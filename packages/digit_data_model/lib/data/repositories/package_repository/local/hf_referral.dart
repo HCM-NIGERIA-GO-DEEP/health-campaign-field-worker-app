@@ -214,11 +214,14 @@ class HFReferralLocalRepository
   ) async {
     return retryLocalCallOperation(() async {
       final referralCompanions = entities
-          .map(
-            (e) => e.companion.copyWith(
-              name: Value(e.name),
-            ),
-          )
+          .map((e) => e.companion.copyWith(
+                name: Value(e.additionalFields?.fields
+                    .where((h) => h.key == 'nameOfReferral')
+                    .firstOrNull
+                    ?.value),
+                // Include localityCode during downsync
+                localityCode: Value(e.localityCode),
+              ))
           .toList();
 
       await sql.batch((batch) async {
@@ -238,8 +241,115 @@ class HFReferralLocalRepository
     DataOperation dataOperation = DataOperation.update,
   }) async {
     return retryLocalCallOperation(() async {
-      final referralCompanion = entity.companion.copyWith(
-        name: Value(entity.name),
+      debugPrint(
+          'HFReferralLocalRepository.update: Starting update for clientReferenceId=${entity.clientReferenceId}');
+
+      // Fetch existing record to merge fields
+      final existingRecords = await search(
+        HFReferralSearchModel(
+          clientReferenceId: [entity.clientReferenceId],
+        ),
+      );
+
+      debugPrint(
+          'HFReferralLocalRepository.update: Found ${existingRecords.length} existing records');
+
+      HFReferralAdditionalFields? mergedAdditionalFields =
+          entity.additionalFields;
+      HFReferralModel updatedEntity = entity;
+
+      if (existingRecords.isNotEmpty) {
+        final existingRecord = existingRecords.first;
+        final existingFields = existingRecord.additionalFields?.fields ?? [];
+        final newFields = entity.additionalFields?.fields ?? [];
+
+        debugPrint(
+            'HFReferralLocalRepository.update: Existing fields=${existingFields.map((f) => '${f.key}=${f.value}').toList()}');
+        debugPrint(
+            'HFReferralLocalRepository.update: New fields=${newFields.map((f) => '${f.key}=${f.value}').toList()}');
+
+        // Create a map of existing fields
+        final fieldMap = <String, dynamic>{};
+        for (final field in existingFields) {
+          fieldMap[field.key] = field.value;
+        }
+
+        // Merge new fields (overwrite existing keys, add new ones)
+        for (final field in newFields) {
+          if (field.value != null && field.value.toString().isNotEmpty) {
+            fieldMap[field.key] = field.value;
+          }
+        }
+
+        // Convert back to list of AdditionalField
+        final mergedFieldsList = fieldMap.entries
+            .map((e) => AdditionalField(e.key, e.value))
+            .toList();
+
+        debugPrint(
+            'HFReferralLocalRepository.update: Merged fields=${mergedFieldsList.map((f) => '${f.key}=${f.value}').toList()}');
+
+        mergedAdditionalFields = HFReferralAdditionalFields(
+          version: entity.additionalFields?.version ?? 1,
+          fields: mergedFieldsList,
+        );
+
+        // Get current timestamp for modified times
+        final currentTime = DateTime.now().millisecondsSinceEpoch;
+
+        // Create updated entity preserving existing field values when incoming is null
+        updatedEntity = HFReferralModel(
+          id: entity.id ?? existingRecord.id,
+          clientReferenceId: entity.clientReferenceId,
+          tenantId: entity.tenantId ?? existingRecord.tenantId,
+          name: entity.name ?? existingRecord.name,
+          projectId: entity.projectId ?? existingRecord.projectId,
+          projectFacilityId:
+              entity.projectFacilityId ?? existingRecord.projectFacilityId,
+          symptom: entity.symptom ?? existingRecord.symptom,
+          symptomSurveyId:
+              entity.symptomSurveyId ?? existingRecord.symptomSurveyId,
+          beneficiaryId: entity.beneficiaryId ?? existingRecord.beneficiaryId,
+          referralCode: entity.referralCode ?? existingRecord.referralCode,
+          nationalLevelId:
+              entity.nationalLevelId ?? existingRecord.nationalLevelId,
+          localityCode: entity.localityCode ?? existingRecord.localityCode,
+          rowVersion: entity.rowVersion ?? existingRecord.rowVersion,
+          isDeleted: entity.isDeleted ?? existingRecord.isDeleted,
+          nonRecoverableError:
+              entity.nonRecoverableError ?? existingRecord.nonRecoverableError,
+          additionalFields: mergedAdditionalFields,
+          auditDetails: AuditDetails(
+            createdBy: existingRecord.auditDetails?.createdBy ??
+                entity.auditDetails?.createdBy ??
+                '',
+            createdTime: existingRecord.auditDetails?.createdTime ??
+                entity.auditDetails?.createdTime ??
+                currentTime,
+            lastModifiedBy: entity.auditDetails?.lastModifiedBy ??
+                existingRecord.auditDetails?.lastModifiedBy,
+            lastModifiedTime: currentTime,
+          ),
+          clientAuditDetails: ClientAuditDetails(
+            createdBy: existingRecord.clientAuditDetails?.createdBy ??
+                entity.clientAuditDetails?.createdBy ??
+                '',
+            createdTime: existingRecord.clientAuditDetails?.createdTime ??
+                entity.clientAuditDetails?.createdTime ??
+                currentTime,
+            lastModifiedBy: entity.clientAuditDetails?.lastModifiedBy ??
+                existingRecord.clientAuditDetails?.lastModifiedBy,
+            lastModifiedTime: currentTime,
+          ),
+        );
+      }
+
+      final referralCompanion = updatedEntity.companion.copyWith(
+        name: Value(mergedAdditionalFields?.fields
+            .where((h) => h.key == 'nameOfReferral')
+            .firstOrNull
+            ?.value),
+        localityCode: Value(updatedEntity.localityCode),
       );
 
       await sql.batch((batch) {
@@ -252,7 +362,7 @@ class HFReferralLocalRepository
         );
       });
 
-      await super.update(entity,
+      await super.update(updatedEntity,
           createOpLog: createOpLog, dataOperation: dataOperation);
     });
   }
