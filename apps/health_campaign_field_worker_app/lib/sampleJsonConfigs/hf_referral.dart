@@ -2474,7 +2474,6 @@ final dynamic sampleReferralFlows = {
       "disabled": false,
       "onAction": [
         {
-          "condition": {"type": "custom", "expression": "isEdit==true"},
           "actions": [
             {
               "actionType": "SEARCH_EVENT",
@@ -2507,10 +2506,10 @@ final dynamic sampleReferralFlows = {
                 "type": "TEMPLATE"
               }
             }
-          ]
+          ],
+          "condition": {"type": "custom", "expression": "isEdit==true"}
         },
         {
-          "condition": {"expression": "DEFAULT"},
           "actions": [
             {
               "actionType": "FETCH_TRANSFORMER_CONFIG",
@@ -2528,7 +2527,8 @@ final dynamic sampleReferralFlows = {
                 "type": "TEMPLATE"
               }
             }
-          ]
+          ],
+          "condition": {"expression": "DEFAULT"}
         }
       ],
       "isSelected": true,
@@ -2547,6 +2547,6 @@ final dynamic sampleReferralFlows = {
     "createdBy": "b43b260c-f620-45d3-a43f-f53148f87f15",
     "lastModifiedBy": "f4e90853-80b7-47cc-91e7-f8cd5ec00e20",
     "createdTime": 1766989202754,
-    "lastModifiedTime": 1771328929754
+    "lastModifiedTime": 1773057994501
   }
 };

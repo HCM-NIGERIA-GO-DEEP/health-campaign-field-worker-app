@@ -628,7 +628,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     i18.home.progressIndicatorTitle,
                   ),
                   prefixLabel: localizations.translate(
-                    i18.home.progressIndicatorPrefixLabel,
+                    i18.home.progressIndicatorPrefixLabelHFReferral,
                   ),
                 ),
             ],

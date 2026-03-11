@@ -83,7 +83,8 @@ class Common {
 
   String get coreCommonDelete => 'CORE_COMMON_DELETE';
 
-  String get coreCommonQuantityDistributed => 'CORE_COMMON_QUANTITY_DISTRIBUTED';
+  String get coreCommonQuantityDistributed =>
+      'CORE_COMMON_QUANTITY_DISTRIBUTED';
 
   String get coreCommonDeleteResource => 'CORE_COMMON_DELETE_RESOURCE';
 
@@ -184,8 +185,7 @@ class Common {
 
   String get permissionsAlert => 'PERMISSIONS_ALERT';
 
-  String get enablePermissionCheckbox =>
-      'ENABLE_PERMISSION_CHECKBOX';
+  String get enablePermissionCheckbox => 'ENABLE_PERMISSION_CHECKBOX';
 
   String get allowPermissions => 'CORE_COMMON_ALLOW_PERMISSIONS';
 
@@ -633,6 +633,9 @@ class Home {
   String get progressIndicatorHelp => 'PROGRESS_INDICATOR_HELP';
 
   String get progressIndicatorPrefixLabel => 'PROGRESS_INDICATOR_PREFIX_LABEL';
+
+  String get progressIndicatorPrefixLabelHFReferral =>
+      'PROGRESS_INDICATOR_PREFIX_LABEL_HFREFERRAL';
 
   String get dataSyncInfoLabel => 'DATA_SYNC_INFO_LABEL';
 
