@@ -67,6 +67,7 @@ import '../widgets/showcase/config/showcase_constants.dart';
 import '../widgets/showcase/showcase_button.dart';
 import '../widgets/stock_reconciliation/stock_reconciliation_card.dart';
 import '../widgets/task_functions.dart';
+import '../widgets/progress_bar/hf_referral_progress.dart';
 
 @RoutePage()
 class HomePage extends LocalizedStatefulWidget {
@@ -569,6 +570,10 @@ class _HomePageState extends LocalizedState<HomePage> {
       skipProgressBar = true;
     }
 
+    final hasHfReferralAction = state.actionsWrapper.actions
+        .map((e) => e.displayName)
+        .contains(i18.home.beneficiaryReferralLabel);
+
     final mappedItems = _getItems(context);
 
     final homeItems = mappedItems?.homeItems ?? [];
@@ -617,6 +622,15 @@ class _HomePageState extends LocalizedState<HomePage> {
                         ),
                       ),
                     ),
+              if (hasHfReferralAction && !skipProgressBar)
+                HFReferralProgressBar(
+                  label: localizations.translate(
+                    i18.home.progressIndicatorTitle,
+                  ),
+                  prefixLabel: localizations.translate(
+                    i18.home.progressIndicatorPrefixLabel,
+                  ),
+                ),
             ],
           ),
           footer: Padding(
