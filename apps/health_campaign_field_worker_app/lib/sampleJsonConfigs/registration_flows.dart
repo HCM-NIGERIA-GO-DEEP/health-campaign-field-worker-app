@@ -975,48 +975,6 @@ final dynamic sampleFlows = {
                     "label": "HOUSEHOLD_OVERVIEW_UNABLE_TO_DELIVER_LABEL",
                     "format": "button",
                     "visible":
-                        "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task)}} == true  && {{fn:checkAllDoseDelivered(item.task)}} == false && {{fn:length(item.referral)}} <= 0",
-                    "onAction": [
-                      {
-                        "actionType": "NAVIGATION",
-                        "properties": {
-                          "data": [
-                            {
-                              "key": "selectedIndividualClientReferenceId",
-                              "value": "{{item.individual.0.clientReferenceId}}"
-                            },
-                            {
-                              "key": "HouseholdClientReferenceId",
-                              "value":
-                                  "{{item.member.0.householdClientReferenceId}}"
-                            },
-                            {
-                              "key": "ProjectBeneficiaryClientReferenceId",
-                              "value":
-                                  "{{item.projectBeneficiary.0.clientReferenceId}}"
-                            }
-                          ],
-                          "name": "UNABLETODELIVER",
-                          "type": "FORM"
-                        }
-                      }
-                    ],
-                    "fieldName": "unableToDeliverButton",
-                    "mandatory": true,
-                    "properties": {
-                      "size": "medium",
-                      "type": "secondary",
-                      "mainAxisSize": "max",
-                      "mainAxisAlignment": "center",
-                      "bottomGap": 16
-                    }
-                  },
-                  {
-                    "icon": "add",
-                    "type": "template",
-                    "label": "REGISTRATION_VIEW_DETAILS",
-                    "format": "button",
-                    "visible":
                         "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task)}} == true &&  {{fn:checkAllDoseDelivered(item.task)}} == true && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false",
                     "onAction": [
                       {
