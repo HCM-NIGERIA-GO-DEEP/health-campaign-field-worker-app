@@ -347,6 +347,9 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                             case NotificationScreenName.profile:
                               context.router.push(ProfileRoute());
                               break;
+                            case NotificationScreenName.boundarySelection:
+                              context.router.push(BoundarySelectionRoute());
+                              break;
                           }
                         }
                       },

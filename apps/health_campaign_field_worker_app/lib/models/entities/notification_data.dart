@@ -1,10 +1,13 @@
 enum NotificationType {
-  stockSync;
+  stockSync,
+  hfReferralSync;
 
   static NotificationType? fromValue(String? value) {
     switch (value) {
       case 'stock_sync':
         return NotificationType.stockSync;
+      case 'hf_referral_sync':
+        return NotificationType.hfReferralSync;
       default:
         return null;
     }
@@ -14,13 +17,16 @@ enum NotificationType {
     switch (this) {
       case NotificationType.stockSync:
         return 'stock_sync';
+      case NotificationType.hfReferralSync:
+        return 'hf_referral_sync';
     }
   }
 }
 
 enum NotificationScreenName {
   home,
-  profile;
+  profile,
+  boundarySelection;
 
   static NotificationScreenName? fromValue(String? value) {
     switch (value) {
@@ -28,6 +34,8 @@ enum NotificationScreenName {
         return NotificationScreenName.home;
       case 'profile':
         return NotificationScreenName.profile;
+      case 'boundary_selection':
+        return NotificationScreenName.boundarySelection;
       default:
         return null;
     }
@@ -39,6 +47,8 @@ enum NotificationScreenName {
         return 'home';
       case NotificationScreenName.profile:
         return 'profile';
+      case NotificationScreenName.boundarySelection:
+        return 'boundary_selection';
     }
   }
 }
