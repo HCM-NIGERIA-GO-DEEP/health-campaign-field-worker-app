@@ -19,7 +19,13 @@ class HFReferralLocalRepository
       final select = sql.select(sql.hFReferral)
         ..where(
           (tbl) => buildAnd([
+            if (query.clientReferenceId != null)
+              tbl.clientReferenceId.isIn(query.clientReferenceId!),
             if (query.projectId != null) tbl.projectId.isIn(query.projectId!),
+            if (query.beneficiaryId != null)
+              tbl.beneficiaryId.isIn(query.beneficiaryId!),
+            if (query.localityCode != null)
+              tbl.localityCode.isIn(query.localityCode!),
           ]),
         );
       select.watch().listen((event) {

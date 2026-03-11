@@ -622,7 +622,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                         ),
                       ),
                     ),
-              if (hasHfReferralAction && !skipProgressBar)
+              if (hasHfReferralAction)
                 HFReferralProgressBar(
                   label: localizations.translate(
                     i18.home.progressIndicatorTitle,
