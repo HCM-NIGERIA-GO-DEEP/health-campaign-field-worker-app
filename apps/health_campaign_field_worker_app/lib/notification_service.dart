@@ -184,6 +184,39 @@ class NotificationService {
     return prefs.getString(_fcmTokenKey);
   }
 
+  /// Show a local notification (without Firebase) that appears in the
+  /// notification bar. When tapped, it triggers [onNotificationTap] with
+  /// the provided [data] payload.
+  /// TODO:: to remove it
+  Future<void> showDummyNotification({
+    required String title,
+    required String body,
+    required Map<String, dynamic> data,
+    int id = 0,
+  }) async {
+    await flutterLocalNotificationsPlugin.show(
+      id,
+      title,
+      body,
+      const NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDescription,
+          importance: Importance.high,
+          priority: Priority.high,
+          icon: '@mipmap/ic_launcher',
+        ),
+        iOS: DarwinNotificationDetails(
+          presentAlert: true,
+          presentBadge: true,
+          presentSound: true,
+        ),
+      ),
+      payload: _encodePayload(data),
+    );
+  }
+
   /// Encode a data map as a simple key=value payload string.
   String _encodePayload(Map<String, dynamic> data) {
     return data.entries.map((e) => '${e.key}=${e.value}').join('&');
