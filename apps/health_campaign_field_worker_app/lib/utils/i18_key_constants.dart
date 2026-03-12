@@ -630,6 +630,8 @@ class Home {
 
   String get stockSyncDataLabel => 'HOME_STOCK_SYNC_DATA_LABEL';
 
+  String get hfReferralSyncDataLabel => 'HOME_HF_REFERRAL_SYNC_DATA_LABEL';
+
   String get callbackLabel => 'HOME_CALL_BACK_LABEL';
 
   String get fileComplaint => 'HOME_FILE_COMPLAINT';

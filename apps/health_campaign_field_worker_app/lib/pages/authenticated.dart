@@ -21,6 +21,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:survey_form/survey_form.dart';
 import 'package:sync_service/sync_service_lib.dart';
 
+import '../notification_service.dart';
 import '../blocs/app_initialization/app_initialization.dart';
 import '../blocs/auth/auth.dart';
 import '../blocs/localization/app_localization.dart';
@@ -60,15 +61,37 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
   late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   bool _isOfflineDialogShowing = false;
 
+  // TODO: Remove this timer — only for testing HF referral push notification
+  Timer? _dummyNotificationTimer;
+
   @override
   void initState() {
     super.initState();
     _connectivitySubscription =
         Connectivity().onConnectivityChanged.listen(_handleConnectivityChange);
+
+    // TODO:  - Remove — dummy HF referral notification every 60 seconds once it is integerated with server
+    _dummyNotificationTimer = Timer.periodic(
+      const Duration(seconds: 60),
+      (_) {
+        if (mounted) {
+          NotificationService().showDummyNotification(
+            title: 'HF Referral Sync',
+            body: 'New referral data is available. Tap to sync.',
+            data: {
+              'screen': 'boundary_selection',
+              'notificationType': 'hf_referral_sync',
+            },
+          );
+        }
+      },
+    );
   }
 
   @override
   void dispose() {
+    //TODO: to remove
+    _dummyNotificationTimer?.cancel();
     _connectivitySubscription.cancel();
     _drawerVisibilityController.close();
     super.dispose();
@@ -346,6 +369,9 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                               break;
                             case NotificationScreenName.profile:
                               context.router.push(ProfileRoute());
+                              break;
+                            case NotificationScreenName.boundarySelection:
+                              context.router.push(BoundarySelectionRoute());
                               break;
                           }
                         }
