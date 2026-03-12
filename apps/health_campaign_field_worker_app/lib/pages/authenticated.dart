@@ -70,7 +70,7 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
     _connectivitySubscription =
         Connectivity().onConnectivityChanged.listen(_handleConnectivityChange);
 
-    // TODO: pitabash - Remove — dummy HF referral notification every 60 seconds
+    // TODO:  - Remove — dummy HF referral notification every 60 seconds once it is integerated with server
     _dummyNotificationTimer = Timer.periodic(
       const Duration(seconds: 60),
       (_) {
@@ -90,7 +90,7 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
 
   @override
   void dispose() {
-    //TODO: to remove [pitabash]
+    //TODO: to remove
     _dummyNotificationTimer?.cancel();
     _connectivitySubscription.cancel();
     _drawerVisibilityController.close();
