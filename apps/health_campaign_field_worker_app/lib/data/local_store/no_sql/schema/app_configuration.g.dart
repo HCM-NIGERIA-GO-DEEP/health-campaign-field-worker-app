@@ -146,70 +146,70 @@ const AppConfigurationSchema = CollectionSchema(
       target: r'SearchHouseHoldFilters',
     ),
     r'STOCK_THRESHOLD_CONFIG': PropertySchema(
-      id: 21,
+      id: 22,
       name: r'STOCK_THRESHOLD_CONFIG',
       type: IsarType.object,
       target: r'StockThresholdConfig',
     ),
     r'SYNC_METHOD': PropertySchema(
-      id: 22,
+      id: 23,
       name: r'SYNC_METHOD',
       type: IsarType.string,
     ),
     r'SYNC_TRIGGER': PropertySchema(
-      id: 23,
+      id: 24,
       name: r'SYNC_TRIGGER',
       type: IsarType.string,
     ),
     r'TENANT_ID': PropertySchema(
-      id: 24,
+      id: 25,
       name: r'TENANT_ID',
       type: IsarType.string,
     ),
     r'TRANSIT_POST_TYPE': PropertySchema(
-      id: 25,
+      id: 26,
       name: r'TRANSIT_POST_TYPE',
       type: IsarType.objectList,
       target: r'TransitPostType',
     ),
     r'TRANSPORT_TYPES': PropertySchema(
-      id: 26,
+      id: 27,
       name: r'TRANSPORT_TYPES',
       type: IsarType.objectList,
       target: r'TransportTypes',
     ),
     r'houseStructureTypes': PropertySchema(
-      id: 27,
+      id: 28,
       name: r'houseStructureTypes',
       type: IsarType.objectList,
       target: r'HouseStructureTypes',
     ),
     r'manualAttendanceReasons': PropertySchema(
-      id: 28,
+      id: 29,
       name: r'manualAttendanceReasons',
       type: IsarType.objectList,
       target: r'ManualAttendanceReasons',
     ),
     r'privacyPolicyConfig': PropertySchema(
-      id: 29,
+      id: 30,
       name: r'privacyPolicyConfig',
       type: IsarType.object,
       target: r'PrivacyPolicy',
     ),
     r'referralReasons': PropertySchema(
-      id: 30,
+      id: 31,
       name: r'referralReasons',
       type: IsarType.objectList,
       target: r'ReferralReasons',
     ),
     r'refusalReasons': PropertySchema(
-      id: 31,
+      id: 32,
       name: r'refusalReasons',
       type: IsarType.objectList,
       target: r'RefusalReasons',
     ),
     r'symptomsTypes': PropertySchema(
-      id: 32,
+      id: 33,
       name: r'symptomsTypes',
       type: IsarType.objectList,
       target: r'SymptomsTypes',
@@ -768,58 +768,58 @@ void _appConfigurationSerialize(
     object.searchHouseHoldFilters,
   );
   writer.writeObject<StockThresholdConfig>(
-    offsets[21],
+    offsets[22],
     allOffsets,
     StockThresholdConfigSchema.serialize,
     object.stockThresholdConfig,
   );
-  writer.writeString(offsets[22], object.syncMethod);
-  writer.writeString(offsets[23], object.syncTrigger);
-  writer.writeString(offsets[24], object.tenantId);
+  writer.writeString(offsets[23], object.syncMethod);
+  writer.writeString(offsets[24], object.syncTrigger);
+  writer.writeString(offsets[25], object.tenantId);
   writer.writeObjectList<TransitPostType>(
-    offsets[25],
+    offsets[26],
     allOffsets,
     TransitPostTypeSchema.serialize,
     object.transitPostType,
   );
   writer.writeObjectList<TransportTypes>(
-    offsets[26],
+    offsets[27],
     allOffsets,
     TransportTypesSchema.serialize,
     object.transportTypes,
   );
   writer.writeObjectList<HouseStructureTypes>(
-    offsets[27],
+    offsets[28],
     allOffsets,
     HouseStructureTypesSchema.serialize,
     object.houseStructureTypes,
   );
   writer.writeObjectList<ManualAttendanceReasons>(
-    offsets[28],
+    offsets[29],
     allOffsets,
     ManualAttendanceReasonsSchema.serialize,
     object.manualAttendanceReasons,
   );
   writer.writeObject<PrivacyPolicy>(
-    offsets[29],
+    offsets[30],
     allOffsets,
     PrivacyPolicySchema.serialize,
     object.privacyPolicyConfig,
   );
   writer.writeObjectList<ReferralReasons>(
-    offsets[30],
+    offsets[31],
     allOffsets,
     ReferralReasonsSchema.serialize,
     object.referralReasons,
   );
   writer.writeObjectList<RefusalReasons>(
-    offsets[31],
+    offsets[32],
     allOffsets,
     RefusalReasonsSchema.serialize,
     object.refusalReasons,
   );
   writer.writeObjectList<SymptomsTypes>(
-    offsets[32],
+    offsets[33],
     allOffsets,
     SymptomsTypesSchema.serialize,
     object.symptomsTypes,
@@ -947,27 +947,27 @@ AppConfiguration _appConfigurationDeserialize(
     SearchHouseHoldFilters(),
   );
   object.stockThresholdConfig = reader.readObjectOrNull<StockThresholdConfig>(
-    offsets[21],
+    offsets[22],
     StockThresholdConfigSchema.deserialize,
     allOffsets,
   );
-  object.syncMethod = reader.readStringOrNull(offsets[22]);
-  object.syncTrigger = reader.readStringOrNull(offsets[23]);
-  object.tenantId = reader.readStringOrNull(offsets[24]);
+  object.syncMethod = reader.readStringOrNull(offsets[23]);
+  object.syncTrigger = reader.readStringOrNull(offsets[24]);
+  object.tenantId = reader.readStringOrNull(offsets[25]);
   object.transitPostType = reader.readObjectList<TransitPostType>(
-    offsets[25],
+    offsets[26],
     TransitPostTypeSchema.deserialize,
     allOffsets,
     TransitPostType(),
   );
   object.transportTypes = reader.readObjectList<TransportTypes>(
-    offsets[26],
+    offsets[27],
     TransportTypesSchema.deserialize,
     allOffsets,
     TransportTypes(),
   );
   object.houseStructureTypes = reader.readObjectList<HouseStructureTypes>(
-    offsets[27],
+    offsets[28],
     HouseStructureTypesSchema.deserialize,
     allOffsets,
     HouseStructureTypes(),
@@ -975,30 +975,30 @@ AppConfiguration _appConfigurationDeserialize(
   object.id = id;
   object.manualAttendanceReasons =
       reader.readObjectList<ManualAttendanceReasons>(
-    offsets[28],
+    offsets[29],
     ManualAttendanceReasonsSchema.deserialize,
     allOffsets,
     ManualAttendanceReasons(),
   );
   object.privacyPolicyConfig = reader.readObjectOrNull<PrivacyPolicy>(
-    offsets[29],
+    offsets[30],
     PrivacyPolicySchema.deserialize,
     allOffsets,
   );
   object.referralReasons = reader.readObjectList<ReferralReasons>(
-    offsets[30],
+    offsets[31],
     ReferralReasonsSchema.deserialize,
     allOffsets,
     ReferralReasons(),
   );
   object.refusalReasons = reader.readObjectList<RefusalReasons>(
-    offsets[31],
+    offsets[32],
     RefusalReasonsSchema.deserialize,
     allOffsets,
     RefusalReasons(),
   );
   object.symptomsTypes = reader.readObjectList<SymptomsTypes>(
-    offsets[32],
+    offsets[33],
     SymptomsTypesSchema.deserialize,
     allOffsets,
     SymptomsTypes(),
@@ -1144,67 +1144,67 @@ P _appConfigurationDeserializeProp<P>(
         allOffsets,
         SearchHouseHoldFilters(),
       )) as P;
-    case 21:
+    case 22:
       return (reader.readObjectOrNull<StockThresholdConfig>(
         offset,
         StockThresholdConfigSchema.deserialize,
         allOffsets,
       )) as P;
-    case 22:
-      return (reader.readStringOrNull(offset)) as P;
     case 23:
       return (reader.readStringOrNull(offset)) as P;
     case 24:
       return (reader.readStringOrNull(offset)) as P;
     case 25:
+      return (reader.readStringOrNull(offset)) as P;
+    case 26:
       return (reader.readObjectList<TransitPostType>(
         offset,
         TransitPostTypeSchema.deserialize,
         allOffsets,
         TransitPostType(),
       )) as P;
-    case 26:
+    case 27:
       return (reader.readObjectList<TransportTypes>(
         offset,
         TransportTypesSchema.deserialize,
         allOffsets,
         TransportTypes(),
       )) as P;
-    case 27:
+    case 28:
       return (reader.readObjectList<HouseStructureTypes>(
         offset,
         HouseStructureTypesSchema.deserialize,
         allOffsets,
         HouseStructureTypes(),
       )) as P;
-    case 28:
+    case 29:
       return (reader.readObjectList<ManualAttendanceReasons>(
         offset,
         ManualAttendanceReasonsSchema.deserialize,
         allOffsets,
         ManualAttendanceReasons(),
       )) as P;
-    case 29:
+    case 30:
       return (reader.readObjectOrNull<PrivacyPolicy>(
         offset,
         PrivacyPolicySchema.deserialize,
         allOffsets,
       )) as P;
-    case 30:
+    case 31:
       return (reader.readObjectList<ReferralReasons>(
         offset,
         ReferralReasonsSchema.deserialize,
         allOffsets,
         ReferralReasons(),
       )) as P;
-    case 31:
+    case 32:
       return (reader.readObjectList<RefusalReasons>(
         offset,
         RefusalReasonsSchema.deserialize,
         allOffsets,
         RefusalReasons(),
       )) as P;
-    case 32:
+    case 33:
       return (reader.readObjectList<SymptomsTypes>(
         offset,
         SymptomsTypesSchema.deserialize,

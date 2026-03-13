@@ -186,7 +186,8 @@ class MdmsRepository {
       ..boundaryLastLevelMaxSelection =
           appConfig?.boundaryLastLevelMaxSelection
       ..backgroundServiceConfig = backgroundServiceConfig
-      ..firebaseConfig = firebaseConfig;
+      ..firebaseConfig = firebaseConfig
+      ..stockThresholdConfig = null;
 
     final List<Languages>? languageList =
         commonMasters?.stateInfo.first.languages.map((element) {

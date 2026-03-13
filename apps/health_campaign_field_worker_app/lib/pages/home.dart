@@ -932,10 +932,11 @@ class _HomePageState extends LocalizedState<HomePage> {
                           localKey: 'clientReferenceId',
                           foreignKey: 'projectBeneficiaryClientReferenceId'),
                       const RelationshipMapping(
-                          from: 'projectBeneficiary',
-                          to: 'referral',
-                          localKey: 'clientReferenceId',
-                          foreignKey: 'projectBeneficiaryClientReferenceId'),
+                          from: 'identifier',
+                          to: 'hFReferral',
+                          localKey: 'identifierId',
+                          foreignKey: 'beneficiaryId'),
+
                       // Conditional mapping
                       if (FlowBuilderSingleton().beneficiaryType ==
                           BeneficiaryType.household)
@@ -1011,11 +1012,11 @@ class _HomePageState extends LocalizedState<HomePage> {
                     final data = allSchemas['REGISTRATION'];
 
                     final registrationDeliveryData = data?['data'];
-                    final flowsData =
-                        (registrationDeliveryData['flows'] as List<dynamic>?)
-                                ?.map((e) => Map<String, dynamic>.from(e as Map))
-                                .toList() ??
-                            [];
+                    final flowsData = (registrationDeliveryData['flows']
+                                as List<dynamic>?)
+                            ?.map((e) => Map<String, dynamic>.from(e as Map))
+                            .toList() ??
+                        [];
                     FlowRegistry.setConfig(flowsData);
                     NavigationRegistry.setupNavigation(ctx);
 
@@ -1028,7 +1029,8 @@ class _HomePageState extends LocalizedState<HomePage> {
                         sampleFlows["flows"] as List<Map<String, dynamic>>);
                     NavigationRegistry.setupNavigation(ctx);
                     ctx.router.push(
-                      FlowBuilderHomeRoute(pageName: sampleFlows["initialPage"]),
+                      FlowBuilderHomeRoute(
+                          pageName: sampleFlows["initialPage"]),
                     );
                   }
                 } catch (e) {
