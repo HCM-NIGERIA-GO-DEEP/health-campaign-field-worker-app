@@ -95,6 +95,8 @@ class AppConfiguration {
 
   @Name('STOCK_THRESHOLD_CONFIG')
   late StockThresholdConfig? stockThresholdConfig;
+  @Name("BOUNDARY_LAST_LEVEL_MAX_SELECTION")
+  late int? boundaryLastLevelMaxSelection;
 }
 
 @embedded
