@@ -240,6 +240,10 @@ class HomeShowcase {
     return 'DISTRIBUTOR_HOME_SHOWCASE_SYNC_DATA';
   }
 
+  String get stockSyncData {
+    return 'DISTRIBUTOR_HOME_SHOWCASE_STOCK_SYNC_DATA';
+  }
+
   String get warehouseManagerManageStock {
     return 'WAREHOUSE_MANAGER_HOME_SHOWCASE_MANAGE_STOCK';
   }
@@ -624,6 +628,10 @@ class Home {
 
   String get syncDataLabel => 'HOME_SYNC_DATA_LABEL';
 
+  String get stockSyncDataLabel => 'HOME_STOCK_SYNC_DATA_LABEL';
+
+  String get hfReferralSyncDataLabel => 'HOME_HF_REFERRAL_SYNC_DATA_LABEL';
+
   String get callbackLabel => 'HOME_CALL_BACK_LABEL';
 
   String get fileComplaint => 'HOME_FILE_COMPLAINT';
@@ -664,6 +672,10 @@ class Home {
   String get closedHouseHoldLabel => 'HOME_CLOSE_HOUSEHOLD_LABEL';
 
   String get clfLabel => "HOME_COMMUNAL_LIVING_FACILITIES_LABEL";
+
+  String get stockBalanceLabel => 'HOME_STOCK_BALANCE_LABEL';
+
+  String get faceRegistrationLabel => 'HOME_FACE_REGISTRATION_LABEL';
 }
 
 class DataShare {

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:digit_data_model/data_model.dart';
@@ -19,28 +18,32 @@ import 'package:flutter_portal/flutter_portal.dart';
 import 'package:isar/isar.dart';
 import 'package:location/location.dart';
 import 'package:qr_flutter/qr_flutter.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:survey_form/survey_form.dart';
 import 'package:sync_service/sync_service_lib.dart';
 
 import 'package:digit_data_model/models/entities/hf_referral.dart';
 
+import '../notification_service.dart';
 import '../blocs/app_initialization/app_initialization.dart';
 import '../blocs/auth/auth.dart';
 import '../blocs/hf_referral_downsync/hf_referral_downsync.dart';
 import '../blocs/localization/app_localization.dart';
 import '../blocs/localization/localization.dart';
 import '../blocs/projects_beneficiary_downsync/project_beneficiaries_downsync.dart';
+import '../blocs/push_notification/push_notification.dart';
 import '../data/local_store/app_shared_preferences.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
+import '../data/local_store/secure_store/secure_store.dart';
 import '../data/remote_client.dart';
 import '../data/repositories/remote/bandwidth_check.dart';
 import '../models/downsync/downsync.dart';
+import '../models/entities/notification_data.dart';
 import '../models/entities/roles_type.dart';
 import '../router/app_router.dart';
 import '../router/authenticated_route_observer.dart';
 import '../utils/environment_config.dart';
 import '../utils/i18_key_constants.dart' as i18;
+import '../utils/stock_downsync.dart';
 import '../utils/utils.dart';
 import '../widgets/error_screen.dart';
 import 'error_boundary.dart';
@@ -61,15 +64,37 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
   late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   bool _isOfflineDialogShowing = false;
 
+  // TODO: Remove this timer — only for testing HF referral push notification
+  Timer? _dummyNotificationTimer;
+
   @override
   void initState() {
     super.initState();
     _connectivitySubscription =
         Connectivity().onConnectivityChanged.listen(_handleConnectivityChange);
+
+    // TODO:  - Remove — dummy HF referral notification every 60 seconds once it is integerated with server
+    _dummyNotificationTimer = Timer.periodic(
+      const Duration(seconds: 60),
+      (_) {
+        if (mounted) {
+          NotificationService().showDummyNotification(
+            title: 'HF Referral Sync',
+            body: 'New referral data is available. Tap to sync.',
+            data: {
+              'screen': 'boundary_selection',
+              'notificationType': 'hf_referral_sync',
+            },
+          );
+        }
+      },
+    );
   }
 
   @override
   void dispose() {
+    //TODO: to remove
+    _dummyNotificationTimer?.cancel();
     _connectivitySubscription.cancel();
     _drawerVisibilityController.close();
     super.dispose();
@@ -123,6 +148,27 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
     }
   }
 
+  void _triggerStockDownsync(BuildContext context) {
+    try {
+      final stockService = StockDownsyncService(
+        localSecureStore: LocalSecureStore.instance,
+        projectFacilityLocalRepository: context.read<
+            LocalRepository<ProjectFacilityModel,
+                ProjectFacilitySearchModel>>(),
+        facilityLocalRepository:
+            context.read<LocalRepository<FacilityModel, FacilitySearchModel>>(),
+        stockRemoteRepository:
+            context.read<RemoteRepository<StockModel, StockSearchModel>>(),
+        stockLocalRepository:
+            context.read<LocalRepository<StockModel, StockSearchModel>>(),
+      );
+
+      stockService.execute(context);
+    } catch (e) {
+      debugPrint('Stock downsync on notification tap failed: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -151,8 +197,10 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                                 if (selectedBoundary == null) {
                                   return const SizedBox.shrink();
                                 } else {
-                                  LocalizationParams()
-                                      .setCode([selectedBoundary.code!, i18.common.coreCommonSubmit]);
+                                  LocalizationParams().setCode([
+                                    selectedBoundary.code!,
+                                    i18.common.coreCommonSubmit
+                                  ]);
                                   final boundaryName =
                                       AppLocalizations.of(context).translate(
                                     selectedBoundary.code ??
@@ -324,31 +372,57 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                         create: (_) => FormsBloc(),
                       ),
                     ],
-                    child: ErrorBoundary(builder: (context, error) {
-                      return error != null
-                          ? const ErrorScreen()
-                          : AutoRouter(
-                              navigatorObservers: () => [
-                                AuthenticatedRouteObserver(
-                                  onNavigated: () {
-                                    bool shouldShowDrawer;
-                                    switch (context.router.topRoute.name) {
-                                      case ProjectSelectionRoute.name:
-                                      case BoundarySelectionRoute.name:
-                                      case PermissionsRoute.name:
-                                        shouldShowDrawer = false;
-                                        break;
-                                      default:
-                                        shouldShowDrawer = true;
-                                    }
+                    child: BlocListener<PushNotificationBloc,
+                        PushNotificationState>(
+                      listener: (context, state) {
+                        if (state is PushNotificationTappedState) {
+                          final notificationData =
+                              NotificationData.fromMap(state.data);
 
-                                    _drawerVisibilityController
-                                        .add(shouldShowDrawer);
-                                  },
-                                ),
-                              ],
-                            );
-                    }),
+                          if (notificationData.notificationType ==
+                              NotificationType.stockSync) {
+                            _triggerStockDownsync(context);
+                          }
+
+                          switch (notificationData.screenName) {
+                            case NotificationScreenName.home:
+                              context.router.replaceAll([HomeRoute()]);
+                              break;
+                            case NotificationScreenName.profile:
+                              context.router.push(ProfileRoute());
+                              break;
+                            case NotificationScreenName.boundarySelection:
+                              context.router.push(BoundarySelectionRoute());
+                              break;
+                          }
+                        }
+                      },
+                      child: ErrorBoundary(builder: (context, error) {
+                        return error != null
+                            ? const ErrorScreen()
+                            : AutoRouter(
+                                navigatorObservers: () => [
+                                  AuthenticatedRouteObserver(
+                                    onNavigated: () {
+                                      bool shouldShowDrawer;
+                                      switch (context.router.topRoute.name) {
+                                        case ProjectSelectionRoute.name:
+                                        case BoundarySelectionRoute.name:
+                                        case PermissionsRoute.name:
+                                          shouldShowDrawer = false;
+                                          break;
+                                        default:
+                                          shouldShowDrawer = true;
+                                      }
+
+                                      _drawerVisibilityController
+                                          .add(shouldShowDrawer);
+                                    },
+                                  ),
+                                ],
+                              );
+                      }),
+                    ),
                   ),
                 ),
               );
@@ -447,9 +521,9 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                   onPressed: () async {
                     final connectivityResult =
                         await (Connectivity().checkConnectivity());
-                    final isOnline =
-                        connectivityResult.contains(ConnectivityResult.wifi) ||
-                            connectivityResult.contains(ConnectivityResult.mobile);
+                    final isOnline = connectivityResult
+                            .contains(ConnectivityResult.wifi) ||
+                        connectivityResult.contains(ConnectivityResult.mobile);
 
                     if (isOnline) {
                       if (context.mounted) {
