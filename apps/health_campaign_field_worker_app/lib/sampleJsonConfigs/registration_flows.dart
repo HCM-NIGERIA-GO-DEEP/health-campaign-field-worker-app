@@ -873,7 +873,7 @@ final dynamic sampleFlows = {
                   },
                   {
                     "type": "template",
-                    "label": "{{fn:getInEligibleStatus(item.task)}}",
+                    "label": "NOT_ELIGIBLE",
                     "format": "tag",
                     "visible":
                         "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task, contextData.0.currentRunningCycle)}}==false",
