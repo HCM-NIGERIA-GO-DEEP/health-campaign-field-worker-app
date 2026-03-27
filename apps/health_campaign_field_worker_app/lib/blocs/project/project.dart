@@ -16,7 +16,7 @@ import 'package:isar/isar.dart';
 import 'package:recase/recase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:survey_form/survey_form.dart';
-
+import '../../data/repositories/remote/notification_token.dart';
 import '../../../models/app_config/app_config_model.dart' as app_configuration;
 import '../../data/local_store/no_sql/schema/app_configuration.dart';
 import '../../data/local_store/no_sql/schema/row_versions.dart';
@@ -27,7 +27,7 @@ import '../../data/repositories/remote/mdms.dart';
 import '../../models/app_config/app_config_model.dart';
 import '../../models/auth/auth_model.dart';
 import '../../models/entities/roles_type.dart';
-import '../../models/entities/transaction_type.dart';
+import '../../notification_service.dart';
 import '../../utils/background_service.dart';
 import '../../utils/environment_config.dart';
 import '../../utils/least_level_boundary_singleton.dart';
@@ -109,6 +109,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
   final LocalRepository<ProductVariantModel, ProductVariantSearchModel>
   productVariantLocalRepository;
   final DashboardRemoteRepository dashboardRemoteRepository;
+  final NotificationTokenRepository notificationTokenRepository;
   BuildContext context;
 
   ProjectBloc({
@@ -141,6 +142,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     required this.attendanceLogLocalRepository,
     required this.attendanceLogRemoteRepository,
     required this.dashboardRemoteRepository,
+    required this.notificationTokenRepository,
     required this.context,
   })  : localSecureStore = localSecureStore ?? LocalSecureStore.instance,
         super(const ProjectState()) {
@@ -165,9 +167,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       title: 'ProjectBloc',
     );
 
-    final isOnline =
-        connectivityResult.contains(ConnectivityResult.wifi) ||
-            connectivityResult.contains(ConnectivityResult.mobile);
+    final isOnline = connectivityResult.contains(ConnectivityResult.wifi) ||
+        connectivityResult.contains(ConnectivityResult.mobile);
     final selectedProject = await localSecureStore.selectedProject;
     final isProjectSetUpComplete = await localSecureStore
         .isProjectSetUpComplete(selectedProject?.id ?? "noProjectId");
@@ -383,6 +384,56 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     );
 
     await projectFacilityLocalRepository.bulkCreate(projectFacilities);
+
+    // Register notification token with filtered facility IDs
+    final currentFacilityIds = projectFacilities
+        .where((pf) {
+      final facilityLevel = pf.additionalFields?.fields
+          .where((f) => f.key == 'facilityLevel')
+          .firstOrNull
+          ?.value;
+
+      // Exclude 'parent' and 'child'
+      return facilityLevel != 'parent' && facilityLevel != 'child';
+    })
+        .map((pf) => pf.facilityId)
+        .toList();
+
+    if (currentFacilityIds.isNotEmpty) {
+      final fcmToken = await NotificationService.getStoredFcmToken();
+      if (fcmToken != null && fcmToken.isNotEmpty) {
+        await _registerNotificationToken(fcmToken, currentFacilityIds);
+      }
+    }
+  }
+
+  /// Registers the Firebase notification token with the assigned facility IDs.
+  Future<void> _registerNotificationToken(
+      String token,
+      List<String> facilityIds,
+      ) async {
+    final serviceRegistry = await isar.serviceRegistrys.where().findAll();
+    final apiEndPoint = Constants.getEndPoint(
+      serviceRegistry: serviceRegistry,
+      service: 'NOTIFICATION',
+      action: ApiOperation.register.toValue(),
+      entityName: 'NotificationToken',
+    );
+
+    if (apiEndPoint.isEmpty) {
+      debugPrint('NotificationToken: No endpoint found in service registry');
+      return;
+    }
+
+    try{
+      await notificationTokenRepository.registerToken(
+        apiEndPoint: apiEndPoint,
+        token: token,
+        facilityIds: facilityIds,
+      );
+    } catch(e){
+      debugPrint('Failed to register notification token');
+    }
   }
 
   FutureOr<void> _loadFacilities(
@@ -421,90 +472,6 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         createOpLog: false,
       );
     }
-  }
-
-  // info: downloads stock data from remote , based on the user role
-  FutureOr<void> downloadStockDataBasedOnRole(
-      List<ProjectFacilityModel> projectFacilities,
-      List<FacilityModel> allFacilities,
-      String? boundaryType,
-      ProjectCycle? currentRunningCycle) async {
-    final userObject = await localSecureStore.userRequestModel;
-    final userRoles = userObject!.roles.map((e) => e.code);
-    final lastChangedSince = currentRunningCycle?.startDate;
-
-    Map<String, String> facilityIdUsageMap = {};
-
-    for (var element in allFacilities) {
-      facilityIdUsageMap[element.id] = element?.usage ?? "";
-    }
-
-    // info : assumption both roles will not be assigned to user
-
-    if (userRoles.contains(RolesType.healthFacilitySupervisor.toValue())) {
-      List<String> receiverIds =
-      projectFacilities.map((e) => e.facilityId).toList();
-      receiverIds = receiverIds
-          .where((e) => facilityIdUsageMap[e] == Constants.healthFacility)
-          .toList();
-      final stockSearchModel = StockSearchModel(
-        receiverId: receiverIds,
-        transactionType: [TransactionType.dispatched.toValue()],
-      );
-      final stockEntriesDownloaded =
-      await downloadStockEntries(stockSearchModel, lastChangedSince);
-      // info : create entries in the local repository
-
-      await createStockDownloadedEntries(stockEntriesDownloaded);
-    } else if (userRoles.contains(RolesType.warehouseManager.toValue()) &&
-        boundaryType == Constants.lgaBoundaryLevel) {
-      List<String> receiverIds =
-      projectFacilities.map((e) => e.facilityId).toList();
-      receiverIds = receiverIds
-          .where((e) => facilityIdUsageMap[e] == Constants.lgaFacility)
-          .toList();
-      final stockSearchModel = StockSearchModel(
-        receiverId: receiverIds,
-        transactionType: [TransactionType.dispatched.toValue()],
-      );
-      final stockEntriesDownloaded =
-      await downloadStockEntries(stockSearchModel, lastChangedSince);
-
-      // info : create entries in the local repository
-      await createStockDownloadedEntries(stockEntriesDownloaded);
-    } else if (userRoles.contains(RolesType.communityDistributor.toValue())) {
-      final receiverIds = [context.loggedInUserUuid];
-      final stockSearchModel = StockSearchModel(
-        receiverId: receiverIds,
-        transactionType: [TransactionType.dispatched.toValue()],
-      );
-      final stockEntriesDownloaded =
-      await downloadStockEntries(stockSearchModel, lastChangedSince);
-
-      // info : create entries in the local repository
-      await createStockDownloadedEntries(stockEntriesDownloaded);
-    }
-  }
-
-  // info : insert data in db
-  FutureOr<void> createStockDownloadedEntries(
-      List<StockModel> stockEntries) async {
-    await stockLocalRepository.bulkCreate(stockEntries);
-  }
-
-  // info:  downloads the stock data from remote repository
-
-  FutureOr<List<StockModel>> downloadStockEntries(
-      StockSearchModel stockSearchModel, int? lastChangedSince) async {
-    var offset = 0;
-    var initialLimit = 10;
-
-    final stockEntries = await stockRemoteRepository.search(stockSearchModel,
-        limit: initialLimit,
-        offSet: offset,
-        lastChangedSince: lastChangedSince);
-
-    return stockEntries;
   }
 
   FutureOr<void> _loadProductVariants(List<ProjectModel> projects) async {
@@ -892,41 +859,13 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       return;
     }
 
-    final getSelectedProjectType = await localSecureStore.selectedProjectType;
     final getSelectedProject = await localSecureStore.selectedProject;
 
-    final currentRunningCycle =
-        getSelectedProject?.additionalDetails?.projectType?.cycles
-            ?.where(
-              (e) =>
-          (e.startDate!) < DateTime.now().millisecondsSinceEpoch &&
-              (e.endDate!) > DateTime.now().millisecondsSinceEpoch,
-          // Return null when no matching cycle is found
-        )
-            .firstOrNull;
-
-    try {
-      final projectFacilities = await projectFacilityLocalRepository
-          .search(ProjectFacilitySearchModel());
-      final facilities =
-      await facilityLocalRepository.search(FacilitySearchModel());
-      await downloadStockDataBasedOnRole(projectFacilities, facilities,
-          event.model.address?.boundaryType, currentRunningCycle);
-
-      emit(state.copyWith(
-        selectedProject: event.model,
-        loading: false,
-        syncError: null,
-        projectType: getSelectedProjectType,
-        selectedCycle: currentRunningCycle,
-      ));
-    } catch (_) {
-      emit(state.copyWith(
-        loading: false,
-        projects: [],
-        syncError: ProjectSyncErrorType.projectFacilities,
-      ));
-    }
+    emit(state.copyWith(
+      selectedProject: getSelectedProject,
+      loading: false,
+      syncError: null,
+    ));
   }
 
   Future<void> storeSchema(dynamic schemaJson) async {
