@@ -220,9 +220,14 @@ class BednetDistributionBloc
     if (state.selectedSchool == null) return;
 
     final updated = [...state.teacherInfoByClass];
+    String? taskError;
+
     if (event.classIndex >= 0 && event.classIndex < updated.length) {
       updated[event.classIndex] = event.info;
       final classIndividual = state.classIndividuals.elementAtOrNull(
+        event.classIndex,
+      );
+      final classDetails = state.classDetailsByClass.elementAtOrNull(
         event.classIndex,
       );
       var nextIndividuals = state.classIndividuals;
@@ -237,10 +242,34 @@ class BednetDistributionBloc
         );
         nextIndividuals = [...state.classIndividuals];
         nextIndividuals[event.classIndex] = merged;
+
+        if (classDetails != null) {
+          final userUuid = RegistrationDeliverySingleton().loggedInUserUuid;
+          if (userUuid == null || userUuid.isEmpty) {
+            taskError = 'Cannot save distribution task: user is not logged in.';
+          } else {
+            try {
+              await bednetDistributionRepository
+                  .createOrUpdateBednetTaskForClassDetails(
+                school: state.selectedSchool!,
+                classIndividual: merged,
+                details: classDetails,
+                userUuid: userUuid,
+                boundaryCode: state.boundaryCode ?? '',
+                boundaryName: RegistrationDeliverySingleton().boundary?.name,
+              );
+            } catch (error, stackTrace) {
+              debugPrint('Bednet task create/update failed: $error');
+              debugPrintStack(stackTrace: stackTrace);
+              taskError = 'Could not save distribution task: $error';
+            }
+          }
+        }
       }
       emit(state.copyWith(
         teacherInfoByClass: updated,
         classIndividuals: nextIndividuals,
+        error: taskError,
       ));
     }
   }
@@ -255,7 +284,6 @@ class BednetDistributionBloc
     final summaries = [...state.summariesByClass];
 
     var nextIndividuals = state.classIndividuals;
-    String? taskError;
 
     if (event.classIndex >= 0 && event.classIndex < details.length) {
       details[event.classIndex] = event.details;
@@ -286,26 +314,6 @@ class BednetDistributionBloc
         );
         nextIndividuals = [...state.classIndividuals];
         nextIndividuals[event.classIndex] = merged;
-
-        final userUuid = RegistrationDeliverySingleton().loggedInUserUuid;
-        if (userUuid == null || userUuid.isEmpty) {
-          taskError = 'Cannot save distribution task: user is not logged in.';
-        } else {
-          try {
-            await bednetDistributionRepository.createOrUpdateBednetTaskForClassDetails(
-              school: state.selectedSchool!,
-              classIndividual: merged,
-              details: event.details,
-              userUuid: userUuid,
-              boundaryCode: state.boundaryCode ?? '',
-              boundaryName: RegistrationDeliverySingleton().boundary?.name,
-            );
-          } catch (error, stackTrace) {
-            debugPrint('Bednet task create/update failed: $error');
-            debugPrintStack(stackTrace: stackTrace);
-            taskError = 'Could not save distribution task: $error';
-          }
-        }
       }
     }
 
@@ -314,7 +322,7 @@ class BednetDistributionBloc
         classDetailsByClass: details,
         summariesByClass: summaries,
         classIndividuals: nextIndividuals,
-        error: taskError,
+        error: null,
       ),
     );
   }

@@ -122,6 +122,7 @@ class MainApplicationState extends State<MainApplication>
                   individualRemoteRepository: ctx.read<
                       RemoteRepository<IndividualModel,
                           IndividualSearchModel>>(),
+                  taskRepository: ctx.repository<TaskModel, TaskSearchModel>(),
                 )..add(
                     AuthAutoLoginEvent(
                       tenantId: envConfig.variables.tenantId,
@@ -171,8 +172,7 @@ class MainApplicationState extends State<MainApplication>
                                 LocalRepository<HouseholdModel,
                                     HouseholdSearchModel>>(),
                             taskLocalRepository: context.read<
-                                LocalRepository<TaskModel,
-                                    TaskSearchModel>>(),
+                                LocalRepository<TaskModel, TaskSearchModel>>(),
                           ),
                         ),
                         BlocProvider(
@@ -394,7 +394,8 @@ class MainApplicationState extends State<MainApplication>
                                   orElse: () => [
                                     const UnauthenticatedRouteWrapper(),
                                   ],
-                                  authenticated: (_, __, ___, ____, _____) => [
+                                  authenticated:
+                                      (_, __, ___, ____, _____, ______) => [
                                     AuthenticatedRouteWrapper(),
                                   ],
                                 ),

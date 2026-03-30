@@ -385,6 +385,13 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
             .isNotEmpty
         : false;
 
+    final isCommunityDistributor = authBloc.state !=
+            const AuthState.unauthenticated()
+        ? context.loggedInUserRoles.any(
+            (role) => role.code == RolesType.communityDistributor.toValue(),
+          )
+        : false;
+
     return BlocBuilder<AuthBloc, AuthState>(builder: (context, state) {
       return BlocListener<LocalizationBloc, LocalizationState>(
         listener: (context, state) {
@@ -425,7 +432,8 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                   },
                   icon: Icons.home,
                 ),
-                if (appInitializationBloc.state is AppInitialized) ...[
+                if (appInitializationBloc.state is AppInitialized &&
+                    !isCommunityDistributor) ...[
                   SidebarItem(
                     title: AppLocalizations.of(context).translate(
                       i18.common.coreCommonlanguage,
@@ -439,51 +447,55 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                         : null,
                   )
                 ],
-                SidebarItem(
-                  title: AppLocalizations.of(context).translate(
-                    i18.common.coreCommonProfile,
-                  ),
-                  icon: Icons.person,
-                  onPressed: () async {
-                    final connectivityResult =
-                        await (Connectivity().checkConnectivity());
-                    final isOnline =
-                        connectivityResult.contains(ConnectivityResult.wifi) ||
-                            connectivityResult.contains(ConnectivityResult.mobile);
+                if (!isCommunityDistributor)
+                  SidebarItem(
+                    title: AppLocalizations.of(context).translate(
+                      i18.common.coreCommonProfile,
+                    ),
+                    icon: Icons.person,
+                    onPressed: () async {
+                      final connectivityResult =
+                          await (Connectivity().checkConnectivity());
+                      final isOnline =
+                          connectivityResult.contains(ConnectivityResult.wifi) ||
+                              connectivityResult
+                                  .contains(ConnectivityResult.mobile);
 
-                    if (isOnline) {
-                      if (context.mounted) {
-                        Navigator.of(context, rootNavigator: true).pop();
-                        context.router.push(ProfileRoute());
-                      }
-                    } else {
-                      if (context.mounted) {
-                        showCustomPopup(
-                          context: context,
-                          builder: (ctx) => Popup(
-                            title: AppLocalizations.of(context).translate(
-                              i18.common.connectionLabel,
+                      if (isOnline) {
+                        if (context.mounted) {
+                          Navigator.of(context, rootNavigator: true).pop();
+                          context.router.push(ProfileRoute());
+                        }
+                      } else {
+                        if (context.mounted) {
+                          showCustomPopup(
+                            context: context,
+                            builder: (ctx) => Popup(
+                              title: AppLocalizations.of(context).translate(
+                                i18.common.connectionLabel,
+                              ),
+                              description:
+                                  AppLocalizations.of(context).translate(
+                                i18.common.connectionContent,
+                              ),
+                              actions: [
+                                DigitButton(
+                                    label:
+                                        AppLocalizations.of(context).translate(
+                                      i18.common.coreCommonOk,
+                                    ),
+                                    onPressed: () =>
+                                        Navigator.of(context, rootNavigator: true)
+                                            .pop(),
+                                    type: DigitButtonType.primary,
+                                    size: DigitButtonSize.large)
+                              ],
                             ),
-                            description: AppLocalizations.of(context).translate(
-                              i18.common.connectionContent,
-                            ),
-                            actions: [
-                              DigitButton(
-                                  label: AppLocalizations.of(context).translate(
-                                    i18.common.coreCommonOk,
-                                  ),
-                                  onPressed: () =>
-                                      Navigator.of(context, rootNavigator: true)
-                                          .pop(),
-                                  type: DigitButtonType.primary,
-                                  size: DigitButtonSize.large)
-                            ],
-                          ),
-                        );
+                          );
+                        }
                       }
-                    }
-                  },
-                ),
+                    },
+                  ),
                 if (isDistributor) ...[
                   SidebarItem(
                     title: AppLocalizations.of(context).translate(
@@ -498,17 +510,18 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
 
                   // TODO: Non system user
 
-                  SidebarItem(
-                    title: AppLocalizations.of(context).translate(
-                      //TODO: TO append the total count of non- system users
-                      i18.nonMobileUser.nonMobileUserLabel,
+                  if (!isCommunityDistributor)
+                    SidebarItem(
+                      title: AppLocalizations.of(context).translate(
+                        //TODO: TO append the total count of non- system users
+                        i18.nonMobileUser.nonMobileUserLabel,
+                      ),
+                      icon: Icons.group,
+                      onPressed: () {
+                        Navigator.of(context, rootNavigator: true).pop();
+                        context.router.push(const NonMobileUserListRoute());
+                      },
                     ),
-                    icon: Icons.group,
-                    onPressed: () {
-                      Navigator.of(context, rootNavigator: true).pop();
-                      context.router.push(const NonMobileUserListRoute());
-                    },
-                  ),
                 ],
               ],
               logOutDigitButtonLabel: AppLocalizations.of(context)

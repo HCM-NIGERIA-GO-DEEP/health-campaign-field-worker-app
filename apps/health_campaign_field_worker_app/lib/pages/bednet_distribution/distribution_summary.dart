@@ -46,7 +46,7 @@ class DistributionSummaryPage extends StatelessWidget {
                 );
             context.router.popUntilRouteWithName(SchoolDetailsRoute.name);
             context.router.push(
-              ClassTeacherInfoRoute(
+              ClassDetailsRoute(
                 classIndex: 0,
                 totalClasses: state.classIndividuals.length,
               ),

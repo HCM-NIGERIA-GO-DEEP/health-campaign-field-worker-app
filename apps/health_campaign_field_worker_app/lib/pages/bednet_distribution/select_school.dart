@@ -46,58 +46,49 @@ class SelectSchoolPage extends StatelessWidget {
                   header: const BackNavigationHelpHeaderWidget(
                     showHelp: false,
                   ),
-                  footer: DigitCard(
-                    margin: const EdgeInsets.only(top: spacer2),
-                    children: [
-                      DigitButton(
-                        label: 'Next',
-                        type: DigitButtonType.primary,
-                        size: DigitButtonSize.large,
-                        mainAxisSize: MainAxisSize.max,
-                        isDisabled: state.schools.isEmpty,
-                        onPressed: () {
-                          form.markAllAsTouched();
-                          if (!form.valid) return;
-                          final school = form.control(_schoolControl).value
-                              as HouseholdModel;
-                          context.read<BednetDistributionBloc>().add(
-                                BednetDistributionEvent.selectSchool(
-                                  school: school,
-                                ),
-                              );
-                        },
-                      ),
-                    ],
+                  footer: StreamBuilder<Object?>(
+                    stream: form.valueChanges,
+                    initialData: form.value,
+                    builder: (context, _) {
+                      final selected =
+                          form.control(_schoolControl).value as HouseholdModel?;
+                      final hasSelection = selected != null;
+                      return DigitCard(
+                        margin: const EdgeInsets.only(top: spacer2),
+                        children: [
+                          DigitButton(
+                            label: 'Next',
+                            type: DigitButtonType.primary,
+                            size: DigitButtonSize.large,
+                            mainAxisSize: MainAxisSize.max,
+                            isDisabled:
+                                state.schools.isEmpty || !hasSelection,
+                            onPressed: () {
+                              form.markAllAsTouched();
+                              if (!form.valid) return;
+                              final school = form.control(_schoolControl).value
+                                  as HouseholdModel;
+                              context.read<BednetDistributionBloc>().add(
+                                    BednetDistributionEvent.selectSchool(
+                                      school: school,
+                                    ),
+                                  );
+                            },
+                          ),
+                        ],
+                      );
+                    },
                   ),
                   slivers: [
                     SliverToBoxAdapter(
                       child: DigitCard(
                         margin: const EdgeInsets.all(spacer2),
                         children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Select the school',
-                                  style: textTheme.headingXl.copyWith(
-                                    color: theme.colorTheme.primary.primary2,
-                                  ),
-                                ),
-                              ),
-                              DigitButton(
-                                label: 'Refresh',
-                                type: DigitButtonType.tertiary,
-                                size: DigitButtonSize.medium,
-                                onPressed: () {
-                                  if (state.loading) return;
-                                  context.read<BednetDistributionBloc>().add(
-                                        const BednetDistributionEvent.reload(),
-                                      );
-                                },
-                              ),
-                            ],
+                          Text(
+                            'Select the school',
+                            style: textTheme.headingXl.copyWith(
+                              color: theme.colorTheme.primary.primary2,
+                            ),
                           ),
                           const SizedBox(height: spacer2),
                           ReactiveWrapperField(

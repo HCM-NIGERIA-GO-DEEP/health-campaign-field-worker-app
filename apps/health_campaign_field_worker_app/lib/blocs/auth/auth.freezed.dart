@@ -20,21 +20,27 @@ mixin _$AuthEvent {
   TResult when<TResult extends Object?>({
     required TResult Function(String userId, String password, String tenantId)
         login,
+    required TResult Function(int? bednetCount) addProductCounts,
     required TResult Function(String tenantId) autoLogin,
+    required TResult Function(String clientReferenceId) deliveryProductCounts,
     required TResult Function() logout,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String userId, String password, String tenantId)? login,
+    TResult? Function(int? bednetCount)? addProductCounts,
     TResult? Function(String tenantId)? autoLogin,
+    TResult? Function(String clientReferenceId)? deliveryProductCounts,
     TResult? Function()? logout,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String userId, String password, String tenantId)? login,
+    TResult Function(int? bednetCount)? addProductCounts,
     TResult Function(String tenantId)? autoLogin,
+    TResult Function(String clientReferenceId)? deliveryProductCounts,
     TResult Function()? logout,
     required TResult orElse(),
   }) =>
@@ -42,21 +48,30 @@ mixin _$AuthEvent {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(AuthLoginEvent value) login,
+    required TResult Function(AuthAddProductCountsEvent value) addProductCounts,
     required TResult Function(AuthAutoLoginEvent value) autoLogin,
+    required TResult Function(AuthDeliveryProductCountsEvent value)
+        deliveryProductCounts,
     required TResult Function(AuthLogoutEvent value) logout,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(AuthLoginEvent value)? login,
+    TResult? Function(AuthAddProductCountsEvent value)? addProductCounts,
     TResult? Function(AuthAutoLoginEvent value)? autoLogin,
+    TResult? Function(AuthDeliveryProductCountsEvent value)?
+        deliveryProductCounts,
     TResult? Function(AuthLogoutEvent value)? logout,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(AuthLoginEvent value)? login,
+    TResult Function(AuthAddProductCountsEvent value)? addProductCounts,
     TResult Function(AuthAutoLoginEvent value)? autoLogin,
+    TResult Function(AuthDeliveryProductCountsEvent value)?
+        deliveryProductCounts,
     TResult Function(AuthLogoutEvent value)? logout,
     required TResult orElse(),
   }) =>
@@ -166,7 +181,9 @@ class _$AuthLoginEventImpl implements AuthLoginEvent {
   TResult when<TResult extends Object?>({
     required TResult Function(String userId, String password, String tenantId)
         login,
+    required TResult Function(int? bednetCount) addProductCounts,
     required TResult Function(String tenantId) autoLogin,
+    required TResult Function(String clientReferenceId) deliveryProductCounts,
     required TResult Function() logout,
   }) {
     return login(userId, password, tenantId);
@@ -176,7 +193,9 @@ class _$AuthLoginEventImpl implements AuthLoginEvent {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String userId, String password, String tenantId)? login,
+    TResult? Function(int? bednetCount)? addProductCounts,
     TResult? Function(String tenantId)? autoLogin,
+    TResult? Function(String clientReferenceId)? deliveryProductCounts,
     TResult? Function()? logout,
   }) {
     return login?.call(userId, password, tenantId);
@@ -186,7 +205,9 @@ class _$AuthLoginEventImpl implements AuthLoginEvent {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String userId, String password, String tenantId)? login,
+    TResult Function(int? bednetCount)? addProductCounts,
     TResult Function(String tenantId)? autoLogin,
+    TResult Function(String clientReferenceId)? deliveryProductCounts,
     TResult Function()? logout,
     required TResult orElse(),
   }) {
@@ -200,7 +221,10 @@ class _$AuthLoginEventImpl implements AuthLoginEvent {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(AuthLoginEvent value) login,
+    required TResult Function(AuthAddProductCountsEvent value) addProductCounts,
     required TResult Function(AuthAutoLoginEvent value) autoLogin,
+    required TResult Function(AuthDeliveryProductCountsEvent value)
+        deliveryProductCounts,
     required TResult Function(AuthLogoutEvent value) logout,
   }) {
     return login(this);
@@ -210,7 +234,10 @@ class _$AuthLoginEventImpl implements AuthLoginEvent {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(AuthLoginEvent value)? login,
+    TResult? Function(AuthAddProductCountsEvent value)? addProductCounts,
     TResult? Function(AuthAutoLoginEvent value)? autoLogin,
+    TResult? Function(AuthDeliveryProductCountsEvent value)?
+        deliveryProductCounts,
     TResult? Function(AuthLogoutEvent value)? logout,
   }) {
     return login?.call(this);
@@ -220,7 +247,10 @@ class _$AuthLoginEventImpl implements AuthLoginEvent {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(AuthLoginEvent value)? login,
+    TResult Function(AuthAddProductCountsEvent value)? addProductCounts,
     TResult Function(AuthAutoLoginEvent value)? autoLogin,
+    TResult Function(AuthDeliveryProductCountsEvent value)?
+        deliveryProductCounts,
     TResult Function(AuthLogoutEvent value)? logout,
     required TResult orElse(),
   }) {
@@ -243,6 +273,166 @@ abstract class AuthLoginEvent implements AuthEvent {
   @JsonKey(ignore: true)
   _$$AuthLoginEventImplCopyWith<_$AuthLoginEventImpl> get copyWith =>
       throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$AuthAddProductCountsEventImplCopyWith<$Res> {
+  factory _$$AuthAddProductCountsEventImplCopyWith(
+          _$AuthAddProductCountsEventImpl value,
+          $Res Function(_$AuthAddProductCountsEventImpl) then) =
+      __$$AuthAddProductCountsEventImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({int? bednetCount});
+}
+
+/// @nodoc
+class __$$AuthAddProductCountsEventImplCopyWithImpl<$Res>
+    extends _$AuthEventCopyWithImpl<$Res, _$AuthAddProductCountsEventImpl>
+    implements _$$AuthAddProductCountsEventImplCopyWith<$Res> {
+  __$$AuthAddProductCountsEventImplCopyWithImpl(
+      _$AuthAddProductCountsEventImpl _value,
+      $Res Function(_$AuthAddProductCountsEventImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? bednetCount = freezed,
+  }) {
+    return _then(_$AuthAddProductCountsEventImpl(
+      bednetCount: freezed == bednetCount
+          ? _value.bednetCount
+          : bednetCount // ignore: cast_nullable_to_non_nullable
+              as int?,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$AuthAddProductCountsEventImpl implements AuthAddProductCountsEvent {
+  const _$AuthAddProductCountsEventImpl({this.bednetCount});
+
+  @override
+  final int? bednetCount;
+
+  @override
+  String toString() {
+    return 'AuthEvent.addProductCounts(bednetCount: $bednetCount)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$AuthAddProductCountsEventImpl &&
+            (identical(other.bednetCount, bednetCount) ||
+                other.bednetCount == bednetCount));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, bednetCount);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$AuthAddProductCountsEventImplCopyWith<_$AuthAddProductCountsEventImpl>
+      get copyWith => __$$AuthAddProductCountsEventImplCopyWithImpl<
+          _$AuthAddProductCountsEventImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(String userId, String password, String tenantId)
+        login,
+    required TResult Function(int? bednetCount) addProductCounts,
+    required TResult Function(String tenantId) autoLogin,
+    required TResult Function(String clientReferenceId) deliveryProductCounts,
+    required TResult Function() logout,
+  }) {
+    return addProductCounts(bednetCount);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(String userId, String password, String tenantId)? login,
+    TResult? Function(int? bednetCount)? addProductCounts,
+    TResult? Function(String tenantId)? autoLogin,
+    TResult? Function(String clientReferenceId)? deliveryProductCounts,
+    TResult? Function()? logout,
+  }) {
+    return addProductCounts?.call(bednetCount);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(String userId, String password, String tenantId)? login,
+    TResult Function(int? bednetCount)? addProductCounts,
+    TResult Function(String tenantId)? autoLogin,
+    TResult Function(String clientReferenceId)? deliveryProductCounts,
+    TResult Function()? logout,
+    required TResult orElse(),
+  }) {
+    if (addProductCounts != null) {
+      return addProductCounts(bednetCount);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(AuthLoginEvent value) login,
+    required TResult Function(AuthAddProductCountsEvent value) addProductCounts,
+    required TResult Function(AuthAutoLoginEvent value) autoLogin,
+    required TResult Function(AuthDeliveryProductCountsEvent value)
+        deliveryProductCounts,
+    required TResult Function(AuthLogoutEvent value) logout,
+  }) {
+    return addProductCounts(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(AuthLoginEvent value)? login,
+    TResult? Function(AuthAddProductCountsEvent value)? addProductCounts,
+    TResult? Function(AuthAutoLoginEvent value)? autoLogin,
+    TResult? Function(AuthDeliveryProductCountsEvent value)?
+        deliveryProductCounts,
+    TResult? Function(AuthLogoutEvent value)? logout,
+  }) {
+    return addProductCounts?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(AuthLoginEvent value)? login,
+    TResult Function(AuthAddProductCountsEvent value)? addProductCounts,
+    TResult Function(AuthAutoLoginEvent value)? autoLogin,
+    TResult Function(AuthDeliveryProductCountsEvent value)?
+        deliveryProductCounts,
+    TResult Function(AuthLogoutEvent value)? logout,
+    required TResult orElse(),
+  }) {
+    if (addProductCounts != null) {
+      return addProductCounts(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class AuthAddProductCountsEvent implements AuthEvent {
+  const factory AuthAddProductCountsEvent({final int? bednetCount}) =
+      _$AuthAddProductCountsEventImpl;
+
+  int? get bednetCount;
+  @JsonKey(ignore: true)
+  _$$AuthAddProductCountsEventImplCopyWith<_$AuthAddProductCountsEventImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
@@ -313,7 +503,9 @@ class _$AuthAutoLoginEventImpl implements AuthAutoLoginEvent {
   TResult when<TResult extends Object?>({
     required TResult Function(String userId, String password, String tenantId)
         login,
+    required TResult Function(int? bednetCount) addProductCounts,
     required TResult Function(String tenantId) autoLogin,
+    required TResult Function(String clientReferenceId) deliveryProductCounts,
     required TResult Function() logout,
   }) {
     return autoLogin(tenantId);
@@ -323,7 +515,9 @@ class _$AuthAutoLoginEventImpl implements AuthAutoLoginEvent {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String userId, String password, String tenantId)? login,
+    TResult? Function(int? bednetCount)? addProductCounts,
     TResult? Function(String tenantId)? autoLogin,
+    TResult? Function(String clientReferenceId)? deliveryProductCounts,
     TResult? Function()? logout,
   }) {
     return autoLogin?.call(tenantId);
@@ -333,7 +527,9 @@ class _$AuthAutoLoginEventImpl implements AuthAutoLoginEvent {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String userId, String password, String tenantId)? login,
+    TResult Function(int? bednetCount)? addProductCounts,
     TResult Function(String tenantId)? autoLogin,
+    TResult Function(String clientReferenceId)? deliveryProductCounts,
     TResult Function()? logout,
     required TResult orElse(),
   }) {
@@ -347,7 +543,10 @@ class _$AuthAutoLoginEventImpl implements AuthAutoLoginEvent {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(AuthLoginEvent value) login,
+    required TResult Function(AuthAddProductCountsEvent value) addProductCounts,
     required TResult Function(AuthAutoLoginEvent value) autoLogin,
+    required TResult Function(AuthDeliveryProductCountsEvent value)
+        deliveryProductCounts,
     required TResult Function(AuthLogoutEvent value) logout,
   }) {
     return autoLogin(this);
@@ -357,7 +556,10 @@ class _$AuthAutoLoginEventImpl implements AuthAutoLoginEvent {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(AuthLoginEvent value)? login,
+    TResult? Function(AuthAddProductCountsEvent value)? addProductCounts,
     TResult? Function(AuthAutoLoginEvent value)? autoLogin,
+    TResult? Function(AuthDeliveryProductCountsEvent value)?
+        deliveryProductCounts,
     TResult? Function(AuthLogoutEvent value)? logout,
   }) {
     return autoLogin?.call(this);
@@ -367,7 +569,10 @@ class _$AuthAutoLoginEventImpl implements AuthAutoLoginEvent {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(AuthLoginEvent value)? login,
+    TResult Function(AuthAddProductCountsEvent value)? addProductCounts,
     TResult Function(AuthAutoLoginEvent value)? autoLogin,
+    TResult Function(AuthDeliveryProductCountsEvent value)?
+        deliveryProductCounts,
     TResult Function(AuthLogoutEvent value)? logout,
     required TResult orElse(),
   }) {
@@ -386,6 +591,170 @@ abstract class AuthAutoLoginEvent implements AuthEvent {
   @JsonKey(ignore: true)
   _$$AuthAutoLoginEventImplCopyWith<_$AuthAutoLoginEventImpl> get copyWith =>
       throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$AuthDeliveryProductCountsEventImplCopyWith<$Res> {
+  factory _$$AuthDeliveryProductCountsEventImplCopyWith(
+          _$AuthDeliveryProductCountsEventImpl value,
+          $Res Function(_$AuthDeliveryProductCountsEventImpl) then) =
+      __$$AuthDeliveryProductCountsEventImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String clientReferenceId});
+}
+
+/// @nodoc
+class __$$AuthDeliveryProductCountsEventImplCopyWithImpl<$Res>
+    extends _$AuthEventCopyWithImpl<$Res, _$AuthDeliveryProductCountsEventImpl>
+    implements _$$AuthDeliveryProductCountsEventImplCopyWith<$Res> {
+  __$$AuthDeliveryProductCountsEventImplCopyWithImpl(
+      _$AuthDeliveryProductCountsEventImpl _value,
+      $Res Function(_$AuthDeliveryProductCountsEventImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? clientReferenceId = null,
+  }) {
+    return _then(_$AuthDeliveryProductCountsEventImpl(
+      clientReferenceId: null == clientReferenceId
+          ? _value.clientReferenceId
+          : clientReferenceId // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$AuthDeliveryProductCountsEventImpl
+    implements AuthDeliveryProductCountsEvent {
+  const _$AuthDeliveryProductCountsEventImpl({required this.clientReferenceId});
+
+  @override
+  final String clientReferenceId;
+
+  @override
+  String toString() {
+    return 'AuthEvent.deliveryProductCounts(clientReferenceId: $clientReferenceId)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$AuthDeliveryProductCountsEventImpl &&
+            (identical(other.clientReferenceId, clientReferenceId) ||
+                other.clientReferenceId == clientReferenceId));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, clientReferenceId);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$AuthDeliveryProductCountsEventImplCopyWith<
+          _$AuthDeliveryProductCountsEventImpl>
+      get copyWith => __$$AuthDeliveryProductCountsEventImplCopyWithImpl<
+          _$AuthDeliveryProductCountsEventImpl>(this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(String userId, String password, String tenantId)
+        login,
+    required TResult Function(int? bednetCount) addProductCounts,
+    required TResult Function(String tenantId) autoLogin,
+    required TResult Function(String clientReferenceId) deliveryProductCounts,
+    required TResult Function() logout,
+  }) {
+    return deliveryProductCounts(clientReferenceId);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(String userId, String password, String tenantId)? login,
+    TResult? Function(int? bednetCount)? addProductCounts,
+    TResult? Function(String tenantId)? autoLogin,
+    TResult? Function(String clientReferenceId)? deliveryProductCounts,
+    TResult? Function()? logout,
+  }) {
+    return deliveryProductCounts?.call(clientReferenceId);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(String userId, String password, String tenantId)? login,
+    TResult Function(int? bednetCount)? addProductCounts,
+    TResult Function(String tenantId)? autoLogin,
+    TResult Function(String clientReferenceId)? deliveryProductCounts,
+    TResult Function()? logout,
+    required TResult orElse(),
+  }) {
+    if (deliveryProductCounts != null) {
+      return deliveryProductCounts(clientReferenceId);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(AuthLoginEvent value) login,
+    required TResult Function(AuthAddProductCountsEvent value) addProductCounts,
+    required TResult Function(AuthAutoLoginEvent value) autoLogin,
+    required TResult Function(AuthDeliveryProductCountsEvent value)
+        deliveryProductCounts,
+    required TResult Function(AuthLogoutEvent value) logout,
+  }) {
+    return deliveryProductCounts(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(AuthLoginEvent value)? login,
+    TResult? Function(AuthAddProductCountsEvent value)? addProductCounts,
+    TResult? Function(AuthAutoLoginEvent value)? autoLogin,
+    TResult? Function(AuthDeliveryProductCountsEvent value)?
+        deliveryProductCounts,
+    TResult? Function(AuthLogoutEvent value)? logout,
+  }) {
+    return deliveryProductCounts?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(AuthLoginEvent value)? login,
+    TResult Function(AuthAddProductCountsEvent value)? addProductCounts,
+    TResult Function(AuthAutoLoginEvent value)? autoLogin,
+    TResult Function(AuthDeliveryProductCountsEvent value)?
+        deliveryProductCounts,
+    TResult Function(AuthLogoutEvent value)? logout,
+    required TResult orElse(),
+  }) {
+    if (deliveryProductCounts != null) {
+      return deliveryProductCounts(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class AuthDeliveryProductCountsEvent implements AuthEvent {
+  const factory AuthDeliveryProductCountsEvent(
+          {required final String clientReferenceId}) =
+      _$AuthDeliveryProductCountsEventImpl;
+
+  String get clientReferenceId;
+  @JsonKey(ignore: true)
+  _$$AuthDeliveryProductCountsEventImplCopyWith<
+          _$AuthDeliveryProductCountsEventImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 /// @nodoc
@@ -428,7 +797,9 @@ class _$AuthLogoutEventImpl implements AuthLogoutEvent {
   TResult when<TResult extends Object?>({
     required TResult Function(String userId, String password, String tenantId)
         login,
+    required TResult Function(int? bednetCount) addProductCounts,
     required TResult Function(String tenantId) autoLogin,
+    required TResult Function(String clientReferenceId) deliveryProductCounts,
     required TResult Function() logout,
   }) {
     return logout();
@@ -438,7 +809,9 @@ class _$AuthLogoutEventImpl implements AuthLogoutEvent {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String userId, String password, String tenantId)? login,
+    TResult? Function(int? bednetCount)? addProductCounts,
     TResult? Function(String tenantId)? autoLogin,
+    TResult? Function(String clientReferenceId)? deliveryProductCounts,
     TResult? Function()? logout,
   }) {
     return logout?.call();
@@ -448,7 +821,9 @@ class _$AuthLogoutEventImpl implements AuthLogoutEvent {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String userId, String password, String tenantId)? login,
+    TResult Function(int? bednetCount)? addProductCounts,
     TResult Function(String tenantId)? autoLogin,
+    TResult Function(String clientReferenceId)? deliveryProductCounts,
     TResult Function()? logout,
     required TResult orElse(),
   }) {
@@ -462,7 +837,10 @@ class _$AuthLogoutEventImpl implements AuthLogoutEvent {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(AuthLoginEvent value) login,
+    required TResult Function(AuthAddProductCountsEvent value) addProductCounts,
     required TResult Function(AuthAutoLoginEvent value) autoLogin,
+    required TResult Function(AuthDeliveryProductCountsEvent value)
+        deliveryProductCounts,
     required TResult Function(AuthLogoutEvent value) logout,
   }) {
     return logout(this);
@@ -472,7 +850,10 @@ class _$AuthLogoutEventImpl implements AuthLogoutEvent {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(AuthLoginEvent value)? login,
+    TResult? Function(AuthAddProductCountsEvent value)? addProductCounts,
     TResult? Function(AuthAutoLoginEvent value)? autoLogin,
+    TResult? Function(AuthDeliveryProductCountsEvent value)?
+        deliveryProductCounts,
     TResult? Function(AuthLogoutEvent value)? logout,
   }) {
     return logout?.call(this);
@@ -482,7 +863,10 @@ class _$AuthLogoutEventImpl implements AuthLogoutEvent {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(AuthLoginEvent value)? login,
+    TResult Function(AuthAddProductCountsEvent value)? addProductCounts,
     TResult Function(AuthAutoLoginEvent value)? autoLogin,
+    TResult Function(AuthDeliveryProductCountsEvent value)?
+        deliveryProductCounts,
     TResult Function(AuthLogoutEvent value)? logout,
     required TResult orElse(),
   }) {
@@ -508,7 +892,8 @@ mixin _$AuthState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)
+            String? individualId,
+            int? bednetCount)
         authenticated,
     required TResult Function(String? error) error,
   }) =>
@@ -522,7 +907,8 @@ mixin _$AuthState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            int? bednetCount)?
         authenticated,
     TResult? Function(String? error)? error,
   }) =>
@@ -536,7 +922,8 @@ mixin _$AuthState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            int? bednetCount)?
         authenticated,
     TResult Function(String? error)? error,
     required TResult orElse(),
@@ -634,7 +1021,8 @@ class _$AuthUnauthenticatedStateImpl implements AuthUnauthenticatedState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)
+            String? individualId,
+            int? bednetCount)
         authenticated,
     required TResult Function(String? error) error,
   }) {
@@ -651,7 +1039,8 @@ class _$AuthUnauthenticatedStateImpl implements AuthUnauthenticatedState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            int? bednetCount)?
         authenticated,
     TResult? Function(String? error)? error,
   }) {
@@ -668,7 +1057,8 @@ class _$AuthUnauthenticatedStateImpl implements AuthUnauthenticatedState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            int? bednetCount)?
         authenticated,
     TResult Function(String? error)? error,
     required TResult orElse(),
@@ -766,7 +1156,8 @@ class _$AuthLoadingStateImpl implements AuthLoadingState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)
+            String? individualId,
+            int? bednetCount)
         authenticated,
     required TResult Function(String? error) error,
   }) {
@@ -783,7 +1174,8 @@ class _$AuthLoadingStateImpl implements AuthLoadingState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            int? bednetCount)?
         authenticated,
     TResult? Function(String? error)? error,
   }) {
@@ -800,7 +1192,8 @@ class _$AuthLoadingStateImpl implements AuthLoadingState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            int? bednetCount)?
         authenticated,
     TResult Function(String? error)? error,
     required TResult orElse(),
@@ -865,7 +1258,8 @@ abstract class _$$AuthAuthenticatedStateImplCopyWith<$Res> {
       String refreshToken,
       UserRequestModel userModel,
       RoleActionsWrapperModel actionsWrapper,
-      String? individualId});
+      String? individualId,
+      int? bednetCount});
 
   $UserRequestModelCopyWith<$Res> get userModel;
   $RoleActionsWrapperModelCopyWith<$Res> get actionsWrapper;
@@ -888,6 +1282,7 @@ class __$$AuthAuthenticatedStateImplCopyWithImpl<$Res>
     Object? userModel = null,
     Object? actionsWrapper = null,
     Object? individualId = freezed,
+    Object? bednetCount = freezed,
   }) {
     return _then(_$AuthAuthenticatedStateImpl(
       accessToken: null == accessToken
@@ -910,6 +1305,10 @@ class __$$AuthAuthenticatedStateImplCopyWithImpl<$Res>
           ? _value.individualId
           : individualId // ignore: cast_nullable_to_non_nullable
               as String?,
+      bednetCount: freezed == bednetCount
+          ? _value.bednetCount
+          : bednetCount // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 
@@ -939,7 +1338,8 @@ class _$AuthAuthenticatedStateImpl implements AuthAuthenticatedState {
       required this.refreshToken,
       required this.userModel,
       required this.actionsWrapper,
-      this.individualId});
+      this.individualId,
+      this.bednetCount});
 
   @override
   final String accessToken;
@@ -951,10 +1351,12 @@ class _$AuthAuthenticatedStateImpl implements AuthAuthenticatedState {
   final RoleActionsWrapperModel actionsWrapper;
   @override
   final String? individualId;
+  @override
+  final int? bednetCount;
 
   @override
   String toString() {
-    return 'AuthState.authenticated(accessToken: $accessToken, refreshToken: $refreshToken, userModel: $userModel, actionsWrapper: $actionsWrapper, individualId: $individualId)';
+    return 'AuthState.authenticated(accessToken: $accessToken, refreshToken: $refreshToken, userModel: $userModel, actionsWrapper: $actionsWrapper, individualId: $individualId, bednetCount: $bednetCount)';
   }
 
   @override
@@ -971,12 +1373,14 @@ class _$AuthAuthenticatedStateImpl implements AuthAuthenticatedState {
             (identical(other.actionsWrapper, actionsWrapper) ||
                 other.actionsWrapper == actionsWrapper) &&
             (identical(other.individualId, individualId) ||
-                other.individualId == individualId));
+                other.individualId == individualId) &&
+            (identical(other.bednetCount, bednetCount) ||
+                other.bednetCount == bednetCount));
   }
 
   @override
   int get hashCode => Object.hash(runtimeType, accessToken, refreshToken,
-      userModel, actionsWrapper, individualId);
+      userModel, actionsWrapper, individualId, bednetCount);
 
   @JsonKey(ignore: true)
   @override
@@ -995,12 +1399,13 @@ class _$AuthAuthenticatedStateImpl implements AuthAuthenticatedState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)
+            String? individualId,
+            int? bednetCount)
         authenticated,
     required TResult Function(String? error) error,
   }) {
-    return authenticated(
-        accessToken, refreshToken, userModel, actionsWrapper, individualId);
+    return authenticated(accessToken, refreshToken, userModel, actionsWrapper,
+        individualId, bednetCount);
   }
 
   @override
@@ -1013,12 +1418,13 @@ class _$AuthAuthenticatedStateImpl implements AuthAuthenticatedState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            int? bednetCount)?
         authenticated,
     TResult? Function(String? error)? error,
   }) {
-    return authenticated?.call(
-        accessToken, refreshToken, userModel, actionsWrapper, individualId);
+    return authenticated?.call(accessToken, refreshToken, userModel,
+        actionsWrapper, individualId, bednetCount);
   }
 
   @override
@@ -1031,14 +1437,15 @@ class _$AuthAuthenticatedStateImpl implements AuthAuthenticatedState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            int? bednetCount)?
         authenticated,
     TResult Function(String? error)? error,
     required TResult orElse(),
   }) {
     if (authenticated != null) {
-      return authenticated(
-          accessToken, refreshToken, userModel, actionsWrapper, individualId);
+      return authenticated(accessToken, refreshToken, userModel, actionsWrapper,
+          individualId, bednetCount);
     }
     return orElse();
   }
@@ -1087,13 +1494,15 @@ abstract class AuthAuthenticatedState implements AuthState {
       required final String refreshToken,
       required final UserRequestModel userModel,
       required final RoleActionsWrapperModel actionsWrapper,
-      final String? individualId}) = _$AuthAuthenticatedStateImpl;
+      final String? individualId,
+      final int? bednetCount}) = _$AuthAuthenticatedStateImpl;
 
   String get accessToken;
   String get refreshToken;
   UserRequestModel get userModel;
   RoleActionsWrapperModel get actionsWrapper;
   String? get individualId;
+  int? get bednetCount;
   @JsonKey(ignore: true)
   _$$AuthAuthenticatedStateImplCopyWith<_$AuthAuthenticatedStateImpl>
       get copyWith => throw _privateConstructorUsedError;
@@ -1171,7 +1580,8 @@ class _$AuthErrorStateImpl implements AuthErrorState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)
+            String? individualId,
+            int? bednetCount)
         authenticated,
     required TResult Function(String? error) error,
   }) {
@@ -1188,7 +1598,8 @@ class _$AuthErrorStateImpl implements AuthErrorState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            int? bednetCount)?
         authenticated,
     TResult? Function(String? error)? error,
   }) {
@@ -1205,7 +1616,8 @@ class _$AuthErrorStateImpl implements AuthErrorState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            int? bednetCount)?
         authenticated,
     TResult Function(String? error)? error,
     required TResult orElse(),

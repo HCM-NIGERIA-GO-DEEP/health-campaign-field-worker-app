@@ -8,10 +8,10 @@ import '../../utils/utils.dart';
 /// Persists bednet class-row entities: [IndividualModel] (with [AddressModel]),
 /// [ProjectBeneficiaryModel], [HouseholdMemberModel].
 ///
-/// [TaskModel] is created when class rows are seeded and then updated when class
-/// distribution **details** are submitted (see
-/// [createOrUpdateBednetTaskForClassDetails]), with [TaskResourceModel] rows
-/// when a project product variant can be resolved.
+/// [TaskModel] is created or updated when **teacher** details are submitted (see
+/// [createOrUpdateBednetTaskForClassDetails]), after class distribution metrics
+/// are already stored on the class row, with [TaskResourceModel] rows when a
+/// project product variant can be resolved.
 ///
 /// Mirrors the registration flow in the reference
 /// `CustomBeneficiaryRegistrationBloc` (BLoC orchestrates; repository performs saves).
@@ -39,7 +39,7 @@ class BednetDistributionRepository {
       'ADMINISTRATION_SUCCESS';
 
   /// Creates one class distribution row: individual + project beneficiary +
-  /// household member + initial task linked to project beneficiary.
+  /// household member (task is created on teacher submit).
   Future<void> createClassDistributionEntities({
     required HouseholdModel school,
     required int classIndex,
@@ -153,45 +153,6 @@ class BednetDistributionRepository {
     );
 
     await householdMemberLocalRepository.create(householdMember);
-
-    final taskClientReferenceId = IdGen.i.identifier;
-    final taskAddress = AddressModel(
-      relatedClientReferenceId: taskClientReferenceId,
-      latitude: coords.latitude,
-      longitude: coords.longitude,
-      boundary: boundaryCode.isEmpty ? null : boundaryCode,
-      type: AddressType.permanent,
-      tenantId: tenantId,
-      locality: locality,
-      auditDetails: auditDetails,
-      clientAuditDetails: clientAuditDetails,
-    );
-
-    final task = TaskModel(
-      clientReferenceId: taskClientReferenceId,
-      projectId: projectId,
-      projectBeneficiaryId: projectBeneficiary.id,
-      projectBeneficiaryClientReferenceId: projectBeneficiary.clientReferenceId,
-      createdBy: userUuid,
-      tenantId: tenantId,
-      rowVersion: 1,
-      createdDate: createdAt,
-      address: taskAddress,
-      additionalFields: TaskAdditionalFields(
-        version: 1,
-        fields: [
-          AdditionalField(kBednetTaskSchoolNameKey, school.bednetDisplayName),
-          AdditionalField(
-              kBednetTaskSchoolClientRefKey, school.clientReferenceId),
-          AdditionalField(kBednetTaskClassNameKey, classNameLabel),
-          AdditionalField(kBednetClassIndexKey, classIndex),
-        ],
-      ),
-      auditDetails: auditDetails,
-      clientAuditDetails: clientAuditDetails,
-    );
-
-    await taskLocalRepository.create(task);
   }
 
   Future<String?> _resolveProductVariantIdForProject(String projectId) async {
@@ -302,7 +263,8 @@ class BednetDistributionRepository {
     );
   }
 
-  /// Creates or updates the bednet [TaskModel] after class details are filled in.
+  /// Creates or updates the bednet [TaskModel] after class details and teacher
+  /// info are persisted (invoked from teacher submit with [ClassDetailsModel]).
   /// Metrics are on [TaskModel.additionalFields]; [TaskResourceModel] lines are
   /// added when a project resource / product variant is available.
   Future<void> createOrUpdateBednetTaskForClassDetails({

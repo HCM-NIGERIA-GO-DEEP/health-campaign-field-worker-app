@@ -4,6 +4,7 @@ import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -221,56 +222,65 @@ class ClassDetailsPage extends StatelessWidget {
           body: ScrollableContent(
             enableFixedDigitButton: true,
             header: const BackNavigationHelpHeaderWidget(showHelp: false),
-            footer: DigitCard(
-              margin: const EdgeInsets.only(top: spacer2),
-              children: [
-                DigitButton(
-                  label: 'Submit',
-                  type: DigitButtonType.primary,
-                  size: DigitButtonSize.large,
-                  mainAxisSize: MainAxisSize.max,
-                  isDisabled: !form.valid,
-                  onPressed: () {
-                    form.markAllAsTouched();
-                    if (!form.valid) return;
+            footer: StreamBuilder<Object?>(
+              stream: form.valueChanges,
+              initialData: form.value,
+              builder: (context, _) {
+                return DigitCard(
+                  margin: const EdgeInsets.only(top: spacer2),
+                  children: [
+                    DigitButton(
+                      label: 'Submit',
+                      type: DigitButtonType.primary,
+                      size: DigitButtonSize.large,
+                      mainAxisSize: MainAxisSize.max,
+                      isDisabled: !form.valid,
+                      onPressed: () {
+                        form.markAllAsTouched();
+                        if (!form.valid) return;
 
-                    final details = ClassDetailsModel(
-                      distributionDate: form.control(_date).value as DateTime,
-                      pupilCount: classPupilCount,
-                      numberOfBoys: classBoys,
-                      numberOfGirls: classGirls,
-                      pupilsPresent: int.tryParse(
-                              form.control(_present).value as String? ?? '0') ??
-                          0,
-                      boysPresent: int.tryParse(
-                              form.control(_boysPresent).value as String? ??
-                                  '0') ??
-                          0,
-                      girlsPresent: int.tryParse(
-                              form.control(_girlsPresent).value as String? ??
-                                  '0') ??
-                          0,
-                      pupilsAbsent: int.tryParse(
-                              form.control(_absent).value as String? ?? '0') ??
-                          0,
-                    );
-
-                    context.read<BednetDistributionBloc>().add(
-                          BednetDistributionEvent.saveClassDetails(
-                            classIndex: classIndex,
-                            details: details,
-                          ),
+                        final details = ClassDetailsModel(
+                          distributionDate:
+                              form.control(_date).value as DateTime,
+                          pupilCount: classPupilCount,
+                          numberOfBoys: classBoys,
+                          numberOfGirls: classGirls,
+                          pupilsPresent: int.tryParse(
+                                  form.control(_present).value as String? ??
+                                      '0') ??
+                              0,
+                          boysPresent: int.tryParse(
+                                  form.control(_boysPresent).value as String? ??
+                                      '0') ??
+                              0,
+                          girlsPresent: int.tryParse(
+                                  form.control(_girlsPresent).value as String? ??
+                                      '0') ??
+                              0,
+                          pupilsAbsent: int.tryParse(
+                                  form.control(_absent).value as String? ??
+                                      '0') ??
+                              0,
                         );
 
-                    context.router.push(
-                      DistributionSummaryRoute(
-                        classIndex: classIndex,
-                        totalClasses: totalClasses,
-                      ),
-                    );
-                  },
-                ),
-              ],
+                        context.read<BednetDistributionBloc>().add(
+                              BednetDistributionEvent.saveClassDetails(
+                                classIndex: classIndex,
+                                details: details,
+                              ),
+                            );
+
+                        context.router.push(
+                          ClassTeacherInfoRoute(
+                            classIndex: classIndex,
+                            totalClasses: totalClasses,
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                );
+              },
             ),
             slivers: [
               SliverToBoxAdapter(
@@ -308,6 +318,9 @@ class ClassDetailsPage extends StatelessWidget {
                             child: DigitTextFormInput(
                               initialValue: form.control(_present).value,
                               keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
                               errorMessage: field.errorText,
                               onChange: (value) {
                                 form.control(_present).value = value;
@@ -332,6 +345,9 @@ class ClassDetailsPage extends StatelessWidget {
                             child: DigitTextFormInput(
                               initialValue: form.control(_boysPresent).value,
                               keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
                               errorMessage: field.errorText,
                               onChange: (value) {
                                 form.control(_boysPresent).value = value;
@@ -355,6 +371,9 @@ class ClassDetailsPage extends StatelessWidget {
                             child: DigitTextFormInput(
                               initialValue: form.control(_girlsPresent).value,
                               keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                              ],
                               errorMessage: field.errorText,
                               onChange: (value) {
                                 form.control(_girlsPresent).value = value;

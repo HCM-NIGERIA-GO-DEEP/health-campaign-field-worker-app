@@ -11,7 +11,7 @@ import '../../models/bednet_distribution/bednet_distribution_models.dart';
 import '../../router/app_router.dart';
 import '../../widgets/header/back_navigation_help_header.dart';
 
-/// Mobile must be exactly 11 digits (optional spaces stripped before check).
+/// Mobile is optional; when provided it must be exactly 11 digits.
 Map<String, dynamic>? _teacherMobileElevenDigits(
   AbstractControl<dynamic> control,
 ) {
@@ -20,6 +20,20 @@ Map<String, dynamic>? _teacherMobileElevenDigits(
   final digitsOnly = raw.replaceAll(RegExp(r'\D'), '');
   if (digitsOnly.length != 11) {
     return {'mobileElevenDigits': true};
+  }
+  return null;
+}
+
+/// Letters and spaces only; trimmed length at least 3.
+Map<String, dynamic>? _teacherNameValidator(
+  AbstractControl<dynamic> control,
+) {
+  final raw = control.value?.toString() ?? '';
+  final t = raw.trim();
+  if (t.isEmpty) return {'required': true};
+  if (t.length < 3) return {'minLength': true};
+  if (!RegExp(r'^[a-zA-Z ]+$').hasMatch(t)) {
+    return {'alphabetOnly': true};
   }
   return null;
 }
@@ -42,7 +56,6 @@ class ClassTeacherInfoPage extends StatelessWidget {
   static const _genderItems = [
     DropdownItem(name: 'Male', code: 'Male'),
     DropdownItem(name: 'Female', code: 'Female'),
-    DropdownItem(name: 'Other', code: 'Other'),
   ];
 
   static String _digitsOnly(String raw) =>
@@ -57,7 +70,7 @@ class ClassTeacherInfoPage extends StatelessWidget {
     for (final item in _genderItems) {
       if (item.code.toLowerCase() == lower) return item.code;
     }
-    return t;
+    return '';
   }
 
   @override
@@ -74,7 +87,7 @@ class ClassTeacherInfoPage extends StatelessWidget {
       form: () => fb.group({
         _name: FormControl<String>(
           value: existing?.name ?? '',
-          validators: [Validators.required],
+          validators: [Validators.delegate(_teacherNameValidator)],
         ),
         _gender: FormControl<String>(
           value: _normalizeGender(
@@ -84,10 +97,7 @@ class ClassTeacherInfoPage extends StatelessWidget {
         ),
         _mobile: FormControl<String>(
           value: _digitsOnly(existing?.mobileNumber ?? ''),
-          validators: [
-            Validators.required,
-            Validators.delegate(_teacherMobileElevenDigits),
-          ],
+          validators: [Validators.delegate(_teacherMobileElevenDigits)],
         ),
       }),
       builder: (context, form, _) {
@@ -97,64 +107,58 @@ class ClassTeacherInfoPage extends StatelessWidget {
           body: ScrollableContent(
             enableFixedDigitButton: true,
             header: const BackNavigationHelpHeaderWidget(showHelp: false),
-            footer: DigitCard(
-              margin: const EdgeInsets.only(top: spacer2),
-              children: [
-                DigitButton(
-                  label: 'Next',
-                  type: DigitButtonType.primary,
-                  size: DigitButtonSize.large,
-                  mainAxisSize: MainAxisSize.max,
-                  isDisabled: !form.valid,
-                  onPressed: () {
-                    form.markAllAsTouched();
-                    if (!form.valid) return;
+            footer: StreamBuilder<Object?>(
+              stream: form.valueChanges,
+              initialData: form.value,
+              builder: (context, _) {
+                return DigitCard(
+                  margin: const EdgeInsets.only(top: spacer2),
+                  children: [
+                    DigitButton(
+                      label: 'Next',
+                      type: DigitButtonType.primary,
+                      size: DigitButtonSize.large,
+                      mainAxisSize: MainAxisSize.max,
+                      isDisabled: !form.valid,
+                      onPressed: () {
+                        form.markAllAsTouched();
+                        if (!form.valid) return;
 
-                    final mobileRaw =
-                        (form.control(_mobile).value as String?) ?? '';
-                    final mobileDigits = _digitsOnly(mobileRaw);
+                        final mobileRaw =
+                            (form.control(_mobile).value as String?) ?? '';
+                        final mobileDigits = _digitsOnly(mobileRaw);
 
-                    context.read<BednetDistributionBloc>().add(
-                          BednetDistributionEvent.saveTeacherInfo(
+                        context.read<BednetDistributionBloc>().add(
+                              BednetDistributionEvent.saveTeacherInfo(
+                                classIndex: classIndex,
+                                info: ClassTeacherInfoModel(
+                                  name: (form.control(_name).value
+                                          as String?) ??
+                                      '',
+                                  gender: (form.control(_gender).value
+                                          as String?) ??
+                                      '',
+                                  mobileNumber: mobileDigits,
+                                ),
+                              ),
+                            );
+
+                        context.router.push(
+                          DistributionSummaryRoute(
                             classIndex: classIndex,
-                            info: ClassTeacherInfoModel(
-                              name: (form.control(_name).value as String?) ?? '',
-                              gender: (form.control(_gender).value as String?) ?? '',
-                              mobileNumber: mobileDigits,
-                            ),
+                            totalClasses: totalClasses,
                           ),
                         );
-
-                    context.router.push(
-                      ClassDetailsRoute(
-                        classIndex: classIndex,
-                        totalClasses: totalClasses,
-                      ),
-                    );
-                  },
-                ),
-              ],
+                      },
+                    ),
+                  ],
+                );
+              },
             ),
             slivers: [
               SliverToBoxAdapter(
                 child: Column(
                   children: [
-                    Align(
-                      alignment: Alignment.centerRight,
-                      child: Padding(
-                        padding: const EdgeInsets.only(
-                          top: spacer2,
-                          right: spacer2,
-                        ),
-                        child: DigitButton(
-                          label: 'Help',
-                          suffixIcon: Icons.help_outline_outlined,
-                          type: DigitButtonType.tertiary,
-                          size: DigitButtonSize.medium,
-                          onPressed: () {},
-                        ),
-                      ),
-                    ),
                     DigitCard(
                       margin: const EdgeInsets.all(spacer2),
                       children: [
@@ -168,6 +172,10 @@ class ClassTeacherInfoPage extends StatelessWidget {
                           formControlName: _name,
                           validationMessages: {
                             'required': (_) => 'Name is required',
+                            'minLength': (_) =>
+                                'Name must be at least 3 characters',
+                            'alphabetOnly': (_) =>
+                                'Name may only contain letters',
                           },
                           builder: (field) => LabeledField(
                             label: 'Name',
@@ -176,6 +184,11 @@ class ClassTeacherInfoPage extends StatelessWidget {
                               initialValue: form.control(_name).value,
                               errorMessage: field.errorText,
                               keyboardType: TextInputType.text,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.allow(
+                                  RegExp(r'[a-zA-Z ]'),
+                                ),
+                              ],
                               onChange: (value) {
                                 form.control(_name).value = value;
                               },
@@ -222,13 +235,12 @@ class ClassTeacherInfoPage extends StatelessWidget {
                         ReactiveWrapperField(
                           formControlName: _mobile,
                           validationMessages: {
-                            'required': (_) => 'Mobile number is required',
                             'mobileElevenDigits': (_) =>
                                 'Enter exactly 11 digits for mobile number',
                           },
                           builder: (field) => LabeledField(
                             label: 'Mobile number',
-                            isRequired: true,
+                            isRequired: false,
                             child: DigitTextFormInput(
                               initialValue: form.control(_mobile).value,
                               errorMessage: field.errorText,

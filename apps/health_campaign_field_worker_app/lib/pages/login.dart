@@ -1,18 +1,14 @@
 import 'package:digit_ui_components/digit_components.dart';
-import 'package:digit_ui_components/models/privacy_notice/privacy_notice_model.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/atoms/digit_loader.dart';
 import 'package:digit_ui_components/widgets/atoms/pop_up_card.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:digit_ui_components/widgets/molecules/show_pop_up.dart';
-import 'package:digit_ui_components/widgets/privacy_notice/privacy_component.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-import '../blocs/app_initialization/app_initialization.dart';
 import '../blocs/auth/auth.dart';
-import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../router/app_router.dart';
 import '../utils/environment_config.dart';
 import '../utils/i18_key_constants.dart' as i18;
@@ -31,10 +27,8 @@ class LoginPage extends LocalizedStatefulWidget {
 
 class _LoginPageState extends LocalizedState<LoginPage> {
   var passwordVisible = false;
-  bool isPrivacyEnabled = false;
   static const _userId = 'userId';
   static const _password = 'password';
-  static const _privacyCheck = 'privacyCheck';
 
   @override
   void initState() {
@@ -135,34 +129,6 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                           ),
                         ),
                       ),
-                      BlocBuilder<AppInitializationBloc,
-                              AppInitializationState>(
-                          builder: (context, initState) {
-                        final privacyPolicyJson = initState.maybeWhen(
-                            initialized:
-                                (AppConfiguration appConfiguration, _, __) =>
-                                    appConfiguration.privacyPolicyConfig,
-                            orElse: () => null);
-                        if (privacyPolicyJson?.active == false) {
-                          return const SizedBox.shrink();
-                        }
-
-                        form
-                            .control(_privacyCheck)
-                            .setValidators([Validators.requiredTrue]);
-                        form.control(_privacyCheck).updateValueAndValidity();
-                        return PrivacyComponent(
-                          privacyPolicy:
-                              convertToPrivacyPolicyModel(privacyPolicyJson),
-                          formControlName: _privacyCheck,
-                          text: localizations
-                              .translate(i18.privacyPolicy.privacyNoticeText),
-                          linkText: localizations.translate(
-                              i18.privacyPolicy.privacyPolicyLinkText),
-                          validationMessage: localizations.translate(
-                              i18.privacyPolicy.privacyPolicyValidationText),
-                        );
-                      }),
                       DigitButton(
                         label: localizations.translate(i18.login.actionLabel),
                         type: DigitButtonType.primary,
@@ -215,7 +181,7 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                                   ),
                                   onPressed: () {
                                     Navigator.of(ctx).pop();
-                                    context.router.popUntilRoot();
+                                    context.router.replaceAll([LoginRoute()]);
                                   },
                                   type: DigitButtonType.primary,
                                   size: DigitButtonSize.large)
@@ -241,38 +207,5 @@ class _LoginPageState extends LocalizedState<LoginPage> {
           validators: [Validators.required],
           value: '',
         ),
-        _privacyCheck: FormControl<bool>(
-          value: false,
-        )
       });
-}
-
-// convert to privacy notice model
-PrivacyNoticeModel? convertToPrivacyPolicyModel(PrivacyPolicy? privacyPolicy) {
-  return PrivacyNoticeModel(
-    header: privacyPolicy?.header ?? '',
-    module: privacyPolicy?.module ?? '',
-    active: privacyPolicy?.active,
-    contents: privacyPolicy?.contents
-        ?.map((content) => ContentNoticeModel(
-              header: content.header,
-              descriptions: content.descriptions
-                  ?.map((description) => DescriptionNoticeModel(
-                        text: description.text,
-                        type: description.type,
-                        isBold: description.isBold,
-                        subDescriptions: description.subDescriptions
-                            ?.map((subDescription) => SubDescriptionNoticeModel(
-                                  text: subDescription.text,
-                                  type: subDescription.type,
-                                  isBold: subDescription.isBold,
-                                  isSpaceRequired:
-                                      subDescription.isSpaceRequired,
-                                ))
-                            .toList(),
-                      ))
-                  .toList(),
-            ))
-        .toList(),
-  );
 }
