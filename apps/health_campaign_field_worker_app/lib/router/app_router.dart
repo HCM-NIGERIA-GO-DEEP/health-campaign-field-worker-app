@@ -42,6 +42,7 @@ import '../pages/project_facility_selection.dart';
 import '../pages/project_selection.dart';
 import '../pages/qr_details_page.dart';
 import '../pages/reports/beneficiary/beneficaries_report.dart';
+import '../pages/reports/summary_report/custom_summary_report.dart';
 import '../pages/unauthenticated.dart';
 
 export 'package:auto_route/auto_route.dart';
@@ -163,6 +164,11 @@ class AppRouter extends _$AppRouter {
               path: 'success',
             ),
           ],
+        ),
+
+        AutoRoute(
+          page: CustomSummaryReportRoute.page,
+          path: 'custom-report-summary',
         ),
 
         /// Project Selection

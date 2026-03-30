@@ -105,6 +105,17 @@ abstract class _$AppRouter extends RootStackRouter {
         ),
       );
     },
+    CustomSummaryReportRoute.name: (routeData) {
+      final args = routeData.argsAs<CustomSummaryReportRouteArgs>(
+          orElse: () => const CustomSummaryReportRouteArgs());
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: CustomSummaryReportPage(
+          key: args.key,
+          appLocalizations: args.appLocalizations,
+        ),
+      );
+    },
     DataReceiverRoute.name: (routeData) {
       final args = routeData.argsAs<DataReceiverRouteArgs>();
       return AutoRoutePage<dynamic>(
@@ -564,6 +575,45 @@ class ClassTeacherInfoRouteArgs {
   @override
   String toString() {
     return 'ClassTeacherInfoRouteArgs{key: $key, classIndex: $classIndex, totalClasses: $totalClasses}';
+  }
+}
+
+/// generated route for
+/// [CustomSummaryReportPage]
+class CustomSummaryReportRoute
+    extends PageRouteInfo<CustomSummaryReportRouteArgs> {
+  CustomSummaryReportRoute({
+    Key? key,
+    AppLocalizations? appLocalizations,
+    List<PageRouteInfo>? children,
+  }) : super(
+          CustomSummaryReportRoute.name,
+          args: CustomSummaryReportRouteArgs(
+            key: key,
+            appLocalizations: appLocalizations,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'CustomSummaryReportRoute';
+
+  static const PageInfo<CustomSummaryReportRouteArgs> page =
+      PageInfo<CustomSummaryReportRouteArgs>(name);
+}
+
+class CustomSummaryReportRouteArgs {
+  const CustomSummaryReportRouteArgs({
+    this.key,
+    this.appLocalizations,
+  });
+
+  final Key? key;
+
+  final AppLocalizations? appLocalizations;
+
+  @override
+  String toString() {
+    return 'CustomSummaryReportRouteArgs{key: $key, appLocalizations: $appLocalizations}';
   }
 }
 
