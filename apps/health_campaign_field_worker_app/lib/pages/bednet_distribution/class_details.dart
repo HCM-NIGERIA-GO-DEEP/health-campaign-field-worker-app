@@ -1,6 +1,7 @@
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
+import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,6 +24,42 @@ Map<String, dynamic>? _bednetMaxIntFormValidator(
   if (v == null) return {'invalidNumber': true};
   if (v < 0) return {'negative': true};
   if (v > max) return {'maxExceeded': true};
+  return null;
+}
+
+Map<String, dynamic>? _presentCompositionValidator(
+  AbstractControl<dynamic> control,
+) {
+  if (control is! FormGroup) return null;
+
+  final presentRaw = control.control(ClassDetailsPage._present).value
+      ?.toString()
+      .trim();
+  final boysRaw = control.control(ClassDetailsPage._boysPresent).value
+      ?.toString()
+      .trim();
+  final girlsRaw = control.control(ClassDetailsPage._girlsPresent).value
+      ?.toString()
+      .trim();
+
+  if (presentRaw == null ||
+      boysRaw == null ||
+      girlsRaw == null ||
+      presentRaw.isEmpty ||
+      boysRaw.isEmpty ||
+      girlsRaw.isEmpty) {
+    return null;
+  }
+
+  final present = int.tryParse(presentRaw);
+  final boys = int.tryParse(boysRaw);
+  final girls = int.tryParse(girlsRaw);
+  if (present == null || boys == null || girls == null) return null;
+
+  if (boys + girls != present) {
+    return {'presentMismatch': true};
+  }
+
   return null;
 }
 
@@ -51,52 +88,86 @@ class ClassDetailsPage extends StatelessWidget {
       return const Scaffold(body: SizedBox.shrink());
     }
     final classIndividual = state.classIndividuals.elementAtOrNull(classIndex);
-    final classFields =
-        classIndividual?.additionalFields?.fields ?? const <AdditionalField>[];
-    final additionalFieldMap = <String, Object?>{
-      for (final field in classFields) field.key.toLowerCase(): field.value,
+    final schoolFieldMap = <String, Object?>{
+      for (final field
+          in school.additionalFields?.fields ?? const <AdditionalField>[])
+        field.key.toLowerCase(): field.value as Object?,
     };
 
-    int? readNullableInt(List<String> keys) {
+    int? readSchoolInt(List<String> keys) {
       for (final key in keys) {
-        final raw = additionalFieldMap[key.toLowerCase()];
+        final raw = schoolFieldMap[key.toLowerCase()];
         if (raw == null) continue;
-        final value = int.tryParse(raw.toString());
-        if (value != null) return value;
+        final parsed = int.tryParse(raw.toString());
+        if (parsed != null) return parsed;
       }
       return null;
     }
 
-    DateTime readDate() {
-      final raw = additionalFieldMap['distributiondate'];
-      if (raw == null) return DateTime.now();
-      final millis = int.tryParse(raw.toString());
-      if (millis == null) return DateTime.now();
-      return DateTime.fromMillisecondsSinceEpoch(millis);
+    int resolveClassOrdinal() {
+      final fields =
+          classIndividual?.additionalFields?.fields ?? const <AdditionalField>[];
+      for (final field in fields) {
+        if (field.key.toLowerCase() != kBednetClassIndexKey.toLowerCase()) {
+          continue;
+        }
+        final parsed = int.tryParse(field.value.toString());
+        if (parsed != null && parsed > 0) return parsed;
+      }
+      final givenName = classIndividual?.name?.givenName?.trim() ?? '';
+      final classNumMatch = RegExp(r'(\d+)').firstMatch(givenName);
+      if (classNumMatch != null) {
+        final parsed = int.tryParse(classNumMatch.group(1)!);
+        if (parsed != null && parsed > 0) return parsed;
+      }
+      return classIndex + 1;
     }
 
     final className = classIndividual?.name?.givenName?.trim();
     final classLabel = (className?.isNotEmpty ?? false)
         ? className!
         : 'Class ${classIndex + 1}';
+    final classOrdinal = resolveClassOrdinal();
 
     final previous = state.classDetailsByClass.elementAt(classIndex);
+    final classTotalBoysFromSchool = readSchoolInt([
+      'class${classOrdinal}_totalboys',
+      'class${classOrdinal}_numberofboys',
+      'class${classOrdinal}_boys',
+    ]);
+    final classTotalGirlsFromSchool = readSchoolInt([
+      'class${classOrdinal}_totalgirls',
+      'class${classOrdinal}_numberofgirls',
+      'class${classOrdinal}_girls',
+    ]);
+    final classTotalPupilsFromSchool = readSchoolInt([
+      'class${classOrdinal}_totalstudents',
+      'class${classOrdinal}_totalpupils',
+      'class${classOrdinal}_pupilcount',
+      'class${classOrdinal}_total',
+    ]);
+
     final classPupilCount =
-        previous?.pupilCount ?? school.bednetPupilCount;
-    final classBoys = previous?.numberOfBoys ?? school.bednetNumberOfBoys;
-    final classGirls = previous?.numberOfGirls ?? school.bednetNumberOfGirls;
+        previous?.pupilCount ??
+            classTotalPupilsFromSchool ??
+            ((classTotalBoysFromSchool ?? 0) + (classTotalGirlsFromSchool ?? 0) >
+                    0
+                ? (classTotalBoysFromSchool ?? 0) +
+                    (classTotalGirlsFromSchool ?? 0)
+                : school.bednetPupilCount);
+    final classBoys =
+        previous?.numberOfBoys ?? classTotalBoysFromSchool ?? school.bednetNumberOfBoys;
+    final classGirls = previous?.numberOfGirls ??
+        classTotalGirlsFromSchool ??
+        school.bednetNumberOfGirls;
 
     return ReactiveFormBuilder(
       form: () => fb.group({
         _date: FormControl<DateTime>(
-          value: previous?.distributionDate ?? readDate(),
+          value: previous?.distributionDate ?? DateTime.now(),
         ),
         _present: FormControl<String>(
-          value: previous?.pupilsPresent.toString() ??
-              readNullableInt(
-                const ['pupilspresent', 'pupils_present'],
-              )?.toString() ??
-              '',
+          value: previous?.pupilsPresent.toString() ?? '',
           validators: [
             Validators.required,
             Validators.delegate(
@@ -105,11 +176,7 @@ class ClassDetailsPage extends StatelessWidget {
           ],
         ),
         _boysPresent: FormControl<String>(
-          value: previous?.boysPresent.toString() ??
-              readNullableInt(
-                const ['boyspresent', 'boys_present'],
-              )?.toString() ??
-              '',
+          value: previous?.boysPresent.toString() ?? '',
           validators: [
             Validators.required,
             Validators.delegate(
@@ -118,11 +185,7 @@ class ClassDetailsPage extends StatelessWidget {
           ],
         ),
         _girlsPresent: FormControl<String>(
-          value: previous?.girlsPresent.toString() ??
-              readNullableInt(
-                const ['girlspresent', 'girls_present'],
-              )?.toString() ??
-              '',
+          value: previous?.girlsPresent.toString() ?? '',
           validators: [
             Validators.required,
             Validators.delegate(
@@ -131,14 +194,15 @@ class ClassDetailsPage extends StatelessWidget {
           ],
         ),
         _absent: FormControl<String>(
-          value: previous?.pupilsAbsent.toString() ??
-              readNullableInt(
-                const ['pupilsabsent', 'pupils_absent'],
-              )?.toString() ??
-              '',
+          value: previous?.pupilsAbsent.toString() ?? '',
         ),
-      }),
+      }, [
+        Validators.delegate(_presentCompositionValidator),
+      ]),
       builder: (context, form, _) {
+        final theme = Theme.of(context);
+        final textTheme = theme.digitTextTheme(context);
+
         void recomputeAbsent() {
           final total = classPupilCount;
           final presentRaw = (form.control(_present).value ?? '').toString();
@@ -165,6 +229,7 @@ class ClassDetailsPage extends StatelessWidget {
                   type: DigitButtonType.primary,
                   size: DigitButtonSize.large,
                   mainAxisSize: MainAxisSize.max,
+                  isDisabled: !form.valid,
                   onPressed: () {
                     form.markAllAsTouched();
                     if (!form.valid) return;
@@ -315,6 +380,16 @@ class ClassDetailsPage extends StatelessWidget {
                             );
                           },
                         ),
+                        if (form.hasError('presentMismatch'))
+                          Padding(
+                            padding: const EdgeInsets.only(top: spacer1),
+                            child: Text(
+                              'Boys present + Girls present must equal Number of Pupils Present',
+                              style: textTheme.bodyS.copyWith(
+                                color: theme.colorTheme.alert.error,
+                              ),
+                            ),
+                          ),
                       ],
                     )
                   ],

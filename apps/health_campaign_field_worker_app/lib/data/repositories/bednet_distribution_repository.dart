@@ -1,7 +1,6 @@
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/address_type.dart';
-import 'package:uuid/uuid.dart';
 
 import '../../models/bednet_distribution/bednet_distribution_models.dart';
 import '../../utils/utils.dart';
@@ -9,15 +8,14 @@ import '../../utils/utils.dart';
 /// Persists bednet class-row entities: [IndividualModel] (with [AddressModel]),
 /// [ProjectBeneficiaryModel], [HouseholdMemberModel].
 ///
-/// [TaskModel] is created only when class distribution **details** are submitted
-/// (see [createOrUpdateBednetTaskForClassDetails]), with [TaskResourceModel] rows
+/// [TaskModel] is created when class rows are seeded and then updated when class
+/// distribution **details** are submitted (see
+/// [createOrUpdateBednetTaskForClassDetails]), with [TaskResourceModel] rows
 /// when a project product variant can be resolved.
 ///
 /// Mirrors the registration flow in the reference
 /// `CustomBeneficiaryRegistrationBloc` (BLoC orchestrates; repository performs saves).
 class BednetDistributionRepository {
-  static const _uuid = Uuid();
-
   BednetDistributionRepository({
     required this.individualLocalRepository,
     required this.householdMemberLocalRepository,
@@ -41,7 +39,7 @@ class BednetDistributionRepository {
       'ADMINISTRATION_SUCCESS';
 
   /// Creates one class distribution row: individual + project beneficiary +
-  /// household member (no [TaskModel] — task is created when class details are saved).
+  /// household member + initial task linked to project beneficiary.
   Future<void> createClassDistributionEntities({
     required HouseholdModel school,
     required int classIndex,
@@ -77,9 +75,9 @@ class BednetDistributionRepository {
             name: boundaryName ?? boundaryCode,
           );
 
-    final individualClientReferenceId = _uuid.v1();
-    final projectBeneficiaryClientReferenceId = _uuid.v1();
-    final householdMemberClientReferenceId = _uuid.v1();
+    final individualClientReferenceId = IdGen.i.identifier;
+    final projectBeneficiaryClientReferenceId = IdGen.i.identifier;
+    final householdMemberClientReferenceId = IdGen.i.identifier;
 
     final addressForIndividual = AddressModel(
       relatedClientReferenceId: individualClientReferenceId,
@@ -117,6 +115,10 @@ class BednetDistributionRepository {
           AdditionalField(kBednetClassIndexKey, classIndex),
           AdditionalField('className', classNameLabel),
           AdditionalField(kBednetFlowKey, true),
+          AdditionalField(
+            'projectBeneficiaryClientReferenceId',
+            projectBeneficiaryClientReferenceId,
+          ),
         ],
       ),
       auditDetails: auditDetails,
@@ -128,7 +130,7 @@ class BednetDistributionRepository {
     final projectBeneficiary = ProjectBeneficiaryModel(
       clientReferenceId: projectBeneficiaryClientReferenceId,
       projectId: projectId,
-      beneficiaryClientReferenceId: individualClientReferenceId,
+      beneficiaryClientReferenceId: school.clientReferenceId,
       dateOfRegistration: createdAt,
       tenantId: tenantId,
       rowVersion: 1,
@@ -151,6 +153,45 @@ class BednetDistributionRepository {
     );
 
     await householdMemberLocalRepository.create(householdMember);
+
+    final taskClientReferenceId = IdGen.i.identifier;
+    final taskAddress = AddressModel(
+      relatedClientReferenceId: taskClientReferenceId,
+      latitude: coords.latitude,
+      longitude: coords.longitude,
+      boundary: boundaryCode.isEmpty ? null : boundaryCode,
+      type: AddressType.permanent,
+      tenantId: tenantId,
+      locality: locality,
+      auditDetails: auditDetails,
+      clientAuditDetails: clientAuditDetails,
+    );
+
+    final task = TaskModel(
+      clientReferenceId: taskClientReferenceId,
+      projectId: projectId,
+      projectBeneficiaryId: projectBeneficiary.id,
+      projectBeneficiaryClientReferenceId: projectBeneficiary.clientReferenceId,
+      createdBy: userUuid,
+      tenantId: tenantId,
+      rowVersion: 1,
+      createdDate: createdAt,
+      address: taskAddress,
+      additionalFields: TaskAdditionalFields(
+        version: 1,
+        fields: [
+          AdditionalField(kBednetTaskSchoolNameKey, school.bednetDisplayName),
+          AdditionalField(
+              kBednetTaskSchoolClientRefKey, school.clientReferenceId),
+          AdditionalField(kBednetTaskClassNameKey, classNameLabel),
+          AdditionalField(kBednetClassIndexKey, classIndex),
+        ],
+      ),
+      auditDetails: auditDetails,
+      clientAuditDetails: clientAuditDetails,
+    );
+
+    await taskLocalRepository.create(task);
   }
 
   Future<String?> _resolveProductVariantIdForProject(String projectId) async {
@@ -187,7 +228,7 @@ class BednetDistributionRepository {
     final quantity = details.boysPresent + details.girlsPresent;
     return [
       TaskResourceModel(
-        clientReferenceId: _uuid.v1(),
+        clientReferenceId: IdGen.i.identifier,
         taskclientReferenceId: taskClientReferenceId,
         productVariantId: productVariantId,
         quantity: quantity.toString(),
@@ -201,7 +242,8 @@ class BednetDistributionRepository {
             AdditionalField('administeredQuantity', quantity),
             AdditionalField(
               'status',
-              BednetDistributionRepository.kBednetTaskAdministrationSuccessStatus,
+              BednetDistributionRepository
+                  .kBednetTaskAdministrationSuccessStatus,
             ),
           ],
         ),
@@ -233,10 +275,13 @@ class BednetDistributionRepository {
     return TaskAdditionalFields(
       version: 1,
       fields: [
-        AdditionalField(kBednetTaskAdministrationStatusKey,
-            BednetDistributionRepository.kBednetTaskAdministrationSuccessStatus),
+        AdditionalField(
+            kBednetTaskAdministrationStatusKey,
+            BednetDistributionRepository
+                .kBednetTaskAdministrationSuccessStatus),
         AdditionalField(kBednetTaskSchoolNameKey, school.bednetDisplayName),
-        AdditionalField(kBednetTaskSchoolClientRefKey, school.clientReferenceId),
+        AdditionalField(
+            kBednetTaskSchoolClientRefKey, school.clientReferenceId),
         if (classDisplayName.isNotEmpty)
           AdditionalField(kBednetTaskClassNameKey, classDisplayName),
         AdditionalField(kBednetTaskTotalPupilKey, details.pupilCount),
@@ -277,21 +322,100 @@ class BednetDistributionRepository {
       throw StateError('projectId is not set on RegistrationDeliverySingleton');
     }
 
-    final productVariantId = await _resolveProductVariantIdForProject(projectId);
+    final productVariantId =
+        await _resolveProductVariantIdForProject(projectId);
 
-    final beneficiaries = await projectBeneficiaryLocalRepository.search(
-      ProjectBeneficiarySearchModel(
-        projectId: [projectId],
-        beneficiaryClientReferenceId: [classIndividual.clientReferenceId],
-        tag: ['BEDNET'],
-      ),
-    );
-    final projectBeneficiary = beneficiaries.firstOrNull;
-    if (projectBeneficiary == null) {
-      throw StateError(
-        'No BEDNET project beneficiary for individual '
-        '${classIndividual.clientReferenceId}',
+    final individualFieldMap = <String, Object?>{
+      for (final field in classIndividual.additionalFields?.fields ??
+          const <AdditionalField>[])
+        field.key.toLowerCase(): field.value as Object?,
+    };
+    final projectBeneficiaryClientRefFromIndividual =
+        individualFieldMap['projectbeneficiaryclientreferenceid']?.toString();
+    final projectBeneficiaryIdFromIndividual =
+        individualFieldMap['projectbeneficiaryid']?.toString();
+
+    ProjectBeneficiaryModel? projectBeneficiary;
+
+    // Primary path: resolve PB from beneficiary linkage details already tied to
+    // the class row (more reliable than only using individual client ref).
+    if (projectBeneficiaryClientRefFromIndividual != null &&
+        projectBeneficiaryClientRefFromIndividual.isNotEmpty) {
+      final byClientRef = await projectBeneficiaryLocalRepository.search(
+        ProjectBeneficiarySearchModel(
+          projectId: [projectId],
+          clientReferenceId: [projectBeneficiaryClientRefFromIndividual],
+          tag: ['BEDNET'],
+        ),
       );
+      projectBeneficiary = byClientRef.firstOrNull;
+    }
+
+    if (projectBeneficiary == null &&
+        projectBeneficiaryIdFromIndividual != null &&
+        projectBeneficiaryIdFromIndividual.isNotEmpty) {
+      final byId = await projectBeneficiaryLocalRepository.search(
+        ProjectBeneficiarySearchModel(
+          projectId: [projectId],
+          id: [projectBeneficiaryIdFromIndividual],
+          tag: ['BEDNET'],
+        ),
+      );
+      projectBeneficiary = byId.firstOrNull;
+    }
+
+    // Fallback for rows where PB refs were not yet persisted.
+    final householdClientRefFromIndividual =
+        individualFieldMap['householdclientreferenceid']?.toString();
+    final beneficiaryRefCandidates = <String>[
+      if (householdClientRefFromIndividual != null &&
+          householdClientRefFromIndividual.isNotEmpty)
+        householdClientRefFromIndividual,
+      school.clientReferenceId,
+      classIndividual.clientReferenceId,
+    ];
+
+    for (final beneficiaryRef in beneficiaryRefCandidates) {
+      if (projectBeneficiary != null) break;
+      final byBeneficiaryRef = await projectBeneficiaryLocalRepository.search(
+        ProjectBeneficiarySearchModel(
+          projectId: [projectId],
+          beneficiaryClientReferenceId: [beneficiaryRef],
+          tag: ['BEDNET'],
+        ),
+      );
+      projectBeneficiary = byBeneficiaryRef.firstOrNull;
+    }
+
+    if (projectBeneficiary == null) {
+      // Older/synced class rows might not have a BEDNET project beneficiary yet.
+      // Create one on-demand so task save can proceed.
+      final nowForBeneficiary = DateTime.now().millisecondsSinceEpoch;
+      final auditForBeneficiary = AuditDetails(
+        createdBy: userUuid,
+        createdTime: nowForBeneficiary,
+      );
+      final clientAuditForBeneficiary = ClientAuditDetails(
+        createdBy: userUuid,
+        createdTime: nowForBeneficiary,
+      );
+
+      projectBeneficiary = ProjectBeneficiaryModel(
+        clientReferenceId: IdGen.i.identifier,
+        projectId: projectId,
+        beneficiaryClientReferenceId:
+            householdClientRefFromIndividual?.isNotEmpty == true
+                ? householdClientRefFromIndividual
+                : school.clientReferenceId,
+        dateOfRegistration: nowForBeneficiary,
+        tenantId: tenantId,
+        rowVersion: 1,
+        tag: 'BEDNET',
+        auditDetails: auditForBeneficiary,
+        clientAuditDetails: clientAuditForBeneficiary,
+      );
+
+      await projectBeneficiaryLocalRepository.create(projectBeneficiary);
     }
 
     final coords = school.bednetLatLngFromAdditionalFields;
@@ -377,7 +501,7 @@ class BednetDistributionRepository {
       return;
     }
 
-    final taskClientReferenceId = _uuid.v1();
+    final taskClientReferenceId = IdGen.i.identifier;
     final auditDetails = AuditDetails(
       createdBy: userUuid,
       createdTime: now,

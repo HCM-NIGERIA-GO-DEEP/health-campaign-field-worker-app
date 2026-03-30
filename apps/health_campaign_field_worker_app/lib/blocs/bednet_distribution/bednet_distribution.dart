@@ -88,6 +88,11 @@ class BednetDistributionBloc
         loading: false,
         schools: schools,
         boundaryCode: boundaryCode,
+        selectedSchool: null,
+        classIndividuals: const [],
+        teacherInfoByClass: const [],
+        classDetailsByClass: const [],
+        summariesByClass: const [],
         navIntent: BednetNavIntent.none,
       ));
     } catch (error, stackTrace) {

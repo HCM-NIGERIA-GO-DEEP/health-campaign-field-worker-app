@@ -1,9 +1,8 @@
-import 'package:collection/collection.dart';
-import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
@@ -46,6 +45,9 @@ class ClassTeacherInfoPage extends StatelessWidget {
     DropdownItem(name: 'Other', code: 'Other'),
   ];
 
+  static String _digitsOnly(String raw) =>
+      raw.replaceAll(RegExp(r'[^0-9]'), '');
+
   /// Empty string until the user selects a value (no default to Male).
   static String _normalizeGender(String? raw) {
     if (raw == null) return '';
@@ -63,11 +65,6 @@ class ClassTeacherInfoPage extends StatelessWidget {
     final state = context.read<BednetDistributionBloc>().state;
     final existing = state.teacherInfoByClass.elementAt(classIndex);
     final classIndividual = state.classIndividuals.elementAtOrNull(classIndex);
-    final classFields =
-        classIndividual?.additionalFields?.fields ?? const <AdditionalField>[];
-    final additionalFieldMap = <String, Object?>{
-      for (final field in classFields) field.key.toLowerCase(): field.value,
-    };
     final className = classIndividual?.name?.givenName?.trim();
     final classLabel = (className?.isNotEmpty ?? false)
         ? className!
@@ -76,22 +73,17 @@ class ClassTeacherInfoPage extends StatelessWidget {
     return ReactiveFormBuilder(
       form: () => fb.group({
         _name: FormControl<String>(
-          value: existing?.name ??
-              additionalFieldMap['teachername']?.toString() ??
-              '',
+          value: existing?.name ?? '',
           validators: [Validators.required],
         ),
         _gender: FormControl<String>(
           value: _normalizeGender(
-            existing?.gender ??
-                additionalFieldMap['teachergender']?.toString(),
+            existing?.gender,
           ),
           validators: [Validators.required],
         ),
         _mobile: FormControl<String>(
-          value: existing?.mobileNumber ??
-              additionalFieldMap['teachermobilenumber']?.toString() ??
-              '',
+          value: _digitsOnly(existing?.mobileNumber ?? ''),
           validators: [
             Validators.required,
             Validators.delegate(_teacherMobileElevenDigits),
@@ -101,11 +93,6 @@ class ClassTeacherInfoPage extends StatelessWidget {
       builder: (context, form, _) {
         final theme = Theme.of(context);
         final textTheme = theme.digitTextTheme(context);
-        final genderVal = (form.control(_gender).value as String?) ?? '';
-        final genderSelected = genderVal.isEmpty
-            ? null
-            : (_genderItems.firstWhereOrNull((e) => e.code == genderVal) ??
-                DropdownItem(name: genderVal, code: genderVal));
         return Scaffold(
           body: ScrollableContent(
             enableFixedDigitButton: true,
@@ -118,14 +105,14 @@ class ClassTeacherInfoPage extends StatelessWidget {
                   type: DigitButtonType.primary,
                   size: DigitButtonSize.large,
                   mainAxisSize: MainAxisSize.max,
+                  isDisabled: !form.valid,
                   onPressed: () {
                     form.markAllAsTouched();
                     if (!form.valid) return;
 
                     final mobileRaw =
                         (form.control(_mobile).value as String?) ?? '';
-                    final mobileDigits =
-                        mobileRaw.replaceAll(RegExp(r'\D'), '');
+                    final mobileDigits = _digitsOnly(mobileRaw);
 
                     context.read<BednetDistributionBloc>().add(
                           BednetDistributionEvent.saveTeacherInfo(
@@ -195,23 +182,41 @@ class ClassTeacherInfoPage extends StatelessWidget {
                             ),
                           ),
                         ),
-                        ReactiveWrapperField(
-                          formControlName: _gender,
-                          validationMessages: {
-                            'required': (_) => 'Gender is required',
-                          },
-                          builder: (field) => LabeledField(
-                            label: 'Gender',
-                            isRequired: true,
-                            child: DigitDropdown<String>(
-                              items: _genderItems,
-                              emptyItemText: 'Select gender',
-                              selectedOption: genderSelected,
-                              onSelect: (value) {
-                                form.control(_gender).value = value.code;
-                              },
-                              errorMessage: field.errorText,
+                        LabeledField(
+                          label: 'Gender',
+                          isRequired: true,
+                          child: ReactiveDropdownField<String>(
+                            formControlName: _gender,
+                            validationMessages: {
+                              ValidationMessage.required: (_) =>
+                                  'Gender is required',
+                            },
+                            decoration: InputDecoration(
+                              isDense: true,
+                              contentPadding: const EdgeInsets.symmetric(
+                                horizontal: spacer2,
+                                vertical: spacer1,
+                              ),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(spacer1),
+                              ),
+                              errorMaxLines: 2,
                             ),
+                            hint: Text(
+                              'Select gender',
+                              style: textTheme.bodyL.copyWith(
+                                color: theme.colorTheme.text.secondary,
+                              ),
+                            ),
+                            isExpanded: true,
+                            items: _genderItems
+                                .map(
+                                  (e) => DropdownMenuItem<String>(
+                                    value: e.code,
+                                    child: Text(e.name),
+                                  ),
+                                )
+                                .toList(),
                           ),
                         ),
                         ReactiveWrapperField(
@@ -228,8 +233,13 @@ class ClassTeacherInfoPage extends StatelessWidget {
                               initialValue: form.control(_mobile).value,
                               errorMessage: field.errorText,
                               keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(11),
+                              ],
                               onChange: (value) {
-                                form.control(_mobile).value = value;
+                                form.control(_mobile).value =
+                                    _digitsOnly(value);
                               },
                             ),
                           ),

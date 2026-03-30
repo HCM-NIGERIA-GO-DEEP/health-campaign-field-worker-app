@@ -38,9 +38,7 @@ class DistributionSummaryPage extends StatelessWidget {
                   const BednetDistributionEvent.clearNavIntent(),
                 );
             context.router.popUntilRouteWithName(SchoolDetailsRoute.name);
-            context.router.push(
-              const BednetDistributionAcknowledgementRoute(),
-            );
+            context.router.push(const BednetDistributionSuccessRoute());
             break;
           case BednetNavIntent.continueNextClass:
             context.read<BednetDistributionBloc>().add(

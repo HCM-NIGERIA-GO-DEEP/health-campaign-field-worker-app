@@ -34,7 +34,7 @@ class SelectSchoolPage extends StatelessWidget {
             form: () => fb.group({
               _schoolControl: FormControl<HouseholdModel>(
                 validators: [Validators.required],
-                value: state.selectedSchool,
+                value: null,
               )
             }),
             builder: (context, form, _) {
@@ -54,6 +54,7 @@ class SelectSchoolPage extends StatelessWidget {
                         type: DigitButtonType.primary,
                         size: DigitButtonSize.large,
                         mainAxisSize: MainAxisSize.max,
+                        isDisabled: state.schools.isEmpty,
                         onPressed: () {
                           form.markAllAsTouched();
                           if (!form.valid) return;
@@ -109,6 +110,7 @@ class SelectSchoolPage extends StatelessWidget {
                               label: 'Select the school',
                               isRequired: true,
                               child: DigitDropdown<HouseholdModel>(
+                                isSearchable: false,
                                 items: state.schools
                                     .map(
                                       (e) => DropdownItem(
