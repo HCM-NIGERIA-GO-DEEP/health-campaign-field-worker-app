@@ -29,6 +29,8 @@ class HouseholdTypeMapper extends EnumMapper<HouseholdType> {
         return HouseholdType.family;
       case "COMMUNITY":
         return HouseholdType.community;
+      case "SCHOOL":
+        return HouseholdType.school;
       case "OTHER":
         return HouseholdType.other;
       default:
@@ -43,6 +45,8 @@ class HouseholdTypeMapper extends EnumMapper<HouseholdType> {
         return "FAMILY";
       case HouseholdType.community:
         return "COMMUNITY";
+      case HouseholdType.school:
+        return "SCHOOL";
       case HouseholdType.other:
         return "OTHER";
     }

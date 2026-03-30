@@ -18,6 +18,15 @@ import '../blocs/localization/app_localization.dart';
 import '../pages/acknowledgement.dart';
 import '../pages/authenticated.dart';
 import '../pages/boundary_selection.dart';
+import '../pages/bednet_distribution/bednet_distribution_acknowledgement.dart';
+import '../pages/bednet_distribution/beneficiary_acknowledgement.dart';
+import '../pages/bednet_distribution/bednet_distribution_success.dart';
+import '../pages/bednet_distribution/bednet_distribution_wrapper.dart';
+import '../pages/bednet_distribution/class_details.dart';
+import '../pages/bednet_distribution/class_teacher_info.dart';
+import '../pages/bednet_distribution/distribution_summary.dart';
+import '../pages/bednet_distribution/school_details.dart';
+import '../pages/bednet_distribution/select_school.dart';
 import '../pages/home.dart';
 import '../pages/language_selection.dart';
 import '../pages/login.dart';
@@ -118,6 +127,42 @@ class AppRouter extends _$AppRouter {
         AutoRoute(
           page: ProjectFacilitySelectionRoute.page,
           path: 'select-project-facilities',
+        ),
+
+        AutoRoute(
+          page: BednetDistributionWrapperRoute.page,
+          path: 'bednet-distribution',
+          children: [
+            AutoRoute(
+              page: SelectSchoolRoute.page,
+              path: '',
+              initial: true,
+            ),
+            AutoRoute(
+              page: SchoolDetailsRoute.page,
+              path: 'school-details',
+            ),
+            AutoRoute(
+              page: ClassTeacherInfoRoute.page,
+              path: 'class-teacher-info',
+            ),
+            AutoRoute(
+              page: ClassDetailsRoute.page,
+              path: 'class-details',
+            ),
+            AutoRoute(
+              page: DistributionSummaryRoute.page,
+              path: 'distribution-summary',
+            ),
+            AutoRoute(
+              page: BednetDistributionAcknowledgementRoute.page,
+              path: 'beneficiary-acknowledgement',
+            ),
+            AutoRoute(
+              page: BednetDistributionSuccessRoute.page,
+              path: 'success',
+            ),
+          ],
         ),
 
         /// Project Selection

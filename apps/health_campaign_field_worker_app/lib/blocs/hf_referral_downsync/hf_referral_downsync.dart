@@ -103,7 +103,7 @@ class HFReferralDownSyncBloc
         // Get initial batch to check if there's data available from current offset
         final initialResults = await hfReferralRemoteRepository.search(
             HFReferralSearchModel(
-              localityCode: [event.boundaryCode],
+              boundaryCode: event.boundaryCode,
             ),
             offSet: offset,
             limit: event.batchSize);
@@ -113,7 +113,7 @@ class HFReferralDownSyncBloc
         if (initialResults.isEmpty && offset > 0) {
           final retryResults = await hfReferralRemoteRepository.search(
               HFReferralSearchModel(
-                localityCode: [event.boundaryCode],
+                boundaryCode: event.boundaryCode,
               ),
               offSet: offset ?? 0,
               limit: event.batchSize ?? 200);
@@ -191,7 +191,7 @@ class HFReferralDownSyncBloc
       if (offset > 0) {
         final newDataCheck = await hfReferralRemoteRepository.search(
             HFReferralSearchModel(
-              localityCode: [event.boundaryCode],
+              boundaryCode: event.boundaryCode,
             ),
             offSet: 0,
             limit: 200);
@@ -229,7 +229,7 @@ class HFReferralDownSyncBloc
         // Fetch batch from server starting from current offset
         final hfReferrals = await hfReferralRemoteRepository.search(
             HFReferralSearchModel(
-              localityCode: [event.boundaryCode],
+              boundaryCode: event.boundaryCode,
             ),
             offSet: currentOffset,
             limit: event.batchSize);
@@ -254,7 +254,7 @@ class HFReferralDownSyncBloc
             beneficiaryId: referral.beneficiaryId,
             referralCode: referral.referralCode,
             nationalLevelId: referral.nationalLevelId,
-            localityCode: event.boundaryCode,
+            // boundaryCode: event.boundaryCode,
             isDeleted: referral.isDeleted,
             additionalFields: referral.additionalFields,
             auditDetails: referral.auditDetails,
