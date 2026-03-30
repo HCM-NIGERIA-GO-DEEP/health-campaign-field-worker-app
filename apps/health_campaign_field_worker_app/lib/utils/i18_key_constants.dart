@@ -87,7 +87,8 @@ class Common {
 
   String get coreCommonDelete => 'CORE_COMMON_DELETE';
 
-  String get coreCommonQuantityDistributed => 'CORE_COMMON_QUANTITY_DISTRIBUTED';
+  String get coreCommonQuantityDistributed =>
+      'CORE_COMMON_QUANTITY_DISTRIBUTED';
 
   String get coreCommonDeleteResource => 'CORE_COMMON_DELETE_RESOURCE';
 
@@ -188,8 +189,7 @@ class Common {
 
   String get permissionsAlert => 'PERMISSIONS_ALERT';
 
-  String get enablePermissionCheckbox =>
-      'ENABLE_PERMISSION_CHECKBOX';
+  String get enablePermissionCheckbox => 'ENABLE_PERMISSION_CHECKBOX';
 
   String get allowPermissions => 'CORE_COMMON_ALLOW_PERMISSIONS';
 
@@ -220,6 +220,10 @@ class Common {
 class HomeShowcase {
   const HomeShowcase();
 
+  String get summaryReport {
+    return 'HOME_SHOWCASE_SUMMARY_REPORT_LABLE';
+  }
+  
   String get distributorProgressBar {
     return 'DISTRIBUTOR_HOME_SHOWCASE_PROGRESS_BAR';
   }
@@ -665,6 +669,8 @@ class Home {
   String get closedHouseHoldLabel => 'HOME_CLOSE_HOUSEHOLD_LABEL';
 
   String get clfLabel => "HOME_COMMUNAL_LIVING_FACILITIES_LABEL";
+
+  String get summaryLabel => 'HOME_SUMMARY_LABEL';
 }
 
 class DataShare {

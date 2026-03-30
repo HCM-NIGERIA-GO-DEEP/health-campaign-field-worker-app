@@ -1372,6 +1372,15 @@ class _HomePageState extends LocalizedState<HomePage> {
           },
         ),
       ),
+      i18.home.summaryLabel: homeShowcaseData.summaryReport.buildWith(
+        child: HomeItemCard(
+          icon: Icons.summarize,
+          label: i18.home.summaryLabel,
+          onPressed: () {
+            context.router.push(CustomSummaryReportRoute());
+          },
+        ),
+      ),
       i18.home.dataShare: homeShowcaseData.dataShare.buildWith(
         child: HomeItemCard(
           icon: Icons.send,
@@ -1458,6 +1467,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       // i18.home.beneficiaryIdLabel: homeShowcaseData.beneficiaryId.showcaseKey, // TODO: Uncomment when beneficiary downsync is implemented
       i18.home.dataShare: homeShowcaseData.dataShare.showcaseKey,
       i18.home.db: homeShowcaseData.db.showcaseKey,
+      i18.home.summaryLabel: homeShowcaseData.summaryReport.showcaseKey,
     };
 
     final homeItemsLabel = <String>[
@@ -1478,6 +1488,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       // i18.home.beneficiaryIdLabel, // TODO: Uncomment when beneficiary downsync is implemented
       i18.home.dataShare,
       i18.home.db,
+      i18.home.summaryLabel,
     ];
 
     final List<String> filteredLabels = homeItemsLabel
@@ -1493,6 +1504,8 @@ class _HomePageState extends LocalizedState<HomePage> {
         .where((f) => f != i18.home.db)
         .map((label) => homeItemsShowcaseMap[label]!)
         .toList();
+
+    filteredLabels.add(i18.home.summaryLabel);
 
     if (envConfig.variables.envType == EnvType.demo && kReleaseMode) {
       filteredLabels.remove(i18.home.db);

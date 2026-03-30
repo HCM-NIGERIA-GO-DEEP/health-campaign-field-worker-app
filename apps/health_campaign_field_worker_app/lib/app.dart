@@ -17,6 +17,7 @@ import 'blocs/auth/auth.dart';
 import 'blocs/error/error.dart';
 import 'blocs/localization/localization.dart';
 import 'blocs/project/project.dart';
+import 'blocs/summary_report/custom_summary_report_bloc.dart';
 import 'data/local_store/app_shared_preferences.dart';
 import 'data/network_manager.dart';
 import 'data/remote_client.dart';
@@ -164,6 +165,16 @@ class MainApplicationState extends State<MainApplication>
 
                     return MultiBlocProvider(
                       providers: [
+                        BlocProvider(
+                          create: (context) => SummaryReportBloc(
+                            householdLocalRepository: context.read<
+                                LocalRepository<HouseholdModel,
+                                    HouseholdSearchModel>>(),
+                            taskLocalRepository: context.read<
+                                LocalRepository<TaskModel,
+                                    TaskSearchModel>>(),
+                          ),
+                        ),
                         BlocProvider(
                           create: (localizationModulesList != null &&
                                   selectedLocale != null)
