@@ -85,6 +85,7 @@ class _HomePageState extends LocalizedState<HomePage> {
   final storage = const FlutterSecureStorage();
   late StreamSubscription<List<ConnectivityResult>> subscription;
   bool isTriggerLocalisation = true;
+  late final HomePageShowcaseData homeShowcaseData = createHomeShowcaseData();
 
   @override
   initState() {
@@ -1093,7 +1094,8 @@ class _HomePageState extends LocalizedState<HomePage> {
           onPressed: () async {
             final moduleName =
                 'hcm-inventory-${context.selectedProject.referenceID}';
-            triggerLocalization(module: moduleName);
+            final newModuleName = 'hcm-inventory-CMP-2026-03-30-000308';
+            triggerLocalization(module: newModuleName, loadOnline: true);
             isTriggerLocalisation = false;
 
             await FlowNavigationUtils.navigateToFlowModule(
@@ -1150,7 +1152,8 @@ class _HomePageState extends LocalizedState<HomePage> {
           onPressed: () async {
             final moduleName =
                 'hcm-stockreconciliation-${context.selectedProject.referenceID}';
-            triggerLocalization(module: moduleName);
+            final newModuleName = 'hcm-stockreconciliation';
+            triggerLocalization(module: newModuleName, loadOnline: true);
             isTriggerLocalisation = false;
 
             await FlowNavigationUtils.navigateToFlowModule(

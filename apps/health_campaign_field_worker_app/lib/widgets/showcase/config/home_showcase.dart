@@ -1,11 +1,7 @@
 part of 'showcase_constants.dart';
 
-class _HomePageShowcaseData {
-  static final _HomePageShowcaseData _instance = _HomePageShowcaseData._();
-
-  _HomePageShowcaseData._();
-
-  factory _HomePageShowcaseData() => _instance;
+class HomePageShowcaseData {
+  HomePageShowcaseData();
 
   List<ShowcaseItemBuilder> get showcaseData => [
         distributorProgressBar,

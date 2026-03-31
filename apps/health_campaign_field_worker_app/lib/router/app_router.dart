@@ -22,6 +22,7 @@ import '../pages/bednet_distribution/bednet_distribution_acknowledgement.dart';
 import '../pages/bednet_distribution/beneficiary_acknowledgement.dart';
 import '../pages/bednet_distribution/bednet_distribution_success.dart';
 import '../pages/bednet_distribution/bednet_distribution_wrapper.dart';
+import '../pages/bednet_distribution/class_confirmation.dart';
 import '../pages/bednet_distribution/class_details.dart';
 import '../pages/bednet_distribution/class_teacher_info.dart';
 import '../pages/bednet_distribution/distribution_summary.dart';
@@ -154,6 +155,10 @@ class AppRouter extends _$AppRouter {
             AutoRoute(
               page: DistributionSummaryRoute.page,
               path: 'distribution-summary',
+            ),
+            AutoRoute(
+              page: ClassConfirmationRoute.page,
+              path: 'class-confirmation',
             ),
             AutoRoute(
               page: BednetDistributionAcknowledgementRoute.page,

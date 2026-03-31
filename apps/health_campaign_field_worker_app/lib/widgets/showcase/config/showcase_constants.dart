@@ -14,7 +14,7 @@ part 'complaints_details_view.dart';
 part 'complaint_type.dart';
 part 'complaints_details.dart';
 
-final homeShowcaseData = _HomePageShowcaseData();
+HomePageShowcaseData createHomeShowcaseData() => HomePageShowcaseData();
 final selectStockShowcaseData = _SelectStockShowcaseData();
 final warehouseDetailsShowcaseData = _WarehouseDetailsShowcaseData();
 final stockDetailsShowcaseData = _StockDetailsShowcaseData();

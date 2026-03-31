@@ -232,12 +232,13 @@ class BednetDistributionBloc
       );
       var nextIndividuals = state.classIndividuals;
       if (classIndividual != null) {
+        final mobile = event.info.mobileNumber.trim();
         final merged = await _updateClassIndividual(
           classIndividual,
           {
             'teacherName': event.info.name,
             'teacherGender': event.info.gender,
-            'teacherMobileNumber': event.info.mobileNumber,
+            if (mobile.isNotEmpty) 'teacherMobileNumber': mobile,
           },
         );
         nextIndividuals = [...state.classIndividuals];
@@ -417,7 +418,22 @@ class BednetDistributionBloc
     if (expected <= 0) return false;
     final linked = _allClassIndividualsForSchool(school, allIndividuals);
     if (linked.length < expected) return false;
-    return linked.every((i) => i.bednetClassAdministered);
+    return linked.every((i) => i.bednetClassAdministered || _isZeroPupilClass(i));
+  }
+
+  bool _isZeroPupilClass(IndividualModel individual) {
+    final fields =
+        individual.additionalFields?.fields ?? const <AdditionalField>[];
+    final map = <String, Object?>{
+      for (final field in fields) field.key.toLowerCase(): field.value,
+    };
+    final raw = map['pupilcount'] ??
+        map['pupil_count'] ??
+        map['totalpupil'] ??
+        map['total_pupil'];
+    if (raw == null) return false;
+    final n = int.tryParse(raw.toString());
+    return n != null && n == 0;
   }
 
   bool _individualMatchesSchool(
@@ -478,7 +494,7 @@ class BednetDistributionBloc
     List<IndividualModel> allIndividuals,
   ) {
     return _allClassIndividualsForSchool(school, allIndividuals)
-        .where((i) => !i.bednetClassAdministered)
+        .where((i) => !i.bednetClassAdministered && !_isZeroPupilClass(i))
         .toList();
   }
 

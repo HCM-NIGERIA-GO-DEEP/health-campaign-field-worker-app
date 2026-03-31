@@ -83,6 +83,17 @@ abstract class _$AppRouter extends RootStackRouter {
         ),
       );
     },
+    ClassConfirmationRoute.name: (routeData) {
+      final args = routeData.argsAs<ClassConfirmationRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: ClassConfirmationPage(
+          key: args.key,
+          classIndex: args.classIndex,
+          totalClasses: args.totalClasses,
+        ),
+      );
+    },
     ClassDetailsRoute.name: (routeData) {
       final args = routeData.argsAs<ClassDetailsRouteArgs>();
       return AutoRoutePage<dynamic>(
@@ -489,6 +500,49 @@ class BoundarySelectionRouteArgs {
   @override
   String toString() {
     return 'BoundarySelectionRouteArgs{key: $key, appLocalizations: $appLocalizations}';
+  }
+}
+
+/// generated route for
+/// [ClassConfirmationPage]
+class ClassConfirmationRoute extends PageRouteInfo<ClassConfirmationRouteArgs> {
+  ClassConfirmationRoute({
+    Key? key,
+    required int classIndex,
+    required int totalClasses,
+    List<PageRouteInfo>? children,
+  }) : super(
+          ClassConfirmationRoute.name,
+          args: ClassConfirmationRouteArgs(
+            key: key,
+            classIndex: classIndex,
+            totalClasses: totalClasses,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'ClassConfirmationRoute';
+
+  static const PageInfo<ClassConfirmationRouteArgs> page =
+      PageInfo<ClassConfirmationRouteArgs>(name);
+}
+
+class ClassConfirmationRouteArgs {
+  const ClassConfirmationRouteArgs({
+    this.key,
+    required this.classIndex,
+    required this.totalClasses,
+  });
+
+  final Key? key;
+
+  final int classIndex;
+
+  final int totalClasses;
+
+  @override
+  String toString() {
+    return 'ClassConfirmationRouteArgs{key: $key, classIndex: $classIndex, totalClasses: $totalClasses}';
   }
 }
 

@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/bednet_distribution/bednet_distribution.dart';
-import '../../models/bednet_distribution/bednet_distribution_models.dart';
 import '../../router/app_router.dart';
 import '../../widgets/header/back_navigation_help_header.dart';
 import 'widgets/bednet_info_card.dart';
@@ -23,41 +22,9 @@ class DistributionSummaryPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocListener<BednetDistributionBloc, BednetDistributionState>(
-      listenWhen: (prev, curr) =>
-          curr.navIntent != BednetNavIntent.none &&
-          prev.navIntent != curr.navIntent,
-      listener: (context, state) {
-        if (!context.mounted) return;
-        if (state.navIntent == BednetNavIntent.none) return;
-        switch (state.navIntent) {
-          case BednetNavIntent.none:
-            break;
-          case BednetNavIntent.openSuccess:
-            context.read<BednetDistributionBloc>().add(
-                  const BednetDistributionEvent.clearNavIntent(),
-                );
-            context.router.popUntilRouteWithName(SchoolDetailsRoute.name);
-            context.router.push(const BednetDistributionSuccessRoute());
-            break;
-          case BednetNavIntent.continueNextClass:
-            context.read<BednetDistributionBloc>().add(
-                  const BednetDistributionEvent.clearNavIntent(),
-                );
-            context.router.popUntilRouteWithName(SchoolDetailsRoute.name);
-            context.router.push(
-              ClassDetailsRoute(
-                classIndex: 0,
-                totalClasses: state.classIndividuals.length,
-              ),
-            );
-            break;
-        }
-      },
-      child: _DistributionSummaryBody(
-        classIndex: classIndex,
-        totalClasses: totalClasses,
-      ),
+    return _DistributionSummaryBody(
+      classIndex: classIndex,
+      totalClasses: totalClasses,
     );
   }
 }
@@ -101,11 +68,12 @@ class _DistributionSummaryBody extends StatelessWidget {
               size: DigitButtonSize.large,
               mainAxisSize: MainAxisSize.max,
               onPressed: () {
-                context.read<BednetDistributionBloc>().add(
-                      BednetDistributionEvent.completeClassAdministration(
-                        classIndex: classIndex,
-                      ),
-                    );
+                context.router.push(
+                  ClassConfirmationRoute(
+                    classIndex: classIndex,
+                    totalClasses: totalClasses,
+                  ),
+                );
               },
             ),
           ],
