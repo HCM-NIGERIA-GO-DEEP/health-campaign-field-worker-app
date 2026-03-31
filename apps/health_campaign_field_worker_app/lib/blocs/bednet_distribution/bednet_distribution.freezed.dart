@@ -1526,10 +1526,12 @@ mixin _$BednetDistributionState {
   bool get loading => throw _privateConstructorUsedError;
   String? get boundaryCode => throw _privateConstructorUsedError;
   List<HouseholdModel> get schools => throw _privateConstructorUsedError;
-  List<IndividualModel> get classIndividuals =>
+  Map<int, IndividualModel> get classIndividualsByOrdinal =>
       throw _privateConstructorUsedError;
   HouseholdModel? get selectedSchool => throw _privateConstructorUsedError;
   int get currentClassIndex => throw _privateConstructorUsedError;
+  List<int> get pendingClassOrdinals => throw _privateConstructorUsedError;
+  int get totalClasses => throw _privateConstructorUsedError;
   List<ClassTeacherInfoModel?> get teacherInfoByClass =>
       throw _privateConstructorUsedError;
   List<ClassDetailsModel?> get classDetailsByClass =>
@@ -1557,9 +1559,11 @@ abstract class $BednetDistributionStateCopyWith<$Res> {
       {bool loading,
       String? boundaryCode,
       List<HouseholdModel> schools,
-      List<IndividualModel> classIndividuals,
+      Map<int, IndividualModel> classIndividualsByOrdinal,
       HouseholdModel? selectedSchool,
       int currentClassIndex,
+      List<int> pendingClassOrdinals,
+      int totalClasses,
       List<ClassTeacherInfoModel?> teacherInfoByClass,
       List<ClassDetailsModel?> classDetailsByClass,
       List<DistributionSummaryModel?> summariesByClass,
@@ -1585,9 +1589,11 @@ class _$BednetDistributionStateCopyWithImpl<$Res,
     Object? loading = null,
     Object? boundaryCode = freezed,
     Object? schools = null,
-    Object? classIndividuals = null,
+    Object? classIndividualsByOrdinal = null,
     Object? selectedSchool = freezed,
     Object? currentClassIndex = null,
+    Object? pendingClassOrdinals = null,
+    Object? totalClasses = null,
     Object? teacherInfoByClass = null,
     Object? classDetailsByClass = null,
     Object? summariesByClass = null,
@@ -1608,10 +1614,10 @@ class _$BednetDistributionStateCopyWithImpl<$Res,
           ? _value.schools
           : schools // ignore: cast_nullable_to_non_nullable
               as List<HouseholdModel>,
-      classIndividuals: null == classIndividuals
-          ? _value.classIndividuals
-          : classIndividuals // ignore: cast_nullable_to_non_nullable
-              as List<IndividualModel>,
+      classIndividualsByOrdinal: null == classIndividualsByOrdinal
+          ? _value.classIndividualsByOrdinal
+          : classIndividualsByOrdinal // ignore: cast_nullable_to_non_nullable
+              as Map<int, IndividualModel>,
       selectedSchool: freezed == selectedSchool
           ? _value.selectedSchool
           : selectedSchool // ignore: cast_nullable_to_non_nullable
@@ -1619,6 +1625,14 @@ class _$BednetDistributionStateCopyWithImpl<$Res,
       currentClassIndex: null == currentClassIndex
           ? _value.currentClassIndex
           : currentClassIndex // ignore: cast_nullable_to_non_nullable
+              as int,
+      pendingClassOrdinals: null == pendingClassOrdinals
+          ? _value.pendingClassOrdinals
+          : pendingClassOrdinals // ignore: cast_nullable_to_non_nullable
+              as List<int>,
+      totalClasses: null == totalClasses
+          ? _value.totalClasses
+          : totalClasses // ignore: cast_nullable_to_non_nullable
               as int,
       teacherInfoByClass: null == teacherInfoByClass
           ? _value.teacherInfoByClass
@@ -1661,9 +1675,11 @@ abstract class _$$BednetDistributionStateImplCopyWith<$Res>
       {bool loading,
       String? boundaryCode,
       List<HouseholdModel> schools,
-      List<IndividualModel> classIndividuals,
+      Map<int, IndividualModel> classIndividualsByOrdinal,
       HouseholdModel? selectedSchool,
       int currentClassIndex,
+      List<int> pendingClassOrdinals,
+      int totalClasses,
       List<ClassTeacherInfoModel?> teacherInfoByClass,
       List<ClassDetailsModel?> classDetailsByClass,
       List<DistributionSummaryModel?> summariesByClass,
@@ -1688,9 +1704,11 @@ class __$$BednetDistributionStateImplCopyWithImpl<$Res>
     Object? loading = null,
     Object? boundaryCode = freezed,
     Object? schools = null,
-    Object? classIndividuals = null,
+    Object? classIndividualsByOrdinal = null,
     Object? selectedSchool = freezed,
     Object? currentClassIndex = null,
+    Object? pendingClassOrdinals = null,
+    Object? totalClasses = null,
     Object? teacherInfoByClass = null,
     Object? classDetailsByClass = null,
     Object? summariesByClass = null,
@@ -1711,10 +1729,10 @@ class __$$BednetDistributionStateImplCopyWithImpl<$Res>
           ? _value._schools
           : schools // ignore: cast_nullable_to_non_nullable
               as List<HouseholdModel>,
-      classIndividuals: null == classIndividuals
-          ? _value._classIndividuals
-          : classIndividuals // ignore: cast_nullable_to_non_nullable
-              as List<IndividualModel>,
+      classIndividualsByOrdinal: null == classIndividualsByOrdinal
+          ? _value._classIndividualsByOrdinal
+          : classIndividualsByOrdinal // ignore: cast_nullable_to_non_nullable
+              as Map<int, IndividualModel>,
       selectedSchool: freezed == selectedSchool
           ? _value.selectedSchool
           : selectedSchool // ignore: cast_nullable_to_non_nullable
@@ -1722,6 +1740,14 @@ class __$$BednetDistributionStateImplCopyWithImpl<$Res>
       currentClassIndex: null == currentClassIndex
           ? _value.currentClassIndex
           : currentClassIndex // ignore: cast_nullable_to_non_nullable
+              as int,
+      pendingClassOrdinals: null == pendingClassOrdinals
+          ? _value._pendingClassOrdinals
+          : pendingClassOrdinals // ignore: cast_nullable_to_non_nullable
+              as List<int>,
+      totalClasses: null == totalClasses
+          ? _value.totalClasses
+          : totalClasses // ignore: cast_nullable_to_non_nullable
               as int,
       teacherInfoByClass: null == teacherInfoByClass
           ? _value._teacherInfoByClass
@@ -1759,9 +1785,11 @@ class _$BednetDistributionStateImpl extends _BednetDistributionState
       {this.loading = false,
       this.boundaryCode,
       final List<HouseholdModel> schools = const [],
-      final List<IndividualModel> classIndividuals = const [],
+      final Map<int, IndividualModel> classIndividualsByOrdinal = const {},
       this.selectedSchool,
       this.currentClassIndex = 0,
+      final List<int> pendingClassOrdinals = const [],
+      this.totalClasses = 0,
       final List<ClassTeacherInfoModel?> teacherInfoByClass = const [],
       final List<ClassDetailsModel?> classDetailsByClass = const [],
       final List<DistributionSummaryModel?> summariesByClass = const [],
@@ -1769,7 +1797,8 @@ class _$BednetDistributionStateImpl extends _BednetDistributionState
       this.navIntent = BednetNavIntent.none,
       this.schoolSelectionSeq = 0})
       : _schools = schools,
-        _classIndividuals = classIndividuals,
+        _classIndividualsByOrdinal = classIndividualsByOrdinal,
+        _pendingClassOrdinals = pendingClassOrdinals,
         _teacherInfoByClass = teacherInfoByClass,
         _classDetailsByClass = classDetailsByClass,
         _summariesByClass = summariesByClass,
@@ -1789,14 +1818,14 @@ class _$BednetDistributionStateImpl extends _BednetDistributionState
     return EqualUnmodifiableListView(_schools);
   }
 
-  final List<IndividualModel> _classIndividuals;
+  final Map<int, IndividualModel> _classIndividualsByOrdinal;
   @override
   @JsonKey()
-  List<IndividualModel> get classIndividuals {
-    if (_classIndividuals is EqualUnmodifiableListView)
-      return _classIndividuals;
+  Map<int, IndividualModel> get classIndividualsByOrdinal {
+    if (_classIndividualsByOrdinal is EqualUnmodifiableMapView)
+      return _classIndividualsByOrdinal;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_classIndividuals);
+    return EqualUnmodifiableMapView(_classIndividualsByOrdinal);
   }
 
   @override
@@ -1804,6 +1833,19 @@ class _$BednetDistributionStateImpl extends _BednetDistributionState
   @override
   @JsonKey()
   final int currentClassIndex;
+  final List<int> _pendingClassOrdinals;
+  @override
+  @JsonKey()
+  List<int> get pendingClassOrdinals {
+    if (_pendingClassOrdinals is EqualUnmodifiableListView)
+      return _pendingClassOrdinals;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_pendingClassOrdinals);
+  }
+
+  @override
+  @JsonKey()
+  final int totalClasses;
   final List<ClassTeacherInfoModel?> _teacherInfoByClass;
   @override
   @JsonKey()
@@ -1847,7 +1889,7 @@ class _$BednetDistributionStateImpl extends _BednetDistributionState
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'BednetDistributionState(loading: $loading, boundaryCode: $boundaryCode, schools: $schools, classIndividuals: $classIndividuals, selectedSchool: $selectedSchool, currentClassIndex: $currentClassIndex, teacherInfoByClass: $teacherInfoByClass, classDetailsByClass: $classDetailsByClass, summariesByClass: $summariesByClass, error: $error, navIntent: $navIntent, schoolSelectionSeq: $schoolSelectionSeq)';
+    return 'BednetDistributionState(loading: $loading, boundaryCode: $boundaryCode, schools: $schools, classIndividualsByOrdinal: $classIndividualsByOrdinal, selectedSchool: $selectedSchool, currentClassIndex: $currentClassIndex, pendingClassOrdinals: $pendingClassOrdinals, totalClasses: $totalClasses, teacherInfoByClass: $teacherInfoByClass, classDetailsByClass: $classDetailsByClass, summariesByClass: $summariesByClass, error: $error, navIntent: $navIntent, schoolSelectionSeq: $schoolSelectionSeq)';
   }
 
   @override
@@ -1858,9 +1900,12 @@ class _$BednetDistributionStateImpl extends _BednetDistributionState
       ..add(DiagnosticsProperty('loading', loading))
       ..add(DiagnosticsProperty('boundaryCode', boundaryCode))
       ..add(DiagnosticsProperty('schools', schools))
-      ..add(DiagnosticsProperty('classIndividuals', classIndividuals))
+      ..add(DiagnosticsProperty(
+          'classIndividualsByOrdinal', classIndividualsByOrdinal))
       ..add(DiagnosticsProperty('selectedSchool', selectedSchool))
       ..add(DiagnosticsProperty('currentClassIndex', currentClassIndex))
+      ..add(DiagnosticsProperty('pendingClassOrdinals', pendingClassOrdinals))
+      ..add(DiagnosticsProperty('totalClasses', totalClasses))
       ..add(DiagnosticsProperty('teacherInfoByClass', teacherInfoByClass))
       ..add(DiagnosticsProperty('classDetailsByClass', classDetailsByClass))
       ..add(DiagnosticsProperty('summariesByClass', summariesByClass))
@@ -1878,12 +1923,16 @@ class _$BednetDistributionStateImpl extends _BednetDistributionState
             (identical(other.boundaryCode, boundaryCode) ||
                 other.boundaryCode == boundaryCode) &&
             const DeepCollectionEquality().equals(other._schools, _schools) &&
-            const DeepCollectionEquality()
-                .equals(other._classIndividuals, _classIndividuals) &&
+            const DeepCollectionEquality().equals(
+                other._classIndividualsByOrdinal, _classIndividualsByOrdinal) &&
             (identical(other.selectedSchool, selectedSchool) ||
                 other.selectedSchool == selectedSchool) &&
             (identical(other.currentClassIndex, currentClassIndex) ||
                 other.currentClassIndex == currentClassIndex) &&
+            const DeepCollectionEquality()
+                .equals(other._pendingClassOrdinals, _pendingClassOrdinals) &&
+            (identical(other.totalClasses, totalClasses) ||
+                other.totalClasses == totalClasses) &&
             const DeepCollectionEquality()
                 .equals(other._teacherInfoByClass, _teacherInfoByClass) &&
             const DeepCollectionEquality()
@@ -1903,9 +1952,11 @@ class _$BednetDistributionStateImpl extends _BednetDistributionState
       loading,
       boundaryCode,
       const DeepCollectionEquality().hash(_schools),
-      const DeepCollectionEquality().hash(_classIndividuals),
+      const DeepCollectionEquality().hash(_classIndividualsByOrdinal),
       selectedSchool,
       currentClassIndex,
+      const DeepCollectionEquality().hash(_pendingClassOrdinals),
+      totalClasses,
       const DeepCollectionEquality().hash(_teacherInfoByClass),
       const DeepCollectionEquality().hash(_classDetailsByClass),
       const DeepCollectionEquality().hash(_summariesByClass),
@@ -1926,9 +1977,11 @@ abstract class _BednetDistributionState extends BednetDistributionState {
       {final bool loading,
       final String? boundaryCode,
       final List<HouseholdModel> schools,
-      final List<IndividualModel> classIndividuals,
+      final Map<int, IndividualModel> classIndividualsByOrdinal,
       final HouseholdModel? selectedSchool,
       final int currentClassIndex,
+      final List<int> pendingClassOrdinals,
+      final int totalClasses,
       final List<ClassTeacherInfoModel?> teacherInfoByClass,
       final List<ClassDetailsModel?> classDetailsByClass,
       final List<DistributionSummaryModel?> summariesByClass,
@@ -1944,11 +1997,15 @@ abstract class _BednetDistributionState extends BednetDistributionState {
   @override
   List<HouseholdModel> get schools;
   @override
-  List<IndividualModel> get classIndividuals;
+  Map<int, IndividualModel> get classIndividualsByOrdinal;
   @override
   HouseholdModel? get selectedSchool;
   @override
   int get currentClassIndex;
+  @override
+  List<int> get pendingClassOrdinals;
+  @override
+  int get totalClasses;
   @override
   List<ClassTeacherInfoModel?> get teacherInfoByClass;
   @override

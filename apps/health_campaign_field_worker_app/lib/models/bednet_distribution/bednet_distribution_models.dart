@@ -193,6 +193,20 @@ extension BednetIndividualFields on IndividualModel {
     final s = raw.toString().toLowerCase();
     return s == 'true' || s == '1' || s == 'yes';
   }
+
+  int? get bednetClassIndex {
+    final m = _bednetFieldMap;
+    final raw = m[kBednetClassIndexKey.toLowerCase()] ??
+        m['classindex'] ??
+        m['class_index'];
+    if (raw == null) return null;
+    return int.tryParse(raw.toString());
+  }
+
+  String get bednetClassLabel {
+    final idx = bednetClassIndex;
+    return idx != null ? 'Class $idx' : 'Class';
+  }
 }
 
 class ClassTeacherInfoModel {

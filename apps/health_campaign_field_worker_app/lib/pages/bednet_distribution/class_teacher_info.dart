@@ -76,12 +76,12 @@ class ClassTeacherInfoPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.read<BednetDistributionBloc>().state;
-    final existing = state.teacherInfoByClass.elementAt(classIndex);
-    final classIndividual = state.classIndividuals.elementAtOrNull(classIndex);
-    final className = classIndividual?.name?.givenName?.trim();
-    final classLabel = (className?.isNotEmpty ?? false)
-        ? className!
-        : 'Class ${classIndex + 1}';
+    final ordinalIndex = classIndex - 1;
+    final existing = (ordinalIndex >= 0 &&
+            ordinalIndex < state.teacherInfoByClass.length)
+        ? state.teacherInfoByClass.elementAt(ordinalIndex)
+        : null;
+    final classLabel = 'Class $classIndex';
 
     return ReactiveFormBuilder(
       form: () => fb.group({

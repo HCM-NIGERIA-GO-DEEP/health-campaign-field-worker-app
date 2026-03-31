@@ -24,7 +24,8 @@ class ClassConfirmationPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.digitTextTheme(context);
-    final isLastClass = totalClasses > 0 && classIndex >= totalClasses - 1;
+    final pending = context.watch<BednetDistributionBloc>().state.pendingClassOrdinals;
+    final isLastPending = pending.length == 1 && pending.first == classIndex;
 
     return BlocListener<BednetDistributionBloc, BednetDistributionState>(
       listenWhen: (prev, curr) =>
@@ -40,7 +41,7 @@ class ClassConfirmationPage extends StatelessWidget {
             context.read<BednetDistributionBloc>().add(
                   const BednetDistributionEvent.clearNavIntent(),
                 );
-            if (isLastClass) {
+            if (isLastPending) {
               context.router.popUntilRouteWithName(SelectSchoolRoute.name);
               if (context.router.current.name != SelectSchoolRoute.name) {
                 context.router.push(const SelectSchoolRoute());
@@ -55,10 +56,13 @@ class ClassConfirmationPage extends StatelessWidget {
                   const BednetDistributionEvent.clearNavIntent(),
                 );
             context.router.popUntilRouteWithName(SchoolDetailsRoute.name);
+            final nextOrdinal = state.pendingClassOrdinals.isNotEmpty
+                ? state.pendingClassOrdinals.first
+                : 1;
             context.router.push(
               ClassDetailsRoute(
-                classIndex: 0,
-                totalClasses: state.classIndividuals.length,
+                classIndex: nextOrdinal,
+                totalClasses: state.totalClasses,
               ),
             );
             break;
@@ -72,7 +76,7 @@ class ClassConfirmationPage extends StatelessWidget {
             margin: const EdgeInsets.only(top: spacer2),
             children: [
               DigitButton(
-                label: isLastClass ? 'Next School' : 'Next Class',
+                label: isLastPending ? 'Next School' : 'Next Class',
                 type: DigitButtonType.primary,
                 size: DigitButtonSize.large,
                 mainAxisSize: MainAxisSize.max,

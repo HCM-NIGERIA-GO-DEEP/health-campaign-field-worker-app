@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
@@ -88,7 +87,7 @@ class ClassDetailsPage extends StatelessWidget {
     if (school == null) {
       return const Scaffold(body: SizedBox.shrink());
     }
-    final classIndividual = state.classIndividuals.elementAtOrNull(classIndex);
+    final classOrdinal = classIndex;
     final schoolFieldMap = <String, Object?>{
       for (final field
           in school.additionalFields?.fields ?? const <AdditionalField>[])
@@ -105,32 +104,12 @@ class ClassDetailsPage extends StatelessWidget {
       return null;
     }
 
-    int resolveClassOrdinal() {
-      final fields =
-          classIndividual?.additionalFields?.fields ?? const <AdditionalField>[];
-      for (final field in fields) {
-        if (field.key.toLowerCase() != kBednetClassIndexKey.toLowerCase()) {
-          continue;
-        }
-        final parsed = int.tryParse(field.value.toString());
-        if (parsed != null && parsed > 0) return parsed;
-      }
-      final givenName = classIndividual?.name?.givenName?.trim() ?? '';
-      final classNumMatch = RegExp(r'(\d+)').firstMatch(givenName);
-      if (classNumMatch != null) {
-        final parsed = int.tryParse(classNumMatch.group(1)!);
-        if (parsed != null && parsed > 0) return parsed;
-      }
-      return classIndex + 1;
-    }
+    final classLabel = 'Class $classOrdinal';
 
-    final className = classIndividual?.name?.givenName?.trim();
-    final classLabel = (className?.isNotEmpty ?? false)
-        ? className!
-        : 'Class ${classIndex + 1}';
-    final classOrdinal = resolveClassOrdinal();
-
-    final previous = state.classDetailsByClass.elementAt(classIndex);
+    final previous = (classOrdinal - 1 >= 0 &&
+            classOrdinal - 1 < state.classDetailsByClass.length)
+        ? state.classDetailsByClass.elementAt(classOrdinal - 1)
+        : null;
     final classTotalBoysFromSchool = readSchoolInt([
       'class${classOrdinal}_totalboys',
       'class${classOrdinal}_numberofboys',

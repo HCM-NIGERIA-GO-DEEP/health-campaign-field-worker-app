@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../data/local_store/bednet_class_draft_store.dart';
 import '../../data/repositories/bednet_distribution_repository.dart';
 import '../../models/bednet_distribution/bednet_distribution_models.dart';
 import '../../utils/utils.dart';
@@ -21,6 +22,7 @@ class BednetDistributionBloc
   final LocalRepository<IndividualModel, IndividualSearchModel>
       individualLocalRepository;
   final BednetDistributionRepository bednetDistributionRepository;
+  final BednetClassDraftStore bednetClassDraftStore = BednetClassDraftStore();
 
   BednetDistributionBloc({
     required this.householdLocalRepository,
@@ -89,7 +91,9 @@ class BednetDistributionBloc
         schools: schools,
         boundaryCode: boundaryCode,
         selectedSchool: null,
-        classIndividuals: const [],
+        classIndividualsByOrdinal: const {},
+        pendingClassOrdinals: const [],
+        totalClasses: 0,
         teacherInfoByClass: const [],
         classDetailsByClass: const [],
         summariesByClass: const [],
@@ -119,7 +123,9 @@ class BednetDistributionBloc
           loading: false,
           error: 'Cannot start distribution: logged-in user is unknown.',
           selectedSchool: null,
-          classIndividuals: [],
+          classIndividualsByOrdinal: const {},
+          pendingClassOrdinals: const [],
+          totalClasses: 0,
           teacherInfoByClass: [],
           classDetailsByClass: [],
           summariesByClass: [],
@@ -128,10 +134,8 @@ class BednetDistributionBloc
       return;
     }
 
-    final boundaryMeta = RegistrationDeliverySingleton().boundary;
-
     try {
-      var allIndividuals = await individualLocalRepository.search(
+      final allIndividuals = await individualLocalRepository.search(
         IndividualSearchModel(boundaryCode: state.boundaryCode),
       );
 
@@ -139,46 +143,103 @@ class BednetDistributionBloc
           ? 1
           : event.school.bednetNumberOfClasses;
 
-      for (var classIndex = 1; classIndex <= expectedClasses; classIndex++) {
-        final existing = _findExistingClassRow(
-          event.school,
-          allIndividuals,
-          classIndex,
-        );
-        if (existing != null) continue;
+      final classByOrdinal = <int, IndividualModel>{};
+      final administeredOrdinals = <int>{};
 
-        await bednetDistributionRepository.createClassDistributionEntities(
-          school: event.school,
-          classIndex: classIndex,
-          userUuid: userUuid,
-          boundaryCode: state.boundaryCode ?? '',
-          boundaryName: boundaryMeta?.name,
-        );
+      for (final ind in allIndividuals) {
+        if (!_individualMatchesSchool(event.school, ind)) continue;
+        if (!_isClassIndividual(ind)) continue;
+        final ordinal = ind.bednetClassIndex;
+        if (ordinal == null || ordinal <= 0) continue;
+        classByOrdinal.putIfAbsent(ordinal, () => ind);
+        if (ind.bednetClassAdministered) administeredOrdinals.add(ordinal);
       }
 
-      allIndividuals = await individualLocalRepository.search(
-        IndividualSearchModel(boundaryCode: state.boundaryCode),
-      );
+      int? readSchoolInt(int ordinal, List<String> keys) {
+        final schoolFieldMap = <String, Object?>{
+          for (final field
+              in event.school.additionalFields?.fields ?? const <AdditionalField>[])
+            field.key.toLowerCase(): field.value as Object?,
+        };
+        for (final key in keys) {
+          final raw = schoolFieldMap[key.replaceAll('{n}', ordinal.toString()).toLowerCase()];
+          if (raw == null) continue;
+          final parsed = int.tryParse(raw.toString());
+          if (parsed != null) return parsed;
+        }
+        return null;
+      }
 
-      final classes = _pendingClassIndividuals(event.school, allIndividuals);
-      final totalClasses = classes.isEmpty
-          ? event.school.bednetNumberOfClasses
-          : classes.length;
+      bool isZeroPupilClassOrdinal(int ordinal) {
+        final totalPupils = readSchoolInt(ordinal, const [
+          'class{n}_totalstudents',
+          'class{n}_totalpupils',
+          'class{n}_pupilcount',
+          'class{n}_total',
+        ]);
+        final boys = readSchoolInt(ordinal, const [
+          'class{n}_totalboys',
+          'class{n}_numberofboys',
+          'class{n}_boys',
+        ]);
+        final girls = readSchoolInt(ordinal, const [
+          'class{n}_totalgirls',
+          'class{n}_numberofgirls',
+          'class{n}_girls',
+        ]);
+        final computed = (boys ?? 0) + (girls ?? 0);
+        final resolved = totalPupils ?? (computed > 0 ? computed : null);
+        return resolved != null && resolved == 0;
+      }
 
-      if (classes.isEmpty) {
+      final pendingOrdinals = <int>[];
+      for (var ordinal = 1; ordinal <= expectedClasses; ordinal++) {
+        if (administeredOrdinals.contains(ordinal)) continue;
+        if (isZeroPupilClassOrdinal(ordinal)) continue;
+        pendingOrdinals.add(ordinal);
+      }
+
+      if (pendingOrdinals.isEmpty) {
         emit(
           state.copyWith(
             loading: false,
             error:
                 'No pending classes for this school. All classes may already be administered.',
             selectedSchool: null,
-            classIndividuals: [],
-            teacherInfoByClass: [],
-            classDetailsByClass: [],
-            summariesByClass: [],
+            classIndividualsByOrdinal: {},
+            pendingClassOrdinals: [],
+            totalClasses: 0,
+            teacherInfoByClass: const [],
+            classDetailsByClass: const [],
+            summariesByClass: const [],
           ),
         );
         return;
+      }
+
+      final teacherDrafts =
+          List<ClassTeacherInfoModel?>.filled(expectedClasses, null);
+      final detailsDrafts =
+          List<ClassDetailsModel?>.filled(expectedClasses, null);
+      final summaryDrafts =
+          List<DistributionSummaryModel?>.filled(expectedClasses, null);
+
+      for (var ordinal = 1; ordinal <= expectedClasses; ordinal++) {
+        final draft = await bednetClassDraftStore.read(
+          schoolClientRef: event.school.clientReferenceId,
+          classOrdinal: ordinal,
+        );
+        if (draft?.teacher != null) teacherDrafts[ordinal - 1] = draft!.teacher;
+        if (draft?.details != null) {
+          detailsDrafts[ordinal - 1] = draft!.details;
+          summaryDrafts[ordinal - 1] = DistributionSummaryModel(
+            resourceName: 'Bednet',
+            boysReceived: draft.details!.boysPresent,
+            girlsReceived: draft.details!.girlsPresent,
+            totalDelivered:
+                draft.details!.boysPresent + draft.details!.girlsPresent,
+          );
+        }
       }
 
       emit(
@@ -187,10 +248,12 @@ class BednetDistributionBloc
           error: null,
           selectedSchool: event.school,
           currentClassIndex: 0,
-          classIndividuals: classes,
-          teacherInfoByClass: List.generate(totalClasses, (_) => null),
-          classDetailsByClass: List.generate(totalClasses, (_) => null),
-          summariesByClass: List.generate(totalClasses, (_) => null),
+          classIndividualsByOrdinal: classByOrdinal,
+          pendingClassOrdinals: pendingOrdinals,
+          totalClasses: expectedClasses,
+          teacherInfoByClass: teacherDrafts,
+          classDetailsByClass: detailsDrafts,
+          summariesByClass: summaryDrafts,
           navIntent: BednetNavIntent.none,
           schoolSelectionSeq: state.schoolSelectionSeq + 1,
         ),
@@ -204,7 +267,9 @@ class BednetDistributionBloc
           error:
               'Could not prepare class records for this school: $error',
           selectedSchool: null,
-          classIndividuals: [],
+          classIndividualsByOrdinal: const {},
+          pendingClassOrdinals: const [],
+          totalClasses: 0,
           teacherInfoByClass: [],
           classDetailsByClass: [],
           summariesByClass: [],
@@ -220,57 +285,20 @@ class BednetDistributionBloc
     if (state.selectedSchool == null) return;
 
     final updated = [...state.teacherInfoByClass];
-    String? taskError;
 
-    if (event.classIndex >= 0 && event.classIndex < updated.length) {
-      updated[event.classIndex] = event.info;
-      final classIndividual = state.classIndividuals.elementAtOrNull(
-        event.classIndex,
-      );
-      final classDetails = state.classDetailsByClass.elementAtOrNull(
-        event.classIndex,
-      );
-      var nextIndividuals = state.classIndividuals;
-      if (classIndividual != null) {
-        final mobile = event.info.mobileNumber.trim();
-        final merged = await _updateClassIndividual(
-          classIndividual,
-          {
-            'teacherName': event.info.name,
-            'teacherGender': event.info.gender,
-            if (mobile.isNotEmpty) 'teacherMobileNumber': mobile,
-          },
-        );
-        nextIndividuals = [...state.classIndividuals];
-        nextIndividuals[event.classIndex] = merged;
+    final ordinal = event.classIndex;
+    if (ordinal >= 1 && ordinal <= updated.length) {
+      updated[ordinal - 1] = event.info;
 
-        if (classDetails != null) {
-          final userUuid = RegistrationDeliverySingleton().loggedInUserUuid;
-          if (userUuid == null || userUuid.isEmpty) {
-            taskError = 'Cannot save distribution task: user is not logged in.';
-          } else {
-            try {
-              await bednetDistributionRepository
-                  .createOrUpdateBednetTaskForClassDetails(
-                school: state.selectedSchool!,
-                classIndividual: merged,
-                details: classDetails,
-                userUuid: userUuid,
-                boundaryCode: state.boundaryCode ?? '',
-                boundaryName: RegistrationDeliverySingleton().boundary?.name,
-              );
-            } catch (error, stackTrace) {
-              debugPrint('Bednet task create/update failed: $error');
-              debugPrintStack(stackTrace: stackTrace);
-              taskError = 'Could not save distribution task: $error';
-            }
-          }
-        }
-      }
+      await bednetClassDraftStore.upsertTeacher(
+        schoolClientRef: state.selectedSchool!.clientReferenceId,
+        classOrdinal: ordinal,
+        teacher: event.info,
+      );
+
       emit(state.copyWith(
         teacherInfoByClass: updated,
-        classIndividuals: nextIndividuals,
-        error: taskError,
+        error: null,
       ));
     }
   }
@@ -284,45 +312,27 @@ class BednetDistributionBloc
     final details = [...state.classDetailsByClass];
     final summaries = [...state.summariesByClass];
 
-    var nextIndividuals = state.classIndividuals;
-
-    if (event.classIndex >= 0 && event.classIndex < details.length) {
-      details[event.classIndex] = event.details;
-      summaries[event.classIndex] = DistributionSummaryModel(
+    final ordinal = event.classIndex;
+    if (ordinal >= 1 && ordinal <= details.length) {
+      details[ordinal - 1] = event.details;
+      summaries[ordinal - 1] = DistributionSummaryModel(
         resourceName: 'Bednet',
         boysReceived: event.details.boysPresent,
         girlsReceived: event.details.girlsPresent,
         totalDelivered: event.details.boysPresent + event.details.girlsPresent,
       );
 
-      final classIndividual = state.classIndividuals.elementAtOrNull(
-        event.classIndex,
+      await bednetClassDraftStore.upsertDetails(
+        schoolClientRef: state.selectedSchool!.clientReferenceId,
+        classOrdinal: ordinal,
+        details: event.details,
       );
-      if (classIndividual != null) {
-        final merged = await _updateClassIndividual(
-          classIndividual,
-          {
-            'distributionDate':
-                event.details.distributionDate.millisecondsSinceEpoch,
-            'pupilCount': event.details.pupilCount,
-            'numberOfBoys': event.details.numberOfBoys,
-            'numberOfGirls': event.details.numberOfGirls,
-            'pupilsPresent': event.details.pupilsPresent,
-            'boysPresent': event.details.boysPresent,
-            'girlsPresent': event.details.girlsPresent,
-            'pupilsAbsent': event.details.pupilsAbsent,
-          },
-        );
-        nextIndividuals = [...state.classIndividuals];
-        nextIndividuals[event.classIndex] = merged;
-      }
     }
 
     emit(
       state.copyWith(
         classDetailsByClass: details,
         summariesByClass: summaries,
-        classIndividuals: nextIndividuals,
         error: null,
       ),
     );
@@ -333,32 +343,100 @@ class BednetDistributionBloc
     BednetDistributionEmitter emit,
   ) async {
     if (state.selectedSchool == null) return;
-    final classIndividual =
-        state.classIndividuals.elementAtOrNull(event.classIndex);
-    if (classIndividual == null) return;
+    final ordinal = event.classIndex;
+    if (ordinal < 1 || ordinal > state.totalClasses) return;
+
+    final existingIndividual = state.classIndividualsByOrdinal[ordinal];
 
     final now = DateTime.now().millisecondsSinceEpoch;
-    await _updateClassIndividual(
-      classIndividual,
-      {
-        kBednetClassAdministeredKey: true,
-        kBednetClassAdministeredAtKey: now,
-      },
-    );
+    final classDetails = state.classDetailsByClass.elementAtOrNull(ordinal - 1);
+    final teacherInfo = state.teacherInfoByClass.elementAtOrNull(ordinal - 1);
 
-    final allIndividuals = await individualLocalRepository.search(
-      IndividualSearchModel(boundaryCode: state.boundaryCode),
-    );
-    final pending =
-        _pendingClassIndividuals(state.selectedSchool!, allIndividuals);
+    String? taskError;
+
+    IndividualModel? classIndividual = existingIndividual;
+    if (classIndividual == null) {
+      final userUuid = RegistrationDeliverySingleton().loggedInUserUuid;
+      if (userUuid == null || userUuid.isEmpty) {
+        emit(state.copyWith(error: 'Cannot save distribution: user is not logged in.'));
+        return;
+      }
+      classIndividual = await bednetDistributionRepository.createClassDistributionEntities(
+        school: state.selectedSchool!,
+        classIndex: ordinal,
+        userUuid: userUuid,
+        boundaryCode: state.boundaryCode ?? '',
+        boundaryName: RegistrationDeliverySingleton().boundary?.name,
+      );
+    }
+
+    if (classDetails != null && teacherInfo != null) {
+      final mobile = teacherInfo.mobileNumber.trim();
+      final merged = await _updateClassIndividual(
+        classIndividual,
+        {
+          'distributionDate':
+              classDetails.distributionDate.millisecondsSinceEpoch,
+          'pupilCount': classDetails.pupilCount,
+          'numberOfBoys': classDetails.numberOfBoys,
+          'numberOfGirls': classDetails.numberOfGirls,
+          'pupilsPresent': classDetails.pupilsPresent,
+          'boysPresent': classDetails.boysPresent,
+          'girlsPresent': classDetails.girlsPresent,
+          'pupilsAbsent': classDetails.pupilsAbsent,
+          'teacherName': teacherInfo.name,
+          'teacherGender': teacherInfo.gender,
+          if (mobile.isNotEmpty) 'teacherMobileNumber': mobile,
+          kBednetClassAdministeredKey: true,
+          kBednetClassAdministeredAtKey: now,
+        },
+      );
+
+      final userUuid = RegistrationDeliverySingleton().loggedInUserUuid;
+      if (userUuid == null || userUuid.isEmpty) {
+        taskError = 'Cannot save distribution task: user is not logged in.';
+      } else {
+        try {
+          await bednetDistributionRepository.createOrUpdateBednetTaskForClassDetails(
+            school: state.selectedSchool!,
+            classIndividual: merged,
+            details: classDetails,
+            userUuid: userUuid,
+            boundaryCode: state.boundaryCode ?? '',
+            boundaryName: RegistrationDeliverySingleton().boundary?.name,
+          );
+        } catch (error, stackTrace) {
+          debugPrint('Bednet task create/update failed: $error');
+          debugPrintStack(stackTrace: stackTrace);
+          taskError = 'Could not save distribution task: $error';
+        }
+      }
+
+      await bednetClassDraftStore.clear(
+        schoolClientRef: state.selectedSchool!.clientReferenceId,
+        classOrdinal: ordinal,
+      );
+    } else {
+      // If drafts are missing, still mark administered to avoid blocking the flow.
+      await _updateClassIndividual(
+        classIndividual,
+        {
+          kBednetClassAdministeredKey: true,
+          kBednetClassAdministeredAtKey: now,
+        },
+      );
+    }
+
+    final pending = state.pendingClassOrdinals.where((e) => e != ordinal).toList();
+    final byOrdinal = {...state.classIndividualsByOrdinal};
+    byOrdinal[ordinal] = classIndividual;
 
     emit(
       state.copyWith(
-        classIndividuals: pending,
-        teacherInfoByClass: List.generate(pending.length, (_) => null),
-        classDetailsByClass: List.generate(pending.length, (_) => null),
-        summariesByClass: List.generate(pending.length, (_) => null),
+        classIndividualsByOrdinal: byOrdinal,
+        pendingClassOrdinals: pending,
         currentClassIndex: 0,
+        error: taskError,
         navIntent: pending.isEmpty
             ? BednetNavIntent.openSuccess
             : BednetNavIntent.continueNextClass,
@@ -417,23 +495,60 @@ class BednetDistributionBloc
     final expected = school.bednetNumberOfClasses;
     if (expected <= 0) return false;
     final linked = _allClassIndividualsForSchool(school, allIndividuals);
-    if (linked.length < expected) return false;
-    return linked.every((i) => i.bednetClassAdministered || _isZeroPupilClass(i));
-  }
+    final administeredOrdinals = <int>{};
+    for (final ind in linked) {
+      if (!ind.bednetClassAdministered) continue;
+      final ord = ind.bednetClassIndex;
+      if (ord != null && ord > 0) administeredOrdinals.add(ord);
+    }
 
-  bool _isZeroPupilClass(IndividualModel individual) {
-    final fields =
-        individual.additionalFields?.fields ?? const <AdditionalField>[];
-    final map = <String, Object?>{
-      for (final field in fields) field.key.toLowerCase(): field.value,
-    };
-    final raw = map['pupilcount'] ??
-        map['pupil_count'] ??
-        map['totalpupil'] ??
-        map['total_pupil'];
-    if (raw == null) return false;
-    final n = int.tryParse(raw.toString());
-    return n != null && n == 0;
+    int? readSchoolInt(int ordinal, List<String> keys) {
+      final schoolFieldMap = <String, Object?>{
+        for (final field
+            in school.additionalFields?.fields ?? const <AdditionalField>[])
+          field.key.toLowerCase(): field.value as Object?,
+      };
+      for (final key in keys) {
+        final raw = schoolFieldMap[key
+            .replaceAll('{n}', ordinal.toString())
+            .toLowerCase()];
+        if (raw == null) continue;
+        final parsed = int.tryParse(raw.toString());
+        if (parsed != null) return parsed;
+      }
+      return null;
+    }
+
+    bool isZeroPupilOrdinal(int ordinal) {
+      final totalPupils = readSchoolInt(ordinal, const [
+        'class{n}_totalstudents',
+        'class{n}_totalpupils',
+        'class{n}_pupilcount',
+        'class{n}_total',
+      ]);
+      final boys = readSchoolInt(ordinal, const [
+        'class{n}_totalboys',
+        'class{n}_numberofboys',
+        'class{n}_boys',
+      ]);
+      final girls = readSchoolInt(ordinal, const [
+        'class{n}_totalgirls',
+        'class{n}_numberofgirls',
+        'class{n}_girls',
+      ]);
+      final computed = (boys ?? 0) + (girls ?? 0);
+      final resolved = totalPupils ?? (computed > 0 ? computed : null);
+      return resolved != null && resolved == 0;
+    }
+
+    var effectiveExpected = 0;
+    for (var ordinal = 1; ordinal <= expected; ordinal++) {
+      if (isZeroPupilOrdinal(ordinal)) continue;
+      effectiveExpected++;
+    }
+
+    return administeredOrdinals.length >= effectiveExpected &&
+        effectiveExpected > 0;
   }
 
   bool _individualMatchesSchool(
@@ -494,7 +609,7 @@ class BednetDistributionBloc
     List<IndividualModel> allIndividuals,
   ) {
     return _allClassIndividualsForSchool(school, allIndividuals)
-        .where((i) => !i.bednetClassAdministered && !_isZeroPupilClass(i))
+        .where((i) => !i.bednetClassAdministered)
         .toList();
   }
 
@@ -624,9 +739,11 @@ class BednetDistributionState with _$BednetDistributionState {
     @Default(false) bool loading,
     String? boundaryCode,
     @Default([]) List<HouseholdModel> schools,
-    @Default([]) List<IndividualModel> classIndividuals,
+    @Default({}) Map<int, IndividualModel> classIndividualsByOrdinal,
     HouseholdModel? selectedSchool,
     @Default(0) int currentClassIndex,
+    @Default([]) List<int> pendingClassOrdinals,
+    @Default(0) int totalClasses,
     @Default([]) List<ClassTeacherInfoModel?> teacherInfoByClass,
     @Default([]) List<ClassDetailsModel?> classDetailsByClass,
     @Default([]) List<DistributionSummaryModel?> summariesByClass,

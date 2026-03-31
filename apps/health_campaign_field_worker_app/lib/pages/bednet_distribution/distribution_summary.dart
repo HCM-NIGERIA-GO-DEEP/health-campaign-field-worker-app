@@ -1,4 +1,3 @@
-import 'package:collection/collection.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
@@ -41,16 +40,11 @@ class _DistributionSummaryBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final state = context.watch<BednetDistributionBloc>().state;
-    final summary = state.summariesByClass.elementAt(classIndex);
-    final classLabel = state.classIndividuals
-                .elementAtOrNull(classIndex)
-                ?.name
-                ?.givenName
-                ?.trim()
-                .isNotEmpty ==
-            true
-        ? state.classIndividuals.elementAt(classIndex).name!.givenName!.trim()
-        : 'Class ${classIndex + 1}';
+    final ordinalIndex = classIndex - 1;
+    final summary = (ordinalIndex >= 0 && ordinalIndex < state.summariesByClass.length)
+        ? state.summariesByClass.elementAt(ordinalIndex)
+        : null;
+    final classLabel = 'Class $classIndex';
     if (summary == null) {
       return const Scaffold(body: SizedBox.shrink());
     }

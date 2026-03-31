@@ -21,8 +21,10 @@ class SchoolDetailsPage extends StatelessWidget {
         if (school == null) {
           return const Scaffold(body: SizedBox.shrink());
         }
-        final pendingCount = state.classIndividuals.length;
-        final totalClasses = school.bednetNumberOfClasses;
+        final pendingCount = state.pendingClassOrdinals.length;
+        final totalClasses = state.totalClasses > 0
+            ? state.totalClasses
+            : school.bednetNumberOfClasses;
 
         return Scaffold(
           body: ScrollableContent(
@@ -37,9 +39,13 @@ class SchoolDetailsPage extends StatelessWidget {
                   size: DigitButtonSize.large,
                   mainAxisSize: MainAxisSize.max,
                   onPressed: () {
+                    final firstPending =
+                        state.pendingClassOrdinals.isNotEmpty
+                            ? state.pendingClassOrdinals.first
+                            : 1;
                     context.router.push(
                       ClassDetailsRoute(
-                        classIndex: 0,
+                        classIndex: firstPending,
                         totalClasses: totalClasses,
                       ),
                     );

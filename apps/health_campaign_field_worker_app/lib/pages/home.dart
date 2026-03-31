@@ -1095,7 +1095,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             final moduleName =
                 'hcm-inventory-${context.selectedProject.referenceID}';
             final newModuleName = 'hcm-inventory-CMP-2026-03-30-000308';
-            triggerLocalization(module: newModuleName, loadOnline: true);
+            triggerLocalization(module: newModuleName);
             isTriggerLocalisation = false;
 
             await FlowNavigationUtils.navigateToFlowModule(
@@ -1153,7 +1153,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             final moduleName =
                 'hcm-stockreconciliation-${context.selectedProject.referenceID}';
             final newModuleName = 'hcm-stockreconciliation';
-            triggerLocalization(module: newModuleName, loadOnline: true);
+            triggerLocalization(module: newModuleName);
             isTriggerLocalisation = false;
 
             await FlowNavigationUtils.navigateToFlowModule(

@@ -40,7 +40,7 @@ class BednetDistributionRepository {
 
   /// Creates one class distribution row: individual + project beneficiary +
   /// household member (task is created on teacher submit).
-  Future<void> createClassDistributionEntities({
+  Future<IndividualModel> createClassDistributionEntities({
     required HouseholdModel school,
     required int classIndex,
     required String userUuid,
@@ -134,7 +134,6 @@ class BednetDistributionRepository {
       dateOfRegistration: createdAt,
       tenantId: tenantId,
       rowVersion: 1,
-      tag: 'BEDNET',
       auditDetails: auditDetails,
       clientAuditDetails: clientAuditDetails,
     );
@@ -153,6 +152,7 @@ class BednetDistributionRepository {
     );
 
     await householdMemberLocalRepository.create(householdMember);
+    return individual;
   }
 
   Future<String?> _resolveProductVariantIdForProject(String projectId) async {
@@ -307,7 +307,6 @@ class BednetDistributionRepository {
         ProjectBeneficiarySearchModel(
           projectId: [projectId],
           clientReferenceId: [projectBeneficiaryClientRefFromIndividual],
-          tag: ['BEDNET'],
         ),
       );
       projectBeneficiary = byClientRef.firstOrNull;
@@ -320,7 +319,6 @@ class BednetDistributionRepository {
         ProjectBeneficiarySearchModel(
           projectId: [projectId],
           id: [projectBeneficiaryIdFromIndividual],
-          tag: ['BEDNET'],
         ),
       );
       projectBeneficiary = byId.firstOrNull;
@@ -343,7 +341,6 @@ class BednetDistributionRepository {
         ProjectBeneficiarySearchModel(
           projectId: [projectId],
           beneficiaryClientReferenceId: [beneficiaryRef],
-          tag: ['BEDNET'],
         ),
       );
       projectBeneficiary = byBeneficiaryRef.firstOrNull;
@@ -365,14 +362,10 @@ class BednetDistributionRepository {
       projectBeneficiary = ProjectBeneficiaryModel(
         clientReferenceId: IdGen.i.identifier,
         projectId: projectId,
-        beneficiaryClientReferenceId:
-            householdClientRefFromIndividual?.isNotEmpty == true
-                ? householdClientRefFromIndividual
-                : school.clientReferenceId,
+        beneficiaryClientReferenceId: school.clientReferenceId,
         dateOfRegistration: nowForBeneficiary,
         tenantId: tenantId,
         rowVersion: 1,
-        tag: 'BEDNET',
         auditDetails: auditForBeneficiary,
         clientAuditDetails: clientAuditForBeneficiary,
       );
