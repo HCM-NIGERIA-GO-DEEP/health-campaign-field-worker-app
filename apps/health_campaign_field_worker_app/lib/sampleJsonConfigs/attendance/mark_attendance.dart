@@ -157,7 +157,7 @@ final dynamic markAttendanceFlow = {
     },
     {
       "disabled":
-          "{{fn:allAttendanceSelected(contextData.0.attendees, widgetData.attendanceCollection)}}",
+          "{{fn:allAttendanceSelected(widgetData, contextData.0.AttendanceRegisterModel)}}",
       "format": "button",
       "type": "template",
       "fieldName": "createReferral",
@@ -195,7 +195,7 @@ final dynamic markAttendanceFlow = {
       "fieldName": "submitAttendance",
       "label": "CORE_COMMON_SUBMIT",
       "disabled":
-          "{{fn:allAttendanceSelected(contextData.0.attendees, widgetData.attendanceCollection)}}",
+          "{{fn:allAttendanceSelected(widgetData, contextData.0.AttendanceRegisterModel)}}",
       "onAction": [],
       "properties": {
         "type": "secondary",

@@ -275,7 +275,8 @@ class MarkAttendanceCard extends ResolvedFlowWidget {
           maxLines: 2,
         ),
         if ((attendanceLogStatus == -1.0 || attendanceLogSyncStatus) &&
-            _allowManualAttendance(compositeKey, scanQrCode) &&
+            _allowManualAttendance(compositeKey, scanQrCode,
+                item['entity']?.individualId, filterAttendanceLogs) &&
             signatureCapture == false)
           Row(
             children: [
@@ -291,8 +292,8 @@ class MarkAttendanceCard extends ResolvedFlowWidget {
                     };
                     _markAttendance(data, compositeKey);
                   },
-                  type: _getAttendanceStatus(
-                              item['entity']?.individualId, compositeKey) ==
+                  type: _getAttendanceStatus(item['entity']?.individualId,
+                              compositeKey, attendanceLogStatus) ==
                           1.0
                       ? DigitButtonType.primary
                       : DigitButtonType.secondary,
@@ -329,8 +330,8 @@ class MarkAttendanceCard extends ResolvedFlowWidget {
                     };
                     _markAttendance(data, compositeKey);
                   },
-                  type: _getAttendanceStatus(
-                              item['entity']?.individualId, compositeKey) ==
+                  type: _getAttendanceStatus(item['entity']?.individualId,
+                              compositeKey, attendanceLogStatus) ==
                           0.0
                       ? DigitButtonType.primary
                       : DigitButtonType.secondary,
@@ -357,7 +358,8 @@ class MarkAttendanceCard extends ResolvedFlowWidget {
             ],
           ),
         if ((attendanceLogStatus == -1.0 || attendanceLogSyncStatus) &&
-            _allowManualAttendance(compositeKey, scanQrCode) &&
+            _allowManualAttendance(compositeKey, scanQrCode,
+                item['entity']?.individualId, filterAttendanceLogs) &&
             signatureCapture == true)
           DigitButton(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -390,8 +392,8 @@ class MarkAttendanceCard extends ResolvedFlowWidget {
                     screenKey, stateData, item, listIndex, compositeKey);
               }
             },
-            type: _getAttendanceStatus(
-                        item['entity']?.individualId, compositeKey) !=
+            type: _getAttendanceStatus(item['entity']?.individualId,
+                        compositeKey, attendanceLogStatus) !=
                     -1.0
                 ? DigitButtonType.primary
                 : DigitButtonType.secondary,
@@ -401,7 +403,9 @@ class MarkAttendanceCard extends ResolvedFlowWidget {
                   DigitButtonThemeData.defaultTheme(context)
                       .primaryDigitButtonColor,
               DigitButtonColor: (_getAttendanceStatus(
-                              item['entity']?.individualId, compositeKey) ==
+                              item['entity']?.individualId,
+                              compositeKey,
+                              attendanceLogStatus) ==
                           1.0
                       ? colorMap[presentButtonColor]
                       : colorMap[absentButtonColor]) ??
@@ -413,8 +417,8 @@ class MarkAttendanceCard extends ResolvedFlowWidget {
               smallMediumRadius: BorderRadius.circular(spacer3),
               padding: EdgeInsets.all(WidgetParsers.parseSize(padding)),
             ),
-            prefixIcon: _getAttendanceStatus(
-                        item['entity']?.individualId, compositeKey) !=
+            prefixIcon: _getAttendanceStatus(item['entity']?.individualId,
+                        compositeKey, attendanceLogStatus) !=
                     -1.0
                 ? DigitIconMapping.getIcon("Check")
                 : DigitIconMapping.getIcon("Edit"),
@@ -653,7 +657,12 @@ class MarkAttendanceCard extends ResolvedFlowWidget {
     return hasUnsyncedLog;
   }
 
-  bool _allowManualAttendance(String? compositeKey, bool scanQrCode) {
+  bool _allowManualAttendance(
+    String? compositeKey,
+    bool scanQrCode,
+    String individualId,
+    List attendanceLogs,
+  ) {
     if (compositeKey == null) return false;
     final currentState = FlowCrudStateRegistry().get(compositeKey);
     final widgetData =
@@ -671,11 +680,23 @@ class MarkAttendanceCard extends ResolvedFlowWidget {
     }
     final entryTime = (selectedDate['entryTime'] as num?)?.toInt() ?? 0;
     final entryDate = DateTime.fromMillisecondsSinceEpoch(entryTime);
+
+    List filterAttendanceLogs = attendanceLogs.where((log) {
+      return log["individualId"] == individualId;
+    }).toList();
+
+    final signatureData = filterAttendanceLogs.firstWhereOrNull(
+            (log) => log["additionalDetails"] != null)?["additionalDetails"]
+        ["signatureData"];
+
+    final uploadToServer =
+        filterAttendanceLogs.any((log) => log["uploadToServer"] == true);
+
     final now = DateTime.now();
     bool isSameDay = entryDate.year == now.year &&
         entryDate.month == now.month &&
         entryDate.day == now.day;
-    return !isSameDay; // allow manual marking for past dates, hide for current day
+    return (!isSameDay || (signatureData != false && uploadToServer == false));
   }
 
   String _getAttendanceStatusText(
@@ -684,7 +705,8 @@ class MarkAttendanceCard extends ResolvedFlowWidget {
       double attendanceLogStatus,
       Map<String, dynamic> statusMapping,
       resolved) {
-    final status = _getAttendanceStatus(individualId, compositeKey);
+    final status =
+        _getAttendanceStatus(individualId, compositeKey, attendanceLogStatus);
     if (attendanceLogStatus != -1.0) {
       return resolved
           .resolveText(statusMapping[attendanceLogStatus.toString()]);
@@ -693,12 +715,15 @@ class MarkAttendanceCard extends ResolvedFlowWidget {
         ''; // default to empty string if not marked
   }
 
-  double _getAttendanceStatus(String? individualId, String? compositeKey) {
+  double _getAttendanceStatus(
+      String? individualId, String? compositeKey, double logStatus) {
     final attendanceCollection =
         _getAttendanceCollection(individualId, compositeKey);
 
     final status = (attendanceCollection['status']);
-    return status ?? -1.0; // default to -1.0 (absent) if not marked
+    return status ??
+        logStatus ??
+        -1.0; // default to -1.0 (absent) if not marked
   }
 
   Map<String, dynamic> _getAttendanceCollection(

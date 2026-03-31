@@ -834,7 +834,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       final filterAttendanceLogs = attendanceLogs?.where((log) {
         final logTime = log.time;
         if (logTime == null) return false;
-        return logTime == entryTime;
+        return logTime == entryTime && log.uploadToServer == true;
       }).toList();
 
       final now = DateTime.now();
@@ -848,12 +848,28 @@ class _HomePageState extends LocalizedState<HomePage> {
     FunctionRegistry.register('allAttendanceSelected', (args, stateData) {
       if (args.isEmpty || args.first == null) return false;
 
-      final attendee = args.first;
-      final attendanceCollection = args.length > 1 ? args[1] as Map? : null;
+      final widgetData = args.first;
+      final attendanceRegisterModel = args.length > 1 ? args[1] : null;
 
-      if (attendee is! List || attendanceCollection is! Map) return true;
+      if (attendanceRegisterModel == null || widgetData == null) return true;
 
-      return attendee.length != attendanceCollection.length;
+      final attendee = attendanceRegisterModel.attendees;
+      final attendanceCollection = widgetData?["attendanceCollection"];
+      final dateTime = widgetData?["selectedAttendanceDate"];
+
+      var entryTime = dateTime?["entryTime"];
+      final attendanceLogs = attendanceRegisterModel?.attendanceLog;
+      final filterAttendanceLogs = attendanceLogs?.where((log) {
+        final logTime = log.time;
+        if (logTime == null) return false;
+        return logTime == entryTime && log.uploadToServer == false;
+      }).toList();
+
+      if (filterAttendanceLogs != null && filterAttendanceLogs.isNotEmpty) {
+        return attendee?.length != filterAttendanceLogs.length;
+      }
+
+      return attendee?.length != attendanceCollection?.length;
     });
 
     // Helper to extract stockEntryType from additionalFields array
@@ -980,20 +996,20 @@ class _HomePageState extends LocalizedState<HomePage> {
       final attendanceRegisterModel = args.length > 2 ? args[2] : null;
       final uploadToServer = args.length > 3 ? args[3] as int? : 0;
 
+      final existingLogs =
+          attendanceLogs.where((log) => log.uploadToServer == false).toList();
+
       final registerId = attendanceRegisterModel?.id ?? '';
       final isNotSingleSession =
           attendanceRegisterModel?.additionalDetails?["sessions"] == 2;
-
-      final attendanceCollection = widgetData['attendanceCollection'] as Map?;
-      if (attendanceCollection == null || attendanceCollection.isEmpty) {
-        return null;
-      }
 
       final comment = widgetData['COMMENT'] as String?;
       final isMorning = widgetData['sessionToggle'] as bool? ?? true;
 
       final selectedDate = widgetData['selectedDate'] as int?;
       final attendanceManualData = widgetData['attendanceManualData'] as Map?;
+
+      final attendanceCollection = widgetData['attendanceCollection'] as Map?;
 
       DateTime? dateSession = selectedDate != null
           ? DateTime.fromMillisecondsSinceEpoch(selectedDate)
@@ -1050,6 +1066,26 @@ class _HomePageState extends LocalizedState<HomePage> {
       final now = DateTime.now().millisecondsSinceEpoch;
 
       final List<EntityModel> entities = [];
+
+      List filterExistingLogs = existingLogs.where((log) {
+        final logTime = log.time;
+        if (logTime == null) return false;
+        return logTime == entryTime;
+      }).toList();
+
+      for (var log in filterExistingLogs) {
+        (attendanceCollection ?? {})[log.individualId] = {
+          'status': log.status == EnumValues.active.toValue() ? 1.0 : 0.0,
+          'isFirstSignature':
+              log.additionalDetails?['isFirstSignature'] ?? false,
+          'signatureData': log.additionalDetails?['signatureData'] ?? null,
+          'qrCreatedTime': log.additionalDetails?['qrCreatedTime'] ?? null,
+        };
+      }
+
+      if (attendanceCollection == null || attendanceCollection.isEmpty) {
+        return null;
+      }
 
       for (final entry in attendanceCollection.entries) {
         final individualId = entry.key.toString();
