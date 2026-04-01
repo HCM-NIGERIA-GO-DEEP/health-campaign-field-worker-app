@@ -3,6 +3,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_data_model/models/entities/hf_referral.dart';
 import 'package:disk_space_update/disk_space_update.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -45,6 +46,8 @@ class BeneficiaryDownSyncBloc
       referralLocalRepository;
   final LocalRepository<ServiceModel, ServiceSearchModel>
       serviceLocalRepository;
+  final LocalRepository<HFReferralModel, HFReferralSearchModel>
+      hfReferralLocalRepository;
 
   BeneficiaryDownSyncBloc({
     required this.individualLocalRepository,
@@ -58,6 +61,7 @@ class BeneficiaryDownSyncBloc
     required this.sideEffectLocalRepository,
     required this.referralLocalRepository,
     required this.serviceLocalRepository,
+    required this.hfReferralLocalRepository,
   }) : super(const BeneficiaryDownSyncState._()) {
     on(_handleDownSyncOfBeneficiaries);
     on(_handleCheckTotalCount);
@@ -207,8 +211,10 @@ class BeneficiaryDownSyncBloc
                 isDeleted: true,
               ),
             );
-            emit(BeneficiaryDownSyncState.inProgress(
-                offset, downSyncResults["DownsyncCriteria"]["totalCount"]));
+            if (downSyncResults.isNotEmpty) {
+              emit(BeneficiaryDownSyncState.inProgress(
+                  offset, downSyncResults["DownsyncCriteria"]["totalCount"]));
+            }
 
             // check if the API response is there or it failed
             if (downSyncResults.isNotEmpty) {
@@ -225,6 +231,8 @@ class BeneficiaryDownSyncBloc
                 sideEffectLocalRepository,
                 referralLocalRepository,
                 serviceLocalRepository,
+                downSyncLocalRepository,
+                hfReferralLocalRepository
               ]);
               // Update the local downSync data for the boundary with the new values
               totalCount = downSyncResults["DownsyncCriteria"]["totalCount"];
@@ -238,10 +246,32 @@ class BeneficiaryDownSyncBloc
                 boundaryName: event.boundaryName,
               ));
             }
-            // When API response failed
+            // When API returns empty, treat as graceful completion.
+            //
+            // This can happen if the server-side dataset changed between the initial
+            // count check and the batch fetch (e.g. deletions), or if the backend
+            // returns an empty final page. In those cases, data may already be
+            // persisted locally; showing "download failed" is misleading.
             else {
-              emit(const BeneficiaryDownSyncState.failed());
+              await downSyncLocalRepository.update(
+                existingDownSyncData.first.copyWith(
+                  offset: 0,
+                  limit: 0,
+                  totalCount: totalCount,
+                  locality: event.boundaryCode,
+                  boundaryName: event.boundaryName,
+                  lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
+                ),
+              );
+              final result = DownsyncModel(
+                offset: totalCount,
+                lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
+                totalCount: totalCount,
+                locality: event.boundaryCode,
+                boundaryName: event.boundaryName,
+              );
               await LocalSecureStore.instance.setManualSyncTrigger(false);
+              emit(BeneficiaryDownSyncState.success(result));
               break;
             }
           } else {

@@ -123,7 +123,8 @@ class Constants {
     'hcm-peer-to-peer',
     'hcm-transit-post',
     'hcm-attendance',
-    'hcm-dashboard'
+    'hcm-dashboard',
+    'hcm-inventory-CMP-2026-03-30-000308'
   ];
 
   // Modules to load on home page and logout
@@ -135,7 +136,8 @@ class Constants {
     'hcm-peer-to-peer',
     'hcm-transit-post',
     'hcm-attendance',
-    'hcm-dashboard'
+    'hcm-dashboard',
+    'hcm-stock'
   ];
   static const String surveyFormPreviewDateFormat = 'dd MMMM yyyy';
   static const String defaultDateFormat = 'dd/MM/yyyy';
@@ -154,9 +156,9 @@ class Constants {
   static const String healthFacility = 'Health Facility';
   static const String lgaBoundaryLevel = 'LGA';
   static const String provincialBoundaryLevel = 'Provincia';
-  static const String centralFacility = 'Central Facility';
+  static const String centralFacility = 'Storing Resource';
   static const String stateBoundaryLevel = 'State';
-  static const String stateFacility = 'State Facility';
+  static const String stateFacility = 'Warehouse';
   static const String lgaFacility = 'LGA Facility';
 
   static List<LocalRepository> getLocalRepositories(
@@ -234,8 +236,8 @@ class Constants {
     final appConfigs = await isar.appConfigurations.where().findAll();
     final config = appConfigs.firstOrNull;
 
-    final enableCrashlytics =
-        config?.firebaseConfig?.enableCrashlytics ?? false; // TODO: Remove hardcoding and uncomment above
+    final enableCrashlytics = config?.firebaseConfig?.enableCrashlytics ??
+        false; // TODO: Remove hardcoding and uncomment above
     if (enableCrashlytics) {
       firebase_services.initialize(
         options: DefaultFirebaseOptions.currentPlatform,

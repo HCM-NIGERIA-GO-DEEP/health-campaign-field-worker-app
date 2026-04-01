@@ -1095,7 +1095,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             final moduleName =
                 'hcm-inventory-${context.selectedProject.referenceID}';
             final newModuleName = 'hcm-inventory-CMP-2026-03-30-000308';
-            triggerLocalization(module: newModuleName);
+            triggerLocalization(module: newModuleName, loadOnline: true);
             isTriggerLocalisation = false;
 
             await FlowNavigationUtils.navigateToFlowModule(
@@ -1360,21 +1360,21 @@ class _HomePageState extends LocalizedState<HomePage> {
           },
         ),
       ),
-      i18.home.db: homeShowcaseData.db.buildWith(
-        child: HomeItemCard(
-          icon: Icons.table_chart,
-          label: i18.home.db,
-          onPressed: () async {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => DriftDbViewer(
-                  context.read<LocalSqlDataStore>(),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
+      // i18.home.db: homeShowcaseData.db.buildWith(
+      //   child: HomeItemCard(
+      //     icon: Icons.table_chart,
+      //     label: i18.home.db,
+      //     onPressed: () async {
+      //       Navigator.of(context).push(
+      //         MaterialPageRoute(
+      //           builder: (context) => DriftDbViewer(
+      //             context.read<LocalSqlDataStore>(),
+      //           ),
+      //         ),
+      //       );
+      //     },
+      //   ),
+      // ),
       i18.home.summaryLabel: homeShowcaseData.summaryReport.buildWith(
         child: HomeItemCard(
           icon: Icons.summarize,
@@ -1461,7 +1461,7 @@ class _HomePageState extends LocalizedState<HomePage> {
           homeShowcaseData.hfBeneficiaryReferral.showcaseKey,
       i18.home.manageAttendanceLabel:
           homeShowcaseData.manageAttendance.showcaseKey,
-      i18.home.db: homeShowcaseData.db.showcaseKey,
+      // i18.home.db: homeShowcaseData.db.showcaseKey,
       i18.home.closedHouseHoldLabel:
           homeShowcaseData.closedHouseHold.showcaseKey,
       i18.home.dashboard: homeShowcaseData.dashBoard.showcaseKey,
@@ -1490,7 +1490,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.dashboard,
       // i18.home.beneficiaryIdLabel, // TODO: Uncomment when beneficiary downsync is implemented
       i18.home.dataShare,
-      i18.home.db,
+      // i18.home.db,
       i18.home.summaryLabel,
     ];
 
@@ -1550,7 +1550,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                   .read<LocalizationBloc>()
                   .add(LocalizationEvent.onLoadLocalization(
                     module: module != null && module.isNotEmpty
-                        ? "$module,hcm-common,hcm-login,hcm-scanner,hcm-checklist"
+                        ? "$module,hcm-common,hcm-login,hcm-scanner,hcm-checklist,hcm-stock"
                         : localizationModulesList?.interfaces
                                 .where(
                                     (e) => e.type == Modules.localizationModule)

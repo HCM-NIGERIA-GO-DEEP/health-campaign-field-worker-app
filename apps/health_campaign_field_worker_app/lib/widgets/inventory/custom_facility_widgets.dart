@@ -1,3 +1,5 @@
+import 'package:digit_data_model/blocs/facility/facility.dart';
+import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/project_facility.dart';
 import 'package:digit_flow_builder/blocs/flow_crud_bloc.dart';
 import 'package:digit_forms_engine/blocs/forms/forms.dart';
@@ -9,7 +11,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
+import '../../blocs/project/project.dart';
 import '../../models/entities/roles_type.dart';
+import '../../utils/constants.dart';
 import '../../utils/extensions/extensions.dart';
 import '../localized.dart';
 
@@ -108,6 +112,73 @@ class __FacilityCardContentState extends State<_FacilityCardContent> {
   TextEditingController teamCodeController = TextEditingController();
   bool _initialized = false;
   bool _formControlUpdated = false;
+  bool _requestedFacilitiesLoad = false;
+
+  void _maybeLoadFacilitiesForSelectedProject() {
+    if (_requestedFacilitiesLoad) return;
+
+    FacilityBloc? facilityBloc;
+    try {
+      facilityBloc = context.read<FacilityBloc>();
+    } catch (_) {
+      facilityBloc = null;
+    }
+    if (facilityBloc == null) return;
+
+    String? projectId;
+    try {
+      projectId = context.read<ProjectBloc>().state.selectedProject?.id;
+    } catch (_) {
+      projectId = null;
+    }
+    if (projectId == null || projectId.isEmpty) return;
+
+    _requestedFacilitiesLoad = true;
+    facilityBloc.add(
+      FacilityEvent.loadForProjectId(
+        projectId: projectId,
+        loadAllProjects: false,
+      ),
+    );
+  }
+
+  List<ProjectFacilityModel> _filterProjectFacilitiesUsingFacilityUsage({
+    required List<ProjectFacilityModel> projectFacilities,
+    required String? usage,
+    required bool isToField,
+    required bool isFromField,
+  }) {
+    // We filter *facilities* by usage, then return matching *project facilities*.
+    // If FacilityBloc isn't available / not fetched, keep original behavior.
+    if (usage == null || usage.trim().isEmpty) return projectFacilities;
+
+    List<FacilityModel> facilitiesForProject = const [];
+    try {
+      // Watch so this widget rebuilds when facilities are fetched
+      final state = context.watch<FacilityBloc>().state;
+      if (state is FacilityFetchedState) {
+        facilitiesForProject = state.facilities;
+      }
+    } catch (_) {
+      // FacilityBloc not in tree
+      return projectFacilities;
+    }
+
+    if (facilitiesForProject.isEmpty) {
+      _maybeLoadFacilitiesForSelectedProject();
+      return projectFacilities;
+    }
+
+    final allowedFacilityIds = facilitiesForProject
+        .where((f) => (f.usage ?? '').trim() == usage.trim())
+        .map((f) => f.id)
+        .toSet();
+
+    // Return the matching ProjectFacilityModels
+    return projectFacilities
+        .where((pf) => allowedFacilityIds.contains(pf.facilityId))
+        .toList();
+  }
 
   @override
   void initState() {
@@ -120,6 +191,11 @@ class __FacilityCardContentState extends State<_FacilityCardContent> {
 
     // Initialize from prefilled formData if available
     _initializeFromFormData();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _maybeLoadFacilitiesForSelectedProject();
+    });
   }
 
   void _initializeFromFormData() {
@@ -273,38 +349,65 @@ class __FacilityCardContentState extends State<_FacilityCardContent> {
     // For return flow, prefill facilityFromWhich with logged-in user UUID
     // only for distributors (least level) who don't have a facility assigned
     final isLeastLevel = showDeliveryTeamOption;
-    if (isReturnFlow && isFromField && isLeastLevel && !_initialized) {
+    if (isReturnFlow && isToField && isLeastLevel && !_initialized) {
       final userUuid = context.loggedInUserUuid;
       selectedFacilityId = userUuid;
       _initialized = true;
       _formControlUpdated = false;
     }
 
-    final filteredFacilities = projectFacilities.where((e) {
-      final model = e as ProjectFacilityModel;
-      final facilityLevel = model.additionalFields?.fields
-          .where((f) => f.key == 'facilityLevel')
-          .firstOrNull
-          ?.value;
+    final typedProjectFacilities =
+        projectFacilities.cast<ProjectFacilityModel>().toList();
 
-      // If no facilityLevel (e.g. from ProjectFacilities list), always include
-      if (facilityLevel == null) return true;
+    // You can populate this later (from navigation params / schema / etc.)
+    String? usage = "";
+    bool? showTeamOption = false;
 
-      if (isReturnFlow) {
-        if (isToField) return facilityLevel == 'parent';
-        if (isFromField) return facilityLevel == 'current';
-      } else if (transactionType == 'DISPATCHED' ||
-          transactionType == 'ISSUED') {
-        if (isToField) return facilityLevel == 'child';
-        if (isFromField) return facilityLevel == 'current';
-      } else if (transactionType == 'RECEIVED' ||
-          transactionType == 'RECEIPT') {
-        if (isToField) return facilityLevel == 'current';
-        if (isFromField) return facilityLevel == 'parent';
+    if (stockEntryType == 'ISSUED') {
+      if (isWareHouseMgr) {
+        if (isFromField) {
+          usage = Constants.healthFacility;
+        } else {
+          usage = Constants.stateFacility;
+        }
+      } else if (isDistributor) {
+        usage = "None";
+      } else {
+        if (isToField) {
+          usage = Constants.healthFacility;
+        } else {
+          showTeamOption = true;
+          usage = "None";
+        }
       }
+    } else {
+      if (isWareHouseMgr) {
+        if (isFromField) {
+          usage = Constants.centralFacility;
+        } else {
+          usage = Constants.stateFacility;
+        }
+      } else if (isDistributor) {
+        if (isToField) {
+          usage = "None";
+        } else {
+          usage = Constants.healthFacility;
+        }
+      } else {
+        if (isFromField) {
+          usage = Constants.stateFacility;
+        } else {
+          usage = Constants.healthFacility;
+        }
+      }
+    }
 
-      return true;
-    }).toList();
+    final filteredFacilities = _filterProjectFacilitiesUsingFacilityUsage(
+      projectFacilities: typedProjectFacilities,
+      usage: usage,
+      isToField: isToField,
+      isFromField: isFromField,
+    );
 
     // Build facility list with Delivery Team option if applicable
     var facilities = <DropdownItem>[];
@@ -313,8 +416,16 @@ class __FacilityCardContentState extends State<_FacilityCardContent> {
     // doing DISPATCHED/ISSUED transactions
     final showDeliveryTeam = showDeliveryTeamOption &&
         isToField &&
-        (transactionType == 'DISPATCHED' || transactionType == 'ISSUED');
+        (transactionType == 'DISPATCHED' ||
+            transactionType == 'ISSUED' ||
+            transactionType == 'RECEIVED');
     if (showDeliveryTeam) {
+      facilities.add(const DropdownItem(
+        code: 'Delivery Team',
+        name: 'Delivery Team',
+      ));
+    }
+    if (showTeamOption) {
       facilities.add(const DropdownItem(
         code: 'Delivery Team',
         name: 'Delivery Team',

@@ -151,8 +151,10 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                                 if (selectedBoundary == null) {
                                   return const SizedBox.shrink();
                                 } else {
-                                  LocalizationParams()
-                                      .setCode([selectedBoundary.code!, i18.common.coreCommonSubmit]);
+                                  LocalizationParams().setCode([
+                                    selectedBoundary.code!,
+                                    i18.common.coreCommonSubmit
+                                  ]);
                                   final boundaryName =
                                       AppLocalizations.of(context).translate(
                                     selectedBoundary.code ??
@@ -293,6 +295,9 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                           serviceLocalRepository: ctx.read<
                               LocalRepository<ServiceModel,
                                   ServiceSearchModel>>(),
+                          hfReferralLocalRepository: ctx.read<
+                              LocalRepository<HFReferralModel,
+                                  HFReferralSearchModel>>(),
                         ),
                       ),
                       BlocProvider(
@@ -385,12 +390,12 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
             .isNotEmpty
         : false;
 
-    final isCommunityDistributor = authBloc.state !=
-            const AuthState.unauthenticated()
-        ? context.loggedInUserRoles.any(
-            (role) => role.code == RolesType.communityDistributor.toValue(),
-          )
-        : false;
+    final isCommunityDistributor =
+        authBloc.state != const AuthState.unauthenticated()
+            ? context.loggedInUserRoles.any(
+                (role) => role.code == RolesType.communityDistributor.toValue(),
+              )
+            : false;
 
     return BlocBuilder<AuthBloc, AuthState>(builder: (context, state) {
       return BlocListener<LocalizationBloc, LocalizationState>(
@@ -456,10 +461,10 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                     onPressed: () async {
                       final connectivityResult =
                           await (Connectivity().checkConnectivity());
-                      final isOnline =
-                          connectivityResult.contains(ConnectivityResult.wifi) ||
-                              connectivityResult
-                                  .contains(ConnectivityResult.mobile);
+                      final isOnline = connectivityResult
+                              .contains(ConnectivityResult.wifi) ||
+                          connectivityResult
+                              .contains(ConnectivityResult.mobile);
 
                       if (isOnline) {
                         if (context.mounted) {
@@ -484,9 +489,9 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                                         AppLocalizations.of(context).translate(
                                       i18.common.coreCommonOk,
                                     ),
-                                    onPressed: () =>
-                                        Navigator.of(context, rootNavigator: true)
-                                            .pop(),
+                                    onPressed: () => Navigator.of(context,
+                                            rootNavigator: true)
+                                        .pop(),
                                     type: DigitButtonType.primary,
                                     size: DigitButtonSize.large)
                               ],
