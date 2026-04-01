@@ -44,6 +44,16 @@ class DateWidget extends ResolvedFlowWidget {
     void Function(ActionConfig) onAction,
     ResolvedWidgetContext resolved,
   ) {
+    void triggerAction() async {
+      // Process onAction array from config (if present)
+      if (json['onAction'] != null && json['onAction'] is List) {
+        final actionsList = List<Map<String, dynamic>>.from(json['onAction']);
+        if (actionsList.isNotEmpty) {
+          await resolved.executeActions(actionsList, context);
+        }
+      }
+    }
+
     return WidgetStateContext.reactive(context, (ctx, state) {
       final fieldKey = json['fieldKey'] as String? ?? 'selectedDate';
       final label = json['label'] as String?;
@@ -130,13 +140,7 @@ class DateWidget extends ResolvedFlowWidget {
               ));
 
               // Process onAction array from config (if present)
-              if (json['onAction'] != null && json['onAction'] is List) {
-                final actionsList =
-                    List<Map<String, dynamic>>.from(json['onAction']);
-                if (actionsList.isNotEmpty) {
-                  await resolved.executeActions(actionsList, context);
-                }
-              }
+              triggerAction();
             },
           ),
         ],
