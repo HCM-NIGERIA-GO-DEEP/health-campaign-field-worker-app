@@ -349,65 +349,94 @@ class __FacilityCardContentState extends State<_FacilityCardContent> {
     // For return flow, prefill facilityFromWhich with logged-in user UUID
     // only for distributors (least level) who don't have a facility assigned
     final isLeastLevel = showDeliveryTeamOption;
-    if (isReturnFlow && isToField && isLeastLevel && !_initialized) {
+    if (isReturnFlow && isFromField && isLeastLevel && !_initialized) {
       final userUuid = context.loggedInUserUuid;
       selectedFacilityId = userUuid;
       _initialized = true;
       _formControlUpdated = false;
     }
 
-    final typedProjectFacilities =
-        projectFacilities.cast<ProjectFacilityModel>().toList();
+// todo my changes unblock after test
+    // final typedProjectFacilities =
+    // projectFacilities.cast<ProjectFacilityModel>().toList();
+    //
+    // // You can populate this later (from navigation params / schema / etc.)
+    // String? usage = "";
+    // bool? showTeamOption = false;
+    //
+    // if (stockEntryType == 'ISSUED') {
+    //   if (isWareHouseMgr) {
+    //     if (isFromField) {
+    //       usage = Constants.healthFacility;
+    //     } else {
+    //       usage = Constants.stateFacility;
+    //     }
+    //   } else if (isDistributor) {
+    //     usage = "None";
+    //   } else {
+    //     if (isToField) {
+    //       usage = Constants.healthFacility;
+    //     } else {
+    //       showTeamOption = true;
+    //       usage = "None";
+    //     }
+    //   }
+    // } else {
+    //   if (isWareHouseMgr) {
+    //     if (isFromField) {
+    //       usage = Constants.centralFacility;
+    //     } else {
+    //       usage = Constants.stateFacility;
+    //     }
+    //   } else if (isDistributor) {
+    //     if (isToField) {
+    //       usage = "None";
+    //     } else {
+    //       usage = Constants.healthFacility;
+    //     }
+    //   } else {
+    //     if (isFromField) {
+    //       usage = Constants.stateFacility;
+    //     } else {
+    //       usage = Constants.healthFacility;
+    //     }
+    //   }
+    // }
+    //
+    // final filteredFacilities = _filterProjectFacilitiesUsingFacilityUsage(
+    //   projectFacilities: typedProjectFacilities,
+    //   usage: usage,
+    //   isToField: isToField,
+    //   isFromField: isFromField,
+    // );
 
-    // You can populate this later (from navigation params / schema / etc.)
-    String? usage = "";
-    bool? showTeamOption = false;
 
-    if (stockEntryType == 'ISSUED') {
-      if (isWareHouseMgr) {
-        if (isFromField) {
-          usage = Constants.healthFacility;
-        } else {
-          usage = Constants.stateFacility;
-        }
-      } else if (isDistributor) {
-        usage = "None";
-      } else {
-        if (isToField) {
-          usage = Constants.healthFacility;
-        } else {
-          showTeamOption = true;
-          usage = "None";
-        }
+
+
+
+    final filteredFacilities = projectFacilities.where((e) {
+      final model = e as ProjectFacilityModel;
+      final facilityLevel = model.additionalFields?.fields
+          .where((f) => f.key == 'facilityLevel')
+          .firstOrNull
+          ?.value;
+
+      // If no facilityLevel (e.g. from ProjectFacilities list), always include
+      if (facilityLevel == null) return true;
+
+      if (isReturnFlow) {
+        if (isToField) return facilityLevel == 'parent';
+        if (isFromField) return facilityLevel == 'current';
+      } else if (transactionType == 'DISPATCHED' || transactionType == 'ISSUED') {
+        if (isToField) return facilityLevel == 'child';
+        if (isFromField) return facilityLevel == 'current';
+      } else if (transactionType == 'RECEIVED' || transactionType == 'RECEIPT') {
+        if (isToField) return facilityLevel == 'current';
+        if (isFromField) return facilityLevel == 'parent';
       }
-    } else {
-      if (isWareHouseMgr) {
-        if (isFromField) {
-          usage = Constants.centralFacility;
-        } else {
-          usage = Constants.stateFacility;
-        }
-      } else if (isDistributor) {
-        if (isToField) {
-          usage = "None";
-        } else {
-          usage = Constants.healthFacility;
-        }
-      } else {
-        if (isFromField) {
-          usage = Constants.stateFacility;
-        } else {
-          usage = Constants.healthFacility;
-        }
-      }
-    }
 
-    final filteredFacilities = _filterProjectFacilitiesUsingFacilityUsage(
-      projectFacilities: typedProjectFacilities,
-      usage: usage,
-      isToField: isToField,
-      isFromField: isFromField,
-    );
+      return true;
+    }).toList();
 
     // Build facility list with Delivery Team option if applicable
     var facilities = <DropdownItem>[];

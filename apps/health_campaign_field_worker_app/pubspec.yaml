@@ -81,8 +81,9 @@ dependencies:
   digit_forms_engine: ^0.0.1
   digit_flow_builder: ^0.0.1
   jailbreak_root_detection: ^1.1.6
+  firebase_messaging: ^14.6.5
   # registration_delivery: 1.0.7+1
-  
+
 
 dev_dependencies:
   flutter_test:

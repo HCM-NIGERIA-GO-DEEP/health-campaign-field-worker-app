@@ -215,6 +215,14 @@ class Common {
   String get qrInventory => 'QR_INVENTORY';
 
   String get qrAttendance => 'QR_ATTENDANCE';
+
+  String get stockDataFound => 'STOCK_DATA_FOUND';
+
+  String get stockNoDataFound => 'STOCK_NO_DATA_FOUND';
+
+  String get stockDataFoundContent => 'STOCK_DATA_FOUND_CONTENT';
+
+  String get stockNoDataFoundContent => 'STOCK_NO_DATA_FOUND_CONTENT';
 }
 
 class HomeShowcase {
@@ -223,7 +231,7 @@ class HomeShowcase {
   String get summaryReport {
     return 'HOME_SHOWCASE_SUMMARY_REPORT_LABLE';
   }
-  
+
   String get distributorProgressBar {
     return 'DISTRIBUTOR_HOME_SHOWCASE_PROGRESS_BAR';
   }
@@ -246,6 +254,10 @@ class HomeShowcase {
 
   String get distributorSyncData {
     return 'DISTRIBUTOR_HOME_SHOWCASE_SYNC_DATA';
+  }
+
+  String get stockSyncData {
+    return 'DISTRIBUTOR_HOME_SHOWCASE_STOCK_SYNC_DATA';
   }
 
   String get warehouseManagerManageStock {
@@ -632,6 +644,8 @@ class Home {
 
   String get syncDataLabel => 'HOME_SYNC_DATA_LABEL';
 
+  String get stockSyncDataLabel => 'HOME_STOCK_SYNC_DATA_LABEL';
+
   String get callbackLabel => 'HOME_CALL_BACK_LABEL';
 
   String get fileComplaint => 'HOME_FILE_COMPLAINT';
@@ -669,6 +683,10 @@ class Home {
   String get closedHouseHoldLabel => 'HOME_CLOSE_HOUSEHOLD_LABEL';
 
   String get clfLabel => "HOME_COMMUNAL_LIVING_FACILITIES_LABEL";
+
+  String get stockBalanceLabel => 'HOME_STOCK_BALANCE_LABEL';
+
+  String get faceRegistrationLabel => 'HOME_FACE_REGISTRATION_LABEL';
 
   String get summaryLabel => 'HOME_SUMMARY_LABEL';
 }
