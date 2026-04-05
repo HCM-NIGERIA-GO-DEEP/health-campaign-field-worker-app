@@ -86,11 +86,8 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                   await overviewBloc.stream.firstWhere((element) =>
                       element.loading == false &&
                       element.householdMemberWrapper.household != null);
-                  HouseholdMemberWrapper memberWrapper =
-                      overviewBloc.state.householdMemberWrapper;
-                  final route = router.parent() as StackRouter;
-                  // route.popUntilRouteWithName(SearchBeneficiaryRoute.name);
-                  // route.push(BeneficiaryWrapperRoute(wrapper: memberWrapper));
+                  if (!context.mounted) return;
+                  await router.maybePop();
                 }
               },
             );

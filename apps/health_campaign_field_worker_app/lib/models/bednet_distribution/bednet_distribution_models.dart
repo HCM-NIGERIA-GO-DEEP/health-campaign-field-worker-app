@@ -159,6 +159,20 @@ extension BednetHouseholdFields on HouseholdModel {
   }
 }
 
+/// Registered head name if present; otherwise school head from [HouseholdModel.additionalFields].
+String bednetHouseholdHeadDisplayName({
+  HouseholdModel? household,
+  IndividualModel? headOfHousehold,
+}) {
+  final given = headOfHousehold?.name?.givenName?.trim();
+  if (given != null && given.isNotEmpty) return given;
+  if (household != null) {
+    final schoolHead = household.bednetSchoolHead.trim();
+    if (schoolHead.isNotEmpty && schoolHead != 'N/A') return schoolHead;
+  }
+  return '';
+}
+
 /// Placeholder schools when the local DB has no school households yet (replace
 /// with API-backed list when available).
 List<HouseholdModel> bednetDummySchoolHouseholds() {

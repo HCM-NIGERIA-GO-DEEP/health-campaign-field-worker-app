@@ -18,6 +18,7 @@ import 'package:digit_ui_components/widgets/scrollable_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/delivery_intervention/deliver_intervention.dart';
+import '../../../models/bednet_distribution/bednet_distribution_models.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/back_navigation_help_header.dart';
@@ -26,6 +27,7 @@ import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/st
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/table_card/table_card.dart';
 import 'package:survey_form/survey_form.dart';
 
+import '../../../router/app_router.dart';
 import '../../../blocs/registration_deliver/household_overview/household_overview.dart';
 import '../../../blocs/registration_deliver/search_households/search_bloc_common_wrapper.dart';
 import '../../../blocs/registration_deliver/search_households/search_households.dart';
@@ -504,29 +506,60 @@ class _HouseholdOverviewPageState
                                               element: {
                                                 localizations.translate(i18
                                                     .householdOverView
-                                                    .householdOverViewHouseholdHeadNameLabel): state
+                                                    .householdOverViewHouseholdHeadNameLabel): () {
+                                                  final headName =
+                                                      bednetHouseholdHeadDisplayName(
+                                                    household: state
                                                         .householdMemberWrapper
-                                                        .headOfHousehold
-                                                        ?.name
-                                                        ?.givenName ??
-                                                    localizations.translate(i18
-                                                        .common.coreCommonNA),
+                                                        .household,
+                                                    headOfHousehold: state
+                                                        .householdMemberWrapper
+                                                        .headOfHousehold,
+                                                  );
+                                                  return headName.isNotEmpty
+                                                      ? headName
+                                                      : localizations.translate(
+                                                          i18.common.coreCommonNA,
+                                                        );
+                                                }(),
                                                 localizations.translate(
                                                   i18.householdLocation
                                                       .administrationAreaFormLabel,
-                                                ): localizations.translate(state
-                                                        .householdMemberWrapper
-                                                        .headOfHousehold
-                                                        ?.address
-                                                        ?.first
-                                                        .locality
-                                                        ?.code ??
-                                                    i18.common.coreCommonNA),
+                                                ): () {
+                                                  final localityCode = state
+                                                      .householdMemberWrapper
+                                                      .headOfHousehold
+                                                      ?.address
+                                                      ?.first
+                                                      .locality
+                                                      ?.code;
+                                                  if (localityCode != null &&
+                                                      localityCode.isNotEmpty) {
+                                                    return localizations
+                                                        .translate(localityCode);
+                                                  }
+                                                  final community = state
+                                                      .householdMemberWrapper
+                                                      .household
+                                                      ?.bednetCommunity
+                                                      .trim();
+                                                  if (community != null &&
+                                                      community.isNotEmpty &&
+                                                      community != '—') {
+                                                    return community;
+                                                  }
+                                                  return localizations.translate(
+                                                    i18.common.coreCommonNA,
+                                                  );
+                                                }(),
                                                 localizations.translate(
                                                   i18.deliverIntervention
                                                       .memberCountText,
                                                 ): state.householdMemberWrapper
-                                                    .household?.memberCount,
+                                                        .household?.memberCount ??
+                                                    state.householdMemberWrapper
+                                                        .household
+                                                        ?.bednetPupilCount,
                                                 if (shouldShowStatus)
                                                   localizations.translate(i18
                                                           .beneficiaryDetails
@@ -650,11 +683,17 @@ class _HouseholdOverviewPageState
                                               [])
                                           .map(
                                         (e) {
-                                          final isHead = state
-                                                  .householdMemberWrapper
-                                                  .headOfHousehold
-                                                  ?.clientReferenceId ==
-                                              e.clientReferenceId;
+                                          final wrapper =
+                                              state.householdMemberWrapper;
+                                          final isHead = wrapper
+                                                      .headOfHousehold
+                                                      ?.clientReferenceId ==
+                                                  e.clientReferenceId ||
+                                              _isBednetSchoolHeadMember(
+                                                e,
+                                                wrapper.household,
+                                                wrapper.headOfHousehold,
+                                              );
                                           final projectBeneficiaryId = state
                                               .householdMemberWrapper
                                               .projectBeneficiaries
@@ -771,9 +810,6 @@ class _HouseholdOverviewPageState
                                             tasks: taskData,
                                             sideEffects: sideEffectData,
                                             editMemberAction: () async {
-                                              final bloc = ctx.read<
-                                                  HouseholdOverviewBloc>();
-
                                               Navigator.of(
                                                 context,
                                                 rootNavigator: true,
@@ -785,52 +821,38 @@ class _HouseholdOverviewPageState
                                                 return;
                                               }
 
-                                              final projectId =
-                                                  RegistrationDeliverySingleton()
-                                                      .projectId!;
-                                              bloc.add(
-                                                HouseholdOverviewReloadEvent(
-                                                  projectId: projectId,
-                                                  projectBeneficiaryType:
-                                                      beneficiaryType,
+                                              final projectBeneficiaryModel =
+                                                  state
+                                                      .householdMemberWrapper
+                                                      .projectBeneficiaries
+                                                      ?.firstWhereOrNull(
+                                                (element) =>
+                                                    element
+                                                        .beneficiaryClientReferenceId ==
+                                                    (RegistrationDeliverySingleton()
+                                                                .beneficiaryType ==
+                                                            BeneficiaryType
+                                                                .individual
+                                                        ? e.clientReferenceId
+                                                        : state
+                                                            .householdMemberWrapper
+                                                            .household
+                                                            ?.clientReferenceId),
+                                              );
+
+                                              await context.router.push(
+                                                BednetIndividualDetailsWrapperRoute(
+                                                  householdModel: state
+                                                      .householdMemberWrapper
+                                                      .household!,
+                                                  addressModel: address.first,
+                                                  individualModel: e,
+                                                  projectBeneficiaryModel:
+                                                      projectBeneficiaryModel,
+                                                  isHeadOfHousehold: isHead,
                                                 ),
                                               );
 
-                                              // await context.router.root.push(
-                                              //   BeneficiaryRegistrationWrapperRoute(
-                                              //     initialState:
-                                              //         BeneficiaryRegistrationEditIndividualState(
-                                              //       individualModel: e,
-                                              //       householdModel: state
-                                              //           .householdMemberWrapper
-                                              //           .household!,
-                                              //       addressModel: address.first,
-                                              //       projectBeneficiaryModel: state
-                                              //           .householdMemberWrapper
-                                              //           .projectBeneficiaries
-                                              //           ?.firstWhereOrNull(
-                                              //         (element) =>
-                                              //             element
-                                              //                 .beneficiaryClientReferenceId ==
-                                              //             (RegistrationDeliverySingleton()
-                                              //                         .beneficiaryType ==
-                                              //                     BeneficiaryType
-                                              //                         .individual
-                                              //                 ? e
-                                              //                     .clientReferenceId
-                                              //                 : state
-                                              //                     .householdMemberWrapper
-                                              //                     .household
-                                              //                     ?.clientReferenceId),
-                                              //       ),
-                                              //     ),
-                                              //     children: [
-                                              //       IndividualDetailsRoute(
-                                              //         isHeadOfHousehold: isHead,
-                                              //       ),
-                                              //     ],
-                                              //   ),
-                                              // );
                                               callReloadEvent(
                                                   offset: 0, limit: 10);
                                             },
@@ -1013,29 +1035,16 @@ class _HouseholdOverviewPageState
   }
 
   addIndividual(BuildContext context, HouseholdModel household) async {
-    final bloc = context.read<HouseholdOverviewBloc>();
-
     final address = household.address;
 
     if (address == null) return;
-    bloc.add(
-      HouseholdOverviewReloadEvent(
-        projectId: RegistrationDeliverySingleton().projectId!,
-        projectBeneficiaryType:
-            RegistrationDeliverySingleton().beneficiaryType!,
+
+    await context.router.push(
+      BednetIndividualDetailsWrapperRoute(
+        householdModel: household,
+        addressModel: address,
       ),
     );
-    // await context.router.push(
-    //   BeneficiaryRegistrationWrapperRoute(
-    //     initialState: BeneficiaryRegistrationAddMemberState(
-    //       addressModel: address,
-    //       householdModel: household,
-    //     ),
-    //     children: [
-    //       IndividualDetailsRoute(),
-    //     ],
-    //   ),
-    // );
   }
 
   bool isOutsideProjectDateRange() {
@@ -1189,6 +1198,23 @@ class _HouseholdOverviewPageState
     } else {
       return selectedFilter;
     }
+  }
+
+  /// When there is no DB head (e.g. school household), match [bednetSchoolHead] to a member's given name.
+  bool _isBednetSchoolHeadMember(
+    IndividualModel member,
+    HouseholdModel? household,
+    IndividualModel? headOfHousehold,
+  ) {
+    if (headOfHousehold != null) return false;
+    if (household == null) return false;
+    final schoolHead = household.bednetSchoolHead.trim();
+    if (schoolHead.isEmpty || schoolHead == 'N/A') return false;
+    final given = member.name?.givenName?.trim();
+    if (given == null || given.isEmpty) return false;
+    final sh = schoolHead.toLowerCase();
+    final g = given.toLowerCase();
+    return sh == g || sh.startsWith('$g ');
   }
 
   getFilters() {

@@ -21,6 +21,7 @@ import '../pages/authenticated.dart';
 import '../pages/bednet_distribution/bednet_distribution_success.dart';
 import '../pages/bednet_distribution/bednet_distribution_wrapper.dart';
 import '../pages/bednet_distribution/bednet_household_overview_wrapper.dart';
+import '../pages/bednet_distribution/bednet_individual_details_wrapper.dart';
 import '../pages/bednet_distribution/school_details.dart';
 import '../pages/bednet_distribution/select_school.dart';
 import '../pages/boundary_selection.dart';
@@ -138,11 +139,11 @@ class AppRouter extends _$AppRouter {
                   path: '',
                   initial: true,
                 ),
+                AutoRoute(
+                  page: BednetIndividualDetailsWrapperRoute.page,
+                  path: 'individual-details',
+                ),
               ],
-            ),
-            AutoRoute(
-              page: IndividualDetailsRoute.page,
-              path: 'individual-details',
             ),
             AutoRoute(
               page: BednetDistributionSuccessRoute.page,

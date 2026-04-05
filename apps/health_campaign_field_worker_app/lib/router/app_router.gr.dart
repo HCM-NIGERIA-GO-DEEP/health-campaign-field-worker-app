@@ -54,6 +54,21 @@ abstract class _$AppRouter extends RootStackRouter {
         child: WrappedRoute(child: const BednetHouseholdOverviewWrapperPage()),
       );
     },
+    BednetIndividualDetailsWrapperRoute.name: (routeData) {
+      final args = routeData.argsAs<BednetIndividualDetailsWrapperRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: WrappedRoute(
+            child: BednetIndividualDetailsWrapperPage(
+          key: args.key,
+          householdModel: args.householdModel,
+          addressModel: args.addressModel,
+          individualModel: args.individualModel,
+          projectBeneficiaryModel: args.projectBeneficiaryModel,
+          isHeadOfHousehold: args.isHeadOfHousehold,
+        )),
+      );
+    },
     BeneficiariesReportRoute.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
@@ -498,6 +513,65 @@ class BednetHouseholdOverviewWrapperRoute extends PageRouteInfo<void> {
   static const String name = 'BednetHouseholdOverviewWrapperRoute';
 
   static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
+/// [BednetIndividualDetailsWrapperPage]
+class BednetIndividualDetailsWrapperRoute
+    extends PageRouteInfo<BednetIndividualDetailsWrapperRouteArgs> {
+  BednetIndividualDetailsWrapperRoute({
+    Key? key,
+    required HouseholdModel householdModel,
+    required AddressModel addressModel,
+    IndividualModel? individualModel,
+    ProjectBeneficiaryModel? projectBeneficiaryModel,
+    bool isHeadOfHousehold = false,
+    List<PageRouteInfo>? children,
+  }) : super(
+          BednetIndividualDetailsWrapperRoute.name,
+          args: BednetIndividualDetailsWrapperRouteArgs(
+            key: key,
+            householdModel: householdModel,
+            addressModel: addressModel,
+            individualModel: individualModel,
+            projectBeneficiaryModel: projectBeneficiaryModel,
+            isHeadOfHousehold: isHeadOfHousehold,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'BednetIndividualDetailsWrapperRoute';
+
+  static const PageInfo<BednetIndividualDetailsWrapperRouteArgs> page =
+      PageInfo<BednetIndividualDetailsWrapperRouteArgs>(name);
+}
+
+class BednetIndividualDetailsWrapperRouteArgs {
+  const BednetIndividualDetailsWrapperRouteArgs({
+    this.key,
+    required this.householdModel,
+    required this.addressModel,
+    this.individualModel,
+    this.projectBeneficiaryModel,
+    this.isHeadOfHousehold = false,
+  });
+
+  final Key? key;
+
+  final HouseholdModel householdModel;
+
+  final AddressModel addressModel;
+
+  final IndividualModel? individualModel;
+
+  final ProjectBeneficiaryModel? projectBeneficiaryModel;
+
+  final bool isHeadOfHousehold;
+
+  @override
+  String toString() {
+    return 'BednetIndividualDetailsWrapperRouteArgs{key: $key, householdModel: $householdModel, addressModel: $addressModel, individualModel: $individualModel, projectBeneficiaryModel: $projectBeneficiaryModel, isHeadOfHousehold: $isHeadOfHousehold}';
+  }
 }
 
 /// generated route for
