@@ -17,6 +17,10 @@ import 'package:transit_post/router/transit_post_router.dart';
 import '../blocs/localization/app_localization.dart';
 import '../pages/acknowledgement.dart';
 import '../pages/authenticated.dart';
+import '../pages/bednet_distribution/bednet_distribution_success.dart';
+import '../pages/bednet_distribution/bednet_distribution_wrapper.dart';
+import '../pages/bednet_distribution/school_details.dart';
+import '../pages/bednet_distribution/select_school.dart';
 import '../pages/boundary_selection.dart';
 import '../pages/home.dart';
 import '../pages/language_selection.dart';
@@ -94,6 +98,26 @@ class AppRouter extends _$AppRouter {
         AutoRoute(
           page: UserDashboardRoute.page,
           path: 'dashboard',
+        ),
+
+        AutoRoute(
+          page: BednetDistributionWrapperRoute.page,
+          path: 'bednet-distribution',
+          children: [
+            AutoRoute(
+              page: SelectSchoolRoute.page,
+              path: '',
+              initial: true,
+            ),
+            AutoRoute(
+              page: SchoolDetailsRoute.page,
+              path: 'school-details',
+            ),
+            AutoRoute(
+              page: BednetDistributionSuccessRoute.page,
+              path: 'success',
+            ),
+          ],
         ),
 
         AutoRoute(

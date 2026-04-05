@@ -19,6 +19,7 @@ const householdLocation = HouseholdLocation();
 const searchBeneficiary = SearchBeneficiary();
 const individualDetails = IndividualDetails();
 const beneficiaryDetails = BeneficiaryDetails();
+const studentsList = StudentsList();
 
 const selectStockShowcase = SelectStockShowcase();
 const warehouseDetailsShowcase = WarehouseDetailsShowcase();
@@ -1214,6 +1215,30 @@ class BeneficiaryDetails {
       'INSUFFICIENT_STORAGE_WARNING_CONTENT';
 
   String get recordCycle => 'BENEFICIARY_DETAILS_RECORD_CYCLE';
+}
+
+class StudentsList {
+  const StudentsList();
+
+  String get title => 'STUDENTS_LIST_TITLE';
+
+  String get searchHint => 'STUDENTS_LIST_SEARCH_HINT';
+
+  String get sort => 'STUDENTS_LIST_SORT';
+
+  String get schoolHead => 'STUDENTS_LIST_SCHOOL_HEAD';
+
+  String get delivered => 'STUDENTS_LIST_DELIVERED';
+
+  String get notDelivered => 'STUDENTS_LIST_NOT_DELIVERED';
+
+  String get notVisited => 'STUDENTS_LIST_NOT_VISITED';
+
+  String get recordDelivery => 'STUDENTS_LIST_RECORD_DELIVERY';
+
+  String get unableToDeliver => 'STUDENTS_LIST_UNABLE_TO_DELIVER';
+
+  String get addStudent => 'STUDENTS_LIST_ADD_STUDENT';
 }
 
 class PrivacyPolicy {

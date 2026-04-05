@@ -13,6 +13,8 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/data_model.init.dart' as data_model_mappers;
 import 'package:digit_data_model/models/entities/hf_referral.dart';
+import 'package:digit_data_model/models/entities/household_type.dart';
+import 'package:digit_data_model/models/templates/template_config.dart';
 import 'package:digit_dss/digit_dss.dart' as dss_mappers;
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
@@ -534,6 +536,185 @@ initializeAllMappers() async {
     Future(() => survey_form_mappers.initializeMappers())
   ];
   await Future.wait(initializations);
+}
+
+// create a singleton class for RegistrationDelivery package where set data and get data methods are defined
+
+class RegistrationDeliverySingleton {
+  static final RegistrationDeliverySingleton _singleton =
+      RegistrationDeliverySingleton._internal();
+
+  factory RegistrationDeliverySingleton() {
+    return _singleton;
+  }
+
+  RegistrationDeliverySingleton._internal();
+
+  String? _tenantId;
+  String? _loggedInUserUuid;
+  UserModel? _loggedInUser;
+  double? _maxRadius;
+  String? _projectId;
+  BeneficiaryType? _beneficiaryType;
+  ProjectTypeModel? _projectType;
+  ProjectModel? _selectedProject;
+  BoundaryModel? _boundaryModel;
+  PersistenceConfiguration? _persistenceConfiguration = PersistenceConfiguration
+      .offlineFirst; // Default to offline first persistence configuration
+  List<String>? _genderOptions;
+  List<String>? _idTypeOptions;
+  List<String>? _householdDeletionReasonOptions;
+  List<String>? _householdMemberDeletionReasonOptions;
+  List<String>? _deliveryCommentOptions;
+  List<String>? _symptomsTypes;
+  List<String>? _searchHouseHoldFilter, _searchCLFFilters;
+  List<String>? _referralReasons;
+  List<String>? _houseStructureTypes;
+  List<String>? _refusalReasons;
+  HouseholdType? _householdType;
+  int? _beneficiaryIdMinCount;
+  int? _beneficiaryIdBatchSize;
+  Map<String, TemplateConfig>? _templateConfigs;
+  String? _registrationConfig;
+  String? _deliveryConfig;
+  int? _stockCount;
+
+  void setBoundary({required BoundaryModel boundary}) {
+    _boundaryModel = boundary;
+  }
+
+  void setPersistenceConfiguration(
+      {required PersistenceConfiguration persistenceConfiguration}) {
+    _persistenceConfiguration = persistenceConfiguration;
+  }
+
+  void setInitialData({
+    required String loggedInUserUuid,
+    required double maxRadius,
+    required String projectId,
+    required BeneficiaryType selectedBeneficiaryType,
+    required ProjectTypeModel? projectType,
+    required ProjectModel selectedProject,
+    required List<String>? genderOptions,
+    required List<String>? idTypeOptions,
+    required List<String>? householdDeletionReasonOptions,
+    required List<String>? householdMemberDeletionReasonOptions,
+    required List<String>? deliveryCommentOptions,
+    required List<String>? symptomsTypes,
+    required List<String>? searchHouseHoldFilter,
+    required List<String>? searchCLFFilters,
+    required List<String>? referralReasons,
+    required List<String>? houseStructureTypes,
+    required List<String>? refusalReasons,
+    required UserModel? loggedInUser,
+    required int? beneficiaryIdMinCount,
+    required int? beneficiaryIdBatchSize,
+  }) {
+    _loggedInUserUuid = loggedInUserUuid;
+    _maxRadius = maxRadius;
+    _projectId = projectId;
+    _beneficiaryType = selectedBeneficiaryType;
+    _projectType = projectType;
+    _selectedProject = selectedProject;
+    _genderOptions = genderOptions;
+    _idTypeOptions = idTypeOptions;
+    _householdDeletionReasonOptions = householdDeletionReasonOptions;
+    _householdMemberDeletionReasonOptions =
+        householdMemberDeletionReasonOptions;
+    _deliveryCommentOptions = deliveryCommentOptions;
+    _symptomsTypes = symptomsTypes;
+    _searchHouseHoldFilter = searchHouseHoldFilter;
+    _searchCLFFilters = searchCLFFilters;
+    _referralReasons = referralReasons;
+    _houseStructureTypes = houseStructureTypes;
+    _refusalReasons = refusalReasons;
+    _loggedInUser = loggedInUser;
+    _beneficiaryIdMinCount = beneficiaryIdMinCount;
+    _beneficiaryIdBatchSize = beneficiaryIdBatchSize;
+  }
+
+  void setTenantId(String tenantId) {
+    _tenantId = tenantId;
+  }
+
+  void setHouseholdType(HouseholdType? householdType) {
+    _householdType = householdType;
+  }
+
+  void setStockCount(int stockCount) {
+    _stockCount = stockCount;
+  }
+
+  void setTemplateConfigs(Map<String, TemplateConfig> templateConfigs) {
+    _templateConfigs = templateConfigs;
+  }
+
+  void setRegistrationConfig(String registrationConfig) {
+    _registrationConfig = registrationConfig;
+  }
+
+  void setDeliveryConfig(String deliveryConfig) {
+    _deliveryConfig = deliveryConfig;
+  }
+
+  String? get tenantId => _tenantId;
+
+  String? get loggedInUserUuid => _loggedInUserUuid;
+
+  double? get maxRadius => _maxRadius;
+
+  String? get projectId => _projectId;
+
+  BeneficiaryType? get beneficiaryType => _beneficiaryType;
+
+  ProjectTypeModel? get projectType => _projectType;
+
+  ProjectModel? get selectedProject => _selectedProject;
+
+  BoundaryModel? get boundary => _boundaryModel;
+
+  PersistenceConfiguration? get persistenceConfiguration =>
+      _persistenceConfiguration;
+
+  List<String>? get genderOptions => _genderOptions;
+
+  List<String>? get idTypeOptions => _idTypeOptions;
+
+  List<String>? get householdDeletionReasonOptions =>
+      _householdDeletionReasonOptions;
+
+  List<String>? get householdMemberDeletionReasonOptions =>
+      _householdMemberDeletionReasonOptions;
+
+  List<String>? get deliveryCommentOptions => _deliveryCommentOptions;
+
+  List<String>? get symptomsTypes => _symptomsTypes;
+
+  List<String>? get searchHouseHoldFilter => _searchHouseHoldFilter;
+
+  List<String>? get searchCLFFilters => _searchCLFFilters;
+
+  List<String>? get referralReasons => _referralReasons;
+
+  List<String>? get houseStructureTypes => _houseStructureTypes;
+
+  List<String>? get refusalReasons => _refusalReasons;
+
+  UserModel? get loggedInUser => _loggedInUser;
+
+  HouseholdType? get householdType => _householdType;
+
+  int? get beneficiaryIdMinCount => _beneficiaryIdMinCount;
+
+  int? get beneficiaryIdBatchSize => _beneficiaryIdBatchSize;
+
+  Map<String, TemplateConfig>? get templateConfigs => _templateConfigs;
+
+  String? get regisrationConfig => _registrationConfig;
+
+  String? get deliveryConfig => _deliveryConfig;
+
+  int? get stockCount => _stockCount;
 }
 
 void attemptSyncUp(BuildContext context) async {

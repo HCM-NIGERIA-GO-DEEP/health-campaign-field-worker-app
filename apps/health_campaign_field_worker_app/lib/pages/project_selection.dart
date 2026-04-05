@@ -10,12 +10,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:isar/isar.dart';
 
 import '../blocs/auth/auth.dart';
-import '../blocs/localization/localization.dart';
 import '../blocs/project/project.dart';
 import '../data/local_store/app_shared_preferences.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../router/app_router.dart';
-import '../utils/environment_config.dart';
 import '../utils/i18_key_constants.dart' as i18;
 import '../utils/utils.dart';
 import '../widgets/header/back_navigation_help_header.dart';
@@ -245,7 +243,7 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
       context: context,
       locale: AppSharedPreferences().getSelectedLocale!,
       moduleKey:
-          'INVENTORY,REGISTRATION,COMPLAINTS,HFREFERRAL,CLOSEHOUSEHOLD,COMPLAINTS,STOCKREPORTS,STOCKRECONCILIATION,PERMISSIONHANDLER,CHECKLIST',
+          'INVENTORY,REGISTRATION,COMPLAINTS,HFREFERRAL,CLOSEHOUSEHOLD,COMPLAINTS,STOCKREPORTS,STOCKRECONCILIATION,CHECKLIST',
       /// TODO: NEED TO MOVE CONSTANT FILE
       projectReferenceId: context.selectedProject.referenceID ?? '',
     );
@@ -255,18 +253,9 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
     try {
       await boundaryBloc.stream
           .firstWhere((element) => element.boundaryList.isNotEmpty);
-      context
-          .read<LocalizationBloc>()
-          .add(LocalizationEvent.onLoadLocalization(
-        module: 'hcm-permissionhandler-${context.selectedProject.referenceID}',
-        tenantId: envConfig.variables.tenantId,
-        locale: AppSharedPreferences()
-            .getSelectedLocale!,
-        path: Constants.localizationApiPath,
-      ));
       if (mounted) {
         context.router.replaceAll([
-          const PermissionsRoute(),
+          BoundarySelectionRoute(),
         ]);
       }
     } catch (e) {

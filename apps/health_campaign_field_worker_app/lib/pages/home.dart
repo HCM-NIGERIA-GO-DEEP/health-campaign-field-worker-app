@@ -872,165 +872,176 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.beneficiaryLabel:
           homeShowcaseData.distributorBeneficiaries.buildWith(
         child: HomeItemCard(
-          icon: Icons.all_inbox,
+          icon: Icons.house,
           label: i18.home.beneficiaryLabel,
           onPressed: () async {
-            // if (isTriggerLocalisation) {
-            final moduleName =
-                'hcm-registration-${context.selectedProject.referenceID}';
-            triggerLocalization(module: moduleName);
-            isTriggerLocalisation = false;
-            // }
-
-            final prefs = await SharedPreferences.getInstance();
-            final schemaJsonRaw = prefs.getString('app_config_schemas');
-
-            FlowBuilderSingleton().setPersistenceConfiguration(
-                persistenceConfiguration:
-                    PersistenceConfiguration.offlineFirst);
-            WidgetRegistry.initialize();
-            CrudBlocSingleton().setData(
-              crudService: DigitCrudService(
-                context: context,
-                relationshipMap: [
-                  const RelationshipMapping(
-                      from: 'name',
-                      to: 'individual',
-                      localKey: 'individualClientReferenceId',
-                      foreignKey: 'clientReferenceId'),
-                  const RelationshipMapping(
-                      from: 'identifier',
-                      to: 'individual',
-                      localKey: 'individualClientReferenceId',
-                      foreignKey: 'clientReferenceId'),
-                  const RelationshipMapping(
-                      from: 'householdMember',
-                      to: 'individual',
-                      localKey: 'individualClientReferenceId',
-                      foreignKey: 'clientReferenceId'),
-                  const RelationshipMapping(
-                      from: 'address',
-                      to: 'household',
-                      localKey: 'relatedClientReferenceId',
-                      foreignKey: 'clientReferenceId'),
-                  const RelationshipMapping(
-                      from: 'householdMember',
-                      to: 'household',
-                      localKey: 'householdClientReferenceId',
-                      foreignKey: 'clientReferenceId'),
-                  const RelationshipMapping(
-                      from: 'projectBeneficiary',
-                      to: 'task',
-                      localKey: 'clientReferenceId',
-                      foreignKey: 'projectBeneficiaryClientReferenceId'),
-
-                  const RelationshipMapping(
-                      from: 'identifier',
-                      to: 'hFReferral',
-                      localKey: 'identifierId',
-                      foreignKey: 'beneficiaryId'),
-
-                  // Conditional mapping
-                  if (FlowBuilderSingleton().beneficiaryType ==
-                      BeneficiaryType.household)
-                    const RelationshipMapping(
-                      from: 'projectBeneficiary',
-                      to: 'household',
-                      localKey: 'beneficiaryClientReferenceId',
-                      foreignKey: 'clientReferenceId',
-                    )
-                  else
-                    const RelationshipMapping(
-                      from: 'projectBeneficiary',
-                      to: 'individual',
-                      localKey: 'beneficiaryClientReferenceId',
-                      foreignKey: 'clientReferenceId',
-                    ),
-                ],
-                nestedModelMappings: [
-                  const NestedModelMapping(
-                    rootModel: 'individual',
-                    fields: {
-                      'name': NestedFieldMapping(
-                        table: 'name',
-                        localKey: 'clientReferenceId',
-                        foreignKey: 'individualClientReferenceId',
-                        type: NestedMappingType.one,
-                      ),
-                      'address': NestedFieldMapping(
-                        table: 'address',
-                        localKey: 'clientReferenceId',
-                        foreignKey: 'relatedClientReferenceId',
-                        type: NestedMappingType.many,
-                      ),
-                      'identifiers': NestedFieldMapping(
-                        table: 'identifier',
-                        localKey: 'clientReferenceId',
-                        foreignKey: 'individualClientReferenceId',
-                        type: NestedMappingType.many,
-                      ),
-                    },
-                  ),
-                  const NestedModelMapping(
-                    rootModel: 'household',
-                    fields: {
-                      'address': NestedFieldMapping(
-                        table: 'address',
-                        localKey: 'clientReferenceId',
-                        foreignKey: 'relatedClientReferenceId',
-                        type: NestedMappingType.one,
-                      ),
-                    },
-                  ),
-                  const NestedModelMapping(
-                    rootModel: 'task',
-                    fields: {
-                      'resource': NestedFieldMapping(
-                        table: 'resource',
-                        localKey: 'taskclientReferenceId',
-                        foreignKey: 'clientReferenceId',
-                        type: NestedMappingType.many,
-                      ),
-                    },
-                  ),
-                ],
-                searchEntityRepository: context.read<SearchEntityRepository>(),
-              ),
-              dynamicEntityModelListener: EntityModelMapMapper(),
-            );
-            try {
-              if (schemaJsonRaw != null) {
-                final allSchemas =
-                    json.decode(schemaJsonRaw) as Map<String, dynamic>;
-                final data = allSchemas['REGISTRATION'];
-
-                final registrationDeliveryData = data?['data'];
-                final flowsData =
-                    (registrationDeliveryData['flows'] as List<dynamic>?)
-                            ?.map((e) => Map<String, dynamic>.from(e as Map))
-                            .toList() ??
-                        [];
-                FlowRegistry.setConfig(flowsData);
-                NavigationRegistry.setupNavigation(context);
-
-                context.router.push(
-                  FlowBuilderHomeRoute(
-                      pageName: registrationDeliveryData["initialPage"]),
-                );
-              } else {
-                FlowRegistry.setConfig(
-                    sampleFlows["flows"] as List<Map<String, dynamic>>);
-                NavigationRegistry.setupNavigation(context);
-                context.router.push(
-                  FlowBuilderHomeRoute(pageName: sampleFlows["initialPage"]),
-                );
-              }
-            } catch (e) {
-              debugPrint('error $e');
-            }
+            context.router.push(const BednetDistributionWrapperRoute());
           },
         ),
       ),
+
+      // i18.home.beneficiaryLabel:
+      //     homeShowcaseData.distributorBeneficiaries.buildWith(
+      //   child: HomeItemCard(
+      //     icon: Icons.all_inbox,
+      //     label: i18.home.beneficiaryLabel,
+      //     onPressed: () async {
+      //       // if (isTriggerLocalisation) {
+      //       final moduleName =
+      //           'hcm-registration-${context.selectedProject.referenceID}';
+      //       triggerLocalization(module: moduleName);
+      //       isTriggerLocalisation = false;
+      //       // }
+
+      //       final prefs = await SharedPreferences.getInstance();
+      //       final schemaJsonRaw = prefs.getString('app_config_schemas');
+
+      //       FlowBuilderSingleton().setPersistenceConfiguration(
+      //           persistenceConfiguration:
+      //               PersistenceConfiguration.offlineFirst);
+      //       WidgetRegistry.initialize();
+      //       CrudBlocSingleton().setData(
+      //         crudService: DigitCrudService(
+      //           context: context,
+      //           relationshipMap: [
+      //             const RelationshipMapping(
+      //                 from: 'name',
+      //                 to: 'individual',
+      //                 localKey: 'individualClientReferenceId',
+      //                 foreignKey: 'clientReferenceId'),
+      //             const RelationshipMapping(
+      //                 from: 'identifier',
+      //                 to: 'individual',
+      //                 localKey: 'individualClientReferenceId',
+      //                 foreignKey: 'clientReferenceId'),
+      //             const RelationshipMapping(
+      //                 from: 'householdMember',
+      //                 to: 'individual',
+      //                 localKey: 'individualClientReferenceId',
+      //                 foreignKey: 'clientReferenceId'),
+      //             const RelationshipMapping(
+      //                 from: 'address',
+      //                 to: 'household',
+      //                 localKey: 'relatedClientReferenceId',
+      //                 foreignKey: 'clientReferenceId'),
+      //             const RelationshipMapping(
+      //                 from: 'householdMember',
+      //                 to: 'household',
+      //                 localKey: 'householdClientReferenceId',
+      //                 foreignKey: 'clientReferenceId'),
+      //             const RelationshipMapping(
+      //                 from: 'projectBeneficiary',
+      //                 to: 'task',
+      //                 localKey: 'clientReferenceId',
+      //                 foreignKey: 'projectBeneficiaryClientReferenceId'),
+
+      //             const RelationshipMapping(
+      //                 from: 'identifier',
+      //                 to: 'hFReferral',
+      //                 localKey: 'identifierId',
+      //                 foreignKey: 'beneficiaryId'),
+
+      //             // Conditional mapping
+      //             if (FlowBuilderSingleton().beneficiaryType ==
+      //                 BeneficiaryType.household)
+      //               const RelationshipMapping(
+      //                 from: 'projectBeneficiary',
+      //                 to: 'household',
+      //                 localKey: 'beneficiaryClientReferenceId',
+      //                 foreignKey: 'clientReferenceId',
+      //               )
+      //             else
+      //               const RelationshipMapping(
+      //                 from: 'projectBeneficiary',
+      //                 to: 'individual',
+      //                 localKey: 'beneficiaryClientReferenceId',
+      //                 foreignKey: 'clientReferenceId',
+      //               ),
+      //           ],
+      //           nestedModelMappings: [
+      //             const NestedModelMapping(
+      //               rootModel: 'individual',
+      //               fields: {
+      //                 'name': NestedFieldMapping(
+      //                   table: 'name',
+      //                   localKey: 'clientReferenceId',
+      //                   foreignKey: 'individualClientReferenceId',
+      //                   type: NestedMappingType.one,
+      //                 ),
+      //                 'address': NestedFieldMapping(
+      //                   table: 'address',
+      //                   localKey: 'clientReferenceId',
+      //                   foreignKey: 'relatedClientReferenceId',
+      //                   type: NestedMappingType.many,
+      //                 ),
+      //                 'identifiers': NestedFieldMapping(
+      //                   table: 'identifier',
+      //                   localKey: 'clientReferenceId',
+      //                   foreignKey: 'individualClientReferenceId',
+      //                   type: NestedMappingType.many,
+      //                 ),
+      //               },
+      //             ),
+      //             const NestedModelMapping(
+      //               rootModel: 'household',
+      //               fields: {
+      //                 'address': NestedFieldMapping(
+      //                   table: 'address',
+      //                   localKey: 'clientReferenceId',
+      //                   foreignKey: 'relatedClientReferenceId',
+      //                   type: NestedMappingType.one,
+      //                 ),
+      //               },
+      //             ),
+      //             const NestedModelMapping(
+      //               rootModel: 'task',
+      //               fields: {
+      //                 'resource': NestedFieldMapping(
+      //                   table: 'resource',
+      //                   localKey: 'taskclientReferenceId',
+      //                   foreignKey: 'clientReferenceId',
+      //                   type: NestedMappingType.many,
+      //                 ),
+      //               },
+      //             ),
+      //           ],
+      //           searchEntityRepository: context.read<SearchEntityRepository>(),
+      //         ),
+      //         dynamicEntityModelListener: EntityModelMapMapper(),
+      //       );
+      //       try {
+      //         if (schemaJsonRaw != null) {
+      //           final allSchemas =
+      //               json.decode(schemaJsonRaw) as Map<String, dynamic>;
+      //           final data = allSchemas['REGISTRATION'];
+
+      //           final registrationDeliveryData = data?['data'];
+      //           final flowsData =
+      //               (registrationDeliveryData['flows'] as List<dynamic>?)
+      //                       ?.map((e) => Map<String, dynamic>.from(e as Map))
+      //                       .toList() ??
+      //                   [];
+      //           FlowRegistry.setConfig(flowsData);
+      //           NavigationRegistry.setupNavigation(context);
+
+      //           context.router.push(
+      //             FlowBuilderHomeRoute(
+      //                 pageName: registrationDeliveryData["initialPage"]),
+      //           );
+      //         } else {
+      //           FlowRegistry.setConfig(
+      //               sampleFlows["flows"] as List<Map<String, dynamic>>);
+      //           NavigationRegistry.setupNavigation(context);
+      //           context.router.push(
+      //             FlowBuilderHomeRoute(pageName: sampleFlows["initialPage"]),
+      //           );
+      //         }
+      //       } catch (e) {
+      //         debugPrint('error $e');
+      //       }
+      //     },
+      //   ),
+      // ),
 
       /// TODO: NEED TO UPDATE CLF
 

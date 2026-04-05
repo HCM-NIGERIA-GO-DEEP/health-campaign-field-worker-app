@@ -36,6 +36,18 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const AuthenticatedPageWrapper(),
       );
     },
+    BednetDistributionSuccessRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const BednetDistributionSuccessPage(),
+      );
+    },
+    BednetDistributionWrapperRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: WrappedRoute(child: const BednetDistributionWrapperPage()),
+      );
+    },
     BeneficiariesReportRoute.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
@@ -169,6 +181,18 @@ abstract class _$AppRouter extends RootStackRouter {
         ),
       );
     },
+    SchoolDetailsRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const SchoolDetailsPage(),
+      );
+    },
+    SelectSchoolRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const SelectSchoolPage(),
+      );
+    },
     UnauthenticatedRouteWrapper.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
@@ -264,6 +288,34 @@ class AuthenticatedRouteWrapper extends PageRouteInfo<void> {
         );
 
   static const String name = 'AuthenticatedRouteWrapper';
+
+  static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
+/// [BednetDistributionSuccessPage]
+class BednetDistributionSuccessRoute extends PageRouteInfo<void> {
+  const BednetDistributionSuccessRoute({List<PageRouteInfo>? children})
+      : super(
+          BednetDistributionSuccessRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'BednetDistributionSuccessRoute';
+
+  static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
+/// [BednetDistributionWrapperPage]
+class BednetDistributionWrapperRoute extends PageRouteInfo<void> {
+  const BednetDistributionWrapperRoute({List<PageRouteInfo>? children})
+      : super(
+          BednetDistributionWrapperRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'BednetDistributionWrapperRoute';
 
   static const PageInfo<void> page = PageInfo<void>(name);
 }
@@ -701,6 +753,34 @@ class ProjectSelectionRouteArgs {
   String toString() {
     return 'ProjectSelectionRouteArgs{key: $key, appLocalizations: $appLocalizations}';
   }
+}
+
+/// generated route for
+/// [SchoolDetailsPage]
+class SchoolDetailsRoute extends PageRouteInfo<void> {
+  const SchoolDetailsRoute({List<PageRouteInfo>? children})
+      : super(
+          SchoolDetailsRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'SchoolDetailsRoute';
+
+  static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
+/// [SelectSchoolPage]
+class SelectSchoolRoute extends PageRouteInfo<void> {
+  const SelectSchoolRoute({List<PageRouteInfo>? children})
+      : super(
+          SelectSchoolRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'SelectSchoolRoute';
+
+  static const PageInfo<void> page = PageInfo<void>(name);
 }
 
 /// generated route for

@@ -1018,5 +1018,125 @@
     "locale": "pt_MZ",
     "message": "Certifique -se de revisar todos os detalhes antes de clicar no botão Enviar. Clique no botão Cancelar para voltar para a página anterior.",
     "module": "hcm-delivery"
+  },
+  {
+    "code": "STUDENTS_LIST_TITLE",
+    "locale": "en_MZ",
+    "message": "Students List",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_TITLE",
+    "locale": "pt_MZ",
+    "message": "Lista de estudantes",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_SEARCH_HINT",
+    "locale": "en_MZ",
+    "message": "Search Student",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_SEARCH_HINT",
+    "locale": "pt_MZ",
+    "message": "Pesquisar estudante",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_SORT",
+    "locale": "en_MZ",
+    "message": "Sort",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_SORT",
+    "locale": "pt_MZ",
+    "message": "Ordenar",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_SCHOOL_HEAD",
+    "locale": "en_MZ",
+    "message": "School Head",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_SCHOOL_HEAD",
+    "locale": "pt_MZ",
+    "message": "Chefe da escola",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_DELIVERED",
+    "locale": "en_MZ",
+    "message": "Delivered",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_DELIVERED",
+    "locale": "pt_MZ",
+    "message": "Entregue",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_NOT_DELIVERED",
+    "locale": "en_MZ",
+    "message": "Not Delivered",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_NOT_DELIVERED",
+    "locale": "pt_MZ",
+    "message": "Não entregue",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_NOT_VISITED",
+    "locale": "en_MZ",
+    "message": "Not Visited",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_NOT_VISITED",
+    "locale": "pt_MZ",
+    "message": "Não visitado",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_RECORD_DELIVERY",
+    "locale": "en_MZ",
+    "message": "Record Delivery",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_RECORD_DELIVERY",
+    "locale": "pt_MZ",
+    "message": "Registar entrega",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_UNABLE_TO_DELIVER",
+    "locale": "en_MZ",
+    "message": "Unable to deliver ?",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_UNABLE_TO_DELIVER",
+    "locale": "pt_MZ",
+    "message": "Não foi possível entregar?",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_ADD_STUDENT",
+    "locale": "en_MZ",
+    "message": "Add Student",
+    "module": "hcm-bednet"
+  },
+  {
+    "code": "STUDENTS_LIST_ADD_STUDENT",
+    "locale": "pt_MZ",
+    "message": "Adicionar estudante",
+    "module": "hcm-bednet"
   }
 ]
