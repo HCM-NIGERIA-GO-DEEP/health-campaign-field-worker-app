@@ -20,6 +20,7 @@ import 'package:transit_post/blocs/app_localization.dart'
     as transit_post_localization;
 
 import '../blocs/localization/app_localization.dart';
+import '../blocs/registration_deliver/app_localization.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../data/repositories/local/localization.dart';
 
@@ -65,6 +66,10 @@ getAppLocalizationDelegates({
       appConfig.languages!,
     ),
     flow_builder_localization.FlowBuilderLocalization.getDelegate(
+      LocalizationLocalRepository().returnLocalizationFromSQL(sql) as Future,
+      appConfig.languages!,
+    ),
+    RegistrationDeliveryLocalization.getDelegate(
       LocalizationLocalRepository().returnLocalizationFromSQL(sql) as Future,
       appConfig.languages!,
     ),

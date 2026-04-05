@@ -34,7 +34,7 @@ class SchoolDetailsPage extends StatelessWidget {
                   size: DigitButtonSize.large,
                   mainAxisSize: MainAxisSize.max,
                   onPressed: () {
-                    context.router.push(const BednetHouseholdOverviewWrapperRoute());
+                    context.router.push(HouseholdOverviewRoute());
                     // context.router.push(const BednetDistributionSuccessRoute());
                   },
                 )

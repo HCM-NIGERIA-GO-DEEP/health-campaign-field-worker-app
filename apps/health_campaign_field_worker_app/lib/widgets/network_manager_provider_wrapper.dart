@@ -7,7 +7,6 @@ import 'package:digit_data_model/data/repositories/package_repository/local/hous
 import 'package:digit_data_model/data/repositories/package_repository/local/pgr_service.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/project_beneficiary.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/referral.dart';
-import 'package:digit_data_model/data/repositories/package_repository/local/registration_delivery_address.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/side_effect.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/stock.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/stock_reconciliation.dart';
@@ -46,6 +45,7 @@ import 'package:transit_post/data/repositories/remote/user_action.dart';
 import '../blocs/app_initialization/app_initialization.dart';
 import '../data/local_store/downsync/downsync.dart';
 import '../data/network_manager.dart';
+import '../data/registration_deliver_repo/local/registration_delivery_address.dart';
 import '../data/repositories/oplog.dart';
 import '../data/repositories/remote/auth.dart';
 import '../data/repositories/remote/downsync.dart';
