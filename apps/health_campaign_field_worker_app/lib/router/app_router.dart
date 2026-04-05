@@ -15,10 +15,12 @@ import 'package:survey_form/router/survey_form_router.gm.dart';
 import 'package:transit_post/router/transit_post_router.dart';
 
 import '../blocs/localization/app_localization.dart';
+import '../blocs/registration_deliver/app_localization.dart';
 import '../pages/acknowledgement.dart';
 import '../pages/authenticated.dart';
 import '../pages/bednet_distribution/bednet_distribution_success.dart';
 import '../pages/bednet_distribution/bednet_distribution_wrapper.dart';
+import '../pages/bednet_distribution/bednet_household_overview_wrapper.dart';
 import '../pages/bednet_distribution/school_details.dart';
 import '../pages/bednet_distribution/select_school.dart';
 import '../pages/boundary_selection.dart';
@@ -36,6 +38,20 @@ import '../pages/profile.dart';
 import '../pages/project_facility_selection.dart';
 import '../pages/project_selection.dart';
 import '../pages/qr_details_page.dart';
+import '../pages/registration_deliver_pages/beneficiary/beneficiary_checklist.dart';
+import '../pages/registration_deliver_pages/beneficiary/beneficiary_details.dart';
+import '../pages/registration_deliver_pages/beneficiary/deliver_intervention.dart';
+import '../pages/registration_deliver_pages/beneficiary/delivery_summary_page.dart';
+import '../pages/registration_deliver_pages/beneficiary/household_overview.dart';
+import '../pages/registration_deliver_pages/beneficiary/refused_delivery.dart';
+import '../pages/registration_deliver_pages/beneficiary/widgets/household_acknowledgement.dart';
+import '../pages/registration_deliver_pages/beneficiary/widgets/splash_acknowledgement.dart';
+import '../pages/registration_deliver_pages/beneficiary_registration/beneficiary_acknowledgement.dart';
+import '../pages/registration_deliver_pages/beneficiary_registration/house_details.dart';
+import '../pages/registration_deliver_pages/beneficiary_registration/household_details.dart';
+import '../pages/registration_deliver_pages/beneficiary_registration/individual_details.dart';
+import '../pages/registration_deliver_pages/search_beneficiary.dart';
+import '../pages/registration_deliver_pages/summary_page.dart';
 import '../pages/reports/beneficiary/beneficaries_report.dart';
 import '../pages/unauthenticated.dart';
 
@@ -112,6 +128,21 @@ class AppRouter extends _$AppRouter {
             AutoRoute(
               page: SchoolDetailsRoute.page,
               path: 'school-details',
+            ),
+            AutoRoute(
+              page: BednetHouseholdOverviewWrapperRoute.page,
+              path: 'overview',
+              children: [
+                AutoRoute(
+                  page: HouseholdOverviewRoute.page,
+                  path: '',
+                  initial: true,
+                ),
+              ],
+            ),
+            AutoRoute(
+              page: IndividualDetailsRoute.page,
+              path: 'individual-details',
             ),
             AutoRoute(
               page: BednetDistributionSuccessRoute.page,
