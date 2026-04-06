@@ -2,6 +2,7 @@ import 'package:attendance_management/utils/date_util_attendance.dart';
 import 'package:attendance_management/utils/utils.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:digit_data_model/utils/utils.dart';
+import 'package:digit_data_model/data/local_store/no_sql/schema/entity_mapper_listener.dart';
 import 'package:digit_scanner/blocs/scanner.dart';
 import 'package:digit_scanner/pages/qr_scanner.dart';
 import 'package:digit_scanner/utils/scanner_utils.dart';

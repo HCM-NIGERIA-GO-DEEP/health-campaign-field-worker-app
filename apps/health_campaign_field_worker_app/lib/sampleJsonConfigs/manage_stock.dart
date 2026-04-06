@@ -581,6 +581,7 @@ final dynamic sampleInventoryFlows = {
               "includeInForm": true,
               "enums": [],
             },
+
             {
               "type": "string",
               "enums": [],
@@ -600,18 +601,45 @@ final dynamic sampleInventoryFlows = {
               "innerLabel": "",
               "systemDate": false,
               "includeInSummary": true,
-              "validations": [
-                {
-                  "type": "required",
-                  "value": true,
-                  "message":
-                      "APPONE_MANAGESTOCK_WAREHOUSE_label_facilityToWhich_mandatory_message"
-                }
-              ],
+              "includeInForm": true,
+              "validations": [],
               "errorMessage": "",
               "isMultiSelect": false,
               "dropDownOptions": []
             },
+
+            // {
+            //   "type": "string",
+            //   "visibilityCondition": {
+            //     "expression": [
+            //       // {"condition": "stockDetails.facilityToWhich==Delivery Team"}
+            //     ]
+            //   },
+            //   "label": "APPONE_MANAGESTOCK_WAREHOUSE_label_deliveryTeamCode",
+            //   "order": 4,
+            //   "value": "",
+            //   "format": "scanner",
+            //   "hidden": false,
+            //   "tooltip": "",
+            //   "helpText": "Scan Team Code",
+            //   "infoText": "",
+            //   "readOnly": false,
+            //   "fieldName": "deliveryTeamTo",
+            //   "deleteFlag": false,
+            //   "innerLabel": "",
+            //   "systemDate": false,
+            //   "validations": [
+            //     {
+            //       "type": "required",
+            //       "value": true,
+            //       "message":
+            //           "APPONE_MANAGESTOCK_WAREHOUSE_label_facilityToWhich_mandatory_message"
+            //     }
+            //   ],
+            //   "errorMessage": "",
+            //   "isMultiSelect": false,
+            //   "enums": [],
+            // },
           ],
           "navigateTo": {"name": "stockDetails", "type": "form"}
         },
@@ -872,33 +900,6 @@ final dynamic sampleInventoryFlows = {
                   "type": "required",
                   "value": false,
                   "message": "Batch number is required"
-                }
-              ],
-              "errorMessage": "",
-              "isMultiSelect": false,
-              "enums": null
-            },
-            {
-              "type": "string",
-              "label": "APPONE_INVENTORY_EXPIRY_DATE_LABEL",
-              "order": 3,
-              "value": "",
-              "format": "date",
-              "hidden": false,
-              "tooltip": "",
-              "helpText": "Select the expiry date",
-              "infoText": "",
-              "readOnly": false,
-              "fieldName": "expiryDate",
-              "deleteFlag": false,
-              "innerLabel": "",
-              "systemDate": false,
-              "visibilityCondition": {},
-              "validations": [
-                {
-                  "type": "required",
-                  "value": true,
-                  "message": "Expiry date is required"
                 }
               ],
               "errorMessage": "",
@@ -2606,28 +2607,8 @@ final dynamic sampleInventoryFlows = {
             },
             {
               "type": "string",
-              "label": "INVENTORY_EXPIRY_LABEL",
-              "order": 6,
-              "value": "",
-              "format": "date",
-              "hidden": false,
-              "tooltip": "",
-              "helpText": "Select the expiry date",
-              "infoText": "",
-              "readOnly": false,
-              "fieldName": "expiryDate",
-              "deleteFlag": false,
-              "innerLabel": "",
-              "systemDate": false,
-              "visibilityCondition": {},
-              "errorMessage": "",
-              "isMultiSelect": false,
-              "enums": null
-            },
-            {
-              "type": "string",
               "label": "INVENTORY_QUANTITY_SENT_BY_WAREHOUSE_LABEL",
-              "order": 7,
+              "order": 6,
               "value": "",
               "format": "text",
               "hidden": false,
@@ -2659,7 +2640,7 @@ final dynamic sampleInventoryFlows = {
             {
               "type": "string",
               "label": "INVENTORY_COMMENTS_LABEL",
-              "order": 8,
+              "order": 7,
               "value": "",
               "format": "textArea",
               "hidden": false,

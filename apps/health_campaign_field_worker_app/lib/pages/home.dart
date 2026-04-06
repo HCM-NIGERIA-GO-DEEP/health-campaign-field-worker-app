@@ -1696,21 +1696,21 @@ class _HomePageState extends LocalizedState<HomePage> {
           },
         ),
       ),
-      // i18.home.db: homeShowcaseData.db.buildWith(
-      //   child: HomeItemCard(
-      //     icon: Icons.table_chart,
-      //     label: i18.home.db,
-      //     onPressed: () async {
-      //       Navigator.of(context).push(
-      //         MaterialPageRoute(
-      //           builder: (context) => DriftDbViewer(
-      //             context.read<LocalSqlDataStore>(),
-      //           ),
-      //         ),
-      //       );
-      //     },
-      //   ),
-      // ),
+      i18.home.db: homeShowcaseData.db.buildWith(
+        child: HomeItemCard(
+          icon: Icons.table_chart,
+          label: i18.home.db,
+          onPressed: () async {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => DriftDbViewer(
+                  context.read<LocalSqlDataStore>(),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
       i18.home.summaryLabel: homeShowcaseData.summaryReport.buildWith(
         child: HomeItemCard(
           icon: Icons.summarize,
@@ -1830,7 +1830,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.faceRegistrationLabel,
       i18.home.dataShare,
       i18.home.stockSyncDataLabel,
-      // i18.home.db,
+      i18.home.db,
       i18.home.summaryLabel,
     ];
 
