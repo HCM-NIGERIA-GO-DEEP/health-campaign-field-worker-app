@@ -1,4 +1,6 @@
 import 'package:collection/collection.dart';
+import 'package:digit_data_model/models/entities/attendance_log.dart';
+import 'package:digit_data_model/models/entities/attendance_register.dart';
 import 'package:digit_data_model/models/entities/project_type.dart';
 import 'package:digit_flow_builder/utils/utils.dart';
 import 'package:digit_ui_components/utils/date_utils.dart';
@@ -170,6 +172,20 @@ bool _recordedSideEffectInternal(
   return false;
 }
 
+// Helper function matching hasLogWithType logic
+bool _hasLogWithType(attendanceLog, DateTime date, String type) {
+  final logTime = type == 'ENTRY'
+      ? DateTime(date.year, date.month, date.day, 9).millisecondsSinceEpoch
+      : DateTime(date.year, date.month, date.day, 18).millisecondsSinceEpoch;
+
+  return attendanceLog.any((element) {
+    if (element is! AttendanceLogModel) return false;
+    final elementTime = element.time;
+    final elementType = element.type?.toString();
+    return elementTime == logTime && elementType == type;
+  });
+}
+
 /// Initializes the [FunctionRegistry] with application-specific functions.
 ///
 /// This function should be called at application startup to populate the
@@ -338,9 +354,8 @@ void initializeFunctionRegistry() {
 
     if (tasks.isNotEmpty) {
       // Get currentRunningCycle from third argument if provided
-      final currentRunningCycle = args.length > 2
-          ? int.tryParse(args[2]?.toString() ?? '')
-          : null;
+      final currentRunningCycle =
+          args.length > 2 ? int.tryParse(args[2]?.toString() ?? '') : null;
 
       for (final item in tasks) {
         Map<String, dynamic> task;
@@ -372,8 +387,7 @@ void initializeFunctionRegistry() {
           if (fields != null) {
             for (final field in fields) {
               if (field is Map && field['key'] == 'cycleIndex') {
-                taskCycleIndex =
-                    int.tryParse(field['value']?.toString() ?? '');
+                taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
                 break;
               }
             }
@@ -423,12 +437,30 @@ void initializeFunctionRegistry() {
 
   FunctionRegistry.register("getInEligibleStatus", (args, stateData) {
     // No arguments passed
-    if (args.isEmpty) return '';
+    if (args.isEmpty) return TaskStatus.ineligible;
+
+    // --- ProjectType comes from FlowBuilderSingleton ---
+    final projectType = FlowBuilderSingleton().projectType;
+    if (projectType == null) return TaskStatus.ineligible;
+
+    // --- Current active cycle ---
+    Map<String, dynamic>? currentCycle;
+    for (final e in projectType.cycles ?? []) {
+      if ((e.startDate ?? 0) < DateTime.now().millisecondsSinceEpoch &&
+          (e.endDate ?? 0) > DateTime.now().millisecondsSinceEpoch) {
+        currentCycle = {
+          "startDate": e.startDate,
+          "endDate": e.endDate,
+        };
+        break;
+      }
+    }
+    if (currentCycle == null) return TaskStatus.ineligible;
 
     final tasks = args.first;
 
     // Must be a non-empty list of tasks
-    if (tasks is! List || tasks.isEmpty) return '';
+    if (tasks is! List || tasks.isEmpty) return TaskStatus.ineligible;
 
     // Get the last task and convert to Map if needed
     final item = tasks.last;
@@ -483,7 +515,8 @@ void initializeFunctionRegistry() {
     final status = value.trim().toUpperCase();
 
     // Match valid delivered statuses
-    if (status == TaskStatus.administrationSuccess || status == TaskStatus.delivered) {
+    if (status == TaskStatus.administrationSuccess ||
+        status == TaskStatus.delivered) {
       return true;
     }
 
@@ -1162,7 +1195,7 @@ void initializeFunctionRegistry() {
 
             // Disable if any task status is success
             if (status == TaskStatus.administrationSuccess ||
-                status == TaskStatus.delivered ) {
+                status == TaskStatus.delivered) {
               return true;
             }
 
@@ -1477,5 +1510,44 @@ void initializeFunctionRegistry() {
 
     // If checklist exists → Visited, otherwise → Not Visited
     return checklistExists ? 'VISITED' : 'HF_REFERRAL_NOT_VISITED';
+  });
+
+  /// Checks if the individual was registered before the current running cycle.
+  ///
+  /// - **Function Name**: `'isRegisteredBeforeCurrentCycle'`
+  /// - **Arguments**:
+  ///   - First argument: dateOfRegistration (timestamp in milliseconds)
+  ///   - Second argument: currentRunningCycle (cycle id/index)
+  /// - **Returns**: `true` if registered before the current cycle, `false` if registered in the current cycle.
+  ///
+  /// This is used to conditionally show buttons only for individuals registered
+  /// in a previous cycle (not the current one).
+  FunctionRegistry.register('isRegisteredBeforeCurrentCycle',
+      (args, stateData) {
+    if (args.isEmpty) return false;
+
+    // Parse dateOfRegistration timestamp
+    final rawDate = args.first;
+    int? registrationTime;
+    if (rawDate is int) {
+      registrationTime = rawDate;
+    } else if (rawDate is String) {
+      registrationTime = int.tryParse(rawDate);
+    }
+    if (registrationTime == null) return false;
+
+    // Get current running cycle from project config
+    final projectType = FlowBuilderSingleton().projectType;
+    if (projectType == null || projectType.cycles == null) return false;
+
+    // Find the current active cycle
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final currentCycle = projectType.cycles!.firstWhereOrNull(
+      (e) => (e.startDate ?? 0) < now && (e.endDate ?? 0) > now,
+    );
+    if (currentCycle == null) return false;
+
+    // If registered before the current cycle's start date, return true
+    return registrationTime < (currentCycle.startDate ?? 0);
   });
 }

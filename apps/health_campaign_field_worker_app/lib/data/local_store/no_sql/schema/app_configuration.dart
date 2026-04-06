@@ -93,6 +93,9 @@ class AppConfiguration {
   late List<RefusalReasons>? refusalReasons;
   late PrivacyPolicy? privacyPolicyConfig;
 
+  @Name("BOUNDARY_LAST_LEVEL_MAX_SELECTION")
+  late int? boundaryLastLevelMaxSelection;
+
   @Name('STOCK_THRESHOLD_CONFIG')
   StockThresholdConfig? stockThresholdConfig;
 

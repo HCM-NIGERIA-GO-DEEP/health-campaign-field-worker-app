@@ -30,6 +30,21 @@ abstract class _$AppRouter extends RootStackRouter {
         ),
       );
     },
+    AttendanceDigitScannerRoute.name: (routeData) {
+      final args = routeData.argsAs<AttendanceDigitScannerRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: AttendanceDigitScannerPage(
+          key: args.key,
+          enableDynamicQRScanning: args.enableDynamicQRScanning,
+          attendees: args.attendees,
+          onScanResult: args.onScanResult,
+          quantity: args.quantity,
+          singleValue: args.singleValue,
+          isGS1code: args.isGS1code,
+        ),
+      );
+    },
     AuthenticatedRouteWrapper.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
@@ -124,6 +139,18 @@ abstract class _$AppRouter extends RootStackRouter {
         child: CustomSummaryReportPage(
           key: args.key,
           appLocalizations: args.appLocalizations,
+        ),
+      );
+    },
+    CurrentBoundaryRoute.name: (routeData) {
+      final args = routeData.argsAs<CurrentBoundaryRouteArgs>(
+          orElse: () => const CurrentBoundaryRouteArgs());
+      return AutoRoutePage<BoundaryModel>(
+        routeData: routeData,
+        child: CurrentBoundaryPage(
+          key: args.key,
+          appLocalizations: args.appLocalizations,
+          onBoundarySelected: args.onBoundarySelected,
         ),
       );
     },
@@ -348,6 +375,76 @@ class AcknowledgementRouteArgs {
   @override
   String toString() {
     return 'AcknowledgementRouteArgs{key: $key, appLocalizations: $appLocalizations, isDataRecordSuccess: $isDataRecordSuccess, label: $label, description: $description, descriptionTableData: $descriptionTableData}';
+  }
+}
+
+/// generated route for
+/// [AttendanceDigitScannerPage]
+class AttendanceDigitScannerRoute
+    extends PageRouteInfo<AttendanceDigitScannerRouteArgs> {
+  AttendanceDigitScannerRoute({
+    Key? key,
+    required bool enableDynamicQRScanning,
+    required List<AttendeeModel> attendees,
+    required void Function(
+      ScannedIndividualDataModel,
+      AttendanceValidationResult,
+    ) onScanResult,
+    required int quantity,
+    bool singleValue = false,
+    required bool isGS1code,
+    List<PageRouteInfo>? children,
+  }) : super(
+          AttendanceDigitScannerRoute.name,
+          args: AttendanceDigitScannerRouteArgs(
+            key: key,
+            enableDynamicQRScanning: enableDynamicQRScanning,
+            attendees: attendees,
+            onScanResult: onScanResult,
+            quantity: quantity,
+            singleValue: singleValue,
+            isGS1code: isGS1code,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'AttendanceDigitScannerRoute';
+
+  static const PageInfo<AttendanceDigitScannerRouteArgs> page =
+      PageInfo<AttendanceDigitScannerRouteArgs>(name);
+}
+
+class AttendanceDigitScannerRouteArgs {
+  const AttendanceDigitScannerRouteArgs({
+    this.key,
+    required this.enableDynamicQRScanning,
+    required this.attendees,
+    required this.onScanResult,
+    required this.quantity,
+    this.singleValue = false,
+    required this.isGS1code,
+  });
+
+  final Key? key;
+
+  final bool enableDynamicQRScanning;
+
+  final List<AttendeeModel> attendees;
+
+  final void Function(
+    ScannedIndividualDataModel,
+    AttendanceValidationResult,
+  ) onScanResult;
+
+  final int quantity;
+
+  final bool singleValue;
+
+  final bool isGS1code;
+
+  @override
+  String toString() {
+    return 'AttendanceDigitScannerRouteArgs{key: $key, enableDynamicQRScanning: $enableDynamicQRScanning, attendees: $attendees, onScanResult: $onScanResult, quantity: $quantity, singleValue: $singleValue, isGS1code: $isGS1code}';
   }
 }
 
@@ -668,6 +765,49 @@ class CustomSummaryReportRouteArgs {
   @override
   String toString() {
     return 'CustomSummaryReportRouteArgs{key: $key, appLocalizations: $appLocalizations}';
+  }
+}
+
+/// generated route for
+/// [CurrentBoundaryPage]
+class CurrentBoundaryRoute extends PageRouteInfo<CurrentBoundaryRouteArgs> {
+  CurrentBoundaryRoute({
+    Key? key,
+    AppLocalizations? appLocalizations,
+    dynamic Function(BuildContext)? onBoundarySelected,
+    List<PageRouteInfo>? children,
+  }) : super(
+          CurrentBoundaryRoute.name,
+          args: CurrentBoundaryRouteArgs(
+            key: key,
+            appLocalizations: appLocalizations,
+            onBoundarySelected: onBoundarySelected,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'CurrentBoundaryRoute';
+
+  static const PageInfo<CurrentBoundaryRouteArgs> page =
+      PageInfo<CurrentBoundaryRouteArgs>(name);
+}
+
+class CurrentBoundaryRouteArgs {
+  const CurrentBoundaryRouteArgs({
+    this.key,
+    this.appLocalizations,
+    this.onBoundarySelected,
+  });
+
+  final Key? key;
+
+  final AppLocalizations? appLocalizations;
+
+  final dynamic Function(BuildContext)? onBoundarySelected;
+
+  @override
+  String toString() {
+    return 'CurrentBoundaryRouteArgs{key: $key, appLocalizations: $appLocalizations, onBoundarySelected: $onBoundarySelected}';
   }
 }
 

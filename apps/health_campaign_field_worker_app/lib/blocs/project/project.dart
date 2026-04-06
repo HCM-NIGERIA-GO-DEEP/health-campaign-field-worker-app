@@ -3,9 +3,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:core';
 
-import 'package:attendance_management/attendance_management.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:digit_data_model/data/repositories/package_repository/remote/stock.dart';
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_data_model/models/entities/attendance_log.dart';
+import 'package:digit_data_model/models/entities/attendance_register.dart';
 import 'package:digit_dss/digit_dss.dart';
 import 'package:digit_ui_components/utils/app_logger.dart';
 import 'package:flutter/cupertino.dart';
@@ -24,17 +26,15 @@ import '../../data/local_store/no_sql/schema/service_registry.dart';
 import '../../data/local_store/secure_store/secure_store.dart';
 import '../../data/repositories/remote/bandwidth_check.dart';
 import '../../data/repositories/remote/mdms.dart';
-import '../../data/repositories/remote/notification_token.dart';
 import '../../models/app_config/app_config_model.dart';
 import '../../models/auth/auth_model.dart';
 import '../../models/entities/roles_type.dart';
-import '../../notification_service.dart';
 import '../../utils/background_service.dart';
-import '../../models/entities/transaction_type.dart';
+import '../../utils/download_image.dart';
 import '../../utils/environment_config.dart';
 import '../../utils/least_level_boundary_singleton.dart';
 import '../../utils/utils.dart';
-import 'package:digit_data_model/data/repositories/package_repository/remote/stock.dart';
+import '../push_notification/push_notification.dart';
 
 part 'project.freezed.dart';
 
@@ -112,7 +112,6 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
   final LocalRepository<ProductVariantModel, ProductVariantSearchModel>
       productVariantLocalRepository;
   final DashboardRemoteRepository dashboardRemoteRepository;
-  final NotificationTokenRepository notificationTokenRepository;
   BuildContext context;
 
   ProjectBloc({
@@ -145,7 +144,6 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     required this.attendanceLogLocalRepository,
     required this.attendanceLogRemoteRepository,
     required this.dashboardRemoteRepository,
-    required this.notificationTokenRepository,
     required this.context,
   })  : localSecureStore = localSecureStore ?? LocalSecureStore.instance,
         super(const ProjectState()) {
@@ -414,39 +412,22 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         .toList();
 
     if (currentFacilityIds.isNotEmpty) {
-      final fcmToken = await NotificationService.getStoredFcmToken();
-      if (fcmToken != null && fcmToken.isNotEmpty) {
-        await _registerNotificationToken(fcmToken, currentFacilityIds);
-      }
-    }
-  }
-
-  /// Registers the Firebase notification token with the assigned facility IDs.
-  Future<void> _registerNotificationToken(
-    String token,
-    List<String> facilityIds,
-  ) async {
-    final serviceRegistry = await isar.serviceRegistrys.where().findAll();
-    final apiEndPoint = Constants.getEndPoint(
-      serviceRegistry: serviceRegistry,
-      service: 'NOTIFICATION',
-      action: ApiOperation.register.toValue(),
-      entityName: 'NotificationToken',
-    );
-
-    if (apiEndPoint.isEmpty) {
-      debugPrint('NotificationToken: No endpoint found in service registry');
-      return;
-    }
-
-    try{
-      await notificationTokenRepository.registerToken(
-        apiEndPoint: apiEndPoint,
-        token: token,
-        facilityIds: facilityIds,
+      final serviceRegistry = await isar.serviceRegistrys.where().findAll();
+      final apiEndPoint = Constants.getEndPoint(
+        serviceRegistry: serviceRegistry,
+        service: 'NOTIFICATION',
+        action: ApiOperation.register.toValue(),
+        entityName: 'NotificationToken',
       );
-    } catch(e){
-      debugPrint('Failed to register notification token');
+
+      if (apiEndPoint.isNotEmpty) {
+        context.read<PushNotificationBloc>().add(
+              PushNotificationEvent.registerToken(
+                apiEndPoint: apiEndPoint,
+                facilityIds: currentFacilityIds,
+              ),
+            );
+      }
     }
   }
 
@@ -600,6 +581,24 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     }
   }
 
+  Future<List<AttendanceLogModel>> _updateLogsData(
+      List<AttendanceLogModel> logs) async {
+    List<AttendanceLogModel> updatedLogs = [];
+    for (var log in logs) {
+      var additionalDetails = log.additionalDetails;
+      if (additionalDetails != null &&
+          additionalDetails['isFirstSignature'] == "true" &&
+          additionalDetails['signatureFileStoreId'] != null) {
+        String signatureFileStoreId = additionalDetails['signatureFileStoreId'];
+        String signatureBase64 =
+            await DownloadImage.downloadSignature(signatureFileStoreId);
+        additionalDetails['signatureData'] = signatureBase64;
+      }
+      updatedLogs.add(log.copyWith(additionalDetails: additionalDetails));
+    }
+    return updatedLogs;
+  }
+
   Future<void> _handleProjectSelection(
     ProjectSelectProjectEvent event,
     ProjectEmitter emit,
@@ -672,7 +671,9 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
                       registerId: register.id,
                     ),
                   );
-                  await attendanceLogLocalRepository.bulkCreate(logs);
+                  List<AttendanceLogModel> updatedLogs =
+                      await _updateLogsData(logs);
+                  await attendanceLogLocalRepository.bulkCreate(updatedLogs);
                 }
               } catch (_) {
                 emit(state.copyWith(
@@ -994,6 +995,15 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         ProjectFacilitySearchModel(projectId: [projectId]),
       );
 
+      // Filter to only include facilities where facilityLevel is 'current'
+      final currentFacilities = projectFacilities.where((pf) {
+        final facilityLevel = pf.additionalFields?.fields
+            .where((f) => f.key == 'facilityLevel')
+            .firstOrNull
+            ?.value;
+        return facilityLevel == null || facilityLevel == 'current';
+      }).toList();
+
       final projectResources = await projectResourceLocalRepository.search(
         ProjectResourceSearchModel(projectId: [projectId]),
       );
@@ -1005,31 +1015,24 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
       List<String> receiverIds = [];
       if (userRoles.contains(RolesType.healthFacilitySupervisor.toValue())) {
-        receiverIds = projectFacilities.map((e) => e.facilityId).toList();
+        receiverIds = currentFacilities.map((e) => e.facilityId).toList();
       } else if (userRoles.contains(RolesType.warehouseManager.toValue())) {
-        receiverIds = projectFacilities.map((e) => e.facilityId).toList();
-      } else if (userRoles
-          .contains(RolesType.communityDistributor.toValue())) {
+        receiverIds = currentFacilities.map((e) => e.facilityId).toList();
+      } else if (userRoles.contains(RolesType.communityDistributor.toValue())) {
         receiverIds = [userObject.uuid];
       }
 
       if (receiverIds.isEmpty) return;
 
       final stockSearchModel = StockSearchModel(
-        receiverId: receiverIds,
-        transactionType: [TransactionType.dispatched.toValue()],
-        productVariantId:
-            productVariantIds.isNotEmpty ? productVariantIds : null,
+        receiverId: receiverIds.first,
+        senderId: receiverIds.first,
       );
 
-      final totalCount = await (stockRemoteRepository
-              as StockRemoteRepository)
+      final totalCount = await (stockRemoteRepository as StockRemoteRepository)
           .fetchTotalCount(stockSearchModel, offSet: 0);
 
       if (totalCount <= 0) return;
-
-      debugPrint(
-          'SILENT_STOCK_DOWNSYNC: Found $totalCount records, downloading...');
 
       const batchSize = 50;
       int offset = 0;

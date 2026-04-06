@@ -1,14 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:attendance_management/attendance_management.dart';
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_data_model/models/entities/attendance_log.dart';
 import 'package:digit_data_model/models/entities/hf_referral.dart';
 import 'package:digit_data_model/models/entities/user_action.dart';
 import 'package:survey_form/models/entities/service.dart';
 import 'package:sync_service/data/repositories/sync/remote_type.dart';
 import 'package:sync_service/data/sync_entity_mapper_listener.dart';
+import 'package:sync_service/utils/utils.dart' as sync_utils;
 
 import '../utils/environment_config.dart';
 
@@ -82,6 +83,11 @@ class SyncServiceMapper extends SyncEntityMapperListener {
             .map((e) => ReferralModelMapper.fromJson(jsonEncode(e)))
             .toList();
         await local.bulkCreate(entity);
+      case "HFReferrals":
+        final entity = entityList
+            .map((e) => HFReferralModelMapper.fromJson(jsonEncode(e)))
+            .toList();
+        await local.bulkCreate(entity);
       case "Services":
         final entity = entityList
             .map((e) => ServiceModelMapper.fromJson(jsonEncode(e)))
@@ -117,7 +123,7 @@ class SyncServiceMapper extends SyncEntityMapperListener {
           case DataModelType.hFReferral:
           case DataModelType.attendance:
           case DataModelType.service:
-          case DataModelType.userAction:
+            // case DataModelType.userAction:
             return true;
           default:
             return false;
@@ -166,6 +172,12 @@ class SyncServiceMapper extends SyncEntityMapperListener {
     const memberRelationshipSelfIdKey = 'memberRelationshipSelfId';
     const memberRelationshipRelativeIdKey = 'memberRelationshipRelativeId';
     const serviceAttributesIdKey = 'serviceAttributesId';
+
+    // Report progress: searching for this entity type
+    sync_utils.SyncServiceSingleton().reportProgress(sync_utils.SyncProgress(
+      entityType: '${typeGroupedEntity.key.name} (${entities.length})',
+      operation: 'syncDown',
+    ));
 
     switch (typeGroupedEntity.key) {
       case DataModelType.individual:

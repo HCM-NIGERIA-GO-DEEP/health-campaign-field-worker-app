@@ -1,8 +1,8 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -27,6 +27,7 @@ class NotificationService {
   void Function(Map<String, dynamic>)? onNotificationTap;
 
   static const String _fcmTokenKey = 'fcm_device_token';
+  static const String _fcmTokenMapKey = 'fcm_device_token_map';
   static const String _channelId = 'fcm_default_channel';
   static const String _channelName = 'Push Notifications';
   static const String _channelDescription =
@@ -173,7 +174,7 @@ class NotificationService {
     debugPrint('FCM TOKEN (copied to clipboard):');
     debugPrint(token);
     debugPrint('═══════════════════════════════════════════');
-    await Clipboard.setData(ClipboardData(text: token));
+    // await Clipboard.setData(ClipboardData(text: token));
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_fcmTokenKey, token);
   }
@@ -199,5 +200,28 @@ class NotificationService {
       }
     }
     return map;
+  }
+
+  /// Store FCM token in SharedPreferences map against userId.
+  static Future<void> storeTokenForUser(String userId, String token) async {
+    final prefs = await SharedPreferences.getInstance();
+    final map = await _getTokenMap();
+    map[userId] = token;
+    await prefs.setString(_fcmTokenMapKey, jsonEncode(map));
+    debugPrint('FCM: Stored token for user $userId');
+  }
+
+  /// Retrieve stored FCM token for a specific user.
+  static Future<String?> getTokenForUser(String userId) async {
+    final map = await _getTokenMap();
+    return map[userId];
+  }
+
+  /// Get the full token map from SharedPreferences.
+  static Future<Map<String, String>> _getTokenMap() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getString(_fcmTokenMapKey);
+    if (raw == null) return {};
+    return Map<String, String>.from(jsonDecode(raw) as Map);
   }
 }

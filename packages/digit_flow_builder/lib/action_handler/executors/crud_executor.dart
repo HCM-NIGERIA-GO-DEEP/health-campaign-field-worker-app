@@ -1,4 +1,5 @@
 import 'package:digit_crud_bloc/bloc/crud_bloc.dart';
+import 'package:digit_crud_bloc/utils/utils.dart';
 import 'package:digit_data_converter/utils/utils.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:flutter/material.dart';
@@ -218,8 +219,15 @@ class UpdateExecutor extends ActionExecutor {
       for (final modify in modifyList) {
         if (modify is Map<String, dynamic>) {
           final key = modify['key'] as String?;
-          final value = modify['value'];
+          var value = modify['value'];
           if (key != null) {
+            // Resolve template expressions like {{navigation.mrnNumber}}
+            if (value is String && value.contains('{{')) {
+              final resolved = resolveValue(value, contextData);
+              if (resolved != null) {
+                value = resolved;
+              }
+            }
             modifyMap[key] = value;
           }
         }
@@ -232,11 +240,20 @@ class UpdateExecutor extends ActionExecutor {
     for (final entity in entityList) {
       final entityType = getEntityTypeName(entity);
       final clientAudit = entity.clientAuditDetails;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final currentUserUuid = FlowBuilderSingleton().loggedInUserUuid ?? '';
 
-      final updatedClientAudit = clientAudit?.copyWith(
-        lastModifiedBy: FlowBuilderSingleton().loggedInUserUuid,
-        lastModifiedTime: DateTime.now().millisecondsSinceEpoch,
-      );
+      final updatedClientAudit = clientAudit != null
+          ? clientAudit.copyWith(
+              lastModifiedBy: currentUserUuid,
+              lastModifiedTime: now,
+            )
+          : ClientAuditDetails(
+              createdBy: entity.auditDetails?.createdBy ?? currentUserUuid,
+              createdTime: entity.auditDetails?.createdTime ?? now,
+              lastModifiedBy: currentUserUuid,
+              lastModifiedTime: now,
+            );
 
       EntityModel updatedEntity = entity;
 
@@ -355,7 +372,9 @@ class UpdateExecutor extends ActionExecutor {
     }
 
     debugPrint('UPDATE_EVENT: Updating ${processedEntities.length} entities (${entityList.length - processedEntities.length} unchanged)');
-    context.read<CrudBloc>().add(CrudEventUpdate(entities: processedEntities));
+    // Use CrudService directly to await the update, ensuring DB is updated
+    // before subsequent actions (e.g., UPDATE_STOCK_BALANCE) query it.
+    await CrudBlocSingleton().crudService.updateEntities(processedEntities);
     return contextData;
   }
 

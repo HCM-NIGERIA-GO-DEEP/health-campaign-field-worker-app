@@ -1,25 +1,27 @@
 import 'dart:async';
 
-import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/data/repositories/package_repository/remote/stock.dart';
+import 'package:digit_data_model/data_model.dart';
+import 'package:digit_data_model/models/entities/user_action.dart';
 import 'package:disk_space_update/disk_space_update.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:transit_post/data/repositories/local/user_action.dart';
+import 'package:transit_post/data/repositories/remote/user_action.dart';
 
 import '../../data/local_store/no_sql/schema/app_configuration.dart';
 import '../../data/local_store/secure_store/secure_store.dart';
 import '../../data/repositories/remote/bandwidth_check.dart';
 import '../../models/downsync/downsync.dart';
 import '../../models/entities/roles_type.dart';
-import '../../models/entities/transaction_type.dart';
 import '../../utils/background_service.dart';
 
 part 'stock_downsync.freezed.dart';
 
 typedef StockDownSyncEmitter = Emitter<StockDownSyncState>;
 
-class StockDownSyncBloc
-    extends Bloc<StockDownSyncEvent, StockDownSyncState> {
+class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
   final LocalSecureStore localSecureStore;
 
   final LocalRepository<ProjectFacilityModel, ProjectFacilitySearchModel>
@@ -40,6 +42,10 @@ class StockDownSyncBloc
   final LocalRepository<DownsyncModel, DownsyncSearchModel>
       downSyncLocalRepository;
 
+  final UserActionRemoteRepository userActionRemoteRepository;
+
+  final UserActionLocalRepository userActionLocalRepository;
+
   StockDownSyncBloc({
     required this.localSecureStore,
     required this.projectFacilityLocalRepository,
@@ -49,6 +55,8 @@ class StockDownSyncBloc
     required this.projectResourceLocalRepository,
     required this.bandwidthCheckRepository,
     required this.downSyncLocalRepository,
+    required this.userActionRemoteRepository,
+    required this.userActionLocalRepository,
   }) : super(const StockDownSyncState._()) {
     on(_handleGetBatchSize);
     on(_handleCheckTotalCount);
@@ -65,6 +73,15 @@ class StockDownSyncBloc
       ProjectFacilitySearchModel(projectId: [projectId]),
     );
 
+    // Filter to only include facilities where facilityLevel is 'current'
+    final currentFacilities = projectFacilities.where((pf) {
+      final facilityLevel = pf.additionalFields?.fields
+          .where((f) => f.key == 'facilityLevel')
+          .firstOrNull
+          ?.value;
+      return facilityLevel == null || facilityLevel == 'current';
+    }).toList();
+
     final projectResources = await projectResourceLocalRepository.search(
       ProjectResourceSearchModel(projectId: [projectId]),
     );
@@ -77,9 +94,9 @@ class StockDownSyncBloc
     List<String> receiverIds = [];
 
     if (userRoles.contains(RolesType.healthFacilitySupervisor.toValue())) {
-      receiverIds = projectFacilities.map((e) => e.facilityId).toList();
+      receiverIds = currentFacilities.map((e) => e.facilityId).toList();
     } else if (userRoles.contains(RolesType.warehouseManager.toValue())) {
-      receiverIds = projectFacilities.map((e) => e.facilityId).toList();
+      receiverIds = currentFacilities.map((e) => e.facilityId).toList();
     } else if (userRoles.contains(RolesType.communityDistributor.toValue())) {
       receiverIds = [userObject.uuid];
     }
@@ -87,10 +104,10 @@ class StockDownSyncBloc
     if (receiverIds.isEmpty) return null;
 
     return StockSearchModel(
-      receiverId: receiverIds,
-      transactionType: [TransactionType.dispatched.toValue()],
-      productVariantId:
-          productVariantIds.isNotEmpty ? productVariantIds : null,
+      receiverId: receiverIds.first,
+      senderId: receiverIds.first,
+      // transactionType: [TransactionType.dispatched.toValue()],
+      //productVariantId://     productVariantIds.isNotEmpty ? productVariantIds : null,
     );
   }
 
@@ -154,11 +171,11 @@ class StockDownSyncBloc
 
       // Always start from offset 0 for total count check since
       // lastChangedSince already scopes the query to new/modified records
-      final totalCount =
-          await (stockRemoteRepository as StockRemoteRepository).fetchTotalCount(
+      final totalCount = await (stockRemoteRepository as StockRemoteRepository)
+          .fetchTotalCount(
         stockSearchModel,
         offSet: 0,
-        lastChangedSince: lastSyncedTime,
+        lastSyncedTime: lastSyncedTime,
       );
 
       emit(StockDownSyncState.dataFound(
@@ -204,14 +221,10 @@ class StockDownSyncBloc
             ? null
             : existingDownSyncData.first.lastSyncedTime;
 
-        // Always start from offset 0 for each sync cycle since
-        // lastChangedSince already scopes to new/modified records
-        int offset = 0;
-
         // Create initial downsync record if not exists
         if (existingDownSyncData.isEmpty) {
           await downSyncLocalRepository.create(DownsyncModel(
-            offset: offset,
+            offset: 0,
             limit: event.batchSize,
             lastSyncedTime: lastSyncedTime,
             totalCount: 0,
@@ -228,21 +241,20 @@ class StockDownSyncBloc
         while (syncedCount < totalCount) {
           final stockEntries = await stockRemoteRepository.search(
             stockSearchModel,
-            offSet: offset,
+            offSet: 0,
             limit: event.batchSize,
-            lastChangedSince: lastSyncedTime,
+            lastSyncedTime: lastSyncedTime,
           );
 
           if (stockEntries.isEmpty) break;
 
           await stockLocalRepository.bulkCreate(stockEntries);
 
-          offset += stockEntries.length;
           syncedCount += stockEntries.length;
 
-          // Update downsync record after each batch
+          // Update downsync record, keep offset 0, update lastSyncedTime
           await downSyncLocalRepository.update(DownsyncModel(
-            offset: offset,
+            offset: 0,
             limit: event.batchSize,
             lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
             totalCount: totalCount,
@@ -252,10 +264,77 @@ class StockDownSyncBloc
           emit(StockDownSyncState.inProgress(syncedCount, totalCount));
         }
 
+        // After stock download, downsync stock balance user actions
+        await _downSyncStockBalances(event.projectId);
+
         emit(StockDownSyncState.success(syncedCount, totalCount));
       } catch (e) {
         emit(const StockDownSyncState.failed());
       }
+    }
+  }
+
+  /// Fetches stock balance UserAction records from the server
+  /// using balance keys (stock_balance_{facilityId}_{productVariantId})
+  /// and creates or updates them locally.
+  Future<void> _downSyncStockBalances(String projectId) async {
+    try {
+      final projectFacilities = await projectFacilityLocalRepository.search(
+        ProjectFacilitySearchModel(projectId: [projectId]),
+      );
+      final projectResources = await projectResourceLocalRepository.search(
+        ProjectResourceSearchModel(projectId: [projectId]),
+      );
+
+      final facilityIds =
+          projectFacilities.map((e) => e.facilityId).toSet().toList();
+      final productVariantIds = projectResources
+          .map((pr) => pr.resource.productVariantId)
+          .whereType<String>()
+          .toSet()
+          .toList();
+
+      if (facilityIds.isEmpty || productVariantIds.isEmpty) return;
+
+      // Build balance keys for all facility × product variant combinations
+      final balanceKeys = <String>[];
+      for (final facilityId in facilityIds) {
+        for (final productVariantId in productVariantIds) {
+          balanceKeys.add('stock_balance_${facilityId}_$productVariantId');
+        }
+      }
+
+      // Fetch from server
+      final remoteBalances = await userActionRemoteRepository.search(
+        UserActionSearchModel(
+          clientReferenceId: balanceKeys,
+        ),
+      );
+
+      if (remoteBalances.isEmpty) return;
+
+      // For each fetched balance, create or update locally
+      for (final remoteBalance in remoteBalances) {
+        final existing = await userActionLocalRepository.search(
+          UserActionSearchModel(
+            clientReferenceId: [remoteBalance.clientReferenceId],
+          ),
+        );
+
+        if (existing.isNotEmpty) {
+          await userActionLocalRepository.update(
+            remoteBalance,
+            createOpLog: false,
+          );
+        } else {
+          await userActionLocalRepository.create(
+            remoteBalance,
+            createOpLog: false,
+          );
+        }
+      }
+    } catch (e) {
+      debugPrint('Stock balance downsync error: $e');
     }
   }
 }
