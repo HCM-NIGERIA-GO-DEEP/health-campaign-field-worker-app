@@ -510,6 +510,7 @@ class HouseholdOverView {
   String get instituteTypeLabel => 'HOUSEHOLD_OVER_VIEW_INSTITUTE_TYPE_LABEL';
 
   String get clfOverviewLabel => 'HOUSEHOLD_OVER_VIEW_CLF_LABEL';
+  String get householdOverViewChildLabel => 'HOUSEHOLD_OVER_VIEW_CHILD_LABEL';
 
   String get householdOverViewEditLabel =>
       'HOUSEHOLD_OVER_VIEW_EDIT_ICON_LABEL';
@@ -565,6 +566,10 @@ class HouseholdOverView {
 
   String get householdOverViewAddActionText =>
       'HOUSEHOLD_OVER_VIEW__ADD_ACTION_TEXT';
+  String get householdOverViewAddStudentText =>
+      'HOUSEHOLD_OVER_VIEW_ADD_STUDENT_TEXT';
+  String get householdOverViewAddHeadText =>
+      'HOUSEHOLD_OVER_VIEW_ADD_HEAD_TEXT';
 }
 
 class MemberCard {

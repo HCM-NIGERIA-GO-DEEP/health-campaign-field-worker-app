@@ -69,7 +69,8 @@ class HouseholdOverviewBloc
     if (event.searchByName == null &&
         (event.selectedFilter == null || event.selectedFilter!.isEmpty)) {
       // Retrieve household members based on certain criteria.
-      final members = event.limit != null
+      final members =
+       event.limit != null
           ? await householdMemberRepository.search(
               HouseholdMemberSearchModel(
                 householdClientReferenceId:
@@ -83,7 +84,8 @@ class HouseholdOverviewBloc
                 offset: event.offset,
               ),
             )
-          : await householdMemberRepository.search(HouseholdMemberSearchModel(
+          : 
+          await householdMemberRepository.search(HouseholdMemberSearchModel(
               householdClientReferenceId: state
                           .householdMemberWrapper.household !=
                       null

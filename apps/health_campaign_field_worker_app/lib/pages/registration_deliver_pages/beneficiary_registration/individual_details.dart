@@ -16,7 +16,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/household_overview/household_overview.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/constants.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart' as i18;
+import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart'
+    as i18;
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/back_navigation_help_header.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/localized.dart';
@@ -26,7 +27,6 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import '../../../blocs/registration_deliver/search_households/search_households.dart';
 import '../../../utils/registration_deliver_utils/extensions/extensions.dart';
-
 
 @RoutePage()
 class IndividualDetailsPage extends LocalizedStatefulWidget {
@@ -44,8 +44,6 @@ class IndividualDetailsPage extends LocalizedStatefulWidget {
 
 class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
   static const _individualNameKey = 'individualName';
-  static const _idTypeKey = 'idType';
-  static const _idNumberKey = 'idNumber';
   static const _dobKey = 'dob';
   static const _genderKey = 'gender';
   static const _mobileNumberKey = 'mobileNumber';
@@ -125,9 +123,9 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                                 form.control(_dobKey).setErrors({'': true});
                               });
                             }
-                            if (form.control(_idTypeKey).value == null) {
-                              form.control(_idTypeKey).setErrors({'': true});
-                            }
+                            // if (form.control(_idTypeKey).value == null) {
+                            //   form.control(_idTypeKey).setErrors({'': true});
+                            // }
                             if (form.control(_genderKey).value == null) {
                               setState(() {
                                 form.control(_genderKey).setErrors({'': true});
@@ -332,7 +330,8 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                           localizations.translate(
                             i18.individualDetails.individualsDetailsLabelText,
                           ),
-                          style: textTheme.headingXl.copyWith(color: theme.colorTheme.primary.primary2),
+                          style: textTheme.headingXl.copyWith(
+                              color: theme.colorTheme.primary.primary2),
                         ),
                         Column(
                           children: [
@@ -341,9 +340,10 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                               child: ReactiveWrapperField(
                                 formControlName: _individualNameKey,
                                 validationMessages: {
-                                  'required': (object) => localizations.translate(
-                                    '${i18.individualDetails.nameLabelText}_IS_REQUIRED',
-                                  ),
+                                  'required': (object) =>
+                                      localizations.translate(
+                                        '${i18.individualDetails.nameLabelText}_IS_REQUIRED',
+                                      ),
                                   'maxLength': (object) => localizations
                                       .translate(i18.common.maxCharsRequired)
                                       .replaceAll('{}', maxLength.toString()),
@@ -355,7 +355,7 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                                   isRequired: true,
                                   child: DigitTextFormInput(
                                     initialValue:
-                                    form.control(_individualNameKey).value,
+                                        form.control(_individualNameKey).value,
                                     onChange: (value) {
                                       form.control(_individualNameKey).value =
                                           value;
@@ -365,20 +365,22 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                                 ),
                               ),
                             ),
-                            if(widget.isHeadOfHousehold)
-                              const SizedBox(height: spacer2,),
+                            if (widget.isHeadOfHousehold)
+                              const SizedBox(
+                                height: spacer2,
+                              ),
                             Offstage(
                               offstage: !widget.isHeadOfHousehold,
                               child: DigitCheckbox(
                                 capitalizeFirstLetter: false,
                                 label: (RegistrationDeliverySingleton()
-                                    .householdType ==
-                                    HouseholdType.community)
-                                    ? localizations.translate(
-                                    i18.individualDetails.clfCheckboxLabelText)
+                                            .householdType ==
+                                        HouseholdType.community)
+                                    ? localizations.translate(i18
+                                        .individualDetails.clfCheckboxLabelText)
                                     : localizations.translate(
-                                  i18.individualDetails.checkboxLabelText,
-                                ),
+                                        i18.individualDetails.checkboxLabelText,
+                                      ),
                                 value: widget.isHeadOfHousehold,
                                 readOnly: widget.isHeadOfHousehold,
                                 onChanged: (_) {},
@@ -387,102 +389,6 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                           ],
                         ),
 
-                        ReactiveWrapperField(
-                          formControlName: _idTypeKey,
-                          validationMessages: {
-                            'required': (_) => localizations.translate(
-                                  i18.common.corecommonRequired,
-                                ),
-                          },
-                          builder: (field) => LabeledField(
-                            label: localizations.translate(
-                              i18.individualDetails.idTypeLabelText,
-                            ),
-                            capitalizedFirstLetter: false,
-                            isRequired: true,
-                            child: DigitDropdown<String>(
-                              selectedOption:
-                                  (form.control(_idTypeKey).value != null)
-                                      ? DropdownItem(
-                                          name: localizations.translate(
-                                              form.control(_idTypeKey).value),
-                                          code: form.control(_idTypeKey).value)
-                                      : const DropdownItem(name: '', code: ''),
-                              items: RegistrationDeliverySingleton()
-                                  .idTypeOptions!
-                                  .map(
-                                    (e) => DropdownItem(
-                                        name: localizations.translate(e),
-                                        code: e),
-                                  )
-                                  .toList(),
-                              onSelect: (value) {
-                                form.control(_idTypeKey).value = value.code;
-                                setState(() {
-                                  if (value.code == 'DEFAULT') {
-                                    form.control(_idNumberKey).value =
-                                        IdGen.i.identifier.toString();
-                                  } else {
-                                    form.control(_idNumberKey).value = null;
-                                  }
-                                });
-                              },
-                              emptyItemText: localizations
-                                  .translate(i18.common.noMatchFound),
-                              errorMessage: form.control(_idTypeKey).hasErrors
-                                  ? localizations.translate(
-                                      i18.common.corecommonRequired,
-                                    )
-                                  : null,
-                            ),
-                          ),
-                        ),
-                        if (form.control(_idTypeKey).value != 'DEFAULT')
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              ReactiveFormConsumer(
-                                builder: (context, formGroup, child) {
-                                  return ReactiveWrapperField(
-                                    formControlName: _idNumberKey,
-                                    validationMessages: {
-                                      'required': (object) =>
-                                          localizations.translate(
-                                            '${i18.individualDetails.idNumberLabelText}_IS_REQUIRED',
-                                          ),
-                                    },
-                                    builder: (field) => LabeledField(
-                                      label: localizations.translate(
-                                        i18.individualDetails.idNumberLabelText,
-                                      ),
-                                      capitalizedFirstLetter: false,
-                                      isRequired: form
-                                          .control(_idNumberKey)
-                                          .validators
-                                          .isNotEmpty,
-                                      child: DigitTextFormInput(
-                                        readOnly:
-                                            form.control(_idTypeKey).value ==
-                                                'DEFAULT',
-                                        initialValue:
-                                            form.control(_idNumberKey).value,
-                                        onChange: (value) {
-                                          form.control(_idNumberKey).value =
-                                              value;
-                                        },
-                                        errorMessage: field.errorText,
-                                      ),
-                                    ),
-                                  );
-                                },
-                              ),
-                              const SizedBox(height: 4),
-                            ],
-                          ),
-                        if (form.control(_idTypeKey).value == 'DEFAULT')
-                          const SizedBox(
-                            height: spacer2,
-                          ),
                         individualDetailsShowcaseData.dateOfBirth.buildWith(
                           child: DigitDobPicker(
                             datePickerFormControl: _dobKey,
@@ -606,96 +512,9 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                             ),
                           ),
                         ),
-                        // const SizedBox(height: spacer4),
-                        if ((RegistrationDeliverySingleton().beneficiaryType ==
-                                    BeneficiaryType.household &&
-                                widget.isHeadOfHousehold) ||
-                            (RegistrationDeliverySingleton().beneficiaryType ==
-                                BeneficiaryType.individual))
-                          BlocBuilder<DigitScannerBloc, DigitScannerState>(
-                            buildWhen: (p, c) {
-                              return true;
-                            },
-                            builder: (context, state) => state
-                                    .qrCodes.isNotEmpty
-                                ? Row(
-                                    mainAxisAlignment:
-                                        MainAxisAlignment.spaceBetween,
-                                    children: [
-                                      SizedBox(
-                                        width:
-                                            MediaQuery.of(context).size.width /
-                                                3,
-                                        child: Text(
-                                          localizations.translate(
-                                            i18.deliverIntervention.voucherCode,
-                                          ),
-                                          style: textTheme.headingS,
-                                        ),
-                                      ),
-                                      Flexible(
-                                        child: Text(
-                                          overflow: TextOverflow.ellipsis,
-                                          localizations
-                                              .translate(state.qrCodes.last),
-                                        ),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          bottom: spacer2 * 2,
-                                        ),
-                                        child: IconButton(
-                                          color:
-                                              theme.colorTheme.primary.primary1,
-                                          icon: const Icon(Icons.edit),
-                                          onPressed: () {
-                                            Navigator.of(context).push(
-                                              //[TODO: Add the route to auto_route]
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    const DigitScannerPage(
-                                                  quantity: 1,
-                                                  isGS1code: false,
-                                                  singleValue: true,
-                                                  isEditEnabled: true,
-                                                ),
-                                                settings: const RouteSettings(
-                                                    name: '/qr-scanner'),
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ],
-
-                                    // ignore: no-empty-block
-                                  )
-                                : DigitButton(
-                                    type: DigitButtonType.secondary,
-                                    size: DigitButtonSize.large,
-                                    mainAxisSize: MainAxisSize.max,
-                                    onPressed: () {
-                                      Navigator.of(context).push(
-                                        // [TODO: Add the route to auto_route]
-                                        MaterialPageRoute(
-                                          builder: (context) =>
-                                              const DigitScannerPage(
-                                            quantity: 1,
-                                            isGS1code: false,
-                                            singleValue: true,
-                                          ),
-                                          settings: const RouteSettings(
-                                              name: '/qr-scanner'),
-                                        ),
-                                      );
-                                    },
-                                    prefixIcon: Icons.qr_code,
-                                    label: localizations.translate(
-                                      i18.individualDetails
-                                          .linkVoucherToIndividual,
-                                    ),
-                                  ),
-                          ),
+                        
+                                
+                        
                       ]),
                 ),
               ],
@@ -774,7 +593,8 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
         createdTime: context.millisecondsSinceEpoch(),
         lastModifiedBy: RegistrationDeliverySingleton().loggedInUserUuid,
         lastModifiedTime: context.millisecondsSinceEpoch(),
-      ), individualClientReferenceId: '',
+      ),
+      individualClientReferenceId: individual.clientReferenceId,
     );
 
     String? individualName = form.control(_individualNameKey).value as String?;
@@ -788,12 +608,12 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
               .byName(form.control(_genderKey).value.toString().toLowerCase()),
       mobileNumber: form.control(_mobileNumberKey).value,
       dateOfBirth: dobString,
-      identifiers: [
-        identifier.copyWith(
-          identifierId: form.control(_idNumberKey).value,
-          identifierType: form.control(_idTypeKey).value,
-        ),
-      ],
+      // identifiers: [
+      //   identifier.copyWith(
+      //     identifierId: form.control(_idNumberKey).value ?? 'test',
+      //     identifierType: form.control(_idTypeKey).value ?? 'test',
+      //   ),
+      // ],
     );
 
     return individual;
@@ -836,13 +656,6 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                     HouseholdType.community)
                 ? null
                 : searchQuery?.trim()),
-      ),
-      _idTypeKey: FormControl<String>(
-        value: individual?.identifiers?.firstOrNull?.identifierType,
-      ),
-      _idNumberKey: FormControl<String>(
-        validators: [Validators.required],
-        value: individual?.identifiers?.firstOrNull?.identifierId,
       ),
       _dobKey: FormControl<DateTime>(
         value: individual?.dateOfBirth != null
