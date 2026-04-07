@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/bednet_distribution/bednet_distribution.dart';
 import '../../router/app_router.dart';
 import '../../widgets/header/back_navigation_help_header.dart';
+import 'widgets/bednet_bloc_guard.dart';
 import 'widgets/bednet_info_card.dart';
 
 @RoutePage()
@@ -39,7 +40,11 @@ class _DistributionSummaryBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.watch<BednetDistributionBloc>().state;
+    final bloc = maybeBednetDistributionBloc(context);
+    if (bloc == null) {
+      return missingBednetDistributionBlocFallback(context);
+    }
+    final state = bloc.state;
     final ordinalIndex = classIndex - 1;
     final summary = (ordinalIndex >= 0 && ordinalIndex < state.summariesByClass.length)
         ? state.summariesByClass.elementAt(ordinalIndex)

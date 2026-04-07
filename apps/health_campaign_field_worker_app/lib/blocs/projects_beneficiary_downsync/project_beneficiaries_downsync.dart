@@ -48,8 +48,8 @@ class BeneficiaryDownSyncBloc
       hfReferralLocalRepository;
   final LocalRepository<ServiceModel, ServiceSearchModel>
       serviceLocalRepository;
-  final LocalRepository<HFReferralModel, HFReferralSearchModel>
-      hfReferralLocalRepository;
+  // final LocalRepository<HFReferralModel, HFReferralSearchModel>
+  //     hfReferralLocalRepository;
 
   BeneficiaryDownSyncBloc({
     required this.individualLocalRepository,
@@ -64,7 +64,7 @@ class BeneficiaryDownSyncBloc
     required this.referralLocalRepository,
     required this.hfReferralLocalRepository,
     required this.serviceLocalRepository,
-    required this.hfReferralLocalRepository,
+    // required this.hfReferralLocalRepository,
   }) : super(const BeneficiaryDownSyncState._()) {
     on(_handleDownSyncOfBeneficiaries);
     on(_handleCheckTotalCount);

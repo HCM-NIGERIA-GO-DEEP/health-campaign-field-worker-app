@@ -1,4 +1,3 @@
-import 'package:attendance_management/router/attendance_router.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendee.dart';
@@ -56,7 +55,6 @@ part 'app_router.gr.dart';
 
 @AutoRouterConfig(
   modules: [
-    AttendanceRoute,
     DigitScannerPackageRoute,
     DashboardRoute,
     SurveyFormRoute,
@@ -197,8 +195,8 @@ class AppRouter extends _$AppRouter {
           path: 'current-boundary',
         ),
 
-        // Attendance Route
-        ...AttendanceRoute().routes,
+        // // Attendance Route
+        // ...AttendanceRoute().routes,
 
         // Forms Route
         ...FormsRoute().routes,

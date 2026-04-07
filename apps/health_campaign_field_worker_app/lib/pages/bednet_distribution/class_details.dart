@@ -12,6 +12,7 @@ import '../../blocs/bednet_distribution/bednet_distribution.dart';
 import '../../models/bednet_distribution/bednet_distribution_models.dart';
 import '../../router/app_router.dart';
 import '../../widgets/header/back_navigation_help_header.dart';
+import 'widgets/bednet_bloc_guard.dart';
 import 'widgets/bednet_info_card.dart';
 
 Map<String, dynamic>? _bednetMaxIntFormValidator(
@@ -82,7 +83,11 @@ class ClassDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.read<BednetDistributionBloc>().state;
+    final bloc = maybeBednetDistributionBloc(context);
+    if (bloc == null) {
+      return missingBednetDistributionBlocFallback(context);
+    }
+    final state = bloc.state;
     final school = state.selectedSchool;
     if (school == null) {
       return const Scaffold(body: SizedBox.shrink());
@@ -242,7 +247,7 @@ class ClassDetailsPage extends StatelessWidget {
                               0,
                         );
 
-                        context.read<BednetDistributionBloc>().add(
+                        bloc.add(
                               BednetDistributionEvent.saveClassDetails(
                                 classIndex: classIndex,
                                 details: details,

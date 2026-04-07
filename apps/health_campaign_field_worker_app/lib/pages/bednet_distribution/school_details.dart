@@ -7,6 +7,7 @@ import '../../blocs/bednet_distribution/bednet_distribution.dart';
 import '../../models/bednet_distribution/bednet_distribution_models.dart';
 import '../../router/app_router.dart';
 import '../../widgets/header/back_navigation_help_header.dart';
+import 'widgets/bednet_bloc_guard.dart';
 import 'widgets/bednet_info_card.dart';
 
 @RoutePage()
@@ -15,7 +16,12 @@ class SchoolDetailsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bloc = maybeBednetDistributionBloc(context);
+    if (bloc == null) {
+      return missingBednetDistributionBlocFallback(context);
+    }
     return BlocBuilder<BednetDistributionBloc, BednetDistributionState>(
+      bloc: bloc,
       builder: (context, state) {
         final school = state.selectedSchool;
         if (school == null) {

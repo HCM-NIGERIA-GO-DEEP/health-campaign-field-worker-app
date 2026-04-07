@@ -16,6 +16,7 @@ import 'package:location/location.dart';
 import 'package:survey_form/survey_form.dart';
 
 import 'blocs/app_initialization/app_initialization.dart';
+import 'blocs/bednet_distribution/bednet_distribution.dart';
 import 'blocs/auth/auth.dart';
 import 'blocs/error/error.dart';
 import 'blocs/push_notification/push_notification.dart';
@@ -27,6 +28,7 @@ import 'blocs/push_notification/push_notification.dart';
 import 'data/local_store/app_shared_preferences.dart';
 import 'data/network_manager.dart';
 import 'data/remote_client.dart';
+import 'data/repositories/bednet_distribution_repository.dart';
 import 'data/repositories/remote/bandwidth_check.dart';
 import 'data/repositories/remote/localization.dart';
 import 'data/repositories/remote/mdms.dart';
@@ -193,6 +195,7 @@ class MainApplicationState extends State<MainApplication>
                       final selectedLocale =
                           AppSharedPreferences().getSelectedLocale ??
                               firstLanguage;
+                      AppSharedPreferences().setSelectedLocale(selectedLocale);
                       LocalizationParams().setLocale(Locale(selectedLocale));
                       final languages = appConfig.languages;
 
@@ -305,8 +308,8 @@ class MainApplicationState extends State<MainApplication>
                               stockRemoteRepository: ctx.read<
                                   RemoteRepository<StockModel,
                                       StockSearchModel>>(),
-                              notificationTokenRepository:
-                              NotificationTokenRepository(widget.client),
+                              // notificationTokenRepository:
+                              // NotificationTokenRepository(widget.client),
 
                               context: context,
                             ),
@@ -333,6 +336,34 @@ class MainApplicationState extends State<MainApplication>
                               projectFacilityDataRepository: context.repository<
                                   ProjectFacilityModel,
                                   ProjectFacilitySearchModel>(),
+                            ),
+                          ),
+                          BlocProvider(
+                            create: (ctx) => BednetDistributionBloc(
+                              householdLocalRepository: ctx.read<
+                                  LocalRepository<HouseholdModel,
+                                      HouseholdSearchModel>>(),
+                              individualLocalRepository: ctx.read<
+                                  LocalRepository<IndividualModel,
+                                      IndividualSearchModel>>(),
+                              bednetDistributionRepository:
+                                  BednetDistributionRepository(
+                                individualLocalRepository: ctx.read<
+                                    LocalRepository<IndividualModel,
+                                        IndividualSearchModel>>(),
+                                householdMemberLocalRepository: ctx.read<
+                                    LocalRepository<HouseholdMemberModel,
+                                        HouseholdMemberSearchModel>>(),
+                                projectBeneficiaryLocalRepository: ctx.read<
+                                    LocalRepository<ProjectBeneficiaryModel,
+                                        ProjectBeneficiarySearchModel>>(),
+                                taskLocalRepository: ctx.read<
+                                    LocalRepository<TaskModel,
+                                        TaskSearchModel>>(),
+                                projectResourceLocalRepository: ctx.read<
+                                    LocalRepository<ProjectResourceModel,
+                                        ProjectResourceSearchModel>>(),
+                              ),
                             ),
                           ),
                           BlocProvider(
@@ -427,8 +458,8 @@ class MainApplicationState extends State<MainApplication>
                                     orElse: () => [
                                       const UnauthenticatedRouteWrapper(),
                                     ],
-                                    authenticated: (_, __, ___, ____, _____) =>
-                                        [
+                                    authenticated:
+                                        (_, __, ___, ____, _____, ______) => [
                                       AuthenticatedRouteWrapper(),
                                     ],
                                   ),

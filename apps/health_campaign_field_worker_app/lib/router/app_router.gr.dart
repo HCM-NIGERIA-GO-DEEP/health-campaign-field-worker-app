@@ -131,17 +131,6 @@ abstract class _$AppRouter extends RootStackRouter {
         ),
       );
     },
-    CustomSummaryReportRoute.name: (routeData) {
-      final args = routeData.argsAs<CustomSummaryReportRouteArgs>(
-          orElse: () => const CustomSummaryReportRouteArgs());
-      return AutoRoutePage<dynamic>(
-        routeData: routeData,
-        child: CustomSummaryReportPage(
-          key: args.key,
-          appLocalizations: args.appLocalizations,
-        ),
-      );
-    },
     CurrentBoundaryRoute.name: (routeData) {
       final args = routeData.argsAs<CurrentBoundaryRouteArgs>(
           orElse: () => const CurrentBoundaryRouteArgs());
@@ -151,6 +140,17 @@ abstract class _$AppRouter extends RootStackRouter {
           key: args.key,
           appLocalizations: args.appLocalizations,
           onBoundarySelected: args.onBoundarySelected,
+        ),
+      );
+    },
+    CustomSummaryReportRoute.name: (routeData) {
+      final args = routeData.argsAs<CustomSummaryReportRouteArgs>(
+          orElse: () => const CustomSummaryReportRouteArgs());
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: CustomSummaryReportPage(
+          key: args.key,
+          appLocalizations: args.appLocalizations,
         ),
       );
     },
@@ -310,7 +310,6 @@ abstract class _$AppRouter extends RootStackRouter {
         ),
       );
     },
-    ...AttendanceRoute().pagesMap,
     ...DigitScannerPackageRoute().pagesMap,
     ...DashboardRoute().pagesMap,
     ...SurveyFormRoute().pagesMap,
@@ -730,45 +729,6 @@ class ClassTeacherInfoRouteArgs {
 }
 
 /// generated route for
-/// [CustomSummaryReportPage]
-class CustomSummaryReportRoute
-    extends PageRouteInfo<CustomSummaryReportRouteArgs> {
-  CustomSummaryReportRoute({
-    Key? key,
-    AppLocalizations? appLocalizations,
-    List<PageRouteInfo>? children,
-  }) : super(
-          CustomSummaryReportRoute.name,
-          args: CustomSummaryReportRouteArgs(
-            key: key,
-            appLocalizations: appLocalizations,
-          ),
-          initialChildren: children,
-        );
-
-  static const String name = 'CustomSummaryReportRoute';
-
-  static const PageInfo<CustomSummaryReportRouteArgs> page =
-      PageInfo<CustomSummaryReportRouteArgs>(name);
-}
-
-class CustomSummaryReportRouteArgs {
-  const CustomSummaryReportRouteArgs({
-    this.key,
-    this.appLocalizations,
-  });
-
-  final Key? key;
-
-  final AppLocalizations? appLocalizations;
-
-  @override
-  String toString() {
-    return 'CustomSummaryReportRouteArgs{key: $key, appLocalizations: $appLocalizations}';
-  }
-}
-
-/// generated route for
 /// [CurrentBoundaryPage]
 class CurrentBoundaryRoute extends PageRouteInfo<CurrentBoundaryRouteArgs> {
   CurrentBoundaryRoute({
@@ -808,6 +768,45 @@ class CurrentBoundaryRouteArgs {
   @override
   String toString() {
     return 'CurrentBoundaryRouteArgs{key: $key, appLocalizations: $appLocalizations, onBoundarySelected: $onBoundarySelected}';
+  }
+}
+
+/// generated route for
+/// [CustomSummaryReportPage]
+class CustomSummaryReportRoute
+    extends PageRouteInfo<CustomSummaryReportRouteArgs> {
+  CustomSummaryReportRoute({
+    Key? key,
+    AppLocalizations? appLocalizations,
+    List<PageRouteInfo>? children,
+  }) : super(
+          CustomSummaryReportRoute.name,
+          args: CustomSummaryReportRouteArgs(
+            key: key,
+            appLocalizations: appLocalizations,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'CustomSummaryReportRoute';
+
+  static const PageInfo<CustomSummaryReportRouteArgs> page =
+      PageInfo<CustomSummaryReportRouteArgs>(name);
+}
+
+class CustomSummaryReportRouteArgs {
+  const CustomSummaryReportRouteArgs({
+    this.key,
+    this.appLocalizations,
+  });
+
+  final Key? key;
+
+  final AppLocalizations? appLocalizations;
+
+  @override
+  String toString() {
+    return 'CustomSummaryReportRouteArgs{key: $key, appLocalizations: $appLocalizations}';
   }
 }
 

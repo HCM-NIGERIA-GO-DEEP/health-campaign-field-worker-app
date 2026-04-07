@@ -616,15 +616,11 @@ final dynamic sampleInventoryFlows = {
                   "value": {
                     "hierarchyMapping": {
                       "State": {
-                        "forReceipt": ["LGA Facility"],
-                        "forIssue": ["LGA Facility"]
-                      },
-                      "LGA": {
-                        "forReceipt": ["State Facility"],
-                        "forIssue": ["Health Facility"]
+                        "forReceipt": ["Storing Resource"],
+                        "forIssue": ["Warehouse"]
                       },
                       "Health Facility": {
-                        "forReceipt": ["LGA Facility"],
+                        "forReceipt": ["Warehouse"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
                     },
@@ -644,7 +640,10 @@ final dynamic sampleInventoryFlows = {
               "enums": [],
               "visibilityCondition": {
                 "expression": [
-                  {"condition": "warehouseDetails.facilityToWhich==DELIVERY_TEAM"}
+                  {
+                    "condition":
+                        "warehouseDetails.facilityToWhich==DELIVERY_TEAM"
+                  }
                 ]
               },
               "label": "APP_CONFIG_INVENTORY_warehouseDetails_teamCode_LABEL",
@@ -781,15 +780,11 @@ final dynamic sampleInventoryFlows = {
                   "value": {
                     "hierarchyMapping": {
                       "State": {
-                        "forReceipt": ["Central Facility"],
-                        "forIssue": ["LGA Facility"]
-                      },
-                      "LGA": {
-                        "forReceipt": ["State Facility"],
-                        "forIssue": ["Health Facility"]
+                        "forReceipt": ["Storing Resource"],
+                        "forIssue": ["Warehouse"]
                       },
                       "Health Facility": {
-                        "forReceipt": ["LGA Facility"],
+                        "forReceipt": ["Warehouse"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
                     },
@@ -1320,7 +1315,12 @@ final dynamic sampleInventoryFlows = {
               {
                 "key": "secondaryType",
                 "value":
-                    "{{fn:getSecondaryType(stockDetails.facilityFromWhich)}}"
+                    "{{fn:getSecondaryType(formData.stockDetails.facilityFromWhich)}}"
+              },
+              {
+                "key": "receiverPartyType",
+                "value":
+                    "{{fn:getSecondaryType(formData.warehouseDetails.facilityToWhich)}}"
               },
               {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"}
             ],
@@ -1514,15 +1514,11 @@ final dynamic sampleInventoryFlows = {
                   "value": {
                     "hierarchyMapping": {
                       "State": {
-                        "forReceipt": ["LGA Facility"],
-                        "forIssue": ["LGA Facility"]
-                      },
-                      "LGA": {
-                        "forReceipt": ["State Facility"],
-                        "forIssue": ["Health Facility"]
+                        "forReceipt": ["Storing Resource"],
+                        "forIssue": ["Warehouse"]
                       },
                       "Health Facility": {
-                        "forReceipt": ["LGA Facility"],
+                        "forReceipt": ["Warehouse"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
                     },
@@ -1541,7 +1537,10 @@ final dynamic sampleInventoryFlows = {
               "enums": [],
               "visibilityCondition": {
                 "expression": [
-                  {"condition": "warehouseDetails.facilityToWhich==DELIVERY_TEAM"}
+                  {
+                    "condition":
+                        "warehouseDetails.facilityToWhich==DELIVERY_TEAM"
+                  }
                 ]
               },
               "label": "APP_CONFIG_INVENTORY_warehouseDetails_teamCode_LABEL",
@@ -1668,15 +1667,11 @@ final dynamic sampleInventoryFlows = {
                   "value": {
                     "hierarchyMapping": {
                       "State": {
-                        "forReceipt": ["Central Facility"],
-                        "forIssue": ["LGA Facility"]
-                      },
-                      "LGA": {
-                        "forReceipt": ["State Facility"],
-                        "forIssue": ["Health Facility"]
+                        "forReceipt": ["Storing Resource"],
+                        "forIssue": ["Warehouse"]
                       },
                       "Health Facility": {
-                        "forReceipt": ["LGA Facility"],
+                        "forReceipt": ["Warehouse"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
                     },

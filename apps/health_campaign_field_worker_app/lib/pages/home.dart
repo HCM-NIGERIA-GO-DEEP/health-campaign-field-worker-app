@@ -28,6 +28,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:health_campaign_field_worker_app/utils/i18_key_constants.dart';
 import 'package:isar/isar.dart';
 import 'package:recase/recase.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -63,6 +64,8 @@ import '../utils/debound.dart';
 import '../utils/environment_config.dart';
 import '../utils/flow_navigation_utils.dart';
 import '../utils/i18_key_constants.dart' as i18;
+import '../utils/i18_key_constants.dart';
+import '../utils/i18_key_constants.dart';
 import '../utils/least_level_boundary_singleton.dart';
 import '../utils/stock_downsync_utils.dart';
 import '../utils/utils.dart';
@@ -2330,19 +2333,18 @@ class _HomePageState extends LocalizedState<HomePage> {
           label: i18.home.beneficiaryLabel,
           onPressed: () async {
             context.router.push(const BednetDistributionWrapperRoute());
-    // context.router.push(CurrentBoundaryRoute(
-    // onBoundarySelected: (ctx) async {
-    // final moduleName =
-    // 'hcm-registration-${context.selectedProject.referenceID}';
-    // triggerLocalization(module: moduleName);
-    // isTriggerLocalisation = false;
-
+            // context.router.push(CurrentBoundaryRoute(
+            // onBoundarySelected: (ctx) async {
+            // final moduleName =
+            // 'hcm-registration-${context.selectedProject.referenceID}';
+            // triggerLocalization(module: moduleName);
+            // isTriggerLocalisation = false;
           },
         ),
       ),
 
-                final prefs = await SharedPreferences.getInstance();
-                final schemaJsonRaw = prefs.getString('app_config_schemas');
+      // final prefs = await SharedPreferences.getInstance();
+      // final schemaJsonRaw = prefs.getString('app_config_schemas');
       // i18.home.beneficiaryLabel:
       //     homeShowcaseData.distributorBeneficiaries.buildWith(
       //   child: HomeItemCard(
@@ -2557,11 +2559,12 @@ class _HomePageState extends LocalizedState<HomePage> {
           icon: Icons.store_mall_directory,
           label: i18.home.manageStockLabel,
           onPressed: () async {
-            final moduleName =
-                'hcm-inventory-${context.selectedProject.referenceID}';
-            final newModuleName = 'hcm-inventory-CMP-2026-03-30-000308';
-            triggerLocalization(module: newModuleName, loadOnline: true);
-            isTriggerLocalisation = false;
+            context.router.push(CurrentBoundaryRoute(
+              onBoundarySelected: (ctx) async {
+                final moduleName =
+                    'hcm-inventory-${context.selectedProject.referenceID}';
+                triggerLocalization(module: moduleName);
+                isTriggerLocalisation = false;
 
                 await FlowNavigationUtils.navigateToFlowModule(
                   context: ctx,

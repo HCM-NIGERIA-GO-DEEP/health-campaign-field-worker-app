@@ -244,9 +244,9 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                           serviceLocalRepository: ctx.read<
                               LocalRepository<ServiceModel,
                                   ServiceSearchModel>>(),
-                          hfReferralLocalRepository: ctx.read<
-                              LocalRepository<HFReferralModel,
-                                  HFReferralSearchModel>>(),
+                          // hfReferralLocalRepository: ctx.read<
+                          //     LocalRepository<HFReferralModel,
+                          //         HFReferralSearchModel>>(),
                         ),
                       ),
                       BlocProvider(

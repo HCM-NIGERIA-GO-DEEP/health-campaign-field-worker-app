@@ -8,6 +8,7 @@ import '../../blocs/bednet_distribution/bednet_distribution.dart';
 import '../../models/bednet_distribution/bednet_distribution_models.dart';
 import '../../router/app_router.dart';
 import '../../widgets/header/back_navigation_help_header.dart';
+import 'widgets/bednet_bloc_guard.dart';
 
 /// Shown after the last class distribution summary is submitted, when all
 /// pending classes for the school have been administered.
@@ -17,9 +18,13 @@ class BednetDistributionAcknowledgementPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bloc = maybeBednetDistributionBloc(context);
+    if (bloc == null) {
+      return missingBednetDistributionBlocFallback(context);
+    }
     final theme = Theme.of(context);
     final textTheme = theme.digitTextTheme(context);
-    final school = context.watch<BednetDistributionBloc>().state.selectedSchool;
+    final school = bloc.state.selectedSchool;
 
     return Scaffold(
       body: ScrollableContent(

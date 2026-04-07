@@ -8,6 +8,7 @@ import '../../blocs/bednet_distribution/bednet_distribution.dart';
 import '../../models/bednet_distribution/bednet_distribution_models.dart';
 import '../../router/app_router.dart';
 import '../../widgets/header/back_navigation_help_header.dart';
+import 'widgets/bednet_bloc_guard.dart';
 
 @RoutePage()
 class ClassConfirmationPage extends StatelessWidget {
@@ -22,12 +23,17 @@ class ClassConfirmationPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bloc = maybeBednetDistributionBloc(context);
+    if (bloc == null) {
+      return missingBednetDistributionBlocFallback(context);
+    }
     final theme = Theme.of(context);
     final textTheme = theme.digitTextTheme(context);
-    final pending = context.watch<BednetDistributionBloc>().state.pendingClassOrdinals;
+    final pending = bloc.state.pendingClassOrdinals;
     final isLastPending = pending.length == 1 && pending.first == classIndex;
 
     return BlocListener<BednetDistributionBloc, BednetDistributionState>(
+      bloc: bloc,
       listenWhen: (prev, curr) =>
           curr.navIntent != BednetNavIntent.none &&
           prev.navIntent != curr.navIntent,
@@ -38,7 +44,7 @@ class ClassConfirmationPage extends StatelessWidget {
           case BednetNavIntent.none:
             break;
           case BednetNavIntent.openSuccess:
-            context.read<BednetDistributionBloc>().add(
+            bloc.add(
                   const BednetDistributionEvent.clearNavIntent(),
                 );
             if (isLastPending) {
@@ -52,7 +58,7 @@ class ClassConfirmationPage extends StatelessWidget {
             }
             break;
           case BednetNavIntent.continueNextClass:
-            context.read<BednetDistributionBloc>().add(
+            bloc.add(
                   const BednetDistributionEvent.clearNavIntent(),
                 );
             context.router.popUntilRouteWithName(SchoolDetailsRoute.name);
@@ -81,7 +87,7 @@ class ClassConfirmationPage extends StatelessWidget {
                 size: DigitButtonSize.large,
                 mainAxisSize: MainAxisSize.max,
                 onPressed: () {
-                  context.read<BednetDistributionBloc>().add(
+                  bloc.add(
                         BednetDistributionEvent.completeClassAdministration(
                           classIndex: classIndex,
                         ),

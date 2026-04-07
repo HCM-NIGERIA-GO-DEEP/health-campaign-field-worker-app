@@ -1,4 +1,4 @@
-import 'package:attendance_management/widgets/labelled_toggle.dart';
+// import 'package:attendance_management/widgets/labelled_toggle.dart';
 import 'package:digit_ui_components/enum/app_enums.dart';
 import 'package:digit_ui_components/theme/spacers.dart';
 import 'package:digit_ui_components/widgets/atoms/digit_button.dart';
@@ -94,7 +94,7 @@ class _CustomSummaryReportState
             children: [
               const BackNavigationHelpHeaderWidget(),
               Container(
-                padding: const EdgeInsets.all(kPadding),
+                padding: const EdgeInsets.all(16),
                 child: Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
@@ -199,12 +199,12 @@ class _ReportDetailsContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(kPadding),
+      padding: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          const SizedBox(height: kPadding * 2),
+          const SizedBox(height: 16 * 2),
           Flexible(
             child: ReadonlyDigitGrid(
               data: data,
@@ -234,7 +234,7 @@ class _NoReportContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(
-          height: kPadding * 2,
+          height: 16 * 2,
           width: double.maxFinite,
         ),
         Center(

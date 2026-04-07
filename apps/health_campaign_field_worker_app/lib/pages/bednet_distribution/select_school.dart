@@ -10,6 +10,7 @@ import '../../blocs/bednet_distribution/bednet_distribution.dart';
 import '../../models/bednet_distribution/bednet_distribution_models.dart';
 import '../../router/app_router.dart';
 import '../../widgets/header/back_navigation_help_header.dart';
+import 'widgets/bednet_bloc_guard.dart';
 
 @RoutePage()
 class SelectSchoolPage extends StatelessWidget {
@@ -19,7 +20,12 @@ class SelectSchoolPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bloc = maybeBednetDistributionBloc(context);
+    if (bloc == null) {
+      return missingBednetDistributionBlocFallback(context);
+    }
     return BlocListener<BednetDistributionBloc, BednetDistributionState>(
+      bloc: bloc,
       listenWhen: (previous, current) =>
           previous.schoolSelectionSeq != current.schoolSelectionSeq &&
           current.selectedSchool != null &&
@@ -29,6 +35,7 @@ class SelectSchoolPage extends StatelessWidget {
         context.router.push(const SchoolDetailsRoute());
       },
       child: BlocBuilder<BednetDistributionBloc, BednetDistributionState>(
+        bloc: bloc,
         builder: (context, state) {
           return ReactiveFormBuilder(
             form: () => fb.group({
@@ -68,7 +75,7 @@ class SelectSchoolPage extends StatelessWidget {
                               if (!form.valid) return;
                               final school = form.control(_schoolControl).value
                                   as HouseholdModel;
-                              context.read<BednetDistributionBloc>().add(
+                              bloc.add(
                                     BednetDistributionEvent.selectSchool(
                                       school: school,
                                     ),

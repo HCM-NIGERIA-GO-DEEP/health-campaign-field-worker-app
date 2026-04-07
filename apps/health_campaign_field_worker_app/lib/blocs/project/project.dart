@@ -29,6 +29,7 @@ import '../../data/repositories/remote/mdms.dart';
 import '../../models/app_config/app_config_model.dart';
 import '../../models/auth/auth_model.dart';
 import '../../models/entities/roles_type.dart';
+import '../../models/entities/transaction_type.dart';
 import '../../utils/background_service.dart';
 import '../../utils/download_image.dart';
 import '../../utils/environment_config.dart';
@@ -494,7 +495,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
           .where((e) => facilityIdUsageMap[e] == Constants.healthFacility)
           .toList();
       final stockSearchModel = StockSearchModel(
-        receiverId: receiverIds,
+        receiverId: receiverIds.first,
         transactionType: [TransactionType.dispatched.toValue()],
       );
       final stockEntriesDownloaded =
@@ -510,7 +511,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
           .where((e) => facilityIdUsageMap[e] == Constants.lgaFacility)
           .toList();
       final stockSearchModel = StockSearchModel(
-        receiverId: receiverIds,
+        receiverId: receiverIds.first,
         transactionType: [TransactionType.dispatched.toValue()],
       );
       final stockEntriesDownloaded =
@@ -521,7 +522,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     } else if (userRoles.contains(RolesType.communityDistributor.toValue())) {
       final receiverIds = [context.loggedInUserUuid];
       final stockSearchModel = StockSearchModel(
-        receiverId: receiverIds,
+        receiverId: receiverIds.first,
         transactionType: [TransactionType.dispatched.toValue()],
       );
       final stockEntriesDownloaded =
@@ -546,9 +547,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     var initialLimit = 10;
 
     final stockEntries = await stockRemoteRepository.search(stockSearchModel,
-        limit: initialLimit,
-        offSet: offset,
-        lastChangedSince: lastChangedSince);
+        limit: initialLimit, offSet: offset, lastSyncedTime: lastChangedSince);
 
     return stockEntries;
   }

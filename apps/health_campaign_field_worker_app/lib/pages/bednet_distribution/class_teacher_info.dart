@@ -10,6 +10,7 @@ import '../../blocs/bednet_distribution/bednet_distribution.dart';
 import '../../models/bednet_distribution/bednet_distribution_models.dart';
 import '../../router/app_router.dart';
 import '../../widgets/header/back_navigation_help_header.dart';
+import 'widgets/bednet_bloc_guard.dart';
 
 /// Mobile is optional; when provided it must be exactly 11 digits.
 Map<String, dynamic>? _teacherMobileElevenDigits(
@@ -75,7 +76,11 @@ class ClassTeacherInfoPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final state = context.read<BednetDistributionBloc>().state;
+    final bloc = maybeBednetDistributionBloc(context);
+    if (bloc == null) {
+      return missingBednetDistributionBlocFallback(context);
+    }
+    final state = bloc.state;
     final ordinalIndex = classIndex - 1;
     final existing = (ordinalIndex >= 0 &&
             ordinalIndex < state.teacherInfoByClass.length)
@@ -128,7 +133,7 @@ class ClassTeacherInfoPage extends StatelessWidget {
                             (form.control(_mobile).value as String?) ?? '';
                         final mobileDigits = _digitsOnly(mobileRaw);
 
-                        context.read<BednetDistributionBloc>().add(
+                        bloc.add(
                               BednetDistributionEvent.saveTeacherInfo(
                                 classIndex: classIndex,
                                 info: ClassTeacherInfoModel(
