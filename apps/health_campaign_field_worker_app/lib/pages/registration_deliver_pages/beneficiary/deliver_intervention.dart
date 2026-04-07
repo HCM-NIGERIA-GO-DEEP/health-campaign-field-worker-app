@@ -17,6 +17,7 @@ import 'package:health_campaign_field_worker_app/blocs/registration_deliver/sear
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/additional_fields_type.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/deliver_strategy_type.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
+import 'package:health_campaign_field_worker_app/router/app_router.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart' as i18;
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/back_navigation_help_header.dart';
@@ -107,7 +108,7 @@ class DeliverInterventionPageState
               navigateToSummary: true,
               householdMemberWrapper: householdMember),
         );
-    // context.router.push(DeliverySummaryRoute());
+    context.router.push(DeliverySummaryRoute());
   }
 
   void handleLocationState(
@@ -220,34 +221,34 @@ class DeliverInterventionPageState
                           : 0;
 
                       final steps = generateSteps(numberOfDoses);
-                      if ((productVariants ?? []).isEmpty && context.mounted) {
-                        SchedulerBinding.instance.addPostFrameCallback((_) {
-                          showCustomPopup(
-                              context: context,
-                              builder: (popUpContext) => Popup(
-                                      title: localizations.translate(
-                                        i18.common.noResultsFound,
-                                      ),
-                                      description: localizations.translate(
-                                        i18.deliverIntervention
-                                            .checkForProductVariantsConfig,
-                                      ),
-                                      type: PopUpType.alert,
-                                      actions: [
-                                        DigitButton(
-                                          label: localizations.translate(
-                                            i18.common.coreCommonOk,
-                                          ),
-                                          onPressed: () {
-                                            context.router.maybePop();
-                                            Navigator.of(popUpContext).pop();
-                                          },
-                                          type: DigitButtonType.primary,
-                                          size: DigitButtonSize.large,
-                                        ),
-                                      ]));
-                        });
-                      }
+                      // if ((productVariants ?? []).isEmpty && context.mounted) {
+                      //   SchedulerBinding.instance.addPostFrameCallback((_) {
+                      //     showCustomPopup(
+                      //         context: context,
+                      //         builder: (popUpContext) => Popup(
+                      //                 title: localizations.translate(
+                      //                   i18.common.noResultsFound,
+                      //                 ),
+                      //                 description: localizations.translate(
+                      //                   i18.deliverIntervention
+                      //                       .checkForProductVariantsConfig,
+                      //                 ),
+                      //                 type: PopUpType.alert,
+                      //                 actions: [
+                      //                   DigitButton(
+                      //                     label: localizations.translate(
+                      //                       i18.common.coreCommonOk,
+                      //                     ),
+                      //                     onPressed: () {
+                      //                       context.router.maybePop();
+                      //                       Navigator.of(popUpContext).pop();
+                      //                     },
+                      //                     type: DigitButtonType.primary,
+                      //                     size: DigitButtonSize.large,
+                      //                   ),
+                      //                 ]));
+                      //   });
+                      // }
 
                       return BlocBuilder<ProductVariantBloc,
                           ProductVariantState>(
@@ -317,34 +318,34 @@ class DeliverInterventionPageState
                                                                 deliveredProducts,
                                                                 form);
 
-                                                        if (hasEmptyResources) {
-                                                          Toast.showToast(
-                                                              context,
-                                                              message: localizations
-                                                                  .translate(i18
-                                                                      .deliverIntervention
-                                                                      .resourceDeliveredValidation),
-                                                              type: ToastType
-                                                                  .error);
-                                                        } else if (hasDuplicates) {
-                                                          Toast.showToast(
-                                                              context,
-                                                              message: localizations
-                                                                  .translate(i18
-                                                                      .deliverIntervention
-                                                                      .resourceDuplicateValidation),
-                                                              type: ToastType
-                                                                  .error);
-                                                        } else if (hasZeroQuantity) {
-                                                          Toast.showToast(
-                                                              context,
-                                                              message: localizations
-                                                                  .translate(i18
-                                                                      .deliverIntervention
-                                                                      .resourceCannotBeZero),
-                                                              type: ToastType
-                                                                  .error);
-                                                        } else {
+                                                        // if (hasEmptyResources) {
+                                                        //   Toast.showToast(
+                                                        //       context,
+                                                        //       message: localizations
+                                                        //           .translate(i18
+                                                        //               .deliverIntervention
+                                                        //               .resourceDeliveredValidation),
+                                                        //       type: ToastType
+                                                        //           .error);
+                                                        // } else if (hasDuplicates) {
+                                                        //   Toast.showToast(
+                                                        //       context,
+                                                        //       message: localizations
+                                                        //           .translate(i18
+                                                        //               .deliverIntervention
+                                                        //               .resourceDuplicateValidation),
+                                                        //       type: ToastType
+                                                        //           .error);
+                                                        // } else if (hasZeroQuantity) {
+                                                        //   Toast.showToast(
+                                                        //       context,
+                                                        //       message: localizations
+                                                        //           .translate(i18
+                                                        //               .deliverIntervention
+                                                        //               .resourceCannotBeZero),
+                                                        //       type: ToastType
+                                                        //           .error);
+                                                        // } else {
                                                           context
                                                               .read<
                                                                   LocationBloc>()
@@ -359,7 +360,7 @@ class DeliverInterventionPageState
                                                             projectBeneficiary!
                                                                 .first,
                                                           );
-                                                        }
+                                                        // }
                                                       },
                                                     );
                                                   });

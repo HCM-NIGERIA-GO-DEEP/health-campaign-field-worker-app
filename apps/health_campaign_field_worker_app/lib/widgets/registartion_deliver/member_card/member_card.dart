@@ -17,6 +17,7 @@ import 'package:health_campaign_field_worker_app/utils/registration_deliver_util
 import 'package:survey_form/blocs/service_definition.dart';
 
 import '../../../models/registration_deliver_model/entities/registration_delivery_enums.dart';
+import '../../../router/app_router.dart';
 import '../../../utils/registration_deliver_utils/extensions/extensions.dart';
 
 
@@ -314,9 +315,7 @@ class MemberCard extends StatelessWidget {
                                                         '${RegistrationDeliverySingleton().selectedProject!.name}.${RegistrationDeliveryEnums.eligibility.toValue()}'))
                                                 .toList()
                                                 .isEmpty) {
-                                              // context.router.push(
-                                              //   DeliverInterventionRoute(),
-                                              // );
+                                              context.router.push(BeneficiaryDetailsRoute());
                                             } else {
                                                 // navigateToChecklist(context,
                                                 //     projectBeneficiaryClientReferenceId);

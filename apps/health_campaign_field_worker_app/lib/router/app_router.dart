@@ -143,6 +143,22 @@ class AppRouter extends _$AppRouter {
                   page: BednetIndividualDetailsWrapperRoute.page,
                   path: 'individual-details',
                 ),
+                 AutoRoute(
+                    page: BeneficiaryDetailsRoute.page,
+                    path: 'beneficiary-details',
+                  ),
+                AutoRoute(
+                    page: DeliverInterventionRoute.page,
+                    path: 'deliver-intervention',
+                  ),
+                  AutoRoute(
+                    page: DeliverySummaryRoute.page,
+                    path: 'delivery-summary',
+                  ),
+                // AutoRoute(
+                //     page: DoseAdministeredRoute.page,
+                //     path: 'dose-administered',
+                //   ),
               ],
             ),
             AutoRoute(
