@@ -787,26 +787,27 @@ class _HouseholdOverviewPageState
                                                   );
                                                 },
                                                 isNotEligible:
-                                                    RegistrationDeliverySingleton()
-                                                                .projectType
-                                                                ?.cycles !=
-                                                            null
-                                                        ? !checkEligibilityForAgeAndSideEffect(
-                                                            DigitDOBAgeConvertor(
-                                                              years: ageInYears,
-                                                              months:
-                                                                  ageInMonths,
-                                                            ),
-                                                            RegistrationDeliverySingleton()
-                                                                .projectType,
-                                                            (taskData ?? [])
-                                                                    .isNotEmpty
-                                                                ? taskData
-                                                                    ?.lastOrNull
-                                                                : null,
-                                                            sideEffectData,
-                                                          )
-                                                        : false,
+                                                    // RegistrationDeliverySingleton()
+                                                    //             .projectType
+                                                    //             ?.cycles !=
+                                                    //         null
+                                                    //     ? !checkEligibilityForAgeAndSideEffect(
+                                                    //         DigitDOBAgeConvertor(
+                                                    //           years: ageInYears,
+                                                    //           months:
+                                                    //               ageInMonths,
+                                                    //         ),
+                                                    //         RegistrationDeliverySingleton()
+                                                    //             .projectType,
+                                                    //         (taskData ?? [])
+                                                    //                 .isNotEmpty
+                                                    //             ? taskData
+                                                    //                 ?.lastOrNull
+                                                    //             : null,
+                                                    //         sideEffectData,
+                                                    //       )
+                                                    //     : 
+                                                        false,
                                                 name: e.name?.givenName ??
                                                     ' - - ',
                                                 years: (e.dateOfBirth == null
@@ -830,14 +831,14 @@ class _HouseholdOverviewPageState
                                                             DateTime.now(),
                                                       ).months),
                                                 gender: e.gender?.name,
-                                                isBeneficiaryRefused:
-                                                    isBeneficiaryRefused &&
-                                                        !checkStatus(
-                                                          taskData,
-                                                          currentCycle,
-                                                        ),
-                                                isBeneficiaryReferred:
-                                                    isBeneficiaryReferred,
+                                                // isBeneficiaryRefused:
+                                                //     isBeneficiaryRefused &&
+                                                //         !checkStatus(
+                                                //           taskData,
+                                                //           currentCycle,
+                                                //         ),
+                                                // isBeneficiaryReferred:
+                                                //     isBeneficiaryReferred,
                                                 isDelivered: taskData == null
                                                     ? false
                                                     : taskData.isNotEmpty &&
