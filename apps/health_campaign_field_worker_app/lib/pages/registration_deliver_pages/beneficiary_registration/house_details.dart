@@ -17,6 +17,7 @@ import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/sh
 import 'package:reactive_forms/reactive_forms.dart';
 
 import '../../../utils/registration_deliver_utils/extensions/extensions.dart';
+import 'individual_details.dart';
 
 @RoutePage()
 class HouseDetailsPage extends LocalizedStatefulWidget {
@@ -80,6 +81,7 @@ class HouseDetailsPageState extends LocalizedState<HouseDetailsPage> {
                               }
 
                               if (!form.valid) return;
+                              bool shouldNavigateNext = false;
                               selectedHouseStructureTypes =
                                   form.control(_householdStructureKey).value;
 
@@ -162,7 +164,7 @@ class HouseDetailsPageState extends LocalizedState<HouseDetailsPage> {
                                       model: houseModel,
                                     ),
                                   );
-                                  // router.push(HouseHoldDetailsRoute());
+                                  shouldNavigateNext = true;
                                 },
                                 editHousehold: (
                                   address,
@@ -213,6 +215,20 @@ class HouseDetailsPageState extends LocalizedState<HouseDetailsPage> {
                                   // router.push(HouseHoldDetailsRoute());
                                 },
                               );
+                              if (shouldNavigateNext) {
+                                final registrationBloc =
+                                    context.read<BeneficiaryRegistrationBloc>();
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (_) => BlocProvider.value(
+                                      value: registrationBloc,
+                                      child: const IndividualDetailsPage(
+                                        isHeadOfHousehold: true,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }
                             },
                             type: DigitButtonType.primary,
                             size: DigitButtonSize.large,
@@ -362,9 +378,9 @@ class HouseDetailsPageState extends LocalizedState<HouseDetailsPage> {
         value: state.householdModel?.additionalFields?.fields
             .where((e) =>
                 e.key == AdditionalFieldsType.houseStructureTypes.toValue())
-            .first
-            .value
-            .toString()
+            .firstOrNull
+            ?.value
+            ?.toString()
             .split("|"),
       )
     });

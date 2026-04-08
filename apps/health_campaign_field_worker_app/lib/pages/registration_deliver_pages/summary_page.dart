@@ -17,6 +17,7 @@ import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/ba
 
 
 import '../../../widgets/localized.dart';
+import '../bednet_distribution/bednet_distribution_success.dart';
 
 
 @RoutePage()
@@ -62,18 +63,12 @@ class SummaryPageState extends LocalizedState<SummaryPage> {
               if (value.navigateToRoot) {
                 (router.parent() as StackRouter).maybePop();
               } else {
-                // router.popUntil((route) =>
-                //     route.settings.name == SearchBeneficiaryRoute.name);
-                // context.read<SearchBlocWrapper>().searchHouseholdsBloc.add(
-                //       SearchHouseholdsEvent.searchByHousehold(
-                //         householdModel: value.householdModel,
-                //         projectId: RegistrationDeliverySingleton().projectId!,
-                //         isProximityEnabled: false,
-                //       ),
-                //     );
-                // router.push(BeneficiaryAcknowledgementRoute(
-                //   enableViewHousehold: true,
-                // ));
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (_) => const BednetDistributionSuccessPage(),
+                  ),
+                  (route) => route.isFirst,
+                );
               }
             },
           );

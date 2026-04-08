@@ -1,9 +1,23 @@
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_data_model/data/repositories/package_repository/oplog/oplog.dart';
+import 'package:digit_ui_components/services/location_bloc.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:isar/isar.dart';
+import 'package:location/location.dart';
+import 'package:provider/provider.dart';
+import 'package:survey_form/survey_form.dart';
 
 import '../../blocs/app_initialization/app_initialization.dart';
 import '../../blocs/bednet_distribution/bednet_distribution.dart';
+import '../../blocs/registration_deliver/search_households/household_global_seach.dart';
+import '../../blocs/registration_deliver/search_households/individual_global_search.dart';
+import '../../blocs/registration_deliver/search_households/search_bloc_common_wrapper.dart';
+import '../../blocs/registration_deliver/search_households/search_households.dart';
+import '../../blocs/registration_deliver/search_households/tag_by_search.dart';
+import '../../data/registration_deliver_repo/local/household_global_search.dart';
+import '../../data/registration_deliver_repo/local/individual_global_search.dart';
+import '../../data/registration_deliver_repo/local/registration_delivery_address.dart';
 import '../../data/local_store/no_sql/schema/app_configuration.dart';
 import '../../router/app_router.dart';
 import '../../utils/environment_config.dart';
@@ -61,15 +75,133 @@ class BednetDistributionWrapperPage extends StatelessWidget
       ),
     );
 
-    return BlocProvider(
-      create: (_) => BednetDistributionBloc(
-        householdLocalRepository: context
-            .read<LocalRepository<HouseholdModel, HouseholdSearchModel>>(),
-      )..add(
-          BednetDistributionEvent.initialize(
-            boundaryCode: context.boundary.code ?? '',
+    final singleton = RegistrationDeliverySingleton();
+    final projectId = singleton.projectId;
+    final beneficiaryType = singleton.beneficiaryType;
+    final userUid = singleton.loggedInUserUuid;
+    if (projectId == null || beneficiaryType == null || userUid == null) {
+      return const Material(
+        child: Center(
+          child: Text('Registration session not initialized'),
+        ),
+      );
+    }
+
+    final sql = context.read<LocalSqlDataStore>();
+    final isar = context.read<Isar>();
+    final addressRepository = context.read<RegistrationDeliveryAddressRepo>();
+    final individualGlobalSearchRepository = IndividualGlobalSearchRepository(
+      sql,
+      IndividualOpLogManager(isar),
+    );
+    final houseHoldGlobalSearchRepository = HouseHoldGlobalSearchRepository(
+      sql,
+      HouseholdOpLogManager(isar),
+    );
+
+    final individual = context.repository<IndividualModel, IndividualSearchModel>();
+    final household = context.repository<HouseholdModel, HouseholdSearchModel>();
+    final householdMember =
+        context.repository<HouseholdMemberModel, HouseholdMemberSearchModel>();
+    final projectBeneficiary =
+        context.repository<ProjectBeneficiaryModel, ProjectBeneficiarySearchModel>();
+    final task = context.repository<TaskModel, TaskSearchModel>();
+    final sideEffect =
+        context.repository<SideEffectModel, SideEffectSearchModel>();
+    final referral = context.repository<ReferralModel, ReferralSearchModel>();
+
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider(
+          create: (_) => BednetDistributionBloc(
+            householdLocalRepository: context
+                .read<LocalRepository<HouseholdModel, HouseholdSearchModel>>(),
+          )..add(
+              BednetDistributionEvent.initialize(
+                boundaryCode: context.boundary.code ?? '',
+              ),
+            ),
+        ),
+        BlocProvider(
+          create: (_) => SearchHouseholdsBloc(
+            userUid: userUid,
+            projectId: projectId,
+            individual: individual,
+            householdMember: householdMember,
+            household: household,
+            projectBeneficiary: projectBeneficiary,
+            taskDataRepository: task,
+            beneficiaryType: beneficiaryType,
+            sideEffectDataRepository: sideEffect,
+            addressRepository: addressRepository,
+            referralDataRepository: referral,
+            individualGlobalSearchRepository: individualGlobalSearchRepository,
+            houseHoldGlobalSearchRepository: houseHoldGlobalSearchRepository,
           ),
         ),
+        BlocProvider(
+          create: (_) => TagSearchBloc(
+            userUid: userUid,
+            projectId: projectId,
+            individual: individual,
+            householdMember: householdMember,
+            household: household,
+            projectBeneficiary: projectBeneficiary,
+            taskDataRepository: task,
+            beneficiaryType: beneficiaryType,
+            sideEffectDataRepository: sideEffect,
+            addressRepository: addressRepository,
+            referralDataRepository: referral,
+            individualGlobalSearchRepository: individualGlobalSearchRepository,
+            houseHoldGlobalSearchRepository: houseHoldGlobalSearchRepository,
+          ),
+        ),
+        BlocProvider(
+          create: (_) => IndividualGlobalSearchBloc(
+            userUid: userUid,
+            projectId: projectId,
+            individual: individual,
+            householdMember: householdMember,
+            household: household,
+            projectBeneficiary: projectBeneficiary,
+            taskDataRepository: task,
+            beneficiaryType: beneficiaryType,
+            sideEffectDataRepository: sideEffect,
+            addressRepository: addressRepository,
+            referralDataRepository: referral,
+            individualGlobalSearchRepository: individualGlobalSearchRepository,
+            houseHoldGlobalSearchRepository: houseHoldGlobalSearchRepository,
+          ),
+        ),
+        BlocProvider(
+          create: (_) => HouseHoldGlobalSearchBloc(
+            userUid: userUid,
+            projectId: projectId,
+            individual: individual,
+            householdMember: householdMember,
+            household: household,
+            projectBeneficiary: projectBeneficiary,
+            taskDataRepository: task,
+            beneficiaryType: beneficiaryType,
+            sideEffectDataRepository: sideEffect,
+            addressRepository: addressRepository,
+            referralDataRepository: referral,
+            individualGlobalSearchRepository: individualGlobalSearchRepository,
+            houseHoldGlobalSearchRepository: houseHoldGlobalSearchRepository,
+          ),
+        ),
+        Provider<SearchBlocWrapper>(
+          create: (ctx) => SearchBlocWrapper(
+            searchHouseholdsBloc: ctx.read<SearchHouseholdsBloc>(),
+            tagSearchBloc: ctx.read<TagSearchBloc>(),
+            individualGlobalSearchBloc: ctx.read<IndividualGlobalSearchBloc>(),
+            houseHoldGlobalSearchBloc: ctx.read<HouseHoldGlobalSearchBloc>(),
+          ),
+        ),
+        BlocProvider(
+          create: (_) => LocationBloc(location: Location()),
+        ),
+      ],
       child: Theme(
         data: squareTheme,
         child: this,
