@@ -152,9 +152,17 @@ class AppRouter extends _$AppRouter {
                     path: 'deliver-intervention',
                   ),
                   AutoRoute(
-                    page: DeliverySummaryRoute.page,
-                    path: 'delivery-summary',
+                    page: HouseholdAcknowledgementRoute.page,
+                    path: 'household-acknowledgement',
                   ),
+                  AutoRoute(
+                    page: BeneficiaryAcknowledgementRoute.page,
+                    path: 'beneficiary-acknowledgement',
+                  ),
+                  // AutoRoute(
+                  //   page: DeliverySummaryRoute.page,
+                  //   path: 'delivery-summary',
+                  // ),
                 // AutoRoute(
                 //     page: DoseAdministeredRoute.page,
                 //     path: 'dose-administered',

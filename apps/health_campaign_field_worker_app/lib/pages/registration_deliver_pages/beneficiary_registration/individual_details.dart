@@ -8,6 +8,7 @@ import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/utils/date_utils.dart';
 import 'package:digit_ui_components/widgets/atoms/digit_dob_picker.dart';
+import 'package:digit_ui_components/widgets/atoms/pop_up_card.dart';
 import 'package:digit_ui_components/widgets/atoms/selection_card.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
@@ -26,6 +27,7 @@ import 'package:intl/intl.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import '../../../blocs/registration_deliver/search_households/search_households.dart';
+import '../../../router/app_router.dart';
 import '../../../utils/registration_deliver_utils/extensions/extensions.dart';
 
 @RoutePage()
@@ -85,7 +87,7 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                       element.loading == false &&
                       element.householdMemberWrapper.household != null);
                   if (!context.mounted) return;
-                  await router.maybePop();
+                  await router.push( HouseholdAcknowledgementRoute());
                 }
               },
             );
@@ -139,11 +141,41 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                             if (!form.valid) return;
                             FocusManager.instance.primaryFocus?.unfocus();
 
-                            state.maybeWhen(
-                              orElse: () {
-                                return;
-                              },
-                              create: (
+                            final submit = await showDialog<bool>(
+                              context: context,
+                              builder: (ctx) => Popup(
+                                title: localizations.translate(
+                                    i18.deliverIntervention.dialogTitle),
+                                description: localizations.translate(
+                                    i18.deliverIntervention.dialogContent),
+                                actions: [
+                                  DigitButton(
+                                      label: localizations.translate(
+                                          i18.common.coreCommonSubmit),
+                                      onPressed: () {
+                                        Navigator.of(context,
+                                                rootNavigator: true)
+                                            .pop(true);
+                                      },
+                                      type: DigitButtonType.primary,
+                                      size: DigitButtonSize.large),
+                                  DigitButton(
+                                      label: localizations.translate(
+                                          i18.common.coreCommonCancel),
+                                      onPressed: () => Navigator.of(context,
+                                              rootNavigator: true)
+                                          .pop(false),
+                                      type: DigitButtonType.secondary,
+                                      size: DigitButtonSize.large),
+                                ],
+                              ),
+                            );
+                            if (submit ?? false) {
+                              state.maybeWhen(
+                                orElse: () {
+                                  return;
+                                },
+                                create: (
                                 addressModel,
                                 householdModel,
                                 individualModel,
@@ -316,6 +348,7 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                                 }
                               },
                             );
+                            }
                           },
                         );
                       },

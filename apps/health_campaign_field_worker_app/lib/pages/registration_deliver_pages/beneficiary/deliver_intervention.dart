@@ -108,7 +108,8 @@ class DeliverInterventionPageState
               navigateToSummary: true,
               householdMemberWrapper: householdMember),
         );
-    context.router.push(DeliverySummaryRoute());
+    context.router.push(
+        HouseholdAcknowledgementRoute(enableViewHousehold: false));
   }
 
   void handleLocationState(
@@ -346,20 +347,51 @@ class DeliverInterventionPageState
                                                         //       type: ToastType
                                                         //           .error);
                                                         // } else {
-                                                          context
-                                                              .read<
-                                                                  LocationBloc>()
-                                                              .add(
-                                                                  const LoadLocationEvent());
-                                                          handleLocationState(
-                                                            locationState,
-                                                            context,
-                                                            deliveryInterventionState,
-                                                            form,
-                                                            householdMemberWrapper,
-                                                            projectBeneficiary!
-                                                                .first,
+                                                          final submit = await showDialog<bool>(
+                                                            context: context,
+                                                            builder: (ctx) => Popup(
+                                                              title: localizations.translate(
+                                                                  i18.deliverIntervention.dialogTitle),
+                                                              description: localizations.translate(
+                                                                  i18.deliverIntervention.dialogContent),
+                                                              actions: [
+                                                                DigitButton(
+                                                                    label: localizations.translate(
+                                                                        i18.common.coreCommonSubmit),
+                                                                    onPressed: () {
+                                                                      Navigator.of(context,
+                                                                              rootNavigator: true)
+                                                                          .pop(true);
+                                                                    },
+                                                                    type: DigitButtonType.primary,
+                                                                    size: DigitButtonSize.large),
+                                                                DigitButton(
+                                                                    label: localizations.translate(
+                                                                        i18.common.coreCommonCancel),
+                                                                    onPressed: () => Navigator.of(context,
+                                                                            rootNavigator: true)
+                                                                        .pop(false),
+                                                                    type: DigitButtonType.secondary,
+                                                                    size: DigitButtonSize.large),
+                                                              ],
+                                                            ),
                                                           );
+                                                          if (submit ?? false) {
+                                                            context
+                                                                .read<
+                                                                    LocationBloc>()
+                                                                .add(
+                                                                    const LoadLocationEvent());
+                                                            handleLocationState(
+                                                              locationState,
+                                                              context,
+                                                              deliveryInterventionState,
+                                                              form,
+                                                              householdMemberWrapper,
+                                                              projectBeneficiary!
+                                                                  .first,
+                                                            );
+                                                          }
                                                         // }
                                                       },
                                                     );

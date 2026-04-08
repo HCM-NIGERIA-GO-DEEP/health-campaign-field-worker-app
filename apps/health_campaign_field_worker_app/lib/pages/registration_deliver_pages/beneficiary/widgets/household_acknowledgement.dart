@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/household_overview/household_overview.dart';
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/search_households/search_households.dart';
+import 'package:health_campaign_field_worker_app/router/app_router.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/localized.dart';
 
@@ -48,16 +49,12 @@ class HouseholdAcknowledgementPageState
                       label: localizations.translate(
                         householdDetails.viewHouseHoldDetailsAction,
                       ),
-                      isDisabled: !(widget.enableViewHousehold ?? false),
+                      // isDisabled: !(widget.enableViewHousehold ?? false),
                       onPressed: () {
-                        final wrapper = context
-                            .read<HouseholdOverviewBloc>()
-                            .state
-                            .householdMemberWrapper;
-
-                        // context.router.popAndPush(
-                        //   BeneficiaryWrapperRoute(wrapper: wrapper),
-                        // );
+                        final parent = context.router.parent() as StackRouter;
+                        // Pop twice to navigate back to the previous screen
+                        parent.popUntilRoot();
+                        context.router.push(const SchoolDetailsRoute());
                       },
                       type: DigitButtonType.primary,
                       size: DigitButtonSize.large),
