@@ -56,10 +56,6 @@ class BednetDistributionBloc
               .compareTo(b.bednetDisplayName.toLowerCase()),
         );
 
-      if (schools.isEmpty) {
-        schools = bednetDummySchoolHouseholds();
-      }
-
       emit(state.copyWith(
         loading: false,
         schools: schools,
