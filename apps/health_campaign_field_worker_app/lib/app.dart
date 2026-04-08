@@ -367,6 +367,16 @@ class MainApplicationState extends State<MainApplication>
                             ),
                           ),
                           BlocProvider(
+                            create: (ctx) => SummaryReportBloc(
+                              householdLocalRepository: ctx.read<
+                                  LocalRepository<HouseholdModel,
+                                      HouseholdSearchModel>>(),
+                              taskLocalRepository: ctx.read<
+                                  LocalRepository<TaskModel,
+                                      TaskSearchModel>>(),
+                            ),
+                          ),
+                          BlocProvider(
                             create: (context) => ProductVariantBloc(
                               const ProductVariantEmptyState(),
                               context.repository<ProductVariantModel,

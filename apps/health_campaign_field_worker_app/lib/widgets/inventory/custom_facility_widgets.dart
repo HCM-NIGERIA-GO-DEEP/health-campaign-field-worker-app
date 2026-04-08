@@ -412,6 +412,13 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
       ));
     }
 
+    if (isDistributor && isFromField && isReturnFlow) {
+      facilities.add(DropdownItem(
+        code: context.loggedInUserUuid,
+        name: localizations.translate('DELIVERY_TEAM'),
+      ));
+    }
+
     facilities.addAll(filteredFacilities.map((e) {
       final model = e as ProjectFacilityModel;
       final facilityId = model.facilityId;

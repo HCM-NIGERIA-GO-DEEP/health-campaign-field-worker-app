@@ -3070,11 +3070,11 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.fileComplaint:
           homeShowcaseData.distributorFileComplaint.showcaseKey,
       i18.home.syncDataLabel: homeShowcaseData.distributorSyncData.showcaseKey,
-      i18.home.viewReportsLabel: homeShowcaseData.inventoryReport.showcaseKey,
+      // i18.home.viewReportsLabel: homeShowcaseData.inventoryReport.showcaseKey,
       i18.home.beneficiaryReferralLabel:
           homeShowcaseData.hfBeneficiaryReferral.showcaseKey,
-      i18.home.manageAttendanceLabel:
-          homeShowcaseData.manageAttendance.showcaseKey,
+      // i18.home.manageAttendanceLabel:
+      //     homeShowcaseData.manageAttendance.showcaseKey,
       // i18.home.db: homeShowcaseData.db.showcaseKey,
       i18.home.closedHouseHoldLabel:
           homeShowcaseData.closedHouseHold.showcaseKey,
@@ -3083,9 +3083,9 @@ class _HomePageState extends LocalizedState<HomePage> {
       // i18.home.clfLabel: homeShowcaseData.clf.showcaseKey, // TODO: Uncomment when CLF is implemented
       // i18.home.beneficiaryIdLabel: homeShowcaseData.beneficiaryId.showcaseKey, // TODO: Uncomment when beneficiary downsync is implemented
       i18.home.dataShare: homeShowcaseData.dataShare.showcaseKey,
-      i18.home.db: homeShowcaseData.db.showcaseKey,
+      // i18.home.db: homeShowcaseData.db.showcaseKey,
       i18.home.stockSyncDataLabel: homeShowcaseData.stockSyncData.showcaseKey,
-      i18.home.summaryLabel: homeShowcaseData.summaryReport.showcaseKey,
+      // i18.home.summaryLabel: homeShowcaseData.summaryReport.showcaseKey,
     };
 
     final homeItemsLabel = <String>[
@@ -3099,16 +3099,16 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.mySurveyForm,
       i18.home.fileComplaint,
       i18.home.syncDataLabel,
-      i18.home.viewReportsLabel,
+      // i18.home.viewReportsLabel,
       i18.home.beneficiaryReferralLabel,
-      i18.home.manageAttendanceLabel,
+      // i18.home.manageAttendanceLabel,
       i18.home.dashboard,
       // i18.home.beneficiaryIdLabel, // TODO: Uncomment when beneficiary downsync is implemented
       i18.home.faceRegistrationLabel,
       i18.home.dataShare,
       i18.home.stockSyncDataLabel,
-      i18.home.db,
-      i18.home.summaryLabel,
+      // i18.home.db,
+      // i18.home.summaryLabel,
     ];
 
     final List<String> filteredLabels = homeItemsLabel

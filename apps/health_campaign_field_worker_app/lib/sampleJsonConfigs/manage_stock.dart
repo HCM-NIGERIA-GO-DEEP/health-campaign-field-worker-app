@@ -779,14 +779,14 @@ final dynamic sampleInventoryFlows = {
                   "type": "facilityHierarchy",
                   "value": {
                     "hierarchyMapping": {
-                      "State": {
-                        "forReceipt": ["Storing Resource"],
-                        "forIssue": ["Warehouse"]
-                      },
-                      "Health Facility": {
-                        "forReceipt": ["Warehouse"],
-                        "forIssue": ["DELIVERY_TEAM"]
-                      }
+                      // "State": {
+                      //   "forReceipt": ["Storing Resource"],
+                      //   "forIssue": ["Warehouse"]
+                      // },
+                      // "Health Facility": {
+                      //   "forReceipt": ["Warehouse"],
+                      //   "forIssue": ["DELIVERY_TEAM"]
+                      // }
                     },
                     "useTransactionType": true
                   },
@@ -1666,14 +1666,14 @@ final dynamic sampleInventoryFlows = {
                   "type": "facilityHierarchy",
                   "value": {
                     "hierarchyMapping": {
-                      "State": {
-                        "forReceipt": ["Storing Resource"],
-                        "forIssue": ["Warehouse"]
-                      },
-                      "Health Facility": {
-                        "forReceipt": ["Warehouse"],
-                        "forIssue": ["DELIVERY_TEAM"]
-                      }
+                      // "State": {
+                      //   "forReceipt": ["Storing Resource"],
+                      //   "forIssue": ["Warehouse"]
+                      // },
+                      // "Health Facility": {
+                      //   "forReceipt": ["Warehouse"],
+                      //   "forIssue": ["DELIVERY_TEAM"]
+                      // }
                     },
                     "useTransactionType": true
                   },

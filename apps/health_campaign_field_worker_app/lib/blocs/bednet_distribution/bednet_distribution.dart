@@ -555,23 +555,40 @@ class BednetDistributionBloc
     HouseholdModel school,
     IndividualModel individual,
   ) {
+    String normalize(String? value) => value?.trim().toLowerCase() ?? '';
+
     final fields =
         individual.additionalFields?.fields ?? const <AdditionalField>[];
     final map = <String, Object?>{
       for (final field in fields)
         field.key.toLowerCase(): field.value as Object?,
     };
-    final linkedSchool = map['schoolid']?.toString() ??
+    final linkedSchoolRaw = map['schoolid']?.toString() ??
         map['school_id']?.toString() ??
         map['schoolclientreferenceid']?.toString() ??
         map['householdclientreferenceid']?.toString() ??
         map['household_id']?.toString();
-    final hasLink = linkedSchool != null && linkedSchool.isNotEmpty;
-    final matchesSchool = !hasLink ||
-        linkedSchool == school.bednetSchoolId ||
-        linkedSchool == school.clientReferenceId ||
-        linkedSchool == school.id;
-    return matchesSchool;
+    final linkedSchool = normalize(linkedSchoolRaw);
+    final hasLink = linkedSchool.isNotEmpty;
+    if (hasLink) {
+      final candidates = <String>{
+        normalize(school.bednetSchoolId),
+        normalize(school.clientReferenceId),
+        normalize(school.id),
+      }..removeWhere((e) => e.isEmpty);
+      return candidates.contains(linkedSchool);
+    }
+
+    // Do not treat unlinked class rows as belonging to every school.
+    // Fallback to school-name matching only when that metadata is present.
+    final linkedSchoolName = normalize(
+      map['schoolname']?.toString() ?? map['school_name']?.toString(),
+    );
+    if (linkedSchoolName.isNotEmpty) {
+      return linkedSchoolName == normalize(school.bednetDisplayName);
+    }
+
+    return false;
   }
 
   bool _isClassIndividual(IndividualModel individual) {
