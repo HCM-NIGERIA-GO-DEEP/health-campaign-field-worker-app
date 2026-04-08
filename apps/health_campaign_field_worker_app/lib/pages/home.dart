@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:collection/collection.dart';
 
 import 'package:attendance_management/utils/utils.dart';
+import 'package:collection/collection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crypto/crypto.dart';
 import 'package:digit_crud_bloc/digit_crud_bloc.dart';
@@ -43,7 +43,6 @@ import '../blocs/app_initialization/app_initialization.dart';
 import '../blocs/auth/auth.dart';
 import '../blocs/localization/localization.dart';
 import '../blocs/stock_downsync/stock_downsync.dart';
-import '../blocs/stock_downsync/stock_downsync.dart';
 import '../data/local_store/app_shared_preferences.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../data/local_store/no_sql/schema/service_registry.dart';
@@ -64,7 +63,6 @@ import '../utils/debound.dart';
 import '../utils/environment_config.dart';
 import '../utils/flow_navigation_utils.dart';
 import '../utils/i18_key_constants.dart' as i18;
-import '../utils/i18_key_constants.dart';
 import '../utils/i18_key_constants.dart';
 import '../utils/least_level_boundary_singleton.dart';
 import '../utils/stock_downsync_utils.dart';
@@ -427,6 +425,14 @@ class _HomePageState extends LocalizedState<HomePage> {
       // For dispatch/damage/loss the warehouse is the sender
       const senderTypes = {'dispatch', 'damage', 'loss'};
       return senderTypes.contains(reportType) ? 'senderId' : 'receiverId';
+    });
+
+    // For received reports, filter by modifiedBy (receiver updates the transaction)
+    // For other reports, filter by createdBy (sender creates the transaction)
+    FunctionRegistry.register('getAuditFilterKey', (args, stateData) {
+      if (args.isEmpty) return 'clientCreatedBy';
+      final reportType = args.first?.toString() ?? '';
+      return reportType == 'receipt' ? 'clientModifiedBy' : 'clientCreatedBy';
     });
 
     // Get secondary party type based on facility selection
@@ -3111,8 +3117,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                 .map((e) => e.displayName)
                 .toList()
                 .contains(element) ||
-            element == i18.home.db ||
-            element == i18.home.manageAttendanceLabel)
+            element == i18.home.db)
         .toList();
 
     final showcaseKeys = filteredLabels

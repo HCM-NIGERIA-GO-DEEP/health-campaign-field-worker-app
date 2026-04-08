@@ -82,6 +82,7 @@ class StockCalculationUtils {
       final transactionType = stock.transactionType?.toUpperCase() ?? '';
       final transactionReason = stock.transactionReason?.toUpperCase() ?? '';
       final quantity = num.tryParse(stock.quantity ?? '0') ?? 0.0;
+      final status = _getAdditionalFieldValue(stock, 'status');
 
       // Extract stockEntryType from additionalFields as fallback
       final stockEntryType = _getStockEntryType(stock);
@@ -117,9 +118,7 @@ class StockCalculationUtils {
       // Stock Issued/Lost/Damaged: This facility is the sender AND transactionType == DISPATCHED
       // Check sender first so damage/loss is counted correctly when senderId == receiverId
       else if (isSender && transactionType == 'DISPATCHED') {
-        final status = _getAdditionalFieldValue(stock, 'status');
-        // If the receiver rejected this stock, it comes back to the sender.
-        // Don't count as issued so the quantity stays in sender's balance.
+        // Rejected stock comes back to the sender — don't count as issued
         if (status == 'REJECTED') {
           // Skip - rejected stock is not subtracted from sender's balance
         } else if (transactionReason == 'LOST_IN_TRANSIT' ||
@@ -130,8 +129,6 @@ class StockCalculationUtils {
             transactionReason == 'DAMAGED_IN_STORAGE' ||
             stockEntryType == 'DAMAGED') {
           stockDamaged += quantity;
-        } else if (stockEntryType == 'REJECTED') {
-          // Rejected stock - not counted as issued since it was never accepted
         } else if (stockEntryType == 'RETURNED') {
           // Reverse logistics: returned stock dispatched out
           stockReturned += quantity;
@@ -144,7 +141,6 @@ class StockCalculationUtils {
       // Incoming dispatches are only counted as received if the status is ACCEPTED.
       // Pending/IN_TRANSIT dispatches are not counted until explicitly accepted.
       else if (isReceiver && transactionType == 'DISPATCHED') {
-        final status = _getAdditionalFieldValue(stock, 'status');
         if (status == 'ACCEPTED') {
           stockReceived += quantity;
         }
