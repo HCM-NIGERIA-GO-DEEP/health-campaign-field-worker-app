@@ -15,6 +15,7 @@ class ResourceBeneficiaryCard extends LocalizedStatefulWidget {
   final int cardIndex;
   final FormGroup form;
   final int totalItems;
+  final bool? isReadOnly;
 
   const ResourceBeneficiaryCard({
     super.key,
@@ -23,6 +24,7 @@ class ResourceBeneficiaryCard extends LocalizedStatefulWidget {
     required this.cardIndex,
     required this.form,
     required this.totalItems,
+    this.isReadOnly=false,
   });
 
   @override
@@ -86,7 +88,8 @@ class ResourceBeneficiaryCardState
           child: DigitNumericFormInput(
             minValue: 1,
             step: 1,
-            initialValue: "0",
+            initialValue: "1",
+            readOnly: widget.isReadOnly ?? false,
             onChange: (value) {
               widget.form
                   .control('quantityDistributed.${widget.cardIndex}')

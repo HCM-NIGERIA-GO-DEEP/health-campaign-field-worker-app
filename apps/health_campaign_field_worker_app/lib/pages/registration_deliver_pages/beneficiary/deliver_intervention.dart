@@ -514,6 +514,7 @@ class DeliverInterventionPageState
                                                           .indexOf(e),
                                                       totalItems:
                                                           _controllers.length,
+                                                      isReadOnly: RegistrationDeliverySingleton().beneficiaryType == BeneficiaryType.individual,
                                                       onDelete: (index) {
                                                         (form.control(
                                                           _resourceDeliveredKey,
@@ -828,7 +829,7 @@ class DeliverInterventionPageState
                     bloc.tasks?.lastOrNull?.resources?.elementAt(i).quantity ??
                         '0',
                   )
-                : 0,
+                : 1,
             validators: [Validators.min(1)],
           ),
         ),
