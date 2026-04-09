@@ -110,6 +110,12 @@ abstract class _$AppRouter extends RootStackRouter {
         ),
       );
     },
+    BeneficiaryTypeSelectionRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const BeneficiaryTypeSelectionPage(),
+      );
+    },
     BoundarySelectionRoute.name: (routeData) {
       final args = routeData.argsAs<BoundarySelectionRouteArgs>(
           orElse: () => const BoundarySelectionRouteArgs());
@@ -713,6 +719,20 @@ class BeneficiaryDetailsRouteArgs {
   String toString() {
     return 'BeneficiaryDetailsRouteArgs{key: $key, appLocalizations: $appLocalizations}';
   }
+}
+
+/// generated route for
+/// [BeneficiaryTypeSelectionPage]
+class BeneficiaryTypeSelectionRoute extends PageRouteInfo<void> {
+  const BeneficiaryTypeSelectionRoute({List<PageRouteInfo>? children})
+      : super(
+          BeneficiaryTypeSelectionRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'BeneficiaryTypeSelectionRoute';
+
+  static const PageInfo<void> page = PageInfo<void>(name);
 }
 
 /// generated route for
