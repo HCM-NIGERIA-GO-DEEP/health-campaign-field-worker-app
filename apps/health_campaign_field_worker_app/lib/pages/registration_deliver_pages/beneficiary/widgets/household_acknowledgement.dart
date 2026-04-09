@@ -9,7 +9,6 @@ import 'package:health_campaign_field_worker_app/router/app_router.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/localized.dart';
 
-
 @RoutePage()
 class HouseholdAcknowledgementPage extends LocalizedStatefulWidget {
   final bool? enableViewHousehold;
@@ -54,7 +53,7 @@ class HouseholdAcknowledgementPageState
                         final parent = context.router.parent() as StackRouter;
                         // Pop twice to navigate back to the previous screen
                         parent.popUntilRoot();
-                        context.router.push(const SchoolDetailsRoute());
+                        context.router.push(HouseHoldDetailsRoute());
                       },
                       type: DigitButtonType.primary,
                       size: DigitButtonSize.large),
@@ -68,6 +67,7 @@ class HouseholdAcknowledgementPageState
                         final parent = context.router.parent() as StackRouter;
                         // Pop twice to navigate back to the previous screen
                         parent.popUntilRoot();
+                        context.router.push(SearchBeneficiaryRoute());
                       },
                       type: DigitButtonType.secondary,
                       size: DigitButtonSize.large),

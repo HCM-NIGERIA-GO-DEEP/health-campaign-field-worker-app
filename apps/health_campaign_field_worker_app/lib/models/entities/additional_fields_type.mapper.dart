@@ -61,6 +61,8 @@ class AdditionalFieldsTypeMapper extends EnumMapper<AdditionalFieldsType> {
         return AdditionalFieldsType.longitude;
       case "mobile":
         return AdditionalFieldsType.mobile;
+      case "e-Token":
+        return AdditionalFieldsType.eToken;
       case "EMPLOYEE":
         return AdditionalFieldsType.employee;
       default:
@@ -107,6 +109,8 @@ class AdditionalFieldsTypeMapper extends EnumMapper<AdditionalFieldsType> {
         return "longitude";
       case AdditionalFieldsType.mobile:
         return "mobile";
+      case AdditionalFieldsType.eToken:
+        return "e-Token";
       case AdditionalFieldsType.employee:
         return "EMPLOYEE";
     }

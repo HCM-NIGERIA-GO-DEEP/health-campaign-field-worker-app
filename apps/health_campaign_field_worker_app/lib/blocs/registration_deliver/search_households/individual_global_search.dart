@@ -1,17 +1,23 @@
 import 'dart:async';
 
 import 'package:collection/collection.dart';
-import 'package:digit_data_model/models/entities/individual.dart';
+import 'package:digit_data_model/data_model.dart';
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/search_households/search_households.dart';
-import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/household.dart';
-import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/household_member.dart';
-import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/project_beneficiary.dart';
-import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/referral.dart';
-import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/side_effect.dart';
-import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
-import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/task.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/global_search_parameters.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
+import 'package:registration_delivery/models/entities/status.dart';
+
+import '../../../utils/registration_deliver_utils/global_search_parameters.dart';
+import '../../../utils/utils.dart';
+// import 'package:digit_data_model/models/entities/individual.dart';
+// import 'package:health_campaign_field_worker_app/blocs/registration_deliver/search_households/search_households.dart';
+// import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/household.dart';
+// import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/household_member.dart';
+// import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/project_beneficiary.dart';
+// import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/referral.dart';
+// import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/side_effect.dart';
+// import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
+// import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/task.dart';
+// import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/global_search_parameters.dart';
+// import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
 
 class IndividualGlobalSearchBloc extends SearchHouseholdsBloc {
   IndividualGlobalSearchBloc(
@@ -89,11 +95,11 @@ class IndividualGlobalSearchBloc extends SearchHouseholdsBloc {
       final houseHoldIds =
           householdMembers.map((e) => e.householdClientReferenceId!).toList();
 
-      // householdList = await household.search(
-      //   HouseholdSearchModel(
-      //     clientReferenceId: houseHoldIds,
-      //   ),
-      // );
+      householdList = await household.search(
+        HouseholdSearchModel(
+          clientReferenceId: houseHoldIds,
+        ),
+      );
 
       var finalHouseholdMembersList = await fetchHouseholdMembersBulk(
           null, householdList.map((e) => e.clientReferenceId).toList());
@@ -103,11 +109,11 @@ class IndividualGlobalSearchBloc extends SearchHouseholdsBloc {
               .map((e) => e.individualClientReferenceId!)
               .toList()));
 
-      // projectBeneficiariesList = await projectBeneficiary.search(
-      //     ProjectBeneficiarySearchModel(
-      //         projectId: [RegistrationDeliverySingleton().projectId.toString()],
-      //         beneficiaryClientReferenceId:
-      //             individualsList.map((e) => e.clientReferenceId).toList()));
+      projectBeneficiariesList = await projectBeneficiary.search(
+          ProjectBeneficiarySearchModel(
+              projectId: [RegistrationDeliverySingleton().projectId.toString()],
+              beneficiaryClientReferenceId:
+                  individualsList.map((e) => e.clientReferenceId).toList()));
 
       List<dynamic> tasksRelated = await _processTasksAndRelatedData(
           projectBeneficiariesList, taskList, sideEffectsList, referralsList);
@@ -134,10 +140,10 @@ class IndividualGlobalSearchBloc extends SearchHouseholdsBloc {
             : null;
       }
 
-      // projectBeneficiariesList = await projectBeneficiary.search(
-      //     ProjectBeneficiarySearchModel(
-      //         projectId: [RegistrationDeliverySingleton().projectId.toString()],
-      //         clientReferenceId: listOfBeneficiaries));
+      projectBeneficiariesList = await projectBeneficiary.search(
+          ProjectBeneficiarySearchModel(
+              projectId: [RegistrationDeliverySingleton().projectId.toString()],
+              clientReferenceId: listOfBeneficiaries));
 
       late List<String> listOfMembers = [];
 
@@ -165,9 +171,9 @@ class IndividualGlobalSearchBloc extends SearchHouseholdsBloc {
           .map((e) => e.householdClientReferenceId.toString())
           .toList();
 
-      // householdList = await household.search(HouseholdSearchModel(
-      //   clientReferenceId: houseHoldClientReferenceIds,
-      // ));
+      householdList = await household.search(HouseholdSearchModel(
+        clientReferenceId: houseHoldClientReferenceIds,
+      ));
 
       var finalHouseholdMembersList = await fetchHouseholdMembersBulk(
           null, householdList.map((e) => e.clientReferenceId).toList());
@@ -177,11 +183,11 @@ class IndividualGlobalSearchBloc extends SearchHouseholdsBloc {
               .map((e) => e.individualClientReferenceId!)
               .toList()));
 
-      // projectBeneficiariesList = await projectBeneficiary.search(
-      //     ProjectBeneficiarySearchModel(
-      //         projectId: [RegistrationDeliverySingleton().projectId.toString()],
-      //         beneficiaryClientReferenceId:
-      //             individualsList.map((e) => e.clientReferenceId).toList()));
+      projectBeneficiariesList = await projectBeneficiary.search(
+          ProjectBeneficiarySearchModel(
+              projectId: [RegistrationDeliverySingleton().projectId.toString()],
+              beneficiaryClientReferenceId:
+                  individualsList.map((e) => e.clientReferenceId).toList()));
 
       finalResults.forEach((element) {
         taskList.add(element);
@@ -224,11 +230,11 @@ class IndividualGlobalSearchBloc extends SearchHouseholdsBloc {
       ))
               .cast<HouseholdMemberModel>();
 
-      // householdList = await household.search(HouseholdSearchModel(
-      //   clientReferenceId: householdMembers
-      //       .map((e) => e.householdClientReferenceId.toString())
-      //       .toList(),
-      // ));
+      householdList = await household.search(HouseholdSearchModel(
+        clientReferenceId: householdMembers
+            .map((e) => e.householdClientReferenceId.toString())
+            .toList(),
+      ));
 
       var finalHouseholdMembersList = await fetchHouseholdMembersBulk(
           null, householdList.map((e) => e.clientReferenceId).toList());
@@ -238,11 +244,11 @@ class IndividualGlobalSearchBloc extends SearchHouseholdsBloc {
               .map((e) => e.individualClientReferenceId!)
               .toList()));
 
-      // projectBeneficiariesList = await projectBeneficiary.search(
-      //     ProjectBeneficiarySearchModel(
-      //         projectId: [RegistrationDeliverySingleton().projectId.toString()],
-      //         beneficiaryClientReferenceId:
-      //             individualsList.map((e) => e.clientReferenceId).toList()));
+      projectBeneficiariesList = await projectBeneficiary.search(
+          ProjectBeneficiarySearchModel(
+              projectId: [RegistrationDeliverySingleton().projectId.toString()],
+              beneficiaryClientReferenceId:
+                  individualsList.map((e) => e.clientReferenceId).toList()));
 
       List<dynamic> tasksRelated = await _processTasksAndRelatedData(
           projectBeneficiariesList, taskList, sideEffectsList, referralsList);
@@ -337,17 +343,17 @@ class IndividualGlobalSearchBloc extends SearchHouseholdsBloc {
       if (head == null) continue;
 
       // Add household member wrapper to containers
-      // containers.add(
-      //   HouseholdMemberWrapper(
-      //     household: filteredHousehold,
-      //     headOfHousehold: head,
-      //     members: filteredIndividuals,
-      //     projectBeneficiaries: filteredBeneficiaries,
-      //     tasks: filteredTasks.isEmpty ? null : filteredTasks,
-      //     sideEffects: sideEffectsList.isEmpty ? null : sideEffectsList,
-      //     referrals: referralsList.isEmpty ? null : referralsList,
-      //   ),
-      // );
+      containers.add(
+        HouseholdMemberWrapper(
+          household: filteredHousehold,
+          headOfHousehold: head,
+          members: filteredIndividuals,
+          projectBeneficiaries: filteredBeneficiaries,
+          tasks: filteredTasks.isEmpty ? null : filteredTasks,
+          sideEffects: sideEffectsList.isEmpty ? null : sideEffectsList,
+          referrals: referralsList.isEmpty ? null : referralsList,
+        ),
+      );
     }
   }
 
@@ -356,22 +362,22 @@ class IndividualGlobalSearchBloc extends SearchHouseholdsBloc {
       List<TaskModel> taskList,
       List<SideEffectModel> sideEffectsList,
       List<ReferralModel> referralsList) async {
-    // if (projectBeneficiariesList.isNotEmpty) {
-    //   if (taskList.isEmpty) {
-    //     taskList =
-    //         await fetchTaskByProjectBeneficiary(projectBeneficiariesList);
-    //   }
-    //   sideEffectsList =
-    //       await sideEffectDataRepository.search(SideEffectSearchModel(
-    //     taskClientReferenceId:
-    //         taskList.map((e) => e.clientReferenceId).toList(),
-    //   ));
-    //   referralsList = await referralDataRepository.search(ReferralSearchModel(
-    //     projectBeneficiaryClientReferenceId:
-    //         projectBeneficiariesList.map((e) => e.clientReferenceId).toList(),
-    //   ));
-    // }
+    if (projectBeneficiariesList.isNotEmpty) {
+      if (taskList.isEmpty) {
+        taskList =
+            await fetchTaskByProjectBeneficiary(projectBeneficiariesList);
+      }
+      sideEffectsList =
+          await sideEffectDataRepository.search(SideEffectSearchModel(
+        taskClientReferenceId:
+            taskList.map((e) => e.clientReferenceId).toList(),
+      ));
+      referralsList = await referralDataRepository.search(ReferralSearchModel(
+        projectBeneficiaryClientReferenceId:
+            projectBeneficiariesList.map((e) => e.clientReferenceId).toList(),
+      ));
+    }
 
-    // return [taskList, sideEffectsList, referralsList];
+    return [taskList, sideEffectsList, referralsList];
   }
 }

@@ -4,6 +4,8 @@ import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:health_campaign_field_worker_app/blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
 
 import '../../widgets/header/back_navigation_help_header.dart';
 import 'bednet_inform_household.dart';
@@ -46,11 +48,16 @@ class BednetHouseholdReviewPage extends StatelessWidget {
               size: DigitButtonSize.large,
               mainAxisSize: MainAxisSize.max,
               onPressed: () {
+                final registrationBloc =
+                    context.read<BeneficiaryRegistrationBloc>();
                 Navigator.of(context).push(
                   MaterialPageRoute(
-                    builder: (_) => BednetInformHouseholdPage(
-                      eToken: _token,
-                      itnForDelivery: _itnForDelivery,
+                    builder: (_) => BlocProvider.value(
+                      value: registrationBloc,
+                      child: BednetInformHouseholdPage(
+                        eToken: _token,
+                        itnForDelivery: _itnForDelivery,
+                      ),
                     ),
                   ),
                 );

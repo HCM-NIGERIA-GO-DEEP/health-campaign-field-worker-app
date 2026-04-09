@@ -22,6 +22,7 @@ enum AdditionalFieldsType {
   @MappableValue("latitude") latitude,
   @MappableValue("longitude") longitude,
   @MappableValue("mobile") mobile,
+  @MappableValue("e-Token") eToken,
   @MappableValue("EMPLOYEE") employee,
   ;
 }

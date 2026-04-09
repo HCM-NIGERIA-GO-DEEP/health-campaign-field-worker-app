@@ -1,8 +1,9 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/household_type.dart';
-import 'package:digit_scanner/blocs/scanner.dart';
-import 'package:digit_scanner/pages/qr_scanner.dart';
+// import 'package:digit_scanner/blocs/scanner.dart';
+// import 'package:digit_scanner/pages/qr_scanner.dart';
+
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/services/location_bloc.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
@@ -145,13 +146,16 @@ class _SearchBeneficiaryPageState
                                 padding: const EdgeInsets.all(spacer2),
                                 child: DigitSearchBar(
                                   controller: searchController,
-                                  hintText: 'To start, enter the Beneficiary ID',
+                                  hintText:
+                                      'To start, enter the Beneficiary ID',
                                   textCapitalization: TextCapitalization.words,
                                   onChanged: (value) {
-                                    if (!isNameSearchEnabled && value.isNotEmpty) {
+                                    if (!isNameSearchEnabled &&
+                                        value.isNotEmpty) {
                                       return;
                                     }
-                                    if (value.isEmpty || value.trim().length > 2) {
+                                    if (value.isEmpty ||
+                                        value.trim().length > 2) {
                                       triggerGlobalSearchEvent();
                                     }
                                   },
@@ -255,21 +259,22 @@ class _SearchBeneficiaryPageState
                     child: CircularProgressIndicator(),
                   ),
                 ),
-              BlocListener<DigitScannerBloc, DigitScannerState>(
-                listener: (context, scannerState) {
-                  if (scannerState.qrCodes.isNotEmpty) {
-                    context.read<SearchBlocWrapper>().tagSearchBloc.add(
-                          SearchHouseholdsEvent.searchByTag(
-                            tag: scannerState.qrCodes.isNotEmpty
-                                ? scannerState.qrCodes.lastOrNull!
-                                : '',
-                            projectId:
-                                RegistrationDeliverySingleton().projectId!,
-                          ),
-                        );
-                  }
-                },
-                child: BlocBuilder<LocationBloc, LocationState>(
+              // BlocListener<DigitScannerBloc, DigitScannerState>(
+              //   listener: (context, scannerState) {
+              //     if (scannerState.qrCodes.isNotEmpty) {
+              //       context.read<SearchBlocWrapper>().tagSearchBloc.add(
+              //             SearchHouseholdsEvent.searchByTag(
+              //               tag: scannerState.qrCodes.isNotEmpty
+              //                   ? scannerState.qrCodes.lastOrNull!
+              //                   : '',
+              //               projectId:
+              //                   RegistrationDeliverySingleton().projectId!,
+              //             ),
+              //           );
+              //     }
+              //   },
+              //   child: 
+              BlocBuilder<LocationBloc, LocationState>(
                   builder: (context, locationState) {
                     return SliverList(
                       delegate: SliverChildBuilderDelegate(
@@ -293,12 +298,12 @@ class _SearchBeneficiaryPageState
                               distance: isProximityEnabled ? distance : null,
                               householdMember: i,
                               onOpenPressed: () async {
-                                final scannerBloc =
-                                    context.read<DigitScannerBloc>();
+                                // final scannerBloc =
+                                //     context.read<DigitScannerBloc>();
 
-                                scannerBloc.add(
-                                  const DigitScannerEvent.handleScanner(),
-                                );
+                                // scannerBloc.add(
+                                //   const DigitScannerEvent.handleScanner(),
+                                // );
 
                                 if ((i.tasks != null &&
                                         i.tasks?.lastOrNull!.status ==
@@ -347,7 +352,7 @@ class _SearchBeneficiaryPageState
                     );
                   },
                 ),
-              ),
+              // ),
             ],
           ),
         ),
@@ -377,26 +382,26 @@ class _SearchBeneficiaryPageState
                       : false,
                   onPressed: () {
                     FocusManager.instance.primaryFocus?.unfocus();
-                    context.read<DigitScannerBloc>().add(
-                          const DigitScannerEvent.handleScanner(),
-                        );
+                    // context.read<DigitScannerBloc>().add(
+                    //       const DigitScannerEvent.handleScanner(),
+                    //     );
                     final registrationBloc = BeneficiaryRegistrationBloc(
                       BeneficiaryRegistrationState.create(
                         searchQuery: searchHouseholdsState.searchQuery ??
                             searchController.text.trim(),
                       ),
-                      individualRepository:
-                          context.repository<IndividualModel, IndividualSearchModel>(context),
-                      householdRepository:
-                          context.repository<HouseholdModel, HouseholdSearchModel>(context),
+                      individualRepository: context.repository<IndividualModel,
+                          IndividualSearchModel>(context),
+                      householdRepository: context.repository<HouseholdModel,
+                          HouseholdSearchModel>(context),
                       householdMemberRepository: context.repository<
                           HouseholdMemberModel,
                           HouseholdMemberSearchModel>(context),
                       projectBeneficiaryRepository: context.repository<
                           ProjectBeneficiaryModel,
                           ProjectBeneficiarySearchModel>(context),
-                      taskDataRepository:
-                          context.repository<TaskModel, TaskSearchModel>(context),
+                      taskDataRepository: context
+                          .repository<TaskModel, TaskSearchModel>(context),
                       beneficiaryType:
                           RegistrationDeliverySingleton().beneficiaryType!,
                     );
@@ -413,31 +418,31 @@ class _SearchBeneficiaryPageState
                     blocWrapper.clearEvent();
                   },
                 ),
-                DigitButton(
-                  capitalizeLetters: false,
-                  type: DigitButtonType.secondary,
-                  size: DigitButtonSize.large,
-                  mainAxisSize: MainAxisSize.max,
-                  onPressed: () {
-                    blocWrapper.clearEvent();
-                    selectedFilters = [];
-                    searchController.clear();
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (context) => const DigitScannerPage(
-                          quantity: 1,
-                          isGS1code: false,
-                          singleValue: true,
-                        ),
-                        settings: const RouteSettings(name: '/qr-scanner'),
-                      ),
-                    );
-                  },
-                  prefixIcon: Icons.qr_code,
-                  label: localizations.translate(
-                    i18.deliverIntervention.scannerLabel,
-                  ),
-                ),
+                // DigitButton(
+                //   capitalizeLetters: false,
+                //   type: DigitButtonType.secondary,
+                //   size: DigitButtonSize.large,
+                //   mainAxisSize: MainAxisSize.max,
+                //   onPressed: () {
+                //     blocWrapper.clearEvent();
+                //     selectedFilters = [];
+                //     searchController.clear();
+                //     Navigator.of(context).push(
+                //       MaterialPageRoute(
+                //         builder: (context) => const DigitScannerPage(
+                //           quantity: 1,
+                //           isGS1code: false,
+                //           singleValue: true,
+                //         ),
+                //         settings: const RouteSettings(name: '/qr-scanner'),
+                //       ),
+                //     );
+                //   },
+                //   prefixIcon: Icons.qr_code,
+                //   label: localizations.translate(
+                //     i18.deliverIntervention.scannerLabel,
+                //   ),
+                // ),
               ]),
         ),
       ),

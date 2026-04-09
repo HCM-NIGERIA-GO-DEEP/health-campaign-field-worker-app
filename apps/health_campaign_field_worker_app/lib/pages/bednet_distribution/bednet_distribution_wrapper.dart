@@ -245,8 +245,8 @@ class _BednetLocalizationLoaderState
       if (locale == null) return;
       context.read<LocalizationBloc>().add(
             LocalizationEvent.onLoadLocalization(
-              module: 'hcm-household,hcm-beneficiary,hcm-member,'
-                  'hcm-delivery,hcm-home,hcm-common,hcm-scanner',
+              module: 'hcm-household,hcm-closedhousehold,hcm-beneficiary,'
+                  'hcm-member,hcm-delivery,hcm-home,hcm-common,hcm-scanner',
               tenantId: envConfig.variables.tenantId,
               locale: locale,
               path: Constants.localizationApiPath,

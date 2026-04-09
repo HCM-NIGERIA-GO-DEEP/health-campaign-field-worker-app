@@ -121,6 +121,7 @@ class Constants {
     'hcm-beneficiary',
     'hcm-member',
     'hcm-delivery',
+    'hcm-closedhousehold',
     'hcm-reports',
   ];
 
@@ -154,6 +155,7 @@ class Constants {
     'hcm-beneficiary',
     'hcm-member',
     'hcm-delivery',
+    'hcm-closedhousehold',
     'hcm-reports',
   ];
   static const String surveyFormPreviewDateFormat = 'dd MMMM yyyy';

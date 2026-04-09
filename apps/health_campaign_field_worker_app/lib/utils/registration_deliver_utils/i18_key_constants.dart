@@ -1,4 +1,5 @@
 const common = Common();
+const bednetDistribution = BednetDistribution();
 const searchBeneficiary = SearchBeneficiary();
 const beneficiaryDetails = BeneficiaryDetails();
 const householdLocation = HouseholdLocation();
@@ -1098,4 +1099,24 @@ class CLFDetailsShowcase {
 
   String get numberOfChildrenBelow5InHousehold =>
       'CLF_DETAILS_SHOWCASE_NO_OF_CHILD_BELOW_5_IN_INSTITUTION';
+}
+
+class BednetDistribution {
+  const BednetDistribution();
+
+  String get informHouseholdTitle => 'INFORM_HOUSEHOLD_TITLE';
+
+  String get informHouseholdReadyToSubmitLabel =>
+      'DELIVER_INTERVENTION_DIALOG_TITLE';
+
+  String get informHouseholdSubmitConfirmText =>
+      'DELIVER_INTERVENTION_DIALOG_CONTENT';
+
+  String get netInstruction1 => 'net_instruction_1';
+  String get netInstruction2 => 'net_instruction_2';
+  String get netInstruction3 => 'net_instruction_3';
+  String get netInstruction4 => 'net_instruction_4';
+  String get netInstruction5 => 'net_instruction_5';
+  String get netInstruction6 => 'net_instruction_6';
+  String get netInstruction7 => 'net_instruction_7';
 }

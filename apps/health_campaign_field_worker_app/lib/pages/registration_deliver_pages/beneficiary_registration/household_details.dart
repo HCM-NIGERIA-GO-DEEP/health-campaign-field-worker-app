@@ -11,6 +11,8 @@ import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/lo
 import 'package:intl/intl.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
+import 'package:health_campaign_field_worker_app/models/entities/additional_fields_type.dart';
+
 import '../../../blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
 import '../../bednet_distribution/bednet_household_review.dart';
 import '../../../utils/registration_deliver_utils/extensions/extensions.dart';
@@ -134,11 +136,27 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                       lastModifiedTime: createdAt,
                                     ),
                                   );
+
+                              var existingFields = household.additionalFields?.fields ?? [];
+                              var fieldMap = { for (var f in existingFields) f.key : f };
+                              if (!fieldMap.containsKey(AdditionalFieldsType.eToken.toValue())) {
+                                fieldMap[AdditionalFieldsType.eToken.toValue()] = AdditionalField(AdditionalFieldsType.eToken.toValue(), '');
+                              }
+                              fieldMap[AdditionalFieldsType.latitude.toValue()] = AdditionalField(AdditionalFieldsType.latitude.toValue(), addressModel?.latitude?.toString() ?? '');
+                              fieldMap[AdditionalFieldsType.longitude.toValue()] = AdditionalField(AdditionalFieldsType.longitude.toValue(), addressModel?.longitude?.toString() ?? '');
+                              final newAdditionalFields = HouseholdAdditionalFields(
+                                version: household.additionalFields?.version ?? 1,
+                                fields: fieldMap.values.toList(),
+                              );
+
                               household = household.copyWith(
                                 tenantId:
                                     RegistrationDeliverySingleton().tenantId,
                                 memberCount: memberCount,
                                 address: addressModel,
+                                latitude: addressModel?.latitude,
+                                longitude: addressModel?.longitude,
+                                additionalFields: newAdditionalFields,
                               );
 
                               final individual = IndividualModel(
