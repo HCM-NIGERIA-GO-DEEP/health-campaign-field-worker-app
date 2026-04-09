@@ -105,7 +105,7 @@ class DeliverInterventionPageState
                   ? true
                   : false,
               boundaryModel: RegistrationDeliverySingleton().boundary!,
-              navigateToSummary: true,
+              navigateToSummary: false,
               householdMemberWrapper: householdMember),
         );
     context.router.push(

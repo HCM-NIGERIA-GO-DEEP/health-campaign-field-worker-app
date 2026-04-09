@@ -514,6 +514,7 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                                   .translate(i18.common.corecommonRequired)
                               : null,
                         ),
+                        if(widget.isHeadOfHousehold)
                         individualDetailsShowcaseData.mobile.buildWith(
                           child: ReactiveWrapperField(
                             formControlName: _mobileNumberKey,

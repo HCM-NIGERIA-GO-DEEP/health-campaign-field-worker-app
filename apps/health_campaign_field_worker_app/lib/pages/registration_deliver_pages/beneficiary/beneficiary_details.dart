@@ -275,46 +275,7 @@ class BeneficiaryDetailsPageState
                                         : state.selectedIndividual?.name
                                                 ?.givenName ??
                                             '--',
-                                    localizations.translate(
-                                      i18.deliverIntervention.idTypeText,
-                                    ): () {
-                                      final identifiers =
-                                          RegistrationDeliverySingleton()
-                                                      .beneficiaryType !=
-                                                  BeneficiaryType.individual
-                                              ? householdMemberWrapper
-                                                  .headOfHousehold?.identifiers
-                                              : state.selectedIndividual
-                                                  ?.identifiers;
-                                      if (identifiers == null ||
-                                          identifiers.isEmpty) {
-                                        return '--';
-                                      }
-
-                                      return localizations.translate(
-                                          identifiers.first.identifierType ??
-                                              '--');
-                                    }(),
-                                    localizations.translate(
-                                      i18.deliverIntervention.idNumberText,
-                                    ): () {
-                                      final identifiers =
-                                          RegistrationDeliverySingleton()
-                                                      .beneficiaryType !=
-                                                  BeneficiaryType.individual
-                                              ? householdMemberWrapper
-                                                  .headOfHousehold?.identifiers
-                                              : state.selectedIndividual
-                                                  ?.identifiers;
-                                      if (identifiers == null ||
-                                          identifiers.isEmpty) {
-                                        return '--';
-                                      }
-
-                                      return maskString(identifiers
-                                          .first.identifierId
-                                          .toString());
-                                    }(),
+                                    
                                     localizations.translate(
                                       i18.common.coreCommonAge,
                                     ): () {
@@ -359,16 +320,7 @@ class BeneficiaryDetailsPageState
                                         : state.selectedIndividual?.gender?.name
                                                 .sentenceCase ??
                                             '--',
-                                    localizations.translate(
-                                      i18.common.coreCommonMobileNumber,
-                                    ): RegistrationDeliverySingleton()
-                                                .beneficiaryType !=
-                                            BeneficiaryType.individual
-                                        ? householdMemberWrapper
-                                            .headOfHousehold?.mobileNumber
-                                        : state.selectedIndividual
-                                                ?.mobileNumber ??
-                                            '--',
+                                    
                                     localizations.translate(i18
                                         .deliverIntervention
                                         .dateOfRegistrationLabel): () {
