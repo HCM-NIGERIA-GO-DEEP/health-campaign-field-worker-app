@@ -380,6 +380,11 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
       isFromField: isFromField,
     );
 
+    // Check if there are child facilities (for warehouse managers at lowest level)
+    final hasNoChildFacilities = isToField &&
+        (transactionType == 'DISPATCHED' || transactionType == 'ISSUED') &&
+        filteredFacilities.isEmpty;
+
     // Build facility dropdown items
     var facilities = <DropdownItem>[];
 
@@ -387,7 +392,8 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
         ((isToField &&
                 !isReturnFlow &&
                 (transactionType == 'DISPATCHED' ||
-                    transactionType == 'ISSUED')) ||
+                    transactionType == 'ISSUED') &&
+                (!isWareHouseMgr || hasNoChildFacilities)) ||
             (isFromField && isReturnFlow && !isWareHouseMgr));
     if (showDeliveryTeam) {
       facilities.add(DropdownItem(

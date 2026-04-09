@@ -344,7 +344,25 @@ final dynamic sampleInventoryFlows = {
                       "APP_CONFIG_INVENTORY_returnOrIssueSelection_OPTION_RETURNED",
                   "code": "RETURNED"
                 }
-              ]
+              ],
+              "visible": "{{fn:hasRole('DISTRIBUTOR')}} == false",
+            },
+            {
+              "type": "template",
+              "format": "dropdownTemplate",
+              "label":
+                  "APP_CONFIG_INVENTORY_returnOrIssueSelection_TRANSACTION_TYPE_LABEL",
+              "fieldName": "transactionType",
+              "valueKey": "code",
+              "enums": [
+                {
+                  "name":
+                      "APP_CONFIG_INVENTORY_returnOrIssueSelection_OPTION_RETURNED",
+                  "code": "RETURNED"
+                }
+              ],
+              "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
+              "showWhenSingleOption": true
             }
           ]
         },
