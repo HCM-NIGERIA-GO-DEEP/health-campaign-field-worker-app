@@ -109,6 +109,8 @@ class BednetDistributionWrapperPage extends StatelessWidget
     final sideEffect =
         context.repository<SideEffectModel, SideEffectSearchModel>();
     final referral = context.repository<ReferralModel, ReferralSearchModel>();
+    final serviceDefinition = context.repository<ServiceDefinitionModel,
+        ServiceDefinitionSearchModel>();
 
     return MultiBlocProvider(
       providers: [
@@ -200,6 +202,12 @@ class BednetDistributionWrapperPage extends StatelessWidget
         ),
         BlocProvider(
           create: (_) => LocationBloc(location: Location()),
+        ),
+        BlocProvider(
+          create: (_) => ServiceDefinitionBloc(
+            const ServiceDefinitionEmptyState(),
+            serviceDefinitionDataRepository: serviceDefinition,
+          )..add(const ServiceDefinitionFetchEvent()),
         ),
       ],
       child: Theme(

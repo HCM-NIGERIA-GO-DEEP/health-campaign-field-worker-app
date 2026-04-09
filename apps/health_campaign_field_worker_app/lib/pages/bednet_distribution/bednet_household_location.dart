@@ -13,7 +13,7 @@ import 'package:health_campaign_field_worker_app/utils/registration_deliver_util
     as i18;
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/back_navigation_help_header.dart';
-import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/localized.dart';
+import '../../widgets/registartion_deliver/localized.dart';
 
 class BednetHouseholdLocationPage extends LocalizedStatefulWidget {
   const BednetHouseholdLocationPage({super.key, super.appLocalizations});
@@ -83,9 +83,14 @@ class _BednetHouseholdLocationPageState
                   type: DigitButtonType.primary,
                   size: DigitButtonSize.large,
                   mainAxisSize: MainAxisSize.max,
-                  isDisabled: false,
+                  isDisabled: locationState.accuracy == null,
                   onPressed: () {
-                    final gpsAccuracy = double.tryParse(_gpsController.text.trim());
+                    final createdAt = context.millisecondsSinceEpoch();
+                    final userUuid =
+                        RegistrationDeliverySingleton().loggedInUserUuid ?? '';
+                    final gpsAccuracy =
+                        double.tryParse(_gpsController.text.trim());
+
                     final addressModel = AddressModel(
                       type: AddressType.correspondence,
                       latitude: locationState.latitude,
@@ -95,22 +100,24 @@ class _BednetHouseholdLocationPageState
                           ? RegistrationDeliverySingleton().boundary?.name
                           : _settlementController.text.trim(),
                       locality: LocalityModel(
-                        code:
-                            RegistrationDeliverySingleton().boundary?.code ?? '',
-                        name:
-                            RegistrationDeliverySingleton().boundary?.name ?? '',
+                        code: RegistrationDeliverySingleton().boundary?.code ??
+                            '',
+                        name: RegistrationDeliverySingleton().boundary?.name ??
+                            '',
                       ),
                       tenantId: RegistrationDeliverySingleton().tenantId,
                       rowVersion: 1,
+                      auditDetails: AuditDetails(
+                        createdBy: userUuid,
+                        createdTime: createdAt,
+                        lastModifiedBy: userUuid,
+                        lastModifiedTime: createdAt,
+                      ),
                       clientAuditDetails: ClientAuditDetails(
-                        createdBy:
-                            RegistrationDeliverySingleton().loggedInUserUuid ??
-                                '',
-                        createdTime: context.millisecondsSinceEpoch(),
-                        lastModifiedBy:
-                            RegistrationDeliverySingleton().loggedInUserUuid ??
-                                '',
-                        lastModifiedTime: context.millisecondsSinceEpoch(),
+                        createdBy: userUuid,
+                        createdTime: createdAt,
+                        lastModifiedBy: userUuid,
+                        lastModifiedTime: createdAt,
                       ),
                     );
                     final registrationBloc =
@@ -144,7 +151,9 @@ class _BednetHouseholdLocationPageState
                       ),
                     ),
                     LabeledField(
-                      label: 'Settlement',
+                      label: localizations.translate(
+                        i18.householdLocation.administrationAreaFormLabel,
+                      ),
                       child: DigitTextFormInput(
                         focusNode: _settlementFocusNode,
                         controller: _settlementController,
@@ -158,7 +167,8 @@ class _BednetHouseholdLocationPageState
                         focusNode: _gpsFocusNode,
                         controller: _gpsController
                           ..text = _gpsController.text.isEmpty
-                              ? (locationState.accuracy?.toStringAsFixed(6) ?? '')
+                              ? (locationState.accuracy?.toStringAsFixed(6) ??
+                                  '')
                               : _gpsController.text,
                         keyboardType: const TextInputType.numberWithOptions(
                           signed: false,

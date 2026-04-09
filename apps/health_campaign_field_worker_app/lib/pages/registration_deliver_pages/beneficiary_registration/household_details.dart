@@ -14,7 +14,8 @@ import 'package:reactive_forms/reactive_forms.dart';
 import '../../../blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
 import '../../bednet_distribution/bednet_household_review.dart';
 import '../../../utils/registration_deliver_utils/extensions/extensions.dart';
-import '../../../utils/registration_deliver_utils/i18_key_constants.dart' as i18;
+import '../../../utils/registration_deliver_utils/i18_key_constants.dart'
+    as i18;
 import '../../../utils/registration_deliver_utils/utils.dart';
 import '../../../widgets/registartion_deliver/back_navigation_help_header.dart';
 
@@ -52,7 +53,8 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
       body: ReactiveFormBuilder(
         form: () => buildForm(bloc.state),
         builder: (context, form, child) {
-          return BlocBuilder<BeneficiaryRegistrationBloc, BeneficiaryRegistrationState>(
+          return BlocBuilder<BeneficiaryRegistrationBloc,
+              BeneficiaryRegistrationState>(
             builder: (context, registrationState) {
               return ScrollableContent(
                 header: Column(children: [
@@ -85,8 +87,9 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                           final dateOfRegistration = form
                               .control(_dateOfRegistrationKey)
                               .value as DateTime;
-                          final headName =
-                              form.control(_nameOfIndividualKey).value as String;
+                          final headName = form
+                              .control(_nameOfIndividualKey)
+                              .value as String;
                           final mobile =
                               form.control(_mobileNumberKey).value as String?;
 
@@ -102,34 +105,84 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                               loading,
                               isHeadOfHousehold,
                             ) {
+                              final createdAt =
+                                  context.millisecondsSinceEpoch();
+                              final userUuid = RegistrationDeliverySingleton()
+                                      .loggedInUserUuid ??
+                                  '';
+
+                              final clientRefId =
+                                  individualModel?.clientReferenceId ??
+                                      IdGen.i.identifier;
+
                               var household = householdModel ??
                                   HouseholdModel(
-                                    tenantId: RegistrationDeliverySingleton().tenantId,
+                                    tenantId: RegistrationDeliverySingleton()
+                                        .tenantId,
                                     clientReferenceId: IdGen.i.identifier,
                                     rowVersion: 1,
+                                    auditDetails: AuditDetails(
+                                      createdBy: userUuid,
+                                      createdTime: createdAt,
+                                      lastModifiedBy: userUuid,
+                                      lastModifiedTime: createdAt,
+                                    ),
+                                    clientAuditDetails: ClientAuditDetails(
+                                      createdBy: userUuid,
+                                      createdTime: createdAt,
+                                      lastModifiedBy: userUuid,
+                                      lastModifiedTime: createdAt,
+                                    ),
                                   );
                               household = household.copyWith(
-                                tenantId: RegistrationDeliverySingleton().tenantId,
+                                tenantId:
+                                    RegistrationDeliverySingleton().tenantId,
                                 memberCount: memberCount,
                                 address: addressModel,
                               );
 
                               final individual = IndividualModel(
-                                clientReferenceId: individualModel?.clientReferenceId ?? IdGen.i.identifier,
-                                tenantId: RegistrationDeliverySingleton().tenantId,
+                                clientReferenceId: clientRefId,
+                                tenantId:
+                                    RegistrationDeliverySingleton().tenantId,
                                 rowVersion: 1,
                                 mobileNumber: mobile,
+                                auditDetails: AuditDetails(
+                                  createdBy: userUuid,
+                                  createdTime: createdAt,
+                                  lastModifiedBy: userUuid,
+                                  lastModifiedTime: createdAt,
+                                ),
+                                clientAuditDetails: ClientAuditDetails(
+                                  createdBy: userUuid,
+                                  createdTime: createdAt,
+                                  lastModifiedBy: userUuid,
+                                  lastModifiedTime: createdAt,
+                                ),
                                 name: NameModel(
                                   givenName: headName.trim(),
-                                  individualClientReferenceId:
-                                      individualModel?.clientReferenceId ?? IdGen.i.identifier,
-                                  tenantId: RegistrationDeliverySingleton().tenantId,
+                                  individualClientReferenceId: clientRefId,
+                                  tenantId:
+                                      RegistrationDeliverySingleton().tenantId,
                                   rowVersion: 1,
+                                  auditDetails: AuditDetails(
+                                    createdBy: userUuid,
+                                    createdTime: createdAt,
+                                    lastModifiedBy: userUuid,
+                                    lastModifiedTime: createdAt,
+                                  ),
+                                  clientAuditDetails: ClientAuditDetails(
+                                    createdBy: userUuid,
+                                    createdTime: createdAt,
+                                    lastModifiedBy: userUuid,
+                                    lastModifiedTime: createdAt,
+                                  ),
                                 ),
                               );
 
                               bloc.add(
-                                BeneficiaryRegistrationEvent.saveIndividualDetails(
+                                BeneficiaryRegistrationEvent
+                                    .saveIndividualDetails(
                                   model: individual,
                                   isHeadOfHousehold: true,
                                 ),
@@ -156,10 +209,13 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                 ?.trim();
                             Navigator.of(context).push(
                               MaterialPageRoute(
-                                builder: (_) => BednetHouseholdReviewPage(
-                                  headName: headName,
-                                  memberCount: memberCount,
-                                  mobileNumber: mobile,
+                                builder: (_) => BlocProvider.value(
+                                  value: bloc,
+                                  child: BednetHouseholdReviewPage(
+                                    headName: headName,
+                                    memberCount: memberCount,
+                                    mobileNumber: mobile,
+                                  ),
                                 ),
                               ),
                             );
@@ -173,7 +229,9 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                         margin: const EdgeInsets.all(spacer2),
                         children: [
                           Text(
-                            'Household Registration',
+                            localizations.translate(
+                              i18.householdDetails.householdDetailsLabel,
+                            ),
                             style: textTheme.headingXl.copyWith(
                               color: const Color(0xFF005A7A),
                             ),
@@ -186,10 +244,12 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                               ),
                               child: DigitDateFormInput(
                                 controller: _dateController
-                                  ..text = DateFormat(Constants().dateMonthYearFormat)
+                                  ..text = DateFormat(
+                                          Constants().dateMonthYearFormat)
                                       .format(
-                                        form.control(_dateOfRegistrationKey).value as DateTime,
-                                      ),
+                                    form.control(_dateOfRegistrationKey).value
+                                        as DateTime,
+                                  ),
                                 confirmText: localizations.translate(
                                   i18.common.coreCommonOk,
                                 ),
@@ -198,9 +258,11 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                 ),
                                 onChange: (value) {
                                   if (value.trim().isEmpty) return;
-                                  final parsed = DateFormat(Constants().dateMonthYearFormat)
+                                  final parsed = DateFormat(
+                                          Constants().dateMonthYearFormat)
                                       .parse(value);
-                                  form.control(_dateOfRegistrationKey).value = parsed;
+                                  form.control(_dateOfRegistrationKey).value =
+                                      parsed;
                                 },
                               ),
                             ),
@@ -218,9 +280,11 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                               ),
                               isRequired: true,
                               child: DigitTextFormInput(
-                                initialValue: form.control(_nameOfIndividualKey).value,
-                                onChange: (value) =>
-                                    form.control(_nameOfIndividualKey).value = value,
+                                initialValue:
+                                    form.control(_nameOfIndividualKey).value,
+                                onChange: (value) => form
+                                    .control(_nameOfIndividualKey)
+                                    .value = value,
                                 errorMessage: field.errorText,
                               ),
                             ),
@@ -242,9 +306,11 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                   FilteringTextInputFormatter.digitsOnly,
                                 ],
                                 maxLength: 10,
-                                initialValue: form.control(_mobileNumberKey).value,
-                                onChange: (value) =>
-                                    form.control(_mobileNumberKey).value = value,
+                                initialValue:
+                                    form.control(_mobileNumberKey).value,
+                                onChange: (value) => form
+                                    .control(_mobileNumberKey)
+                                    .value = value,
                                 errorMessage: field.errorText,
                               ),
                             ),
@@ -263,10 +329,14 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                 minValue: 1,
                                 maxValue: 100,
                                 step: 1,
-                                initialValue: form.control(_memberCountKey).value.toString(),
+                                initialValue: form
+                                    .control(_memberCountKey)
+                                    .value
+                                    .toString(),
                                 onChange: (value) {
                                   if (value.isEmpty) return;
-                                  form.control(_memberCountKey).value = int.parse(value);
+                                  form.control(_memberCountKey).value =
+                                      int.parse(value);
                                 },
                               ),
                             ),
