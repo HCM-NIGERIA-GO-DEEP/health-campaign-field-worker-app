@@ -53,10 +53,10 @@ packages:
     dependency: transitive
     description:
       name: args
-      sha256: bf9f5caeea8d8fe6721a9c358dd8a5c1947b27f1cfaa18b39c301273594919e6
+      sha256: d0481093c50b1da8910eb0bb301626d4d8eb7284aa739614d2b394ee09e3ea04
       url: "https://pub.dev"
     source: hosted
-    version: "2.6.0"
+    version: "2.7.0"
   asn1lib:
     dependency: transitive
     description:
@@ -139,11 +139,10 @@ packages:
   auto_route:
     dependency: "direct main"
     description:
-      name: auto_route
-      sha256: a9001a90539ca3effc168f7e1029a5885c7326b9032c09ac895e303c1d137704
-      url: "https://pub.dev"
-    source: hosted
-    version: "8.3.0"
+      path: "../../packages/auto_route"
+      relative: true
+    source: path
+    version: "7.9.2"
   auto_route_generator:
     dependency: "direct dev"
     description:
@@ -273,7 +272,7 @@ packages:
     source: hosted
     version: "0.11.0+2"
   camera_android_camerax:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: camera_android_camerax
       sha256: "594b40a5ea0e144fdfe49e4036abe4ec9bd578b2ce3aabdb0668a02db376a1e8"
@@ -459,11 +458,9 @@ packages:
   dart_mappable_builder:
     dependency: "direct dev"
     description:
-      path: "packages/dart_mappable_builder"
-      ref: master
-      resolved-ref: fa446e8582bba65a88894844ead567f4955e1487
-      url: "https://github.com/egovernments/health-campaign-field-worker-app/"
-    source: git
+      path: "../../packages/dart_mappable_builder"
+      relative: true
+    source: path
     version: "4.2.3"
   dart_style:
     dependency: transitive
@@ -581,13 +578,12 @@ packages:
   digit_location_tracker:
     dependency: "direct main"
     description:
-      name: digit_location_tracker
-      sha256: a93bda5b07db112210e08c7a76f0627957d931d5106c8a7db8876503cc2fd06f
-      url: "https://pub.dev"
-    source: hosted
+      path: "../../packages/digit_location_tracker"
+      relative: true
+    source: path
     version: "1.0.0"
   digit_scanner:
-    dependency: "direct main"
+    dependency: "direct overridden"
     description:
       path: "../../packages/digit_scanner"
       relative: true
@@ -729,7 +725,7 @@ packages:
     source: hosted
     version: "8.0.7"
   file_selector_linux:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: file_selector_linux
       sha256: "54cbbd957e1156d29548c7d9b9ec0c0ebb6de0a90452198683a7d23aed617a33"
@@ -745,7 +741,7 @@ packages:
     source: hosted
     version: "0.9.4+2"
   file_selector_platform_interface:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: file_selector_platform_interface
       sha256: a3994c26f10378a039faa11de174d7b78eb8f79e4dd0af2a451410c1a5c3f66b
@@ -899,7 +895,7 @@ packages:
     source: hosted
     version: "3.0.7"
   flutter_dropzone_platform_interface:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: flutter_dropzone_platform_interface
       sha256: b4e2df75364bab2f4c3ca32b87193267d786b6e158c3f345c3a1daeb911d82b9
@@ -1122,6 +1118,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "8.2.8"
+  formula_parser:
+    dependency: "direct main"
+    description:
+      name: formula_parser
+      sha256: af9e9ae2961ec1dab54c5de97d9a6bef0593ddb998720e3785bd91ef05353359
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.1"
   freezed:
     dependency: "direct dev"
     description:
@@ -1773,13 +1777,13 @@ packages:
     source: hosted
     version: "0.2.1"
   petitparser:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: petitparser
-      sha256: c15605cd28af66339f8eb6fbe0e541bfe2d1b72d5825efc6598f3e0a31b9ad27
+      sha256: cb3798bef7fc021ac45b308f4b51208a152792445cce0448c9a4ba5879dd8750
       url: "https://pub.dev"
     source: hosted
-    version: "6.0.2"
+    version: "5.4.0"
   platform:
     dependency: transitive
     description:
@@ -2362,10 +2366,10 @@ packages:
     dependency: transitive
     description:
       name: watcher
-      sha256: "3d2ad6751b3c16cf07c7fca317a1413b3f26530319181b37e3b9039b84fc01d8"
+      sha256: "1398c9f081a753f9226febe8900fce8f7d0a67163334e1c94a2438339d79d635"
       url: "https://pub.dev"
     source: hosted
-    version: "1.1.0"
+    version: "1.2.1"
   web:
     dependency: transitive
     description:
@@ -2431,13 +2435,13 @@ packages:
     source: hosted
     version: "1.1.0"
   xml:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: xml
-      sha256: b015a8ad1c488f66851d762d3090a21c600e479dc75e68328c52774040cf9226
+      sha256: "5bc72e1e45e941d825fd7468b9b4cc3b9327942649aeb6fc5cdbf135f0a86e84"
       url: "https://pub.dev"
     source: hosted
-    version: "6.5.0"
+    version: "6.3.0"
   xxh3:
     dependency: transitive
     description:
