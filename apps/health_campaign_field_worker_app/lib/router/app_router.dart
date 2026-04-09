@@ -122,9 +122,13 @@ class AppRouter extends _$AppRouter {
           path: 'bednet-distribution',
           children: [
             AutoRoute(
-              page: SelectSchoolRoute.page,
+              page: SearchBeneficiaryRoute.page,
               path: '',
               initial: true,
+            ),
+            AutoRoute(
+              page: SelectSchoolRoute.page,
+              path: 'select-school',
             ),
             AutoRoute(
               page: SchoolDetailsRoute.page,

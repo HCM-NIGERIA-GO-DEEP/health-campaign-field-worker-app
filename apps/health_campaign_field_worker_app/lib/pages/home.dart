@@ -1489,7 +1489,7 @@ class _HomePageState extends LocalizedState<HomePage> {
         .toList();
 
     final showcaseKeys = filteredLabels
-        .where((f) => f != i18.home.db)
+        // .where((f) => f != i18.home.db)
         .map((label) => homeItemsShowcaseMap[label]!)
         .toList();
 
@@ -1572,6 +1572,53 @@ void setPackagesSingleton(BuildContext context) {
           projectId: context.selectedProject.id,
           minAge: context.selectedProjectType?.validMinAge,
           maxAge: context.selectedProjectType?.validMaxAge,
+        );
+        RegistrationDeliverySingleton().setInitialData(
+          loggedInUserUuid: context.loggedInUserUuid,
+          maxRadius: appConfiguration.maxRadius!,
+          projectId: context.projectId,
+          selectedBeneficiaryType: context.beneficiaryType,
+          projectType: context.selectedProjectType,
+          selectedProject: context.selectedProject,
+          genderOptions: (appConfiguration.genderOptions ?? [])
+              .map((e) => e.code)
+              .toList(),
+          idTypeOptions: (appConfiguration.idTypeOptions ?? [])
+              .map((e) => e.code)
+              .toList(),
+          householdDeletionReasonOptions:
+              (appConfiguration.householdDeletionReasonOptions ?? [])
+                  .map((e) => e.code)
+                  .toList(),
+          householdMemberDeletionReasonOptions:
+              (appConfiguration.householdMemberDeletionReasonOptions ?? [])
+                  .map((e) => e.code)
+                  .toList(),
+          deliveryCommentOptions:
+              (appConfiguration.deliveryCommentOptions ?? [])
+                  .map((e) => e.code)
+                  .toList(),
+          symptomsTypes: (appConfiguration.symptomsTypes ?? [])
+              .map((e) => e.code)
+              .toList(),
+          searchHouseHoldFilter: (appConfiguration.searchHouseHoldFilters ?? [])
+              .map((e) => e.code)
+              .toList(),
+          searchCLFFilters: (appConfiguration.searchCLFFilters ?? [])
+              .map((e) => e.code)
+              .toList(),
+          referralReasons: (appConfiguration.referralReasons ?? [])
+              .map((e) => e.code)
+              .toList(),
+          houseStructureTypes: (appConfiguration.houseStructureTypes ?? [])
+              .map((e) => e.code)
+              .toList(),
+          refusalReasons: (appConfiguration.refusalReasons ?? [])
+              .map((e) => e.code)
+              .toList(),
+          loggedInUser: context.loggedInUserModel,
+          beneficiaryIdMinCount: 25,
+          beneficiaryIdBatchSize: 100,
         );
         FlowBuilderSingleton().setInitialData(
           loggedInUser: context.loggedInUserModel,

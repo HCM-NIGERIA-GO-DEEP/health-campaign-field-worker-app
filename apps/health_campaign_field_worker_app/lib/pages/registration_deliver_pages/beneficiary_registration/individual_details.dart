@@ -29,6 +29,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 import '../../../blocs/registration_deliver/search_households/search_households.dart';
 import '../../../router/app_router.dart';
 import '../../../utils/registration_deliver_utils/extensions/extensions.dart';
+import '../summary_page.dart';
 
 @RoutePage()
 class IndividualDetailsPage extends LocalizedStatefulWidget {
@@ -230,7 +231,14 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                                           : null,
                                     ),
                                   );
-                                  // router.push(SummaryRoute());
+                                  Navigator.of(context).push(
+                                    MaterialPageRoute(
+                                      builder: (_) => BlocProvider.value(
+                                        value: bloc,
+                                        child: const SummaryPage(),
+                                      ),
+                                    ),
+                                  );
                                 }
                               },
                               editIndividual: (
