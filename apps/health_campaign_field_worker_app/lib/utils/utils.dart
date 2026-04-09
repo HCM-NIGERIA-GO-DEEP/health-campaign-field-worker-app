@@ -136,7 +136,8 @@ performBackgroundService({
         );
       }
     } else if (context != null && context.mounted) {
-      debugPrint('Background service not started: isRunning=$isRunning, isOnline=$isOnline');
+      debugPrint(
+          'Background service not started: isRunning=$isRunning, isOnline=$isOnline');
     }
   }
 }

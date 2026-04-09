@@ -9,15 +9,12 @@ part 'custom_summary_report_bloc.freezed.dart';
 
 typedef SummaryReportEmitter = Emitter<SummaryReportState>;
 
-/// Reads household and task rows from the local SQLite store via the same
-/// [LocalRepository] instances registered in [NetworkManagerProviderWrapper].
+/// Reads task rows from the local SQLite store via the same
+/// [LocalRepository] registered in [NetworkManagerProviderWrapper].
 class SummaryReportBloc extends Bloc<SummaryReportEvent, SummaryReportState> {
-  final LocalRepository<HouseholdModel, HouseholdSearchModel>
-      householdLocalRepository;
   final LocalRepository<TaskModel, TaskSearchModel> taskLocalRepository;
 
   SummaryReportBloc({
-    required this.householdLocalRepository,
     required this.taskLocalRepository,
   }) : super(const SummaryReportEmptyState()) {
     on<SummaryReportLoadDataEvent>(_handleLoadDataEvent);
@@ -48,27 +45,47 @@ class SummaryReportBloc extends Bloc<SummaryReportEvent, SummaryReportState> {
     return 0;
   }
 
+  /// Distinct schools per day for summary: prefer [kBednetTaskSchoolNameKey], else school client ref.
+  static String? _schoolVisitedIdentityFromTask(TaskModel task) {
+    final fields = task.additionalFields?.fields ?? const <AdditionalField>[];
+    final map = {
+      for (final f in fields) f.key.toLowerCase(): f.value,
+    };
+    for (final key in const [
+      kBednetTaskSchoolNameKey,
+      'school_name',
+      'nameofphu',
+    ]) {
+      final raw = map[key.toLowerCase()];
+      if (raw == null) continue;
+      final s = raw.toString().trim();
+      if (s.isNotEmpty) return s;
+    }
+    for (final key in const [
+      kBednetTaskSchoolClientRefKey,
+      'schoolclientreferenceid',
+    ]) {
+      final raw = map[key.toLowerCase()];
+      if (raw == null) continue;
+      final s = raw.toString().trim();
+      if (s.isNotEmpty) return s;
+    }
+    return null;
+  }
+
   Future<void> _handleLoadDataEvent(
     SummaryReportLoadDataEvent event,
     SummaryReportEmitter emit,
   ) async {
     emit(const SummaryReportLoadingState());
 
-    final householdListData = await householdLocalRepository.search(
-      HouseholdSearchModel.ignoreDeleted(),
-    );
     final taskListData = await taskLocalRepository.search(
       TaskSearchModel(
         createdBy: event.userId,
       ),
     );
 
-    final schoolVisitedByDate = <String, int>{};
-    for (final household in householdListData) {
-      final dateKey = _dateKeyFromClientAudit(household.clientAuditDetails);
-      if (dateKey == null) continue;
-      schoolVisitedByDate.update(dateKey, (v) => v + 1, ifAbsent: () => 1);
-    }
+    final schoolsVisitedByDate = <String, Set<String>>{};
 
     final bednetDeliveredByDate = <String, int>{};
     final bednetRemainingByDate = <String, int>{};
@@ -87,6 +104,11 @@ class SummaryReportBloc extends Bloc<SummaryReportEvent, SummaryReportState> {
     for (final task in taskListData) {
       final dateKey = _dateKeyFromClientAudit(task.clientAuditDetails);
       if (dateKey == null) continue;
+
+      final schoolId = _schoolVisitedIdentityFromTask(task);
+      if (schoolId != null) {
+        schoolsVisitedByDate.putIfAbsent(dateKey, () => <String>{}).add(schoolId);
+      }
 
       final totalPupils = _readIntFromTaskFields(
         task.additionalFields,
@@ -111,6 +133,10 @@ class SummaryReportBloc extends Bloc<SummaryReportEvent, SummaryReportState> {
         ifAbsent: () => remainingNonNegative,
       );
     }
+
+    final schoolVisitedByDate = <String, int>{
+      for (final e in schoolsVisitedByDate.entries) e.key: e.value.length,
+    };
 
     final allDates = <String>{
       ...schoolVisitedByDate.keys,

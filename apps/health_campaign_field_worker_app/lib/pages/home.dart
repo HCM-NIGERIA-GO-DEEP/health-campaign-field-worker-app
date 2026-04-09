@@ -3075,7 +3075,7 @@ class _HomePageState extends LocalizedState<HomePage> {
           homeShowcaseData.hfBeneficiaryReferral.showcaseKey,
       // i18.home.manageAttendanceLabel:
       //     homeShowcaseData.manageAttendance.showcaseKey,
-      // i18.home.db: homeShowcaseData.db.showcaseKey,
+      i18.home.db: homeShowcaseData.db.showcaseKey,
       i18.home.closedHouseHoldLabel:
           homeShowcaseData.closedHouseHold.showcaseKey,
       i18.home.dashboard: homeShowcaseData.dashBoard.showcaseKey,
@@ -3083,7 +3083,6 @@ class _HomePageState extends LocalizedState<HomePage> {
       // i18.home.clfLabel: homeShowcaseData.clf.showcaseKey, // TODO: Uncomment when CLF is implemented
       // i18.home.beneficiaryIdLabel: homeShowcaseData.beneficiaryId.showcaseKey, // TODO: Uncomment when beneficiary downsync is implemented
       i18.home.dataShare: homeShowcaseData.dataShare.showcaseKey,
-      // i18.home.db: homeShowcaseData.db.showcaseKey,
       i18.home.stockSyncDataLabel: homeShowcaseData.stockSyncData.showcaseKey,
       // i18.home.summaryLabel: homeShowcaseData.summaryReport.showcaseKey,
     };
@@ -3107,7 +3106,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.faceRegistrationLabel,
       i18.home.dataShare,
       i18.home.stockSyncDataLabel,
-      // i18.home.db,
+      i18.home.db,
       // i18.home.summaryLabel,
     ];
 

@@ -308,21 +308,21 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
 
     //   if (facilityLevel == null) return true;
 
-    //   if (isLessExcessFlow) {
-    //     if (isToField) return facilityLevel == 'parent';
-    //     if (isFromField) return facilityLevel == 'current';
-    //   } else if (isReturnFlow) {
-    //     if (isToField) return facilityLevel == 'parent';
-    //     if (isFromField) return facilityLevel == 'current';
-    //   } else if (transactionType == 'DISPATCHED' ||
-    //       transactionType == 'ISSUED') {
-    //     if (isToField) return facilityLevel == 'child';
-    //     if (isFromField) return facilityLevel == 'current';
-    //   } else if (transactionType == 'RECEIVED' ||
-    //       transactionType == 'RECEIPT') {
-    //     if (isToField) return facilityLevel == 'current';
-    //     if (isFromField) return facilityLevel == 'parent';
-    //   }
+    //     if (isLessExcessFlow) {
+    //       if (isToField) return facilityLevel == 'parent';
+    //       if (isFromField) return facilityLevel == 'current';
+    //     } else if (isReturnFlow) {
+    //       if (isToField) return facilityLevel == 'parent';
+    //       if (isFromField) return facilityLevel == 'current';
+    //     } else if (transactionType == 'DISPATCHED' ||
+    //         transactionType == 'ISSUED') {
+    //       if (isToField) return facilityLevel == 'child';
+    //       if (isFromField) return facilityLevel == 'current';
+    //     } else if (transactionType == 'RECEIVED' ||
+    //         transactionType == 'RECEIPT') {
+    //       if (isToField) return facilityLevel == 'current';
+    //       if (isFromField) return facilityLevel == 'parent';
+    //  }
 
     //   return true;
     // }).toList();
@@ -333,22 +333,6 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
 
     String? usage = "";
     bool? showTeamOption = false;
-
-      if (isLessExcessFlow) {
-        if (isToField) return facilityLevel == 'parent';
-        if (isFromField) return facilityLevel == 'current';
-      } else if (isReturnFlow) {
-        if (isToField) return facilityLevel == 'parent';
-        if (isFromField) return facilityLevel == 'current';
-      } else if (transactionType == 'DISPATCHED' ||
-          transactionType == 'ISSUED') {
-        if (isToField) return facilityLevel == 'child';
-        if (isFromField) return facilityLevel == 'current';
-      } else if (transactionType == 'RECEIVED' ||
-          transactionType == 'RECEIPT') {
-        if (isToField) return facilityLevel == 'current';
-        if (isFromField) return facilityLevel == 'parent';
-   }
 
     if (stockEntryType == 'ISSUED') {
       if (isWareHouseMgr) {

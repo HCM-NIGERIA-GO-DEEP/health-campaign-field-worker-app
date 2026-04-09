@@ -632,7 +632,7 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                   icon: Icons.home,
                 ),
                 if (appInitializationBloc.state is AppInitialized &&
-                    !isCommunityDistributor) ...[
+                    !isDistributor) ...[
                   SidebarItem(
                     title: AppLocalizations.of(context).translate(
                       i18.common.coreCommonlanguage,
@@ -646,7 +646,7 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                         : null,
                   )
                 ],
-                if (!isCommunityDistributor)
+                if (!isDistributor)
                   SidebarItem(
                     title: AppLocalizations.of(context).translate(
                       i18.common.coreCommonProfile,
@@ -709,7 +709,7 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
 
                   // TODO: Non system user
 
-                  if (!isCommunityDistributor)
+                  if (!isDistributor)
                     SidebarItem(
                       title: AppLocalizations.of(context).translate(
                         //TODO: TO append the total count of non- system users
