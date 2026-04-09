@@ -24,6 +24,7 @@ import '../pages/bednet_distribution/bednet_household_overview_wrapper.dart';
 import '../pages/bednet_distribution/bednet_individual_details_wrapper.dart';
 import '../pages/bednet_distribution/school_details.dart';
 import '../pages/bednet_distribution/select_school.dart';
+import '../pages/beneficiary_type_selection.dart';
 import '../pages/boundary_selection.dart';
 import '../pages/home.dart';
 import '../pages/language_selection.dart';
@@ -57,6 +58,7 @@ import '../pages/reports/beneficiary/beneficaries_report.dart';
 import '../pages/unauthenticated.dart';
 
 export 'package:auto_route/auto_route.dart';
+import '../pages/beneficiary_type_selection.dart';
 
 part 'app_router.gr.dart';
 
@@ -98,6 +100,10 @@ class AppRouter extends _$AppRouter {
           path: 'permissions-page',
         ),
         AutoRoute(page: HomeRoute.page, path: 'home'),
+        AutoRoute(
+          page: BeneficiaryTypeSelectionRoute.page,
+          path: 'beneficiary-type-selection',
+        ),
         AutoRoute(page: ProfileRoute.page, path: 'profile'),
         AutoRoute(page: UserQRDetailsRoute.page, path: 'user-qr-code'),
         AutoRoute(page: DigitScannerRoute.page, path: 'scanner'),
@@ -122,13 +128,17 @@ class AppRouter extends _$AppRouter {
           path: 'bednet-distribution',
           children: [
             AutoRoute(
-              page: SearchBeneficiaryRoute.page,
+              page: BeneficiaryTypeSelectionRoute.page,
               path: '',
               initial: true,
             ),
             AutoRoute(
               page: SelectSchoolRoute.page,
               path: 'select-school',
+            ),
+            AutoRoute(
+              page: SearchBeneficiaryRoute.page,
+              path: 'search-beneficiary',
             ),
             AutoRoute(
               page: SchoolDetailsRoute.page,
