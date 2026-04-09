@@ -58,6 +58,7 @@ import '../pages/reports/beneficiary/beneficaries_report.dart';
 import '../pages/unauthenticated.dart';
 
 export 'package:auto_route/auto_route.dart';
+import '../pages/beneficiary_type_selection.dart';
 
 part 'app_router.gr.dart';
 
@@ -127,13 +128,17 @@ class AppRouter extends _$AppRouter {
           path: 'bednet-distribution',
           children: [
             AutoRoute(
-              page: SearchBeneficiaryRoute.page,
+              page: BeneficiaryTypeSelectionRoute.page,
               path: '',
               initial: true,
             ),
             AutoRoute(
               page: SelectSchoolRoute.page,
               path: 'select-school',
+            ),
+            AutoRoute(
+              page: SearchBeneficiaryRoute.page,
+              path: 'search-beneficiary',
             ),
             AutoRoute(
               page: SchoolDetailsRoute.page,

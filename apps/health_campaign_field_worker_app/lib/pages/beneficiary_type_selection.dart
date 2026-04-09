@@ -39,8 +39,8 @@ class BeneficiaryTypeSelectionPage extends StatelessWidget {
                         child: _BeneficiaryTypeCard(
                           icon: Icons.storefront,
                           label: 'School',
-                          // No action for now as per requirement
-                          onTap: () {},
+                          onTap: () =>
+                              context.router.push(const SelectSchoolRoute()),
                         ),
                       ),
                       const SizedBox(width: spacer2),
@@ -48,10 +48,8 @@ class BeneficiaryTypeSelectionPage extends StatelessWidget {
                         child: _BeneficiaryTypeCard(
                           icon: Icons.house,
                           label: 'Household',
-                          onTap: () {
-                            // Navigate to existing bednet distribution flow
-                            context.router.push(const BednetDistributionWrapperRoute());
-                          },
+                          onTap: () =>
+                              context.router.push(SearchBeneficiaryRoute()),
                         ),
                       ),
                     ],
@@ -115,4 +113,3 @@ class _BeneficiaryTypeCard extends StatelessWidget {
     );
   }
 }
-
