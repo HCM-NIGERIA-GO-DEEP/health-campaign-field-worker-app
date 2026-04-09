@@ -5,10 +5,10 @@ import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/household_type.dart';
 import 'package:digit_ui_components/utils/date_utils.dart';
+import 'package:formula_parser/formula_parser.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/additional_fields_type.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
 import 'package:reactive_forms/reactive_forms.dart';
-
 
 /// This class contains custom validators for form controls.
 class CustomValidator {
@@ -227,22 +227,24 @@ DeliveryDoseCriteria? fetchProductVariant(ProjectCycleDelivery? currentDelivery,
     final filteredCriteria = currentDelivery.doseCriteria?.where((criteria) {
       final condition = criteria.condition;
       if (condition != null) {
-        if (condition.contains('and')) {
+        if (isFormula(condition)) {
+          return true;
+        } else if (condition.contains('and')) {
           final conditions = condition.split('and');
 
           List expressionParser = [];
           for (var element in conditions) {
-            // final expression = FormulaParser(
-            //   element,
-            //   {
-            //     'age': individualAgeInMonths,
-            //     if (gender != null) 'gender': gender,
-            //     if (memberCount != null) 'memberCount': memberCount,
-            //     if (roomCount != null) 'roomCount': roomCount
-            //   },
-            // );
-            // final error = expression.parse;
-            // expressionParser.add(error["value"]);
+            final expression = FormulaParser(
+              element,
+              {
+                'age': individualAgeInMonths,
+                if (gender != null) 'gender': gender,
+                if (memberCount != null) 'memberCount': memberCount,
+                if (roomCount != null) 'roomCount': roomCount
+              },
+            );
+            final error = expression.parse;
+            expressionParser.add(error["value"]);
           }
 
           return expressionParser.where((element) => element == true).length ==
@@ -251,20 +253,20 @@ DeliveryDoseCriteria? fetchProductVariant(ProjectCycleDelivery? currentDelivery,
           final conditions = condition.split('or');
 
           List expressionParser = [];
-          // for (var element in conditions) {
-          //   final expression = CustomFormulaParser.parseCondition(element, {
-          //     if (individualModel != null && individualAgeInMonths != 0)
-          //       'age': individualAgeInMonths,
-          //     if (gender != null) 'gender': gender,
-          //     if (memberCount != null) 'memberCount': memberCount,
-          //     if (roomCount != null) 'roomCount': roomCount,
-          //     if (structureType != null) 'type_of_structure': structureType
-          //   }, stringKeys: [
-          //     'type_of_structure'
-          //   ]);
-          //   final error = expression;
-          //   expressionParser.add(error["value"]);
-          // }
+          for (var element in conditions) {
+            final expression = CustomFormulaParser.parseCondition(element, {
+              if (individualModel != null && individualAgeInMonths != 0)
+                'age': individualAgeInMonths,
+              if (gender != null) 'gender': gender,
+              if (memberCount != null) 'memberCount': memberCount,
+              if (roomCount != null) 'roomCount': roomCount,
+              if (structureType != null) 'type_of_structure': structureType
+            }, stringKeys: [
+              'type_of_structure'
+            ]);
+            final error = expression;
+            expressionParser.add(error["value"]);
+          }
 
           return expressionParser.where((element) => element == true).isNotEmpty
               ? true
@@ -274,20 +276,20 @@ DeliveryDoseCriteria? fetchProductVariant(ProjectCycleDelivery? currentDelivery,
               'and'); // Assuming there's only one condition since we have contain for and check above and split with and will return the first condition so this is valid
 
           List expressionParser = [];
-          // for (var element in conditions) {
-          //   final expression = CustomFormulaParser.parseCondition(element, {
-          //     if (individualModel != null && individualAgeInMonths != 0)
-          //       'age': individualAgeInMonths,
-          //     if (gender != null) 'gender': gender,
-          //     if (memberCount != null) 'memberCount': memberCount,
-          //     if (roomCount != null) 'roomCount': roomCount,
-          //     if (structureType != null) 'type_of_structure': structureType
-          //   }, stringKeys: [
-          //     'type_of_structure'
-          //   ]);
-          //   final error = expression;
-          //   expressionParser.add(error["value"]);
-          // }
+          for (var element in conditions) {
+            final expression = CustomFormulaParser.parseCondition(element, {
+              if (individualModel != null && individualAgeInMonths != 0)
+                'age': individualAgeInMonths,
+              if (gender != null) 'gender': gender,
+              if (memberCount != null) 'memberCount': memberCount,
+              if (roomCount != null) 'roomCount': roomCount,
+              if (structureType != null) 'type_of_structure': structureType
+            }, stringKeys: [
+              'type_of_structure'
+            ]);
+            final error = expression;
+            expressionParser.add(error["value"]);
+          }
 
           return expressionParser.where((element) => element == true).length ==
               conditions.length;
@@ -303,6 +305,13 @@ DeliveryDoseCriteria? fetchProductVariant(ProjectCycleDelivery? currentDelivery,
   return null;
 }
 
+bool isFormula(String condition) {
+  final upper = condition.toUpperCase();
+  return upper.contains('MIN(') ||
+      upper.contains('CEIL(') ||
+      upper.contains('MAX(');
+}
+
 String maskString(String input) {
   // Define the character to use for masking (e.g., "*")
   const maskingChar = '*';
@@ -314,53 +323,53 @@ String maskString(String input) {
   return maskedString;
 }
 
-// class CustomFormulaParser {
-//   // Modify the function to accept stringKeys as nullable
-//   static Map<String, dynamic> parseCondition(
-//     String condition,
-//     Map<String, dynamic> variables, {
-//     List<String>? stringKeys,
-//   } // Accept stringKeys as nullable
-//       ) {
-//     // If stringKeys is null or empty, default to FormulaParser for all conditions
-//     if (stringKeys == null || stringKeys.isEmpty) {
-//       return _parseAsFormula(condition, variables);
-//     }
+class CustomFormulaParser {
+  // Modify the function to accept stringKeys as nullable
+  static Map<String, dynamic> parseCondition(
+    String condition,
+    Map<String, dynamic> variables, {
+    List<String>? stringKeys,
+  } // Accept stringKeys as nullable
+      ) {
+    // If stringKeys is null or empty, default to FormulaParser for all conditions
+    if (stringKeys == null || stringKeys.isEmpty) {
+      return _parseAsFormula(condition, variables);
+    }
 
-//     // Loop through stringKeys and check for string comparison in the condition
-//     for (var key in stringKeys) {
-//       if (condition.contains('$key==')) {
-//         // Extract the expected value after '==' for string comparison
-//         var value = condition.split('==')[1].trim();
-//         if (variables.containsKey(key) && variables[key] is String) {
-//           return _compareString(condition, value, variables[key]);
-//         }
-//       }
-//     }
+    // Loop through stringKeys and check for string comparison in the condition
+    for (var key in stringKeys) {
+      if (condition.contains('$key==')) {
+        // Extract the expected value after '==' for string comparison
+        var value = condition.split('==')[1].trim();
+        if (variables.containsKey(key) && variables[key] is String) {
+          return _compareString(condition, value, variables[key]);
+        }
+      }
+    }
 
-//     // If no string-specific comparison, use FormulaParser for numeric evaluation
-//     return _parseAsFormula(condition, variables);
-//   }
+    // If no string-specific comparison, use FormulaParser for numeric evaluation
+    return _parseAsFormula(condition, variables);
+  }
 
   // Handle string comparison
-  // static Map<String, dynamic> _compareString(
-  //     String condition, String expectedValue, String actualValue) {
-  //   // Compare string values directly
-  //   bool comparisonResult = actualValue == expectedValue;
-  //   return {'value': comparisonResult};
-  // }
+  static Map<String, dynamic> _compareString(
+      String condition, String expectedValue, String actualValue) {
+    // Compare string values directly
+    bool comparisonResult = actualValue == expectedValue;
+    return {'value': comparisonResult};
+  }
 
-  // // Handle numeric evaluation using FormulaParser
-  // static Map<String, dynamic> _parseAsFormula(
-  //     String condition, Map<String, dynamic> variables) {
-  //   final expression = FormulaParser(
-  //     condition,
-  //     variables,
-  //   );
-  //   final error = expression.parse;
-  //   return error; // Parsing the numeric expression
-  // }
-// }
+  // Handle numeric evaluation using FormulaParser
+  static Map<String, dynamic> _parseAsFormula(
+      String condition, Map<String, dynamic> variables) {
+    final expression = FormulaParser(
+      condition,
+      variables,
+    );
+    final error = expression.parse;
+    return error; // Parsing the numeric expression
+  }
+}
 
 class Coordinate {
   final double? latitude;

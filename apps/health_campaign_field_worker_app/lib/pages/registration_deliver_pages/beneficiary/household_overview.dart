@@ -49,6 +49,8 @@ class _HouseholdOverviewPageState
   final TextEditingController searchController = TextEditingController();
   int offset = 0;
   int limit = 1000;
+  bool _hasSeenLoading = false;
+  bool _redirectedToAddHead = false;
 
   String? householdClientReferenceId;
 
@@ -74,9 +76,29 @@ class _HouseholdOverviewPageState
             .add(const SearchHouseholdsClearEvent());
         context.router.maybePop();
       },
-      child: BlocBuilder<HouseholdOverviewBloc, HouseholdOverviewState>(
-        builder: (ctx, state) {
-          return Scaffold(
+      child: BlocListener<HouseholdOverviewBloc, HouseholdOverviewState>(
+        listener: (context, state) {
+          if (state.loading) {
+            _hasSeenLoading = true;
+            return;
+          }
+
+          if (!_hasSeenLoading || _redirectedToAddHead) return;
+
+          final household = state.householdMemberWrapper.household;
+          if ((state.householdMemberWrapper.members ?? []).isEmpty &&
+              household != null) {
+            _redirectedToAddHead = true;
+            final address = household.address;
+            if (address != null && context.mounted) {
+              Future.microtask(
+                  () => addIndividual(context, household, isHeadOfHousehold: true));
+            }
+          }
+        },
+        child: BlocBuilder<HouseholdOverviewBloc, HouseholdOverviewState>(
+          builder: (ctx, state) {
+            return Scaffold(
             body: state.loading
                 ? const Center(child: CircularProgressIndicator())
                 : NotificationListener<ScrollNotification>(
@@ -879,12 +901,13 @@ class _HouseholdOverviewPageState
                     ),
                   ),
           );
-        },
+        },)
       ),
     );
   }
 
-  addIndividual(BuildContext context, HouseholdModel household) async {
+  addIndividual(BuildContext context, HouseholdModel household,
+      {bool isHeadOfHousehold = false}) async {
     final address = household.address;
 
     if (address == null) return;
@@ -893,6 +916,7 @@ class _HouseholdOverviewPageState
       BednetIndividualDetailsWrapperRoute(
         householdModel: household,
         addressModel: address,
+        isHeadOfHousehold: isHeadOfHousehold,
       ),
     );
   }

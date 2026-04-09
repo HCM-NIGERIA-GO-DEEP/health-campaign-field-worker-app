@@ -423,76 +423,76 @@ class DeliverInterventionPageState
                                                   ),
                                                   style: textTheme.headingXl.copyWith(color: theme.colorTheme.primary.primary2),
                                                 ),
-                                                if (RegistrationDeliverySingleton()
-                                                        .beneficiaryType ==
-                                                    BeneficiaryType.individual)
-                                                  ReactiveWrapperField(
-                                                    formControlName:
-                                                        _doseAdministrationKey,
-                                                    builder: (field) =>
-                                                        LabeledField(
-                                                      label: localizations
-                                                          .translate(i18
-                                                              .deliverIntervention
-                                                              .currentCycle),
-                                                      child: DigitTextFormInput(
-                                                        readOnly: true,
-                                                        keyboardType:
-                                                            TextInputType
-                                                                .number,
-                                                        initialValue: form
-                                                            .control(
-                                                                _doseAdministrationKey)
-                                                            .value,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                if (numberOfDoses > 1)
-                                                  SizedBox(
-                                                    height: MediaQuery.sizeOf(
-                                                                context)
-                                                            .height *
-                                                        0.07,
-                                                    child: DigitStepper(
-                                                      activeIndex:
-                                                          deliveryInterventionState
-                                                                  .dose -
-                                                              1,
-                                                      stepperList: steps,
-                                                      inverted: true,
-                                                    ),
-                                                  ),
-                                                ReactiveWrapperField(
-                                                  formControlName:
-                                                      _dateOfAdministrationKey,
-                                                  builder: (field) =>
-                                                      LabeledField(
-                                                    label:
-                                                        localizations.translate(
-                                                      i18.householdDetails
-                                                          .dateOfRegistrationLabel,
-                                                    ),
-                                                    child: DigitDateFormInput(
-                                                      readOnly: true,
-                                                      initialValue: DateFormat(
-                                                              'dd MMM yyyy')
-                                                          .format(form
-                                                              .control(
-                                                                  _dateOfAdministrationKey)
-                                                              .value)
-                                                          .toString(),
-                                                      confirmText: localizations
-                                                          .translate(
-                                                        i18.common.coreCommonOk,
-                                                      ),
-                                                      cancelText: localizations
-                                                          .translate(
-                                                        i18.common
-                                                            .coreCommonCancel,
-                                                      ),
-                                                    ),
-                                                  ),
-                                                ),
+                                                // if (RegistrationDeliverySingleton()
+                                                //         .beneficiaryType ==
+                                                //     BeneficiaryType.individual)
+                                                //   ReactiveWrapperField(
+                                                //     formControlName:
+                                                //         _doseAdministrationKey,
+                                                //     builder: (field) =>
+                                                //         LabeledField(
+                                                //       label: localizations
+                                                //           .translate(i18
+                                                //               .deliverIntervention
+                                                //               .currentCycle),
+                                                //       child: DigitTextFormInput(
+                                                //         readOnly: true,
+                                                //         keyboardType:
+                                                //             TextInputType
+                                                //                 .number,
+                                                //         initialValue: form
+                                                //             .control(
+                                                //                 _doseAdministrationKey)
+                                                //             .value,
+                                                //       ),
+                                                //     ),
+                                                //   ),
+                                                // if (numberOfDoses > 1)
+                                                //   SizedBox(
+                                                //     height: MediaQuery.sizeOf(
+                                                //                 context)
+                                                //             .height *
+                                                //         0.07,
+                                                //     child: DigitStepper(
+                                                //       activeIndex:
+                                                //           deliveryInterventionState
+                                                //                   .dose -
+                                                //               1,
+                                                //       stepperList: steps,
+                                                //       inverted: true,
+                                                //     ),
+                                                //   ),
+                                                // ReactiveWrapperField(
+                                                //   formControlName:
+                                                //       _dateOfAdministrationKey,
+                                                //   builder: (field) =>
+                                                //       LabeledField(
+                                                //     label:
+                                                //         localizations.translate(
+                                                //       i18.householdDetails
+                                                //           .dateOfRegistrationLabel,
+                                                //     ),
+                                                //     child: DigitDateFormInput(
+                                                //       readOnly: true,
+                                                //       initialValue: DateFormat(
+                                                //               'dd MMM yyyy')
+                                                //           .format(form
+                                                //               .control(
+                                                //                   _dateOfAdministrationKey)
+                                                //               .value)
+                                                //           .toString(),
+                                                //       confirmText: localizations
+                                                //           .translate(
+                                                //         i18.common.coreCommonOk,
+                                                //       ),
+                                                //       cancelText: localizations
+                                                //           .translate(
+                                                //         i18.common
+                                                //             .coreCommonCancel,
+                                                //       ),
+                                                //     ),
+                                                //   ),
+                                                // ),
                                               ]),
                                           DigitCard(
                                               margin:
@@ -535,95 +535,9 @@ class DeliverInterventionPageState
                                                         });
                                                       },
                                                     )),
-                                                Center(
-                                                  child: DigitButton(
-                                                    label:
-                                                        localizations.translate(
-                                                      i18.deliverIntervention
-                                                          .resourceAddBeneficiary,
-                                                    ),
-                                                    type: DigitButtonType
-                                                        .tertiary,
-                                                    size:
-                                                        DigitButtonSize.medium,
-                                                    isDisabled: ((form.control(_resourceDeliveredKey)
-                                                                            as FormArray)
-                                                                        .value ??
-                                                                    [])
-                                                                .length <
-                                                            (productVariants ??
-                                                                    [])
-                                                                .length
-                                                        ? false
-                                                        : true,
-                                                    onPressed: () async {
-                                                      addController(form);
-                                                      setState(() {
-                                                        _controllers.add(
-                                                          _controllers.length,
-                                                        );
-                                                      });
-                                                    },
-                                                    prefixIcon:
-                                                        Icons.add_circle,
-                                                  ),
-                                                ),
+                                               
                                               ]),
-                                          DigitCard(
-                                              margin:
-                                                  const EdgeInsets.all(spacer2),
-                                              children: [
-                                                Text(
-                                                  localizations.translate(
-                                                    i18.deliverIntervention
-                                                        .deliveryCommentHeading,
-                                                  ),
-                                                  style: textTheme.headingXl.copyWith(
-                                                    color: theme.colorTheme.primary.primary2
-                                                  ),
-                                                ),
-                                                ReactiveWrapperField(
-                                                  formControlName:
-                                                      _deliveryCommentKey,
-                                                  builder: (field) =>
-                                                      LabeledField(
-                                                    label:
-                                                        localizations.translate(
-                                                      i18.deliverIntervention
-                                                          .deliveryCommentLabel,
-                                                    ),
-                                                    child:
-                                                        DigitDropdown<String>(
-                                                      items:
-                                                          RegistrationDeliverySingleton()
-                                                              .deliveryCommentOptions!
-                                                              .map((e) =>
-                                                                  DropdownItem(
-                                                                    name: localizations
-                                                                        .translate(
-                                                                            e),
-                                                                    code: e,
-                                                                  ))
-                                                              .toList()
-                                                            ..sort((a, b) => a
-                                                                .code
-                                                                .compareTo(
-                                                                    b.code)),
-                                                      emptyItemText:
-                                                          localizations
-                                                              .translate(i18
-                                                                  .common
-                                                                  .noMatchFound),
-                                                      onChange: (value) {
-                                                        form
-                                                            .control(
-                                                                _deliveryCommentKey)
-                                                            .value = value;
-                                                      },
-                                                    ),
-                                                  ),
-                                                ),
-                                              ]),
+                                        
                                         ],
                                       ),
                                     ],

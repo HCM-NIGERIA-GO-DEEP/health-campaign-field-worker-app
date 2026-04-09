@@ -220,7 +220,8 @@ class HouseholdOverviewBloc
           householdMemberWrapper: state.householdMemberWrapper.copyWith(
             members:
                 (event.projectBeneficiaryType == BeneficiaryType.individual)
-                    ? [
+                    ? [ 
+                      // ...[]
                         ...state.householdMemberWrapper.members ?? [],
                         ...beneficiaryIndividuals,
                       ]
