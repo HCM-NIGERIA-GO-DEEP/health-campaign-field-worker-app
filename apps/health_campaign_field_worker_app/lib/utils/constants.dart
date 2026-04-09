@@ -103,16 +103,25 @@ class Constants {
   }
 
   static const String localizationApiPath = 'localization/messages/v1/_search';
-  // Modules to load initially (fetch from server and cache locally)
+  // Modules to load initially (fetch from server and cache locally).
+  // Keep this in sync with homeLocalizationModules below.
   static const List<String> initialLocalizationModules = [
     'digit-privacy-policy',
     'hcm-login',
+    'hcm-forgot-password',
     'hcm-common',
     'hcm-scanner',
     'hcm-peer-to-peer',
     'hcm-transit-post',
     'hcm-attendance',
-    'hcm-dashboard'
+    'hcm-dashboard',
+    // Field-worker core modules
+    'hcm-home',
+    'hcm-household',
+    'hcm-beneficiary',
+    'hcm-member',
+    'hcm-delivery',
+    'hcm-reports',
   ];
 
   // Modules to load when inside packages
@@ -123,19 +132,29 @@ class Constants {
     'hcm-peer-to-peer',
     'hcm-transit-post',
     'hcm-attendance',
-    'hcm-dashboard'
+    'hcm-dashboard',
+    'hcm-beneficiary',
   ];
 
-  // Modules to load on home page and logout
+  // Modules to load on home page and logout.
+  // Must be a superset of initialLocalizationModules (minus login/privacy).
   static const List<String> homeLocalizationModules = [
-    'hcm-login',
-    'hcm-common',
     'digit-privacy-policy',
+    'hcm-login',
+    'hcm-forgot-password',
+    'hcm-common',
     'hcm-scanner',
     'hcm-peer-to-peer',
     'hcm-transit-post',
     'hcm-attendance',
-    'hcm-dashboard'
+    'hcm-dashboard',
+    // Field-worker core modules
+    'hcm-home',
+    'hcm-household',
+    'hcm-beneficiary',
+    'hcm-member',
+    'hcm-delivery',
+    'hcm-reports',
   ];
   static const String surveyFormPreviewDateFormat = 'dd MMMM yyyy';
   static const String defaultDateFormat = 'dd/MM/yyyy';

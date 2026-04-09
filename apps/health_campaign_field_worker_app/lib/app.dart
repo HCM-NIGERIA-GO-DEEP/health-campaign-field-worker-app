@@ -172,7 +172,7 @@ class MainApplicationState extends State<MainApplication>
                                       widget.client, widget.sql),
                                   widget.sql)
                                 ..add(
-  LocalizationEvent.onLoadLocalization(
+                                  LocalizationEvent.onLoadLocalization(
                                     module:
                                         "hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()},${localizationModulesList.interfaces.where((element) => element.type == Modules.localizationModule && Constants.initialLocalizationModules.contains(element.name.toString())).map((e) => e.name.toString()).join(',')}",
                                     tenantId: envConfig.variables.tenantId,

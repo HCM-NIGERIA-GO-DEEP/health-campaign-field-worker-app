@@ -10,6 +10,9 @@ import 'package:survey_form/survey_form.dart';
 
 import '../../blocs/app_initialization/app_initialization.dart';
 import '../../blocs/bednet_distribution/bednet_distribution.dart';
+import '../../blocs/localization/localization.dart';
+import '../../data/local_store/app_shared_preferences.dart';
+import '../../utils/constants.dart';
 import '../../blocs/registration_deliver/search_households/household_global_seach.dart';
 import '../../blocs/registration_deliver/search_households/individual_global_search.dart';
 import '../../blocs/registration_deliver/search_households/search_bloc_common_wrapper.dart';
@@ -212,10 +215,48 @@ class BednetDistributionWrapperPage extends StatelessWidget
       ],
       child: Theme(
         data: squareTheme,
-        child: this,
+        child: _BednetLocalizationLoader(child: this),
       ),
     );
   }
+}
+
+/// Dispatches a localization load for [hcm-household] as soon as the bednet
+/// wrapper mounts, re-setting [LocalizationParams.module] so that household
+/// translations are visible throughout the entire bednet flow regardless of
+/// which feature module was loaded last.
+class _BednetLocalizationLoader extends StatefulWidget {
+  final Widget child;
+  const _BednetLocalizationLoader({required this.child});
+
+  @override
+  State<_BednetLocalizationLoader> createState() =>
+      _BednetLocalizationLoaderState();
+}
+
+class _BednetLocalizationLoaderState
+    extends State<_BednetLocalizationLoader> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final locale = AppSharedPreferences().getSelectedLocale;
+      if (locale == null) return;
+      context.read<LocalizationBloc>().add(
+            LocalizationEvent.onLoadLocalization(
+              module: 'hcm-household,hcm-beneficiary,hcm-member,'
+                  'hcm-delivery,hcm-home,hcm-common,hcm-scanner',
+              tenantId: envConfig.variables.tenantId,
+              locale: locale,
+              path: Constants.localizationApiPath,
+            ),
+          );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
 
 void _syncRegistrationDeliverySingleton(

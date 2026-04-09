@@ -19,20 +19,33 @@ class SyncServiceMapper extends SyncEntityMapperListener {
   ) async {
     try {
       for (int i = 0; i <= response.keys.length - 1; i++) {
-        if (response.keys.elementAt(i) != 'DownsyncCriteria') {
-          final local = RepositoryType.getLocalForType(
-            DataModels.getDataModelForEntityName(response.keys.elementAt(i)),
+        final key = response.keys.elementAt(i);
+        if (key == 'DownsyncCriteria') continue;
+
+        // Extract and check the entity list BEFORE attempting to get the
+        // local repository. If the server returns null for a key (e.g.
+        // "HFReferrals": null), there is nothing to insert and the
+        // corresponding local repository may not even be provided to this
+        // call, which would throw an unrecoverable exception.
+        final List<dynamic> entityResponse = response[key] ?? [];
+        final entityList =
+            entityResponse.whereType<Map<String, dynamic>>().toList();
+
+        if (entityList.isEmpty) continue;
+
+        LocalRepository<EntityModel, EntitySearchModel>? local;
+        try {
+          local = RepositoryType.getLocalForType(
+            DataModels.getDataModelForEntityName(key),
             localRepositories,
           );
-          final List<dynamic> entityResponse =
-              response[response.keys.elementAt(i)] ?? [];
-
-          final entityList =
-              entityResponse.whereType<Map<String, dynamic>>().toList();
-
-          var key = response.keys.elementAt(i);
-          createDbRecords(local, entityList, key);
+        } catch (_) {
+          // No local repository registered for this entity type in the
+          // current context (e.g. HFReferrals during downsync). Skip it.
+          continue;
         }
+
+        createDbRecords(local, entityList, key);
       }
     } catch (e) {
       rethrow;
