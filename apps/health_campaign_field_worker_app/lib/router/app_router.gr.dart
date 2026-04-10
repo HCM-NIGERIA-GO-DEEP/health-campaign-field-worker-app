@@ -51,6 +51,12 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const AuthenticatedPageWrapper(),
       );
     },
+    BednetDistributionAcknowledgementRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const BednetDistributionAcknowledgementPage(),
+      );
+    },
     BednetDistributionSuccessRoute.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
@@ -139,39 +145,6 @@ abstract class _$AppRouter extends RootStackRouter {
         child: BoundarySelectionPage(
           key: args.key,
           appLocalizations: args.appLocalizations,
-        ),
-      );
-    },
-    ClassConfirmationRoute.name: (routeData) {
-      final args = routeData.argsAs<ClassConfirmationRouteArgs>();
-      return AutoRoutePage<dynamic>(
-        routeData: routeData,
-        child: ClassConfirmationPage(
-          key: args.key,
-          classIndex: args.classIndex,
-          totalClasses: args.totalClasses,
-        ),
-      );
-    },
-    ClassDetailsRoute.name: (routeData) {
-      final args = routeData.argsAs<ClassDetailsRouteArgs>();
-      return AutoRoutePage<dynamic>(
-        routeData: routeData,
-        child: ClassDetailsPage(
-          key: args.key,
-          classIndex: args.classIndex,
-          totalClasses: args.totalClasses,
-        ),
-      );
-    },
-    ClassTeacherInfoRoute.name: (routeData) {
-      final args = routeData.argsAs<ClassTeacherInfoRouteArgs>();
-      return AutoRoutePage<dynamic>(
-        routeData: routeData,
-        child: ClassTeacherInfoPage(
-          key: args.key,
-          classIndex: args.classIndex,
-          totalClasses: args.totalClasses,
         ),
       );
     },
@@ -462,18 +435,6 @@ abstract class _$AppRouter extends RootStackRouter {
         ),
       );
     },
-    SchoolDetailsRoute.name: (routeData) {
-      return AutoRoutePage<dynamic>(
-        routeData: routeData,
-        child: const SchoolDetailsPage(),
-      );
-    },
-    SelectSchoolRoute.name: (routeData) {
-      return AutoRoutePage<dynamic>(
-        routeData: routeData,
-        child: const SelectSchoolPage(),
-      );
-    },
     UnauthenticatedRouteWrapper.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
@@ -638,6 +599,20 @@ class AuthenticatedRouteWrapper extends PageRouteInfo<void> {
         );
 
   static const String name = 'AuthenticatedRouteWrapper';
+
+  static const PageInfo<void> page = PageInfo<void>(name);
+}
+
+/// generated route for
+/// [BednetDistributionAcknowledgementPage]
+class BednetDistributionAcknowledgementRoute extends PageRouteInfo<void> {
+  const BednetDistributionAcknowledgementRoute({List<PageRouteInfo>? children})
+      : super(
+          BednetDistributionAcknowledgementRoute.name,
+          initialChildren: children,
+        );
+
+  static const String name = 'BednetDistributionAcknowledgementRoute';
 
   static const PageInfo<void> page = PageInfo<void>(name);
 }
@@ -899,50 +874,6 @@ class BeneficiaryTypeSelectionRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
-/// [BeneficiaryAcknowledgementPage]
-class BeneficiaryAcknowledgementRoute
-    extends PageRouteInfo<BeneficiaryAcknowledgementRouteArgs> {
-  BeneficiaryAcknowledgementRoute({
-    Key? key,
-    AppLocalizations? appLocalizations,
-    bool? enableViewHousehold,
-    List<PageRouteInfo>? children,
-  }) : super(
-          BeneficiaryAcknowledgementRoute.name,
-          args: BeneficiaryAcknowledgementRouteArgs(
-            key: key,
-            appLocalizations: appLocalizations,
-            enableViewHousehold: enableViewHousehold,
-          ),
-          initialChildren: children,
-        );
-
-  static const String name = 'BeneficiaryAcknowledgementRoute';
-
-  static const PageInfo<BeneficiaryAcknowledgementRouteArgs> page =
-      PageInfo<BeneficiaryAcknowledgementRouteArgs>(name);
-}
-
-class BeneficiaryAcknowledgementRouteArgs {
-  const BeneficiaryAcknowledgementRouteArgs({
-    this.key,
-    this.appLocalizations,
-    this.enableViewHousehold,
-  });
-
-  final Key? key;
-
-  final AppLocalizations? appLocalizations;
-
-  final bool? enableViewHousehold;
-
-  @override
-  String toString() {
-    return 'BeneficiaryAcknowledgementRouteArgs{key: $key, appLocalizations: $appLocalizations, enableViewHousehold: $enableViewHousehold}';
-  }
-}
-
-/// generated route for
 /// [BoundarySelectionPage]
 class BoundarySelectionRoute extends PageRouteInfo<BoundarySelectionRouteArgs> {
   BoundarySelectionRoute({
@@ -977,135 +908,6 @@ class BoundarySelectionRouteArgs {
   @override
   String toString() {
     return 'BoundarySelectionRouteArgs{key: $key, appLocalizations: $appLocalizations}';
-  }
-}
-
-/// generated route for
-/// [ClassConfirmationPage]
-class ClassConfirmationRoute extends PageRouteInfo<ClassConfirmationRouteArgs> {
-  ClassConfirmationRoute({
-    Key? key,
-    required int classIndex,
-    required int totalClasses,
-    List<PageRouteInfo>? children,
-  }) : super(
-          ClassConfirmationRoute.name,
-          args: ClassConfirmationRouteArgs(
-            key: key,
-            classIndex: classIndex,
-            totalClasses: totalClasses,
-          ),
-          initialChildren: children,
-        );
-
-  static const String name = 'ClassConfirmationRoute';
-
-  static const PageInfo<ClassConfirmationRouteArgs> page =
-      PageInfo<ClassConfirmationRouteArgs>(name);
-}
-
-class ClassConfirmationRouteArgs {
-  const ClassConfirmationRouteArgs({
-    this.key,
-    required this.classIndex,
-    required this.totalClasses,
-  });
-
-  final Key? key;
-
-  final int classIndex;
-
-  final int totalClasses;
-
-  @override
-  String toString() {
-    return 'ClassConfirmationRouteArgs{key: $key, classIndex: $classIndex, totalClasses: $totalClasses}';
-  }
-}
-
-/// generated route for
-/// [ClassDetailsPage]
-class ClassDetailsRoute extends PageRouteInfo<ClassDetailsRouteArgs> {
-  ClassDetailsRoute({
-    Key? key,
-    required int classIndex,
-    required int totalClasses,
-    List<PageRouteInfo>? children,
-  }) : super(
-          ClassDetailsRoute.name,
-          args: ClassDetailsRouteArgs(
-            key: key,
-            classIndex: classIndex,
-            totalClasses: totalClasses,
-          ),
-          initialChildren: children,
-        );
-
-  static const String name = 'ClassDetailsRoute';
-
-  static const PageInfo<ClassDetailsRouteArgs> page =
-      PageInfo<ClassDetailsRouteArgs>(name);
-}
-
-class ClassDetailsRouteArgs {
-  const ClassDetailsRouteArgs({
-    this.key,
-    required this.classIndex,
-    required this.totalClasses,
-  });
-
-  final Key? key;
-
-  final int classIndex;
-
-  final int totalClasses;
-
-  @override
-  String toString() {
-    return 'ClassDetailsRouteArgs{key: $key, classIndex: $classIndex, totalClasses: $totalClasses}';
-  }
-}
-
-/// generated route for
-/// [ClassTeacherInfoPage]
-class ClassTeacherInfoRoute extends PageRouteInfo<ClassTeacherInfoRouteArgs> {
-  ClassTeacherInfoRoute({
-    Key? key,
-    required int classIndex,
-    required int totalClasses,
-    List<PageRouteInfo>? children,
-  }) : super(
-          ClassTeacherInfoRoute.name,
-          args: ClassTeacherInfoRouteArgs(
-            key: key,
-            classIndex: classIndex,
-            totalClasses: totalClasses,
-          ),
-          initialChildren: children,
-        );
-
-  static const String name = 'ClassTeacherInfoRoute';
-
-  static const PageInfo<ClassTeacherInfoRouteArgs> page =
-      PageInfo<ClassTeacherInfoRouteArgs>(name);
-}
-
-class ClassTeacherInfoRouteArgs {
-  const ClassTeacherInfoRouteArgs({
-    this.key,
-    required this.classIndex,
-    required this.totalClasses,
-  });
-
-  final Key? key;
-
-  final int classIndex;
-
-  final int totalClasses;
-
-  @override
-  String toString() {
-    return 'ClassTeacherInfoRouteArgs{key: $key, classIndex: $classIndex, totalClasses: $totalClasses}';
   }
 }
 

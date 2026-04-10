@@ -2,6 +2,30 @@ import 'dart:convert';
 
 import 'package:digit_data_model/data_model.dart';
 
+/// Persisted on [IndividualModel.additionalFields] when a class distribution is finished.
+const String kBednetClassAdministeredKey = 'bednetClassAdministered';
+const String kBednetClassAdministeredAtKey = 'bednetClassAdministeredAt';
+
+/// Identifies a class row created for bednet distribution (links to [HouseholdModel] school).
+const String kBednetClassIndexKey = 'bednetClassIndex';
+const String kBednetFlowKey = 'bednetClassDistribution';
+
+/// Keys on [TaskModel.additionalFields] when class distribution details are submitted.
+const String kBednetTaskTotalPupilKey = 'totalPupilCount';
+const String kBednetTaskTotalBoysKey = 'totalBoys';
+const String kBednetTaskTotalGirlsKey = 'totalGirls';
+const String kBednetTaskPupilsPresentKey = 'pupilsPresent';
+const String kBednetTaskBoysPresentKey = 'boysPresent';
+const String kBednetTaskGirlsPresentKey = 'girlsPresent';
+const String kBednetTaskPupilsAbsentKey = 'pupilsAbsent';
+const String kBednetTaskDistributionDateKey = 'distributionDate';
+const String kBednetTaskSchoolClientRefKey = 'schoolClientReferenceId';
+const String kBednetTaskSchoolNameKey = 'schoolName';
+const String kBednetTaskClassNameKey = 'className';
+const String kBednetTaskAdministrationStatusKey = 'taskAdministrationStatus';
+const String kBednetTaskAdministrationSuccessStatus = 'ADMINISTRATION_SUCCESS';
+const String kBednetTaskTotalAbsentKey = 'totalAbsent';
+
 /// Parsed [HouseholdModel.additionalFields] for school households (see assets/sample_data/household.csv).
 extension BednetHouseholdFields on HouseholdModel {
   String get bednetSchoolId => id ?? clientReferenceId;
@@ -162,7 +186,8 @@ extension BednetHouseholdFields on HouseholdModel {
   bool get isSchoolHousehold {
     final fields = additionalFields?.fields ?? const <AdditionalField>[];
     final map = <String, Object?>{
-      for (final field in fields) field.key.toLowerCase(): field.value as Object?,
+      for (final field in fields)
+        field.key.toLowerCase(): field.value as Object?,
     };
     final typeField = map['type']?.toString().toLowerCase();
     if (typeField == 'school') return true;
@@ -192,3 +217,50 @@ String bednetHouseholdHeadDisplayName({
   return '';
 }
 
+class ClassTeacherInfoModel {
+  final String name;
+  final String gender;
+  final String mobileNumber;
+
+  const ClassTeacherInfoModel({
+    required this.name,
+    required this.gender,
+    required this.mobileNumber,
+  });
+}
+
+class ClassDetailsModel {
+  final DateTime distributionDate;
+  final int pupilCount;
+  final int numberOfBoys;
+  final int numberOfGirls;
+  final int pupilsPresent;
+  final int boysPresent;
+  final int girlsPresent;
+  final int pupilsAbsent;
+
+  const ClassDetailsModel({
+    required this.distributionDate,
+    required this.pupilCount,
+    required this.numberOfBoys,
+    required this.numberOfGirls,
+    required this.pupilsPresent,
+    required this.boysPresent,
+    required this.girlsPresent,
+    required this.pupilsAbsent,
+  });
+}
+
+class DistributionSummaryModel {
+  final String resourceName;
+  final int boysReceived;
+  final int girlsReceived;
+  final int totalDelivered;
+
+  const DistributionSummaryModel({
+    required this.resourceName,
+    required this.boysReceived,
+    required this.girlsReceived,
+    required this.totalDelivered,
+  });
+}

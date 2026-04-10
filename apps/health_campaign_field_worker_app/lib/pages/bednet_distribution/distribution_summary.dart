@@ -46,9 +46,7 @@ class _DistributionSummaryBody extends StatelessWidget {
     }
     final state = bloc.state;
     final ordinalIndex = classIndex - 1;
-    final summary = (ordinalIndex >= 0 && ordinalIndex < state.summariesByClass.length)
-        ? state.summariesByClass.elementAt(ordinalIndex)
-        : null;
+    final summary = null;
     final classLabel = 'Class $classIndex';
     if (summary == null) {
       return const Scaffold(body: SizedBox.shrink());
@@ -66,14 +64,7 @@ class _DistributionSummaryBody extends StatelessWidget {
               type: DigitButtonType.primary,
               size: DigitButtonSize.large,
               mainAxisSize: MainAxisSize.max,
-              onPressed: () {
-                context.router.push(
-                  ClassConfirmationRoute(
-                    classIndex: classIndex,
-                    totalClasses: totalClasses,
-                  ),
-                );
-              },
+              onPressed: () {},
             ),
           ],
         ),

@@ -338,34 +338,34 @@ class MainApplicationState extends State<MainApplication>
                                   ProjectFacilitySearchModel>(),
                             ),
                           ),
-                          BlocProvider(
-                            create: (ctx) => BednetDistributionBloc(
-                              householdLocalRepository: ctx.read<
-                                  LocalRepository<HouseholdModel,
-                                      HouseholdSearchModel>>(),
-                              individualLocalRepository: ctx.read<
-                                  LocalRepository<IndividualModel,
-                                      IndividualSearchModel>>(),
-                              bednetDistributionRepository:
-                                  BednetDistributionRepository(
-                                individualLocalRepository: ctx.read<
-                                    LocalRepository<IndividualModel,
-                                        IndividualSearchModel>>(),
-                                householdMemberLocalRepository: ctx.read<
-                                    LocalRepository<HouseholdMemberModel,
-                                        HouseholdMemberSearchModel>>(),
-                                projectBeneficiaryLocalRepository: ctx.read<
-                                    LocalRepository<ProjectBeneficiaryModel,
-                                        ProjectBeneficiarySearchModel>>(),
-                                taskLocalRepository: ctx.read<
-                                    LocalRepository<TaskModel,
-                                        TaskSearchModel>>(),
-                                projectResourceLocalRepository: ctx.read<
-                                    LocalRepository<ProjectResourceModel,
-                                        ProjectResourceSearchModel>>(),
-                              ),
-                            ),
-                          ),
+                          // BlocProvider(
+                          //   create: (ctx) => BednetDistributionBloc(
+                          //     householdLocalRepository: ctx.read<
+                          //         LocalRepository<HouseholdModel,
+                          //             HouseholdSearchModel>>(),
+                          //     individualLocalRepository: ctx.read<
+                          //         LocalRepository<IndividualModel,
+                          //             IndividualSearchModel>>(),
+                          //     bednetDistributionRepository:
+                          //         BednetDistributionRepository(
+                          //       individualLocalRepository: ctx.read<
+                          //           LocalRepository<IndividualModel,
+                          //               IndividualSearchModel>>(),
+                          //       householdMemberLocalRepository: ctx.read<
+                          //           LocalRepository<HouseholdMemberModel,
+                          //               HouseholdMemberSearchModel>>(),
+                          //       projectBeneficiaryLocalRepository: ctx.read<
+                          //           LocalRepository<ProjectBeneficiaryModel,
+                          //               ProjectBeneficiarySearchModel>>(),
+                          //       taskLocalRepository: ctx.read<
+                          //           LocalRepository<TaskModel,
+                          //               TaskSearchModel>>(),
+                          //       projectResourceLocalRepository: ctx.read<
+                          //           LocalRepository<ProjectResourceModel,
+                          //               ProjectResourceSearchModel>>(),
+                          //     ),
+                          //   ),
+                          // ),
                           BlocProvider(
                             create: (ctx) => SummaryReportBloc(
                               taskLocalRepository: ctx.read<
