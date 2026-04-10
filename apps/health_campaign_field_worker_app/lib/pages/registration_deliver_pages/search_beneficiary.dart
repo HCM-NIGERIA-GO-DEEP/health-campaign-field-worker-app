@@ -161,49 +161,13 @@ class _SearchBeneficiaryPageState
                                   },
                                 ),
                               ),
-                              locationState.latitude != null
-                                  ? Padding(
-                                      padding: const EdgeInsets.all(spacer2),
-                                      child: DigitSwitch(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.start,
-                                        label: (RegistrationDeliverySingleton()
-                                                    .householdType ==
-                                                HouseholdType.community)
-                                            ? localizations.translate(
-                                                i18.searchBeneficiary
-                                                    .communityProximityLabel,
-                                              )
-                                            : localizations.translate(
-                                                i18.searchBeneficiary
-                                                    .proximityLabel,
-                                              ),
-                                        value: isProximityEnabled,
-                                        onChanged: (value) {
-                                          searchController.clear();
-                                          setState(() {
-                                            isProximityEnabled = value;
-                                            lat = locationState.latitude!;
-                                            long = locationState.longitude!;
-                                          });
-
-                                          if (locationState.hasPermissions &&
-                                              value &&
-                                              locationState.latitude != null &&
-                                              locationState.longitude != null &&
-                                              RegistrationDeliverySingleton()
-                                                      .maxRadius !=
-                                                  null &&
-                                              isProximityEnabled) {
-                                            triggerGlobalSearchEvent();
-                                          } else {
-                                            blocWrapper.clearEvent();
-                                            triggerGlobalSearchEvent();
-                                          }
-                                        },
-                                      ),
-                                    )
-                                  : const Offstage(),
+                              _buildProximityControl(
+                                context,
+                                locationState,
+                                textTheme.bodyS.copyWith(
+                                  color: const Color(0xFF005A7A),
+                                ),
+                              ),
                               Padding(
                                 padding: const EdgeInsets.symmetric(
                                   horizontal: spacer2,
@@ -444,6 +408,90 @@ class _SearchBeneficiaryPageState
                 // ),
               ]),
         ),
+      ),
+    );
+  }
+
+  /// Proximity switch is hidden until GPS resolves if we only gate on
+  /// `latitude != null`. Show the label row immediately with a spinner or
+  /// permission action so the control does not appear "late".
+  Widget _buildProximityControl(
+    BuildContext context,
+    LocationState locationState,
+    TextStyle loadingRowLabelStyle,
+  ) {
+    final proximityLabel = (RegistrationDeliverySingleton().householdType ==
+            HouseholdType.community)
+        ? localizations.translate(
+            i18.searchBeneficiary.communityProximityLabel,
+          )
+        : localizations.translate(
+            i18.searchBeneficiary.proximityLabel,
+          );
+
+    if (locationState.latitude != null && locationState.longitude != null) {
+      return Padding(
+        padding: const EdgeInsets.all(spacer2),
+        child: DigitSwitch(
+          mainAxisAlignment: MainAxisAlignment.start,
+          label: proximityLabel,
+          value: isProximityEnabled,
+          onChanged: (value) {
+            searchController.clear();
+            setState(() {
+              isProximityEnabled = value;
+              lat = locationState.latitude!;
+              long = locationState.longitude!;
+            });
+
+            if (locationState.hasPermissions &&
+                value &&
+                locationState.latitude != null &&
+                locationState.longitude != null &&
+                RegistrationDeliverySingleton().maxRadius != null &&
+                isProximityEnabled) {
+              triggerGlobalSearchEvent();
+            } else {
+              blocWrapper.clearEvent();
+              triggerGlobalSearchEvent();
+            }
+          },
+        ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.all(spacer2),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Expanded(
+            child: Text(
+              proximityLabel,
+              style: loadingRowLabelStyle,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (!locationState.hasPermissions)
+            TextButton(
+              onPressed: () {
+                context.read<LocationBloc>().add(
+                      const LocationEvent.requestPermission(),
+                    );
+                context.read<LocationBloc>().add(const LoadLocationEvent());
+              },
+              child: Text(
+                localizations.translate(i18.common.coreCommonContinue),
+              ),
+            )
+          else
+            const SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+        ],
       ),
     );
   }

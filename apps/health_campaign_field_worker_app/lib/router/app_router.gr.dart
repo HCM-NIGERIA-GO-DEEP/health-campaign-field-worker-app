@@ -108,6 +108,18 @@ abstract class _$AppRouter extends RootStackRouter {
         ),
       );
     },
+    BeneficiaryAcknowledgementRoute1.name: (routeData) {
+      final args = routeData.argsAs<BeneficiaryAcknowledgementRoute1Args>(
+          orElse: () => const BeneficiaryAcknowledgementRoute1Args());
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: BeneficiaryAcknowledgementPage1(
+          key: args.key,
+          appLocalizations: args.appLocalizations,
+          enableViewHousehold: args.enableViewHousehold,
+        ),
+      );
+    },
     BeneficiaryChecklistRoute.name: (routeData) {
       final args = routeData.argsAs<BeneficiaryChecklistRouteArgs>(
           orElse: () => const BeneficiaryChecklistRouteArgs());
@@ -531,9 +543,9 @@ class AttendanceDigitScannerRoute
       ScannedIndividualDataModel,
       AttendanceValidationResult,
     ) onScanResult,
-    required int quantity,
+    required int quantity = 1,
     bool singleValue = false,
-    required bool isGS1code,
+    required bool isGS1code = false,
     List<PageRouteInfo>? children,
   }) : super(
           AttendanceDigitScannerRoute.name,
@@ -561,9 +573,9 @@ class AttendanceDigitScannerRouteArgs {
     required this.enableDynamicQRScanning,
     required this.attendees,
     required this.onScanResult,
-    required this.quantity,
+    required this.quantity = 1,
     this.singleValue = false,
-    required this.isGS1code,
+    required this.isGS1code = false,
   });
 
   final Key? key;
@@ -773,6 +785,50 @@ class BeneficiaryAcknowledgementRouteArgs {
   @override
   String toString() {
     return 'BeneficiaryAcknowledgementRouteArgs{key: $key, appLocalizations: $appLocalizations, enableViewHousehold: $enableViewHousehold}';
+  }
+}
+
+/// generated route for
+/// [BeneficiaryAcknowledgementPage1]
+class BeneficiaryAcknowledgementRoute1
+    extends PageRouteInfo<BeneficiaryAcknowledgementRoute1Args> {
+  BeneficiaryAcknowledgementRoute1({
+    Key? key,
+    AppLocalizations? appLocalizations,
+    bool? enableViewHousehold,
+    List<PageRouteInfo>? children,
+  }) : super(
+          BeneficiaryAcknowledgementRoute1.name,
+          args: BeneficiaryAcknowledgementRoute1Args(
+            key: key,
+            appLocalizations: appLocalizations,
+            enableViewHousehold: enableViewHousehold,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'BeneficiaryAcknowledgementRoute1';
+
+  static const PageInfo<BeneficiaryAcknowledgementRoute1Args> page =
+      PageInfo<BeneficiaryAcknowledgementRoute1Args>(name);
+}
+
+class BeneficiaryAcknowledgementRoute1Args {
+  const BeneficiaryAcknowledgementRoute1Args({
+    this.key,
+    this.appLocalizations,
+    this.enableViewHousehold,
+  });
+
+  final Key? key;
+
+  final AppLocalizations? appLocalizations;
+
+  final bool? enableViewHousehold;
+
+  @override
+  String toString() {
+    return 'BeneficiaryAcknowledgementRoute1Args{key: $key, appLocalizations: $appLocalizations, enableViewHousehold: $enableViewHousehold}';
   }
 }
 

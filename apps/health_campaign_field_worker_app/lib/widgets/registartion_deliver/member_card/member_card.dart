@@ -334,7 +334,8 @@ class MemberCard extends StatelessWidget {
                                       actions: [
                                         DigitButton(
                                           label: localizations.translate(
-                                            i18.memberCard.unableToDeliverLabel,
+                                            i18.memberCard
+                                                .beneficiaryRefusedLabel,
                                           ),
                                           type: DigitButtonType.secondary,
                                           size: DigitButtonSize.large,
@@ -422,11 +423,125 @@ class MemberCard extends StatelessWidget {
                                             ).then(
                                               (value) {
                                                 final household = context
-                                                    .read<HouseholdOverviewBloc>()
+                                                    .read<
+                                                        HouseholdOverviewBloc>()
                                                     .state
                                                     .householdMemberWrapper
                                                     .household;
-                                                if (household?.isSchoolHousehold ??
+                                                if (household
+                                                        ?.isSchoolHousehold ??
+                                                    false) {
+                                                  return context.router.push(
+                                                    BeneficiaryAcknowledgementRoute(),
+                                                  );
+                                                }
+                                                return context.router.push(
+                                                  HouseholdAcknowledgementRoute(
+                                                    enableViewHousehold: true,
+                                                  ),
+                                                );
+                                              },
+                                            );
+                                          },
+                                        ),
+                                        DigitButton(
+                                          label: localizations.translate(
+                                            i18.memberCard
+                                                .beneficiaryAbsentLabel,
+                                          ),
+                                          type: DigitButtonType.secondary,
+                                          size: DigitButtonSize.large,
+                                          onPressed: () {
+                                            Navigator.of(context,
+                                                    rootNavigator: true)
+                                                .pop();
+                                            context
+                                                .read<DeliverInterventionBloc>()
+                                                .add(
+                                                  DeliverInterventionSubmitEvent(
+                                                    task: TaskModel(
+                                                      projectBeneficiaryClientReferenceId:
+                                                          projectBeneficiaryClientReferenceId,
+                                                      clientReferenceId:
+                                                          IdGen.i.identifier,
+                                                      tenantId:
+                                                          RegistrationDeliverySingleton()
+                                                              .tenantId,
+                                                      rowVersion: 1,
+                                                      auditDetails:
+                                                          AuditDetails(
+                                                        createdBy:
+                                                            RegistrationDeliverySingleton()
+                                                                .loggedInUserUuid!,
+                                                        createdTime: context
+                                                            .millisecondsSinceEpoch(),
+                                                      ),
+                                                      projectId:
+                                                          RegistrationDeliverySingleton()
+                                                              .projectId,
+                                                      status: Status
+                                                          .beneficiaryAbsent
+                                                          .toValue(),
+                                                      clientAuditDetails:
+                                                          ClientAuditDetails(
+                                                        createdBy:
+                                                            RegistrationDeliverySingleton()
+                                                                .loggedInUserUuid!,
+                                                        createdTime: context
+                                                            .millisecondsSinceEpoch(),
+                                                        lastModifiedBy:
+                                                            RegistrationDeliverySingleton()
+                                                                .loggedInUserUuid,
+                                                        lastModifiedTime: context
+                                                            .millisecondsSinceEpoch(),
+                                                      ),
+                                                      additionalFields:
+                                                          TaskAdditionalFields(
+                                                        version: 1,
+                                                        fields: [
+                                                          AdditionalField(
+                                                            'taskStatus',
+                                                            Status
+                                                                .beneficiaryAbsent
+                                                                .toValue(),
+                                                          ),
+                                                        ],
+                                                      ),
+                                                      address: individual
+                                                          .address?.first,
+                                                    ),
+                                                    isEditing: false,
+                                                    boundaryModel:
+                                                        RegistrationDeliverySingleton()
+                                                            .boundary!,
+                                                  ),
+                                                );
+                                            final reloadState = context
+                                                .read<HouseholdOverviewBloc>();
+                                            Future.delayed(
+                                              const Duration(milliseconds: 500),
+                                              () {
+                                                reloadState.add(
+                                                  HouseholdOverviewReloadEvent(
+                                                    projectId:
+                                                        RegistrationDeliverySingleton()
+                                                            .projectId!,
+                                                    projectBeneficiaryType:
+                                                        RegistrationDeliverySingleton()
+                                                            .beneficiaryType!,
+                                                  ),
+                                                );
+                                              },
+                                            ).then(
+                                              (value) {
+                                                final household = context
+                                                    .read<
+                                                        HouseholdOverviewBloc>()
+                                                    .state
+                                                    .householdMemberWrapper
+                                                    .household;
+                                                if (household
+                                                        ?.isSchoolHousehold ??
                                                     false) {
                                                   return context.router.push(
                                                     BeneficiaryAcknowledgementRoute(),
@@ -453,13 +568,13 @@ class MemberCard extends StatelessWidget {
                                         //       context,
                                         //       rootNavigator: true,
                                         //     ).pop();
-                                        //     // await context.router.push(
-                                        //     //   ReferBeneficiaryRoute(
-                                        //     //     projectBeneficiaryClientRefId:
-                                        //     //         projectBeneficiaryClientReferenceId ??
-                                        //     //             '',
-                                        //     //   ),
-                                        //     // );
+                                        //     await context.router.push(
+                                        //       ReferBeneficiaryRoute(
+                                        //         projectBeneficiaryClientRefId:
+                                        //             projectBeneficiaryClientReferenceId ??
+                                        //                 '',
+                                        //       ),
+                                        //     );
                                         //   },
                                         // ),
                                         // DigitButton(

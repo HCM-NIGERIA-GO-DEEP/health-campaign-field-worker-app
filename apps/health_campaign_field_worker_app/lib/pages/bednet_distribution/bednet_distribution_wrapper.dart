@@ -27,6 +27,39 @@ import '../../utils/environment_config.dart';
 import '../../utils/extensions/extensions.dart';
 import '../../utils/registration_deliver_utils/utils.dart';
 
+DateTime? _lastBednetLocalizationRequestAt;
+
+/// Loads registration-delivery modules for the bednet flow. Invoked from
+/// [BednetDistributionWrapperPage.wrappedRoute] as soon as the shell is
+/// entered so localization work starts before nested routes build; avoids a
+/// post-frame delay where [RegistrationDeliveryLocalization.translate] falls
+/// back to raw keys.
+///
+/// [BeneficiaryTypeSelectionPage] may call this as well when opened outside the
+/// bednet shell (legacy route); a short debounce avoids duplicate bloc events
+/// when both the wrapper and that page mount in the same navigation.
+void requestBednetRegistrationLocalizationModules(BuildContext context) {
+  final now = DateTime.now();
+  if (_lastBednetLocalizationRequestAt != null &&
+      now.difference(_lastBednetLocalizationRequestAt!) <
+          const Duration(milliseconds: 800)) {
+    return;
+  }
+  _lastBednetLocalizationRequestAt = now;
+
+  final locale = AppSharedPreferences().getSelectedLocale;
+  if (locale == null) return;
+  context.read<LocalizationBloc>().add(
+        LocalizationEvent.onLoadLocalization(
+          module: 'hcm-household,hcm-closedhousehold,hcm-beneficiary,'
+              'hcm-member,hcm-delivery,hcm-home,hcm-common,hcm-scanner',
+          tenantId: envConfig.variables.tenantId,
+          locale: locale,
+          path: Constants.localizationApiPath,
+        ),
+      );
+}
+
 @RoutePage()
 class BednetDistributionWrapperPage extends StatelessWidget
     implements AutoRouteWrapper {
@@ -47,6 +80,7 @@ class BednetDistributionWrapperPage extends StatelessWidget
     final bednetShell = initState.maybeWhen(
       initialized: (appConfiguration, _, __) {
         _syncRegistrationDeliverySingleton(context, appConfiguration);
+        requestBednetRegistrationLocalizationModules(context);
         return _bednetShell(context, baseTheme: Theme.of(context));
       },
       orElse: () => const Material(
@@ -215,44 +249,33 @@ class BednetDistributionWrapperPage extends StatelessWidget
       ],
       child: Theme(
         data: squareTheme,
-        child: _BednetLocalizationLoader(child: this),
+        child: _BednetLocationPrewarm(child: this),
       ),
     );
   }
 }
 
-/// Dispatches a localization load for [hcm-household] as soon as the bednet
-/// wrapper mounts, re-setting [LocalizationParams.module] so that household
-/// translations are visible throughout the entire bednet flow regardless of
-/// which feature module was loaded last.
-class _BednetLocalizationLoader extends StatefulWidget {
+/// Dispatches [LoadLocationEvent] once when the bednet shell builds so
+/// [SearchBeneficiaryPage]'s proximity switch (shown when latitude is set) is
+/// not delayed until after navigating from [BeneficiaryTypeSelectionPage].
+class _BednetLocationPrewarm extends StatefulWidget {
+  const _BednetLocationPrewarm({required this.child});
+
   final Widget child;
-  const _BednetLocalizationLoader({required this.child});
 
   @override
-  State<_BednetLocalizationLoader> createState() =>
-      _BednetLocalizationLoaderState();
+  State<_BednetLocationPrewarm> createState() => _BednetLocationPrewarmState();
 }
 
-class _BednetLocalizationLoaderState
-    extends State<_BednetLocalizationLoader> {
+class _BednetLocationPrewarmState extends State<_BednetLocationPrewarm> {
+  bool _dispatched = false;
+
   @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      final locale = AppSharedPreferences().getSelectedLocale;
-      if (locale == null) return;
-      context.read<LocalizationBloc>().add(
-            LocalizationEvent.onLoadLocalization(
-              module: 'hcm-household,hcm-closedhousehold,hcm-beneficiary,'
-                  'hcm-member,hcm-delivery,hcm-home,hcm-common,hcm-scanner',
-              tenantId: envConfig.variables.tenantId,
-              locale: locale,
-              path: Constants.localizationApiPath,
-            ),
-          );
-    });
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_dispatched) return;
+    _dispatched = true;
+    context.read<LocationBloc>().add(const LoadLocationEvent());
   }
 
   @override

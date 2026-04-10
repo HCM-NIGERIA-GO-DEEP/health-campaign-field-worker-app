@@ -135,6 +135,10 @@ class _HouseholdOverviewPageState
                             onPressed: () => addIndividual(
                               context,
                               state.householdMemberWrapper.household!,
+                              isHeadOfHousehold: (state.householdMemberWrapper
+                                          .members ??
+                                      [])
+                                  .isEmpty,
                             ),
                             label: localizations.translate(
                               i18.householdOverView
@@ -1071,7 +1075,7 @@ class _HouseholdOverviewPageState
     }
   }
 
-  bool _isHouseholdHeadMember(
+    bool _isHouseholdHeadMember(
     IndividualModel e,
     HouseholdMemberWrapper wrapper,
   ) {
@@ -1083,6 +1087,26 @@ class _HouseholdOverviewPageState
           wrapper.headOfHousehold,
         );
   }
+
+  // bool _isHouseholdHeadMember(
+  //   IndividualModel e,
+  //   HouseholdMemberWrapper wrapper,
+  // ) {
+  //   if (wrapper.headOfHousehold?.clientReferenceId == e.clientReferenceId) {
+  //     return true;
+  //   }
+  //   if (wrapper.headOfHousehold != null) return false;
+  //   // No resolved head: optional name match (school). When multiple members
+  //   // could match [bednetSchoolHead], only the first in list order is tagged.
+  //   if (!_isBednetSchoolHeadMember(e, wrapper.household, null)) {
+  //     return false;
+  //   }
+  //   final raw = wrapper.members ?? [];
+  //   final firstNameMatch = raw.firstWhereOrNull(
+  //     (m) => _isBednetSchoolHeadMember(m, wrapper.household, null),
+  //   );
+  //   return firstNameMatch?.clientReferenceId == e.clientReferenceId;
+  // }
 
   List<IndividualModel> _membersOrderedHeadFirst(
     HouseholdMemberWrapper wrapper,

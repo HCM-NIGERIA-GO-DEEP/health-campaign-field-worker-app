@@ -136,7 +136,8 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                           size: DigitButtonSize.large,
                           mainAxisSize: MainAxisSize.max,
                           onPressed: () async {
-                            if (form.control(_dobKey).value == null) {
+                            if (!widget.isHeadOfHousehold &&
+                                form.control(_dobKey).value == null) {
                               setState(() {
                                 form.control(_dobKey).setErrors({'': true});
                               });
@@ -446,59 +447,59 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                             ),
                           ],
                         ),
-
-                        individualDetailsShowcaseData.dateOfBirth.buildWith(
-                          child: DigitDobPicker(
-                            datePickerFormControl: _dobKey,
-                            datePickerLabel: localizations.translate(
-                              i18.individualDetails.dobLabelText,
-                            ),
-                            ageFieldLabel: localizations.translate(
-                              i18.individualDetails.ageLabelText,
-                            ),
-                            yearsHintLabel: localizations.translate(
-                              i18.individualDetails.yearsHintText,
-                            ),
-                            monthsHintLabel: localizations.translate(
-                              i18.individualDetails.monthsHintText,
-                            ),
-                            separatorLabel: localizations.translate(
-                              i18.individualDetails.separatorLabelText,
-                            ),
-                            yearsAndMonthsErrMsg: localizations.translate(
-                              i18.individualDetails.yearsAndMonthsErrorText,
-                            ),
-                            errorMessage: form.control(_dobKey).hasErrors
-                                ? localizations
-                                    .translate(i18.common.corecommonRequired)
-                                : null,
-                            initialDate: before150Years,
-                            initialValue: getInitialDateValue(form),
-                            onChangeOfFormControl: (value) {
-                              setState(() {
-                                if (value == null) {
-                                  form.control(_dobKey).setErrors({'': true});
-                                } else {
-                                  DigitDOBAgeConvertor age =
-                                      DigitDateUtils.calculateAge(value);
-                                  if ((age.years == 0 && age.months == 0) ||
-                                      (age.months > 11) ||
-                                      (age.years >= 150 && age.months >= 0)) {
+if (!widget.isHeadOfHousehold)
+                          individualDetailsShowcaseData.dateOfBirth.buildWith(
+                            child: DigitDobPicker(
+                              datePickerFormControl: _dobKey,
+                              datePickerLabel: localizations.translate(
+                                i18.individualDetails.dobLabelText,
+                              ),
+                              ageFieldLabel: localizations.translate(
+                                i18.individualDetails.ageLabelText,
+                              ),
+                              yearsHintLabel: localizations.translate(
+                                i18.individualDetails.yearsHintText,
+                              ),
+                              monthsHintLabel: localizations.translate(
+                                i18.individualDetails.monthsHintText,
+                              ),
+                              separatorLabel: localizations.translate(
+                                i18.individualDetails.separatorLabelText,
+                              ),
+                              yearsAndMonthsErrMsg: localizations.translate(
+                                i18.individualDetails.yearsAndMonthsErrorText,
+                              ),
+                              errorMessage: form.control(_dobKey).hasErrors
+                                  ? localizations
+                                      .translate(i18.common.corecommonRequired)
+                                  : null,
+                              initialDate: before150Years,
+                              initialValue: getInitialDateValue(form),
+                              onChangeOfFormControl: (value) {
+                                setState(() {
+                                  if (value == null) {
                                     form.control(_dobKey).setErrors({'': true});
                                   } else {
-                                    form.control(_dobKey).value = value;
-                                    form.control(_dobKey).removeError('');
+                                    DigitDOBAgeConvertor age =
+                                        DigitDateUtils.calculateAge(value);
+                                    if ((age.years == 0 && age.months == 0) ||
+                                        (age.months > 11) ||
+                                        (age.years >= 150 && age.months >= 0)) {
+                                      form.control(_dobKey).setErrors({'': true});
+                                    } else {
+                                      form.control(_dobKey).value = value;
+                                      form.control(_dobKey).removeError('');
+                                    }
                                   }
-                                }
-                              });
-                              // Handle changes to the control's value here
-                            },
-                            cancelText: localizations
-                                .translate(i18.common.coreCommonCancel),
-                            confirmText: localizations
-                                .translate(i18.common.coreCommonOk),
+                                });
+                                // Handle changes to the control's value here
+                              },
+                              cancelText: localizations
+                                  .translate(i18.common.coreCommonCancel),
+                              confirmText: localizations
+                                  .translate(i18.common.coreCommonOk),
+                            ),
                           ),
-                        ),
                         SelectionCard<String>(
                           isRequired: true,
                           showParentContainer: true,

@@ -170,17 +170,22 @@ class HouseholdOverviewBloc
               beneficiaryClientReferenceIds.contains(element.clientReferenceId))
           .toList();
 
-      // Find the head of the household.
-      final head = (event.projectBeneficiaryType == BeneficiaryType.individual
-              ? beneficiaryIndividuals
-              : individuals)
-          .firstWhereOrNull(
-        (i) =>
-            i.clientReferenceId ==
-            householdMemberList
-                .firstWhereOrNull((h) => h.isHeadOfHousehold)
-                ?.individualClientReferenceId,
-      );
+      // Find the head of the household (household member row with isHeadOfHousehold).
+      // For household-level project beneficiaries (e.g. school), beneficiary ids
+      // are the household id, so [beneficiaryIndividuals] can be empty even though
+      // [individuals] contains the head — resolve from [individuals] as fallback.
+      final headMemberId = householdMemberList
+          .firstWhereOrNull((h) => h.isHeadOfHousehold)
+          ?.individualClientReferenceId;
+      IndividualModel? head;
+      if (headMemberId != null) {
+        final pool = event.projectBeneficiaryType == BeneficiaryType.individual
+            ? beneficiaryIndividuals
+            : individuals;
+        head = pool.firstWhereOrNull((i) => i.clientReferenceId == headMemberId);
+        head ??= individuals.firstWhereOrNull(
+            (i) => i.clientReferenceId == headMemberId);
+      }
 
       final List<TaskModel> tasks;
       final List<SideEffectModel> sideEffects;
@@ -215,6 +220,18 @@ class HouseholdOverviewBloc
           (a.clientAuditDetails?.createdTime ?? 0)
               .compareTo(b.clientAuditDetails?.createdTime ?? 0));
 
+      // Project beneficiaries often reference the household id (school flow), not
+      // each member's id — then [beneficiaryIndividuals] is empty while [individuals]
+      // has every member. Use full [individuals] so the list matches [head] resolution.
+      final displayMembers =
+          event.projectBeneficiaryType == BeneficiaryType.individual &&
+                  beneficiaryIndividuals.isEmpty &&
+                  individuals.isNotEmpty
+              ? individuals
+              : (event.projectBeneficiaryType == BeneficiaryType.individual
+                  ? beneficiaryIndividuals
+                  : individuals);
+
       // Check if a head of household was found.
       if (head == null) {
         // If head is not found in this batch: append only when paginating
@@ -230,10 +247,10 @@ class HouseholdOverviewBloc
           householdMemberWrapper: state.householdMemberWrapper.copyWith(
             members: (event.projectBeneficiaryType == BeneficiaryType.individual)
                 ? (isFirstPage
-                    ? beneficiaryIndividuals
-                    : [
-                        ...state.householdMemberWrapper.members ?? [],
-                        ...beneficiaryIndividuals,
+                    ? displayMembers
+                    : [ ...[]
+                        // ...state.householdMemberWrapper.members ?? [],
+                        // ...displayMembers,
                       ])
                 : (isFirstPage
                     ? individuals
@@ -274,9 +291,7 @@ class HouseholdOverviewBloc
           householdMemberWrapper: HouseholdMemberWrapper(
             household: resultHousehold,
             headOfHousehold: head,
-            members: (event.projectBeneficiaryType == BeneficiaryType.individual
-                ? beneficiaryIndividuals
-                : individuals),
+            members: displayMembers,
             tasks: tasks.isEmpty ? null : tasks,
             projectBeneficiaries: projectBeneficiaries,
             sideEffects: sideEffects,
