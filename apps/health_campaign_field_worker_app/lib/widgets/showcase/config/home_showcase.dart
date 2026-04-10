@@ -1,11 +1,7 @@
 part of 'showcase_constants.dart';
 
-class _HomePageShowcaseData {
-  static final _HomePageShowcaseData _instance = _HomePageShowcaseData._();
-
-  _HomePageShowcaseData._();
-
-  factory _HomePageShowcaseData() => _instance;
+class HomePageShowcaseData {
+  HomePageShowcaseData();
 
   List<ShowcaseItemBuilder> get showcaseData => [
         distributorProgressBar,
@@ -43,6 +39,10 @@ class _HomePageShowcaseData {
   );
 
   final distributorSyncData = ShowcaseItemBuilder(
+    messageLocalizationKey: i18.homeShowcase.distributorSyncData,
+  );
+
+  final stockSyncData = ShowcaseItemBuilder(
     messageLocalizationKey: i18.homeShowcase.distributorSyncData,
   );
 
@@ -86,6 +86,11 @@ class _HomePageShowcaseData {
   final inventoryReport = ShowcaseItemBuilder(
     messageLocalizationKey: i18.homeShowcase.inventoryReport,
   );
+
+  final summaryReport = ShowcaseItemBuilder(
+    messageLocalizationKey: i18.homeShowcase.summaryReport,
+  );
+
   final hfBeneficiaryReferral = ShowcaseItemBuilder(
     messageLocalizationKey: i18.homeShowcase.beneficiaryReferral,
   );

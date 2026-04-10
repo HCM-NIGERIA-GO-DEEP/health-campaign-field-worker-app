@@ -63,6 +63,9 @@ class PropertySchema with _$PropertySchema {
     @JsonKey(fromJson: _autoFillConditionListOrNull)
     List<AutoFillCondition>? autoFillCondition,
     @JsonKey(fromJson: _showAlertOrNull) ShowAlertPopUp? showAlertPopUp,
+    // Secondary action alert popup (e.g., for reject confirmation with comment)
+    @JsonKey(fromJson: _showSecondaryAlertOrNull)
+    ShowSecondaryAlertPopUp? showSecondaryAlertPopUp,
     // Multi-entity tab configuration
     @JsonKey(fromJson: _multiEntityConfigOrNull)
     MultiEntityConfig? multiEntityConfig,
@@ -71,6 +74,8 @@ class PropertySchema with _$PropertySchema {
     // Submit condition for pages - when true, form submits directly instead of navigating to next page
     @JsonKey(fromJson: _visibilityConditionOrNull)
     VisibilityCondition? submitCondition,
+    // Secondary action button label (e.g., "Decline" button alongside "Accept")
+    String? secondaryActionLabel,
     // Comparison config for scanner fields - enables duplicate detection against historical data
     @JsonKey(fromJson: _comparisonConfigOrNull)
     ComparisonConfig? comparisonConfig,
@@ -182,6 +187,36 @@ class ShowAlertPopUp with _$ShowAlertPopUp {
 }
 
 @freezed
+class ShowSecondaryAlertPopUp with _$ShowSecondaryAlertPopUp {
+  const factory ShowSecondaryAlertPopUp({
+    required String title,
+    String? description,
+    required String primaryActionLabel,
+    required String secondaryActionLabel,
+    List<AlertCondition>? conditions,
+    // Body fields for form inputs inside the popup (e.g., mandatory comment)
+    List<SecondaryAlertBodyField>? body,
+  }) = _ShowSecondaryAlertPopUp;
+
+  factory ShowSecondaryAlertPopUp.fromJson(Map<String, dynamic> json) =>
+      _$ShowSecondaryAlertPopUpFromJson(json);
+}
+
+@freezed
+class SecondaryAlertBodyField with _$SecondaryAlertBodyField {
+  const factory SecondaryAlertBodyField({
+    required String type,
+    required String label,
+    String? format,
+    required String fieldName,
+    @Default(false) bool mandatory,
+  }) = _SecondaryAlertBodyField;
+
+  factory SecondaryAlertBodyField.fromJson(Map<String, dynamic> json) =>
+      _$SecondaryAlertBodyFieldFromJson(json);
+}
+
+@freezed
 class AlertCondition with _$AlertCondition {
   const factory AlertCondition({
     required String expression, // e.g., condition or "DEFAULT"
@@ -207,7 +242,8 @@ class MultiEntityConfig with _$MultiEntityConfig {
 class ComparisonConfig with _$ComparisonConfig {
   @JsonSerializable(explicitToJson: true, includeIfNull: false)
   const factory ComparisonConfig({
-    required String model, // table to search (e.g., "stock", "projectBeneficiary")
+    required String
+        model, // table to search (e.g., "stock", "projectBeneficiary")
     required String extractKey, // field to match scanned value against
     @Default('additionalFields')
     String extractFrom, // "additionalFields" or "column"
@@ -224,10 +260,13 @@ class ComparisonFilter with _$ComparisonFilter {
   @JsonSerializable(explicitToJson: true, includeIfNull: false)
   const factory ComparisonFilter({
     required String key, // DB column name (e.g., "senderId")
-    required String value, // default template (e.g., "{{navigation.facilityFromWhich}}")
+    required String
+        value, // default template (e.g., "{{navigation.facilityFromWhich}}")
     @Default('equals') String operation,
-    String? switchOn, // template for conditional switch (e.g., "{{navigation.stockEntryType}}")
-    Map<String, String>? cases, // conditional overrides (e.g., {"ISSUED": "{{navigation.facilityToWhich}}"})
+    String?
+        switchOn, // template for conditional switch (e.g., "{{navigation.stockEntryType}}")
+    Map<String, String>?
+        cases, // conditional overrides (e.g., {"ISSUED": "{{navigation.facilityToWhich}}"})
   }) = _ComparisonFilter;
 
   factory ComparisonFilter.fromJson(Map<String, dynamic> json) =>
@@ -312,6 +351,13 @@ List<AutoFillCondition>? _autoFillConditionListOrNull(dynamic value) {
 ShowAlertPopUp? _showAlertOrNull(dynamic value) {
   if (value is Map && value.isNotEmpty) {
     return ShowAlertPopUp.fromJson(Map<String, dynamic>.from(value));
+  }
+  return null;
+}
+
+ShowSecondaryAlertPopUp? _showSecondaryAlertOrNull(dynamic value) {
+  if (value is Map && value.isNotEmpty) {
+    return ShowSecondaryAlertPopUp.fromJson(Map<String, dynamic>.from(value));
   }
   return null;
 }

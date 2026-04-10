@@ -30,6 +30,21 @@ abstract class _$AppRouter extends RootStackRouter {
         ),
       );
     },
+    AttendanceDigitScannerRoute.name: (routeData) {
+      final args = routeData.argsAs<AttendanceDigitScannerRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: AttendanceDigitScannerPage(
+          key: args.key,
+          enableDynamicQRScanning: args.enableDynamicQRScanning,
+          attendees: args.attendees,
+          onScanResult: args.onScanResult,
+          quantity: args.quantity,
+          singleValue: args.singleValue,
+          isGS1code: args.isGS1code,
+        ),
+      );
+    },
     AuthenticatedRouteWrapper.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
@@ -127,6 +142,62 @@ abstract class _$AppRouter extends RootStackRouter {
         ),
       );
     },
+    ClassConfirmationRoute.name: (routeData) {
+      final args = routeData.argsAs<ClassConfirmationRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: ClassConfirmationPage(
+          key: args.key,
+          classIndex: args.classIndex,
+          totalClasses: args.totalClasses,
+        ),
+      );
+    },
+    ClassDetailsRoute.name: (routeData) {
+      final args = routeData.argsAs<ClassDetailsRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: ClassDetailsPage(
+          key: args.key,
+          classIndex: args.classIndex,
+          totalClasses: args.totalClasses,
+        ),
+      );
+    },
+    ClassTeacherInfoRoute.name: (routeData) {
+      final args = routeData.argsAs<ClassTeacherInfoRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: ClassTeacherInfoPage(
+          key: args.key,
+          classIndex: args.classIndex,
+          totalClasses: args.totalClasses,
+        ),
+      );
+    },
+    CurrentBoundaryRoute.name: (routeData) {
+      final args = routeData.argsAs<CurrentBoundaryRouteArgs>(
+          orElse: () => const CurrentBoundaryRouteArgs());
+      return AutoRoutePage<BoundaryModel>(
+        routeData: routeData,
+        child: CurrentBoundaryPage(
+          key: args.key,
+          appLocalizations: args.appLocalizations,
+          onBoundarySelected: args.onBoundarySelected,
+        ),
+      );
+    },
+    CustomSummaryReportRoute.name: (routeData) {
+      final args = routeData.argsAs<CustomSummaryReportRouteArgs>(
+          orElse: () => const CustomSummaryReportRouteArgs());
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: CustomSummaryReportPage(
+          key: args.key,
+          appLocalizations: args.appLocalizations,
+        ),
+      );
+    },
     DataReceiverRoute.name: (routeData) {
       final args = routeData.argsAs<DataReceiverRouteArgs>();
       return AutoRoutePage<dynamic>(
@@ -185,6 +256,17 @@ abstract class _$AppRouter extends RootStackRouter {
         child: DevicesListPage(
           key: args.key,
           deviceType: args.deviceType,
+        ),
+      );
+    },
+    DistributionSummaryRoute.name: (routeData) {
+      final args = routeData.argsAs<DistributionSummaryRouteArgs>();
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: DistributionSummaryPage(
+          key: args.key,
+          classIndex: args.classIndex,
+          totalClasses: args.totalClasses,
         ),
       );
     },
@@ -380,6 +462,18 @@ abstract class _$AppRouter extends RootStackRouter {
         ),
       );
     },
+    SchoolDetailsRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const SchoolDetailsPage(),
+      );
+    },
+    SelectSchoolRoute.name: (routeData) {
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: const SelectSchoolPage(),
+      );
+    },
     UnauthenticatedRouteWrapper.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
@@ -397,7 +491,6 @@ abstract class _$AppRouter extends RootStackRouter {
         ),
       );
     },
-    ...AttendanceRoute().pagesMap,
     ...DigitScannerPackageRoute().pagesMap,
     ...DashboardRoute().pagesMap,
     ...SurveyFormRoute().pagesMap,
@@ -462,6 +555,76 @@ class AcknowledgementRouteArgs {
   @override
   String toString() {
     return 'AcknowledgementRouteArgs{key: $key, appLocalizations: $appLocalizations, isDataRecordSuccess: $isDataRecordSuccess, label: $label, description: $description, descriptionTableData: $descriptionTableData}';
+  }
+}
+
+/// generated route for
+/// [AttendanceDigitScannerPage]
+class AttendanceDigitScannerRoute
+    extends PageRouteInfo<AttendanceDigitScannerRouteArgs> {
+  AttendanceDigitScannerRoute({
+    Key? key,
+    required bool enableDynamicQRScanning,
+    required List<AttendeeModel> attendees,
+    required void Function(
+      ScannedIndividualDataModel,
+      AttendanceValidationResult,
+    ) onScanResult,
+    required int quantity,
+    bool singleValue = false,
+    required bool isGS1code,
+    List<PageRouteInfo>? children,
+  }) : super(
+          AttendanceDigitScannerRoute.name,
+          args: AttendanceDigitScannerRouteArgs(
+            key: key,
+            enableDynamicQRScanning: enableDynamicQRScanning,
+            attendees: attendees,
+            onScanResult: onScanResult,
+            quantity: quantity,
+            singleValue: singleValue,
+            isGS1code: isGS1code,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'AttendanceDigitScannerRoute';
+
+  static const PageInfo<AttendanceDigitScannerRouteArgs> page =
+      PageInfo<AttendanceDigitScannerRouteArgs>(name);
+}
+
+class AttendanceDigitScannerRouteArgs {
+  const AttendanceDigitScannerRouteArgs({
+    this.key,
+    required this.enableDynamicQRScanning,
+    required this.attendees,
+    required this.onScanResult,
+    required this.quantity,
+    this.singleValue = false,
+    required this.isGS1code,
+  });
+
+  final Key? key;
+
+  final bool enableDynamicQRScanning;
+
+  final List<AttendeeModel> attendees;
+
+  final void Function(
+    ScannedIndividualDataModel,
+    AttendanceValidationResult,
+  ) onScanResult;
+
+  final int quantity;
+
+  final bool singleValue;
+
+  final bool isGS1code;
+
+  @override
+  String toString() {
+    return 'AttendanceDigitScannerRouteArgs{key: $key, enableDynamicQRScanning: $enableDynamicQRScanning, attendees: $attendees, onScanResult: $onScanResult, quantity: $quantity, singleValue: $singleValue, isGS1code: $isGS1code}';
   }
 }
 
@@ -736,6 +899,50 @@ class BeneficiaryTypeSelectionRoute extends PageRouteInfo<void> {
 }
 
 /// generated route for
+/// [BeneficiaryAcknowledgementPage]
+class BeneficiaryAcknowledgementRoute
+    extends PageRouteInfo<BeneficiaryAcknowledgementRouteArgs> {
+  BeneficiaryAcknowledgementRoute({
+    Key? key,
+    AppLocalizations? appLocalizations,
+    bool? enableViewHousehold,
+    List<PageRouteInfo>? children,
+  }) : super(
+          BeneficiaryAcknowledgementRoute.name,
+          args: BeneficiaryAcknowledgementRouteArgs(
+            key: key,
+            appLocalizations: appLocalizations,
+            enableViewHousehold: enableViewHousehold,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'BeneficiaryAcknowledgementRoute';
+
+  static const PageInfo<BeneficiaryAcknowledgementRouteArgs> page =
+      PageInfo<BeneficiaryAcknowledgementRouteArgs>(name);
+}
+
+class BeneficiaryAcknowledgementRouteArgs {
+  const BeneficiaryAcknowledgementRouteArgs({
+    this.key,
+    this.appLocalizations,
+    this.enableViewHousehold,
+  });
+
+  final Key? key;
+
+  final AppLocalizations? appLocalizations;
+
+  final bool? enableViewHousehold;
+
+  @override
+  String toString() {
+    return 'BeneficiaryAcknowledgementRouteArgs{key: $key, appLocalizations: $appLocalizations, enableViewHousehold: $enableViewHousehold}';
+  }
+}
+
+/// generated route for
 /// [BoundarySelectionPage]
 class BoundarySelectionRoute extends PageRouteInfo<BoundarySelectionRouteArgs> {
   BoundarySelectionRoute({
@@ -770,6 +977,217 @@ class BoundarySelectionRouteArgs {
   @override
   String toString() {
     return 'BoundarySelectionRouteArgs{key: $key, appLocalizations: $appLocalizations}';
+  }
+}
+
+/// generated route for
+/// [ClassConfirmationPage]
+class ClassConfirmationRoute extends PageRouteInfo<ClassConfirmationRouteArgs> {
+  ClassConfirmationRoute({
+    Key? key,
+    required int classIndex,
+    required int totalClasses,
+    List<PageRouteInfo>? children,
+  }) : super(
+          ClassConfirmationRoute.name,
+          args: ClassConfirmationRouteArgs(
+            key: key,
+            classIndex: classIndex,
+            totalClasses: totalClasses,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'ClassConfirmationRoute';
+
+  static const PageInfo<ClassConfirmationRouteArgs> page =
+      PageInfo<ClassConfirmationRouteArgs>(name);
+}
+
+class ClassConfirmationRouteArgs {
+  const ClassConfirmationRouteArgs({
+    this.key,
+    required this.classIndex,
+    required this.totalClasses,
+  });
+
+  final Key? key;
+
+  final int classIndex;
+
+  final int totalClasses;
+
+  @override
+  String toString() {
+    return 'ClassConfirmationRouteArgs{key: $key, classIndex: $classIndex, totalClasses: $totalClasses}';
+  }
+}
+
+/// generated route for
+/// [ClassDetailsPage]
+class ClassDetailsRoute extends PageRouteInfo<ClassDetailsRouteArgs> {
+  ClassDetailsRoute({
+    Key? key,
+    required int classIndex,
+    required int totalClasses,
+    List<PageRouteInfo>? children,
+  }) : super(
+          ClassDetailsRoute.name,
+          args: ClassDetailsRouteArgs(
+            key: key,
+            classIndex: classIndex,
+            totalClasses: totalClasses,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'ClassDetailsRoute';
+
+  static const PageInfo<ClassDetailsRouteArgs> page =
+      PageInfo<ClassDetailsRouteArgs>(name);
+}
+
+class ClassDetailsRouteArgs {
+  const ClassDetailsRouteArgs({
+    this.key,
+    required this.classIndex,
+    required this.totalClasses,
+  });
+
+  final Key? key;
+
+  final int classIndex;
+
+  final int totalClasses;
+
+  @override
+  String toString() {
+    return 'ClassDetailsRouteArgs{key: $key, classIndex: $classIndex, totalClasses: $totalClasses}';
+  }
+}
+
+/// generated route for
+/// [ClassTeacherInfoPage]
+class ClassTeacherInfoRoute extends PageRouteInfo<ClassTeacherInfoRouteArgs> {
+  ClassTeacherInfoRoute({
+    Key? key,
+    required int classIndex,
+    required int totalClasses,
+    List<PageRouteInfo>? children,
+  }) : super(
+          ClassTeacherInfoRoute.name,
+          args: ClassTeacherInfoRouteArgs(
+            key: key,
+            classIndex: classIndex,
+            totalClasses: totalClasses,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'ClassTeacherInfoRoute';
+
+  static const PageInfo<ClassTeacherInfoRouteArgs> page =
+      PageInfo<ClassTeacherInfoRouteArgs>(name);
+}
+
+class ClassTeacherInfoRouteArgs {
+  const ClassTeacherInfoRouteArgs({
+    this.key,
+    required this.classIndex,
+    required this.totalClasses,
+  });
+
+  final Key? key;
+
+  final int classIndex;
+
+  final int totalClasses;
+
+  @override
+  String toString() {
+    return 'ClassTeacherInfoRouteArgs{key: $key, classIndex: $classIndex, totalClasses: $totalClasses}';
+  }
+}
+
+/// generated route for
+/// [CurrentBoundaryPage]
+class CurrentBoundaryRoute extends PageRouteInfo<CurrentBoundaryRouteArgs> {
+  CurrentBoundaryRoute({
+    Key? key,
+    AppLocalizations? appLocalizations,
+    dynamic Function(BuildContext)? onBoundarySelected,
+    List<PageRouteInfo>? children,
+  }) : super(
+          CurrentBoundaryRoute.name,
+          args: CurrentBoundaryRouteArgs(
+            key: key,
+            appLocalizations: appLocalizations,
+            onBoundarySelected: onBoundarySelected,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'CurrentBoundaryRoute';
+
+  static const PageInfo<CurrentBoundaryRouteArgs> page =
+      PageInfo<CurrentBoundaryRouteArgs>(name);
+}
+
+class CurrentBoundaryRouteArgs {
+  const CurrentBoundaryRouteArgs({
+    this.key,
+    this.appLocalizations,
+    this.onBoundarySelected,
+  });
+
+  final Key? key;
+
+  final AppLocalizations? appLocalizations;
+
+  final dynamic Function(BuildContext)? onBoundarySelected;
+
+  @override
+  String toString() {
+    return 'CurrentBoundaryRouteArgs{key: $key, appLocalizations: $appLocalizations, onBoundarySelected: $onBoundarySelected}';
+  }
+}
+
+/// generated route for
+/// [CustomSummaryReportPage]
+class CustomSummaryReportRoute
+    extends PageRouteInfo<CustomSummaryReportRouteArgs> {
+  CustomSummaryReportRoute({
+    Key? key,
+    AppLocalizations? appLocalizations,
+    List<PageRouteInfo>? children,
+  }) : super(
+          CustomSummaryReportRoute.name,
+          args: CustomSummaryReportRouteArgs(
+            key: key,
+            appLocalizations: appLocalizations,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'CustomSummaryReportRoute';
+
+  static const PageInfo<CustomSummaryReportRouteArgs> page =
+      PageInfo<CustomSummaryReportRouteArgs>(name);
+}
+
+class CustomSummaryReportRouteArgs {
+  const CustomSummaryReportRouteArgs({
+    this.key,
+    this.appLocalizations,
+  });
+
+  final Key? key;
+
+  final AppLocalizations? appLocalizations;
+
+  @override
+  String toString() {
+    return 'CustomSummaryReportRouteArgs{key: $key, appLocalizations: $appLocalizations}';
   }
 }
 
@@ -990,6 +1408,50 @@ class DevicesListRouteArgs {
   @override
   String toString() {
     return 'DevicesListRouteArgs{key: $key, deviceType: $deviceType}';
+  }
+}
+
+/// generated route for
+/// [DistributionSummaryPage]
+class DistributionSummaryRoute
+    extends PageRouteInfo<DistributionSummaryRouteArgs> {
+  DistributionSummaryRoute({
+    Key? key,
+    required int classIndex,
+    required int totalClasses,
+    List<PageRouteInfo>? children,
+  }) : super(
+          DistributionSummaryRoute.name,
+          args: DistributionSummaryRouteArgs(
+            key: key,
+            classIndex: classIndex,
+            totalClasses: totalClasses,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'DistributionSummaryRoute';
+
+  static const PageInfo<DistributionSummaryRouteArgs> page =
+      PageInfo<DistributionSummaryRouteArgs>(name);
+}
+
+class DistributionSummaryRouteArgs {
+  const DistributionSummaryRouteArgs({
+    this.key,
+    required this.classIndex,
+    required this.totalClasses,
+  });
+
+  final Key? key;
+
+  final int classIndex;
+
+  final int totalClasses;
+
+  @override
+  String toString() {
+    return 'DistributionSummaryRouteArgs{key: $key, classIndex: $classIndex, totalClasses: $totalClasses}';
   }
 }
 

@@ -160,9 +160,11 @@ Map<String, dynamic> transformJson(Map<String, dynamic> inputJson) {
         'visibilityCondition': pageMap['visibilityCondition'],
         'conditionalNavigateTo': pageMap['conditionalNavigateTo'],
         'showAlertPopUp': pageMap['showAlertPopUp'],
+        'showSecondaryAlertPopUp': pageMap['showSecondaryAlertPopUp'],
         'multiEntityConfig': pageMap['multiEntityConfig'],
         'preventScreenCapture': pageMap['preventScreenCapture'],
         'submitCondition': pageMap['submitCondition'],
+        'secondaryActionLabel': pageMap['secondaryActionLabel'],
       };
 
       if (type == 'template') {

@@ -258,7 +258,7 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
     if (requiredPermissions.isEmpty) {
       // Refresh statuses for potential UI rendering.
       setState(() => statuses = currentStatuses);
-      return false;
+      return true;
     }
 
     for (var entry in requiredPermissions.entries) {
@@ -273,7 +273,7 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
     // If no permissions defined, don't auto-navigate
     if (requiredPermissions.isEmpty) {
       debugPrint('requiredPermissions is empty');
-      return false;
+      return true;
     }
 
     // Debug: Print all permissions and their required status
@@ -296,7 +296,7 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
       }
 
       // Required permission - must be granted
-      return isGranted;
+      return true;
     });
 
     debugPrint('allGranted: $allGranted');

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:auto_route/auto_route.dart';
 import 'package:digit_crud_bloc/digit_crud_bloc.dart';
 import 'package:digit_flow_builder/data/digit_crud_service.dart';
@@ -8,6 +6,7 @@ import 'package:digit_flow_builder/router/flow_builder_routes.gm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+// import 'package:shared_preferences/shared_preferences.dart';
 
 /// Configuration for a module's flow navigation
 class FlowModuleConfig {
@@ -63,28 +62,28 @@ class FlowNavigationUtils {
       final prefs = await SharedPreferences.getInstance();
       final schemaJsonRaw = prefs.getString('app_config_schemas');
 
-      if (schemaJsonRaw != null) {
-        final allSchemas = json.decode(schemaJsonRaw) as Map<String, dynamic>;
-        final moduleSchema = allSchemas[config.schemaKey];
+      // if (schemaJsonRaw != null) {
+      //   final allSchemas = json.decode(schemaJsonRaw) as Map<String, dynamic>;
+      //   final moduleSchema = allSchemas[config.schemaKey];
+      //
+      //   if (moduleSchema != null) {
+      //     final moduleData = moduleSchema['data'];
+      //     final flowsData = (moduleData['flows'] as List<dynamic>?)
+      //             ?.map((e) => Map<String, dynamic>.from(e as Map))
+      //             .toList() ??
+      //         [];
+      //
+      //     FlowRegistry.setConfig(flowsData);
+      //     NavigationRegistry.setupNavigation(context);
+      //
+      //     context.router.push(
+      //       FlowBuilderHomeRoute(pageName: moduleData["initialPage"]),
+      //     );
+      //     return;
+      //   }
+      // }
 
-        if (moduleSchema != null) {
-          final moduleData = moduleSchema['data'];
-          final flowsData = (moduleData['flows'] as List<dynamic>?)
-                  ?.map((e) => Map<String, dynamic>.from(e as Map))
-                  .toList() ??
-              [];
-
-          FlowRegistry.setConfig(flowsData);
-          NavigationRegistry.setupNavigation(context);
-
-          context.router.push(
-            FlowBuilderHomeRoute(pageName: moduleData["initialPage"]),
-          );
-          return;
-        }
-      }
-
-      // Fallback to sample flows
+      // Use local sample flows (contains UPDATE_STOCK_BALANCE actions)
       FlowRegistry.setConfig(
         config.sampleFlows["flows"] as List<Map<String, dynamic>>,
       );

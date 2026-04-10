@@ -55,14 +55,8 @@ final dynamic sampleComplaintFlows = {
                           "actionType": "CLEAR_STATE",
                           "properties": {
                             "name": "pgrService",
-                            "filterKeys": [
-                              "serviceRequestId",
-                              "mobileNumber"
-                            ],
-                            "widgetKeys": [
-                              "complaintNumber",
-                              "mobileNumber"
-                            ],
+                            "filterKeys": ["serviceRequestId", "mobileNumber"],
+                            "widgetKeys": ["complaintNumber", "mobileNumber"],
                             "triggerSearch": true
                           }
                         }
@@ -83,17 +77,12 @@ final dynamic sampleComplaintFlows = {
                           "actionType": "CLEAR_STATE",
                           "properties": {
                             "name": "pgrService",
-                            "filterKeys": [
-                              "serviceRequestId",
-                              "mobileNumber"
-                            ]
+                            "filterKeys": ["serviceRequestId", "mobileNumber"]
                           }
                         },
                         {
                           "actionType": "CLOSE_POPUP",
-                          "properties": {
-                            "parentScreenKey": "complaintInbox"
-                          }
+                          "properties": {"parentScreenKey": "complaintInbox"}
                         },
                         {
                           "actionType": "SEARCH_EVENT",
@@ -153,11 +142,7 @@ final dynamic sampleComplaintFlows = {
                           "serviceCode",
                           "localityBoundaryCode"
                         ],
-                        "widgetKeys": [
-                          "assignTo",
-                          "complaintType",
-                          "locality"
-                        ],
+                        "widgetKeys": ["assignTo", "complaintType", "locality"],
                         "triggerSearch": true
                       }
                     }
@@ -165,14 +150,8 @@ final dynamic sampleComplaintFlows = {
                   "body": [
                     {
                       "data": [
-                        {
-                          "code": "ASSIGN_TO_ME",
-                          "name": "ASSIGN_TO_ME"
-                        },
-                        {
-                          "code": "ASSIGN_TO_ALL",
-                          "name": "ASSIGN_TO_ALL"
-                        }
+                        {"code": "ASSIGN_TO_ME", "name": "ASSIGN_TO_ME"},
+                        {"code": "ASSIGN_TO_ALL", "name": "ASSIGN_TO_ALL"}
                       ],
                       "type": "template",
                       "format": "radioList",
@@ -245,10 +224,7 @@ final dynamic sampleComplaintFlows = {
                             ]
                           }
                         },
-                        {
-                          "actionType": "CLOSE_POPUP",
-                          "properties": {}
-                        },
+                        {"actionType": "CLOSE_POPUP", "properties": {}},
                         {
                           "actionType": "SEARCH_EVENT",
                           "properties": {
@@ -263,14 +239,16 @@ final dynamic sampleComplaintFlows = {
                               {
                                 "key": "serviceCode",
                                 "value": "{{complaintType }}",
-                                "applyIf": "{{complaintType }} !=null && {{complaintType }} !=null",
+                                "applyIf":
+                                    "{{complaintType }} !=null && {{complaintType }} !=null",
                                 "operation": "equals"
                               },
                               {
                                 "key": "localityBoundaryCode",
                                 "root": "address",
                                 "value": "{{ locality }}",
-                                "applyIf": "{{locality }} !=null && {{locality }} !=null",
+                                "applyIf":
+                                    "{{locality }} !=null && {{locality }} !=null",
                                 "operation": "equals"
                               }
                             ],
@@ -334,9 +312,7 @@ final dynamic sampleComplaintFlows = {
                           "actionType": "CLEAR_STATE",
                           "properties": {
                             "name": "pgrService",
-                            "widgetKeys": [
-                              "sortBy"
-                            ],
+                            "widgetKeys": ["sortBy"],
                             "triggerSearch": true
                           }
                         }
@@ -353,24 +329,23 @@ final dynamic sampleComplaintFlows = {
                       "label": "COMPLAINT_INBOX_SORT_PRIMARY_ACTION_LABEL",
                       "format": "button",
                       "onAction": [
-                        {
-                          "actionType": "CLOSE_POPUP",
-                          "properties": {}
-                        },
+                        {"actionType": "CLOSE_POPUP", "properties": {}},
                         {
                           "actionType": "SEARCH_EVENT",
                           "properties": {
                             "data": [
                               {
                                 "key": "tenantId",
-                                "value": "{{singleton.selectedProject.tenantId}}",
+                                "value":
+                                    "{{singleton.selectedProject.tenantId}}",
                                 "operation": "equals"
                               }
                             ],
                             "name": "pgrService",
                             "orderBy": {
                               "field": "auditCreatedTime",
-                              "order": "{{ sortBy }} == LATEST_FIRST ? desc : asc"
+                              "order":
+                                  "{{ sortBy }} == LATEST_FIRST ? desc : asc"
                             }
                           }
                         }
@@ -416,7 +391,8 @@ final dynamic sampleComplaintFlows = {
                   },
                   {
                     "key": "COMPLAINT_INBOX_COMPLAINT_DATE",
-                    "value": "{{fn:formatDate(item.PgrServiceModel.auditDetails.createdTime, 'date', dd MMM yyyy)}}"
+                    "value":
+                        "{{fn:formatDate(item.PgrServiceModel.auditDetails.createdTime, 'date', dd MMM yyyy)}}"
                   },
                   {
                     "key": "COMPLAINT_INBOX_COMPLAINT_AREA",
@@ -442,7 +418,8 @@ final dynamic sampleComplaintFlows = {
                       "data": [
                         {
                           "key": "clientReferenceId",
-                          "value": "{{ item.PgrServiceModel.clientReferenceId }}"
+                          "value":
+                              "{{ item.PgrServiceModel.clientReferenceId }}"
                         }
                       ],
                       "name": "complaintView",
@@ -464,9 +441,7 @@ final dynamic sampleComplaintFlows = {
           "format": "listView",
           "hidden": false,
           "fieldName": "listView",
-          "properties": {
-            "spacing": "spacer4"
-          },
+          "properties": {"spacing": "spacer4"},
           "visibilityCondition": "{{ context.ComplaintWrapper.empty }}"
         }
       ],
@@ -504,10 +479,7 @@ final dynamic sampleComplaintFlows = {
           "onAction": [
             {
               "actionType": "BACK_NAVIGATION",
-              "properties": {
-                "name": "HOME",
-                "type": "HOME"
-              }
+              "properties": {"name": "HOME", "type": "HOME"}
             }
           ]
         }
@@ -537,9 +509,7 @@ final dynamic sampleComplaintFlows = {
         "rootEntity": "PgrServiceModel",
         "wrapperName": "ComplaintWrapper",
         "searchConfig": {
-          "select": [
-            "pgrService"
-          ],
+          "select": ["pgrService"],
           "primary": "pgrService"
         }
       }
@@ -611,9 +581,7 @@ final dynamic sampleComplaintFlows = {
               "isMultiSelect": false,
               "visibilityCondition": {
                 "expression": [
-                  {
-                    "condition": "complaintType.complaintType==Other"
-                  }
+                  {"condition": "complaintType.complaintType==Other"}
                 ]
               }
             }
@@ -647,7 +615,8 @@ final dynamic sampleComplaintFlows = {
                 {
                   "type": "required",
                   "value": true,
-                  "message": "COMPLAINT_DETAILS_administrativeArea_REQUIRED_ERROR"
+                  "message":
+                      "COMPLAINT_DETAILS_administrativeArea_REQUIRED_ERROR"
                 }
               ],
               "errorMessage": "",
@@ -732,18 +701,9 @@ final dynamic sampleComplaintFlows = {
             {
               "type": "string",
               "enums": [
-                {
-                  "code": "PERMANENT",
-                  "name": "PERMANENT"
-                },
-                {
-                  "code": "CORRESPONDENCE",
-                  "name": "CORRESPONDENCE"
-                },
-                {
-                  "code": "OTHER",
-                  "name": "OTHER"
-                }
+                {"code": "PERMANENT", "name": "PERMANENT"},
+                {"code": "CORRESPONDENCE", "name": "CORRESPONDENCE"},
+                {"code": "OTHER", "name": "OTHER"}
               ],
               "label": "LOCATION_DETAILS_typeOfAddress_LABEL",
               "order": 5,
@@ -807,7 +767,8 @@ final dynamic sampleComplaintFlows = {
                 {
                   "type": "required",
                   "value": true,
-                  "message": "COMPLAINT_DETAILS_complaintRaisedFor_REQUIRED_ERROR"
+                  "message":
+                      "COMPLAINT_DETAILS_complaintRaisedFor_REQUIRED_ERROR"
                 }
               ],
               "errorMessage": "",
@@ -851,7 +812,8 @@ final dynamic sampleComplaintFlows = {
               "autoFillCondition": [
                 {
                   "value": "{{loggedInUserName}}",
-                  "expression": "complaintDetails.complaintRaisedFor==COMPLAINTS_RAISED_FOR_MYSELF"
+                  "expression":
+                      "complaintDetails.complaintRaisedFor==COMPLAINTS_RAISED_FOR_MYSELF"
                 }
               ]
             },
@@ -880,13 +842,13 @@ final dynamic sampleComplaintFlows = {
                 },
                 {
                   "type": "minLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGIT"
+                  "value": 11,
+                  "message": "MOBILE_LENGTH_11_DIGIT"
                 },
                 {
                   "type": "maxLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGIT"
+                  "value": 11,
+                  "message": "MOBILE_LENGTH_11_DIGIT"
                 }
               ],
               "errorMessage": "",
@@ -894,7 +856,8 @@ final dynamic sampleComplaintFlows = {
               "autoFillCondition": [
                 {
                   "value": "{{loggedInUserMobileNumber}}",
-                  "expression": "complaintDetails.complaintRaisedFor==COMPLAINTS_RAISED_FOR_MYSELF"
+                  "expression":
+                      "complaintDetails.complaintRaisedFor==COMPLAINTS_RAISED_FOR_MYSELF"
                 }
               ]
             },
@@ -947,13 +910,13 @@ final dynamic sampleComplaintFlows = {
               "validations": [
                 {
                   "type": "minLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGITS"
+                  "value": 11,
+                  "message": "MOBILE_LENGTH_11_DIGITS"
                 },
                 {
                   "type": "maxLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGITS"
+                  "value": 11,
+                  "message": "MOBILE_LENGTH_11_DIGITS"
                 }
               ],
               "errorMessage": "",
@@ -979,7 +942,8 @@ final dynamic sampleComplaintFlows = {
                 {
                   "type": "required",
                   "value": true,
-                  "message": "COMPLAINT_DETAILS_complaintDescription_REQUIRED_ERROR"
+                  "message":
+                      "COMPLAINT_DETAILS_complaintDescription_REQUIRED_ERROR"
                 }
               ],
               "errorMessage": "",
@@ -999,9 +963,7 @@ final dynamic sampleComplaintFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {
-                  "message": "Failed to fetch config."
-                }
+                "properties": {"message": "Failed to fetch config."}
               }
             ],
             "configName": "complaintRegistration"
@@ -1014,9 +976,7 @@ final dynamic sampleComplaintFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {
-                  "message": "Failed to create household."
-                }
+                "properties": {"message": "Failed to create household."}
               }
             ]
           }
@@ -1027,7 +987,8 @@ final dynamic sampleComplaintFlows = {
             "data": [
               {
                 "key": "complaintClientReferenceId",
-                "value": "{{contextData.entities.PgrServiceModel.clientReferenceId}}"
+                "value":
+                    "{{contextData.entities.PgrServiceModel.clientReferenceId}}"
               }
             ],
             "name": "complaintAcknowledgement",
@@ -1035,9 +996,7 @@ final dynamic sampleComplaintFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {
-                  "message": "Navigation failed."
-                }
+                "properties": {"message": "Navigation failed."}
               }
             ],
             "navigationMode": "popUntilAndPush",
@@ -1053,9 +1012,7 @@ final dynamic sampleComplaintFlows = {
         "rootEntity": "PgrServiceModel",
         "wrapperName": "ComplaintWrapper",
         "searchConfig": {
-          "select": [
-            "pgrService"
-          ],
+          "select": ["pgrService"],
           "primary": "pgrService"
         }
       }
@@ -1069,29 +1026,24 @@ final dynamic sampleComplaintFlows = {
           "heading": "COMPLAINT_ACKNOWLEDGEMENT_SUCCESS_PANEL_CARD_LABEL",
           "fieldName": "complaintSuccess",
           "mandatory": true,
-          "properties": {
-            "type": "success"
-          },
-          "description": "COMPLAINT_ACKNOWLEDGEMENT_SUCCESS_PANEL_CARD_DESCRIPTION",
+          "properties": {"type": "success"},
+          "description":
+              "COMPLAINT_ACKNOWLEDGEMENT_SUCCESS_PANEL_CARD_DESCRIPTION",
           "primaryAction": {
             "type": "template",
-            "label": "COMPLAINT_ACKNOWLEDGEMENT_SUCCESS_PANEL_CARD_ACTION_LABEL",
+            "label":
+                "COMPLAINT_ACKNOWLEDGEMENT_SUCCESS_PANEL_CARD_ACTION_LABEL",
             "format": "button",
             "hidden": false,
             "onAction": [
               {
                 "actionType": "NAVIGATION",
-                "properties": {
-                  "name": "complaintInbox",
-                  "type": "TEMPLATE"
-                }
+                "properties": {"name": "complaintInbox", "type": "TEMPLATE"}
               }
             ],
             "fieldName": "backToComplaints",
             "mandatory": true,
-            "properties": {
-              "type": "primary"
-            }
+            "properties": {"type": "primary"}
           }
         }
       ],
@@ -1103,10 +1055,7 @@ final dynamic sampleComplaintFlows = {
           "onAction": [
             {
               "actionType": "BACK_NAVIGATION",
-              "properties": {
-                "name": "complaintInbox",
-                "type": "TEMPLATE"
-              }
+              "properties": {"name": "complaintInbox", "type": "TEMPLATE"}
             }
           ],
           "mandatory": true
@@ -1136,22 +1085,26 @@ final dynamic sampleComplaintFlows = {
                 },
                 {
                   "key": "COMPLAINT_VIEW_COMPLAINTS_DATE",
-                  "value": "{{fn:formatDate(contextData.0.PgrServiceModel.auditDetails.createdTime, 'date', dd MMM yyyy)}}",
+                  "value":
+                      "{{fn:formatDate(contextData.0.PgrServiceModel.auditDetails.createdTime, 'date', dd MMM yyyy)}}",
                   "defaultValue": "NA"
                 },
                 {
                   "key": "COMPLAINT_VIEW_COMPLAINTS_AREA",
-                  "value": "{{contextData.0.PgrServiceModel.address.locality.code}}",
+                  "value":
+                      "{{contextData.0.PgrServiceModel.address.locality.code}}",
                   "defaultValue": "NA"
                 },
                 {
                   "key": "COMPLAINT_VIEW_COMPLAINANT_CONTACT",
-                  "value": "{{contextData.0.PgrServiceModel.user.mobileNumber}}",
+                  "value":
+                      "{{contextData.0.PgrServiceModel.user.mobileNumber}}",
                   "defaultValue": "NA"
                 },
                 {
                   "key": "COMPLAINT_VIEW_COMPLAINT_STATUS",
-                  "value": "{{contextData.0.PgrServiceModel.applicationStatus}}",
+                  "value":
+                      "{{contextData.0.PgrServiceModel.applicationStatus}}",
                   "defaultValue": "NA"
                 },
                 {
@@ -1178,10 +1131,7 @@ final dynamic sampleComplaintFlows = {
           "onAction": [
             {
               "actionType": "NAVIGATION",
-              "properties": {
-                "name": "complaintInbox",
-                "type": "TEMPLATE"
-              }
+              "properties": {"name": "complaintInbox", "type": "TEMPLATE"}
             }
           ],
           "fieldName": "close",
@@ -1199,10 +1149,7 @@ final dynamic sampleComplaintFlows = {
           "label": "Back",
           "format": "backLink",
           "onAction": [
-            {
-              "actionType": "BACK_NAVIGATION",
-              "properties": {}
-            }
+            {"actionType": "BACK_NAVIGATION", "properties": {}}
           ],
           "mandatory": true
         }
@@ -1232,9 +1179,7 @@ final dynamic sampleComplaintFlows = {
         "rootEntity": "PgrServiceModel",
         "wrapperName": "ComplaintWrapper",
         "searchConfig": {
-          "select": [
-            "pgrService"
-          ],
+          "select": ["pgrService"],
           "primary": "pgrService"
         }
       }

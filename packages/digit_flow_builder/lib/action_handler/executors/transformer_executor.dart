@@ -274,13 +274,17 @@ class TransformerExecutor extends ActionExecutor {
           // Map entity-specific fields (with _item_N suffix) to base field names
           modifiedFormValues = _mapEntityFieldsToBase(modifiedFormValues, i);
 
-          final itemEntities = formEntityMapper.mapFormToEntities(
-            formValues: modifiedFormValues,
-            modelsConfig: transformerConfig,
-            context: contextMap,
-            fallbackFormDataString: fallBackModel,
-          );
-          entities.addAll(itemEntities);
+          try{
+            final itemEntities = formEntityMapper.mapFormToEntities(
+              formValues: modifiedFormValues,
+              modelsConfig: transformerConfig,
+              context: contextMap,
+              fallbackFormDataString: fallBackModel,
+            );
+            entities.addAll(itemEntities);
+          } catch (e){
+            print(e);
+          }
         }
       } else {
         // No items selected, create entities normally
@@ -306,6 +310,32 @@ class TransformerExecutor extends ActionExecutor {
     }
 
     contextData['entities'] = entities;
+
+    // Pass existingModels to contextData even for forceCreate,
+    // so UPDATE_EVENT with source: "existingModels" can update the originals
+    // Filter to only include models matching the created entities' productVariantId
+    if (existingModels != null &&
+        existingModels.isNotEmpty &&
+        contextData['existingModels'] == null) {
+      // Get productVariantIds from newly created entities
+      final createdPvIds = entities
+          .map((e) => e.toMap()['productVariantId']?.toString())
+          .whereType<String>()
+          .toSet();
+
+      if (createdPvIds.isNotEmpty) {
+        final filtered = existingModels
+            .where((e) =>
+                createdPvIds.contains(e.toMap()['productVariantId']?.toString()))
+            .toList();
+        debugPrint('TRANSFORMER: existingModels total=${existingModels.length}, createdPvIds=$createdPvIds, filtered=${filtered.length}');
+        contextData['existingModels'] =
+            filtered.isNotEmpty ? filtered : existingModels;
+      } else {
+        contextData['existingModels'] = existingModels;
+      }
+    }
+
     return contextData;
   }
 

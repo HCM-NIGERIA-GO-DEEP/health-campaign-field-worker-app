@@ -873,7 +873,7 @@ final dynamic sampleFlows = {
                   },
                   {
                     "type": "template",
-                    "label": "{{fn:getInEligibleStatus(item.task)}}",
+                    "label": "NOT_ELIGIBLE",
                     "format": "tag",
                     "visible":
                         "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task, contextData.0.currentRunningCycle)}}==false",
@@ -975,7 +975,7 @@ final dynamic sampleFlows = {
                     "label": "HOUSEHOLD_OVERVIEW_UNABLE_TO_DELIVER_LABEL",
                     "format": "button",
                     "visible":
-                        "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task, contextData.0.currentRunningCycle)}} == true  && {{fn:checkAllDoseDelivered(item.task)}} == false && {{fn:length(item.referral)}} <= 0",
+                        "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task, contextData.0.currentRunningCycle)}} == true  && {{fn:checkAllDoseDelivered(item.task)}} == false && {{fn:length(item.referral)}} <= 0 && {{fn:isRegisteredBeforeCurrentCycle(item.individual.0.clientCreatedTime)}} == true",
                     "onAction": [
                       {
                         "actionType": "NAVIGATION",
@@ -1477,7 +1477,13 @@ final dynamic sampleFlows = {
               "actionType": "field.value==true ? SEARCH_EVENT : CLEAR_STATE",
               "properties": {
                 "data": [
-                  {"key": "", "value": 5, "operation": "within"}
+                  {"key": "", "value": 5, "operation": "within"},
+                  {
+                    "key": "localityBoundaryCode",
+                    "root": "address",
+                    "value": "{{singleton.boundary.code}}",
+                    "operation": "equals"
+                  }
                 ],
                 "name": "address",
                 "type": "field.value==true ? SEARCH_EVENT : CLEAR_STATE"
@@ -1508,6 +1514,12 @@ final dynamic sampleFlows = {
                     "key": "givenName",
                     "value": "field.value",
                     "operation": "contains"
+                  },
+                  {
+                    "key": "localityBoundaryCode",
+                    "root": "address",
+                    "value": "{{singleton.boundary.code}}",
+                    "operation": "equals"
                   }
                 ],
                 "name": "name",
@@ -1622,6 +1634,12 @@ final dynamic sampleFlows = {
                                 "key": "status",
                                 "value": "{{selectedStatus}}",
                                 "operation": "in"
+                              },
+                              {
+                                "key": "localityBoundaryCode",
+                                "root": "address",
+                                "value": "{{singleton.boundary.code}}",
+                                "operation": "equals"
                               }
                             ],
                             "name": "task"
@@ -1643,6 +1661,12 @@ final dynamic sampleFlows = {
                                 "key": "projectId",
                                 "value": "{{singleton.selectedProject.id}}",
                                 "operation": "notEqual"
+                              },
+                              {
+                                "key": "localityBoundaryCode",
+                                "root": "address",
+                                "value": "{{singleton.boundary.code}}",
+                                "operation": "equals"
                               }
                             ],
                             "name": "projectBeneficiary"
@@ -1670,6 +1694,12 @@ final dynamic sampleFlows = {
                                 "root": "task",
                                 "value": "NOT_ADMINISTERED",
                                 "operation": "equals"
+                              },
+                              {
+                                "key": "localityBoundaryCode",
+                                "root": "address",
+                                "value": "{{singleton.boundary.code}}",
+                                "operation": "equals"
                               }
                             ],
                             "filterLogic": "or"
@@ -1690,6 +1720,12 @@ final dynamic sampleFlows = {
                                 "key": "projectId",
                                 "root": "hFReferral",
                                 "value": "{{singleton.selectedProject.id}}",
+                                "operation": "equals"
+                              },
+                              {
+                                "key": "localityBoundaryCode",
+                                "root": "address",
+                                "value": "{{singleton.boundary.code}}",
                                 "operation": "equals"
                               }
                             ]
@@ -1894,6 +1930,12 @@ final dynamic sampleFlows = {
                         {
                           "key": "tag",
                           "value": "{{beneficiaryTag}}",
+                          "operation": "equals"
+                        },
+                        {
+                          "key": "localityBoundaryCode",
+                          "root": "address",
+                          "value": "{{singleton.boundary.code}}",
                           "operation": "equals"
                         }
                       ],
@@ -3309,8 +3351,7 @@ final dynamic sampleFlows = {
                     "key": "ProjectBeneficiaryClientReferenceId",
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                  },
-                  {"key": "status", "value": "INELIGIBLE"}
+                  }
                 ],
                 "onError": [
                   {
@@ -3672,6 +3713,7 @@ final dynamic sampleFlows = {
               "mandatory": true,
               "deleteFlag": false,
               "innerLabel": "",
+              "includeInForm": true,
               "schemaCode": "HCM.ID_TYPE_OPTIONS_POPULATOR",
               "systemDate": false,
               "validations": [
@@ -4932,6 +4974,10 @@ final dynamic sampleFlows = {
               "readOnly": false,
               "required": true,
               "fieldName": "gender",
+              "enums": [
+                {"code": "MALE", "name": "MALE"},
+                {"code": "FEMALE", "name": "Female"}
+              ],
               "mandatory": true,
               "deleteFlag": false,
               "innerLabel": "",
@@ -5887,6 +5933,18 @@ final dynamic sampleFlows = {
           "condition": {
             "type": "custom",
             "expression": "isEdit==true && isClosedHousehold==true"
+          }
+        },
+        {
+          "actionType": "UPDATE_STOCK_BALANCE",
+          "properties": {
+            "entity": "TASK",
+            "onError": [
+              {
+                "actionType": "SHOW_TOAST",
+                "properties": {"message": "Failed to update stock balance."}
+              }
+            ]
           }
         },
         {

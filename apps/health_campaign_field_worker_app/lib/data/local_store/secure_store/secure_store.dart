@@ -22,6 +22,9 @@ class LocalSecureStore {
   static const manualSyncKey = 'manualSyncKey';
   static const selectedProjectTypeKey = 'selectedProjectType';
   static const dbEncryptionKeyKey = 'dbEncryptionKey';
+  static const bednetKey = 'bednet';
+
+  List<String> keysToKeep = [bednetKey];
 
   final storage = const FlutterSecureStorage();
 
@@ -149,6 +152,55 @@ class LocalSecureStore {
     }
   }
 
+  Future<int> get bednet async {
+    final userBody = await storage.read(key: userObjectKey);
+    if (userBody == null) return 0;
+    final bednetMapString = await storage.read(key: bednetKey);
+
+    if (bednetMapString == null) return 0;
+
+    try {
+      final user = UserRequestModel.fromJson(json.decode(userBody));
+
+      Map<String, dynamic> bednetMap = json.decode(bednetMapString);
+
+      return bednetMap[user.uuid] != null ? bednetMap[user.uuid] as int : 0;
+    } catch (_) {
+      return 0;
+    }
+  }
+
+  Future<void> setSpaqCounts(int bednet) async {
+    final userBody = await storage.read(key: userObjectKey);
+    if (userBody == null) return;
+
+    try {
+      final user = UserRequestModel.fromJson(json.decode(userBody));
+      final bednetMapString = await storage.read(key: bednetKey);
+      Map<String, dynamic> bednetMap = {};
+      Map<String, dynamic> spaq1Map = {};
+      Map<String, dynamic> spaq2Map = {};
+
+      Map<String, dynamic> blueVasMap = {};
+      Map<String, dynamic> redVasMap = {};
+
+      if (bednetMapString != null) {
+        try {
+          bednetMap = json.decode(bednetMapString);
+        } catch (_) {}
+      }
+
+      bednetMap[user.uuid] = bednet;
+
+      await storage.write(
+        key: bednetKey,
+        value: json.encode(bednetMap),
+      );
+    } catch (_) {
+      return;
+    }
+  }
+
   Future<void> setSelectedProject(ProjectModel projectModel) async {
     await storage.write(
       key: selectedProjectKey,
@@ -229,7 +281,17 @@ class LocalSecureStore {
     // Preserve the database encryption key before deleting all
     final encryptionKey = await storage.read(key: dbEncryptionKeyKey);
 
-    await storage.deleteAll();
+    // await storage.deleteAll();
+
+    Map<String, String> allValues = await storage.readAll();
+    List<String> allKeys = allValues.keys.toList();
+
+    List<String> keysToDelete =
+        allKeys.where((key) => !keysToKeep.contains(key)).toList();
+
+    for (String key in keysToDelete) {
+      await storage.delete(key: key);
+    }
 
     // Restore the encryption key if it existed
     if (encryptionKey != null) {

@@ -119,6 +119,15 @@ extension ContextUtilityExtensions on BuildContext {
     return selectedBoundary;
   }
 
+  void setBoundary(BoundaryModel selectedBoundary) {
+    SurveyFormSingleton().setBoundary(boundary: selectedBoundary);
+    AttendanceSingleton().setBoundary(boundary: selectedBoundary);
+    TransitPostSingleton().setBoundary(boundary: selectedBoundary);
+    LocationTrackerSingleton()
+        .setBoundaryName(boundaryName: selectedBoundary.code!);
+    FlowBuilderSingleton().setBoundary(boundary: selectedBoundary);
+  }
+
   BoundaryModel? get boundaryOrNull {
     try {
       return boundary;
@@ -130,8 +139,8 @@ extension ContextUtilityExtensions on BuildContext {
   List<UserRoleModel> get loggedInUserRoles {
     final authBloc = _get<AuthBloc>();
     final userRequestObject = authBloc.state.whenOrNull(
-      authenticated:
-          (accessToken, refreshToken, userModel, actionsWrapper, individualId) {
+      authenticated: (accessToken, refreshToken, userModel, actionsWrapper,
+          individualId, bednet) {
         return userModel.roles;
       },
     );
@@ -146,8 +155,8 @@ extension ContextUtilityExtensions on BuildContext {
   String? get loggedInIndividualId {
     final authBloc = _get<AuthBloc>();
     final individualUUID = authBloc.state.whenOrNull(
-      authenticated:
-          (accessToken, refreshToken, userModel, actionsWrapper, individualId) {
+      authenticated: (accessToken, refreshToken, userModel, actionsWrapper,
+          individualId, bednet) {
         return individualId;
       },
     );
@@ -179,8 +188,8 @@ extension ContextUtilityExtensions on BuildContext {
   UserRequestModel get loggedInUser {
     final authBloc = _get<AuthBloc>();
     final userRequestObject = authBloc.state.whenOrNull(
-      authenticated:
-          (accessToken, refreshToken, userModel, actions, individualId) {
+      authenticated: (accessToken, refreshToken, userModel, actions,
+          individualId, bednet) {
         return userModel;
       },
     );

@@ -8,6 +8,8 @@ enum HouseholdType {
   family,
   @MappableValue("COMMUNITY")
   community,
+  @MappableValue("SCHOOL")
+  school,
   @MappableValue("OTHER")
   other,
   ;

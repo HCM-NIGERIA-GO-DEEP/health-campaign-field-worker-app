@@ -4,7 +4,7 @@
 -keep class io.flutter.embedding.** { *; }
 
 # App classes
--keep class com.digit.hcm.** { *; }
+-keep class org.egov.sierraleone.** { *; }
 
 # Flutter Background Service
 -keep class id.flutter.flutter_background_service.** { *; }
@@ -61,6 +61,10 @@
 -keepclassmembers class * implements android.os.Parcelable {
     static ** CREATOR;
 }
+
+# Firebase Cloud Messaging
+-keep class com.google.firebase.messaging.** { *; }
+-dontwarn com.google.firebase.messaging.**
 
 # Keep annotations and signatures
 -keepattributes *Annotation*,Signature,Exceptions

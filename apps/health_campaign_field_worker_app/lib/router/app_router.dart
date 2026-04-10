@@ -1,6 +1,7 @@
-import 'package:attendance_management/router/attendance_router.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_data_model/models/entities/attendee.dart';
+import 'package:digit_data_model/models/entities/scanned_individual_data.dart';
 import 'package:digit_dss/router/dashboard_router.dart';
 import 'package:digit_dss/router/dashboard_router.gm.dart';
 import 'package:digit_flow_builder/router/flow_builder_routes.dart';
@@ -17,6 +18,7 @@ import 'package:transit_post/router/transit_post_router.dart';
 import '../blocs/localization/app_localization.dart';
 import '../blocs/registration_deliver/app_localization.dart';
 import '../pages/acknowledgement.dart';
+import '../pages/attendance_qr_scanner.dart';
 import '../pages/authenticated.dart';
 import '../pages/bednet_distribution/bednet_distribution_success.dart';
 import '../pages/bednet_distribution/bednet_distribution_wrapper.dart';
@@ -26,6 +28,17 @@ import '../pages/bednet_distribution/school_details.dart';
 import '../pages/bednet_distribution/select_school.dart';
 import '../pages/beneficiary_type_selection.dart';
 import '../pages/boundary_selection.dart';
+import '../pages/bednet_distribution/bednet_distribution_acknowledgement.dart';
+import '../pages/bednet_distribution/beneficiary_acknowledgement.dart';
+import '../pages/bednet_distribution/bednet_distribution_success.dart';
+import '../pages/bednet_distribution/bednet_distribution_wrapper.dart';
+import '../pages/bednet_distribution/class_confirmation.dart';
+import '../pages/bednet_distribution/class_details.dart';
+import '../pages/bednet_distribution/class_teacher_info.dart';
+import '../pages/bednet_distribution/distribution_summary.dart';
+import '../pages/bednet_distribution/school_details.dart';
+import '../pages/bednet_distribution/select_school.dart';
+import '../pages/current_boundary.dart';
 import '../pages/home.dart';
 import '../pages/language_selection.dart';
 import '../pages/login.dart';
@@ -55,6 +68,7 @@ import '../pages/registration_deliver_pages/beneficiary_registration/individual_
 import '../pages/registration_deliver_pages/search_beneficiary.dart';
 import '../pages/registration_deliver_pages/summary_page.dart';
 import '../pages/reports/beneficiary/beneficaries_report.dart';
+import '../pages/reports/summary_report/custom_summary_report.dart';
 import '../pages/unauthenticated.dart';
 
 export 'package:auto_route/auto_route.dart';
@@ -64,7 +78,6 @@ part 'app_router.gr.dart';
 
 @AutoRouterConfig(
   modules: [
-    AttendanceRoute,
     DigitScannerPackageRoute,
     DashboardRoute,
     SurveyFormRoute,
@@ -214,6 +227,51 @@ class AppRouter extends _$AppRouter {
           path: 'select-project-facilities',
         ),
 
+        AutoRoute(
+          page: BednetDistributionWrapperRoute.page,
+          path: 'bednet-distribution',
+          children: [
+            AutoRoute(
+              page: SelectSchoolRoute.page,
+              path: '',
+              initial: true,
+            ),
+            AutoRoute(
+              page: SchoolDetailsRoute.page,
+              path: 'school-details',
+            ),
+            AutoRoute(
+              page: ClassTeacherInfoRoute.page,
+              path: 'class-teacher-info',
+            ),
+            AutoRoute(
+              page: ClassDetailsRoute.page,
+              path: 'class-details',
+            ),
+            AutoRoute(
+              page: DistributionSummaryRoute.page,
+              path: 'distribution-summary',
+            ),
+            AutoRoute(
+              page: ClassConfirmationRoute.page,
+              path: 'class-confirmation',
+            ),
+            AutoRoute(
+              page: BednetDistributionAcknowledgementRoute.page,
+              path: 'beneficiary-acknowledgement',
+            ),
+            AutoRoute(
+              page: BednetDistributionSuccessRoute.page,
+              path: 'success',
+            ),
+          ],
+        ),
+
+        AutoRoute(
+          page: CustomSummaryReportRoute.page,
+          path: 'custom-report-summary',
+        ),
+
         /// Project Selection
         AutoRoute(
           page: ProjectSelectionRoute.page,
@@ -226,9 +284,13 @@ class AppRouter extends _$AppRouter {
           page: BoundarySelectionRoute.page,
           path: 'select-boundary',
         ),
+        AutoRoute(
+          page: CurrentBoundaryRoute.page,
+          path: 'current-boundary',
+        ),
 
-        // Attendance Route
-        ...AttendanceRoute().routes,
+        // // Attendance Route
+        // ...AttendanceRoute().routes,
 
         // Forms Route
         ...FormsRoute().routes,

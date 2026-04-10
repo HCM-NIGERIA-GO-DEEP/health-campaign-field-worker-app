@@ -25,3 +25,5 @@ typedef UserDataRepository = DataRepository<UserModel, UserSearchModel>;
 typedef StockDataRepository = DataRepository<StockModel, StockSearchModel>;
 typedef StockReconciliationDataRepository
     = DataRepository<StockReconciliationModel, StockReconciliationSearchModel>;
+
+typedef TaskDataRepository = DataRepository<TaskModel, TaskSearchModel>;

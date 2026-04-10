@@ -5,18 +5,24 @@ import 'package:digit_data_model/data_model.dart';
 /// This provides common stock calculation methods that can be reused across
 /// different widgets like StockReconciliationCard and ProductSelectionCard.
 class StockCalculationUtils {
-  /// Extracts the stockEntryType from a StockModel's additionalFields.
-  /// Returns uppercase value (e.g., 'RECEIPT', 'ISSUED', 'RETURNED', 'DAMAGED', 'LOSS')
-  /// or empty string if not found.
-  static String _getStockEntryType(StockModel stock) {
+  /// Extracts a value from a StockModel's additionalFields by key.
+  /// Returns uppercase string value or empty string if not found.
+  static String _getAdditionalFieldValue(StockModel stock, String key) {
     final fields = stock.additionalFields?.fields;
     if (fields == null) return '';
     for (final field in fields) {
-      if (field.key == 'stockEntryType') {
+      if (field.key == key) {
         return field.value?.toString().toUpperCase() ?? '';
       }
     }
     return '';
+  }
+
+  /// Extracts the stockEntryType from a StockModel's additionalFields.
+  /// Returns uppercase value (e.g., 'RECEIPT', 'ISSUED', 'RETURNED', 'DAMAGED', 'LOSS')
+  /// or empty string if not found.
+  static String _getStockEntryType(StockModel stock) {
+    return _getAdditionalFieldValue(stock, 'stockEntryType');
   }
 
   /// Calculates stock metrics for a given facility and product from a list of stocks.
@@ -33,7 +39,7 @@ class StockCalculationUtils {
   /// - stockReturned: Total quantity returned
   /// - stockLost: Total quantity lost
   /// - stockDamaged: Total quantity damaged
-  /// - stockInHand: Calculated as (received + returned) - (issued + damaged + lost)
+  /// - stockInHand: Calculated as (received) - (issued + returned + damaged + lost). Excess/less are tracked but do not affect balance.
   static Map<String, double> calculateStockMetrics({
     required List<StockModel> stockList,
     required String facilityId,
@@ -53,9 +59,10 @@ class StockCalculationUtils {
       final matchesSender = stock.senderId == facilityId;
       if (!matchesReceiver && !matchesSender) return false;
 
-      // Optionally filter by logged-in user
+      // Optionally filter by logged-in user (created by OR modified by)
       if (loggedInUserUuid != null &&
-          stock.auditDetails?.createdBy != loggedInUserUuid) {
+          stock.auditDetails?.createdBy != loggedInUserUuid &&
+          stock.clientAuditDetails?.lastModifiedBy != loggedInUserUuid) {
         return false;
       }
 
@@ -75,6 +82,7 @@ class StockCalculationUtils {
       final transactionType = stock.transactionType?.toUpperCase() ?? '';
       final transactionReason = stock.transactionReason?.toUpperCase() ?? '';
       final quantity = num.tryParse(stock.quantity ?? '0') ?? 0.0;
+      final status = _getAdditionalFieldValue(stock, 'status');
 
       // Extract stockEntryType from additionalFields as fallback
       final stockEntryType = _getStockEntryType(stock);
@@ -86,8 +94,7 @@ class StockCalculationUtils {
       // Stock Received/Excess/Less: This facility is the receiver AND transactionType == RECEIVED
       // Both LESS and EXCESS use RECEIVED transactionType, differentiated by stockEntryType
       if (isReceiver && transactionType == 'RECEIVED') {
-        if (transactionReason == 'RETURNED' ||
-            stockEntryType == 'RETURNED') {
+        if (transactionReason == 'RETURNED' || stockEntryType == 'RETURNED') {
           stockReturned += quantity;
         } else if (stockEntryType == 'EXCESS') {
           // Stock Excess: recorded via less/excess flow
@@ -111,7 +118,10 @@ class StockCalculationUtils {
       // Stock Issued/Lost/Damaged: This facility is the sender AND transactionType == DISPATCHED
       // Check sender first so damage/loss is counted correctly when senderId == receiverId
       else if (isSender && transactionType == 'DISPATCHED') {
-        if (transactionReason == 'LOST_IN_TRANSIT' ||
+        // Rejected stock comes back to the sender — don't count as issued
+        if (status == 'REJECTED') {
+          // Skip - rejected stock is not subtracted from sender's balance
+        } else if (transactionReason == 'LOST_IN_TRANSIT' ||
             transactionReason == 'LOST_IN_STORAGE' ||
             stockEntryType == 'LOSS') {
           stockLost += quantity;
@@ -119,30 +129,29 @@ class StockCalculationUtils {
             transactionReason == 'DAMAGED_IN_STORAGE' ||
             stockEntryType == 'DAMAGED') {
           stockDamaged += quantity;
+        } else if (stockEntryType == 'RETURNED') {
+          // Reverse logistics: returned stock dispatched out
+          stockReturned += quantity;
         } else {
           // Regular dispatch (issued)
           stockIssued += quantity;
         }
       }
       // Stock Received from dispatch: This facility is the receiver AND transactionType == DISPATCHED
-      // This handles stock received when another facility dispatches TO this facility
+      // Incoming dispatches are only counted as received if the status is ACCEPTED.
+      // Pending/IN_TRANSIT dispatches are not counted until explicitly accepted.
       else if (isReceiver && transactionType == 'DISPATCHED') {
-        if (transactionReason == 'LOST_IN_TRANSIT' ||
-            transactionReason == 'LOST_IN_STORAGE' ||
-            transactionReason == 'DAMAGED_IN_TRANSIT' ||
-            transactionReason == 'DAMAGED_IN_STORAGE' ||
-            stockEntryType == 'LOSS' ||
-            stockEntryType == 'DAMAGED') {
-          // Damage/loss entries - don't count as received
-        } else {
+        if (status == 'ACCEPTED') {
           stockReceived += quantity;
         }
       }
     }
 
-    // Stock in hand = (received + returned + excess) - (issued + damaged + lost + less)
-    final stockInHand = (stockReceived + stockReturned + stockExcess) -
-        (stockIssued + stockDamaged + stockLost + stockLess);
+    // Stock in hand = (received + returned) - (issued + damaged + lost)
+    // Note: excess and less are tracked for backend reporting only and do not affect balance
+    final stockInHand = stockReceived +
+        stockExcess -
+        (stockIssued + stockReturned + stockDamaged + stockLost + stockLess);
 
     return {
       'stockReceived': stockReceived,
@@ -184,6 +193,103 @@ class StockCalculationUtils {
     }
 
     return result;
+  }
+
+  /// Calculates consumed quantities from bednet administration tasks.
+  ///
+  /// A task is treated as a bednet administration task when:
+  /// [bednetStatusKey] in additionalFields equals [bednetSuccessStatus].
+  /// Consumption is read from task resources by product variant id.
+  /// If resources are absent, optional [fallbackPupilsPresentKey] is used and
+  /// attributed to [singleFallbackProductId] (used for single-product validation).
+  static Map<String, double> calculateBednetConsumedByProduct({
+    required List<TaskModel> tasks,
+    required String loggedInUserUuid,
+    required String bednetStatusKey,
+    required String bednetSuccessStatus,
+    String? fallbackPupilsPresentKey,
+    String? singleFallbackProductId,
+  }) {
+    bool isBednetTask(TaskModel task) {
+      for (final field
+          in task.additionalFields?.fields ?? const <AdditionalField>[]) {
+        if (field.key == bednetStatusKey &&
+            field.value?.toString() == bednetSuccessStatus) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    final consumed = <String, double>{};
+    for (final task in tasks) {
+      if (task.createdBy != loggedInUserUuid) continue;
+      if (!isBednetTask(task)) continue;
+
+      var hasResource = false;
+      for (final resource in task.resources ?? const <TaskResourceModel>[]) {
+        final productId = resource.productVariantId;
+        if (productId == null || productId.isEmpty) continue;
+        final qty = num.tryParse(resource.quantity ?? '')?.toDouble() ?? 0;
+        consumed[productId] = (consumed[productId] ?? 0) + qty;
+        hasResource = true;
+      }
+      if (hasResource) continue;
+
+      if (fallbackPupilsPresentKey != null &&
+          fallbackPupilsPresentKey.isNotEmpty &&
+          singleFallbackProductId != null &&
+          singleFallbackProductId.isNotEmpty) {
+        for (final field
+            in task.additionalFields?.fields ?? const <AdditionalField>[]) {
+          if (field.key == fallbackPupilsPresentKey) {
+            final qty =
+                num.tryParse(field.value?.toString() ?? '')?.toDouble() ?? 0;
+            consumed[singleFallbackProductId] =
+                (consumed[singleFallbackProductId] ?? 0) + qty;
+            break;
+          }
+        }
+      }
+    }
+
+    return consumed;
+  }
+
+  /// Calculates effective stock in hand by subtracting bednet-consumed quantity.
+  static Map<String, double> calculateEffectiveStockInHandForProducts({
+    required List<StockModel> stockList,
+    required List<TaskModel> tasks,
+    required String facilityId,
+    required List<String> productIds,
+    required String loggedInUserUuid,
+    required String bednetStatusKey,
+    required String bednetSuccessStatus,
+    String? fallbackPupilsPresentKey,
+    String? singleFallbackProductId,
+  }) {
+    final rawBalances = calculateStockInHandForProducts(
+      stockList: stockList,
+      facilityId: facilityId,
+      productIds: productIds,
+      loggedInUserUuid: loggedInUserUuid,
+    );
+    final consumedByProduct = calculateBednetConsumedByProduct(
+      tasks: tasks,
+      loggedInUserUuid: loggedInUserUuid,
+      bednetStatusKey: bednetStatusKey,
+      bednetSuccessStatus: bednetSuccessStatus,
+      fallbackPupilsPresentKey: fallbackPupilsPresentKey,
+      singleFallbackProductId: singleFallbackProductId,
+    );
+
+    final effective = <String, double>{};
+    for (final productId in productIds) {
+      final raw = rawBalances[productId] ?? 0;
+      final consumed = consumedByProduct[productId] ?? 0;
+      effective[productId] = (raw - consumed).clamp(0, double.infinity);
+    }
+    return effective;
   }
 
   /// Returns empty/zero stock metrics map.

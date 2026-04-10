@@ -73,7 +73,7 @@ abstract class RemoteRepository<D extends EntityModel,
     R query, {
     int? offSet,
     int? limit,
-    int? lastChangedSince,
+    int? lastSyncedTime,
   }) async {
     Response response;
 
@@ -85,8 +85,8 @@ abstract class RemoteRepository<D extends EntityModel,
                 'offset': offSet ?? 0,
                 'limit': limit ?? 100,
                 'tenantId': DigitDataModelSingleton().tenantId,
-                if (lastChangedSince != null)
-                  'lastChangedSince': lastChangedSince,
+                if (lastSyncedTime != null)
+                  'lastSyncedTime': lastSyncedTime,
                 if (query.isDeleted ?? false) 'includeDeleted': query.isDeleted,
               },
               data: entityName == 'User'
@@ -137,7 +137,8 @@ abstract class RemoteRepository<D extends EntityModel,
     if (!responseMap.containsKey(
       (isSearchResponsePlural ||
               entityName == 'ServiceDefinition' ||
-              entityName == 'Service')
+              entityName == 'Service' ||
+              entityName == 'UserAction')
           ? entityNamePlural
           : entityName,
     )) {
@@ -150,7 +151,8 @@ abstract class RemoteRepository<D extends EntityModel,
 
     final entityResponse = await responseMap[(isSearchResponsePlural ||
             entityName == 'ServiceDefinition' ||
-            entityName == 'Service')
+            entityName == 'Service' ||
+            entityName == 'UserAction')
         ? entityNamePlural
         : entityName];
 
