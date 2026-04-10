@@ -51,12 +51,6 @@ abstract class _$AppRouter extends RootStackRouter {
         child: const AuthenticatedPageWrapper(),
       );
     },
-    BednetDistributionAcknowledgementRoute.name: (routeData) {
-      return AutoRoutePage<dynamic>(
-        routeData: routeData,
-        child: const BednetDistributionAcknowledgementPage(),
-      );
-    },
     BednetDistributionSuccessRoute.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
@@ -102,18 +96,6 @@ abstract class _$AppRouter extends RootStackRouter {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
         child: BeneficiaryAcknowledgementPage(
-          key: args.key,
-          appLocalizations: args.appLocalizations,
-          enableViewHousehold: args.enableViewHousehold,
-        ),
-      );
-    },
-    BeneficiaryAcknowledgementRoute1.name: (routeData) {
-      final args = routeData.argsAs<BeneficiaryAcknowledgementRoute1Args>(
-          orElse: () => const BeneficiaryAcknowledgementRoute1Args());
-      return AutoRoutePage<dynamic>(
-        routeData: routeData,
-        child: BeneficiaryAcknowledgementPage1(
           key: args.key,
           appLocalizations: args.appLocalizations,
           enableViewHousehold: args.enableViewHousehold,
@@ -241,17 +223,6 @@ abstract class _$AppRouter extends RootStackRouter {
         child: DevicesListPage(
           key: args.key,
           deviceType: args.deviceType,
-        ),
-      );
-    },
-    DistributionSummaryRoute.name: (routeData) {
-      final args = routeData.argsAs<DistributionSummaryRouteArgs>();
-      return AutoRoutePage<dynamic>(
-        routeData: routeData,
-        child: DistributionSummaryPage(
-          key: args.key,
-          classIndex: args.classIndex,
-          totalClasses: args.totalClasses,
         ),
       );
     },
@@ -543,9 +514,9 @@ class AttendanceDigitScannerRoute
       ScannedIndividualDataModel,
       AttendanceValidationResult,
     ) onScanResult,
-    required int quantity = 1,
+    int quantity = 1,
     bool singleValue = false,
-    required bool isGS1code = false,
+    bool isGS1code = false,
     List<PageRouteInfo>? children,
   }) : super(
           AttendanceDigitScannerRoute.name,
@@ -573,9 +544,9 @@ class AttendanceDigitScannerRouteArgs {
     required this.enableDynamicQRScanning,
     required this.attendees,
     required this.onScanResult,
-    required this.quantity = 1,
+    this.quantity = 1,
     this.singleValue = false,
-    required this.isGS1code = false,
+    this.isGS1code = false,
   });
 
   final Key? key;
@@ -611,20 +582,6 @@ class AuthenticatedRouteWrapper extends PageRouteInfo<void> {
         );
 
   static const String name = 'AuthenticatedRouteWrapper';
-
-  static const PageInfo<void> page = PageInfo<void>(name);
-}
-
-/// generated route for
-/// [BednetDistributionAcknowledgementPage]
-class BednetDistributionAcknowledgementRoute extends PageRouteInfo<void> {
-  const BednetDistributionAcknowledgementRoute({List<PageRouteInfo>? children})
-      : super(
-          BednetDistributionAcknowledgementRoute.name,
-          initialChildren: children,
-        );
-
-  static const String name = 'BednetDistributionAcknowledgementRoute';
 
   static const PageInfo<void> page = PageInfo<void>(name);
 }
@@ -785,50 +742,6 @@ class BeneficiaryAcknowledgementRouteArgs {
   @override
   String toString() {
     return 'BeneficiaryAcknowledgementRouteArgs{key: $key, appLocalizations: $appLocalizations, enableViewHousehold: $enableViewHousehold}';
-  }
-}
-
-/// generated route for
-/// [BeneficiaryAcknowledgementPage1]
-class BeneficiaryAcknowledgementRoute1
-    extends PageRouteInfo<BeneficiaryAcknowledgementRoute1Args> {
-  BeneficiaryAcknowledgementRoute1({
-    Key? key,
-    AppLocalizations? appLocalizations,
-    bool? enableViewHousehold,
-    List<PageRouteInfo>? children,
-  }) : super(
-          BeneficiaryAcknowledgementRoute1.name,
-          args: BeneficiaryAcknowledgementRoute1Args(
-            key: key,
-            appLocalizations: appLocalizations,
-            enableViewHousehold: enableViewHousehold,
-          ),
-          initialChildren: children,
-        );
-
-  static const String name = 'BeneficiaryAcknowledgementRoute1';
-
-  static const PageInfo<BeneficiaryAcknowledgementRoute1Args> page =
-      PageInfo<BeneficiaryAcknowledgementRoute1Args>(name);
-}
-
-class BeneficiaryAcknowledgementRoute1Args {
-  const BeneficiaryAcknowledgementRoute1Args({
-    this.key,
-    this.appLocalizations,
-    this.enableViewHousehold,
-  });
-
-  final Key? key;
-
-  final AppLocalizations? appLocalizations;
-
-  final bool? enableViewHousehold;
-
-  @override
-  String toString() {
-    return 'BeneficiaryAcknowledgementRoute1Args{key: $key, appLocalizations: $appLocalizations, enableViewHousehold: $enableViewHousehold}';
   }
 }
 
@@ -1266,50 +1179,6 @@ class DevicesListRouteArgs {
   @override
   String toString() {
     return 'DevicesListRouteArgs{key: $key, deviceType: $deviceType}';
-  }
-}
-
-/// generated route for
-/// [DistributionSummaryPage]
-class DistributionSummaryRoute
-    extends PageRouteInfo<DistributionSummaryRouteArgs> {
-  DistributionSummaryRoute({
-    Key? key,
-    required int classIndex,
-    required int totalClasses,
-    List<PageRouteInfo>? children,
-  }) : super(
-          DistributionSummaryRoute.name,
-          args: DistributionSummaryRouteArgs(
-            key: key,
-            classIndex: classIndex,
-            totalClasses: totalClasses,
-          ),
-          initialChildren: children,
-        );
-
-  static const String name = 'DistributionSummaryRoute';
-
-  static const PageInfo<DistributionSummaryRouteArgs> page =
-      PageInfo<DistributionSummaryRouteArgs>(name);
-}
-
-class DistributionSummaryRouteArgs {
-  const DistributionSummaryRouteArgs({
-    this.key,
-    required this.classIndex,
-    required this.totalClasses,
-  });
-
-  final Key? key;
-
-  final int classIndex;
-
-  final int totalClasses;
-
-  @override
-  String toString() {
-    return 'DistributionSummaryRouteArgs{key: $key, classIndex: $classIndex, totalClasses: $totalClasses}';
   }
 }
 
