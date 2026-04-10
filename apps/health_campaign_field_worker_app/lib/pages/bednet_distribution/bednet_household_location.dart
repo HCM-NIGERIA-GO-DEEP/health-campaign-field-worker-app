@@ -73,7 +73,7 @@ class _BednetHouseholdLocationPageState
             enableFixedDigitButton: true,
             header: const Padding(
               padding: EdgeInsets.only(bottom: spacer2),
-              child: BackNavigationHelpHeaderWidget(showHelp: true),
+              child: BackNavigationHelpHeaderWidget(showHelp: false),
             ),
             footer: DigitCard(
               margin: const EdgeInsets.only(top: spacer2),
@@ -155,6 +155,7 @@ class _BednetHouseholdLocationPageState
                         i18.householdLocation.administrationAreaFormLabel,
                       ),
                       child: DigitTextFormInput(
+                        isDisabled: true,
                         focusNode: _settlementFocusNode,
                         controller: _settlementController,
                       ),
@@ -164,6 +165,7 @@ class _BednetHouseholdLocationPageState
                           .translate(i18.householdLocation.gpsAccuracyLabel),
                       capitalizedFirstLetter: false,
                       child: DigitTextFormInput(
+                        isDisabled: true,
                         focusNode: _gpsFocusNode,
                         controller: _gpsController
                           ..text = _gpsController.text.isEmpty

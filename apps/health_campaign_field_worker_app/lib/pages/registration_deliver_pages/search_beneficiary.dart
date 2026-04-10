@@ -101,7 +101,7 @@ class _SearchBeneficiaryPageState
           },
           child: ScrollableContent(
             header: const Column(children: [
-              BackNavigationHelpHeaderWidget(showHelp: true),
+              BackNavigationHelpHeaderWidget(showHelp: false),
             ]),
             slivers: [
               SliverToBoxAdapter(
@@ -273,85 +273,84 @@ class _SearchBeneficiaryPageState
               //           );
               //     }
               //   },
-              //   child: 
+              //   child:
               BlocBuilder<LocationBloc, LocationState>(
-                  builder: (context, locationState) {
-                    return SliverList(
-                      delegate: SliverChildBuilderDelegate(
-                        (ctx, index) {
-                          final i = searchHouseholdsState.householdMembers
-                              .elementAt(index);
-                          final distance = calculateDistance(
-                            Coordinate(
-                              lat,
-                              long,
-                            ),
-                            Coordinate(
-                              i.household?.address?.latitude,
-                              i.household?.address?.longitude,
-                            ),
-                          );
+                builder: (context, locationState) {
+                  return SliverList(
+                    delegate: SliverChildBuilderDelegate(
+                      (ctx, index) {
+                        final i = searchHouseholdsState.householdMembers
+                            .elementAt(index);
+                        final distance = calculateDistance(
+                          Coordinate(
+                            lat,
+                            long,
+                          ),
+                          Coordinate(
+                            i.household?.address?.latitude,
+                            i.household?.address?.longitude,
+                          ),
+                        );
 
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: spacer2),
-                            child: ViewBeneficiaryCard(
-                              distance: isProximityEnabled ? distance : null,
-                              householdMember: i,
-                              onOpenPressed: () async {
-                                // final scannerBloc =
-                                //     context.read<DigitScannerBloc>();
+                        return Container(
+                          margin: const EdgeInsets.only(bottom: spacer2),
+                          child: ViewBeneficiaryCard(
+                            distance: isProximityEnabled ? distance : null,
+                            householdMember: i,
+                            onOpenPressed: () async {
+                              // final scannerBloc =
+                              //     context.read<DigitScannerBloc>();
 
-                                // scannerBloc.add(
-                                //   const DigitScannerEvent.handleScanner(),
-                                // );
+                              // scannerBloc.add(
+                              //   const DigitScannerEvent.handleScanner(),
+                              // );
 
-                                if ((i.tasks != null &&
-                                        i.tasks?.lastOrNull!.status ==
-                                            Status.closeHousehold.toValue() &&
-                                        (i.tasks ?? []).isNotEmpty) ||
-                                    (i.projectBeneficiaries ?? []).isEmpty) {
-                                  setState(() {
-                                    selectedFilters = [];
-                                  });
-                                  blocWrapper.clearEvent();
-                                  if (i.household != null) {
-                                    context.read<BednetDistributionBloc>().add(
-                                          BednetDistributionEvent.selectSchool(
-                                            school: i.household!,
-                                          ),
-                                        );
-                                    await context.router.push(
-                                      const BednetHouseholdOverviewWrapperRoute(),
-                                    );
-                                  }
-                                } else {
-                                  if (i.household != null) {
-                                    context.read<BednetDistributionBloc>().add(
-                                          BednetDistributionEvent.selectSchool(
-                                            school: i.household!,
-                                          ),
-                                        );
-                                    await context.router.push(
-                                      const BednetHouseholdOverviewWrapperRoute(),
-                                    );
-                                  }
-                                }
+                              if ((i.tasks != null &&
+                                      i.tasks?.lastOrNull!.status ==
+                                          Status.closeHousehold.toValue() &&
+                                      (i.tasks ?? []).isNotEmpty) ||
+                                  (i.projectBeneficiaries ?? []).isEmpty) {
                                 setState(() {
-                                  isProximityEnabled = false;
+                                  selectedFilters = [];
                                 });
-                                searchController.clear();
-                                selectedFilters.clear();
                                 blocWrapper.clearEvent();
-                              },
-                            ),
-                          );
-                        },
-                        childCount:
-                            searchHouseholdsState.householdMembers.length,
-                      ),
-                    );
-                  },
-                ),
+                                if (i.household != null) {
+                                  context.read<BednetDistributionBloc>().add(
+                                        BednetDistributionEvent.selectSchool(
+                                          school: i.household!,
+                                        ),
+                                      );
+                                  await context.router.push(
+                                    const BednetHouseholdOverviewWrapperRoute(),
+                                  );
+                                }
+                              } else {
+                                if (i.household != null) {
+                                  context.read<BednetDistributionBloc>().add(
+                                        BednetDistributionEvent.selectSchool(
+                                          school: i.household!,
+                                        ),
+                                      );
+                                  await context.router.push(
+                                    const BednetHouseholdOverviewWrapperRoute(),
+                                  );
+                                }
+                              }
+                              setState(() {
+                                isProximityEnabled = false;
+                              });
+                              searchController.clear();
+                              selectedFilters.clear();
+                              blocWrapper.clearEvent();
+                            },
+                          ),
+                        );
+                      },
+                      childCount: searchHouseholdsState.householdMembers.length,
+                    ),
+                  );
+                },
+              ),
               // ),
             ],
           ),

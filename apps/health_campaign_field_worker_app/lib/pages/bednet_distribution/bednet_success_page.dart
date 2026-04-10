@@ -34,13 +34,15 @@ class _BednetSuccessPageState extends LocalizedState<BednetSuccessPage> {
   void _onViewHouseholdDetails() {
     if (!mounted) return;
     // Success → review → household details (two routes below this one).
-    Navigator.of(context).pop();
+    // Navigator.of(context).pop();
     if (mounted) Navigator.of(context).pop();
   }
 
   void _onBackToSearch() {
     if (!mounted) return;
-    context.read<SearchHouseholdsBloc>().add(const SearchHouseholdsEvent.clear());
+    context
+        .read<SearchHouseholdsBloc>()
+        .add(const SearchHouseholdsEvent.clear());
     Navigator.of(context).popUntil((route) => route.isFirst);
   }
 

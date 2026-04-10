@@ -83,11 +83,11 @@ class AppRouter extends _$AppRouter {
       page: UnauthenticatedRouteWrapper.page,
       path: '/',
       children: [
-        AutoRoute(
-            page: LanguageSelectionRoute.page,
-            path: 'language_selection',
-            initial: true),
-        AutoRoute(page: LoginRoute.page, path: 'login'),
+        // AutoRoute(
+        //     page: LanguageSelectionRoute.page,
+        //     path: 'language_selection',
+        //     initial: true),
+        AutoRoute(page: LoginRoute.page, path: 'login', initial: true),
         AutoRoute(page: DigitScannerRoute.page, path: 'scanner'),
       ],
     ),
@@ -157,26 +157,26 @@ class AppRouter extends _$AppRouter {
                   page: BednetIndividualDetailsWrapperRoute.page,
                   path: 'individual-details',
                 ),
-                 AutoRoute(
-                    page: BeneficiaryDetailsRoute.page,
-                    path: 'beneficiary-details',
-                  ),
                 AutoRoute(
-                    page: DeliverInterventionRoute.page,
-                    path: 'deliver-intervention',
-                  ),
-                  AutoRoute(
-                    page: HouseholdAcknowledgementRoute.page,
-                    path: 'household-acknowledgement',
-                  ),
-                  AutoRoute(
-                    page: BeneficiaryAcknowledgementRoute.page,
-                    path: 'beneficiary-acknowledgement',
-                  ),
-                  // AutoRoute(
-                  //   page: DeliverySummaryRoute.page,
-                  //   path: 'delivery-summary',
-                  // ),
+                  page: BeneficiaryDetailsRoute.page,
+                  path: 'beneficiary-details',
+                ),
+                AutoRoute(
+                  page: DeliverInterventionRoute.page,
+                  path: 'deliver-intervention',
+                ),
+                AutoRoute(
+                  page: HouseholdAcknowledgementRoute.page,
+                  path: 'household-acknowledgement',
+                ),
+                AutoRoute(
+                  page: BeneficiaryAcknowledgementRoute.page,
+                  path: 'beneficiary-acknowledgement',
+                ),
+                // AutoRoute(
+                //   page: DeliverySummaryRoute.page,
+                //   path: 'delivery-summary',
+                // ),
                 // AutoRoute(
                 //     page: DoseAdministeredRoute.page,
                 //     path: 'dose-administered',
