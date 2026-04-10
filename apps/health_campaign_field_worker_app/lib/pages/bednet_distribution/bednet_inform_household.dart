@@ -56,14 +56,22 @@ class _BednetInformHouseholdPageState
           persisted: (_) {
             if (!mounted || _isSubmitting) return;
             _isSubmitting = true;
-            Navigator.of(context).pushAndRemoveUntil(
+            final registrationBloc =
+                context.read<BeneficiaryRegistrationBloc>();
+            // Replace inform screen only so the Material stack below (review →
+            // household details → location → search) stays intact and the same
+            // [BeneficiaryRegistrationBloc] remains valid for "View household".
+            Navigator.of(context).pushReplacement(
               MaterialPageRoute(
-                builder: (_) => BednetSuccessPage(
-                  eToken: widget.eToken,
-                  itnForDelivery: widget.itnForDelivery,
+                builder: (_) => BlocProvider.value(
+                  value: registrationBloc,
+                  child: BednetSuccessPage(
+                    eToken: widget.eToken,
+                    itnForDelivery: widget.itnForDelivery,
+                    appLocalizations: localizations,
+                  ),
                 ),
               ),
-              (route) => route.isFirst,
             );
           },
         );

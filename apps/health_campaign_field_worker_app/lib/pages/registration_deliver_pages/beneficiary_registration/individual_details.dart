@@ -14,8 +14,10 @@ import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:health_campaign_field_worker_app/blocs/bednet_distribution/bednet_distribution.dart';
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/household_overview/household_overview.dart';
+import 'package:health_campaign_field_worker_app/models/bednet_distribution/bednet_distribution_models.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/constants.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart'
     as i18;
@@ -71,6 +73,15 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
           listener: (context, state) {
             state.mapOrNull(
               persisted: (value) async {
+                if (context.mounted) {
+                  try {
+                    context.read<BednetDistributionBloc>().add(
+                          BednetDistributionEvent.updateSelectedSchool(
+                            school: value.householdModel,
+                          ),
+                        );
+                  } catch (_) {}
+                }
                 if (value.navigateToRoot) {
                   final overviewBloc = context.read<HouseholdOverviewBloc>();
 
@@ -88,7 +99,11 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                       element.loading == false &&
                       element.householdMemberWrapper.household != null);
                   if (!context.mounted) return;
-                  await router.push( HouseholdAcknowledgementRoute());
+                  if (value.householdModel.isSchoolHousehold) {
+                    await router.push(BeneficiaryAcknowledgementRoute());
+                  } else {
+                    await router.push(HouseholdAcknowledgementRoute());
+                  }
                 }
               },
             );
@@ -350,6 +365,8 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                                                 .state.qrCodes.isNotEmpty
                                             ? scannerBloc.state.qrCodes.first
                                             : null,
+                                        isHeadOfHousehold:
+                                            widget.isHeadOfHousehold,
                                       ),
                                     );
                                   }

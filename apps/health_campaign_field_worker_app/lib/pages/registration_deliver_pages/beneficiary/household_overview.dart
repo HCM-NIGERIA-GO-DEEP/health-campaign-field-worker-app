@@ -529,23 +529,19 @@ class _HouseholdOverviewPageState
                                         ),
 
                                         Column(
-                                          children: (state
-                                                      .householdMemberWrapper
-                                                      .members ??
-                                                  [])
+                                          children:
+                                              _membersOrderedHeadFirst(
+                                            state.householdMemberWrapper,
+                                          )
                                               .map(
                                             (e) {
                                               final wrapper =
                                                   state.householdMemberWrapper;
-                                              final isHead = wrapper
-                                                          .headOfHousehold
-                                                          ?.clientReferenceId ==
-                                                      e.clientReferenceId ||
-                                                  _isBednetSchoolHeadMember(
-                                                    e,
-                                                    wrapper.household,
-                                                    wrapper.headOfHousehold,
-                                                  );
+                                              final isHead =
+                                                  _isHouseholdHeadMember(
+                                                e,
+                                                wrapper,
+                                              );
                                               final projectBeneficiaryId = state
                                                   .householdMemberWrapper
                                                   .projectBeneficiaries
@@ -713,7 +709,8 @@ class _HouseholdOverviewPageState
                                                   );
 
                                                   callReloadEvent(
-                                                      offset: 0, limit: 10);
+                                                      offset: 0,
+                                                      limit: limit);
                                                 },
                                                 setAsHeadAction: () {
                                                   ctx
@@ -1072,6 +1069,29 @@ class _HouseholdOverviewPageState
     } else {
       return selectedFilter;
     }
+  }
+
+  bool _isHouseholdHeadMember(
+    IndividualModel e,
+    HouseholdMemberWrapper wrapper,
+  ) {
+    return wrapper.headOfHousehold?.clientReferenceId ==
+            e.clientReferenceId ||
+        _isBednetSchoolHeadMember(
+          e,
+          wrapper.household,
+          wrapper.headOfHousehold,
+        );
+  }
+
+  List<IndividualModel> _membersOrderedHeadFirst(
+    HouseholdMemberWrapper wrapper,
+  ) {
+    final raw = wrapper.members ?? [];
+    return [
+      ...raw.where((e) => _isHouseholdHeadMember(e, wrapper)),
+      ...raw.where((e) => !_isHouseholdHeadMember(e, wrapper)),
+    ];
   }
 
   /// When there is no DB head (e.g. school household), match [bednetSchoolHead] to a member's given name.

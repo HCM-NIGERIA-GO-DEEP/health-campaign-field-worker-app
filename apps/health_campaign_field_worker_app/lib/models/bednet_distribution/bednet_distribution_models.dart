@@ -157,6 +157,25 @@ extension BednetHouseholdFields on HouseholdModel {
         parseCoord('schoollongitude');
     return (latitude: lat, longitude: lng);
   }
+
+  /// School campaign households (CSV / additionalFields), distinct from regular family households.
+  bool get isSchoolHousehold {
+    final fields = additionalFields?.fields ?? const <AdditionalField>[];
+    final map = <String, Object?>{
+      for (final field in fields) field.key.toLowerCase(): field.value as Object?,
+    };
+    final typeField = map['type']?.toString().toLowerCase();
+    if (typeField == 'school') return true;
+    if (map['schoolname'] != null &&
+        map['schoolname'].toString().trim().isNotEmpty) {
+      return true;
+    }
+    if (map['schoolid'] != null &&
+        map['schoolid'].toString().trim().isNotEmpty) {
+      return true;
+    }
+    return false;
+  }
 }
 
 /// Registered head name if present; otherwise school head from [HouseholdModel.additionalFields].

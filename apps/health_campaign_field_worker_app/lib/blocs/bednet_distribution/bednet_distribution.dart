@@ -20,6 +20,7 @@ class BednetDistributionBloc
     on<BednetDistributionInitializeEvent>(_onInitialize);
     on<BednetDistributionReloadEvent>(_onReload);
     on<BednetDistributionSelectSchoolEvent>(_onSelectSchool);
+    on<BednetDistributionUpdateSelectedSchoolEvent>(_onUpdateSelectedSchool);
   }
 
   Future<void> _onInitialize(
@@ -86,6 +87,21 @@ class BednetDistributionBloc
     );
   }
 
+  /// Syncs school data (e.g. after saving a member) without incrementing
+  /// [schoolSelectionSeq], so [SelectSchoolPage] does not push school details.
+  void _onUpdateSelectedSchool(
+    BednetDistributionUpdateSelectedSchoolEvent event,
+    BednetDistributionEmitter emit,
+  ) {
+    emit(
+      state.copyWith(
+        loading: false,
+        error: null,
+        selectedSchool: event.school,
+      ),
+    );
+  }
+
   bool _isSchoolHousehold(HouseholdModel household) {
     final fields =
         household.additionalFields?.fields ?? const <AdditionalField>[];
@@ -116,6 +132,10 @@ class BednetDistributionEvent with _$BednetDistributionEvent {
       BednetDistributionReloadEvent;
   const factory BednetDistributionEvent.selectSchool(
       {required HouseholdModel school}) = BednetDistributionSelectSchoolEvent;
+
+  /// Same as [selectSchool] for stored data, but does not bump [BednetDistributionState.schoolSelectionSeq].
+  const factory BednetDistributionEvent.updateSelectedSchool(
+      {required HouseholdModel school}) = BednetDistributionUpdateSelectedSchoolEvent;
 }
 
 @freezed

@@ -14,6 +14,7 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/delivery_intervention/deliver_intervention.dart';
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/search_households/search_households.dart';
+import 'package:health_campaign_field_worker_app/models/bednet_distribution/bednet_distribution_models.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/additional_fields_type.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/deliver_strategy_type.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
@@ -108,8 +109,14 @@ class DeliverInterventionPageState
               navigateToSummary: false,
               householdMemberWrapper: householdMember),
         );
-    context.router.push(
-        HouseholdAcknowledgementRoute(enableViewHousehold: false));
+    final household = householdMember.household;
+    if (household?.isSchoolHousehold ?? false) {
+      context.router.push(BeneficiaryAcknowledgementRoute());
+    } else {
+      context.router.push(
+        HouseholdAcknowledgementRoute(enableViewHousehold: false),
+      );
+    }
   }
 
   void handleLocationState(

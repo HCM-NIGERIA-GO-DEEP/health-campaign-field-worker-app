@@ -13,6 +13,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/app_localization.dart';
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/delivery_intervention/deliver_intervention.dart';
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/household_overview/household_overview.dart';
+import 'package:health_campaign_field_worker_app/models/bednet_distribution/bednet_distribution_models.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/additional_fields_type.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart'
@@ -99,7 +100,7 @@ class MemberCard extends StatelessWidget {
                         ),
                       ],
                     ),
-                    _shouldShowEditButton(context)
+                    _shouldShowEditButton(context) && !isHead
                         ? Positioned(
                             child: Align(
                               alignment: Alignment.topRight,
@@ -187,30 +188,31 @@ class MemberCard extends StatelessWidget {
                   ),
                 ),
                 Offstage(
-                  offstage:isHead ? false  :true,
-                  child: 
-                      Align(
-                          alignment: Alignment.bottomLeft,
-                          child: Tag(
-                            isIcon: true,
-                            label: 'School Head',
-                            themeData: TagThemeData(
-                              errorColor: theme.colorTheme.primary.primary2,
-                              errorIcon: Icon(
-                                Icons.error,
-                                color: theme.colorTheme.primary.primary2,
-                                size: 16,
-                              ),
-                            ),
-                            type: TagType.error,
-                          ),
+                  offstage: isHead ? false : true,
+                  child: Align(
+                    alignment: Alignment.bottomLeft,
+                    child: Tag(
+                      isIcon: true,
+                      label: 'School Head',
+                      themeData: TagThemeData(
+                        errorColor: theme.colorTheme.primary.primary2,
+                        errorIcon: Icon(
+                          Icons.error,
+                          color: theme.colorTheme.primary.primary2,
+                          size: 16,
                         ),
+                      ),
+                      type: TagType.error,
+                    ),
+                  ),
                 ),
                 Padding(
                   padding:
                       const EdgeInsets.only(left: spacer1, bottom: spacer2),
                   child: Offstage(
-                    offstage:isHead ? true  :beneficiaryType != BeneficiaryType.individual,
+                    offstage: isHead
+                        ? true
+                        : beneficiaryType != BeneficiaryType.individual,
                     child: !isDelivered || isNotEligible || isBeneficiaryRefused
                         ? Align(
                             alignment: Alignment.centerLeft,
@@ -219,10 +221,11 @@ class MemberCard extends StatelessWidget {
                               label: localizations.translate(
                                 isNotEligible
                                     ? i18.householdOverView
-                                        .householdOverViewNotEligibleIconLabel:
-                                        isBeneficiaryRefused?i18.householdOverView.householdOverViewNotEligibleIconLabel
-                                    : i18.householdOverView
-                                        .householdOverViewNotDeliveredIconLabel,
+                                        .householdOverViewNotEligibleIconLabel
+                                    : isBeneficiaryRefused
+                                        ? 'Not delivered'
+                                        : i18.householdOverView
+                                            .householdOverViewNotDeliveredIconLabel,
                               ),
                               type: TagType.error,
                             ),
@@ -241,8 +244,12 @@ class MemberCard extends StatelessWidget {
                   ),
                 ),
                 Offstage(
-                  offstage:isHead ? true :  beneficiaryType != BeneficiaryType.individual ||
-                      isNotEligible || isBeneficiaryRefused || isDelivered,
+                  offstage: isHead
+                      ? true
+                      : beneficiaryType != BeneficiaryType.individual ||
+                          isNotEligible ||
+                          isBeneficiaryRefused ||
+                          isDelivered,
                   child: Padding(
                     padding: const EdgeInsets.all(spacer1),
                     child: Column(
@@ -327,8 +334,7 @@ class MemberCard extends StatelessWidget {
                                       actions: [
                                         DigitButton(
                                           label: localizations.translate(
-                                            i18.memberCard
-                                                .unableToDeliverLabel,
+                                            i18.memberCard.unableToDeliverLabel,
                                           ),
                                           type: DigitButtonType.secondary,
                                           size: DigitButtonSize.large,
@@ -414,11 +420,24 @@ class MemberCard extends StatelessWidget {
                                                 );
                                               },
                                             ).then(
-                                              (value) => context.router.push(
-                                                HouseholdAcknowledgementRoute(
-                                                  enableViewHousehold: true,
-                                                ),
-                                              ),
+                                              (value) {
+                                                final household = context
+                                                    .read<HouseholdOverviewBloc>()
+                                                    .state
+                                                    .householdMemberWrapper
+                                                    .household;
+                                                if (household?.isSchoolHousehold ??
+                                                    false) {
+                                                  return context.router.push(
+                                                    BeneficiaryAcknowledgementRoute(),
+                                                  );
+                                                }
+                                                return context.router.push(
+                                                  HouseholdAcknowledgementRoute(
+                                                    enableViewHousehold: true,
+                                                  ),
+                                                );
+                                              },
                                             );
                                           },
                                         ),
@@ -485,11 +504,12 @@ class MemberCard extends StatelessWidget {
   //       BeneficiaryChecklistRoute(beneficiaryClientRefId: clientReferenceId));
   // }
   bool _shouldShowEditButton(BuildContext context) {
-    return 
-    // !isCurrentCycleData(context, tasks ?? []) ||
+    return
+        // !isCurrentCycleData(context, tasks ?? []) ||
         (tasks ?? [])
                 .where((element) =>
-                    element.status == Status.administeredSuccess.toValue() || element.status == Status.beneficiaryRefused.toValue())
+                    element.status == Status.administeredSuccess.toValue() ||
+                    element.status == Status.beneficiaryRefused.toValue())
                 .lastOrNull ==
             null;
   }

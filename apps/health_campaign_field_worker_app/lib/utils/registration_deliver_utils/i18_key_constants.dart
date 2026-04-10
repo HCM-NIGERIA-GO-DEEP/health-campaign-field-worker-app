@@ -1119,4 +1119,12 @@ class BednetDistribution {
   String get netInstruction5 => 'net_instruction_5';
   String get netInstruction6 => 'net_instruction_6';
   String get netInstruction7 => 'net_instruction_7';
+
+  /// Shown on inform-household success; include {count} for ITN count if needed.
+  String get informSuccessBednetsDelivered =>
+      'BEDNET_INFORM_SUCCESS_BEDNETS_DELIVERED';
+
+  String get informSuccessETokenLabel => 'BEDNET_INFORM_SUCCESS_ETOKEN_LABEL';
+
+  String get informSuccessMessage => 'BEDNET_INFORM_SUCCESS_MESSAGE';
 }

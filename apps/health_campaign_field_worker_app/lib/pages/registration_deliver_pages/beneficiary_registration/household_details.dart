@@ -14,6 +14,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 import 'package:health_campaign_field_worker_app/models/entities/additional_fields_type.dart';
 
 import '../../../blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
+import '../../../blocs/registration_deliver/search_households/search_households.dart';
 import '../../bednet_distribution/bednet_household_review.dart';
 import '../../../utils/registration_deliver_utils/extensions/extensions.dart';
 import '../../../utils/registration_deliver_utils/i18_key_constants.dart'
@@ -39,6 +40,20 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
   static const _memberCountKey = 'memberCount';
   final TextEditingController _dateController = TextEditingController();
 
+  bool _isHouseholdDetailsViewOnly(BeneficiaryRegistrationState state) {
+    return state.maybeMap(
+      persisted: (p) => !p.isEdit,
+      orElse: () => false,
+    );
+  }
+
+  void _onBackToSearch(BuildContext context) {
+    context
+        .read<SearchHouseholdsBloc>()
+        .add(const SearchHouseholdsEvent.clear());
+    Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+
   @override
   void dispose() {
     _dateController.dispose();
@@ -58,6 +73,13 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
           return BlocBuilder<BeneficiaryRegistrationBloc,
               BeneficiaryRegistrationState>(
             builder: (context, registrationState) {
+              final viewOnly = _isHouseholdDetailsViewOnly(registrationState);
+              if (viewOnly) {
+                form.markAsDisabled();
+              } else {
+                form.markAsEnabled();
+              }
+
               return ScrollableContent(
                 header: Column(children: [
                   Padding(
@@ -69,6 +91,17 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                 footer: DigitCard(
                     margin: const EdgeInsets.only(top: spacer2),
                     children: [
+                      if (viewOnly)
+                        DigitButton(
+                          label: localizations.translate(
+                            i18.acknowledgementSuccess.actionLabelText,
+                          ),
+                          type: DigitButtonType.primary,
+                          size: DigitButtonSize.large,
+                          mainAxisSize: MainAxisSize.max,
+                          onPressed: () => _onBackToSearch(context),
+                        )
+                      else
                       DigitButton(
                         label: registrationState.mapOrNull(
                               editHousehold: (value) => localizations
@@ -243,7 +276,9 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                     ]),
                 slivers: [
                   SliverToBoxAdapter(
-                    child: DigitCard(
+                    child: IgnorePointer(
+                      ignoring: viewOnly,
+                      child: DigitCard(
                         margin: const EdgeInsets.all(spacer2),
                         children: [
                           Text(
@@ -359,7 +394,9 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                               ),
                             ),
                           ),
-                        ]),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               );
@@ -374,15 +411,19 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
     final household = state.mapOrNull(
       editHousehold: (value) => value.householdModel,
       create: (value) => value.householdModel,
+      persisted: (value) => value.householdModel,
     );
     final individual = state.mapOrNull(
       editHousehold: (value) => value.headOfHousehold,
       create: (value) => value.individualModel,
+      persisted: (value) => value.individualModel,
     );
 
     final registrationDate = state.mapOrNull(
       editHousehold: (value) => value.registrationDate,
       create: (value) => DateTime.now(),
+      persisted: (value) =>
+          value.registrationDate ?? DateTime.now(),
     );
 
     return fb.group(<String, Object>{

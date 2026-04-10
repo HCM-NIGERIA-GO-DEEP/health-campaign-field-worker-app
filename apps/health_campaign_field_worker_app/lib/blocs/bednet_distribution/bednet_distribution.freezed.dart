@@ -21,6 +21,7 @@ mixin _$BednetDistributionEvent {
     required TResult Function(String boundaryCode) initialize,
     required TResult Function() reload,
     required TResult Function(HouseholdModel school) selectSchool,
+    required TResult Function(HouseholdModel school) updateSelectedSchool,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -28,6 +29,7 @@ mixin _$BednetDistributionEvent {
     TResult? Function(String boundaryCode)? initialize,
     TResult? Function()? reload,
     TResult? Function(HouseholdModel school)? selectSchool,
+    TResult? Function(HouseholdModel school)? updateSelectedSchool,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -35,6 +37,7 @@ mixin _$BednetDistributionEvent {
     TResult Function(String boundaryCode)? initialize,
     TResult Function()? reload,
     TResult Function(HouseholdModel school)? selectSchool,
+    TResult Function(HouseholdModel school)? updateSelectedSchool,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -45,6 +48,8 @@ mixin _$BednetDistributionEvent {
     required TResult Function(BednetDistributionReloadEvent value) reload,
     required TResult Function(BednetDistributionSelectSchoolEvent value)
         selectSchool,
+    required TResult Function(BednetDistributionUpdateSelectedSchoolEvent value)
+        updateSelectedSchool,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -52,6 +57,8 @@ mixin _$BednetDistributionEvent {
     TResult? Function(BednetDistributionInitializeEvent value)? initialize,
     TResult? Function(BednetDistributionReloadEvent value)? reload,
     TResult? Function(BednetDistributionSelectSchoolEvent value)? selectSchool,
+    TResult? Function(BednetDistributionUpdateSelectedSchoolEvent value)?
+        updateSelectedSchool,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -59,6 +66,8 @@ mixin _$BednetDistributionEvent {
     TResult Function(BednetDistributionInitializeEvent value)? initialize,
     TResult Function(BednetDistributionReloadEvent value)? reload,
     TResult Function(BednetDistributionSelectSchoolEvent value)? selectSchool,
+    TResult Function(BednetDistributionUpdateSelectedSchoolEvent value)?
+        updateSelectedSchool,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
@@ -166,6 +175,7 @@ class _$BednetDistributionInitializeEventImpl
     required TResult Function(String boundaryCode) initialize,
     required TResult Function() reload,
     required TResult Function(HouseholdModel school) selectSchool,
+    required TResult Function(HouseholdModel school) updateSelectedSchool,
   }) {
     return initialize(boundaryCode);
   }
@@ -176,6 +186,7 @@ class _$BednetDistributionInitializeEventImpl
     TResult? Function(String boundaryCode)? initialize,
     TResult? Function()? reload,
     TResult? Function(HouseholdModel school)? selectSchool,
+    TResult? Function(HouseholdModel school)? updateSelectedSchool,
   }) {
     return initialize?.call(boundaryCode);
   }
@@ -186,6 +197,7 @@ class _$BednetDistributionInitializeEventImpl
     TResult Function(String boundaryCode)? initialize,
     TResult Function()? reload,
     TResult Function(HouseholdModel school)? selectSchool,
+    TResult Function(HouseholdModel school)? updateSelectedSchool,
     required TResult orElse(),
   }) {
     if (initialize != null) {
@@ -202,6 +214,8 @@ class _$BednetDistributionInitializeEventImpl
     required TResult Function(BednetDistributionReloadEvent value) reload,
     required TResult Function(BednetDistributionSelectSchoolEvent value)
         selectSchool,
+    required TResult Function(BednetDistributionUpdateSelectedSchoolEvent value)
+        updateSelectedSchool,
   }) {
     return initialize(this);
   }
@@ -212,6 +226,8 @@ class _$BednetDistributionInitializeEventImpl
     TResult? Function(BednetDistributionInitializeEvent value)? initialize,
     TResult? Function(BednetDistributionReloadEvent value)? reload,
     TResult? Function(BednetDistributionSelectSchoolEvent value)? selectSchool,
+    TResult? Function(BednetDistributionUpdateSelectedSchoolEvent value)?
+        updateSelectedSchool,
   }) {
     return initialize?.call(this);
   }
@@ -222,6 +238,8 @@ class _$BednetDistributionInitializeEventImpl
     TResult Function(BednetDistributionInitializeEvent value)? initialize,
     TResult Function(BednetDistributionReloadEvent value)? reload,
     TResult Function(BednetDistributionSelectSchoolEvent value)? selectSchool,
+    TResult Function(BednetDistributionUpdateSelectedSchoolEvent value)?
+        updateSelectedSchool,
     required TResult orElse(),
   }) {
     if (initialize != null) {
@@ -298,6 +316,7 @@ class _$BednetDistributionReloadEventImpl
     required TResult Function(String boundaryCode) initialize,
     required TResult Function() reload,
     required TResult Function(HouseholdModel school) selectSchool,
+    required TResult Function(HouseholdModel school) updateSelectedSchool,
   }) {
     return reload();
   }
@@ -308,6 +327,7 @@ class _$BednetDistributionReloadEventImpl
     TResult? Function(String boundaryCode)? initialize,
     TResult? Function()? reload,
     TResult? Function(HouseholdModel school)? selectSchool,
+    TResult? Function(HouseholdModel school)? updateSelectedSchool,
   }) {
     return reload?.call();
   }
@@ -318,6 +338,7 @@ class _$BednetDistributionReloadEventImpl
     TResult Function(String boundaryCode)? initialize,
     TResult Function()? reload,
     TResult Function(HouseholdModel school)? selectSchool,
+    TResult Function(HouseholdModel school)? updateSelectedSchool,
     required TResult orElse(),
   }) {
     if (reload != null) {
@@ -334,6 +355,8 @@ class _$BednetDistributionReloadEventImpl
     required TResult Function(BednetDistributionReloadEvent value) reload,
     required TResult Function(BednetDistributionSelectSchoolEvent value)
         selectSchool,
+    required TResult Function(BednetDistributionUpdateSelectedSchoolEvent value)
+        updateSelectedSchool,
   }) {
     return reload(this);
   }
@@ -344,6 +367,8 @@ class _$BednetDistributionReloadEventImpl
     TResult? Function(BednetDistributionInitializeEvent value)? initialize,
     TResult? Function(BednetDistributionReloadEvent value)? reload,
     TResult? Function(BednetDistributionSelectSchoolEvent value)? selectSchool,
+    TResult? Function(BednetDistributionUpdateSelectedSchoolEvent value)?
+        updateSelectedSchool,
   }) {
     return reload?.call(this);
   }
@@ -354,6 +379,8 @@ class _$BednetDistributionReloadEventImpl
     TResult Function(BednetDistributionInitializeEvent value)? initialize,
     TResult Function(BednetDistributionReloadEvent value)? reload,
     TResult Function(BednetDistributionSelectSchoolEvent value)? selectSchool,
+    TResult Function(BednetDistributionUpdateSelectedSchoolEvent value)?
+        updateSelectedSchool,
     required TResult orElse(),
   }) {
     if (reload != null) {
@@ -451,6 +478,7 @@ class _$BednetDistributionSelectSchoolEventImpl
     required TResult Function(String boundaryCode) initialize,
     required TResult Function() reload,
     required TResult Function(HouseholdModel school) selectSchool,
+    required TResult Function(HouseholdModel school) updateSelectedSchool,
   }) {
     return selectSchool(school);
   }
@@ -461,6 +489,7 @@ class _$BednetDistributionSelectSchoolEventImpl
     TResult? Function(String boundaryCode)? initialize,
     TResult? Function()? reload,
     TResult? Function(HouseholdModel school)? selectSchool,
+    TResult? Function(HouseholdModel school)? updateSelectedSchool,
   }) {
     return selectSchool?.call(school);
   }
@@ -471,6 +500,7 @@ class _$BednetDistributionSelectSchoolEventImpl
     TResult Function(String boundaryCode)? initialize,
     TResult Function()? reload,
     TResult Function(HouseholdModel school)? selectSchool,
+    TResult Function(HouseholdModel school)? updateSelectedSchool,
     required TResult orElse(),
   }) {
     if (selectSchool != null) {
@@ -487,6 +517,8 @@ class _$BednetDistributionSelectSchoolEventImpl
     required TResult Function(BednetDistributionReloadEvent value) reload,
     required TResult Function(BednetDistributionSelectSchoolEvent value)
         selectSchool,
+    required TResult Function(BednetDistributionUpdateSelectedSchoolEvent value)
+        updateSelectedSchool,
   }) {
     return selectSchool(this);
   }
@@ -497,6 +529,8 @@ class _$BednetDistributionSelectSchoolEventImpl
     TResult? Function(BednetDistributionInitializeEvent value)? initialize,
     TResult? Function(BednetDistributionReloadEvent value)? reload,
     TResult? Function(BednetDistributionSelectSchoolEvent value)? selectSchool,
+    TResult? Function(BednetDistributionUpdateSelectedSchoolEvent value)?
+        updateSelectedSchool,
   }) {
     return selectSchool?.call(this);
   }
@@ -507,6 +541,8 @@ class _$BednetDistributionSelectSchoolEventImpl
     TResult Function(BednetDistributionInitializeEvent value)? initialize,
     TResult Function(BednetDistributionReloadEvent value)? reload,
     TResult Function(BednetDistributionSelectSchoolEvent value)? selectSchool,
+    TResult Function(BednetDistributionUpdateSelectedSchoolEvent value)?
+        updateSelectedSchool,
     required TResult orElse(),
   }) {
     if (selectSchool != null) {
@@ -526,6 +562,182 @@ abstract class BednetDistributionSelectSchoolEvent
   @JsonKey(ignore: true)
   _$$BednetDistributionSelectSchoolEventImplCopyWith<
           _$BednetDistributionSelectSchoolEventImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$BednetDistributionUpdateSelectedSchoolEventImplCopyWith<
+    $Res> {
+  factory _$$BednetDistributionUpdateSelectedSchoolEventImplCopyWith(
+          _$BednetDistributionUpdateSelectedSchoolEventImpl value,
+          $Res Function(_$BednetDistributionUpdateSelectedSchoolEventImpl)
+              then) =
+      __$$BednetDistributionUpdateSelectedSchoolEventImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({HouseholdModel school});
+}
+
+/// @nodoc
+class __$$BednetDistributionUpdateSelectedSchoolEventImplCopyWithImpl<$Res>
+    extends _$BednetDistributionEventCopyWithImpl<$Res,
+        _$BednetDistributionUpdateSelectedSchoolEventImpl>
+    implements
+        _$$BednetDistributionUpdateSelectedSchoolEventImplCopyWith<$Res> {
+  __$$BednetDistributionUpdateSelectedSchoolEventImplCopyWithImpl(
+      _$BednetDistributionUpdateSelectedSchoolEventImpl _value,
+      $Res Function(_$BednetDistributionUpdateSelectedSchoolEventImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? school = null,
+  }) {
+    return _then(_$BednetDistributionUpdateSelectedSchoolEventImpl(
+      school: null == school
+          ? _value.school
+          : school // ignore: cast_nullable_to_non_nullable
+              as HouseholdModel,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$BednetDistributionUpdateSelectedSchoolEventImpl
+    with DiagnosticableTreeMixin
+    implements BednetDistributionUpdateSelectedSchoolEvent {
+  const _$BednetDistributionUpdateSelectedSchoolEventImpl(
+      {required this.school});
+
+  @override
+  final HouseholdModel school;
+
+  @override
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
+    return 'BednetDistributionEvent.updateSelectedSchool(school: $school)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty(
+          'type', 'BednetDistributionEvent.updateSelectedSchool'))
+      ..add(DiagnosticsProperty('school', school));
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$BednetDistributionUpdateSelectedSchoolEventImpl &&
+            (identical(other.school, school) || other.school == school));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, school);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$BednetDistributionUpdateSelectedSchoolEventImplCopyWith<
+          _$BednetDistributionUpdateSelectedSchoolEventImpl>
+      get copyWith =>
+          __$$BednetDistributionUpdateSelectedSchoolEventImplCopyWithImpl<
+                  _$BednetDistributionUpdateSelectedSchoolEventImpl>(
+              this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(String boundaryCode) initialize,
+    required TResult Function() reload,
+    required TResult Function(HouseholdModel school) selectSchool,
+    required TResult Function(HouseholdModel school) updateSelectedSchool,
+  }) {
+    return updateSelectedSchool(school);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(String boundaryCode)? initialize,
+    TResult? Function()? reload,
+    TResult? Function(HouseholdModel school)? selectSchool,
+    TResult? Function(HouseholdModel school)? updateSelectedSchool,
+  }) {
+    return updateSelectedSchool?.call(school);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(String boundaryCode)? initialize,
+    TResult Function()? reload,
+    TResult Function(HouseholdModel school)? selectSchool,
+    TResult Function(HouseholdModel school)? updateSelectedSchool,
+    required TResult orElse(),
+  }) {
+    if (updateSelectedSchool != null) {
+      return updateSelectedSchool(school);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(BednetDistributionInitializeEvent value)
+        initialize,
+    required TResult Function(BednetDistributionReloadEvent value) reload,
+    required TResult Function(BednetDistributionSelectSchoolEvent value)
+        selectSchool,
+    required TResult Function(BednetDistributionUpdateSelectedSchoolEvent value)
+        updateSelectedSchool,
+  }) {
+    return updateSelectedSchool(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(BednetDistributionInitializeEvent value)? initialize,
+    TResult? Function(BednetDistributionReloadEvent value)? reload,
+    TResult? Function(BednetDistributionSelectSchoolEvent value)? selectSchool,
+    TResult? Function(BednetDistributionUpdateSelectedSchoolEvent value)?
+        updateSelectedSchool,
+  }) {
+    return updateSelectedSchool?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(BednetDistributionInitializeEvent value)? initialize,
+    TResult Function(BednetDistributionReloadEvent value)? reload,
+    TResult Function(BednetDistributionSelectSchoolEvent value)? selectSchool,
+    TResult Function(BednetDistributionUpdateSelectedSchoolEvent value)?
+        updateSelectedSchool,
+    required TResult orElse(),
+  }) {
+    if (updateSelectedSchool != null) {
+      return updateSelectedSchool(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class BednetDistributionUpdateSelectedSchoolEvent
+    implements BednetDistributionEvent {
+  const factory BednetDistributionUpdateSelectedSchoolEvent(
+          {required final HouseholdModel school}) =
+      _$BednetDistributionUpdateSelectedSchoolEventImpl;
+
+  HouseholdModel get school;
+  @JsonKey(ignore: true)
+  _$$BednetDistributionUpdateSelectedSchoolEventImplCopyWith<
+          _$BednetDistributionUpdateSelectedSchoolEventImpl>
       get copyWith => throw _privateConstructorUsedError;
 }
 

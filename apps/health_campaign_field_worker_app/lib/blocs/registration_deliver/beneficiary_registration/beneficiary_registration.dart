@@ -231,8 +231,25 @@ class BeneficiaryRegistrationBloc
             final locality = code == null || name == null
                 ? null
                 : LocalityModel(code: code, name: name);
+
+            // If this is a household head, store the head's name in additionalFields
+            final householdToCreate = value.isHeadOfHousehold
+                ? household.copyWith(
+                    additionalFields: HouseholdAdditionalFields(
+                      version: household.additionalFields?.version ?? 1,
+                      fields: [
+                        ...(household.additionalFields?.fields ?? []),
+                        AdditionalField(
+                          'schoolHead',
+                          individual.name?.givenName ?? '',
+                        ),
+                      ],
+                    ),
+                  )
+                : household;
+
             await householdRepository.create(
-              household.copyWith(
+              householdToCreate.copyWith(
                 address: address?.copyWith(
                   relatedClientReferenceId: household.clientReferenceId,
                   auditDetails: individual.auditDetails,
@@ -328,8 +345,25 @@ class BeneficiaryRegistrationBloc
           final locality = code == null || name == null
               ? null
               : LocalityModel(code: code, name: name);
+
+          // If this is a household head, store the head's name in additionalFields
+          final householdToCreate = value.isHeadOfHousehold
+              ? household.copyWith(
+                  additionalFields: HouseholdAdditionalFields(
+                    version: household.additionalFields?.version ?? 1,
+                    fields: [
+                      ...(household.additionalFields?.fields ?? []),
+                      AdditionalField(
+                        'schoolHead',
+                        individual.name?.givenName ?? '',
+                      ),
+                    ],
+                  ),
+                )
+              : household;
+
           await householdRepository.create(
-            household.copyWith(
+            householdToCreate.copyWith(
               address: address.copyWith(
                 relatedClientReferenceId: household.clientReferenceId,
                 auditDetails: individual.auditDetails,
@@ -612,6 +646,7 @@ class BeneficiaryRegistrationBloc
       },
       addMember: (value) async {
         emit(value.copyWith(loading: true));
+        var persistedHousehold = value.householdModel;
         try {
           final createdAt = DateTime.now().millisecondsSinceEpoch;
           final initialModifiedAt = DateTime.now().millisecondsSinceEpoch;
@@ -638,6 +673,42 @@ class BeneficiaryRegistrationBloc
               ],
             ),
           );
+
+          if (event.isHeadOfHousehold) {
+            final existingHousehold =
+                (await householdRepository.search(HouseholdSearchModel(
+              clientReferenceId: [value.householdModel.clientReferenceId],
+            )))
+                    .firstOrNull;
+
+            final merged = _householdWithSchoolHeadName(
+              value.householdModel,
+              event.individualModel.name?.givenName ?? '',
+            );
+
+            final nowMs = DateTime.now().millisecondsSinceEpoch;
+            await householdRepository.update(
+              merged.copyWith(
+                clientAuditDetails: ClientAuditDetails(
+                  createdBy: value.householdModel.clientAuditDetails?.createdBy ??
+                      value.householdModel.auditDetails?.createdBy.toString() ??
+                      event.userUuid,
+                  createdTime: value.householdModel.clientAuditDetails
+                          ?.createdTime ??
+                      value.householdModel.auditDetails?.createdTime ??
+                      nowMs,
+                  lastModifiedBy: event.userUuid,
+                  lastModifiedTime: nowMs,
+                ),
+                id: existingHousehold?.id,
+                rowVersion: existingHousehold?.rowVersion ?? 1,
+                nonRecoverableError:
+                    existingHousehold?.nonRecoverableError ?? false,
+              ),
+            );
+            persistedHousehold = merged;
+          }
+
           if (event.beneficiaryType == BeneficiaryType.individual) {
             await projectBeneficiaryRepository.create(
               ProjectBeneficiaryModel(
@@ -669,7 +740,7 @@ class BeneficiaryRegistrationBloc
                   value.householdModel.clientReferenceId,
               individualClientReferenceId:
                   event.individualModel.clientReferenceId,
-              isHeadOfHousehold: false,
+              isHeadOfHousehold: event.isHeadOfHousehold,
               tenantId: RegistrationDeliverySingleton().tenantId,
               rowVersion: 1,
               clientReferenceId: IdGen.i.identifier,
@@ -690,10 +761,34 @@ class BeneficiaryRegistrationBloc
         } finally {
           emit(value.copyWith(loading: false));
           emit(BeneficiaryRegistrationPersistedState(
-            householdModel: value.householdModel,
+            householdModel: persistedHousehold,
+            isHeadOfHousehold: event.isHeadOfHousehold,
           ));
         }
       },
+    );
+  }
+
+  /// Aligns with [bednetSchoolHead] (flattened key `schoolhead`).
+  HouseholdModel _householdWithSchoolHeadName(
+    HouseholdModel household,
+    String givenName,
+  ) {
+    final existingFields = household.additionalFields?.fields ?? [];
+    final filtered = existingFields.where((f) {
+      final k = f.key.toLowerCase();
+      return k != 'schoolhead' &&
+          k != 'school_head' &&
+          k != 'headteacher';
+    }).toList();
+    return household.copyWith(
+      additionalFields: HouseholdAdditionalFields(
+        version: household.additionalFields?.version ?? 1,
+        fields: [
+          ...filtered,
+          AdditionalField('schoolHead', givenName),
+        ],
+      ),
     );
   }
 
@@ -731,6 +826,7 @@ class BeneficiaryRegistrationEvent with _$BeneficiaryRegistrationEvent {
     required String projectId,
     String? tag,
     required BeneficiaryType beneficiaryType,
+    @Default(false) bool isHeadOfHousehold,
   }) = BeneficiaryRegistrationAddMemberEvent;
 
   const factory BeneficiaryRegistrationEvent.updateHouseholdDetails({

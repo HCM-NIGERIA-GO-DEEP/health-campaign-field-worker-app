@@ -153,11 +153,11 @@ class HouseholdOverviewBloc
         ),
       );
 
-      // Check if any project beneficiaries were found.
-      if (projectBeneficiaries.isEmpty) {
-        // If no project beneficiaries were found, stop loading and return.
+      // Household-level beneficiaries (e.g. school) may have members before a
+      // project beneficiary row exists; still load individuals in that case.
+      if (projectBeneficiaries.isEmpty &&
+          event.projectBeneficiaryType == BeneficiaryType.individual) {
         emit(state.copyWith(loading: false));
-
         return;
       }
 
@@ -182,24 +182,31 @@ class HouseholdOverviewBloc
                 ?.individualClientReferenceId,
       );
 
-      // Search for tasks associated with project beneficiaries.
-      var tasks = await taskDataRepository.search(TaskSearchModel(
-          projectBeneficiaryClientReferenceId:
-              projectBeneficiaries.map((e) => e.clientReferenceId).toList()));
+      final List<TaskModel> tasks;
+      final List<SideEffectModel> sideEffects;
+      final List<ReferralModel> referrals;
 
-      // Search for adverse events associated with tasks.
-      final sideEffects =
-          await sideEffectDataRepository.search(SideEffectSearchModel(
-        taskClientReferenceId:
-            tasks.map((e) => e.clientReferenceId).whereNotNull().toList(),
-      ));
-
-      final referrals = await referralDataRepository.search(ReferralSearchModel(
-        projectBeneficiaryClientReferenceId: projectBeneficiaries
-            .map((e) => e.clientReferenceId)
-            .whereNotNull()
-            .toList(),
-      ));
+      if (projectBeneficiaries.isEmpty) {
+        tasks = [];
+        sideEffects = [];
+        referrals = [];
+      } else {
+        tasks = await taskDataRepository.search(TaskSearchModel(
+            projectBeneficiaryClientReferenceId: projectBeneficiaries
+                .map((e) => e.clientReferenceId)
+                .toList()));
+        sideEffects =
+            await sideEffectDataRepository.search(SideEffectSearchModel(
+          taskClientReferenceId:
+              tasks.map((e) => e.clientReferenceId).whereNotNull().toList(),
+        ));
+        referrals = await referralDataRepository.search(ReferralSearchModel(
+          projectBeneficiaryClientReferenceId: projectBeneficiaries
+              .map((e) => e.clientReferenceId)
+              .whereNotNull()
+              .toList(),
+        ));
+      }
 
       individuals.sort((a, b) => (a.clientAuditDetails?.createdTime ?? 0)
           .compareTo(b.clientAuditDetails?.createdTime ?? 0));
@@ -210,7 +217,10 @@ class HouseholdOverviewBloc
 
       // Check if a head of household was found.
       if (head == null) {
-        // If head is not found, append the new data to the existing state.
+        // If head is not found in this batch: append only when paginating
+        // (offset > 0). For offset 0, replace so a small limit cannot stack
+        // on top of a previous full load (duplicate members after navigation).
+        final isFirstPage = (event.offset ?? 0) == 0;
 
         emit(state.copyWith(
           loading: false,
@@ -218,33 +228,40 @@ class HouseholdOverviewBloc
               ? (event.offset ?? 0) + (event.limit ?? 10)
               : null,
           householdMemberWrapper: state.householdMemberWrapper.copyWith(
-            members:
-                (event.projectBeneficiaryType == BeneficiaryType.individual)
-                    ? [ 
-                      // ...[]
+            members: (event.projectBeneficiaryType == BeneficiaryType.individual)
+                ? (isFirstPage
+                    ? beneficiaryIndividuals
+                    : [
                         ...state.householdMemberWrapper.members ?? [],
                         ...beneficiaryIndividuals,
-                      ]
+                      ])
+                : (isFirstPage
+                    ? individuals
                     : [
                         ...state.householdMemberWrapper.members ?? [],
                         ...individuals,
-                      ],
-            projectBeneficiaries: [
-              ...state.householdMemberWrapper.projectBeneficiaries ?? [],
-              ...projectBeneficiaries,
-            ],
-            tasks: [
-              ...?state.householdMemberWrapper.tasks,
-              ...tasks,
-            ],
-            sideEffects: [
-              ...?state.householdMemberWrapper.sideEffects,
-              ...sideEffects,
-            ],
-            referrals: [
-              ...?state.householdMemberWrapper.referrals,
-              ...referrals,
-            ],
+                      ]),
+            projectBeneficiaries: isFirstPage
+                ? projectBeneficiaries
+                : [
+                    ...state.householdMemberWrapper.projectBeneficiaries ?? [],
+                    ...projectBeneficiaries,
+                  ],
+            tasks: isFirstPage
+                ? (tasks.isEmpty ? null : tasks)
+                : [...?state.householdMemberWrapper.tasks, ...tasks],
+            sideEffects: isFirstPage
+                ? sideEffects
+                : [
+                    ...?state.householdMemberWrapper.sideEffects,
+                    ...sideEffects,
+                  ],
+            referrals: isFirstPage
+                ? referrals
+                : [
+                    ...?state.householdMemberWrapper.referrals,
+                    ...referrals,
+                  ],
           ),
         ));
 

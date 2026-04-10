@@ -32,7 +32,8 @@ mixin _$BeneficiaryRegistrationEvent {
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)
         addMember,
     required TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)
@@ -64,7 +65,8 @@ mixin _$BeneficiaryRegistrationEvent {
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult? Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -96,7 +98,8 @@ mixin _$BeneficiaryRegistrationEvent {
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -291,7 +294,8 @@ class _$BeneficiaryRegistrationSaveAddressEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)
         addMember,
     required TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)
@@ -326,7 +330,8 @@ class _$BeneficiaryRegistrationSaveAddressEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult? Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -361,7 +366,8 @@ class _$BeneficiaryRegistrationSaveAddressEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -568,7 +574,8 @@ class _$BeneficiaryRegistrationSaveHouseDetailsEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)
         addMember,
     required TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)
@@ -603,7 +610,8 @@ class _$BeneficiaryRegistrationSaveHouseDetailsEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult? Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -638,7 +646,8 @@ class _$BeneficiaryRegistrationSaveHouseDetailsEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -858,7 +867,8 @@ class _$BeneficiaryRegistrationSaveHouseholdDetailsEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)
         addMember,
     required TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)
@@ -893,7 +903,8 @@ class _$BeneficiaryRegistrationSaveHouseholdDetailsEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult? Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -928,7 +939,8 @@ class _$BeneficiaryRegistrationSaveHouseholdDetailsEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -1151,7 +1163,8 @@ class _$BeneficiaryRegistrationSaveIndividualDetailsEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)
         addMember,
     required TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)
@@ -1186,7 +1199,8 @@ class _$BeneficiaryRegistrationSaveIndividualDetailsEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult? Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -1221,7 +1235,8 @@ class _$BeneficiaryRegistrationSaveIndividualDetailsEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -1355,7 +1370,8 @@ abstract class _$$BeneficiaryRegistrationAddMemberEventImplCopyWith<$Res> {
       String userUuid,
       String projectId,
       String? tag,
-      BeneficiaryType beneficiaryType});
+      BeneficiaryType beneficiaryType,
+      bool isHeadOfHousehold});
 }
 
 /// @nodoc
@@ -1378,6 +1394,7 @@ class __$$BeneficiaryRegistrationAddMemberEventImplCopyWithImpl<$Res>
     Object? projectId = null,
     Object? tag = freezed,
     Object? beneficiaryType = null,
+    Object? isHeadOfHousehold = null,
   }) {
     return _then(_$BeneficiaryRegistrationAddMemberEventImpl(
       householdModel: null == householdModel
@@ -1408,6 +1425,10 @@ class __$$BeneficiaryRegistrationAddMemberEventImplCopyWithImpl<$Res>
           ? _value.beneficiaryType
           : beneficiaryType // ignore: cast_nullable_to_non_nullable
               as BeneficiaryType,
+      isHeadOfHousehold: null == isHeadOfHousehold
+          ? _value.isHeadOfHousehold
+          : isHeadOfHousehold // ignore: cast_nullable_to_non_nullable
+              as bool,
     ));
   }
 }
@@ -1423,7 +1444,8 @@ class _$BeneficiaryRegistrationAddMemberEventImpl
       required this.userUuid,
       required this.projectId,
       this.tag,
-      required this.beneficiaryType});
+      required this.beneficiaryType,
+      this.isHeadOfHousehold = false});
 
   @override
   final HouseholdModel householdModel;
@@ -1439,10 +1461,13 @@ class _$BeneficiaryRegistrationAddMemberEventImpl
   final String? tag;
   @override
   final BeneficiaryType beneficiaryType;
+  @override
+  @JsonKey()
+  final bool isHeadOfHousehold;
 
   @override
   String toString() {
-    return 'BeneficiaryRegistrationEvent.addMember(householdModel: $householdModel, individualModel: $individualModel, addressModel: $addressModel, userUuid: $userUuid, projectId: $projectId, tag: $tag, beneficiaryType: $beneficiaryType)';
+    return 'BeneficiaryRegistrationEvent.addMember(householdModel: $householdModel, individualModel: $individualModel, addressModel: $addressModel, userUuid: $userUuid, projectId: $projectId, tag: $tag, beneficiaryType: $beneficiaryType, isHeadOfHousehold: $isHeadOfHousehold)';
   }
 
   @override
@@ -1462,12 +1487,22 @@ class _$BeneficiaryRegistrationAddMemberEventImpl
                 other.projectId == projectId) &&
             (identical(other.tag, tag) || other.tag == tag) &&
             (identical(other.beneficiaryType, beneficiaryType) ||
-                other.beneficiaryType == beneficiaryType));
+                other.beneficiaryType == beneficiaryType) &&
+            (identical(other.isHeadOfHousehold, isHeadOfHousehold) ||
+                other.isHeadOfHousehold == isHeadOfHousehold));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, householdModel, individualModel,
-      addressModel, userUuid, projectId, tag, beneficiaryType);
+  int get hashCode => Object.hash(
+      runtimeType,
+      householdModel,
+      individualModel,
+      addressModel,
+      userUuid,
+      projectId,
+      tag,
+      beneficiaryType,
+      isHeadOfHousehold);
 
   @JsonKey(ignore: true)
   @override
@@ -1494,7 +1529,8 @@ class _$BeneficiaryRegistrationAddMemberEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)
         addMember,
     required TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)
@@ -1511,7 +1547,7 @@ class _$BeneficiaryRegistrationAddMemberEventImpl
     required TResult Function(String tag) validate,
   }) {
     return addMember(householdModel, individualModel, addressModel, userUuid,
-        projectId, tag, beneficiaryType);
+        projectId, tag, beneficiaryType, isHeadOfHousehold);
   }
 
   @override
@@ -1530,7 +1566,8 @@ class _$BeneficiaryRegistrationAddMemberEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult? Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -1547,7 +1584,7 @@ class _$BeneficiaryRegistrationAddMemberEventImpl
     TResult? Function(String tag)? validate,
   }) {
     return addMember?.call(householdModel, individualModel, addressModel,
-        userUuid, projectId, tag, beneficiaryType);
+        userUuid, projectId, tag, beneficiaryType, isHeadOfHousehold);
   }
 
   @override
@@ -1566,7 +1603,8 @@ class _$BeneficiaryRegistrationAddMemberEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -1585,7 +1623,7 @@ class _$BeneficiaryRegistrationAddMemberEventImpl
   }) {
     if (addMember != null) {
       return addMember(householdModel, individualModel, addressModel, userUuid,
-          projectId, tag, beneficiaryType);
+          projectId, tag, beneficiaryType, isHeadOfHousehold);
     }
     return orElse();
   }
@@ -1681,7 +1719,8 @@ abstract class BeneficiaryRegistrationAddMemberEvent
           required final String userUuid,
           required final String projectId,
           final String? tag,
-          required final BeneficiaryType beneficiaryType}) =
+          required final BeneficiaryType beneficiaryType,
+          final bool isHeadOfHousehold}) =
       _$BeneficiaryRegistrationAddMemberEventImpl;
 
   HouseholdModel get householdModel;
@@ -1691,6 +1730,7 @@ abstract class BeneficiaryRegistrationAddMemberEvent
   String get projectId;
   String? get tag;
   BeneficiaryType get beneficiaryType;
+  bool get isHeadOfHousehold;
   @JsonKey(ignore: true)
   _$$BeneficiaryRegistrationAddMemberEventImplCopyWith<
           _$BeneficiaryRegistrationAddMemberEventImpl>
@@ -1811,7 +1851,8 @@ class _$BeneficiaryRegistrationUpdateHouseholdDetailsEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)
         addMember,
     required TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)
@@ -1846,7 +1887,8 @@ class _$BeneficiaryRegistrationUpdateHouseholdDetailsEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult? Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -1881,7 +1923,8 @@ class _$BeneficiaryRegistrationUpdateHouseholdDetailsEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -2133,7 +2176,8 @@ class _$BeneficiaryRegistrationUpdateIndividualDetailsEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)
         addMember,
     required TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)
@@ -2168,7 +2212,8 @@ class _$BeneficiaryRegistrationUpdateIndividualDetailsEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult? Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -2204,7 +2249,8 @@ class _$BeneficiaryRegistrationUpdateIndividualDetailsEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -2460,7 +2506,8 @@ class _$BeneficiaryRegistrationCreateEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)
         addMember,
     required TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)
@@ -2495,7 +2542,8 @@ class _$BeneficiaryRegistrationCreateEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult? Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -2530,7 +2578,8 @@ class _$BeneficiaryRegistrationCreateEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -2787,7 +2836,8 @@ class _$BeneficiaryRegistrationSummaryEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)
         addMember,
     required TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)
@@ -2822,7 +2872,8 @@ class _$BeneficiaryRegistrationSummaryEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult? Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -2857,7 +2908,8 @@ class _$BeneficiaryRegistrationSummaryEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -3067,7 +3119,8 @@ class _$BeneficiaryRegistrationTagEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)
         addMember,
     required TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)
@@ -3102,7 +3155,8 @@ class _$BeneficiaryRegistrationTagEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult? Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
@@ -3137,7 +3191,8 @@ class _$BeneficiaryRegistrationTagEventImpl
             String userUuid,
             String projectId,
             String? tag,
-            BeneficiaryType beneficiaryType)?
+            BeneficiaryType beneficiaryType,
+            bool isHeadOfHousehold)?
         addMember,
     TResult Function(
             HouseholdModel household, AddressModel? addressModel, String? tag)?
