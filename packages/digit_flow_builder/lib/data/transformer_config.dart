@@ -810,8 +810,6 @@ final jsonConfig = {
                 "stockRecon.stockReconciliationCard.stockMetrics.stockReturned",
             "stockLost":
                 "stockRecon.stockReconciliationCard.stockMetrics.stockLost",
-            "stockDamaged":
-                "stockRecon.stockReconciliationCard.stockMetrics.stockDamaged",
             "stockExcess":
                 "stockRecon.stockReconciliationCard.stockMetrics.stockExcess",
             "stockLess":

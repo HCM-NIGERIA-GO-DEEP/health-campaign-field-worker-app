@@ -1,4 +1,6 @@
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/stock.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
@@ -10,7 +12,10 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import '../../blocs/bednet_distribution/bednet_distribution.dart';
 import '../../models/bednet_distribution/bednet_distribution_models.dart';
+import '../../models/entities/roles_type.dart';
 import '../../router/app_router.dart';
+import '../../utils/stock_calculation_utils.dart';
+import '../../utils/utils.dart';
 import '../../widgets/header/back_navigation_help_header.dart';
 import 'widgets/bednet_bloc_guard.dart';
 import 'widgets/bednet_info_card.dart';
@@ -33,15 +38,12 @@ Map<String, dynamic>? _presentCompositionValidator(
 ) {
   if (control is! FormGroup) return null;
 
-  final presentRaw = control.control(ClassDetailsPage._present).value
-      ?.toString()
-      .trim();
-  final boysRaw = control.control(ClassDetailsPage._boysPresent).value
-      ?.toString()
-      .trim();
-  final girlsRaw = control.control(ClassDetailsPage._girlsPresent).value
-      ?.toString()
-      .trim();
+  final presentRaw =
+      control.control(ClassDetailsPage._present).value?.toString().trim();
+  final boysRaw =
+      control.control(ClassDetailsPage._boysPresent).value?.toString().trim();
+  final girlsRaw =
+      control.control(ClassDetailsPage._girlsPresent).value?.toString().trim();
 
   if (presentRaw == null ||
       boysRaw == null ||
@@ -62,6 +64,122 @@ Map<String, dynamic>? _presentCompositionValidator(
   }
 
   return null;
+}
+
+String _additionalFieldValue(AdditionalFields? additionalFields, String key) {
+  for (final field in additionalFields?.fields ?? const <AdditionalField>[]) {
+    if (field.key.toLowerCase() == key.toLowerCase()) {
+      return field.value?.toString() ?? '';
+    }
+  }
+  return '';
+}
+
+Future<String?> _resolveCurrentFacilityId(BuildContext context) async {
+  final projectId = RegistrationDeliverySingleton().projectId;
+  if (projectId == null || projectId.isEmpty) return null;
+
+  final isDistributor = context.loggedInUserRoles
+      .any((role) => role.code == RolesType.distributor.toValue());
+
+  if (isDistributor) {
+    return context.loggedInUserUuid;
+  }
+
+  final projectFacilityRepo = context.read<
+      LocalRepository<ProjectFacilityModel, ProjectFacilitySearchModel>>();
+  final projectFacilities = await projectFacilityRepo.search(
+    ProjectFacilitySearchModel(projectId: [projectId]),
+  );
+
+  final currentFacilities = projectFacilities.where((pf) {
+    final facilityLevel =
+        _additionalFieldValue(pf.additionalFields, 'facilityLevel');
+    return facilityLevel.isEmpty || facilityLevel.toLowerCase() == 'current';
+  }).toList();
+
+  if (currentFacilities.isNotEmpty) return currentFacilities.first.facilityId;
+  if (projectFacilities.isNotEmpty) return projectFacilities.first.facilityId;
+  return null;
+}
+
+Future<String?> _resolveBednetProductVariantId(BuildContext context) async {
+  final projectId = RegistrationDeliverySingleton().projectId;
+  if (projectId == null || projectId.isEmpty) return null;
+
+  final projectResourceRepo = context.read<
+      LocalRepository<ProjectResourceModel, ProjectResourceSearchModel>>();
+  final resources = await projectResourceRepo.search(
+    ProjectResourceSearchModel(projectId: [projectId]),
+  );
+  if (resources.isEmpty) return null;
+
+  ProjectResourceModel? preferred;
+  for (final resource in resources) {
+    final name = resource.resource.name?.toLowerCase() ?? '';
+    if (name.contains('bednet') ||
+        name.contains('llin') ||
+        (name.contains('net') && name.contains('bed'))) {
+      preferred = resource;
+      break;
+    }
+  }
+  preferred ??= resources.first;
+  return preferred.resource.productVariantId;
+}
+
+Future<int?> _resolveStockInHandForBednet(BuildContext context) async {
+  final projectId = RegistrationDeliverySingleton().projectId;
+  if (projectId == null || projectId.isEmpty) return null;
+
+  final facilityId = await _resolveCurrentFacilityId(context);
+  final productVariantId = await _resolveBednetProductVariantId(context);
+  if (facilityId == null ||
+      facilityId.isEmpty ||
+      productVariantId == null ||
+      productVariantId.isEmpty) {
+    return null;
+  }
+
+  final stockRepo =
+      context.read<LocalRepository<StockModel, StockSearchModel>>()
+          as StockLocalRepository;
+
+  final receivedStocks = await stockRepo.search(
+    StockSearchModel(receiverId: facilityId),
+  );
+  final sentStocks = await stockRepo.search(
+    StockSearchModel(senderId: facilityId),
+  );
+
+  final allStocksMap = <String, StockModel>{};
+  for (final stock in receivedStocks) {
+    allStocksMap[stock.clientReferenceId] = stock;
+  }
+  for (final stock in sentStocks) {
+    allStocksMap[stock.clientReferenceId] = stock;
+  }
+
+  final allStocks = allStocksMap.values.toList();
+  final taskRepo = context.read<LocalRepository<TaskModel, TaskSearchModel>>()
+      as TaskLocalRepository;
+  final tasks = await taskRepo.search(
+    TaskSearchModel(projectId: projectId),
+    context.loggedInUserUuid,
+  );
+  final effectiveMap =
+      StockCalculationUtils.calculateEffectiveStockInHandForProducts(
+    stockList: allStocks,
+    tasks: tasks,
+    facilityId: facilityId,
+    productIds: [productVariantId],
+    loggedInUserUuid: context.loggedInUserUuid,
+    bednetStatusKey: kBednetTaskAdministrationStatusKey,
+    bednetSuccessStatus: kBednetTaskAdministrationSuccessStatus,
+    fallbackPupilsPresentKey: kBednetTaskPupilsPresentKey,
+    singleFallbackProductId: productVariantId,
+  );
+  return effectiveMap[productVariantId]?.toInt();
 }
 
 @RoutePage()
@@ -132,16 +250,14 @@ class ClassDetailsPage extends StatelessWidget {
       'class${classOrdinal}_total',
     ]);
 
-    final classPupilCount =
-        previous?.pupilCount ??
-            classTotalPupilsFromSchool ??
-            ((classTotalBoysFromSchool ?? 0) + (classTotalGirlsFromSchool ?? 0) >
-                    0
-                ? (classTotalBoysFromSchool ?? 0) +
-                    (classTotalGirlsFromSchool ?? 0)
-                : school.bednetPupilCount);
-    final classBoys =
-        previous?.numberOfBoys ?? classTotalBoysFromSchool ?? school.bednetNumberOfBoys;
+    final classPupilCount = previous?.pupilCount ??
+        classTotalPupilsFromSchool ??
+        ((classTotalBoysFromSchool ?? 0) + (classTotalGirlsFromSchool ?? 0) > 0
+            ? (classTotalBoysFromSchool ?? 0) + (classTotalGirlsFromSchool ?? 0)
+            : school.bednetPupilCount);
+    final classBoys = previous?.numberOfBoys ??
+        classTotalBoysFromSchool ??
+        school.bednetNumberOfBoys;
     final classGirls = previous?.numberOfGirls ??
         classTotalGirlsFromSchool ??
         school.bednetNumberOfGirls;
@@ -219,9 +335,29 @@ class ClassDetailsPage extends StatelessWidget {
                       size: DigitButtonSize.large,
                       mainAxisSize: MainAxisSize.max,
                       isDisabled: !form.valid,
-                      onPressed: () {
+                      onPressed: () async {
                         form.markAllAsTouched();
                         if (!form.valid) return;
+
+                        final pupilsPresent = int.tryParse(
+                                form.control(_present).value as String? ??
+                                    '0') ??
+                            0;
+
+                        final stockInHand =
+                            await _resolveStockInHandForBednet(context);
+                        if ((stockInHand != null &&
+                            stockInHand < pupilsPresent)) {
+                          if (!context.mounted) return;
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Stock in hand ($stockInHand) is less than students present ($pupilsPresent).',
+                              ),
+                            ),
+                          );
+                          return;
+                        }
 
                         final details = ClassDetailsModel(
                           distributionDate:
@@ -237,9 +373,10 @@ class ClassDetailsPage extends StatelessWidget {
                                   form.control(_boysPresent).value as String? ??
                                       '0') ??
                               0,
-                          girlsPresent: int.tryParse(
-                                  form.control(_girlsPresent).value as String? ??
-                                      '0') ??
+                          girlsPresent: int.tryParse(form
+                                      .control(_girlsPresent)
+                                      .value as String? ??
+                                  '0') ??
                               0,
                           pupilsAbsent: int.tryParse(
                                   form.control(_absent).value as String? ??
@@ -248,11 +385,11 @@ class ClassDetailsPage extends StatelessWidget {
                         );
 
                         bloc.add(
-                              BednetDistributionEvent.saveClassDetails(
-                                classIndex: classIndex,
-                                details: details,
-                              ),
-                            );
+                          BednetDistributionEvent.saveClassDetails(
+                            classIndex: classIndex,
+                            details: details,
+                          ),
+                        );
 
                         context.router.push(
                           ClassTeacherInfoRoute(

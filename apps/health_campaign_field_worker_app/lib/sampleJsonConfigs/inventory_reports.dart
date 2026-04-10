@@ -598,10 +598,10 @@ final dynamic inventoryReportFlows = {
                 "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_5_LABEL",
                 "cellValue": "{{item.additionalFields.fields.stockLost}}"
               },
-              {
-                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_6_LABEL",
-                "cellValue": "{{item.additionalFields.fields.stockDamaged}}"
-              },
+              // {
+              //   "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_6_LABEL",
+              //   "cellValue": "{{item.additionalFields.fields.stockDamaged}}"
+              // },
               {
                 "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_EXCESS_LABEL",
                 "cellValue": "{{item.additionalFields.fields.stockExcess}}"

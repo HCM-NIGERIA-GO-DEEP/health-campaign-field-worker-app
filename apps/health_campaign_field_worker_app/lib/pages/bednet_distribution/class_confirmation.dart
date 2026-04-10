@@ -48,6 +48,7 @@ class ClassConfirmationPage extends StatelessWidget {
                   const BednetDistributionEvent.clearNavIntent(),
                 );
             if (isLastPending) {
+              bloc.add(const BednetDistributionEvent.reload());
               context.router.popUntilRouteWithName(SelectSchoolRoute.name);
               if (context.router.current.name != SelectSchoolRoute.name) {
                 context.router.push(const SelectSchoolRoute());

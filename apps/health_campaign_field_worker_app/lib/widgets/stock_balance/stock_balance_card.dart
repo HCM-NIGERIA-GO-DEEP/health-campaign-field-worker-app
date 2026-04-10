@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:digit_data_model/data/repositories/package_repository/local/stock.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
@@ -9,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../blocs/app_initialization/app_initialization.dart';
+import '../../models/bednet_distribution/bednet_distribution_models.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/i18_key_constants.dart' as i18;
 import '../../utils/stock_calculation_utils.dart';
@@ -113,7 +115,7 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       if (!mounted) return;
 
       // For distributors without facilities, use user UUID
-      final distributorWithoutFacilities = isDistributor && facilities.isEmpty;
+      final distributorWithoutFacilities = isDistributor;
 
       final previousFacilityId = _selectedFacility?.id;
       final autoSelectedFacility = facilities.isNotEmpty
@@ -152,45 +154,61 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
     final stockRepo =
         context.read<LocalRepository<StockModel, StockSearchModel>>()
             as StockLocalRepository;
+    final taskRepo = context.read<LocalRepository<TaskModel, TaskSearchModel>>()
+        as TaskLocalRepository;
 
     final isDistributor = _isDistributorWithoutFacilities;
+    final productIds = _productVariants.map((pv) => pv.id).toList();
+
+    Future<void> recomputeBalances() async {
+      if (!mounted) return;
+      final receivedStocks = await stockRepo.search(
+        StockSearchModel(receiverId: facilityId),
+      );
+      final sentStocks = await stockRepo.search(
+        StockSearchModel(senderId: facilityId),
+      );
+      final allStocksMap = <String, StockModel>{};
+      for (final stock in receivedStocks) {
+        allStocksMap[stock.clientReferenceId] = stock;
+      }
+      for (final stock in sentStocks) {
+        allStocksMap[stock.clientReferenceId] = stock;
+      }
+      final allStocks = allStocksMap.values.toList();
+      final tasks = await taskRepo.search(
+        TaskSearchModel(projectId: context.projectId),
+        context.loggedInUserUuid,
+      );
+      final effectiveFacilityId =
+          isDistributor ? context.loggedInUserUuid : facilityId;
+      final balances =
+          StockCalculationUtils.calculateEffectiveStockInHandForProducts(
+        stockList: allStocks,
+        tasks: tasks,
+        facilityId: effectiveFacilityId,
+        productIds: productIds,
+        loggedInUserUuid: context.loggedInUserUuid,
+        bednetStatusKey: kBednetTaskAdministrationStatusKey,
+        bednetSuccessStatus: kBednetTaskAdministrationSuccessStatus,
+      );
+      if (!mounted) return;
+      setState(() {
+        _stockBalances = balances;
+      });
+    }
 
     stockRepo.listenToChanges(
       query: StockSearchModel(receiverId: facilityId),
-      listener: (receivedStocks) async {
-        if (!mounted) return;
+      listener: (_) async {
+        await recomputeBalances();
+      },
+    );
 
-        // Also fetch sent stocks to calculate complete balance
-        final sentStocks = await stockRepo.search(
-          StockSearchModel(senderId: facilityId),
-        );
-
-        // Deduplicate by clientReferenceId
-        final allStocksMap = <String, StockModel>{};
-        for (final stock in receivedStocks) {
-          allStocksMap[stock.clientReferenceId] = stock;
-        }
-        for (final stock in sentStocks) {
-          allStocksMap[stock.clientReferenceId] = stock;
-        }
-        final allStocks = allStocksMap.values.toList();
-
-        final productIds = _productVariants.map((pv) => pv.id).toList();
-        // For distributors, use user UUID as facilityId for calculation
-        final effectiveFacilityId =
-            isDistributor ? context.loggedInUserUuid : facilityId;
-        final balances = StockCalculationUtils.calculateStockInHandForProducts(
-          stockList: allStocks,
-          facilityId: effectiveFacilityId,
-          productIds: productIds,
-          loggedInUserUuid: context.loggedInUserUuid,
-        );
-
-        if (mounted) {
-          setState(() {
-            _stockBalances = balances;
-          });
-        }
+    taskRepo.listenToChanges(
+      query: TaskSearchModel(projectId: context.projectId),
+      listener: (_) async {
+        await recomputeBalances();
       },
     );
   }

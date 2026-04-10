@@ -23,6 +23,7 @@ const String kBednetTaskSchoolClientRefKey = 'schoolClientReferenceId';
 const String kBednetTaskSchoolNameKey = 'schoolName';
 const String kBednetTaskClassNameKey = 'className';
 const String kBednetTaskAdministrationStatusKey = 'taskAdministrationStatus';
+const String kBednetTaskAdministrationSuccessStatus = 'ADMINISTRATION_SUCCESS';
 const String kBednetTaskTotalAbsentKey = 'totalAbsent';
 
 /// Drives one-shot UI navigation after [BednetDistributionEvent.completeClassAdministration].

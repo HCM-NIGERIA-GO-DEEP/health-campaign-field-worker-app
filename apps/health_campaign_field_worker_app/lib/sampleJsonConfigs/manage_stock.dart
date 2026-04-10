@@ -217,7 +217,8 @@ final dynamic sampleInventoryFlows = {
                 ]
               }
             }
-          ]
+          ],
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
         },
       ]
     },
@@ -960,7 +961,8 @@ final dynamic sampleInventoryFlows = {
               ],
               "errorMessage": "",
               "isMultiSelect": false,
-              "enums": null
+              "enums": null,
+              "visible": "{{fn:hasRole('DISTRIBUTOR')}} == false",
             },
             {
               "type": "string",

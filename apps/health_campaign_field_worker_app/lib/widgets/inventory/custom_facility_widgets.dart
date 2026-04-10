@@ -402,7 +402,7 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
       ));
     }
 
-    if (isDistributor && isFromField && isReturnFlow) {
+    if (isDistributor && isFromField) {
       facilities.add(DropdownItem(
         code: context.loggedInUserUuid,
         name: localizations.translate('DELIVERY_TEAM'),

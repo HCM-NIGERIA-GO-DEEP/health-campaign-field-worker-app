@@ -149,8 +149,9 @@ class StockCalculationUtils {
 
     // Stock in hand = (received + returned) - (issued + damaged + lost)
     // Note: excess and less are tracked for backend reporting only and do not affect balance
-    final stockInHand = stockReceived -
-        (stockIssued + stockReturned + stockDamaged + stockLost);
+    final stockInHand = stockReceived +
+        stockExcess -
+        (stockIssued + stockReturned + stockDamaged + stockLost + stockLess);
 
     return {
       'stockReceived': stockReceived,
@@ -192,6 +193,103 @@ class StockCalculationUtils {
     }
 
     return result;
+  }
+
+  /// Calculates consumed quantities from bednet administration tasks.
+  ///
+  /// A task is treated as a bednet administration task when:
+  /// [bednetStatusKey] in additionalFields equals [bednetSuccessStatus].
+  /// Consumption is read from task resources by product variant id.
+  /// If resources are absent, optional [fallbackPupilsPresentKey] is used and
+  /// attributed to [singleFallbackProductId] (used for single-product validation).
+  static Map<String, double> calculateBednetConsumedByProduct({
+    required List<TaskModel> tasks,
+    required String loggedInUserUuid,
+    required String bednetStatusKey,
+    required String bednetSuccessStatus,
+    String? fallbackPupilsPresentKey,
+    String? singleFallbackProductId,
+  }) {
+    bool isBednetTask(TaskModel task) {
+      for (final field
+          in task.additionalFields?.fields ?? const <AdditionalField>[]) {
+        if (field.key == bednetStatusKey &&
+            field.value?.toString() == bednetSuccessStatus) {
+          return true;
+        }
+      }
+      return false;
+    }
+
+    final consumed = <String, double>{};
+    for (final task in tasks) {
+      if (task.createdBy != loggedInUserUuid) continue;
+      if (!isBednetTask(task)) continue;
+
+      var hasResource = false;
+      for (final resource in task.resources ?? const <TaskResourceModel>[]) {
+        final productId = resource.productVariantId;
+        if (productId == null || productId.isEmpty) continue;
+        final qty = num.tryParse(resource.quantity ?? '')?.toDouble() ?? 0;
+        consumed[productId] = (consumed[productId] ?? 0) + qty;
+        hasResource = true;
+      }
+      if (hasResource) continue;
+
+      if (fallbackPupilsPresentKey != null &&
+          fallbackPupilsPresentKey.isNotEmpty &&
+          singleFallbackProductId != null &&
+          singleFallbackProductId.isNotEmpty) {
+        for (final field
+            in task.additionalFields?.fields ?? const <AdditionalField>[]) {
+          if (field.key == fallbackPupilsPresentKey) {
+            final qty =
+                num.tryParse(field.value?.toString() ?? '')?.toDouble() ?? 0;
+            consumed[singleFallbackProductId] =
+                (consumed[singleFallbackProductId] ?? 0) + qty;
+            break;
+          }
+        }
+      }
+    }
+
+    return consumed;
+  }
+
+  /// Calculates effective stock in hand by subtracting bednet-consumed quantity.
+  static Map<String, double> calculateEffectiveStockInHandForProducts({
+    required List<StockModel> stockList,
+    required List<TaskModel> tasks,
+    required String facilityId,
+    required List<String> productIds,
+    required String loggedInUserUuid,
+    required String bednetStatusKey,
+    required String bednetSuccessStatus,
+    String? fallbackPupilsPresentKey,
+    String? singleFallbackProductId,
+  }) {
+    final rawBalances = calculateStockInHandForProducts(
+      stockList: stockList,
+      facilityId: facilityId,
+      productIds: productIds,
+      loggedInUserUuid: loggedInUserUuid,
+    );
+    final consumedByProduct = calculateBednetConsumedByProduct(
+      tasks: tasks,
+      loggedInUserUuid: loggedInUserUuid,
+      bednetStatusKey: bednetStatusKey,
+      bednetSuccessStatus: bednetSuccessStatus,
+      fallbackPupilsPresentKey: fallbackPupilsPresentKey,
+      singleFallbackProductId: singleFallbackProductId,
+    );
+
+    final effective = <String, double>{};
+    for (final productId in productIds) {
+      final raw = rawBalances[productId] ?? 0;
+      final consumed = consumedByProduct[productId] ?? 0;
+      effective[productId] = (raw - consumed).clamp(0, double.infinity);
+    }
+    return effective;
   }
 
   /// Returns empty/zero stock metrics map.

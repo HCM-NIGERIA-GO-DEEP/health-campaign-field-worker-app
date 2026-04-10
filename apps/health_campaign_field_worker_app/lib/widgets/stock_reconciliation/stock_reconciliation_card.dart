@@ -352,14 +352,14 @@ class _StockReconciliationCardState
                         labelFlex: 5,
                       ),
                       const DigitDivider(),
-                      LabelValueItem(
-                        label: localizations.translate(
-                            i18.stockReconciliationMetrics.stockDamaged),
-                        value:
-                            _stockMetrics['stockDamaged']!.toStringAsFixed(0),
-                        labelFlex: 5,
-                      ),
-                      const DigitDivider(),
+                      // LabelValueItem(
+                      //   label: localizations.translate(
+                      //       i18.stockReconciliationMetrics.stockDamaged),
+                      //   value:
+                      //       _stockMetrics['stockDamaged']!.toStringAsFixed(0),
+                      //   labelFlex: 5,
+                      // ),
+                      // const DigitDivider(),
                       LabelValueItem(
                         label: localizations.translate(
                             i18.stockReconciliationMetrics.stockExcess),
@@ -526,18 +526,15 @@ class _StockReconciliationCardState
       if (stateWrapper is List && stateWrapper.isNotEmpty) {
         final firstItem = stateWrapper.first;
         if (firstItem is Map) {
-          final wrapperList =
-              stateWrapper as List<Map<String, List<dynamic>>>;
-          projectFacilities = wrapperList
-              .firstWhere(
-                (m) => m.containsKey('ProjectFacilityModel'),
-                orElse: () => {'ProjectFacilityModel': []},
-              )['ProjectFacilityModel'];
-          allFacilities = wrapperList
-              .firstWhere(
-                (m) => m.containsKey('FacilityModel'),
-                orElse: () => {'FacilityModel': []},
-              )['FacilityModel'];
+          final wrapperList = stateWrapper as List<Map<String, List<dynamic>>>;
+          projectFacilities = wrapperList.firstWhere(
+            (m) => m.containsKey('ProjectFacilityModel'),
+            orElse: () => {'ProjectFacilityModel': []},
+          )['ProjectFacilityModel'];
+          allFacilities = wrapperList.firstWhere(
+            (m) => m.containsKey('FacilityModel'),
+            orElse: () => {'FacilityModel': []},
+          )['FacilityModel'];
         }
       }
 

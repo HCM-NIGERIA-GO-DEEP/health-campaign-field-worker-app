@@ -2626,67 +2626,68 @@ class _HomePageState extends LocalizedState<HomePage> {
           icon: Icons.menu_book,
           label: i18.home.stockReconciliationLabel,
           onPressed: () async {
-            context.router.push(CurrentBoundaryRoute(
-              onBoundarySelected: (ctx) async {
-                final moduleName =
-                    'hcm-stockreconciliation-${context.selectedProject.referenceID}';
+            // context.router.push(CurrentBoundaryRoute(
+            //   onBoundarySelected: (ctx) async {
+            final moduleName =
+                'hcm-stockreconciliation-${context.selectedProject.referenceID}';
 
-                triggerLocalization(module: moduleName);
-                // final newModuleName = 'hcm-stockreconciliation';
-                // triggerLocalization(module: newModuleName);
+            triggerLocalization(module: moduleName);
+            // final newModuleName = 'hcm-stockreconciliation';
+            // triggerLocalization(module: newModuleName);
 
-                isTriggerLocalisation = false;
+            isTriggerLocalisation = false;
 
-                await FlowNavigationUtils.navigateToFlowModule(
-                  context: ctx,
-                  config: FlowModuleConfig(
-                    schemaKey: 'STOCKRECONCILIATION',
-                    sampleFlows: stockReconciliationFlows,
-                    relationshipMappings: const [
-                      RelationshipMapping(
-                          from: 'facility',
-                          to: 'projectFacility',
-                          localKey: 'id',
-                          foreignKey: 'facilityId'),
-                      RelationshipMapping(
-                          from: 'projectResource',
-                          to: 'projectFacility',
-                          localKey: 'projectId',
-                          foreignKey: 'projectId'),
-                      RelationshipMapping(
-                          from: 'productVariant',
-                          to: 'projectResource',
-                          localKey: 'id',
-                          foreignKey: 'resource'),
-                      RelationshipMapping(
-                          from: 'stock',
-                          to: 'facility',
-                          localKey: 'facilityId',
-                          foreignKey: 'id'),
-                    ],
-                    nestedModelMappings: const [
-                      NestedModelMapping(
-                        rootModel: 'projectFacility',
-                        fields: {
-                          'facility': NestedFieldMapping(
-                            table: 'facility',
-                            localKey: 'facilityId',
-                            foreignKey: 'id',
-                            type: NestedMappingType.one,
-                          ),
-                          'projectResources': NestedFieldMapping(
-                            table: 'projectResource',
-                            localKey: 'projectId',
-                            foreignKey: 'projectId',
-                            type: NestedMappingType.many,
-                          ),
-                        },
+            await FlowNavigationUtils.navigateToFlowModule(
+              context: context,
+              config: FlowModuleConfig(
+                schemaKey: 'STOCKRECONCILIATION',
+                sampleFlows: stockReconciliationFlows,
+                relationshipMappings: const [
+                  RelationshipMapping(
+                      from: 'facility',
+                      to: 'projectFacility',
+                      localKey: 'id',
+                      foreignKey: 'facilityId'),
+                  RelationshipMapping(
+                      from: 'projectResource',
+                      to: 'projectFacility',
+                      localKey: 'projectId',
+                      foreignKey: 'projectId'),
+                  RelationshipMapping(
+                      from: 'productVariant',
+                      to: 'projectResource',
+                      localKey: 'id',
+                      foreignKey: 'resource'),
+                  RelationshipMapping(
+                      from: 'stock',
+                      to: 'facility',
+                      localKey: 'facilityId',
+                      foreignKey: 'id'),
+                ],
+                nestedModelMappings: const [
+                  NestedModelMapping(
+                    rootModel: 'projectFacility',
+                    fields: {
+                      'facility': NestedFieldMapping(
+                        table: 'facility',
+                        localKey: 'facilityId',
+                        foreignKey: 'id',
+                        type: NestedMappingType.one,
                       ),
-                    ],
+                      'projectResources': NestedFieldMapping(
+                        table: 'projectResource',
+                        localKey: 'projectId',
+                        foreignKey: 'projectId',
+                        type: NestedMappingType.many,
+                      ),
+                    },
                   ),
-                );
-              },
-            ));
+                ],
+              ),
+              //     );
+              //   },
+              // )
+            );
           },
         ),
       ),
@@ -3070,7 +3071,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.fileComplaint:
           homeShowcaseData.distributorFileComplaint.showcaseKey,
       i18.home.syncDataLabel: homeShowcaseData.distributorSyncData.showcaseKey,
-      // i18.home.viewReportsLabel: homeShowcaseData.inventoryReport.showcaseKey,
+      i18.home.viewReportsLabel: homeShowcaseData.inventoryReport.showcaseKey,
       i18.home.beneficiaryReferralLabel:
           homeShowcaseData.hfBeneficiaryReferral.showcaseKey,
       // i18.home.manageAttendanceLabel:
@@ -3098,7 +3099,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.mySurveyForm,
       i18.home.fileComplaint,
       i18.home.syncDataLabel,
-      // i18.home.viewReportsLabel,
+      i18.home.viewReportsLabel,
       i18.home.beneficiaryReferralLabel,
       // i18.home.manageAttendanceLabel,
       i18.home.dashboard,
