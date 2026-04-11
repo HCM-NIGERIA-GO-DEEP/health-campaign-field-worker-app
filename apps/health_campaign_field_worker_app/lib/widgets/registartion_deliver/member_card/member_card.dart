@@ -312,12 +312,12 @@ class MemberCard extends StatelessWidget {
                           height: 10,
                         ),
                         (isNotEligible ||
-                                (!checkStatus(
-                                      tasks,
-                                      context.selectedCycle,
-                                    ) &&
-                                    !isBeneficiaryRefused &&
-                                    !isBeneficiaryAbsent))
+                                !checkStatus(
+                                  tasks,
+                                  context.selectedCycle,
+                                ) ||
+                                isBeneficiaryRefused ||
+                                isBeneficiaryAbsent)
                             ? const Offstage()
                             : DigitButton(
                                 label: localizations.translate(
