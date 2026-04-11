@@ -78,7 +78,8 @@ bool checkStatus(List<TaskModel>? tasks, ProjectCycle? currentCycle) {
       lastTaskCreatedTime <= currentCycle.endDate;
 
   if (isLastCycleRunning) {
-    if (lastTask.status == Status.delivered.name) {
+    if (lastTask.status == Status.delivered.toValue() ||
+        lastTask.status == Status.administeredSuccess.toValue()) {
       return true;
     }
     return diff.inHours >= 24; // [TODO: Move gap between doses to config]
@@ -95,6 +96,14 @@ bool checkIfBeneficiaryRefused(
       tasks.last.status == Status.beneficiaryRefused.toValue());
 
   return isBeneficiaryRefused;
+}
+
+bool checkIfBeneficiaryAbsent(
+  List<TaskModel>? tasks,
+) {
+  return tasks != null &&
+      tasks.isNotEmpty &&
+      tasks.last.status == Status.beneficiaryAbsent.toValue();
 }
 
 ///  * Returns [true] if the individual is in the same cycle and is eligible for the next dose,

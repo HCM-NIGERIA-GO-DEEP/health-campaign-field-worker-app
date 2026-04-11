@@ -7,6 +7,7 @@ import 'package:digit_data_model/utils/typedefs.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:health_campaign_field_worker_app/data/registration_deliver_repo/local/individual_global_search.dart';
+import '../../../models/bednet_distribution/bednet_distribution_models.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/global_search_parameters.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/typedefs.dart';
@@ -15,6 +16,59 @@ import 'package:health_campaign_field_worker_app/utils/registration_deliver_util
 import '../search_households/search_households.dart';
 
 part 'household_overview.freezed.dart';
+
+/// Head first, then other members (stable order for the rest).
+List<IndividualModel> _householdMembersHeadFirst(
+  List<IndividualModel> members,
+  IndividualModel? head,
+) {
+  if (head == null) return List<IndividualModel>.from(members);
+  final headId = head.clientReferenceId;
+  IndividualModel? headFromMembers;
+  final withoutHead = <IndividualModel>[];
+  for (final m in members) {
+    if (m.clientReferenceId == headId) {
+      headFromMembers ??= m;
+    } else {
+      withoutHead.add(m);
+    }
+  }
+  return <IndividualModel>[headFromMembers ?? head, ...withoutHead];
+}
+
+/// When [resolvedHead] is missing, order by [HouseholdMemberModel.isHeadOfHousehold].
+List<IndividualModel> _orderMembersByDbHeadFlag(
+  List<IndividualModel> members,
+  List<HouseholdMemberModel> householdMemberList,
+) {
+  final headIds = householdMemberList
+      .where((h) => h.isHeadOfHousehold)
+      .map((h) => h.individualClientReferenceId)
+      .whereNotNull()
+      .toSet();
+  if (headIds.isEmpty) return List<IndividualModel>.from(members);
+  final headRows = <IndividualModel>[];
+  final rest = <IndividualModel>[];
+  for (final m in members) {
+    if (headIds.contains(m.clientReferenceId)) {
+      headRows.add(m);
+    } else {
+      rest.add(m);
+    }
+  }
+  return <IndividualModel>[...headRows, ...rest];
+}
+
+List<IndividualModel> _orderedHouseholdMembersForDisplay({
+  required List<IndividualModel> members,
+  IndividualModel? resolvedHead,
+  required List<HouseholdMemberModel> householdMemberList,
+}) {
+  if (resolvedHead != null) {
+    return _householdMembersHeadFirst(members, resolvedHead);
+  }
+  return _orderMembersByDbHeadFlag(members, householdMemberList);
+}
 
 typedef HouseholdOverviewEmitter = Emitter<HouseholdOverviewState>;
 
@@ -153,14 +207,6 @@ class HouseholdOverviewBloc
         ),
       );
 
-      // Household-level beneficiaries (e.g. school) may have members before a
-      // project beneficiary row exists; still load individuals in that case.
-      if (projectBeneficiaries.isEmpty &&
-          event.projectBeneficiaryType == BeneficiaryType.individual) {
-        emit(state.copyWith(loading: false));
-        return;
-      }
-
       final beneficiaryClientReferenceIds = projectBeneficiaries
           .map((e) => e.beneficiaryClientReferenceId)
           .toList();
@@ -185,6 +231,41 @@ class HouseholdOverviewBloc
         head = pool.firstWhereOrNull((i) => i.clientReferenceId == headMemberId);
         head ??= individuals.firstWhereOrNull(
             (i) => i.clientReferenceId == headMemberId);
+      }
+
+      // Single-member household: treat the only member as head when no member row
+      // is flagged (covers first head registration if isHead was not persisted).
+      if (head == null && householdMemberList.length == 1) {
+        final soloId = householdMemberList.first.individualClientReferenceId;
+        if (soloId != null) {
+          head = individuals.firstWhereOrNull((i) => i.clientReferenceId == soloId);
+          if (head == null &&
+              event.projectBeneficiaryType == BeneficiaryType.individual) {
+            head = beneficiaryIndividuals
+                .firstWhereOrNull((i) => i.clientReferenceId == soloId);
+          }
+        }
+      }
+
+      // Match stored household head label (e.g. schoolHead) to a member when DB
+      // has no isHeadOfHousehold flag yet. Skip when the field holds the school
+      // / facility name instead of a person's name.
+      if (head == null) {
+        final schoolHeadLabel = resultHousehold.bednetSchoolHead.trim();
+        final facilityName = resultHousehold.bednetDisplayName.trim();
+        final labelIsFacility = facilityName.isNotEmpty &&
+            schoolHeadLabel.toLowerCase() == facilityName.toLowerCase();
+        if (schoolHeadLabel.isNotEmpty &&
+            schoolHeadLabel != 'N/A' &&
+            !labelIsFacility) {
+          head = individuals.firstWhereOrNull((m) {
+            final g = m.name?.givenName?.trim();
+            if (g == null || g.isEmpty) return false;
+            final sh = schoolHeadLabel.toLowerCase();
+            final gl = g.toLowerCase();
+            return sh == gl || sh.startsWith('$gl ');
+          });
+        }
       }
 
       final List<TaskModel> tasks;
@@ -245,15 +326,26 @@ class HouseholdOverviewBloc
               ? (event.offset ?? 0) + (event.limit ?? 10)
               : null,
           householdMemberWrapper: state.householdMemberWrapper.copyWith(
+            household: resultHousehold,
+            headOfHousehold: null,
             members: (event.projectBeneficiaryType == BeneficiaryType.individual)
                 ? (isFirstPage
-                    ? displayMembers
-                    : [ ...[]
-                        // ...state.householdMemberWrapper.members ?? [],
-                        // ...displayMembers,
+                    ? _orderedHouseholdMembersForDisplay(
+                        members: displayMembers,
+                        resolvedHead: null,
+                        householdMemberList: householdMemberList,
+                      )
+                    : [ 
+                      // ...[]
+                        ...state.householdMemberWrapper.members ?? [],
+                        ...displayMembers,
                       ])
                 : (isFirstPage
-                    ? individuals
+                    ? _orderedHouseholdMembersForDisplay(
+                        members: individuals,
+                        resolvedHead: null,
+                        householdMemberList: householdMemberList,
+                      )
                     : [
                         ...state.householdMemberWrapper.members ?? [],
                         ...individuals,
@@ -291,7 +383,13 @@ class HouseholdOverviewBloc
           householdMemberWrapper: HouseholdMemberWrapper(
             household: resultHousehold,
             headOfHousehold: head,
-            members: displayMembers,
+            members:
+            // [],
+             _orderedHouseholdMembersForDisplay(
+              members: displayMembers,
+              resolvedHead: head,
+              householdMemberList: householdMemberList,
+            ),
             tasks: tasks.isEmpty ? null : tasks,
             projectBeneficiaries: projectBeneficiaries,
             sideEffects: sideEffects,
@@ -919,6 +1017,36 @@ class HouseholdOverviewBloc
                   lastModifiedTime: DateTime.now().millisecondsSinceEpoch,
                 )
               : null,
+        ),
+      );
+    }
+
+    final headGiven = event.individualModel.name?.givenName?.trim() ?? '';
+    if (headGiven.isNotEmpty) {
+      final existingHousehold =
+          (await householdRepository.search(HouseholdSearchModel(
+        clientReferenceId: [event.householdModel.clientReferenceId],
+      )))
+              .firstOrNull;
+      final base = existingHousehold ?? event.householdModel;
+      final merged = householdWithBednetSchoolHeadName(base, headGiven);
+      final nowMs = DateTime.now().millisecondsSinceEpoch;
+      final userId = RegistrationDeliverySingleton().loggedInUserUuid ?? '';
+      await householdRepository.update(
+        merged.copyWith(
+          clientAuditDetails: ClientAuditDetails(
+            createdBy: base.clientAuditDetails?.createdBy ??
+                base.auditDetails?.createdBy.toString() ??
+                userId,
+            createdTime: base.clientAuditDetails?.createdTime ??
+                base.auditDetails?.createdTime ??
+                nowMs,
+            lastModifiedBy: userId,
+            lastModifiedTime: nowMs,
+          ),
+          id: existingHousehold?.id,
+          rowVersion: existingHousehold?.rowVersion ?? 1,
+          nonRecoverableError: existingHousehold?.nonRecoverableError ?? false,
         ),
       );
     }

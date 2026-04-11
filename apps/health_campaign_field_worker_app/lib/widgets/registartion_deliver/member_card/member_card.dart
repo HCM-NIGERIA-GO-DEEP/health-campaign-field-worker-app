@@ -43,7 +43,7 @@ class MemberCard extends StatelessWidget {
   final List<SideEffectModel>? sideEffects;
   final bool isNotEligible;
   final bool isBeneficiaryRefused;
-  final bool isBeneficiaryReferred;
+  final bool isBeneficiaryAbsent;
   final String? projectBeneficiaryClientReferenceId;
 
   const MemberCard({
@@ -64,7 +64,7 @@ class MemberCard extends StatelessWidget {
     this.isNotEligible = false,
     this.projectBeneficiaryClientReferenceId,
     this.isBeneficiaryRefused = false,
-    this.isBeneficiaryReferred = false,
+    this.isBeneficiaryAbsent = false,
     this.sideEffects,
   });
 
@@ -213,17 +213,20 @@ class MemberCard extends StatelessWidget {
                     offstage: isHead
                         ? true
                         : beneficiaryType != BeneficiaryType.individual,
-                    child: !isDelivered || isNotEligible || isBeneficiaryRefused
+                    child: !isDelivered ||
+                            isBeneficiaryAbsent ||
+                            isBeneficiaryRefused
                         ? Align(
                             alignment: Alignment.centerLeft,
                             child: Tag(
                               isIcon: true,
                               label: localizations.translate(
-                                isNotEligible
+                                isBeneficiaryAbsent
                                     ? i18.householdOverView
-                                        .householdOverViewNotEligibleIconLabel
+                                        .householdOverViewAbsentIconLabel
                                     : isBeneficiaryRefused
-                                        ? 'Not delivered'
+                                        ? i18.householdOverView
+                                            .householdOverViewRefusedIconLabel
                                         : i18.householdOverView
                                             .householdOverViewNotDeliveredIconLabel,
                               ),
@@ -247,8 +250,6 @@ class MemberCard extends StatelessWidget {
                   offstage: isHead
                       ? true
                       : beneficiaryType != BeneficiaryType.individual ||
-                          isNotEligible ||
-                          isBeneficiaryRefused ||
                           isDelivered,
                   child: Padding(
                     padding: const EdgeInsets.all(spacer1),
@@ -265,10 +266,12 @@ class MemberCard extends StatelessWidget {
                                             : false,
                                     type: DigitButtonType.primary,
                                     size: DigitButtonSize.medium,
-                                    label: !checkStatus(
-                                      tasks,
-                                      context.selectedCycle,
-                                    )
+                                    label: (!checkStatus(
+                                                  tasks,
+                                                  context.selectedCycle,
+                                                ) &&
+                                            !isBeneficiaryRefused &&
+                                            !isBeneficiaryAbsent)
                                         ? localizations.translate(
                                             i18.householdOverView
                                                 .viewDeliveryLabel,
@@ -309,7 +312,12 @@ class MemberCard extends StatelessWidget {
                           height: 10,
                         ),
                         (isNotEligible ||
-                                !checkStatus(tasks, context.selectedCycle))
+                                (!checkStatus(
+                                      tasks,
+                                      context.selectedCycle,
+                                    ) &&
+                                    !isBeneficiaryRefused &&
+                                    !isBeneficiaryAbsent))
                             ? const Offstage()
                             : DigitButton(
                                 label: localizations.translate(
@@ -339,7 +347,7 @@ class MemberCard extends StatelessWidget {
                                           ),
                                           type: DigitButtonType.secondary,
                                           size: DigitButtonSize.large,
-                                          onPressed: () {
+                                          onPressed: () async {
                                             Navigator.of(context,
                                                     rootNavigator: true)
                                                 .pop();
@@ -404,12 +412,13 @@ class MemberCard extends StatelessWidget {
                                                             .boundary!,
                                                   ),
                                                 );
-                                            final reloadState = context
-                                                .read<HouseholdOverviewBloc>();
-                                            Future.delayed(
+                                            await Future<void>.delayed(
                                               const Duration(milliseconds: 500),
-                                              () {
-                                                reloadState.add(
+                                            );
+                                            if (!context.mounted) return;
+                                            context
+                                                .read<HouseholdOverviewBloc>()
+                                                .add(
                                                   HouseholdOverviewReloadEvent(
                                                     projectId:
                                                         RegistrationDeliverySingleton()
@@ -419,29 +428,6 @@ class MemberCard extends StatelessWidget {
                                                             .beneficiaryType!,
                                                   ),
                                                 );
-                                              },
-                                            ).then(
-                                              (value) {
-                                                final household = context
-                                                    .read<
-                                                        HouseholdOverviewBloc>()
-                                                    .state
-                                                    .householdMemberWrapper
-                                                    .household;
-                                                if (household
-                                                        ?.isSchoolHousehold ??
-                                                    false) {
-                                                  return context.router.push(
-                                                    BeneficiaryAcknowledgementRoute(),
-                                                  );
-                                                }
-                                                return context.router.push(
-                                                  HouseholdAcknowledgementRoute(
-                                                    enableViewHousehold: true,
-                                                  ),
-                                                );
-                                              },
-                                            );
                                           },
                                         ),
                                         DigitButton(
@@ -451,7 +437,7 @@ class MemberCard extends StatelessWidget {
                                           ),
                                           type: DigitButtonType.secondary,
                                           size: DigitButtonSize.large,
-                                          onPressed: () {
+                                          onPressed: () async {
                                             Navigator.of(context,
                                                     rootNavigator: true)
                                                 .pop();
@@ -516,12 +502,13 @@ class MemberCard extends StatelessWidget {
                                                             .boundary!,
                                                   ),
                                                 );
-                                            final reloadState = context
-                                                .read<HouseholdOverviewBloc>();
-                                            Future.delayed(
+                                            await Future<void>.delayed(
                                               const Duration(milliseconds: 500),
-                                              () {
-                                                reloadState.add(
+                                            );
+                                            if (!context.mounted) return;
+                                            context
+                                                .read<HouseholdOverviewBloc>()
+                                                .add(
                                                   HouseholdOverviewReloadEvent(
                                                     projectId:
                                                         RegistrationDeliverySingleton()
@@ -531,29 +518,6 @@ class MemberCard extends StatelessWidget {
                                                             .beneficiaryType!,
                                                   ),
                                                 );
-                                              },
-                                            ).then(
-                                              (value) {
-                                                final household = context
-                                                    .read<
-                                                        HouseholdOverviewBloc>()
-                                                    .state
-                                                    .householdMemberWrapper
-                                                    .household;
-                                                if (household
-                                                        ?.isSchoolHousehold ??
-                                                    false) {
-                                                  return context.router.push(
-                                                    BeneficiaryAcknowledgementRoute(),
-                                                  );
-                                                }
-                                                return context.router.push(
-                                                  HouseholdAcknowledgementRoute(
-                                                    enableViewHousehold: true,
-                                                  ),
-                                                );
-                                              },
-                                            );
                                           },
                                         ),
                                         // DigitButton(
@@ -624,7 +588,8 @@ class MemberCard extends StatelessWidget {
         (tasks ?? [])
                 .where((element) =>
                     element.status == Status.administeredSuccess.toValue() ||
-                    element.status == Status.beneficiaryRefused.toValue())
+                    element.status == Status.beneficiaryRefused.toValue() ||
+                    element.status == Status.beneficiaryAbsent.toValue())
                 .lastOrNull ==
             null;
   }

@@ -83,6 +83,10 @@ class _HouseholdOverviewPageState
             return;
           }
 
+          if ((state.householdMemberWrapper.members ?? []).isNotEmpty) {
+            _redirectedToAddHead = false;
+          }
+
           if (!_hasSeenLoading || _redirectedToAddHead) return;
 
           final household = state.householdMemberWrapper.household;
@@ -452,13 +456,9 @@ class _HouseholdOverviewPageState
                                                             .householdOverViewHouseholdHeadNameLabel):
                                                         () {
                                                       final headName =
-                                                          bednetHouseholdHeadDisplayName(
-                                                        household: state
-                                                            .householdMemberWrapper
-                                                            .household,
-                                                        headOfHousehold: state
-                                                            .householdMemberWrapper
-                                                            .headOfHousehold,
+                                                          _overviewHouseholdHeadDisplayName(
+                                                        state
+                                                            .householdMemberWrapper,
                                                       );
                                                       return headName.isNotEmpty
                                                           ? headName
@@ -651,6 +651,10 @@ class _HouseholdOverviewPageState
 
                                               final isBeneficiaryRefused =
                                                   checkIfBeneficiaryRefused(
+                                                taskData,
+                                              );
+                                              final isBeneficiaryAbsent =
+                                                  checkIfBeneficiaryAbsent(
                                                 taskData,
                                               );
                                               final isBeneficiaryReferred =
@@ -855,22 +859,20 @@ class _HouseholdOverviewPageState
                                                       ).months),
                                                 gender: e.gender?.name,
                                                 isBeneficiaryRefused:
-                                                    isBeneficiaryRefused &&
-                                                        !checkStatus(
-                                                          taskData,
-                                                          currentCycle,
-                                                        ),
+                                                    isBeneficiaryRefused,
+                                                isBeneficiaryAbsent:
+                                                    isBeneficiaryAbsent,
                                                 // isBeneficiaryReferred:
                                                 //     isBeneficiaryReferred,
-                                                isDelivered: taskData == null
-                                                    ? false
-                                                    : taskData.isNotEmpty &&
-                                                            !checkStatus(
-                                                              taskData,
-                                                              currentCycle,
-                                                            )
-                                                        ? true
-                                                        : false,
+                                                isDelivered: taskData != null &&
+                                                    taskData.isNotEmpty &&
+                                                    (taskData.last.status ==
+                                                            Status.delivered
+                                                                .toValue() ||
+                                                        taskData.last.status ==
+                                                            Status
+                                                                .administeredSuccess
+                                                                .toValue()),
                                                 localizations: localizations,
                                                 projectBeneficiaryClientReferenceId:
                                                     projectBeneficiaryId,
@@ -1075,38 +1077,62 @@ class _HouseholdOverviewPageState
     }
   }
 
-    bool _isHouseholdHeadMember(
-    IndividualModel e,
-    HouseholdMemberWrapper wrapper,
-  ) {
-    return wrapper.headOfHousehold?.clientReferenceId ==
-            e.clientReferenceId ||
-        _isBednetSchoolHeadMember(
-          e,
-          wrapper.household,
-          wrapper.headOfHousehold,
-        );
-  }
-
-  // bool _isHouseholdHeadMember(
+  //   bool _isHouseholdHeadMember(
   //   IndividualModel e,
   //   HouseholdMemberWrapper wrapper,
   // ) {
-  //   if (wrapper.headOfHousehold?.clientReferenceId == e.clientReferenceId) {
-  //     return true;
-  //   }
-  //   if (wrapper.headOfHousehold != null) return false;
-  //   // No resolved head: optional name match (school). When multiple members
-  //   // could match [bednetSchoolHead], only the first in list order is tagged.
-  //   if (!_isBednetSchoolHeadMember(e, wrapper.household, null)) {
-  //     return false;
-  //   }
-  //   final raw = wrapper.members ?? [];
-  //   final firstNameMatch = raw.firstWhereOrNull(
-  //     (m) => _isBednetSchoolHeadMember(m, wrapper.household, null),
-  //   );
-  //   return firstNameMatch?.clientReferenceId == e.clientReferenceId;
+  //   return wrapper.headOfHousehold?.clientReferenceId ==
+  //           e.clientReferenceId ||
+  //       _isBednetSchoolHeadMember(
+  //         e,
+  //         wrapper.household,
+  //         wrapper.headOfHousehold,
+  //       );
   // }
+
+  /// Prefer resolved [headOfHousehold], then any member tagged as head (same rules as [MemberCard]).
+  String _overviewHouseholdHeadDisplayName(HouseholdMemberWrapper wrapper) {
+    final fromBloc = wrapper.headOfHousehold?.name?.givenName?.trim();
+    if (fromBloc != null && fromBloc.isNotEmpty) return fromBloc;
+
+    final members = wrapper.members ?? [];
+    for (final m in members) {
+      if (_isHouseholdHeadMember(m, wrapper)) {
+        final n = m.name?.givenName?.trim();
+        if (n != null && n.isNotEmpty) return n;
+      }
+    }
+
+    if (members.length == 1) {
+      final n = members.first.name?.givenName?.trim();
+      if (n != null && n.isNotEmpty) return n;
+    }
+
+    return bednetHouseholdHeadDisplayName(
+      household: wrapper.household,
+      headOfHousehold: wrapper.headOfHousehold,
+    );
+  }
+
+  bool _isHouseholdHeadMember(
+    IndividualModel e,
+    HouseholdMemberWrapper wrapper,
+  ) {
+    if (wrapper.headOfHousehold?.clientReferenceId == e.clientReferenceId) {
+      return true;
+    }
+    if (wrapper.headOfHousehold != null) return false;
+    // No resolved head: optional name match (school). When multiple members
+    // could match [bednetSchoolHead], only the first in list order is tagged.
+    if (!_isBednetSchoolHeadMember(e, wrapper.household, null)) {
+      return false;
+    }
+    final raw = wrapper.members ?? [];
+    final firstNameMatch = raw.firstWhereOrNull(
+      (m) => _isBednetSchoolHeadMember(m, wrapper.household, null),
+    );
+    return firstNameMatch?.clientReferenceId == e.clientReferenceId;
+  }
 
   List<IndividualModel> _membersOrderedHeadFirst(
     HouseholdMemberWrapper wrapper,
@@ -1128,6 +1154,11 @@ class _HouseholdOverviewPageState
     if (household == null) return false;
     final schoolHead = household.bednetSchoolHead.trim();
     if (schoolHead.isEmpty || schoolHead == 'N/A') return false;
+    final facilityName = household.bednetDisplayName.trim();
+    if (facilityName.isNotEmpty &&
+        schoolHead.toLowerCase() == facilityName.toLowerCase()) {
+      return false;
+    }
     final given = member.name?.givenName?.trim();
     if (given == null || given.isEmpty) return false;
     final sh = schoolHead.toLowerCase();

@@ -145,7 +145,7 @@ class BeneficiaryDetailsPageState
                             final cycles = projectType?.cycles;
 
                             return cycles != null && cycles.isNotEmpty
-                                ? deliverState.hasCycleArrived
+                                // ? deliverState.hasCycleArrived
                                     ? DigitCard(
                                         margin:
                                             const EdgeInsets.only(top: spacer2),
@@ -229,7 +229,7 @@ class BeneficiaryDetailsPageState
                                               },
                                             ),
                                           ])
-                                    : const SizedBox.shrink()
+                                    // : const SizedBox.shrink()
                                 : DigitCard(
                                     margin: const EdgeInsets.only(top: spacer2),
                                     children: [

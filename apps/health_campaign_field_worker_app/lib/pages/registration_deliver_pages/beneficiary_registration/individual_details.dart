@@ -104,6 +104,25 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                   } else {
                     await router.push(HouseholdAcknowledgementRoute());
                   }
+                } else if (!value.isEdit && value.individualModel == null) {
+                  HouseholdOverviewBloc? overviewBloc;
+                  try {
+                    overviewBloc = context.read<HouseholdOverviewBloc>();
+                  } catch (_) {
+                    overviewBloc = null;
+                  }
+                  if (overviewBloc == null || !context.mounted) return;
+                  overviewBloc.add(
+                    HouseholdOverviewReloadEvent(
+                      projectId:
+                          RegistrationDeliverySingleton().projectId.toString(),
+                      projectBeneficiaryType:
+                          RegistrationDeliverySingleton().beneficiaryType ??
+                              BeneficiaryType.household,
+                    ),
+                  );
+                  if (!context.mounted) return;
+                  await router.maybePop();
                 }
               },
             );
@@ -326,6 +345,7 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                                 addressModel,
                                 householdModel,
                                 loading,
+                                isHeadFromState,
                               ) {
                                 final individual = _getIndividualModel(
                                   context,
@@ -366,7 +386,7 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                                                 .state.qrCodes.isNotEmpty
                                             ? scannerBloc.state.qrCodes.first
                                             : null,
-                                        isHeadOfHousehold:
+                                        isHeadOfHousehold: isHeadFromState ||
                                             widget.isHeadOfHousehold,
                                       ),
                                     );

@@ -51,6 +51,7 @@ class BednetIndividualDetailsWrapperPage extends StatelessWidget
         : BeneficiaryRegistrationState.addMember(
             addressModel: addressModel,
             householdModel: householdModel,
+            isHeadOfHousehold: isHeadOfHousehold,
           );
 
     return BlocProvider(

@@ -5,6 +5,7 @@ import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/utils/typedefs.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import '../../../models/bednet_distribution/bednet_distribution_models.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/typedefs.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
@@ -301,7 +302,7 @@ class BeneficiaryRegistrationBloc
           } finally {
             emit(
               BeneficiaryRegistrationPersistedState(
-                navigateToRoot: false,
+                navigateToRoot: true,
                 householdModel: household,
                 addressModel: address,
                 individualModel: individual,
@@ -416,7 +417,7 @@ class BeneficiaryRegistrationBloc
           emit(value.copyWith(loading: false));
           emit(
             BeneficiaryRegistrationPersistedState(
-              navigateToRoot: false,
+              navigateToRoot: true,
               householdModel: household,
               addressModel: address,
               individualModel: individual,
@@ -628,6 +629,7 @@ class BeneficiaryRegistrationBloc
         } finally {
           emit(value.copyWith(loading: false));
           emit(BeneficiaryRegistrationPersistedState(
+            navigateToRoot: false,
             householdModel: value.householdModel,
             projectBeneficiaryModel: value.projectBeneficiaryModel,
           ));
@@ -681,7 +683,7 @@ class BeneficiaryRegistrationBloc
             )))
                     .firstOrNull;
 
-            final merged = _householdWithSchoolHeadName(
+            final merged = householdWithBednetSchoolHeadName(
               value.householdModel,
               event.individualModel.name?.givenName ?? '',
             );
@@ -761,34 +763,12 @@ class BeneficiaryRegistrationBloc
         } finally {
           emit(value.copyWith(loading: false));
           emit(BeneficiaryRegistrationPersistedState(
+            navigateToRoot: true,
             householdModel: persistedHousehold,
             isHeadOfHousehold: event.isHeadOfHousehold,
           ));
         }
       },
-    );
-  }
-
-  /// Aligns with [bednetSchoolHead] (flattened key `schoolhead`).
-  HouseholdModel _householdWithSchoolHeadName(
-    HouseholdModel household,
-    String givenName,
-  ) {
-    final existingFields = household.additionalFields?.fields ?? [];
-    final filtered = existingFields.where((f) {
-      final k = f.key.toLowerCase();
-      return k != 'schoolhead' &&
-          k != 'school_head' &&
-          k != 'headteacher';
-    }).toList();
-    return household.copyWith(
-      additionalFields: HouseholdAdditionalFields(
-        version: household.additionalFields?.version ?? 1,
-        fields: [
-          ...filtered,
-          AdditionalField('schoolHead', givenName),
-        ],
-      ),
     );
   }
 
@@ -898,6 +878,7 @@ class BeneficiaryRegistrationState with _$BeneficiaryRegistrationState {
     required AddressModel addressModel,
     required HouseholdModel householdModel,
     @Default(false) bool loading,
+    @Default(false) bool isHeadOfHousehold,
   }) = BeneficiaryRegistrationAddMemberState;
 
   const factory BeneficiaryRegistrationState.persisted({

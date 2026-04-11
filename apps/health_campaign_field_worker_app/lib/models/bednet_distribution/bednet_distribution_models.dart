@@ -203,7 +203,10 @@ extension BednetHouseholdFields on HouseholdModel {
   }
 }
 
-/// Registered head name if present; otherwise school head from [HouseholdModel.additionalFields].
+/// Registered head name if present; otherwise head text from [HouseholdModel.additionalFields].
+///
+/// Never returns the institution / school display name: some imports store that value under
+/// `schoolHead` by mistake; that must not appear as "household head name".
 String bednetHouseholdHeadDisplayName({
   HouseholdModel? household,
   IndividualModel? headOfHousehold,
@@ -212,9 +215,38 @@ String bednetHouseholdHeadDisplayName({
   if (given != null && given.isNotEmpty) return given;
   if (household != null) {
     final schoolHead = household.bednetSchoolHead.trim();
-    if (schoolHead.isNotEmpty && schoolHead != 'N/A') return schoolHead;
+    if (schoolHead.isEmpty || schoolHead == 'N/A') return '';
+    final facilityName = household.bednetDisplayName.trim();
+    if (facilityName.isNotEmpty &&
+        schoolHead.toLowerCase() == facilityName.toLowerCase()) {
+      return '';
+    }
+    return schoolHead;
   }
   return '';
+}
+
+/// Sets `schoolHead` / related keys on [HouseholdModel.additionalFields] (used for household head name).
+HouseholdModel householdWithBednetSchoolHeadName(
+  HouseholdModel household,
+  String givenName,
+) {
+  final existingFields = household.additionalFields?.fields ?? [];
+  final filtered = existingFields.where((f) {
+    final k = f.key.toLowerCase();
+    return k != 'schoolhead' &&
+        k != 'school_head' &&
+        k != 'headteacher';
+  }).toList();
+  return household.copyWith(
+    additionalFields: HouseholdAdditionalFields(
+      version: household.additionalFields?.version ?? 1,
+      fields: [
+        ...filtered,
+        AdditionalField('schoolHead', givenName),
+      ],
+    ),
+  );
 }
 
 class ClassTeacherInfoModel {

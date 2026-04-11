@@ -549,6 +549,11 @@ class HouseholdOverView {
 
   String get householdOverViewNotEligibleIconLabel =>
       'HOUSEHOLD_OVER_VIEW_NOT_ELIGIBLE_ICON_LABEL';
+  String get householdOverViewAbsentIconLabel =>
+      'HOUSEHOLD_OVER_VIEW_ABSENT_ICON_LABEL';
+
+  String get householdOverViewRefusedIconLabel =>
+      'HOUSEHOLD_OVER_VIEW_REFUSED_ICON_LABEL';
 
   String get householdOverViewBeneficiaryReferredLabel =>
       'HOUSEHOLD_OVER_VIEW_BENEFICIARY_REFERRED_LABEL';
