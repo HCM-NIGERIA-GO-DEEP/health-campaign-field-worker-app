@@ -12,6 +12,7 @@ import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
 import '../../blocs/registration_deliver/search_households/search_households.dart';
 import '../../blocs/bednet_distribution/bednet_distribution.dart';
 import '../../blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
+import '../../models/bednet_distribution/bednet_distribution_models.dart';
 import '../../models/registration_deliver_model/entities/status.dart';
 import '../../router/app_router.dart';
 import '../../utils/registration_deliver_utils/global_search_parameters.dart';
@@ -43,6 +44,25 @@ class _SearchBeneficiaryPageState
   bool isNameSearchEnabled = false;
   int offset = 0;
   int limit = 10;
+
+  /// School campaigns use the default nested [HouseholdOverviewRoute]. Regular
+  /// (non-school) households under bednet use [CustomHouseholdOverviewRoute].
+  Future<void> _pushBednetOverviewForHousehold(
+    BuildContext context,
+    HouseholdModel household,
+  ) async {
+    if (household.isSchoolHousehold) {
+      await context.router.push(const BednetHouseholdOverviewWrapperRoute());
+    } else {
+      await context.router.push(
+        BednetHouseholdOverviewWrapperRoute(
+          children: [
+            CustomHouseholdOverviewRoute(),
+          ],
+        ),
+      );
+    }
+  }
 
   double lat = 0.0;
   double long = 0.0;
@@ -273,8 +293,9 @@ class _SearchBeneficiaryPageState
                                           school: i.household!,
                                         ),
                                       );
-                                  await context.router.push(
-                                    const BednetHouseholdOverviewWrapperRoute(),
+                                  await _pushBednetOverviewForHousehold(
+                                    context,
+                                    i.household!,
                                   );
                                 }
                               } else {
@@ -284,8 +305,9 @@ class _SearchBeneficiaryPageState
                                           school: i.household!,
                                         ),
                                       );
-                                  await context.router.push(
-                                    const BednetHouseholdOverviewWrapperRoute(),
+                                  await _pushBednetOverviewForHousehold(
+                                    context,
+                                    i.household!,
                                   );
                                 }
                               }
