@@ -9870,7 +9870,12 @@ final dynamic sampleFlows = {
               "errorMessage": "",
               "isMultiSelect": false,
               "required.message":
-                  "HFREFERRAL_REFERRAL_DETAILS_referralReason_REQUIRED_ERROR"
+                  "HFREFERRAL_REFERRAL_DETAILS_referralReason_REQUIRED_ERROR",
+              "visibilityCondition": {
+                "expression": [
+                  {"condition": "navigation.sourceFlow != 'CHECKLIST'"}
+                ]
+              }
             }
           ],
           "actionLabel": "REFER_BENEFICIARY_SUBMIT_BUTTON",
@@ -10817,7 +10822,8 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                      }
+                      },
+                      {"key": "sourceFlow", "value": "CHECKLIST"}
                     ],
                     "name": "REFER_BENEFICIARY",
                     "type": "FORM",
@@ -10964,7 +10970,8 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                      }
+                      },
+                      {"key": "sourceFlow", "value": "CHECKLIST"}
                     ],
                     "name": "REFER_BENEFICIARY",
                     "type": "FORM",
