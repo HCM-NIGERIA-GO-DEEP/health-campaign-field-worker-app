@@ -672,6 +672,18 @@
     "module": "hcm-household"
   },
   {
+    "code": "SCHOOL_OVER_VIEW_LABEL",
+    "locale": "en_MZ",
+    "message": "School",
+    "module": "hcm-household"
+  },
+  {
+    "code": "SCHOOL_OVER_VIEW_LABEL",
+    "locale": "pt_MZ",
+    "message": "Escola",
+    "module": "hcm-household"
+  },
+  {
     "code": "HOUSEHOLD_OVER_VIEW_EDIT_ICON_LABEL",
     "locale": "en_MZ",
     "message": "Edit household",
@@ -789,6 +801,18 @@
     "code": "HOUSEHOLD_OVER_VIEW_HOUSEHOLD_HEAD_NAME_LABEL",
     "locale": "pt_MZ",
     "message": "Nome da cabeça da família:",
+    "module": "hcm-household"
+  },
+  {
+    "code": "SCHOOL_OVER_VIEW_SCHOOL_HEAD_NAME_LABEL",
+    "locale": "en_MZ",
+    "message": "School Head",
+    "module": "hcm-household"
+  },
+  {
+    "code": "SCHOOL_OVER_VIEW_SCHOOL_HEAD_NAME_LABEL",
+    "locale": "pt_MZ",
+    "message": "Chefe da escola",
     "module": "hcm-household"
   },
   {

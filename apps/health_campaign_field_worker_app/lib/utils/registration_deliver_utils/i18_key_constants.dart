@@ -505,6 +505,7 @@ class HouseholdOverView {
   const HouseholdOverView();
 
   String get householdOverViewLabel => 'HOUSEHOLD_OVER_VIEW_LABEL';
+  String get schoolOverViewLabel => 'SCHOOL_OVER_VIEW_LABEL';
 
   String get instituteNameLabel => 'HOUSEHOLD_OVER_VIEW_INSTITUTE_NAME_LABEL';
 
@@ -563,6 +564,8 @@ class HouseholdOverView {
 
   String get householdOverViewHouseholdHeadNameLabel =>
       'HOUSEHOLD_OVER_VIEW_HOUSEHOLD_HEAD_NAME_LABEL';
+  String get schoolOverViewSchoolHeadNameLabel =>
+      'SCHOOL_OVER_VIEW_SCHOOL_HEAD_NAME_LABEL';
 
   String get householdOverViewActionText => 'HOUSEHOLD_OVER_VIEW_ACTION_TEXT';
 
