@@ -102,6 +102,12 @@
     "locale": "",
     "message": "Beneficiary is Absent",
     "module": "hcm-beneficiary"
+  },
+  {
+    "code": "HOUSEHOLD_OVER_VIEW_ABSENT_ICON_LABEL",
+    "locale": "",
+    "message": "Not Delivered",
+    "module": "hcm-beneficiary"
   }
 
 
