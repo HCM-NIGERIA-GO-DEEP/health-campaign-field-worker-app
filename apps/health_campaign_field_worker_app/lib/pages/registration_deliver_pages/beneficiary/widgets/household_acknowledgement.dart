@@ -50,10 +50,10 @@ class HouseholdAcknowledgementPageState
                       ),
                       // isDisabled: !(widget.enableViewHousehold ?? false),
                       onPressed: () {
-                        final parent = context.router.parent() as StackRouter;
-                        // Pop twice to navigate back to the previous screen
-                        parent.popUntilRoot();
-                        context.router.push(HouseHoldDetailsRoute());
+                        // Stay inside [BednetHouseholdOverviewWrapperRoute]: do not call
+                        // parent.popUntilRoot() — that clears the bednet stack to
+                        // [BeneficiaryTypeSelectionRoute] and breaks nested pushes.
+                        context.router.replace(CustomHouseholdOverviewRoute());
                       },
                       type: DigitButtonType.primary,
                       size: DigitButtonSize.large),

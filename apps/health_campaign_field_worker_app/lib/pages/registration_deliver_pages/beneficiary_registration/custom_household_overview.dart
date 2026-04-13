@@ -2,7 +2,6 @@ import 'package:auto_route/auto_route.dart';
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/household_type.dart';
-import 'package:digit_showcase/showcase_widget.dart';
 import 'package:digit_ui_components/enum/app_enums.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/theme/digit_theme.dart';
@@ -24,7 +23,6 @@ import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/lo
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/table_card/table_card.dart';
 
 import '../../../router/app_router.dart';
-import '../../bednet_distribution/bednet_individual_details_wrapper.dart';
 import '../../../blocs/registration_deliver/household_overview/household_overview.dart';
 import '../../../blocs/registration_deliver/search_households/search_bloc_common_wrapper.dart';
 import '../../../blocs/registration_deliver/search_households/search_households.dart';
@@ -72,18 +70,18 @@ class _CustomHouseholdOverviewPageState
     }
     final textTheme = theme.digitTextTheme(context);
 
-    // Wrap with ShowcaseWidget to provide context for child pages and showcase button
-    return ShowcaseWidget(
-      builder: Builder(
-        builder: (context) => PopScope(
-          onPopInvoked: (didPop) async {
-            context
-                .read<SearchBlocWrapper>()
-                .searchHouseholdsBloc
-                .add(const SearchHouseholdsClearEvent());
-            context.router.maybePop();
-          },
-          child: BlocListener<HouseholdOverviewBloc, HouseholdOverviewState>(
+    // Match [HouseholdOverviewPage]: no ShowcaseWidget here — nesting with
+    // [BednetIndividualDetailsWrapperPage]'s ShowcaseWidget caused digit_showcase
+    // AnchoredOverlay layout errors on a second "Add student" navigation.
+    return PopScope(
+      onPopInvoked: (didPop) async {
+        context
+            .read<SearchBlocWrapper>()
+            .searchHouseholdsBloc
+            .add(const SearchHouseholdsClearEvent());
+        context.router.maybePop();
+      },
+      child: BlocListener<HouseholdOverviewBloc, HouseholdOverviewState>(
             listener: (context, state) {
               if (state.loading) {
                 _hasSeenLoading = true;
@@ -937,17 +935,12 @@ class _CustomHouseholdOverviewPageState
               },
             ),
           ),
-        ),
-      ),
     );
   }
 
-  /// Opens [IndividualDetailsPage] with the same bloc wiring as
-  /// [BednetIndividualDetailsWrapperRoute], but via [Navigator] so it works when
-  /// this overview was opened with a [MaterialPageRoute] (new household flow)
-  /// where the overview AutoRoute shell is not on the stack.
-  ///
-  /// Uses Builder to preserve ShowcaseWidget context from parent route.
+  /// Opens [IndividualDetailsPage] via [BednetIndividualDetailsWrapperRoute], same
+  /// nested AutoRoute stack as [HouseholdOverviewPage] (school flow). The wrapper
+  /// provides [BeneficiaryRegistrationBloc] and showcase for individual details.
   Future<void> _openBednetIndividualDetails({
     required BuildContext context,
     required HouseholdModel householdModel,
@@ -956,27 +949,13 @@ class _CustomHouseholdOverviewPageState
     ProjectBeneficiaryModel? projectBeneficiaryModel,
     required bool isHeadOfHousehold,
   }) async {
-    final overviewBloc = context.read<HouseholdOverviewBloc>();
-    final parentContext = context;
-
-    final wrapper = BednetIndividualDetailsWrapperPage(
-      householdModel: householdModel,
-      addressModel: addressModel,
-      individualModel: individualModel,
-      projectBeneficiaryModel: projectBeneficiaryModel,
-      isHeadOfHousehold: isHeadOfHousehold,
-    );
-
-    // Use Builder to capture and preserve the ShowcaseWidget context
-    // so that child pages have access to showcase functionality
-    await Navigator.of(context, rootNavigator: true).push(
-      MaterialPageRoute<void>(
-        builder: (ctx) => Builder(
-          builder: (showcaseContext) => BlocProvider.value(
-            value: overviewBloc,
-            child: wrapper.wrappedRoute(parentContext),
-          ),
-        ),
+    await context.router.push(
+      BednetIndividualDetailsWrapperRoute(
+        householdModel: householdModel,
+        addressModel: addressModel,
+        individualModel: individualModel,
+        projectBeneficiaryModel: projectBeneficiaryModel,
+        isHeadOfHousehold: isHeadOfHousehold,
       ),
     );
   }

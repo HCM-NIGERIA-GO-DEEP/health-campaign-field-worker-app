@@ -1,12 +1,11 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
+import 'package:digit_ui_components/widgets/atoms/pop_up_card.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:isar/isar.dart';
 import '../../../utils/registration_deliver_utils/constants.dart';
 import '../../../widgets/registartion_deliver/localized.dart';
 import 'package:intl/intl.dart';
@@ -16,17 +15,13 @@ import '../../../models/entities/additional_fields_type.dart';
 
 import '../../../blocs/bednet_distribution/bednet_distribution.dart';
 import '../../../blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
-import '../../../blocs/registration_deliver/delivery_intervention/deliver_intervention.dart';
-import '../../../blocs/registration_deliver/household_overview/household_overview.dart';
 import '../../../blocs/registration_deliver/search_households/search_households.dart';
-import '../../../data/registration_deliver_repo/local/individual_global_search.dart';
+import '../../../router/app_router.dart';
 import '../../../utils/registration_deliver_utils/extensions/extensions.dart';
 import '../../../utils/registration_deliver_utils/i18_key_constants.dart'
     as i18;
 import '../../../utils/registration_deliver_utils/utils.dart';
 import '../../../widgets/registartion_deliver/back_navigation_help_header.dart';
-import '../beneficiary/household_overview.dart';
-import '../beneficiary_registration/custom_household_overview.dart';
 
 @RoutePage()
 class HouseHoldDetailsPage extends LocalizedStatefulWidget {
@@ -47,8 +42,9 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
   static const _childrenCountKey = 'childrenCount';
   final TextEditingController _dateController = TextEditingController();
 
-  /// When true, [BlocListener] opens [HouseholdOverviewPage] after persist.
-  bool _pendingHouseholdOverviewNavigation = false;
+  /// When true, [BlocListener] opens [HouseholdAcknowledgementRoute] after persist
+  /// (bednet household registration from search).
+  bool _pendingHouseholdAcknowledgementNavigation = false;
 
   bool _isHouseholdDetailsViewOnly(BeneficiaryRegistrationState state) {
     return state.maybeMap(
@@ -62,87 +58,6 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
         .read<SearchHouseholdsBloc>()
         .add(const SearchHouseholdsEvent.clear());
     Navigator.of(context).popUntil((route) => route.isFirst);
-  }
-
-  /// Same repositories as [BednetHouseholdOverviewWrapperPage]; required by
-  /// [HouseholdOverviewPage] and [DeliverInterventionBloc] when pushed outside
-  /// the overview AutoRoute shell.
-  Widget _householdOverviewRouteShell({
-    required BuildContext context,
-    required BeneficiaryRegistrationBloc registrationBloc,
-    required HouseholdModel household,
-  }) {
-    final singleton = RegistrationDeliverySingleton();
-    final beneficiaryType = singleton.beneficiaryType;
-
-    if (beneficiaryType == null) {
-      return Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
-
-    final sql = context.read<LocalSqlDataStore>();
-    final isar = context.read<Isar>();
-    final individualGlobalSearchRepository = IndividualGlobalSearchRepository(
-      sql,
-      IndividualOpLogManager(isar),
-    );
-
-    final individual =
-        context.repository<IndividualModel, IndividualSearchModel>(context);
-    final householdRepo =
-        context.repository<HouseholdModel, HouseholdSearchModel>(context);
-    final householdMember = context
-        .repository<HouseholdMemberModel, HouseholdMemberSearchModel>(context);
-    final projectBeneficiary = context.repository<ProjectBeneficiaryModel,
-        ProjectBeneficiarySearchModel>(context);
-    final task = context.repository<TaskModel, TaskSearchModel>(context);
-    final sideEffect =
-        context.repository<SideEffectModel, SideEffectSearchModel>(context);
-    final referral =
-        context.repository<ReferralModel, ReferralSearchModel>(context);
-
-    final taskBeneficiaryRefs = beneficiaryType == BeneficiaryType.individual
-        ? null
-        : <String>[household.clientReferenceId];
-
-    return MultiBlocProvider(
-      providers: [
-        BlocProvider.value(value: registrationBloc),
-        BlocProvider(
-          create: (_) => HouseholdOverviewBloc(
-            HouseholdOverviewState(
-              householdMemberWrapper:
-                  HouseholdMemberWrapper(household: household),
-            ),
-            projectBeneficiaryRepository: projectBeneficiary,
-            householdRepository: householdRepo,
-            individualRepository: individual,
-            householdMemberRepository: householdMember,
-            taskDataRepository: task,
-            sideEffectDataRepository: sideEffect,
-            referralDataRepository: referral,
-            beneficiaryType: beneficiaryType,
-            individualGlobalSearchRepository: individualGlobalSearchRepository,
-          ),
-        ),
-        BlocProvider(
-          create: (_) => DeliverInterventionBloc(
-            const DeliverInterventionState(isEditing: false),
-            taskRepository: task,
-          )..add(
-              DeliverInterventionSearchEvent(
-                taskSearch: TaskSearchModel(
-                  projectBeneficiaryClientReferenceId: taskBeneficiaryRefs,
-                ),
-              ),
-            ),
-        ),
-      ],
-      child: const CustomHouseholdOverviewPage(),
-    );
   }
 
   @override
@@ -160,13 +75,13 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
     return BlocListener<BeneficiaryRegistrationBloc,
         BeneficiaryRegistrationState>(
       listenWhen: (previous, current) =>
-          _pendingHouseholdOverviewNavigation &&
+          _pendingHouseholdAcknowledgementNavigation &&
           current.mapOrNull(persisted: (_) => true) != null,
       listener: (context, state) {
         state.mapOrNull(
           persisted: (value) async {
-            if (!_pendingHouseholdOverviewNavigation) return;
-            _pendingHouseholdOverviewNavigation = false;
+            if (!_pendingHouseholdAcknowledgementNavigation) return;
+            _pendingHouseholdAcknowledgementNavigation = false;
             try {
               context.read<BednetDistributionBloc>().add(
                     BednetDistributionEvent.updateSelectedSchool(
@@ -174,14 +89,15 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                     ),
                   );
             } catch (_) {}
-            if (!context.mounted) return;
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (_) => _householdOverviewRouteShell(
-                  context: context,
-                  registrationBloc: bloc,
-                  household: value.householdModel,
-                ),
+            final router = context.router;
+            final nav = Navigator.of(context);
+            if (nav.canPop()) nav.pop();
+            if (nav.canPop()) nav.pop();
+            await router.push(
+              BednetHouseholdOverviewWrapperRoute(
+                children: [
+                  HouseholdAcknowledgementRoute(),
+                ],
               ),
             );
           },
@@ -233,7 +149,7 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                             type: DigitButtonType.primary,
                             size: DigitButtonSize.large,
                             mainAxisSize: MainAxisSize.max,
-                            onPressed: () {
+                            onPressed: () async {
                               form.markAllAsTouched();
                               if (!form.valid) return;
 
@@ -251,8 +167,8 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                   .control(_mobileNumberKey)
                                   .value as String?;
 
-                              registrationState.maybeWhen(
-                                orElse: () {},
+                              await registrationState.maybeWhen(
+                                orElse: () async {},
                                 create: (
                                   addressModel,
                                   householdModel,
@@ -262,7 +178,45 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                   searchQuery,
                                   loading,
                                   isHeadOfHousehold,
-                                ) {
+                                ) async {
+                                  final submit = await showDialog<bool>(
+                                    context: context,
+                                    builder: (ctx) => Popup(
+                                      title: localizations.translate(
+                                        i18.deliverIntervention.dialogTitle,
+                                      ),
+                                      description: localizations.translate(
+                                        i18.deliverIntervention.dialogContent,
+                                      ),
+                                      actions: [
+                                        DigitButton(
+                                          label: localizations.translate(
+                                            i18.common.coreCommonSubmit,
+                                          ),
+                                          onPressed: () {
+                                            Navigator.of(context,
+                                                    rootNavigator: true)
+                                                .pop(true);
+                                          },
+                                          type: DigitButtonType.primary,
+                                          size: DigitButtonSize.large,
+                                        ),
+                                        DigitButton(
+                                          label: localizations.translate(
+                                            i18.common.coreCommonCancel,
+                                          ),
+                                          onPressed: () => Navigator.of(context,
+                                                  rootNavigator: true)
+                                              .pop(false),
+                                          type: DigitButtonType.secondary,
+                                          size: DigitButtonSize.large,
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                  if (!(submit ?? false)) return;
+                                  if (!context.mounted) return;
+
                                   final createdAt =
                                       context.millisecondsSinceEpoch();
                                   final userUuid =
@@ -405,7 +359,8 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                   if (boundary != null &&
                                       projectId != null &&
                                       loggedInUuid != null) {
-                                    _pendingHouseholdOverviewNavigation = true;
+                                    _pendingHouseholdAcknowledgementNavigation =
+                                        true;
                                     bloc.add(
                                       BeneficiaryRegistrationSummaryEvent(
                                         userUuid: loggedInUuid,

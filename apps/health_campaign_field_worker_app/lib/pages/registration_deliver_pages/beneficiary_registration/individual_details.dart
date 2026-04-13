@@ -67,6 +67,9 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
 
     return Scaffold(
       body: ReactiveFormBuilder(
+        // New bloc instance per route push; key forces a fresh form so DOB/name
+        // are not reused when opening "Add student" again from overview.
+        key: ObjectKey(bloc),
         form: () => buildForm(bloc.state),
         builder: (context, form, child) => BlocConsumer<
             BeneficiaryRegistrationBloc, BeneficiaryRegistrationState>(
@@ -715,6 +718,7 @@ if (!widget.isHeadOfHousehold)
       summary: (value) {
         return value.individualModel;
       },
+      addMember: (_) => null,
     );
 
     final searchQuery = state.mapOrNull<String>(
