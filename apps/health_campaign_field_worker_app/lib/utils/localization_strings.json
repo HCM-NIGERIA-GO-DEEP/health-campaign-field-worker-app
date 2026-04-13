@@ -672,18 +672,6 @@
     "module": "hcm-household"
   },
   {
-    "code": "SCHOOL_OVER_VIEW_LABEL",
-    "locale": "en_MZ",
-    "message": "School",
-    "module": "hcm-household"
-  },
-  {
-    "code": "SCHOOL_OVER_VIEW_LABEL",
-    "locale": "pt_MZ",
-    "message": "Escola",
-    "module": "hcm-household"
-  },
-  {
     "code": "HOUSEHOLD_OVER_VIEW_EDIT_ICON_LABEL",
     "locale": "en_MZ",
     "message": "Edit household",
@@ -804,21 +792,9 @@
     "module": "hcm-household"
   },
   {
-    "code": "SCHOOL_OVER_VIEW_SCHOOL_HEAD_NAME_LABEL",
-    "locale": "en_MZ",
-    "message": "School Head",
-    "module": "hcm-household"
-  },
-  {
-    "code": "SCHOOL_OVER_VIEW_SCHOOL_HEAD_NAME_LABEL",
-    "locale": "pt_MZ",
-    "message": "Chefe da escola",
-    "module": "hcm-household"
-  },
-  {
     "code": "HOUSEHOLD_OVER_VIEW_ACTION_TEXT",
     "locale": "en_MZ",
-    "message": "Record Delivery",
+    "message": "Deliver Intervention",
     "module": "hcm-household"
   },
   {
@@ -914,7 +890,7 @@
   {
     "code": "DELIVER_INTERVENTION_LABEL",
     "locale": "en_MZ",
-    "message": "Record Delivery",
+    "message": "Deliver Intervention",
     "module": "hcm-delivery"
   },
   {
@@ -1162,17 +1138,5 @@
     "locale": "pt_MZ",
     "message": "Adicionar estudante",
     "module": "hcm-bednet"
-  },
-  {
-    "code": "HOUSEHOLD_OVER_VIEW_ADD_STUDENT_TEXT",
-    "locale": "en_MZ",
-    "message": "Add Student",
-    "module": "hcm-household"
-  },
-  {
-    "code": "HOUSEHOLD_OVER_VIEW_ADD_STUDENT_TEXT",
-    "locale": "pt_MZ",
-    "message": "Adicionar estudante",
-    "module": "hcm-household"
   }
 ]
