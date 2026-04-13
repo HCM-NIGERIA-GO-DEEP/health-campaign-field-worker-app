@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_showcase/showcase_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -37,8 +38,8 @@ class BednetIndividualDetailsWrapperPage extends StatelessWidget
         context.repository<HouseholdModel, HouseholdSearchModel>(context);
     final householdMember = context
         .repository<HouseholdMemberModel, HouseholdMemberSearchModel>(context);
-    final projectBeneficiary = context.repository<
-        ProjectBeneficiaryModel, ProjectBeneficiarySearchModel>(context);
+    final projectBeneficiary = context.repository<ProjectBeneficiaryModel,
+        ProjectBeneficiarySearchModel>(context);
     final task = context.repository<TaskModel, TaskSearchModel>(context);
 
     final BeneficiaryRegistrationState initialState = individualModel != null
@@ -64,7 +65,11 @@ class BednetIndividualDetailsWrapperPage extends StatelessWidget
         taskDataRepository: task,
         beneficiaryType: beneficiaryType,
       ),
-      child: this,
+      child: ShowcaseWidget(
+        builder: Builder(
+          builder: (context) => this,
+        ),
+      ),
     );
   }
 

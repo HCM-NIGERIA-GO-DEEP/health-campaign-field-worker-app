@@ -64,6 +64,7 @@ import '../pages/registration_deliver_pages/summary_page.dart';
 import '../pages/reports/beneficiary/beneficaries_report.dart';
 import '../pages/reports/summary_report/custom_summary_report.dart';
 import '../pages/unauthenticated.dart';
+import '../pages/registration_deliver_pages/beneficiary_registration/custom_household_overview.dart';
 
 export 'package:auto_route/auto_route.dart';
 import '../pages/beneficiary_type_selection.dart';
@@ -159,6 +160,10 @@ class AppRouter extends _$AppRouter {
                   page: HouseholdOverviewRoute.page,
                   path: '',
                   initial: true,
+                ),
+                AutoRoute(
+                  page: CustomHouseholdOverviewRoute.page,
+                  path: 'custom-household-route',
                 ),
                 AutoRoute(
                   page: BednetIndividualDetailsWrapperRoute.page,

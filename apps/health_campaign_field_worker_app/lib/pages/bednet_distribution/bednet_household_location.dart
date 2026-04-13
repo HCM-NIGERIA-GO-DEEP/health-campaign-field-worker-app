@@ -6,13 +6,12 @@ import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:health_campaign_field_worker_app/blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
-import 'package:health_campaign_field_worker_app/pages/registration_deliver_pages/beneficiary_registration/household_details.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/extensions/extensions.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart'
-    as i18;
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
-import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/back_navigation_help_header.dart';
+import '../../blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
+import '../registration_deliver_pages/beneficiary_registration/household_details.dart';
+import '../../utils/registration_deliver_utils/extensions/extensions.dart';
+import '../../utils/registration_deliver_utils/i18_key_constants.dart' as i18;
+import '../../utils/registration_deliver_utils/utils.dart';
+import '../../widgets/registartion_deliver/back_navigation_help_header.dart';
 import '../../widgets/registartion_deliver/localized.dart';
 
 class BednetHouseholdLocationPage extends LocalizedStatefulWidget {

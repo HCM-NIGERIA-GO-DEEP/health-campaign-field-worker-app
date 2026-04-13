@@ -19,7 +19,7 @@ class BeneficiaryTypeSelectionPage extends StatelessWidget {
     return Scaffold(
       body: ScrollableContent(
         enableFixedDigitButton: false,
-        header: const BackNavigationHelpHeaderWidget(showHelp: true),
+        header: const BackNavigationHelpHeaderWidget(showHelp: false),
         slivers: [
           SliverToBoxAdapter(
             child: Padding(

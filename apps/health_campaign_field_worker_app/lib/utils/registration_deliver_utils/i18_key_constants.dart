@@ -462,6 +462,8 @@ class HouseholdDetails {
 
   String get householdDetailsLabel => 'HOUSEHOLD_DETAILS_LABEL';
 
+  String get householdRegistrationLabel => 'HOUSEHOLD_REGISTRATION_LABEL';
+
   String get clfDetailsLabel => 'CLF_DETAILS_LABEL';
 
   String get householdDetailsDescription => 'HOUSEHOLD_DETAILS_DESCRIPTION';

@@ -65,6 +65,8 @@ class AdditionalFieldsTypeMapper extends EnumMapper<AdditionalFieldsType> {
         return AdditionalFieldsType.eToken;
       case "EMPLOYEE":
         return AdditionalFieldsType.employee;
+      case "childrenUnder5":
+        return AdditionalFieldsType.childrenUnder5;
       default:
         throw MapperException.unknownEnumValue(value);
     }
@@ -113,6 +115,8 @@ class AdditionalFieldsTypeMapper extends EnumMapper<AdditionalFieldsType> {
         return "e-Token";
       case AdditionalFieldsType.employee:
         return "EMPLOYEE";
+      case AdditionalFieldsType.childrenUnder5:
+        return "childrenUnder5";
     }
   }
 }

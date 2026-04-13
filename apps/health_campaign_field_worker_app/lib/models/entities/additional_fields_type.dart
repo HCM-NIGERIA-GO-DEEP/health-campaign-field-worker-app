@@ -24,5 +24,6 @@ enum AdditionalFieldsType {
   @MappableValue("mobile") mobile,
   @MappableValue("e-Token") eToken,
   @MappableValue("EMPLOYEE") employee,
+  @MappableValue("childrenUnder5") childrenUnder5,
   ;
 }

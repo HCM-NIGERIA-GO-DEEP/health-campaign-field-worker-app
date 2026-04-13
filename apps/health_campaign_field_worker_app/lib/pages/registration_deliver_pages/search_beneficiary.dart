@@ -1,9 +1,5 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/household_type.dart';
-// import 'package:digit_scanner/blocs/scanner.dart';
-// import 'package:digit_scanner/pages/qr_scanner.dart';
-
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/services/location_bloc.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
@@ -13,19 +9,18 @@ import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_keyboard_visibility/flutter_keyboard_visibility.dart';
-import 'package:health_campaign_field_worker_app/blocs/registration_deliver/search_households/search_households.dart';
-import 'package:health_campaign_field_worker_app/blocs/bednet_distribution/bednet_distribution.dart';
-import 'package:health_campaign_field_worker_app/blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
-import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
-import 'package:health_campaign_field_worker_app/router/app_router.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/global_search_parameters.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart'
-    as i18;
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/extensions/extensions.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
-import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/back_navigation_help_header.dart';
-import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/beneficiary/view_beneficiary_card.dart';
-import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/localized.dart';
+import '../../blocs/registration_deliver/search_households/search_households.dart';
+import '../../blocs/bednet_distribution/bednet_distribution.dart';
+import '../../blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
+import '../../models/registration_deliver_model/entities/status.dart';
+import '../../router/app_router.dart';
+import '../../utils/registration_deliver_utils/global_search_parameters.dart';
+import '../../utils/registration_deliver_utils/i18_key_constants.dart' as i18;
+import '../../utils/registration_deliver_utils/extensions/extensions.dart';
+import '../../utils/registration_deliver_utils/utils.dart';
+import '../../widgets/registartion_deliver/back_navigation_help_header.dart';
+import '../../widgets/registartion_deliver/beneficiary/view_beneficiary_card.dart';
+import '../../widgets/registartion_deliver/localized.dart';
 
 import '../../blocs/registration_deliver/search_households/search_bloc_common_wrapper.dart';
 import '../bednet_distribution/bednet_household_location.dart';
@@ -115,20 +110,14 @@ class _SearchBeneficiaryPageState
                           alignment: Alignment.topLeft,
                           child: Text(
                             localizations.translate(
-                              RegistrationDeliverySingleton().householdType !=
-                                          null &&
-                                      RegistrationDeliverySingleton()
-                                              .householdType ==
-                                          HouseholdType.community
-                                  ? i18.searchBeneficiary.searchCLFLabel
-                                  : RegistrationDeliverySingleton()
-                                              .beneficiaryType !=
-                                          BeneficiaryType.individual
-                                      ? i18
-                                          .searchBeneficiary.statisticsLabelText
-                                      : i18.searchBeneficiary
-                                          .searchIndividualLabelText,
-                            ),
+                                RegistrationDeliverySingleton().householdType !=
+                                            null &&
+                                        RegistrationDeliverySingleton()
+                                                .householdType ==
+                                            HouseholdType.community
+                                    ? i18.searchBeneficiary.searchCLFLabel
+                                    : i18
+                                        .searchBeneficiary.statisticsLabelText),
                             style: textTheme.headingXl.copyWith(
                               color: const Color(0xFF005A7A),
                             ),
