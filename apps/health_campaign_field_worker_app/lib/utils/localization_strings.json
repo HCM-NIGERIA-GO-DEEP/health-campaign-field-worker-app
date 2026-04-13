@@ -1162,5 +1162,17 @@
     "locale": "pt_MZ",
     "message": "Adicionar estudante",
     "module": "hcm-bednet"
+  },
+  {
+    "code": "HOUSEHOLD_OVER_VIEW_ADD_STUDENT_TEXT",
+    "locale": "en_MZ",
+    "message": "Add Student",
+    "module": "hcm-household"
+  },
+  {
+    "code": "HOUSEHOLD_OVER_VIEW_ADD_STUDENT_TEXT",
+    "locale": "pt_MZ",
+    "message": "Adicionar estudante",
+    "module": "hcm-household"
   }
 ]
