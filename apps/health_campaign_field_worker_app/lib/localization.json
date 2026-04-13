@@ -109,8 +109,6 @@
     "message": "Not Delivered",
     "module": "hcm-beneficiary"
   }
-
-
   {
     "code": "FETCH_BOUNDARY_FAILED",
     "locale": "",
