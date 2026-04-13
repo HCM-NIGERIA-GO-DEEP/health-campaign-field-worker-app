@@ -358,7 +358,7 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                 inputFormatters: [
                                   FilteringTextInputFormatter.digitsOnly,
                                 ],
-                                maxLength: 10,
+                                maxLength: 11,
                                 initialValue:
                                     form.control(_mobileNumberKey).value,
                                 onChange: (value) => form

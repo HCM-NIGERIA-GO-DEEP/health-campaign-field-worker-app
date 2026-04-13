@@ -578,7 +578,7 @@ if (!widget.isHeadOfHousehold)
                               ),
                               child: DigitTextFormInput(
                                 keyboardType: TextInputType.number,
-                                maxLength: 10,
+                                maxLength: 11,
                                 inputFormatters: [
                                   FilteringTextInputFormatter.digitsOnly,
                                 ],
@@ -750,7 +750,7 @@ if (!widget.isHeadOfHousehold)
         Validators.pattern(Constants.mobileNumberRegExp,
             validationMessage:
                 localizations.translate(i18.common.coreCommonMobileNumber)),
-        Validators.maxLength(10)
+        Validators.maxLength(11)
       ]),
     });
   }

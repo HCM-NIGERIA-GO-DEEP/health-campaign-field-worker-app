@@ -175,7 +175,7 @@ class Constants {
   static const String logoutUserPath = '/user/_logout';
 
   static RegExp mobileNumberRegExp =
-      RegExp(r'^(?=.{10}$)[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$');
+      RegExp(r'^(?=.{11}$)[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$');
 
   static const String healthFacility = 'Health Facility';
   static const String lgaBoundaryLevel = 'LGA';

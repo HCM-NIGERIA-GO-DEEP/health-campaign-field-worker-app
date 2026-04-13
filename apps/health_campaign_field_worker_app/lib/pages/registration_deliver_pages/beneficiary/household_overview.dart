@@ -373,13 +373,21 @@ class _HouseholdOverviewPageState
                                             padding:
                                                 const EdgeInsets.all(spacer2),
                                             child: Text(
-                                              RegistrationDeliverySingleton()
-                                                              .householdType !=
-                                                          null &&
-                                                      RegistrationDeliverySingleton()
-                                                              .householdType ==
-                                                          HouseholdType
-                                                              .community
+                                              state.householdMemberWrapper
+                                                          .household
+                                                          ?.isSchoolHousehold ==
+                                                      true
+                                                  ? localizations.translate(
+                                                      i18.householdOverView
+                                                          .schoolOverViewLabel,
+                                                    )
+                                                  : RegistrationDeliverySingleton()
+                                                                  .householdType !=
+                                                              null &&
+                                                          RegistrationDeliverySingleton()
+                                                                  .householdType ==
+                                                              HouseholdType
+                                                                  .community
                                                   ? localizations.translate(i18
                                                       .householdOverView
                                                       .clfOverviewLabel)
@@ -451,9 +459,19 @@ class _HouseholdOverviewPageState
                                               children: [
                                                 DigitTableCard(
                                                   element: {
-                                                    localizations.translate(i18
-                                                            .householdOverView
-                                                            .householdOverViewHouseholdHeadNameLabel):
+                                                    localizations.translate(
+                                                      state
+                                                                  .householdMemberWrapper
+                                                                  .household
+                                                                  ?.isSchoolHousehold ==
+                                                              true
+                                                          ? i18
+                                                              .householdOverView
+                                                              .schoolOverViewSchoolHeadNameLabel
+                                                          : i18
+                                                              .householdOverView
+                                                              .householdOverViewHouseholdHeadNameLabel,
+                                                    ):
                                                         () {
                                                       final headName =
                                                           _overviewHouseholdHeadDisplayName(
