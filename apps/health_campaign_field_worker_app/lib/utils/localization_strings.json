@@ -818,7 +818,7 @@
   {
     "code": "HOUSEHOLD_OVER_VIEW_ACTION_TEXT",
     "locale": "en_MZ",
-    "message": "Delivery ITN",
+    "message": "Record Delivery",
     "module": "hcm-household"
   },
   {
@@ -914,7 +914,7 @@
   {
     "code": "DELIVER_INTERVENTION_LABEL",
     "locale": "en_MZ",
-    "message": "Delivery ITN",
+    "message": "Record Delivery",
     "module": "hcm-delivery"
   },
   {
