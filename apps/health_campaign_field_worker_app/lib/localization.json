@@ -96,6 +96,12 @@
     "locale": "",
     "message": "Assign As CLF Head",
     "module": "hcm-beneficiary"
+  },
+  {
+    "code": "MEMBER_CARD_BENEFICIARY_ABSENT_LABEL",
+    "locale": "",
+    "message": "Beneficiary is Absent",
+    "module": "hcm-beneficiary"
   }
 
 
