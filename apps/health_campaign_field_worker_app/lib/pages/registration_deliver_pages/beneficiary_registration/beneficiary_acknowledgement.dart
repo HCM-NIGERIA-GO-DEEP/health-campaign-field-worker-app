@@ -53,7 +53,7 @@ class BeneficiaryAcknowledgementPageState
                 ),
                 actions: [
                   DigitButton(
-                    label: 'School details',
+                    label: 'View School Details',
                     onPressed: () {
                       context
                           .read<SearchHouseholdsBloc>()
@@ -65,7 +65,7 @@ class BeneficiaryAcknowledgementPageState
                     size: DigitButtonSize.large,
                   ),
                   DigitButton(
-                    label: 'Select school',
+                    label: 'Back to School Selection',
                     onPressed: () {
                       context
                           .read<SearchHouseholdsBloc>()

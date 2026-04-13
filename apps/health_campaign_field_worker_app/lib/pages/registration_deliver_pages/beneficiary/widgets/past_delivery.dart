@@ -33,10 +33,10 @@ Widget buildTableContent(
 
   // Defining a list of table headers for resource popup
   final columnListResource = [
-    DigitTableColumn(
-      header: localizations.translate(beneficiaryDetails.beneficiaryDose),
-      cellValue: 'dose',
-    ),
+    // DigitTableColumn(
+    //   header: localizations.translate(beneficiaryDetails.beneficiaryDose),
+    //   cellValue: 'dose',
+    // ),
     DigitTableColumn(
       header:
           localizations.translate(beneficiaryDetails.beneficiaryResources),
@@ -72,24 +72,24 @@ Widget buildTableContent(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(bottom: spacer1),
-          child: DigitTableCard(
-            topPadding: const EdgeInsets.only(top: 0.0),
-            fraction: 2.5,
-            element: {
-              localizations.translate(
-                beneficiaryDetails.beneficiaryAge,
-              ): fetchProductVariant(item, individualModel, householdModel)
-                          ?.condition !=
-                      null
-                  ? localizations.translate(fetchProductVariant(
-                          item, individualModel, householdModel)!
-                      .condition!)
-                  : null,
-            },
-          ),
-        ),
+        // Padding(
+        //   padding: const EdgeInsets.only(bottom: spacer1),
+        //   child: DigitTableCard(
+        //     topPadding: const EdgeInsets.only(top: 0.0),
+        //     fraction: 2.5,
+        //     element: {
+        //       localizations.translate(
+        //         beneficiaryDetails.beneficiaryAge,
+        //       ): fetchProductVariant(item, individualModel, householdModel)
+        //                   ?.condition !=
+        //               null
+        //           ? localizations.translate(fetchProductVariant(
+        //                   item, individualModel, householdModel)!
+        //               .condition!)
+        //           : null,
+        //     },
+        //   ),
+        // ),
         const DigitDivider(),
         const SizedBox(height: spacer4,),
         // Build the DigitTable with the data
@@ -120,15 +120,15 @@ Widget buildTableContent(
                     // Display the dose information in the first column if it's the first row,
                     // otherwise, display an empty cell.
 
-                    fetchProductVariant(item, individualModel, householdModel)
-                                ?.productVariants
-                                ?.indexOf(e) ==
-                            0
-                        ? DigitTableData(
-                            '${localizations.translate(i18.deliverIntervention.dose)} ${deliverInterventionState.dose}',
-                            cellKey: 'dose',
-                          )
-                        : DigitTableData('', cellKey: ''),
+                    // fetchProductVariant(item, individualModel, householdModel)
+                    //             ?.productVariants
+                    //             ?.indexOf(e) ==
+                    //         0
+                    //     ? DigitTableData(
+                    //         '${localizations.translate(i18.deliverIntervention.dose)} ${deliverInterventionState.dose}',
+                    //         cellKey: 'dose',
+                    //       )
+                    //     : DigitTableData('', cellKey: ''),
                     // Display the SKU value in the second column.
                     DigitTableData(
                       '$quantity - ${localizations.translate(value.toString())}',

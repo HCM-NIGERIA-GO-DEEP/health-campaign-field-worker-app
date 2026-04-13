@@ -152,9 +152,9 @@ class BeneficiaryDetailsPageState
                                         children: [
                                             DigitButton(
                                               label:
-                                                  '${localizations.translate(i18.beneficiaryDetails.recordCycle)} '
-                                                  '${(deliverState.cycle == 0 ? (deliverState.cycle + 1) : deliverState.cycle).toString()} ${localizations.translate(i18.deliverIntervention.dose)} '
-                                                  '${(deliverState.dose).toString()}',
+                                                  '${localizations.translate(i18.beneficiaryDetails.recordDelivery)} ',
+                                                  // '${(deliverState.cycle == 0 ? (deliverState.cycle + 1) : deliverState.cycle).toString()} ${localizations.translate(i18.deliverIntervention.dose)} ',
+                                                  // '${(deliverState.dose).toString()}',
                                               type: DigitButtonType.primary,
                                               size: DigitButtonSize.large,
                                               mainAxisSize: MainAxisSize.max,

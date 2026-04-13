@@ -301,6 +301,7 @@ class BeneficiaryDetails {
       'INSUFFICIENT_STORAGE_WARNING_CONTENT';
 
   String get recordCycle => 'BENEFICIARY_DETAILS_RECORD_CYCLE';
+  String get recordDelivery => 'BENEFICIARY_DETAILS_RECORD_DELIVERY';
 
   String get householdMemberSingular => 'BENEFICIARY_HOUSEHOLD_MEMBER';
 
