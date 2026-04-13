@@ -82,15 +82,40 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
           persisted: (value) async {
             if (!_pendingHouseholdAcknowledgementNavigation) return;
             _pendingHouseholdAcknowledgementNavigation = false;
-            try {
-              context.read<BednetDistributionBloc>().add(
-                    BednetDistributionEvent.updateSelectedSchool(
-                      school: value.householdModel,
-                    ),
-                  );
-            } catch (_) {}
             final router = context.router;
             final nav = Navigator.of(context);
+            final household = value.householdModel;
+            final householdId = household.clientReferenceId;
+
+            // [BednetHouseholdOverviewWrapperPage] reads selectedSchool in wrappedRoute.
+            // Dispatching [updateSelectedSchool] and pushing in the same turn can run
+            // navigation before the bloc emits — then selectedSchool is still null.
+            bool selectedMatches(BednetDistributionState s) {
+              if (s.selectedSchool == null) return false;
+              if (householdId.isNotEmpty) {
+                return s.selectedSchool!.clientReferenceId == householdId;
+              }
+              return identical(s.selectedSchool, household);
+            }
+
+            try {
+              final bednetBloc = context.read<BednetDistributionBloc>();
+              bednetBloc.add(
+                BednetDistributionEvent.updateSelectedSchool(school: household),
+              );
+              // Wait until [selectedSchool] matches — do not use [stream.firstWhere]:
+              // the bloc stream does not replay the current state, so if the emit
+              // happens before we subscribe, [firstWhere] never completes and we
+              // never navigate (first-time household submit appeared to "do nothing").
+              const step = Duration(milliseconds: 16);
+              for (var i = 0; i < 50; i++) {
+                if (selectedMatches(bednetBloc.state)) break;
+                await Future<void>.delayed(step);
+              }
+            } catch (_) {
+              // No BednetDistributionBloc above this route (unexpected in bednet flow).
+            }
+
             if (nav.canPop()) nav.pop();
             if (nav.canPop()) nav.pop();
             await router.push(

@@ -24,7 +24,7 @@ import 'package:health_campaign_field_worker_app/utils/registration_deliver_util
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/back_navigation_help_header.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/localized.dart';
-import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/showcase/config/showcase_constants.dart';
+import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/showcase/showcase_wrappers.dart';
 import 'package:intl/intl.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
@@ -56,6 +56,26 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
   static const maxLength = 200;
   final clickedStatus = ValueNotifier<bool>(false);
   DateTime now = DateTime.now();
+
+  /// New key each time this [State] is created (each navigation to this page).
+  /// [DigitDobPicker] and other inputs keep internal state from the first
+  /// [initialValue]; without this, reopening "Add student" can show the last DOB.
+  final Key _pageSubtreeKey = UniqueKey();
+
+  /// Per-screen showcase builders (each owns a new [GlobalKey]). The singleton
+  /// [individualDetailsShowcaseData] reused the same keys for every route, so
+  /// two [IndividualDetailsPage]s in the tree briefly caused duplicate GlobalKey.
+  late final ShowcaseItemBuilder _showcaseIndividualName = ShowcaseItemBuilder(
+    messageLocalizationKey:
+        i18.individualDetailsShowcase.firstNameOfIndividual,
+  );
+  late final ShowcaseItemBuilder _showcaseIndividualDob = ShowcaseItemBuilder(
+    messageLocalizationKey: i18.individualDetailsShowcase.dateOfBirth,
+  );
+  late final ShowcaseItemBuilder _showcaseIndividualMobile =
+      ShowcaseItemBuilder(
+    messageLocalizationKey: i18.individualDetailsShowcase.mobile,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -131,7 +151,9 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
             );
           },
           builder: (context, state) {
-            return ScrollableContent(
+            return KeyedSubtree(
+              key: _pageSubtreeKey,
+              child: ScrollableContent(
               enableFixedDigitButton: true,
               header: const Column(children: [
                 Padding(
@@ -417,8 +439,7 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                         ),
                         Column(
                           children: [
-                            individualDetailsShowcaseData.nameOfIndividual
-                                .buildWith(
+                            _showcaseIndividualName.buildWith(
                               child: ReactiveWrapperField(
                                 formControlName: _individualNameKey,
                                 validationMessages: {
@@ -471,7 +492,7 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                           ],
                         ),
 if (!widget.isHeadOfHousehold)
-                          individualDetailsShowcaseData.dateOfBirth.buildWith(
+                          _showcaseIndividualDob.buildWith(
                             child: DigitDobPicker(
                               datePickerFormControl: _dobKey,
                               datePickerLabel: localizations.translate(
@@ -564,7 +585,7 @@ if (!widget.isHeadOfHousehold)
                               : null,
                         ),
                         if(widget.isHeadOfHousehold)
-                        individualDetailsShowcaseData.mobile.buildWith(
+                        _showcaseIndividualMobile.buildWith(
                           child: ReactiveWrapperField(
                             formControlName: _mobileNumberKey,
                             validationMessages: {
@@ -601,6 +622,7 @@ if (!widget.isHeadOfHousehold)
                       ]),
                 ),
               ],
+            ),
             );
           },
         ),

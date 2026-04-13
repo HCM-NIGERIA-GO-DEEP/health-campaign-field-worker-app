@@ -57,11 +57,15 @@ class BednetDistributionBloc
               .compareTo(b.bednetDisplayName.toLowerCase()),
         );
 
+      // Do not clear [selectedSchool] here. [_loadSchools] runs async after
+      // [initialize]; if the user registers a household meanwhile,
+      // [updateSelectedSchool] can run first and would be wiped by
+      // `selectedSchool: null`, leading to "No school selected" on the overview.
       emit(state.copyWith(
         loading: false,
         schools: schools,
         boundaryCode: boundaryCode,
-        selectedSchool: null,
+        selectedSchool: state.selectedSchool,
       ));
     } catch (error, stackTrace) {
       debugPrint('Bednet school load failed: $error');
