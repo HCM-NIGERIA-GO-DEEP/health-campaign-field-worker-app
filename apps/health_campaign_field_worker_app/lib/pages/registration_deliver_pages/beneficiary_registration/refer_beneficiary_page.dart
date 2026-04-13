@@ -1,0 +1,466 @@
+import 'package:digit_data_model/data_model.dart'
+    hide ReferralModel, ReferralAdditionalFields;
+import 'package:digit_data_model/blocs/facility/facility.dart';
+import 'package:digit_ui_components/digit_components.dart';
+import 'package:digit_ui_components/enum/app_enums.dart';
+import 'package:digit_ui_components/theme/spacers.dart';
+import 'package:digit_ui_components/widgets/atoms/digit_button.dart';
+import 'package:digit_ui_components/widgets/atoms/pop_up_card.dart';
+import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import '../../../blocs/registration_deliver/app_localization.dart';
+import '../../../blocs/registration_deliver/delivery_intervention/deliver_intervention.dart';
+import '../../../blocs/registration_deliver/referral_management/referral_management.dart';
+import '../../../blocs/registration_deliver/household_overview/household_overview.dart';
+import '../../../blocs/registration_deliver/search_households/search_households.dart';
+import '../../../models/entities/roles_type.dart';
+import '../../../models/registration_deliver_model/entities/referral.dart';
+import '../../../models/registration_deliver_model/entities/status.dart';
+import '../../../utils/environment_config.dart';
+import '../../../utils/registration_deliver_utils/i18_key_constants.dart'
+    as i18_local;
+import '../../../utils/registration_deliver_utils/utils.dart';
+import '../../../utils/utils.dart' hide RegistrationDeliverySingleton;
+import '../../../widgets/custom_back_navigation.dart';
+import '../../../widgets/registartion_deliver/localized.dart';
+import 'package:registration_delivery/utils/i18_key_constants.dart' as i18_rd;
+
+/// Referral details after TB screening (facility search required).
+class TbReferBeneficiaryPage extends LocalizedStatefulWidget {
+  final String projectBeneficiaryClientRefId;
+  final IndividualModel individual;
+  final String householdClientReferenceId;
+  final String administrativeAreaCode;
+  final List<String> referralReasons;
+  final String tbScreeningPayload;
+
+  const TbReferBeneficiaryPage({
+    super.key,
+    super.appLocalizations,
+    required this.projectBeneficiaryClientRefId,
+    required this.individual,
+    required this.householdClientReferenceId,
+    required this.administrativeAreaCode,
+    required this.referralReasons,
+    required this.tbScreeningPayload,
+  });
+
+  @override
+  State<TbReferBeneficiaryPage> createState() => _TbReferBeneficiaryPageState();
+}
+
+class _TbReferBeneficiaryPageState extends LocalizedState<TbReferBeneficiaryPage> {
+  final _busy = ValueNotifier<bool>(false);
+  FacilityModel? _selected;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<FacilityBloc>().add(
+            FacilityEvent.loadForProjectId(
+              projectId: RegistrationDeliverySingleton().projectId!,
+            ),
+          );
+    });
+  }
+
+  @override
+  void dispose() {
+    _busy.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickFacility(List<FacilityModel> healthFacilities) async {
+    final picked = await Navigator.of(context, rootNavigator: true)
+        .push<FacilityModel>(
+      MaterialPageRoute(
+        builder: (ctx) => _TbFacilitySearchPage(
+          facilities: healthFacilities,
+          localizations: localizations,
+        ),
+      ),
+    );
+    if (picked != null && mounted) {
+      setState(() => _selected = picked);
+    }
+  }
+
+  Future<void> _submit(List<FacilityModel> healthFacilities) async {
+    if (_selected == null) return;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => Popup(
+        title: localizations.translate(i18_rd.deliverIntervention.dialogTitle),
+        type: PopUpType.simple,
+        description:
+            localizations.translate(i18_rd.deliverIntervention.dialogContent),
+        actions: [
+          DigitButton(
+            label: localizations.translate(i18_rd.common.coreCommonSubmit),
+            onPressed: () =>
+                Navigator.of(context, rootNavigator: true).pop(true),
+            type: DigitButtonType.primary,
+            size: DigitButtonSize.large,
+          ),
+          DigitButton(
+            label: localizations.translate(i18_rd.common.coreCommonCancel),
+            onPressed: () =>
+                Navigator.of(context, rootNavigator: true).pop(false),
+            type: DigitButtonType.secondary,
+            size: DigitButtonSize.large,
+          ),
+        ],
+      ),
+    );
+    if (confirm != true || !mounted) return;
+
+    _busy.value = true;
+    final facility = _selected!;
+
+    try {
+      context.read<ReferralBloc>().add(
+            ReferralSubmitEvent(
+              ReferralModel(
+                clientReferenceId: IdGen.i.identifier,
+                projectId: context.projectId,
+                projectBeneficiaryClientReferenceId:
+                    widget.projectBeneficiaryClientRefId,
+                referrerId: context.loggedInUserUuid,
+                recipientId: facility.id,
+                recipientType: 'FACILITY',
+                reasons: widget.referralReasons.isNotEmpty
+                    ? widget.referralReasons
+                    : ['TB_SCREENING'],
+                tenantId: envConfig.variables.tenantId,
+                rowVersion: 1,
+                auditDetails: AuditDetails(
+                  createdBy: context.loggedInUserUuid,
+                  createdTime: DateTime.now().millisecondsSinceEpoch,
+                  lastModifiedBy: context.loggedInUserUuid,
+                  lastModifiedTime: DateTime.now().millisecondsSinceEpoch,
+                ),
+                clientAuditDetails: ClientAuditDetails(
+                  createdBy: context.loggedInUserUuid,
+                  createdTime: DateTime.now().millisecondsSinceEpoch,
+                  lastModifiedBy: context.loggedInUserUuid,
+                  lastModifiedTime: DateTime.now().millisecondsSinceEpoch,
+                ),
+                additionalFields: ReferralAdditionalFields(
+                  version: 1,
+                  fields: [
+                    const AdditionalField('referralType', 'tbScreening'),
+                    AdditionalField(
+                      'childClientReferenceId',
+                      widget.individual.clientReferenceId,
+                    ),
+                    AdditionalField(
+                      'householdClientReferenceId',
+                      widget.householdClientReferenceId,
+                    ),
+                    AdditionalField(
+                      'administrativeAreaCode',
+                      widget.administrativeAreaCode,
+                    ),
+                    AdditionalField(
+                      'tbScreeningData',
+                      widget.tbScreeningPayload,
+                    ),
+                  ],
+                ),
+              ),
+              false,
+            ),
+          );
+
+      final taskRef = IdGen.i.identifier;
+      if (!mounted) return;
+      context.read<DeliverInterventionBloc>().add(
+            DeliverInterventionSubmitEvent(
+              task: TaskModel(
+                projectBeneficiaryClientReferenceId:
+                    widget.projectBeneficiaryClientRefId,
+                clientReferenceId: taskRef,
+                tenantId: envConfig.variables.tenantId,
+                rowVersion: 1,
+                auditDetails: AuditDetails(
+                  createdBy: context.loggedInUserUuid,
+                  createdTime: DateTime.now().millisecondsSinceEpoch,
+                ),
+                projectId: context.projectId,
+                status: Status.beneficiaryReferred.toValue(),
+                clientAuditDetails: ClientAuditDetails(
+                  createdBy: context.loggedInUserUuid,
+                  createdTime: DateTime.now().millisecondsSinceEpoch,
+                  lastModifiedBy: context.loggedInUserUuid,
+                  lastModifiedTime: DateTime.now().millisecondsSinceEpoch,
+                ),
+                additionalFields: TaskAdditionalFields(
+                  version: 1,
+                  fields: [
+                    AdditionalField(
+                      'taskStatus',
+                      Status.beneficiaryReferred.toValue(),
+                    ),
+                    const AdditionalField('referralType', 'tbScreening'),
+                    AdditionalField(
+                      'childClientReferenceId',
+                      widget.individual.clientReferenceId,
+                    ),
+                    AdditionalField(
+                      'householdClientReferenceId',
+                      widget.householdClientReferenceId,
+                    ),
+                    AdditionalField(
+                      'administrativeAreaCode',
+                      widget.administrativeAreaCode,
+                    ),
+                  ],
+                ),
+                address: widget.individual.address?.first.copyWith(
+                  relatedClientReferenceId: taskRef,
+                  id: null,
+                ),
+              ),
+              isEditing: false,
+              boundaryModel: RegistrationDeliverySingleton().boundary!,
+            ),
+          );
+
+      if (!mounted) return;
+      context.read<SearchHouseholdsBloc>().add(const SearchHouseholdsEvent.clear());
+      context.read<HouseholdOverviewBloc>().add(
+            HouseholdOverviewReloadEvent(
+              projectId: context.projectId,
+              projectBeneficiaryType: RegistrationDeliverySingleton().beneficiaryType!,
+            ),
+          );
+
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(true);
+    } finally {
+      _busy.value = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final dateStr = DateFormat('dd/MM/yyyy').format(DateTime.now());
+
+    return BlocBuilder<FacilityBloc, FacilityState>(
+      builder: (ctx, facilityState) {
+        final healthFacilities = facilityState.whenOrNull(
+              fetched: (facilities, allFacilities) {
+                final projectFacilities = facilities
+                    .where((e) => e.usage == Constants.healthFacility)
+                    .toList();
+                return projectFacilities.isEmpty ? allFacilities : projectFacilities;
+              },
+            ) ??
+            [];
+
+        if (facilityState.maybeWhen(loading: () => true, orElse: () => false) &&
+            healthFacilities.isEmpty) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        return Scaffold(
+          body: Column(
+            children: [
+              const CustomBackNavigationHelpHeaderWidget(showHelp: false),
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(spacer2),
+                  child: DigitCard(
+                    children: [
+                      Text(
+                        localizations.translate(
+                          i18_local.referBeneficiary.referralDetails,
+                        ),
+                        style: theme.textTheme.displayMedium,
+                      ),
+                      const SizedBox(height: spacer2),
+                      _readOnlyRow(
+                        theme,
+                        localizations.translate(
+                          i18_local.referBeneficiary.dateOfReferralLabel,
+                        ),
+                        dateStr,
+                      ),
+                      _readOnlyRow(
+                        theme,
+                        localizations.translate(
+                          i18_local.referBeneficiary.administrationUnitFormLabel,
+                        ),
+                        localizations.translate(widget.administrativeAreaCode),
+                      ),
+                      _readOnlyRow(
+                        theme,
+                        localizations.translate(
+                          i18_local.referBeneficiary.referredByLabel,
+                        ),
+                        context.loggedInUser.userName ?? '',
+                      ),
+                      const SizedBox(height: spacer2),
+                      Text(
+                        localizations.translate(
+                          i18_local.referBeneficiary.referredToLabel,
+                        ),
+                        style: theme.textTheme.titleSmall,
+                      ),
+                      const SizedBox(height: spacer1),
+                      InkWell(
+                        onTap: healthFacilities.isEmpty
+                            ? null
+                            : () => _pickFacility(healthFacilities),
+                        child: InputDecorator(
+                          decoration: InputDecoration(
+                            border: const OutlineInputBorder(),
+                            errorText: _selected == null
+                                ? localizations.translate(
+                                    i18_local.common.corecommonRequired,
+                                  )
+                                : null,
+                          ),
+                          child: Text(
+                            _selected == null
+                                ? localizations.translate(
+                                    i18_local.common.searchByName,
+                                  )
+                                : localizations.translate(
+                                    'FAC_${_selected!.id}',
+                                  ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(spacer2),
+                child: ValueListenableBuilder<bool>(
+                  valueListenable: _busy,
+                  builder: (context, busy, _) {
+                    return DigitButton(
+                      label: localizations.translate(
+                        i18_local.common.coreCommonSubmit,
+                      ),
+                      type: DigitButtonType.primary,
+                      size: DigitButtonSize.large,
+                      mainAxisSize: MainAxisSize.max,
+                      isDisabled: busy || _selected == null,
+                      onPressed: () => _submit(healthFacilities),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _readOnlyRow(ThemeData theme, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: spacer2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: theme.textTheme.titleSmall),
+          const SizedBox(height: spacer1),
+          Text(value, style: theme.textTheme.bodyLarge),
+        ],
+      ),
+    );
+  }
+}
+
+class _TbFacilitySearchPage extends StatelessWidget {
+  const _TbFacilitySearchPage({
+    required this.facilities,
+    required this.localizations,
+  });
+
+  final List<FacilityModel> facilities;
+  final RegistrationDeliveryLocalization localizations;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final searchController = TextEditingController();
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(
+          localizations.translate(i18_local.tbScreening.searchFacilitiesHeader),
+        ),
+      ),
+      body: StatefulBuilder(
+        builder: (context, setState) {
+          void filter() => setState(() {});
+
+          final q = searchController.text.trim().toLowerCase();
+          final filtered = q.isEmpty
+              ? facilities
+              : facilities.where((f) {
+                  final name = localizations
+                      .translate('FAC_${f.id}')
+                      .toLowerCase();
+                  final id = f.id.toLowerCase();
+                  return name.contains(q) || id.contains(q);
+                }).toList();
+
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(spacer2),
+                child: TextField(
+                  controller: searchController,
+                  decoration: InputDecoration(
+                    hintText:
+                        localizations.translate(i18_local.common.searchByName),
+                    border: const OutlineInputBorder(),
+                  ),
+                  onChanged: (_) => filter(),
+                ),
+              ),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    final f = filtered[index];
+                    return ListTile(
+                      title: Text(
+                        localizations.translate('FAC_${f.id}'),
+                        style: theme.textTheme.bodyLarge,
+                      ),
+                      subtitle: Text(
+                        f.id,
+                        style: theme.textTheme.bodySmall,
+                      ),
+                      onTap: () => Navigator.of(context).pop(f),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+bool contextIsMdtUser(BuildContext context) {
+  final roles = context.loggedInUser.roles.map((e) => e.code).toSet();
+  return roles.contains(RolesType.distributor.toValue()) ||
+      roles.contains(RolesType.communityDistributor.toValue());
+}

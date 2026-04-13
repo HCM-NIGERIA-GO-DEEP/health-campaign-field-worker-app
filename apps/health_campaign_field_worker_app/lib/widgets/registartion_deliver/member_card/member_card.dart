@@ -45,6 +45,7 @@ class MemberCard extends StatelessWidget {
   final bool isBeneficiaryRefused;
   final bool isBeneficiaryAbsent;
   final String? projectBeneficiaryClientReferenceId;
+  final VoidCallback? tbAssessmentAction;
 
   const MemberCard({
     super.key,
@@ -66,6 +67,7 @@ class MemberCard extends StatelessWidget {
     this.isBeneficiaryRefused = false,
     this.isBeneficiaryAbsent = false,
     this.sideEffects,
+    this.tbAssessmentAction,
   });
 
   @override
@@ -573,6 +575,27 @@ class MemberCard extends StatelessWidget {
                       ],
                     ),
                   ),
+                ),
+                Offstage(
+                  offstage: isHead ||
+                      beneficiaryType != BeneficiaryType.individual ||
+                      tbAssessmentAction == null,
+                  child: tbAssessmentAction == null
+                      ? const SizedBox.shrink()
+                      : Padding(
+                          padding: const EdgeInsets.all(spacer1),
+                          child: DigitButton(
+                            label: localizations.translate(
+                              i18.memberCard.tbAssessmentButton,
+                            ),
+                            isDisabled:
+                                (projectBeneficiaries ?? []).isEmpty,
+                            type: DigitButtonType.secondary,
+                            size: DigitButtonSize.medium,
+                            mainAxisSize: MainAxisSize.max,
+                            onPressed: tbAssessmentAction!,
+                          ),
+                        ),
                 ),
               ])
         ]);

@@ -19,6 +19,7 @@ const individualDetailsShowcase = IndividualDetailsShowcase();
 const householdOverviewShowcase = HouseholdOverviewShowcase();
 const deliverInterventionShowcase = DeliverInterventionShowcase();
 const checklist = Checklist();
+const tbScreening = TbScreening();
 const clfLocationShowCase = CLFLocationShowcase();
 const clfDetailsShowcase = CLFDetailsShowcase();
 
@@ -620,6 +621,9 @@ class MemberCard {
       'MEMBER_CARD_RECORD_ADVERSE_EVENTS_LABEL';
 
   String get referBeneficiaryLabel => 'MEMBER_CARD_REFER_BENEFICIARY_LABEL';
+
+  /// TB screening entry from household (MDT / field user).
+  String get tbAssessmentButton => 'MEMBER_CARD_TB_ASSESSMENT_BUTTON';
 }
 
 class DeliverIntervention {
@@ -1111,6 +1115,35 @@ class CLFDetailsShowcase {
 
   String get numberOfChildrenBelow5InHousehold =>
       'CLF_DETAILS_SHOWCASE_NO_OF_CHILD_BELOW_5_IN_INSTITUTION';
+}
+
+/// TB eligibility screening (household child).
+class TbScreening {
+  const TbScreening();
+
+  String get screenTitle => 'TB_SCREENING_TITLE';
+
+  String get q1 => 'TB_SCREENING_Q1_COUGH_TWO_WEEKS';
+  String get q2 => 'TB_SCREENING_Q2_FEVER_TWO_WEEKS';
+  String get q3 => 'TB_SCREENING_Q3_WEIGHT_LOSS';
+  String get q4 => 'TB_SCREENING_Q4_TB_CONTACT';
+  String get q5 => 'TB_SCREENING_Q5_NOT_EATING';
+  String get q6 => 'TB_SCREENING_Q6_LESS_PLAYFUL';
+
+  String get additionalSymptomsTitle => 'TB_SCREENING_ADDITIONAL_SYMPTOMS_TITLE';
+
+  String get symptomNightSweats => 'TB_SCREENING_SYMPTOM_NIGHT_SWEATS';
+  String get symptomFatigue => 'TB_SCREENING_SYMPTOM_FATIGUE';
+  String get symptomLymph => 'TB_SCREENING_SYMPTOM_LYMPH';
+
+  String get additionalSymptomsRequired =>
+      'TB_SCREENING_ADDITIONAL_SYMPTOMS_REQUIRED';
+
+  String get readyToSubmitTitle => 'TB_SCREENING_READY_TO_SUBMIT_TITLE';
+  String get readyToSubmitMessage => 'TB_SCREENING_READY_TO_SUBMIT_MESSAGE';
+  String get proceed => 'TB_SCREENING_PROCEED';
+
+  String get searchFacilitiesHeader => 'COMMON_FACILITY_SEARCH_HEADER_LABEL';
 }
 
 class BednetDistribution {
