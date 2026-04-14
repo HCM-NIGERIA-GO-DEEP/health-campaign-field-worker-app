@@ -16,6 +16,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/delivery_intervention/deliver_intervention.dart';
 import '../../../models/bednet_distribution/bednet_distribution_models.dart';
+import '../../../models/entities/additional_fields_type.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/back_navigation_help_header.dart';
@@ -23,6 +24,7 @@ import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/lo
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/table_card/table_card.dart';
 
 import '../../../router/app_router.dart';
+import '../../../widgets/registartion_deliver/member_card/custom_member_card.dart';
 import 'check_eligibility_assessment.dart';
 import 'refer_beneficiary_page.dart' show contextIsMdtUser;
 import '../../bednet_distribution/bednet_individual_details_wrapper.dart';
@@ -31,7 +33,7 @@ import '../../../blocs/registration_deliver/search_households/search_bloc_common
 import '../../../blocs/registration_deliver/search_households/search_households.dart';
 import '../../../utils/registration_deliver_utils/i18_key_constants.dart'
     as i18;
-import '../../../widgets/registartion_deliver/member_card/member_card.dart';
+// import '../../../widgets/registartion_deliver/member_card/member_card.dart';
 
 @RoutePage()
 class CustomHouseholdOverviewPage extends LocalizedStatefulWidget {
@@ -673,9 +675,39 @@ class _CustomHouseholdOverviewPageState
                                                 final yearsAge = age?.years;
                                                 final monthsAge = age?.months;
 
-                                                return MemberCard(
+                                                final householdModel =
+                                                    wrapper.household;
+
+                                                return CustomMemberCard(
                                                   isHead: isHead,
                                                   individual: e,
+                                                  bednetHousehold:
+                                                      householdModel,
+                                                  bednetHeadDisplayName:
+                                                      _overviewHouseholdHeadDisplayName(
+                                                    wrapper,
+                                                  ),
+                                                  bednetMemberCount: () {
+                                                    final fromHousehold =
+                                                        householdModel
+                                                            ?.memberCount;
+                                                    if (fromHousehold != null &&
+                                                        fromHousehold > 0) {
+                                                      return fromHousehold;
+                                                    }
+                                                    final n = wrapper.members
+                                                            ?.length ??
+                                                        0;
+                                                    return n > 0 ? n : 1;
+                                                  }(),
+                                                  bednetChildrenUnder5Count:
+                                                      _childrenUnder5FromHousehold(
+                                                    householdModel,
+                                                  ),
+                                                  bednetDeliveryEToken:
+                                                      _bednetDeliveryEToken(
+                                                    wrapper,
+                                                  ),
                                                   projectBeneficiaries:
                                                       projectBeneficiary ?? [],
                                                   tasks: taskData,
@@ -1168,6 +1200,58 @@ class _CustomHouseholdOverviewPageState
   //         wrapper.headOfHousehold,
   //       );
   // }
+
+  /// Reads household additional field `e-Token` (same key as [HouseHoldDetailsPage]).
+  String? _eTokenFromHousehold(HouseholdModel? household) {
+    final fields = household?.additionalFields?.fields;
+    if (fields == null) return null;
+    final raw = fields
+        .firstWhere(
+          (f) => f.key == AdditionalFieldsType.eToken.toValue(),
+          orElse: () => AdditionalField(
+            AdditionalFieldsType.eToken.toValue(),
+            '',
+          ),
+        )
+        .value
+        .toString()
+        .trim();
+    if (raw.isEmpty) return null;
+    return raw;
+  }
+
+  /// Prefer household field; else project beneficiary [tag] (where synced with e-Token).
+  String? _bednetDeliveryEToken(HouseholdMemberWrapper wrapper) {
+    final fromHousehold = _eTokenFromHousehold(wrapper.household);
+    if (fromHousehold != null) return fromHousehold;
+    final hid = wrapper.household?.clientReferenceId;
+    if (hid == null || hid.isEmpty) return null;
+    final pb = wrapper.projectBeneficiaries?.firstWhereOrNull(
+      (b) => b.beneficiaryClientReferenceId == hid,
+    );
+    final tag = pb?.tag?.trim();
+    if (tag != null && tag.isNotEmpty) return tag;
+    return null;
+  }
+
+  /// Same parsing as [HouseHoldDetailsPage.buildForm] for children under 5.
+  int _childrenUnder5FromHousehold(HouseholdModel? household) {
+    final fields = household?.additionalFields?.fields;
+    if (fields == null) return 0;
+    return int.tryParse(
+          fields
+              .firstWhere(
+                (f) => f.key == AdditionalFieldsType.childrenUnder5.toValue(),
+                orElse: () => AdditionalField(
+                  AdditionalFieldsType.childrenUnder5.toValue(),
+                  '0',
+                ),
+              )
+              .value
+              .toString(),
+        ) ??
+        0;
+  }
 
   /// Prefer resolved [headOfHousehold], then any member tagged as head (same rules as [MemberCard]).
   String _overviewHouseholdHeadDisplayName(HouseholdMemberWrapper wrapper) {

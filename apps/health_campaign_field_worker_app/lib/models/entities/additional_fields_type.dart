@@ -25,5 +25,6 @@ enum AdditionalFieldsType {
   @MappableValue("e-Token") eToken,
   @MappableValue("EMPLOYEE") employee,
   @MappableValue("childrenUnder5") childrenUnder5,
+  @MappableValue("eolinOldNetsReturningCount") eolinOldNetsReturningCount,
   ;
 }

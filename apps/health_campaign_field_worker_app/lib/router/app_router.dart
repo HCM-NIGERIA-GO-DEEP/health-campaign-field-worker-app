@@ -48,6 +48,7 @@ import '../pages/project_facility_selection.dart';
 import '../pages/project_selection.dart';
 import '../pages/qr_details_page.dart';
 import '../pages/registration_deliver_pages/beneficiary/beneficiary_checklist.dart';
+import '../pages/registration_deliver_pages/beneficiary/beneficiary_checklist.dart';
 import '../pages/registration_deliver_pages/beneficiary/beneficiary_details.dart';
 import '../pages/registration_deliver_pages/beneficiary/deliver_intervention.dart';
 import '../pages/registration_deliver_pages/beneficiary/delivery_summary_page.dart';
@@ -172,6 +173,10 @@ class AppRouter extends _$AppRouter {
                 AutoRoute(
                   page: BeneficiaryDetailsRoute.page,
                   path: 'beneficiary-details',
+                ),
+                AutoRoute(
+                  page: BeneficiaryChecklistRoute.page,
+                  path: 'beneficiary-checklist',
                 ),
                 AutoRoute(
                   page: DeliverInterventionRoute.page,

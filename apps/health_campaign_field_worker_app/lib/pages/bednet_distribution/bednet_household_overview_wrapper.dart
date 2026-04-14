@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import 'package:survey_form/survey_form.dart';
 
 import '../../blocs/bednet_distribution/bednet_distribution.dart';
+import '../../blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
 import '../../blocs/registration_deliver/delivery_intervention/deliver_intervention.dart';
 import '../../blocs/registration_deliver/household_overview/household_overview.dart';
 import '../../blocs/registration_deliver/search_households/household_global_seach.dart';
@@ -162,6 +163,20 @@ class BednetHouseholdOverviewWrapperPage extends StatelessWidget
             const ServiceDefinitionEmptyState(),
             serviceDefinitionDataRepository: serviceDefinition,
           )..add(const ServiceDefinitionFetchEvent()),
+        ),
+        /// Required for [CustomMemberCard] "Deliver ITN" → [BednetEolinAssessmentPage]
+        /// (MaterialPageRoute passes this bloc down). Same wiring as
+        /// [BednetIndividualDetailsWrapperPage] / search add-household flow.
+        BlocProvider(
+          create: (_) => BeneficiaryRegistrationBloc(
+            const BeneficiaryRegistrationState.create(),
+            individualRepository: individual,
+            householdRepository: household,
+            householdMemberRepository: householdMember,
+            projectBeneficiaryRepository: projectBeneficiary,
+            taskDataRepository: task,
+            beneficiaryType: beneficiaryType,
+          ),
         ),
         BlocProvider(
           create: (_) => HouseholdOverviewBloc(

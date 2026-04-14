@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
@@ -16,21 +17,43 @@ class BednetHouseholdReviewPage extends StatelessWidget {
   final int childrenCount;
   final String? mobileNumber;
 
+  /// When set (e.g. from household [AdditionalFieldsType.eToken]), must match what
+  /// users see elsewhere; otherwise a deterministic synthetic token is used.
+  final String? householdEToken;
+
+  /// When both set, [BednetInformHouseholdPage] persists delivery via repositories
+  /// (overview bloc is not in [BeneficiaryRegistrationState.create]).
+  final HouseholdModel? bednetDeliveryHousehold;
+  final IndividualModel? bednetDeliveryHead;
+
   const BednetHouseholdReviewPage({
     super.key,
     required this.headName,
     required this.memberCount,
     required this.childrenCount,
     this.mobileNumber,
+    this.householdEToken,
+    this.bednetDeliveryHousehold,
+    this.bednetDeliveryHead,
   });
 
   int get _itnForDelivery => max(1, (memberCount / 2).ceil());
 
-  String get _token {
+  /// Same algorithm as before; used only when [householdEToken] is null/empty.
+  static String syntheticEToken({
+    required String headName,
+    required int memberCount,
+  }) {
     final random = Random(headName.hashCode + memberCount);
     final part1 = (100 + random.nextInt(900)).toString();
     final part2 = (100 + random.nextInt(900)).toString();
     return 'E$part1-$part2';
+  }
+
+  String get _effectiveToken {
+    final stored = householdEToken?.trim();
+    if (stored != null && stored.isNotEmpty) return stored;
+    return syntheticEToken(headName: headName, memberCount: memberCount);
   }
 
   @override
@@ -57,8 +80,10 @@ class BednetHouseholdReviewPage extends StatelessWidget {
                     builder: (_) => BlocProvider.value(
                       value: registrationBloc,
                       child: BednetInformHouseholdPage(
-                        eToken: _token,
+                        eToken: _effectiveToken,
                         itnForDelivery: _itnForDelivery,
+                        existingDeliveryHousehold: bednetDeliveryHousehold,
+                        existingDeliveryHead: bednetDeliveryHead,
                       ),
                     ),
                   ),
@@ -92,7 +117,7 @@ class BednetHouseholdReviewPage extends StatelessWidget {
                   DigitCard(
                     children: [
                       _kv('Mobile Number', mobileNumber?.isNotEmpty == true ? mobileNumber! : '--'),
-                      _kv('E-Token', _token),
+                      _kv('E-Token', _effectiveToken),
                     ],
                   ),
                   const SizedBox(height: spacer2),
