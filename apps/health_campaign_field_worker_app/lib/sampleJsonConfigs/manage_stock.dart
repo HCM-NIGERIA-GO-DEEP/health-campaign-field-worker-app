@@ -635,11 +635,15 @@ final dynamic sampleInventoryFlows = {
                   "value": {
                     "hierarchyMapping": {
                       "State": {
-                        "forReceipt": ["Storing Resource"],
-                        "forIssue": ["Warehouse"]
+                        "forReceipt": ["Central Facility"],
+                        "forIssue": ["LGA Facility"]
+                      },
+                      "LGA": {
+                        "forReceipt": ["State Facility"],
+                        "forIssue": ["Health Facility"]
                       },
                       "Health Facility": {
-                        "forReceipt": ["Warehouse"],
+                        "forReceipt": ["LGA Facility"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
                     },
@@ -798,14 +802,18 @@ final dynamic sampleInventoryFlows = {
                   "type": "facilityHierarchy",
                   "value": {
                     "hierarchyMapping": {
-                      // "State": {
-                      //   "forReceipt": ["Storing Resource"],
-                      //   "forIssue": ["Warehouse"]
-                      // },
-                      // "Health Facility": {
-                      //   "forReceipt": ["Warehouse"],
-                      //   "forIssue": ["DELIVERY_TEAM"]
-                      // }
+                      "State": {
+                        "forReceipt": ["Central Facility"],
+                        "forIssue": ["LGA Facility"]
+                      },
+                      "LGA": {
+                        "forReceipt": ["State Facility"],
+                        "forIssue": ["Health Facility"]
+                      },
+                      "Health Facility": {
+                        "forReceipt": ["LGA Facility"],
+                        "forIssue": ["DELIVERY_TEAM"]
+                      }
                     },
                     "useTransactionType": true
                   },
@@ -1534,11 +1542,15 @@ final dynamic sampleInventoryFlows = {
                   "value": {
                     "hierarchyMapping": {
                       "State": {
-                        "forReceipt": ["Storing Resource"],
-                        "forIssue": ["Warehouse"]
+                        "forReceipt": ["Central Facility"],
+                        "forIssue": ["LGA Facility"]
+                      },
+                      "LGA": {
+                        "forReceipt": ["State Facility"],
+                        "forIssue": ["Health Facility"]
                       },
                       "Health Facility": {
-                        "forReceipt": ["Warehouse"],
+                        "forReceipt": ["LGA Facility"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
                     },
@@ -1686,14 +1698,18 @@ final dynamic sampleInventoryFlows = {
                   "type": "facilityHierarchy",
                   "value": {
                     "hierarchyMapping": {
-                      // "State": {
-                      //   "forReceipt": ["Storing Resource"],
-                      //   "forIssue": ["Warehouse"]
-                      // },
-                      // "Health Facility": {
-                      //   "forReceipt": ["Warehouse"],
-                      //   "forIssue": ["DELIVERY_TEAM"]
-                      // }
+                      "State": {
+                        "forReceipt": ["Central Facility"],
+                        "forIssue": ["LGA Facility"]
+                      },
+                      "LGA": {
+                        "forReceipt": ["State Facility"],
+                        "forIssue": ["Health Facility"]
+                      },
+                      "Health Facility": {
+                        "forReceipt": ["LGA Facility"],
+                        "forIssue": ["DELIVERY_TEAM"]
+                      }
                     },
                     "useTransactionType": true
                   },

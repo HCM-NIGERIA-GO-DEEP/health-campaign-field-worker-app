@@ -182,8 +182,10 @@ class Constants {
   static const String provincialBoundaryLevel = 'Provincia';
   static const String centralFacility = 'Storing Resource';
   static const String stateBoundaryLevel = 'State';
-  static const String stateFacility = 'Warehouse';
-  static const String lgaFacility = 'LGA Facility';
+  static const String stateFacility = 'Regional Facility';
+  static const String lgaFacility = 'District Facility';
+  static const String dhFacility = 'Warehouse';
+  static const String dhBoundaryLevel = 'DH';
 
   static List<LocalRepository> getLocalRepositories(
     LocalSqlDataStore sql,

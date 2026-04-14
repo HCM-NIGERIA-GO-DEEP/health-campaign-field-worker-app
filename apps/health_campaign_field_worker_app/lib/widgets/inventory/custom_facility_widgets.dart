@@ -308,21 +308,21 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
 
     //   if (facilityLevel == null) return true;
 
-    //     if (isLessExcessFlow) {
-    //       if (isToField) return facilityLevel == 'parent';
-    //       if (isFromField) return facilityLevel == 'current';
-    //     } else if (isReturnFlow) {
-    //       if (isToField) return facilityLevel == 'parent';
-    //       if (isFromField) return facilityLevel == 'current';
-    //     } else if (transactionType == 'DISPATCHED' ||
-    //         transactionType == 'ISSUED') {
-    //       if (isToField) return facilityLevel == 'child';
-    //       if (isFromField) return facilityLevel == 'current';
-    //     } else if (transactionType == 'RECEIVED' ||
-    //         transactionType == 'RECEIPT') {
-    //       if (isToField) return facilityLevel == 'current';
-    //       if (isFromField) return facilityLevel == 'parent';
-    //  }
+    //   if (isLessExcessFlow) {
+    //     if (isToField) return facilityLevel == 'parent';
+    //     if (isFromField) return facilityLevel == 'current';
+    //   } else if (isReturnFlow) {
+    //     if (isToField) return facilityLevel == 'parent';
+    //     if (isFromField) return facilityLevel == 'current';
+    //   } else if (transactionType == 'DISPATCHED' ||
+    //       transactionType == 'ISSUED') {
+    //     if (isToField) return facilityLevel == 'child';
+    //     if (isFromField) return facilityLevel == 'current';
+    //   } else if (transactionType == 'RECEIVED' ||
+    //       transactionType == 'RECEIPT') {
+    //     if (isToField) return facilityLevel == 'current';
+    //     if (isFromField) return facilityLevel == 'parent';
+    //   }
 
     //   return true;
     // }).toList();
@@ -334,12 +334,32 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
     String? usage = "";
     bool? showTeamOption = false;
 
+    final boundaryLevel = context.selectedProject.address?.boundaryType;
+    //      ==
+    // Constants.lgaBoundaryLevel
+
     if (stockEntryType == 'ISSUED') {
       if (isWareHouseMgr) {
-        if (isFromField) {
-          usage = Constants.stateFacility;
+        if (boundaryLevel == Constants.stateBoundaryLevel) {
+          if (isFromField) {
+            usage = Constants.stateFacility;
+          } else {
+            usage = Constants.lgaFacility;
+          }
         } else {
-          usage = Constants.healthFacility;
+          if (boundaryLevel == Constants.stateBoundaryLevel) {
+            if (isFromField) {
+              usage = Constants.dhFacility;
+            } else {
+              usage = Constants.lgaFacility;
+            }
+          } else {
+            if (isFromField) {
+              usage = Constants.lgaFacility;
+            } else {
+              usage = Constants.dhFacility;
+            }
+          }
         }
       } else if (isDistributor) {
         usage = "None";
@@ -353,10 +373,18 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
       }
     } else {
       if (isWareHouseMgr) {
-        if (isFromField) {
-          usage = Constants.stateFacility;
+        if (boundaryLevel == Constants.stateBoundaryLevel) {
+          if (isFromField) {
+            usage = Constants.stateFacility;
+          } else {
+            usage = Constants.centralFacility;
+          }
         } else {
-          usage = Constants.centralFacility;
+          if (isFromField) {
+            usage = Constants.lgaFacility;
+          } else {
+            usage = Constants.stateFacility;
+          }
         }
       } else if (isDistributor) {
         if (isToField) {
@@ -366,7 +394,7 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
         }
       } else {
         if (isFromField) {
-          usage = Constants.healthFacility;
+          usage = Constants.lgaFacility;
         } else {
           usage = Constants.stateFacility;
         }
