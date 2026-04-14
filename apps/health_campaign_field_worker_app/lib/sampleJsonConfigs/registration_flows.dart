@@ -10823,6 +10823,10 @@ final dynamic sampleFlows = {
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
                       },
+                      {"key": "ec1", "value": "{{eligibilityChecklist.ec1}}"},
+                      {"key": "ec2", "value": "{{eligibilityChecklist.ec2}}"},
+                      {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
+                      {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
                       {"key": "sourceFlow", "value": "CHECKLIST"}
                     ],
                     "name": "REFER_BENEFICIARY",
@@ -10971,6 +10975,10 @@ final dynamic sampleFlows = {
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
                       },
+                      {"key": "ec1", "value": "{{eligibilityChecklist.ec1}}"},
+                      {"key": "ec2", "value": "{{eligibilityChecklist.ec2}}"},
+                      {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
+                      {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
                       {"key": "sourceFlow", "value": "CHECKLIST"}
                     ],
                     "name": "REFER_BENEFICIARY",
