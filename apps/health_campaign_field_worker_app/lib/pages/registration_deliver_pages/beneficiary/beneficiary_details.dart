@@ -463,7 +463,7 @@ class BeneficiaryDetailsPageState
         Align(
           alignment: Alignment.centerLeft,
           child: Text(
-            localizations.translate(i18.beneficiaryDetails.currentCycleLabel),
+            localizations.translate(i18.beneficiaryDetails.currentroundLabel),
             style: textTheme.headingL.copyWith(
               color: theme.colorTheme.primary.primary2,
             ),

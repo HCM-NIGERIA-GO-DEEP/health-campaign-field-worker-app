@@ -1,5 +1,6 @@
 import 'package:digit_ui_components/digit_components.dart';
-import 'package:digit_ui_components/widgets/molecules/panel_cards.dart';
+import 'package:digit_ui_components/theme/digit_extended_theme.dart';
+import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -89,6 +90,9 @@ class _BednetSuccessPageState extends LocalizedState<BednetSuccessPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.digitTextTheme(context);
+
     return PopScope(
       canPop: false,
       child: Scaffold(
@@ -98,15 +102,86 @@ class _BednetSuccessPageState extends LocalizedState<BednetSuccessPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                PanelCard(
-                  type: PanelType.success,
-                  title: localizations.translate(
-                    i18.acknowledgementSuccess.acknowledgementLabelText,
-                  ),
-                  description: localizations.translate(
-                    i18.acknowledgementSuccess.acknowledgementDescriptionText,
-                  ),
-                  actions: const [],
+                DigitCard(
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.only(
+                        left: spacer8,
+                        right: spacer8,
+                        top: spacer9,
+                        bottom: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.green.shade700,
+                        borderRadius: BorderRadius.circular(spacer2),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            localizations
+                                .translate(
+                                  i18.bednetDistribution
+                                      .informSuccessBednetsDelivered,
+                                )
+                                .replaceAll(
+                                  '{count}',
+                                  widget.itnForDelivery.toString(),
+                                ),
+                            style: textTheme.headingM.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: spacer2),
+                          Container(
+                            width: 32,
+                            height: 32,
+                            decoration: const BoxDecoration(
+                              color: Colors.white,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.check,
+                              color: Color(0xFF0B8D46),
+                              size: 22,
+                            ),
+                          ),
+                          const SizedBox(height: spacer1),
+                          Text(
+                            localizations.translate(
+                              i18.bednetDistribution.informSuccessETokenLabel,
+                            ),
+                            style: textTheme.bodyS.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                          const SizedBox(height: spacer7),
+                          SelectableText(
+                            widget.eToken,
+                            style: textTheme.headingL.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: spacer1),
+                    Center(
+                      child: Text(
+                        localizations.translate(
+                          i18.bednetDistribution.informSuccessMessage,
+                        ),
+                        style: textTheme.bodyS,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: spacer2),
                 DigitButton(
@@ -121,7 +196,7 @@ class _BednetSuccessPageState extends LocalizedState<BednetSuccessPage> {
                 const SizedBox(height: spacer2),
                 DigitButton(
                   label: localizations.translate(
-                    i18.acknowledgementSuccess.actionLabelText,
+                    i18.acknowledgementSuccess.acknowledgementLabelText,
                   ),
                   type: DigitButtonType.secondary,
                   size: DigitButtonSize.large,
