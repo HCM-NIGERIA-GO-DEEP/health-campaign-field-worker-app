@@ -116,7 +116,7 @@ final dynamic sampleFlows = {
                       "{{contextData.0.individuals.IndividualModel.identifiers.0.identifierId}}"
                 },
                 {
-                  "key": "BENEFICIARY_DETAIL_ID_LABEL",
+                  "key": "HOME_BENEFICIARY_ID_LABEL",
                   "value":
                       "{{contextData.0.projectBeneficiaries.ProjectBeneficiaryModel.clientReferenceId}}"
                 },
