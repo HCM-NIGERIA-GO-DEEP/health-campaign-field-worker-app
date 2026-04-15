@@ -4247,7 +4247,7 @@ final dynamic sampleFlows = {
           "heading": "DATA_RECORDED_SUCCESSFULLY",
           "description": "DATA_RECORDED_SUCCESSFULLY_DESC",
           "properties": {"type": "success"},
-          "children": [
+          "additionalDetails": [
             {
               "type": "template",
               "format": "text",
@@ -4260,7 +4260,7 @@ final dynamic sampleFlows = {
               "type": "template",
               "format": "text",
               "label": "BENEFICIARY_ID_VALUE",
-              "value": "{{beneficiary.id}}",
+              "value": "81828128",
               "fieldName": "beneficiaryIdValue",
               "mandatory": true,
               "properties": {"style": "bold"}
