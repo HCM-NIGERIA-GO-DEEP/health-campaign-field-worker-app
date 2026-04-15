@@ -1,20 +1,23 @@
 import 'package:digit_ui_components/digit_components.dart';
-import 'package:digit_ui_components/theme/digit_extended_theme.dart';
-import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:digit_ui_components/widgets/molecules/panel_cards.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../blocs/registration_deliver/household_overview/household_overview.dart';
 import '../../blocs/registration_deliver/search_households/search_households.dart';
+import '../../router/app_router.dart';
 import '../../utils/registration_deliver_utils/i18_key_constants.dart' as i18;
+import '../../utils/registration_deliver_utils/utils.dart';
 import '../../widgets/registartion_deliver/localized.dart';
 
-/// Success screen after bednet "inform household" submit.
+/// Shown **only** after successful ITN / bednet **delivery** to the household —
+/// i.e. after submitting [BednetInformHouseholdPage] (EOLIN → inform → success).
 ///
-/// Routing matches [HouseholdAcknowledgementPage]: this flow uses the
-/// [Navigator] stack on top of [SearchBeneficiaryRoute], so "View household"
-/// pops back to [HouseHoldDetailsPage] and "Back to search" clears search
-/// state and pops to the search screen.
+/// Normal **household registration** (search → location → household details) uses
+/// [HouseholdAcknowledgementPage] instead.
+///
+/// Do not pop the auto-route stack twice when this overlay sits on
+/// [SearchBeneficiaryPage]: use [StackRouter.root.navigate] for explicit targets.
 class BednetSuccessPage extends LocalizedStatefulWidget {
   final String eToken;
   final int itnForDelivery;
@@ -31,26 +34,61 @@ class BednetSuccessPage extends LocalizedStatefulWidget {
 }
 
 class _BednetSuccessPageState extends LocalizedState<BednetSuccessPage> {
+  void _dispatchHouseholdOverviewReload() {
+    final projectId = RegistrationDeliverySingleton().projectId;
+    final beneficiaryType = RegistrationDeliverySingleton().beneficiaryType;
+    if (projectId == null || beneficiaryType == null) return;
+    try {
+      context.read<HouseholdOverviewBloc>().add(
+            HouseholdOverviewReloadEvent(
+              projectId: projectId,
+              projectBeneficiaryType: beneficiaryType,
+              offset: 0,
+              limit: 1000,
+            ),
+          );
+    } catch (_) {}
+  }
+
   void _onViewHouseholdDetails() {
     if (!mounted) return;
-    // Success → review → household details (two routes below this one).
-    // Navigator.of(context).pop();
-    if (mounted) Navigator.of(context).pop();
+    _dispatchHouseholdOverviewReload();
+    final root = context.router.root;
+    final nav = Navigator.of(context);
+    if (!nav.canPop()) return;
+    // Dismiss this overlay only; the route below is often [SearchBeneficiaryPage].
+    nav.pop();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      root.navigate(
+        BednetHouseholdOverviewWrapperRoute(
+          children: [
+            CustomHouseholdOverviewRoute(),
+          ],
+        ),
+      );
+    });
   }
 
   void _onBackToSearch() {
     if (!mounted) return;
-    context
-        .read<SearchHouseholdsBloc>()
-        .add(const SearchHouseholdsEvent.clear());
-    Navigator.of(context).popUntil((route) => route.isFirst);
+    try {
+      context
+          .read<SearchHouseholdsBloc>()
+          .add(const SearchHouseholdsEvent.clear());
+    } catch (_) {}
+
+    final root = context.router.root;
+    final nav = Navigator.of(context);
+    if (nav.canPop()) {
+      nav.pop();
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      root.navigate(SearchBeneficiaryRoute());
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final textTheme = theme.digitTextTheme(context);
-
     return PopScope(
       canPop: false,
       child: Scaffold(
@@ -70,55 +108,6 @@ class _BednetSuccessPageState extends LocalizedState<BednetSuccessPage> {
                   ),
                   actions: const [],
                 ),
-                const SizedBox(height: spacer2),
-                // DigitCard(
-                //   children: [
-                //     Text(
-                //       localizations.translate(
-                //         i18.bednetDistribution.informSuccessBednetsDelivered,
-                //       ),
-                //       style: textTheme.headingM.copyWith(
-                //         color: theme.colorTheme.primary.primary2,
-                //       ),
-                //       textAlign: TextAlign.center,
-                //     ),
-                //     const SizedBox(height: spacer1),
-                //     Text(
-                //       '${widget.itnForDelivery}',
-                //       style: textTheme.headingXl.copyWith(
-                //         color: theme.colorTheme.primary.primary2,
-                //         fontWeight: FontWeight.w700,
-                //       ),
-                //       textAlign: TextAlign.center,
-                //     ),
-                //     const SizedBox(height: spacer2),
-                //     Text(
-                //       localizations.translate(
-                //         i18.bednetDistribution.informSuccessETokenLabel,
-                //       ),
-                //       style: textTheme.bodyL.copyWith(
-                //         color: theme.colorTheme.primary.primary1,
-                //       ),
-                //       textAlign: TextAlign.center,
-                //     ),
-                //     const SizedBox(height: spacer1),
-                //     SelectableText(
-                //       widget.eToken,
-                //       style: textTheme.headingL.copyWith(
-                //         fontWeight: FontWeight.w700,
-                //       ),
-                //       textAlign: TextAlign.center,
-                //     ),
-                //     const SizedBox(height: spacer2),
-                //     Text(
-                //       localizations.translate(
-                //         i18.bednetDistribution.informSuccessMessage,
-                //       ),
-                //       style: textTheme.bodyL,
-                //       textAlign: TextAlign.center,
-                //     ),
-                //   ],
-                // ),
                 const SizedBox(height: spacer2),
                 DigitButton(
                   label: localizations.translate(

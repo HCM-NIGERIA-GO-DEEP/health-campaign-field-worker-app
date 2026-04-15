@@ -7,11 +7,13 @@ import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:health_campaign_field_worker_app/blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
-import 'package:health_campaign_field_worker_app/models/entities/additional_fields_type.dart';
-import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/extensions/extensions.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
+import '../../blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
+import '../../models/bednet_distribution/bednet_distribution_models.dart';
+import '../../models/entities/additional_fields_type.dart';
+import '../../models/registration_deliver_model/entities/status.dart';
+import 'package:digit_data_model/models/entities/address_type.dart';
+import '../../utils/registration_deliver_utils/extensions/extensions.dart';
+import '../../utils/registration_deliver_utils/utils.dart';
 
 import '../../utils/registration_deliver_utils/i18_key_constants.dart' as i18;
 import '../../widgets/header/back_navigation_help_header.dart';
@@ -195,11 +197,13 @@ class _BednetInformHouseholdPageState
     final tenantId = RegistrationDeliverySingleton().tenantId;
     final beneficiaryType = RegistrationDeliverySingleton().beneficiaryType!;
 
-    final pbRepo = context.repository<ProjectBeneficiaryModel,
-        ProjectBeneficiarySearchModel>(context);
-    final householdRepo =
-        context.repository<HouseholdModel, HouseholdSearchModel>(context);
-    final taskRepo = context.repository<TaskModel, TaskSearchModel>(context);
+    final pbRepo = context.read<
+        LocalRepository<ProjectBeneficiaryModel,
+            ProjectBeneficiarySearchModel>>();
+    final householdRepo = context
+        .repository<HouseholdModel, HouseholdSearchModel>(context);
+    final taskLocalRepository =
+        context.read<LocalRepository<TaskModel, TaskSearchModel>>();
 
     final benRef = beneficiaryType == BeneficiaryType.individual
         ? head.clientReferenceId
@@ -214,44 +218,33 @@ class _BednetInformHouseholdPageState
 
     final nowMs = DateTime.now().millisecondsSinceEpoch;
 
+    late final ProjectBeneficiaryModel resolvedPb;
     if (pbs.isNotEmpty) {
-      final first = pbs.first;
-      if (first.tag != widget.eToken) {
-        await pbRepo.update(first.copyWith(tag: widget.eToken));
-      }
-      final tasks = await taskRepo.search(
-        TaskSearchModel(
-          projectBeneficiaryClientReferenceId: [first.clientReferenceId],
-        ),
-      );
-      if (tasks.isNotEmpty &&
-          tasks.last.status == Status.closeHousehold.toValue()) {
-        await taskRepo.update(
-          tasks.last.copyWith(status: Status.notAdministered.toValue()),
-        );
+      resolvedPb = pbs.first;
+      if (resolvedPb.tag != widget.eToken) {
+        await pbRepo.update(resolvedPb.copyWith(tag: widget.eToken));
       }
     } else {
-      await pbRepo.create(
-        ProjectBeneficiaryModel(
-          tag: widget.eToken,
-          rowVersion: 1,
-          tenantId: tenantId,
-          clientReferenceId: IdGen.i.identifier,
-          dateOfRegistration: nowMs,
-          projectId: projectId,
-          beneficiaryClientReferenceId: benRef,
-          clientAuditDetails: ClientAuditDetails(
-            createdTime: nowMs,
-            lastModifiedTime: nowMs,
-            lastModifiedBy: userUuid,
-            createdBy: userUuid,
-          ),
-          auditDetails: AuditDetails(
-            createdBy: userUuid,
-            createdTime: nowMs,
-          ),
+      resolvedPb = ProjectBeneficiaryModel(
+        tag: widget.eToken,
+        rowVersion: 1,
+        tenantId: tenantId,
+        clientReferenceId: IdGen.i.identifier,
+        dateOfRegistration: nowMs,
+        projectId: projectId,
+        beneficiaryClientReferenceId: benRef,
+        clientAuditDetails: ClientAuditDetails(
+          createdTime: nowMs,
+          lastModifiedTime: nowMs,
+          lastModifiedBy: userUuid,
+          createdBy: userUuid,
+        ),
+        auditDetails: AuditDetails(
+          createdBy: userUuid,
+          createdTime: nowMs,
         ),
       );
+      await pbRepo.create(resolvedPb);
     }
 
     final existingHh = (await householdRepo.search(
@@ -293,6 +286,144 @@ class _BednetInformHouseholdPageState
         nonRecoverableError: existingHh.nonRecoverableError ?? false,
       ),
     );
+
+    await _recordHouseholdItnDeliveryTask(
+      taskRepo: taskLocalRepository,
+      projectBeneficiary: resolvedPb,
+      household: existingHh,
+      head: head,
+      userUuid: userUuid,
+      tenantId: tenantId,
+    );
+  }
+
+  /// Persists the ITN task with the same locality rules as
+  /// [DeliverInterventionBloc] create/update (must be awaited so navigation does
+  /// not race ahead of the DB write).
+  ///
+  /// Field correctness vs [CustomHouseholdOverviewPage] / [CustomMemberCard]:
+  /// - [TaskModel.projectBeneficiaryClientReferenceId] = [ProjectBeneficiaryModel.clientReferenceId]
+  ///   (PB id), not the household/individual beneficiary ref — matches `taskData` filter.
+  /// - [TaskModel.status] = [Status.administeredSuccess] so `isDelivered` is true.
+  /// - [TaskSearchModel.projectId] is a single project id string (not a list).
+  Future<void> _recordHouseholdItnDeliveryTask({
+    required LocalRepository<TaskModel, TaskSearchModel> taskRepo,
+    required ProjectBeneficiaryModel projectBeneficiary,
+    required HouseholdModel household,
+    required IndividualModel head,
+    required String userUuid,
+    required String? tenantId,
+  }) async {
+    final projectId = RegistrationDeliverySingleton().projectId;
+    final boundary = RegistrationDeliverySingleton().boundary;
+    // Submit dialog already requires boundary; keep guard if singleton changes.
+    if (projectId == null || boundary == null) return;
+
+    final existing = (await taskRepo.search(
+      TaskSearchModel(
+        projectId: projectId,
+        projectBeneficiaryClientReferenceId: [
+          projectBeneficiary.clientReferenceId,
+        ],
+      ),
+    )).firstOrNull;
+
+    if (existing?.status == Status.administeredSuccess.toValue()) {
+      return;
+    }
+
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final coords = household.bednetLatLngFromAdditionalFields;
+    final lat = coords.latitude ??
+        head.address?.firstOrNull?.latitude ??
+        household.address?.latitude ??
+        0.0;
+    final lng = coords.longitude ??
+        head.address?.firstOrNull?.longitude ??
+        household.address?.longitude ??
+        0.0;
+
+    final baseAddr = head.address?.firstOrNull ?? household.address;
+    final clientRef = existing?.clientReferenceId ?? IdGen.i.identifier;
+
+    final fields = <AdditionalField>[
+      const AdditionalField(
+        kBednetTaskAdministrationStatusKey,
+        kBednetTaskAdministrationSuccessStatus,
+      ),
+      AdditionalField(kBednetTaskDistributionDateKey, now),
+      AdditionalField('householdClientReferenceId', household.clientReferenceId),
+      AdditionalField('eToken', widget.eToken),
+      AdditionalField('itnDeliveredCount', widget.itnForDelivery),
+    ];
+
+    final address = (baseAddr ??
+            AddressModel(
+              relatedClientReferenceId: clientRef,
+              latitude: lat,
+              longitude: lng,
+              type: AddressType.permanent,
+              tenantId: tenantId,
+            ))
+        .copyWith(
+      relatedClientReferenceId: clientRef,
+      id: null,
+      latitude: lat,
+      longitude: lng,
+      tenantId: tenantId,
+    );
+
+    final TaskModel task;
+    if (existing != null) {
+      task = existing.copyWith(
+        status: Status.administeredSuccess.toValue(),
+        additionalFields: TaskAdditionalFields(
+          version: existing.additionalFields?.version ?? 1,
+          fields: fields,
+        ),
+        address: address,
+      );
+    } else {
+      task = TaskModel(
+        projectBeneficiaryClientReferenceId:
+            projectBeneficiary.clientReferenceId,
+        clientReferenceId: clientRef,
+        tenantId: tenantId,
+        rowVersion: 1,
+        auditDetails: AuditDetails(
+          createdBy: userUuid,
+          createdTime: now,
+        ),
+        clientAuditDetails: ClientAuditDetails(
+          createdBy: userUuid,
+          createdTime: now,
+        ),
+        projectId: projectId,
+        createdBy: userUuid,
+        status: Status.administeredSuccess.toValue(),
+        createdDate: now,
+        address: address,
+        additionalFields: TaskAdditionalFields(version: 1, fields: fields),
+      );
+    }
+
+    final code = boundary.code;
+    final name = boundary.name;
+    final localityModel = code == null || name == null
+        ? null
+        : LocalityModel(code: code, name: name);
+
+    if (existing != null) {
+      await taskRepo.update(task);
+    } else {
+      await taskRepo.create(
+        task.copyWith(
+          address: task.address?.copyWith(
+            locality: localityModel,
+          ),
+        ),
+      );
+    }
   }
 
   void _openSubmitDialog() async {

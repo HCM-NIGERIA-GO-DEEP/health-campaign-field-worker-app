@@ -238,12 +238,13 @@ HouseholdModel householdWithBednetSchoolHeadName(
         k != 'school_head' &&
         k != 'headteacher';
   }).toList();
+  final trimmed = givenName.trim();
   return household.copyWith(
     additionalFields: HouseholdAdditionalFields(
       version: household.additionalFields?.version ?? 1,
       fields: [
         ...filtered,
-        AdditionalField('schoolHead', givenName),
+        if (trimmed.isNotEmpty) AdditionalField('schoolHead', trimmed),
       ],
     ),
   );

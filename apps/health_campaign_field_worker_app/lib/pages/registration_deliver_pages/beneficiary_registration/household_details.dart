@@ -1,3 +1,6 @@
+import 'dart:math' show max;
+
+import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
@@ -16,6 +19,7 @@ import '../../../models/entities/additional_fields_type.dart';
 import '../../../blocs/bednet_distribution/bednet_distribution.dart';
 import '../../../blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
 import '../../../blocs/registration_deliver/search_households/search_households.dart';
+import '../../../pages/bednet_distribution/bednet_household_review.dart';
 import '../../../router/app_router.dart';
 import '../../../utils/registration_deliver_utils/extensions/extensions.dart';
 import '../../../utils/registration_deliver_utils/i18_key_constants.dart'
@@ -43,7 +47,7 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
   final TextEditingController _dateController = TextEditingController();
 
   /// When true, [BlocListener] opens [HouseholdAcknowledgementRoute] after persist
-  /// (bednet household registration from search).
+  /// (normal household registration from search → location → this page).
   bool _pendingHouseholdAcknowledgementNavigation = false;
 
   bool _isHouseholdDetailsViewOnly(BeneficiaryRegistrationState state) {
@@ -82,10 +86,24 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
           persisted: (value) async {
             if (!_pendingHouseholdAcknowledgementNavigation) return;
             _pendingHouseholdAcknowledgementNavigation = false;
-            final router = context.router;
             final nav = Navigator.of(context);
             final household = value.householdModel;
             final householdId = household.clientReferenceId;
+            final headName =
+                value.individualModel?.name?.givenName?.trim() ?? '';
+            final memberCount = household.memberCount ?? 1;
+            final eToken = BednetHouseholdReviewPage.syntheticEToken(
+              headName: headName.isEmpty ? ' ' : headName,
+              memberCount: memberCount,
+            );
+
+            await _persistBednetETokenAfterRegistration(
+              context: context,
+              householdModel: value.householdModel,
+              projectBeneficiaryModel: value.projectBeneficiaryModel,
+              eToken: eToken,
+            );
+            if (!context.mounted) return;
 
             // [BednetHouseholdOverviewWrapperPage] reads selectedSchool in wrappedRoute.
             // Dispatching [updateSelectedSchool] and pushing in the same turn can run
@@ -116,9 +134,16 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
               // No BednetDistributionBloc above this route (unexpected in bednet flow).
             }
 
+            if (!context.mounted) return;
+
             if (nav.canPop()) nav.pop();
             if (nav.canPop()) nav.pop();
-            await router.push(
+
+            if (!context.mounted) return;
+
+            // General acknowledgement after registration — not [BednetSuccessPage],
+            // which is reserved for after ITN delivery ([BednetInformHouseholdPage]).
+            await context.router.root.navigate(
               BednetHouseholdOverviewWrapperRoute(
                 children: [
                   HouseholdAcknowledgementRoute(),
@@ -182,6 +207,19 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                   form.control(_memberCountKey).value as int;
                               final childrenCount =
                                   form.control(_childrenCountKey).value as int;
+                              if (childrenCount >= memberCount) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      localizations.translate(
+                                        i18.householdDetails
+                                            .childrenMustBeLessThanMemberCount,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
                               final dateOfRegistration = form
                                   .control(_dateOfRegistrationKey)
                                   .value as DateTime;
@@ -279,14 +317,8 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                   var fieldMap = {
                                     for (var f in existingFields) f.key: f
                                   };
-                                  if (!fieldMap.containsKey(
-                                      AdditionalFieldsType.eToken.toValue())) {
-                                    fieldMap[
-                                        AdditionalFieldsType.eToken
-                                            .toValue()] = AdditionalField(
-                                        AdditionalFieldsType.eToken.toValue(),
-                                        '');
-                                  }
+                                  // Do not add placeholder e-Token with an empty value: the
+                                  // service validates each field value length as 1–10000.
                                   fieldMap[
                                       AdditionalFieldsType.latitude
                                           .toValue()] = AdditionalField(
@@ -309,7 +341,14 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                     version:
                                         household.additionalFields?.version ??
                                             1,
-                                    fields: fieldMap.values.toList(),
+                                    fields: fieldMap.values
+                                        .where((f) =>
+                                            f.value != null &&
+                                            f.value
+                                                .toString()
+                                                .trim()
+                                                .isNotEmpty)
+                                        .toList(),
                                   );
 
                                   household = household.copyWith(
@@ -493,7 +532,7 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                   inputFormatters: [
                                     FilteringTextInputFormatter.digitsOnly,
                                   ],
-                                  maxLength: 10,
+                                  maxLength: 11,
                                   initialValue:
                                       form.control(_mobileNumberKey).value,
                                   onChange: (value) => form
@@ -539,12 +578,14 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                         .control(_childrenCountKey)
                                         .value as int?) ??
                                     0;
-                                // Auto-clamp if memberCount was reduced below childrenCount
-                                if (currentChildrenCount > currentMemberCount) {
+                                final maxChildrenAllowed =
+                                    max(0, currentMemberCount - 1);
+                                // Auto-clamp when member count drops or cap is exceeded
+                                if (currentChildrenCount > maxChildrenAllowed) {
                                   WidgetsBinding.instance
                                       .addPostFrameCallback((_) {
                                     form.control(_childrenCountKey).value =
-                                        currentMemberCount;
+                                        maxChildrenAllowed;
                                   });
                                 }
                                 return ReactiveWrapperField(
@@ -560,7 +601,7 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                         FilteringTextInputFormatter.digitsOnly
                                       ],
                                       minValue: 0,
-                                      maxValue: currentMemberCount,
+                                      maxValue: maxChildrenAllowed,
                                       step: 1,
                                       initialValue: form
                                           .control(_childrenCountKey)
@@ -588,6 +629,73 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
         ),
       ),
     );
+  }
+
+  Future<void> _persistBednetETokenAfterRegistration({
+    required BuildContext context,
+    required HouseholdModel householdModel,
+    required ProjectBeneficiaryModel? projectBeneficiaryModel,
+    required String eToken,
+  }) async {
+    if (!context.mounted) return;
+    final userUuid = RegistrationDeliverySingleton().loggedInUserUuid ?? '';
+    final nowMs = DateTime.now().millisecondsSinceEpoch;
+
+    try {
+      final householdRepo =
+          context.repository<HouseholdModel, HouseholdSearchModel>(context);
+      final existingHh = (await householdRepo.search(
+            HouseholdSearchModel(
+              clientReferenceId: [householdModel.clientReferenceId],
+            ),
+          ))
+              .firstOrNull ??
+          householdModel;
+
+      final tokenKey = AdditionalFieldsType.eToken.toValue();
+      final fieldList =
+          List<AdditionalField>.from(existingHh.additionalFields?.fields ?? []);
+      final ti = fieldList.indexWhere((f) => f.key == tokenKey);
+      if (ti >= 0) {
+        fieldList[ti] = AdditionalField(tokenKey, eToken);
+      } else {
+        fieldList.add(AdditionalField(tokenKey, eToken));
+      }
+
+      await householdRepo.update(
+        existingHh.copyWith(
+          additionalFields: HouseholdAdditionalFields(
+            version: existingHh.additionalFields?.version ?? 1,
+            fields: fieldList,
+          ),
+          clientAuditDetails: ClientAuditDetails(
+            createdBy: existingHh.clientAuditDetails?.createdBy ??
+                existingHh.auditDetails?.createdBy.toString() ??
+                userUuid,
+            createdTime: existingHh.clientAuditDetails?.createdTime ??
+                existingHh.auditDetails?.createdTime ??
+                nowMs,
+            lastModifiedBy: userUuid,
+            lastModifiedTime: nowMs,
+          ),
+          id: existingHh.id,
+          rowVersion: existingHh.rowVersion ?? 1,
+          nonRecoverableError: existingHh.nonRecoverableError ?? false,
+        ),
+      );
+    } catch (_) {}
+
+    try {
+      final pbRepo = context.read<
+          LocalRepository<ProjectBeneficiaryModel,
+              ProjectBeneficiarySearchModel>>();
+      if (projectBeneficiaryModel != null &&
+          projectBeneficiaryModel.tag != eToken) {
+        await pbRepo.update(
+          projectBeneficiaryModel.copyWith(tag: eToken),
+        );
+      }
+    } catch (_) {}
   }
 
   FormGroup buildForm(BeneficiaryRegistrationState state) {

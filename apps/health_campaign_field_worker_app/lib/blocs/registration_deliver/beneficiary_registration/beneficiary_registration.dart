@@ -234,7 +234,11 @@ class BeneficiaryRegistrationBloc
                 : LocalityModel(code: code, name: name);
 
             // If this is a household head, store the head's name in additionalFields
-            final householdToCreate = value.isHeadOfHousehold
+            // (omit when empty: server rejects additional field values of length 0.)
+            final headGiven = individual.name?.givenName?.trim();
+            final householdToCreate = value.isHeadOfHousehold &&
+                    headGiven != null &&
+                    headGiven.isNotEmpty
                 ? household.copyWith(
                     additionalFields: HouseholdAdditionalFields(
                       version: household.additionalFields?.version ?? 1,
@@ -242,7 +246,7 @@ class BeneficiaryRegistrationBloc
                         ...(household.additionalFields?.fields ?? []),
                         AdditionalField(
                           'schoolHead',
-                          individual.name?.givenName ?? '',
+                          headGiven,
                         ),
                       ],
                     ),
@@ -348,7 +352,11 @@ class BeneficiaryRegistrationBloc
               : LocalityModel(code: code, name: name);
 
           // If this is a household head, store the head's name in additionalFields
-          final householdToCreate = value.isHeadOfHousehold
+          // (omit when empty: server rejects additional field values of length 0.)
+          final headGiven = individual.name?.givenName?.trim();
+          final householdToCreate = value.isHeadOfHousehold &&
+                  headGiven != null &&
+                  headGiven.isNotEmpty
               ? household.copyWith(
                   additionalFields: HouseholdAdditionalFields(
                     version: household.additionalFields?.version ?? 1,
@@ -356,7 +364,7 @@ class BeneficiaryRegistrationBloc
                       ...(household.additionalFields?.fields ?? []),
                       AdditionalField(
                         'schoolHead',
-                        individual.name?.givenName ?? '',
+                        headGiven,
                       ),
                     ],
                   ),

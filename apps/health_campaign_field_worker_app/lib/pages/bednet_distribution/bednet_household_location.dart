@@ -154,7 +154,7 @@ class _BednetHouseholdLocationPageState
                         i18.householdLocation.administrationAreaFormLabel,
                       ),
                       child: DigitTextFormInput(
-                        isDisabled: true,
+                        readOnly: true,
                         focusNode: _settlementFocusNode,
                         controller: _settlementController,
                       ),
@@ -164,7 +164,7 @@ class _BednetHouseholdLocationPageState
                           .translate(i18.householdLocation.gpsAccuracyLabel),
                       capitalizedFirstLetter: false,
                       child: DigitTextFormInput(
-                        isDisabled: true,
+                        readOnly: true,
                         focusNode: _gpsFocusNode,
                         controller: _gpsController
                           ..text = _gpsController.text.isEmpty

@@ -1,7 +1,5 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
-import 'package:digit_data_model/models/entities/household_type.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/ComponentTheme/digit_tag_theme.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
@@ -10,25 +8,37 @@ import 'package:digit_ui_components/widgets/atoms/digit_tag.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:health_campaign_field_worker_app/blocs/registration_deliver/app_localization.dart';
-import 'package:health_campaign_field_worker_app/blocs/registration_deliver/delivery_intervention/deliver_intervention.dart';
-import 'package:health_campaign_field_worker_app/blocs/registration_deliver/household_overview/household_overview.dart';
-import 'package:health_campaign_field_worker_app/models/bednet_distribution/bednet_distribution_models.dart';
-import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/additional_fields_type.dart';
-import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart'
-    as i18;
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
-// import 'package:registration_delivery/router/registration_delivery_router.gm.dart';
-import 'package:survey_form/blocs/service_definition.dart';
 
-import '../../../models/registration_deliver_model/entities/registration_delivery_enums.dart';
-import '../../../pages/bednet_distribution/bednet_eolin_assessment.dart';
-import '../../../pages/registration_deliver_pages/beneficiary/beneficiary_checklist.dart';
+import '../../../blocs/bednet_distribution/bednet_distribution.dart';
+import '../../../blocs/registration_deliver/app_localization.dart';
+import '../../../blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
+import '../../../blocs/registration_deliver/household_overview/household_overview.dart';
+import '../../../models/registration_deliver_model/entities/additional_fields_type.dart';
+import '../../../models/registration_deliver_model/entities/status.dart';
+import '../../../pages/bednet_distribution/bednet_household_review.dart';
 import '../../../router/app_router.dart';
 import '../../../utils/registration_deliver_utils/extensions/extensions.dart';
-import 'package:health_campaign_field_worker_app/blocs/bednet_distribution/bednet_distribution.dart';
-import 'package:health_campaign_field_worker_app/blocs/registration_deliver/beneficiary_registration/beneficiary_registration.dart';
+import '../../../utils/registration_deliver_utils/i18_key_constants.dart' as i18;
+import '../../../utils/registration_deliver_utils/utils.dart';
+
+/// Reloads overview when the ITN [MaterialPageRoute] stack is closed (same
+/// event shape as [HouseholdOverviewReloadEvent] elsewhere in this file).
+void _reloadHouseholdOverviewAfterItnFlow(BuildContext context) {
+  if (!context.mounted) return;
+  final projectId = RegistrationDeliverySingleton().projectId;
+  final beneficiaryType = RegistrationDeliverySingleton().beneficiaryType;
+  if (projectId == null || beneficiaryType == null) return;
+  try {
+    context.read<HouseholdOverviewBloc>().add(
+          HouseholdOverviewReloadEvent(
+            projectId: projectId,
+            projectBeneficiaryType: beneficiaryType,
+            offset: 0,
+            limit: 1000,
+          ),
+        );
+  } catch (_) {}
+}
 
 class CustomMemberCard extends StatelessWidget {
   final String name;
@@ -52,11 +62,12 @@ class CustomMemberCard extends StatelessWidget {
   final String? projectBeneficiaryClientReferenceId;
   final VoidCallback? tbAssessmentAction;
 
-  /// Household context for "Deliver ITN" → [BednetEolinAssessmentPage] (non-school flow).
+  /// Household context for "Deliver ITN" → [BednetHouseholdReviewPage] (non-school flow).
   final HouseholdModel? bednetHousehold;
   final String? bednetHeadDisplayName;
   final int? bednetMemberCount;
   final int? bednetChildrenUnder5Count;
+
   /// Household additional field `e-Token` (and fallback from project beneficiary tag).
   final String? bednetDeliveryEToken;
 
@@ -184,27 +195,30 @@ class CustomMemberCard extends StatelessWidget {
                         : const Offstage(),
                   ],
                 ),
-                Padding(
-                  padding: const EdgeInsets.all(spacer2),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        gender != null
-                            ? localizations.translate(
-                                'CORE_COMMON_${gender?.toUpperCase()}')
-                            : ' -- ',
-                        style: textTheme.bodyS,
-                      ),
-                      Expanded(
-                        child: Text(
-                          years != null && months != null
-                              ? " | $years ${localizations.translate(i18.memberCard.deliverDetailsYearText)} $months ${localizations.translate(i18.memberCard.deliverDetailsMonthsText)}"
-                              : "|   --",
+                Offstage(
+                  offstage: isHead ? true : false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(spacer2),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          gender != null
+                              ? localizations.translate(
+                                  'CORE_COMMON_${gender?.toUpperCase()}')
+                              : ' -- ',
                           style: textTheme.bodyS,
                         ),
-                      ),
-                    ],
+                        Expanded(
+                          child: Text(
+                            years != null && months != null
+                                ? " | $years ${localizations.translate(i18.memberCard.deliverDetailsYearText)} $months ${localizations.translate(i18.memberCard.deliverDetailsMonthsText)}"
+                                : "|   --",
+                            style: textTheme.bodyS,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
                 Offstage(
@@ -293,19 +307,30 @@ class CustomMemberCard extends StatelessWidget {
                                             !isBeneficiaryRefused &&
                                             !isBeneficiaryAbsent)
                                         ? localizations.translate(
-                                            i18.householdOverView
-                                                .viewDeliveryLabel,
+                                            beneficiaryType ==
+                                                        BeneficiaryType
+                                                            .household &&
+                                                    !isHead &&
+                                                    (years ?? 99) < 5
+                                                ? i18.memberCard
+                                                    .tbAssessmentButton
+                                                : i18.householdOverView
+                                                    .viewDeliveryLabel,
                                           )
                                         : localizations.translate(
-                                            i18.householdOverView
-                                                .householdOverViewActionText,
+                                            beneficiaryType ==
+                                                        BeneficiaryType
+                                                            .household &&
+                                                    !isHead &&
+                                                    (years ?? 99) < 5
+                                                ? i18.memberCard
+                                                    .tbAssessmentButton
+                                                : i18.householdOverView
+                                                    .householdOverViewActionText,
                                           ),
                                     onPressed: () {
                                       final bloc =
                                           context.read<HouseholdOverviewBloc>();
-                                      final serviceDefinitionBloc = context
-                                          .read<ServiceDefinitionBloc>()
-                                          .state;
 
                                       bloc.add(
                                         HouseholdOverviewEvent
@@ -618,54 +643,71 @@ class CustomMemberCard extends StatelessWidget {
             offstage: !isHead,
             child: Padding(
               padding: const EdgeInsets.all(spacer1),
-              child: DigitButton(
-                mainAxisSize: MainAxisSize.max,
-                type: DigitButtonType.primary,
-                size: DigitButtonSize.medium,
-                label: 'Deliver ITN',
-                onPressed: () {
-                  final household = bednetHousehold;
-                  if (household != null) {
-                    try {
-                      context.read<BednetDistributionBloc>().add(
-                            BednetDistributionEvent.updateSelectedSchool(
-                              school: household,
-                            ),
-                          );
-                    } catch (_) {}
-                  }
-
-                  final headName = () {
-                    final h = bednetHeadDisplayName?.trim();
-                    if (h != null && h.isNotEmpty) return h;
-                    final fromIndividual = individual.name?.givenName?.trim();
-                    if (fromIndividual != null && fromIndividual.isNotEmpty) {
-                      return fromIndividual;
-                    }
-                    return name.trim();
-                  }();
-
-                  final members = bednetMemberCount ?? 1;
-                  final children = bednetChildrenUnder5Count ?? 0;
-
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => BlocProvider.value(
-                        value: context.read<BeneficiaryRegistrationBloc>(),
-                        child: BednetEolinAssessmentPage(
-                          headName: headName,
-                          memberCount: members < 1 ? 1 : members,
-                          childrenCount: children < 0 ? 0 : children,
-                          mobileNumber: individual.mobileNumber,
-                          householdEToken: bednetDeliveryEToken,
-                          bednetDeliveryHousehold: household,
-                          bednetDeliveryHead: individual,
+              child: isDelivered
+                  ? Align(
+                      alignment: Alignment.centerLeft,
+                      child: Tag(
+                        isIcon: true,
+                        label: localizations.translate(
+                          i18.memberCard.itnDeliveredTagLabel,
                         ),
+                        type: TagType.success,
                       ),
+                    )
+                  : DigitButton(
+                      mainAxisSize: MainAxisSize.max,
+                      type: DigitButtonType.primary,
+                      size: DigitButtonSize.medium,
+                      label: 'Deliver ITN',
+                      onPressed: () {
+                        final household = bednetHousehold;
+                        if (household != null) {
+                          try {
+                            context.read<BednetDistributionBloc>().add(
+                                  BednetDistributionEvent.updateSelectedSchool(
+                                    school: household,
+                                  ),
+                                );
+                          } catch (_) {}
+                        }
+
+                        final headName = () {
+                          final h = bednetHeadDisplayName?.trim();
+                          if (h != null && h.isNotEmpty) return h;
+                          final fromIndividual =
+                              individual.name?.givenName?.trim();
+                          if (fromIndividual != null &&
+                              fromIndividual.isNotEmpty) {
+                            return fromIndividual;
+                          }
+                          return name.trim();
+                        }();
+
+                        final members = bednetMemberCount ?? 1;
+                        final children = bednetChildrenUnder5Count ?? 0;
+
+                        Navigator.of(context)
+                            .push<void>(
+                              MaterialPageRoute<void>(
+                                builder: (_) => BlocProvider.value(
+                                  value: context
+                                      .read<BeneficiaryRegistrationBloc>(),
+                                  child: BednetHouseholdReviewPage(
+                                    headName: headName,
+                                    memberCount: members < 1 ? 1 : members,
+                                    childrenCount: children < 0 ? 0 : children,
+                                    mobileNumber: individual.mobileNumber,
+                                    householdEToken: bednetDeliveryEToken,
+                                    bednetDeliveryHousehold: household,
+                                    bednetDeliveryHead: individual,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .then((_) =>
+                                _reloadHouseholdOverviewAfterItnFlow(context));
+                      },
                     ),
-                  );
-                },
-              ),
             ),
           ),
         ]);

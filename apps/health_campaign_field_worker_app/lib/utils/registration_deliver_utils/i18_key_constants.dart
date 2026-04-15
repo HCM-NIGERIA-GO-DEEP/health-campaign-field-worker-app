@@ -219,6 +219,14 @@ class BeneficiaryDetails {
 
   String get beneficiaryCompletedOn => 'BENEFICIARY_DETAILS_COMPLETED_ON';
 
+  /// ITN household table: "Delivery No." column header.
+  String get itnDeliveryNoColumnHeader =>
+      'BENEFICIARY_DETAILS_ITN_DELIVERY_NO_HEADER';
+
+  /// ITN household table: first row label (e.g. "Delivery 1").
+  String get itnFirstDeliveryRowLabel =>
+      'BENEFICIARY_DETAILS_ITN_DELIVERY_1';
+
   String get beneficiaryDeliveryStrategy =>
       'BENEFICIARY_DETAILS_DELIVERY_STRATEGY';
 
@@ -502,6 +510,10 @@ class HouseholdDetails {
 
   String get memberCountError => 'MEMBER_COUNT_ERROR';
 
+  /// Children under 5 must be strictly less than total household members.
+  String get childrenMustBeLessThanMemberCount =>
+      'HOUSEHOLD_DETAILS_CHILDREN_LT_MEMBERS_ERROR';
+
   String get typeOfStructure => 'TYPE_OF_STRUCTURE';
 }
 
@@ -581,6 +593,10 @@ class HouseholdOverView {
       'HOUSEHOLD_OVER_VIEW__ADD_ACTION_TEXT';
   String get householdOverViewAddStudentText =>
       'HOUSEHOLD_OVER_VIEW_ADD_STUDENT_TEXT';
+
+  /// Shown when [children under 5] members already match the declared count.
+  String get addStudentChildLimitReached =>
+      'HOUSEHOLD_OVER_VIEW_ADD_STUDENT_CHILD_LIMIT';
   String get householdOverViewAddHeadText =>
       'HOUSEHOLD_OVER_VIEW_ADD_HEAD_TEXT';
 }
@@ -624,6 +640,9 @@ class MemberCard {
 
   /// TB screening entry from household (MDT / field user).
   String get tbAssessmentButton => 'MEMBER_CARD_TB_ASSESSMENT_BUTTON';
+
+  /// Head-of-household row after ITN distribution task exists.
+  String get itnDeliveredTagLabel => 'MEMBER_CARD_ITN_DELIVERED_TAG';
 }
 
 class DeliverIntervention {

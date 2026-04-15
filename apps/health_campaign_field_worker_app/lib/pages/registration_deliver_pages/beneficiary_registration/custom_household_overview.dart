@@ -1,4 +1,3 @@
-import 'package:auto_route/auto_route.dart';
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/household_type.dart';
@@ -14,20 +13,19 @@ import 'package:digit_ui_components/widgets/molecules/show_pop_up.dart';
 import 'package:digit_ui_components/widgets/scrollable_content.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:health_campaign_field_worker_app/blocs/registration_deliver/delivery_intervention/deliver_intervention.dart';
+import '../../../blocs/registration_deliver/delivery_intervention/deliver_intervention.dart';
 import '../../../models/bednet_distribution/bednet_distribution_models.dart';
 import '../../../models/entities/additional_fields_type.dart';
-import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
-import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/back_navigation_help_header.dart';
-import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/localized.dart';
-import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/table_card/table_card.dart';
+import '../../../models/registration_deliver_model/entities/status.dart';
+import '../../../utils/registration_deliver_utils/utils.dart';
+import '../../../widgets/registartion_deliver/back_navigation_help_header.dart';
+import '../../../widgets/registartion_deliver/localized.dart';
+import '../../../widgets/registartion_deliver/table_card/table_card.dart';
 
 import '../../../router/app_router.dart';
 import '../../../widgets/registartion_deliver/member_card/custom_member_card.dart';
 import 'check_eligibility_assessment.dart';
 import 'refer_beneficiary_page.dart' show contextIsMdtUser;
-import '../../bednet_distribution/bednet_individual_details_wrapper.dart';
 import '../../../blocs/registration_deliver/household_overview/household_overview.dart';
 import '../../../blocs/registration_deliver/search_households/search_bloc_common_wrapper.dart';
 import '../../../blocs/registration_deliver/search_households/search_households.dart';
@@ -67,7 +65,7 @@ class _CustomHouseholdOverviewPageState
     final theme = Theme.of(context);
     final beneficiaryType = RegistrationDeliverySingleton().beneficiaryType;
     if (beneficiaryType == null) {
-      return Scaffold(
+      return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(),
         ),
@@ -146,10 +144,28 @@ class _CustomHouseholdOverviewPageState
                           children: [
                             DigitButton(
                               mainAxisSize: MainAxisSize.max,
+                              isDisabled: !_canAddMoreChildrenUnderFive(
+                                state.householdMemberWrapper,
+                              ),
                               onPressed: () {
                                 final household =
                                     state.householdMemberWrapper.household;
                                 if (household == null) return;
+                                if (!_canAddMoreChildrenUnderFive(
+                                  state.householdMemberWrapper,
+                                )) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        localizations.translate(
+                                          i18.householdOverView
+                                              .addStudentChildLimitReached,
+                                        ),
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
                                 addIndividual(
                                   context,
                                   household,
@@ -695,8 +711,8 @@ class _CustomHouseholdOverviewPageState
                                                         fromHousehold > 0) {
                                                       return fromHousehold;
                                                     }
-                                                    final n = wrapper.members
-                                                            ?.length ??
+                                                    final n = wrapper
+                                                            .members?.length ??
                                                         0;
                                                     return n > 0 ? n : 1;
                                                   }(),
@@ -1232,6 +1248,26 @@ class _CustomHouseholdOverviewPageState
     final tag = pb?.tag?.trim();
     if (tag != null && tag.isNotEmpty) return tag;
     return null;
+  }
+
+  int _countMembersUnderFive(HouseholdMemberWrapper wrapper) {
+    var n = 0;
+    for (final m in wrapper.members ?? []) {
+      final dob = m.dateOfBirth;
+      if (dob == null || dob.isEmpty) continue;
+      final age = DigitDateUtils.calculateAge(
+        DigitDateUtils.getFormattedDateToDateTime(dob) ?? DateTime.now(),
+      );
+      if (age.years < 5) n++;
+    }
+    return n;
+  }
+
+  /// True when fewer than the declared [childrenUnder5] members are registered.
+  bool _canAddMoreChildrenUnderFive(HouseholdMemberWrapper wrapper) {
+    final cap = _childrenUnder5FromHousehold(wrapper.household);
+    if (cap <= 0) return false;
+    return _countMembersUnderFive(wrapper) < cap;
   }
 
   /// Same parsing as [HouseHoldDetailsPage.buildForm] for children under 5.
