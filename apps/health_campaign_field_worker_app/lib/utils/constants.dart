@@ -183,7 +183,9 @@ class Constants {
   static const String centralFacility = 'Storing Resource';
   static const String stateBoundaryLevel = 'State';
   static const String stateFacility = 'Regional Facility';
-  static const String lgaFacility = 'District Facility';
+  static const String districtFacility = 'District Facility';
+  static const String lgaFacility = 'LGA Facility';
+  static const String districtFacilityLevel = 'District';
   static const String dhFacility = 'Warehouse';
   static const String dhBoundaryLevel = 'DH';
 

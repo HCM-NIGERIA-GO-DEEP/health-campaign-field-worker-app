@@ -105,6 +105,8 @@ class _FacilityCardContent extends StatefulWidget {
 
 class _FacilityCardContentState extends State<_FacilityCardContent> {
   bool _requestedFacilitiesLoad = false;
+  bool _isLoadingFacilitiesFromDb = false;
+  List<FacilityModel> _facilitiesForProject = const [];
 
   String get formKey => widget.formKey;
   String get dependantFormKey => widget.dependantFormKey;
@@ -141,6 +143,39 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
     );
   }
 
+  Future<void> _loadFacilitiesForCurrentProject(
+    List<ProjectFacilityModel> projectFacilities,
+  ) async {
+    if (_isLoadingFacilitiesFromDb || projectFacilities.isEmpty) return;
+
+    setState(() {
+      _isLoadingFacilitiesFromDb = true;
+    });
+
+    try {
+      final facilityIds =
+          projectFacilities.map((pf) => pf.facilityId).toSet().toList();
+
+      final facilityRepo =
+          context.read<LocalRepository<FacilityModel, FacilitySearchModel>>();
+
+      final facilities = await facilityRepo.search(
+        FacilitySearchModel(id: facilityIds),
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _facilitiesForProject = facilities;
+        _isLoadingFacilitiesFromDb = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingFacilitiesFromDb = false;
+      });
+    }
+  }
+
   List<ProjectFacilityModel> _filterProjectFacilitiesUsingFacilityUsage({
     required List<ProjectFacilityModel> projectFacilities,
     required String? usage,
@@ -149,27 +184,41 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
   }) {
     if (usage == null || usage.trim().isEmpty) return projectFacilities;
 
-    List<FacilityModel> facilitiesForProject = const [];
-    try {
-      final state = context.watch<FacilityBloc>().state;
-      if (state is FacilityFetchedState) {
-        facilitiesForProject = state.facilities;
-      }
-    } catch (_) {
-      return projectFacilities;
+    // Align source scope with StockBalanceCard:
+    // use only project facilities marked as current level.
+    final currentLevelProjectFacilities = projectFacilities.where((pf) {
+      final facilityLevel = pf.additionalFields?.fields
+          .where((f) => f.key == 'facilityLevel')
+          .firstOrNull
+          ?.value;
+      return facilityLevel == null || facilityLevel == 'current';
+    }).toList();
+
+    final currentLevelFacilityIds =
+        currentLevelProjectFacilities.map((pf) => pf.facilityId).toSet();
+
+    if (currentLevelFacilityIds.isEmpty) {
+      return currentLevelProjectFacilities;
     }
 
-    if (facilitiesForProject.isEmpty) {
-      _maybeLoadFacilitiesForSelectedProject();
-      return projectFacilities;
+    // If facilities have not been loaded from DB yet, trigger a load
+    // and temporarily fall back to unfiltered current-level facilities.
+    if (_facilitiesForProject.isEmpty && !_isLoadingFacilitiesFromDb) {
+      // Fire-and-forget DB load; result cached in _facilitiesForProject.
+      _loadFacilitiesForCurrentProject(currentLevelProjectFacilities);
+      return currentLevelProjectFacilities;
     }
 
-    final allowedFacilityIds = facilitiesForProject
+    if (_facilitiesForProject.isEmpty) {
+      return currentLevelProjectFacilities;
+    }
+
+    final allowedFacilityIds = _facilitiesForProject
         .where((f) => (f.usage ?? '').trim() == usage.trim())
         .map((f) => f.id)
         .toSet();
 
-    return projectFacilities
+    return currentLevelProjectFacilities
         .where((pf) => allowedFacilityIds.contains(pf.facilityId))
         .toList();
   }
@@ -344,20 +393,20 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
           if (isFromField) {
             usage = Constants.stateFacility;
           } else {
-            usage = Constants.lgaFacility;
+            usage = Constants.districtFacility;
           }
         } else {
-          if (boundaryLevel == Constants.stateBoundaryLevel) {
+          if (boundaryLevel == Constants.lgaBoundaryLevel) {
             if (isFromField) {
-              usage = Constants.dhFacility;
+              usage = Constants.districtFacility;
             } else {
-              usage = Constants.lgaFacility;
+              usage = Constants.dhFacility;
             }
           } else {
             if (isFromField) {
-              usage = Constants.lgaFacility;
-            } else {
               usage = Constants.dhFacility;
+            } else {
+              usage = "None";
             }
           }
         }
@@ -380,10 +429,18 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
             usage = Constants.centralFacility;
           }
         } else {
-          if (isFromField) {
-            usage = Constants.lgaFacility;
+          if (boundaryLevel == Constants.lgaBoundaryLevel) {
+            if (isFromField) {
+              usage = Constants.districtFacility;
+            } else {
+              usage = Constants.stateFacility;
+            }
           } else {
-            usage = Constants.stateFacility;
+            if (isFromField) {
+              usage = Constants.dhFacility;
+            } else {
+              usage = Constants.districtFacility;
+            }
           }
         }
       } else if (isDistributor) {
@@ -394,9 +451,9 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
         }
       } else {
         if (isFromField) {
-          usage = Constants.lgaFacility;
+          usage = Constants.dhFacility;
         } else {
-          usage = Constants.stateFacility;
+          usage = Constants.districtFacility;
         }
       }
     }
