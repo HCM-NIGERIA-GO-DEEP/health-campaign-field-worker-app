@@ -1288,7 +1288,8 @@ final dynamic sampleFlows = {
                         "key": "HouseholdClientReferenceId",
                         "value":
                             "{{contextData.0.household.HouseholdModel.clientReferenceId}}"
-                      }
+                      },
+                      {"key": "isHead", "value": "false"}
                     ],
                     "name": "ADD_MEMBER",
                     "type": "FORM"
@@ -4385,9 +4386,10 @@ final dynamic sampleFlows = {
               "tooltip":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_dobPicker_tooltip_addmember",
               "ageRange": {
-                "maxAge": 60,
-                "minAge": 3,
-                "errorMessage": "AGE_VALIDATION_ADDMEMBER"
+                "maxAge": "{{ isHead ? 1800 : 60}}",
+                "minAge": "{{isHead ? 216 : 3}}",
+                "errorMessage":
+                    "{{isHead ? AGE_VALIDATION_ADDMEMBER_HEAD : AGE_VALIDATION_ADDMEMBER}}"
               },
               "helpText":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_dobPicker_helpText_addmember",
@@ -4409,13 +4411,15 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "minAge",
-                  "value": 3,
-                  "message": "AGE_VALIDATION_ADDMEMBER"
+                  "value": "{{isHead ? 216 : 3}}",
+                  "message":
+                      "{{isHead ? AGE_VALIDATION_ADDMEMBER_HEAD : AGE_VALIDATION_ADDMEMBER}}"
                 },
                 {
                   "type": "maxAge",
-                  "value": 60,
-                  "message": "AGE_VALIDATION_ADDMEMBER"
+                  "value": "{{isHead ? 1800 : 60}}",
+                  "message":
+                      "{{isHead ? AGE_VALIDATION_ADDMEMBER_HEAD : AGE_VALIDATION_ADDMEMBER}}"
                 }
               ],
               "errorMessage": "",

@@ -1460,6 +1460,38 @@ void initializeFunctionRegistry() {
     return age.years * 12 + age.months;
   });
 
+  /// Registers a function to calculate age in months from a date of birth.
+  ///
+  /// - **Function Name**: `'validChildAge'`
+  /// - **Arguments**: A list where the first element is the date of birth string.
+  /// - **Returns**: The total age in months as an integer, or 0 if the input is invalid.
+  FunctionRegistry.register('validChildAge', (args, stateData) {
+    if (args.isEmpty) return 0;
+
+    final rawValue = args.first;
+    if (rawValue == null) return 0;
+
+    DateTime? dob;
+    if (rawValue is int) {
+      dob = DateTime.fromMillisecondsSinceEpoch(rawValue);
+    } else if (rawValue is String) {
+      // Try parsing as int timestamp first
+      final timestamp = int.tryParse(rawValue);
+      if (timestamp != null) {
+        dob = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      } else {
+        // Otherwise, parse as formatted date string
+        dob = DigitDateUtils.getFormattedDateToDateTime(rawValue);
+      }
+    }
+
+    if (dob == null) return 0;
+
+    final age = DigitDateUtils.calculateAge(dob);
+    final ageInMonths = age.years * 12 + age.months;
+    return ageInMonths >= 3 && ageInMonths <= 60;
+  });
+
   /// Registers a function to compute the referral button label based on symptom and checklist data.
   ///
   /// - **Function Name**: `'computeReferralButtonLabel'`
@@ -1712,8 +1744,7 @@ void initializeFunctionRegistry() {
     final projectType = FlowBuilderSingleton().projectType;
     final now = DateTime.now().millisecondsSinceEpoch;
     final selectedCycle = projectType?.cycles?.firstWhereOrNull(
-      (e) =>
-          (e.startDate ?? 0) < now && (e.endDate ?? 0) > now,
+      (e) => (e.startDate ?? 0) < now && (e.endDate ?? 0) > now,
     );
 
     if (selectedCycle == null) return false;
@@ -1728,8 +1759,7 @@ void initializeFunctionRegistry() {
         if (fields != null) {
           for (final field in fields) {
             if (field is Map && field['key'] == 'cycleIndex') {
-              final cycleIndex =
-                  int.tryParse(field['value']?.toString() ?? '');
+              final cycleIndex = int.tryParse(field['value']?.toString() ?? '');
               if (cycleIndex == selectedCycle.id) {
                 return true;
               }
