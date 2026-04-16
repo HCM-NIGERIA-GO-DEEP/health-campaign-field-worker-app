@@ -43,9 +43,10 @@ class RecordDeliveryCycleState extends LocalizedState<RecordDeliveryCycle> {
 
     final headerList = [
       DigitTableColumn(
-        header:
-            localizations.translate(i18.beneficiaryDetails.beneficiaryDoseNo),
-        cellValue: 'dose',
+        header: localizations.translate(
+          i18.beneficiaryDetails.itnDeliveryNoColumnHeader,
+        ),
+        cellValue: 'delivery',
       ),
       DigitTableColumn(
         header:
@@ -195,6 +196,7 @@ class RecordDeliveryCycleState extends LocalizedState<RecordDeliveryCycle> {
   ) {
     final theme = Theme.of(context);
     final textTheme = theme.digitTextTheme(context);
+    final useCurrentRoundStyle = isCurrentCycle;
 
     final widgetList = <Widget>[];
 
@@ -206,13 +208,16 @@ class RecordDeliveryCycleState extends LocalizedState<RecordDeliveryCycle> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Padding(
-              padding: const EdgeInsets.only(bottom: spacer4),
+              padding: EdgeInsets.only(
+                bottom: useCurrentRoundStyle ? spacer2 : spacer4,
+              ),
               child: Align(
                 alignment: Alignment.centerLeft,
                 child: Text(
                   isCurrentCycle
-                      ? localizations
-                          .translate(i18.beneficiaryDetails.currentCycleLabel)
+                      ? localizations.translate(
+                          i18.beneficiaryDetails.currentroundLabel,
+                        )
                       : '${localizations.translate(i18.beneficiaryDetails.beneficiaryCycle)} ${e.id}',
                   style: textTheme.headingL.copyWith(
                     color: theme.colorTheme.primary.primary2
@@ -223,7 +228,9 @@ class RecordDeliveryCycleState extends LocalizedState<RecordDeliveryCycle> {
             ),
             SizedBox(
               width: MediaQuery.of(context).size.width,
-              height: ((e.deliveries?.length ?? 0) + 1) * 57.5,
+              height: useCurrentRoundStyle
+                  ? 120
+                  : ((e.deliveries?.length ?? 0) + 1) * 57.5,
               child: DigitTable(
                 enableBorder: true,
                 withRowDividers: true,
@@ -258,19 +265,26 @@ class RecordDeliveryCycleState extends LocalizedState<RecordDeliveryCycle> {
 
                     return DigitTableRow(tableRow: [
                       DigitTableData(
-                        '${localizations.translate(i18.deliverIntervention.dose)} ${e.deliveries!.indexOf(item) + 1}',
-                        cellKey: 'dose',
+                        '${localizations.translate(i18.beneficiaryDetails.itnFirstDeliveryRowLabel).split(' ').first} ${e.deliveries!.indexOf(item) + 1}',
+                        cellKey: 'delivery',
+                        style: useCurrentRoundStyle
+                            ? const TextStyle(fontWeight: FontWeight.w700)
+                            : null,
                       ),
                       DigitTableData(
-                        localizations.translate(
-                          index == selectedIndex
-                              ? Status.toAdminister.toValue()
-                              : tasks?.status ?? Status.inComplete.toValue(),
-                        ),
+                        index == selectedIndex
+                            ? localizations.translate(
+                                i18.beneficiaryDetails.toDeliverLabel,
+                              )
+                            : localizations.translate(
+                                tasks?.status ?? Status.inComplete.toValue(),
+                              ),
                         cellKey: 'status',
                         style: TextStyle(
                           color: index == selectedIndex
-                              ? null
+                              ? (useCurrentRoundStyle
+                                  ? DigitTheme.instance.colorScheme.error
+                                  : null)
                               : tasks?.status ==
                                       Status.administeredSuccess.toValue()
                                   ? DigitTheme
@@ -296,6 +310,9 @@ class RecordDeliveryCycleState extends LocalizedState<RecordDeliveryCycle> {
                                     .getFormattedDate() ??
                                 ' -- ',
                         cellKey: 'completedOn',
+                        style: useCurrentRoundStyle
+                            ? const TextStyle(fontWeight: FontWeight.w700)
+                            : null,
                       ),
                     ]);
                   },
