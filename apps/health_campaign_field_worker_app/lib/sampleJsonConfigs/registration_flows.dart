@@ -4881,7 +4881,11 @@ final dynamic sampleFlows = {
                   {
                     "key": "cycleIndex",
                     "value": "{{fn:getCurrentCycleIndex()}}"
-                  }
+                  },
+                  {"key": "ec1", "value": "{{navigation.ec1}}"},
+                  {"key": "ec2", "value": "{{navigation.ec2}}"},
+                  {"key": "ec3", "value": "{{navigation.ec3}}"},
+                  {"key": "ec4", "value": "{{navigation.ec4}}"}
                 ],
                 "onError": [
                   {
