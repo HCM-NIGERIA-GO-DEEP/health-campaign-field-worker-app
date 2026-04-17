@@ -179,6 +179,7 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
   List<ProjectFacilityModel> _filterProjectFacilitiesUsingFacilityUsage({
     required List<ProjectFacilityModel> projectFacilities,
     required String? usage,
+    String? additionalUsage,
     required bool isToField,
     required bool isFromField,
   }) {
@@ -213,8 +214,19 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
       return currentLevelProjectFacilities;
     }
 
+    final primaryUsage = usage.trim();
+    final secondaryUsage = additionalUsage?.trim();
+
     final allowedFacilityIds = _facilitiesForProject
-        .where((f) => (f.usage ?? '').trim() == usage.trim())
+        .where((f) {
+          final currentUsage = (f.usage ?? '').trim();
+          final matchesPrimary = currentUsage == primaryUsage;
+          final matchesSecondary =
+              secondaryUsage != null && secondaryUsage.isNotEmpty
+                  ? currentUsage == secondaryUsage
+                  : false;
+          return matchesPrimary || matchesSecondary;
+        })
         .map((f) => f.id)
         .toSet();
 
@@ -458,9 +470,13 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
       }
     }
 
+    final additionalUsage =
+        usage == Constants.dhFacility ? Constants.healthFacility : null;
+
     final filteredFacilities = _filterProjectFacilitiesUsingFacilityUsage(
       projectFacilities: typedProjectFacilities,
       usage: usage,
+      additionalUsage: additionalUsage,
       isToField: isToField,
       isFromField: isFromField,
     );
