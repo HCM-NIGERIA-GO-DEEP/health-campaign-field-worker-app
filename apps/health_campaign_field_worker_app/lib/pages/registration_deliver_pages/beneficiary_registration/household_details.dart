@@ -207,7 +207,7 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                   form.control(_memberCountKey).value as int;
                               final childrenCount =
                                   form.control(_childrenCountKey).value as int;
-                              if (childrenCount >= memberCount) {
+                              if (childrenCount > memberCount) {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(

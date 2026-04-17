@@ -174,6 +174,8 @@ class DeliverInterventionPageState
       TaskSearchModel(projectId: projectId),
       context.loggedInUserUuid,
     );
+    final isDistributor = context.loggedInUserRoles
+        .any((role) => role.code == RolesType.distributor.toValue());
     final effectiveMap =
         StockCalculationUtils.calculateEffectiveStockInHandForProducts(
       stockList: allStocks,
@@ -184,7 +186,9 @@ class DeliverInterventionPageState
       bednetStatusKey: kBednetTaskAdministrationStatusKey,
       bednetSuccessStatus: kBednetTaskAdministrationSuccessStatus,
       fallbackPupilsPresentKey: kBednetTaskPupilsPresentKey,
+      fallbackItnDeliveredKey: 'itnDeliveredCount',
       singleFallbackProductId: productVariantId,
+      isDistributor: isDistributor,
     );
     return effectiveMap[productVariantId]?.toInt();
   }
@@ -792,6 +796,7 @@ class DeliverInterventionPageState
     String? deliveryStrategy,
     String? projectBeneficiaryClientReferenceId,
     AddressModel? address,
+    HouseholdModel? household,
     double? latitude,
     double? longitude,
   }) {
@@ -898,7 +903,23 @@ class DeliverInterventionPageState
               AdditionalFieldsType.deliveryComment.toValue(),
               deliveryComment,
             ),
-          AdditionalField(AdditionalFieldsType.isSchool.toValue(), true)
+          AdditionalField(AdditionalFieldsType.isSchool.toValue(), true),
+          if (household != null)
+            AdditionalField(
+              'householdClientReferenceId',
+              household.clientReferenceId,
+            ),
+          if (household?.additionalFields?.fields
+                  .firstWhereOrNull((e) => e.key == 'schoolId')
+                  ?.value !=
+              null)
+            AdditionalField(
+              'schoolId',
+              household!.additionalFields!.fields
+                  .firstWhere((e) => e.key == 'schoolId')
+                  .value
+                  .toString(),
+            )
         ],
       ),
     );

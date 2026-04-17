@@ -266,20 +266,24 @@ class BeneficiaryRegistrationBloc
             final initialModifiedAt = DateTime.now().millisecondsSinceEpoch;
             await individualRepository.create(
               individual.copyWith(
-                address: [
-                  address!.copyWith(
-                    relatedClientReferenceId: individual.clientReferenceId,
-                    auditDetails: individual.auditDetails,
-                    clientAuditDetails: individual.clientAuditDetails,
-                    locality: locality,
-                  ),
-                ],
+                address: address == null
+                    ? null
+                    : [
+                        address.copyWith(
+                          relatedClientReferenceId: individual.clientReferenceId,
+                          auditDetails: individual.auditDetails,
+                          clientAuditDetails: individual.clientAuditDetails,
+                          locality: locality,
+                        ),
+                      ],
               ),
             );
 
-            await projectBeneficiaryRepository.create(
-              value.projectBeneficiaryModel!,
-            );
+            if (value.projectBeneficiaryModel != null) {
+              await projectBeneficiaryRepository.create(
+                value.projectBeneficiaryModel!,
+              );
+            }
 
             await householdMemberRepository.create(
               HouseholdMemberModel(
@@ -395,9 +399,11 @@ class BeneficiaryRegistrationBloc
             ),
           );
 
-          await projectBeneficiaryRepository.create(
-            value.projectBeneficiaryModel!,
-          );
+          if (value.projectBeneficiaryModel != null) {
+            await projectBeneficiaryRepository.create(
+              value.projectBeneficiaryModel!,
+            );
+          }
 
           await householdMemberRepository.create(
             HouseholdMemberModel(

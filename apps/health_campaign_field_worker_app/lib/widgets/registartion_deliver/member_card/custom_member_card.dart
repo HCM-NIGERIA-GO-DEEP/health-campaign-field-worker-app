@@ -16,6 +16,8 @@ import '../../../blocs/registration_deliver/household_overview/household_overvie
 import '../../../models/registration_deliver_model/entities/additional_fields_type.dart';
 import '../../../models/registration_deliver_model/entities/status.dart';
 import '../../../pages/bednet_distribution/bednet_household_review.dart';
+import '../../../pages/registration_deliver_pages/beneficiary_registration/refer_beneficiary_page.dart'
+    show contextIsCommunityDistributor;
 import '../../../router/app_router.dart';
 import '../../../utils/registration_deliver_utils/extensions/extensions.dart';
 import '../../../utils/registration_deliver_utils/i18_key_constants.dart'
@@ -105,6 +107,10 @@ class CustomMemberCard extends StatelessWidget {
     final theme = Theme.of(context);
     final beneficiaryType = RegistrationDeliverySingleton().beneficiaryType;
     final textTheme = theme.digitTextTheme(context);
+
+    final tbTask = tasks?.lastWhereOrNull((t) =>
+        t.status == Status.beneficiaryReferred.toValue() ||
+        t.status == 'INELIGIBLE');
 
     return DigitCard(
         margin: const EdgeInsets.only(bottom: spacer2),
@@ -245,9 +251,10 @@ class CustomMemberCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.only(left: spacer1, bottom: spacer2),
                   child: Offstage(
-                    offstage: isHead
-                        ? true
-                        : beneficiaryType != BeneficiaryType.individual,
+                    offstage: (isHead
+                            ? true
+                            : beneficiaryType != BeneficiaryType.individual) ||
+                        tbTask != null,
                     child: !isDelivered ||
                             isBeneficiaryAbsent ||
                             isBeneficiaryRefused
@@ -282,110 +289,89 @@ class CustomMemberCard extends StatelessWidget {
                   ),
                 ),
                 Offstage(
-                  offstage: isHead
-                      ? true
-                      : beneficiaryType != BeneficiaryType.individual ||
-                          isDelivered,
+                  offstage: isHead || isDelivered,
                   child: Padding(
                     padding: const EdgeInsets.all(spacer1),
                     child: Column(
                       children: [
-                        isNotEligible
-                            ? const Offstage()
-                            : !isNotEligible
-                                ? DigitButton(
-                                    mainAxisSize: MainAxisSize.max,
-                                    isDisabled:
-                                        (projectBeneficiaries ?? []).isEmpty
-                                            ? true
-                                            : false,
-                                    type: DigitButtonType.primary,
-                                    size: DigitButtonSize.medium,
-                                    label: (!checkStatus(
-                                              tasks,
-                                              context.selectedCycle,
-                                            ) &&
-                                            !isBeneficiaryRefused &&
-                                            !isBeneficiaryAbsent)
-                                        ? localizations.translate(
-                                            beneficiaryType ==
-                                                        BeneficiaryType
-                                                            .household &&
-                                                    !isHead
-                                                ? i18.memberCard
-                                                    .tbAssessmentButton
-                                                : i18.householdOverView
-                                                    .viewDeliveryLabel,
-                                          )
-                                        : localizations.translate(
-                                            beneficiaryType ==
-                                                        BeneficiaryType
-                                                            .individual &&
-                                                    !isHead
-                                                ? i18.memberCard
-                                                    .tbAssessmentButton
-                                                : i18.householdOverView
-                                                    .householdOverViewActionText,
-                                          ),
-                                    onPressed: () {
-                                      final bloc =
-                                          context.read<HouseholdOverviewBloc>();
-
-                                      bloc.add(
-                                        HouseholdOverviewEvent
-                                            .selectedIndividual(
-                                          individualModel: individual,
+                        () {
+                          if (tbTask != null) {
+                            return Align(
+                              alignment: Alignment.centerLeft,
+                              child: Tag(
+                                isIcon: true,
+                                label: localizations
+                                    .translate(tbTask.status ?? ''),
+                                themeData: tbTask.status ==
+                                        Status.beneficiaryReferred.toValue()
+                                    ? TagThemeData(
+                                        errorColor:
+                                            theme.colorTheme.primary.primary2,
+                                        errorIcon: Icon(
+                                          Icons.error,
+                                          color:
+                                              theme.colorTheme.primary.primary2,
+                                          size: 16,
                                         ),
-                                      );
-                                      bloc.add(HouseholdOverviewReloadEvent(
-                                        projectId:
-                                            RegistrationDeliverySingleton()
-                                                .projectId!,
-                                        projectBeneficiaryType:
-                                            RegistrationDeliverySingleton()
-                                                    .beneficiaryType ??
-                                                BeneficiaryType.individual,
-                                      ));
+                                      )
+                                    : null,
+                                type: tbTask.status ==
+                                        Status.beneficiaryReferred.toValue()
+                                    ? TagType.error
+                                    : TagType.success,
+                              ),
+                            );
+                          }
+                          if (isNotEligible) return const Offstage();
 
-                                      final hoState = bloc.state;
-                                      final pbId = projectBeneficiaries
-                                              ?.firstWhereOrNull(
-                                                (b) =>
-                                                    b.beneficiaryClientReferenceId ==
-                                                    individual
-                                                        .clientReferenceId,
-                                              )
-                                              ?.clientReferenceId ??
-                                          projectBeneficiaryClientReferenceId;
+                          // Role-based button:
+                          // COMMUNITY_DISTRIBUTOR → "TB Assessment" → BeneficiaryChecklist
+                          // All other roles      → "Deliver Interventions" → BeneficiaryDetails
+                          final isCommunityDistributor =
+                              contextIsCommunityDistributor(context);
 
+                          return DigitButton(
+                                  mainAxisSize: MainAxisSize.max,
+                                  isDisabled:
+                                      (projectBeneficiaries ?? []).isEmpty
+                                          ? true
+                                          : false,
+                                  type: DigitButtonType.primary,
+                                  size: DigitButtonSize.medium,
+                                  label: isCommunityDistributor
+                                      ? 'TB assessment'
+                                      : 'Deliver Interventions',
+                                  onPressed: () {
+                                    final bloc =
+                                        context.read<HouseholdOverviewBloc>();
+
+                                    bloc.add(
+                                      HouseholdOverviewEvent.selectedIndividual(
+                                        individualModel: individual,
+                                      ),
+                                    );
+                                    bloc.add(HouseholdOverviewReloadEvent(
+                                      projectId: RegistrationDeliverySingleton()
+                                          .projectId!,
+                                      projectBeneficiaryType:
+                                          RegistrationDeliverySingleton()
+                                                  .beneficiaryType ??
+                                              BeneficiaryType.individual,
+                                    ));
+
+                                    if (isCommunityDistributor &&
+                                        tbAssessmentAction != null) {
+                                      // Household flow with MDT/CD user → TB checklist
+                                      tbAssessmentAction!();
+                                    } else {
+                                      // School flow or non-CD user → Deliver Interventions
                                       context.router.push(
-                                        BeneficiaryChecklistRoute(
-                                          beneficiaryClientRefId:
-                                              individual.clientReferenceId,
-                                          projectBeneficiaryClientRefId: pbId,
-                                          householdClientReferenceId: hoState
-                                                  .householdMemberWrapper
-                                                  .household
-                                                  ?.clientReferenceId ??
-                                              '',
-                                          administrativeAreaCode: hoState
-                                                  .householdMemberWrapper
-                                                  .headOfHousehold
-                                                  ?.address
-                                                  ?.firstOrNull
-                                                  ?.locality
-                                                  ?.code ??
-                                              RegistrationDeliverySingleton()
-                                                  .boundary
-                                                  ?.code ??
-                                              '',
-                                          screeningIndividual: individual,
-                                          appLocalizations: localizations,
-                                        ),
+                                        BeneficiaryDetailsRoute(),
                                       );
-                                    },
-                                  )
-                                : const Offstage(),
+                                    }
+                                  },
+                                );
+                        }(),
                         const SizedBox(
                           height: 10,
                         ),
@@ -652,25 +638,7 @@ class CustomMemberCard extends StatelessWidget {
                     ),
                   ),
                 ),
-                // Offstage(
-                //   offstage: isHead ||
-                //       beneficiaryType != BeneficiaryType.individual ||
-                //       tbAssessmentAction == null,
-                //   child: tbAssessmentAction == null
-                //       ? const SizedBox.shrink()
-                //       : Padding(
-                //           padding: const EdgeInsets.all(spacer1),
-                //           child: DigitButton(
-                //             label: localizations.translate(
-                //               i18.memberCard.tbAssessmentButton,
-                //             ),
-                //             isDisabled: (projectBeneficiaries ?? []).isEmpty,
-                //             type: DigitButtonType.secondary,
-                //             size: DigitButtonSize.medium,
-                //             mainAxisSize: MainAxisSize.max,
-                //             onPressed: tbAssessmentAction!,
-                //           ),
-                //         ),
+                // Removed secondary TB Assessment button.
               ]),
           Offstage(
             offstage: !isHead,

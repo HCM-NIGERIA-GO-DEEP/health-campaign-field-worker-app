@@ -712,15 +712,19 @@ class _BeneficiaryChecklistPageState
     return true;
   }
 
-  /// Q1=Y and Q2–6=N → referral. ≥2 YES (after additional symptoms) → continue delivery.
+  /// Q1=Y or ≥2 YES → referral. Otherwise → INELIGIBLE.
   String _assessEligibilityPlanB() {
     if (_sortedEligibilityQuestionIndices().length < 6) {
-      return Status.toAdminister.toValue();
+      return "INELIGIBLE";
     }
-    if (_isQ1YesRestNoEligibilityPattern()) {
+    final yesCount = _yesCountEligibilityQuestions();
+    final idx = _sortedEligibilityQuestionIndices();
+    final q1Yes = controller[idx.first].text.trim() == _yesAnswer;
+
+    if (q1Yes || yesCount >= 2) {
       return Status.beneficiaryReferred.toValue();
     }
-    return Status.toAdminister.toValue();
+    return "INELIGIBLE";
   }
 
   /// Route args may omit [screeningIndividual] (auto_route / serialization). Resolve from bloc + members.
@@ -1431,15 +1435,14 @@ class _BeneficiaryChecklistPageState
     String decidedFlow,
   ) async {
     final needsPostChecklistNav =
-        decidedFlow == Status.beneficiaryReferred.toValue() ||
-            decidedFlow == Status.toAdminister.toValue();
+        decidedFlow == Status.beneficiaryReferred.toValue();
 
     if (_canNavigateToTbRefer(navigatorContext) && needsPostChecklistNav) {
       if (!navigatorContext.mounted) return;
       final individual = _resolveScreeningIndividual(navigatorContext)!;
       final pbId = _resolveProjectBeneficiaryClientRefId(navigatorContext)!;
-      await Navigator.of(navigatorContext, rootNavigator: true).push<void>(
-        MaterialPageRoute<void>(
+      final referred = await Navigator.of(navigatorContext, rootNavigator: true).push<bool>(
+        MaterialPageRoute<bool>(
           builder: (_) {
             final tbChild = TbReferBeneficiaryPage(
               appLocalizations: localizations,
@@ -1452,16 +1455,6 @@ class _BeneficiaryChecklistPageState
               referralReasons: _referralReasonCodesFromChecklist(),
               tbScreeningPayload: jsonEncode(_checklistPayloadMap(decidedFlow)),
             );
-            // [NetworkManagerProviderWrapper] registers repositories for
-            // package [ReferralModel] (digit_data_model), not the app entity
-            // type from [referral.dart]. Using the app type in generics makes
-            // Provider look up the wrong key and throws ProviderNotFoundException.
-            final referralLocal = navigatorContext.read<
-                LocalRepository<pkg_dm.ReferralModel, pkg_dm.ReferralSearchModel>>();
-            // Same runtime [ReferralLocalRepository]; app vs package [ReferralModel]
-            // are different types so a direct cast fails. Bridge for [ReferralBloc].
-            final referralForBloc = (referralLocal as dynamic)
-                as DataRepository<ReferralModel, ReferralSearchModel>;
 
             return MultiBlocProvider(
               providers: [
@@ -1477,12 +1470,6 @@ class _BeneficiaryChecklistPageState
                 BlocProvider<FacilityBloc>.value(
                   value: navigatorContext.read<FacilityBloc>(),
                 ),
-                BlocProvider<ReferralBloc>(
-                  create: (_) => ReferralBloc(
-                    const ReferralState(),
-                    referralRepository: referralForBloc,
-                  ),
-                ),
               ],
               child: tbChild,
             );
@@ -1490,7 +1477,75 @@ class _BeneficiaryChecklistPageState
         ),
       );
       if (navigatorContext.mounted) {
-        router.maybePop();
+        if (referred == true) {
+          router.push(HouseholdAcknowledgementRoute(enableViewHousehold: true));
+        } else {
+          router.maybePop();
+        }
+      }
+      return;
+    }
+
+    if (decidedFlow == "INELIGIBLE") {
+      final taskRef = IdGen.i.identifier;
+      if (navigatorContext.mounted) {
+        final individual = _resolveScreeningIndividual(navigatorContext)!;
+        navigatorContext.read<DeliverInterventionBloc>().add(
+              DeliverInterventionSubmitEvent(
+                task: TaskModel(
+                  projectBeneficiaryClientReferenceId:
+                      _resolveProjectBeneficiaryClientRefId(navigatorContext),
+                  clientReferenceId: taskRef,
+                  tenantId: RegistrationDeliverySingleton().tenantId,
+                  rowVersion: 1,
+                  auditDetails: AuditDetails(
+                    createdBy: RegistrationDeliverySingleton().loggedInUserUuid!,
+                    createdTime: DateTime.now().millisecondsSinceEpoch,
+                  ),
+                  projectId: RegistrationDeliverySingleton().projectId,
+                  status: "INELIGIBLE",
+                  clientAuditDetails: ClientAuditDetails(
+                    createdBy: RegistrationDeliverySingleton().loggedInUserUuid!,
+                    createdTime: DateTime.now().millisecondsSinceEpoch,
+                    lastModifiedBy: RegistrationDeliverySingleton().loggedInUserUuid!,
+                    lastModifiedTime: DateTime.now().millisecondsSinceEpoch,
+                  ),
+                  additionalFields: TaskAdditionalFields(
+                    version: 1,
+                    fields: [
+                      const AdditionalField('taskStatus', 'INELIGIBLE'),
+                      const AdditionalField('referralType', 'tbScreening'),
+                      AdditionalField(
+                        'childClientReferenceId',
+                        individual.clientReferenceId,
+                      ),
+                      AdditionalField(
+                        'householdClientReferenceId',
+                        _resolveHouseholdClientReferenceId(navigatorContext),
+                      ),
+                      AdditionalField(
+                        'administrativeAreaCode',
+                        _resolveAdministrativeAreaCode(navigatorContext),
+                      ),
+                    ],
+                  ),
+                  address: individual.address?.first.copyWith(
+                    relatedClientReferenceId: taskRef,
+                    id: null,
+                  ),
+                ),
+                isEditing: false,
+                boundaryModel: RegistrationDeliverySingleton().boundary!,
+              ),
+            );
+        navigatorContext.read<HouseholdOverviewBloc>().add(
+          HouseholdOverviewReloadEvent(
+            projectId: RegistrationDeliverySingleton().projectId!,
+            projectBeneficiaryType:
+                RegistrationDeliverySingleton().beneficiaryType!,
+          ),
+        );
+        router.push(HouseholdAcknowledgementRoute(enableViewHousehold: true));
       }
       return;
     }
@@ -1498,9 +1553,6 @@ class _BeneficiaryChecklistPageState
     if (decidedFlow == Status.beneficiaryReferred.toValue()) {
       router.push(BeneficiaryDetailsRoute());
       return;
-    }
-    if (decidedFlow == Status.toAdminister.toValue()) {
-      router.push(BeneficiaryDetailsRoute());
     }
   }
 }

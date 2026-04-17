@@ -20,6 +20,7 @@ import 'package:intl/intl.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import '../../../utils/registration_deliver_utils/extensions/extensions.dart';
+import 'package:collection/collection.dart';
 
 @RoutePage()
 class RefusedDeliveryPage extends LocalizedStatefulWidget {
@@ -148,7 +149,10 @@ class RefusedDeliveryPageState extends LocalizedState<RefusedDeliveryPage> {
                                               .members
                                               ?.first
                                               .address
-                                              ?.first),
+                                              ?.first,
+                                          registrationState
+                                              .householdMemberWrapper
+                                              .household),
                                       isEditing: false,
                                       boundaryModel:
                                           RegistrationDeliverySingleton()
@@ -283,6 +287,7 @@ class RefusedDeliveryPageState extends LocalizedState<RefusedDeliveryPage> {
     String? reasonOfRefusal,
     String? refusalComment,
     AddressModel? address,
+    HouseholdModel? household,
   ) {
     var task = oldTask;
     var clientReferenceId = task?.clientReferenceId ?? IdGen.i.identifier;
@@ -324,7 +329,23 @@ class RefusedDeliveryPageState extends LocalizedState<RefusedDeliveryPage> {
               AdditionalFieldsType.deliveryComment.toValue(),
               refusalComment,
             ),
-          AdditionalField(AdditionalFieldsType.isSchool.toValue(), true)
+          AdditionalField(AdditionalFieldsType.isSchool.toValue(), true),
+          if (household != null)
+            AdditionalField(
+              'householdClientReferenceId',
+              household.clientReferenceId,
+            ),
+          if (household?.additionalFields?.fields
+                  .firstWhereOrNull((e) => e.key == 'schoolId')
+                  ?.value !=
+              null)
+            AdditionalField(
+              'schoolId',
+              household!.additionalFields!.fields
+                  .firstWhere((e) => e.key == 'schoolId')
+                  .value
+                  .toString(),
+            )
         ],
       ),
     );

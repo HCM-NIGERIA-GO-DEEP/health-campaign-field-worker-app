@@ -11,11 +11,11 @@ import 'package:health_campaign_field_worker_app/blocs/registration_deliver/deli
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/additional_fields_type.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/deliver_strategy_type.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart' as i18;
+import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart'
+    as i18;
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/localized.dart';
 
 import '../../../../utils/registration_deliver_utils/extensions/extensions.dart';
-
 
 class RecordDeliveryCycle extends LocalizedStatefulWidget {
   final List<TaskModel>? taskData;
@@ -43,9 +43,7 @@ class RecordDeliveryCycleState extends LocalizedState<RecordDeliveryCycle> {
 
     final headerList = [
       DigitTableColumn(
-        header: localizations.translate(
-          i18.beneficiaryDetails.itnDeliveryNoColumnHeader,
-        ),
+        header: "Delivery No.",
         cellValue: 'delivery',
       ),
       DigitTableColumn(
@@ -219,9 +217,8 @@ class RecordDeliveryCycleState extends LocalizedState<RecordDeliveryCycle> {
                           i18.beneficiaryDetails.currentroundLabel,
                         )
                       : '${localizations.translate(i18.beneficiaryDetails.beneficiaryCycle)} ${e.id}',
-                  style: textTheme.headingL.copyWith(
-                    color: theme.colorTheme.primary.primary2
-                  ),
+                  style: textTheme.headingL
+                      .copyWith(color: theme.colorTheme.primary.primary2),
                   textAlign: TextAlign.left,
                 ),
               ),
@@ -265,7 +262,7 @@ class RecordDeliveryCycleState extends LocalizedState<RecordDeliveryCycle> {
 
                     return DigitTableRow(tableRow: [
                       DigitTableData(
-                        '${localizations.translate(i18.beneficiaryDetails.itnFirstDeliveryRowLabel).split(' ').first} ${e.deliveries!.indexOf(item) + 1}',
+                        'Delivery 1',
                         cellKey: 'delivery',
                         style: useCurrentRoundStyle
                             ? const TextStyle(fontWeight: FontWeight.w700)
@@ -273,9 +270,7 @@ class RecordDeliveryCycleState extends LocalizedState<RecordDeliveryCycle> {
                       ),
                       DigitTableData(
                         index == selectedIndex
-                            ? localizations.translate(
-                                i18.beneficiaryDetails.toDeliverLabel,
-                              )
+                            ? "To Deliver"
                             : localizations.translate(
                                 tasks?.status ?? Status.inComplete.toValue(),
                               ),

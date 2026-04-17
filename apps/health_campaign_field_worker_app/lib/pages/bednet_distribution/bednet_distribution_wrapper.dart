@@ -52,8 +52,8 @@ void requestBednetRegistrationLocalizationModules(BuildContext context) {
   context.read<LocalizationBloc>().add(
         LocalizationEvent.onLoadLocalization(
           module: 'hcm-household,hcm-closedhousehold,hcm-beneficiary,'
-              'hcm-member,hcm-delivery,hcm-home,hcm-common,hcm-scanner'
-              'hcm-checklist',
+              'hcm-member,hcm-delivery,hcm-home,hcm-common,hcm-scanner,'
+              'hcm-checklist,hcm-bednet',
           tenantId: envConfig.variables.tenantId,
           locale: locale,
           path: Constants.localizationApiPath,

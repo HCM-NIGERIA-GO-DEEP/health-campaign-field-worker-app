@@ -70,8 +70,7 @@ class _BednetEolinAssessmentPageState extends State<BednetEolinAssessmentPage> {
   bool get _canProceed {
     if (_hasOldNetsAnswer == null) return false;
     if (_hasOldNetsAnswer == _yes) {
-      return _returningCount >= 1 &&
-          _returningCount <= _itnForDelivery;
+      return _returningCount >= 1;
     }
     return true;
   }
@@ -253,10 +252,7 @@ class _BednetEolinAssessmentPageState extends State<BednetEolinAssessmentPage> {
                           setState(() {
                             _hasOldNetsAnswer = v;
                             if (v == _yes) {
-                              _returningCount = _returningCount.clamp(
-                                1,
-                                _itnForDelivery,
-                              );
+                              _returningCount = max(1, _returningCount);
                             }
                           });
                         },
@@ -280,7 +276,7 @@ class _BednetEolinAssessmentPageState extends State<BednetEolinAssessmentPage> {
                               FilteringTextInputFormatter.digitsOnly,
                             ],
                             minValue: 1,
-                            maxValue: _itnForDelivery,
+                            maxValue: 999,
                             step: 1,
                             initialValue: _returningCount.toString(),
                             onChange: (value) {
@@ -288,8 +284,7 @@ class _BednetEolinAssessmentPageState extends State<BednetEolinAssessmentPage> {
                               setState(() {
                                 final parsed = int.tryParse(value);
                                 if (parsed == null) return;
-                                _returningCount =
-                                    parsed.clamp(1, _itnForDelivery);
+                                _returningCount = max(1, parsed);
                               });
                             },
                           ),
@@ -297,9 +292,7 @@ class _BednetEolinAssessmentPageState extends State<BednetEolinAssessmentPage> {
                         Padding(
                           padding: const EdgeInsets.only(top: spacer1),
                           child: Text(
-                            'Maximum $_itnForDelivery (cannot return more '
-                            'bednets than are being provided for this '
-                            'household).',
+                            'Distributors can retrieve any valid number of old nets.',
                             style: textTheme.bodyS.copyWith(
                               color: theme.colorScheme.onSurface
                                   .withOpacity(0.65),
