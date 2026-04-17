@@ -18,7 +18,8 @@ import '../../../models/registration_deliver_model/entities/status.dart';
 import '../../../pages/bednet_distribution/bednet_household_review.dart';
 import '../../../router/app_router.dart';
 import '../../../utils/registration_deliver_utils/extensions/extensions.dart';
-import '../../../utils/registration_deliver_utils/i18_key_constants.dart' as i18;
+import '../../../utils/registration_deliver_utils/i18_key_constants.dart'
+    as i18;
 import '../../../utils/registration_deliver_utils/utils.dart';
 
 /// Reloads overview when the ITN [MaterialPageRoute] stack is closed (same
@@ -310,8 +311,7 @@ class CustomMemberCard extends StatelessWidget {
                                             beneficiaryType ==
                                                         BeneficiaryType
                                                             .household &&
-                                                    !isHead &&
-                                                    (years ?? 99) < 5
+                                                    !isHead
                                                 ? i18.memberCard
                                                     .tbAssessmentButton
                                                 : i18.householdOverView
@@ -320,9 +320,8 @@ class CustomMemberCard extends StatelessWidget {
                                         : localizations.translate(
                                             beneficiaryType ==
                                                         BeneficiaryType
-                                                            .household &&
-                                                    !isHead &&
-                                                    (years ?? 99) < 5
+                                                            .individual &&
+                                                    !isHead
                                                 ? i18.memberCard
                                                     .tbAssessmentButton
                                                 : i18.householdOverView
@@ -353,7 +352,8 @@ class CustomMemberCard extends StatelessWidget {
                                               ?.firstWhereOrNull(
                                                 (b) =>
                                                     b.beneficiaryClientReferenceId ==
-                                                    individual.clientReferenceId,
+                                                    individual
+                                                        .clientReferenceId,
                                               )
                                               ?.clientReferenceId ??
                                           projectBeneficiaryClientReferenceId;
@@ -691,7 +691,7 @@ class CustomMemberCard extends StatelessWidget {
                       mainAxisSize: MainAxisSize.max,
                       type: DigitButtonType.primary,
                       size: DigitButtonSize.medium,
-                      label: 'Deliver ITN',
+                      label: 'Record ITN Delivery',
                       onPressed: () {
                         final household = bednetHousehold;
                         if (household != null) {

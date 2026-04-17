@@ -4,6 +4,8 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart'
     hide ReferralModel, ReferralSearchModel;
+import 'package:digit_data_model/data_model.dart' as pkg_dm
+    show ReferralModel, ReferralSearchModel;
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/models/RadioButtonModel.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
@@ -25,7 +27,6 @@ import 'package:health_campaign_field_worker_app/models/registration_deliver_mod
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/constants.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart'
     as i18;
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/extensions/extensions.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/back_navigation_help_header.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/localized.dart';
@@ -773,9 +774,8 @@ class _BeneficiaryChecklistPageState
     if (fromRoute != null && fromRoute.isNotEmpty) return fromRoute;
     final state = _tryHouseholdOverviewState(context);
     final addr = state?.householdMemberWrapper.headOfHousehold?.address;
-    final code = (addr != null && addr.isNotEmpty)
-        ? addr.first.locality?.code
-        : null;
+    final code =
+        (addr != null && addr.isNotEmpty) ? addr.first.locality?.code : null;
     return code ?? RegistrationDeliverySingleton().boundary?.code ?? '';
   }
 
@@ -1452,39 +1452,40 @@ class _BeneficiaryChecklistPageState
               referralReasons: _referralReasonCodesFromChecklist(),
               tbScreeningPayload: jsonEncode(_checklistPayloadMap(decidedFlow)),
             );
-            final referralRepo = navigatorContext.repository<ReferralModel,
-                ReferralSearchModel>(navigatorContext);
-            try {
-              return MultiBlocProvider(
-                providers: [
-                  BlocProvider<DeliverInterventionBloc>.value(
-                    value: navigatorContext.read<DeliverInterventionBloc>(),
-                  ),
-                  BlocProvider<SearchHouseholdsBloc>.value(
-                    value: navigatorContext.read<SearchHouseholdsBloc>(),
-                  ),
-                  BlocProvider<HouseholdOverviewBloc>.value(
-                    value: navigatorContext.read<HouseholdOverviewBloc>(),
-                  ),
-                  BlocProvider<ReferralBloc>(
-                    create: (_) => ReferralBloc(
-                      const ReferralState(),
-                      referralRepository: referralRepo,
-                    ),
-                  ),
-                ],
-                child: tbChild,
-              );
-            } catch (_) {
-              return BlocProvider<ReferralBloc>(
-                create: (c) => ReferralBloc(
-                  const ReferralState(),
-                  referralRepository: c.repository<ReferralModel,
-                      ReferralSearchModel>(c),
+            // [NetworkManagerProviderWrapper] registers repositories for
+            // package [ReferralModel] (digit_data_model), not the app entity
+            // type from [referral.dart]. Using the app type in generics makes
+            // Provider look up the wrong key and throws ProviderNotFoundException.
+            final referralLocal = navigatorContext.read<
+                LocalRepository<pkg_dm.ReferralModel, pkg_dm.ReferralSearchModel>>();
+            // Same runtime [ReferralLocalRepository]; app vs package [ReferralModel]
+            // are different types so a direct cast fails. Bridge for [ReferralBloc].
+            final referralForBloc = (referralLocal as dynamic)
+                as DataRepository<ReferralModel, ReferralSearchModel>;
+
+            return MultiBlocProvider(
+              providers: [
+                BlocProvider<DeliverInterventionBloc>.value(
+                  value: navigatorContext.read<DeliverInterventionBloc>(),
                 ),
-                child: tbChild,
-              );
-            }
+                BlocProvider<SearchHouseholdsBloc>.value(
+                  value: navigatorContext.read<SearchHouseholdsBloc>(),
+                ),
+                BlocProvider<HouseholdOverviewBloc>.value(
+                  value: navigatorContext.read<HouseholdOverviewBloc>(),
+                ),
+                BlocProvider<FacilityBloc>.value(
+                  value: navigatorContext.read<FacilityBloc>(),
+                ),
+                BlocProvider<ReferralBloc>(
+                  create: (_) => ReferralBloc(
+                    const ReferralState(),
+                    referralRepository: referralForBloc,
+                  ),
+                ),
+              ],
+              child: tbChild,
+            );
           },
         ),
       );

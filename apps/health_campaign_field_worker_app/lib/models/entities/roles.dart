@@ -4,7 +4,11 @@ part 'roles.mapper.dart';
 
 @MappableEnum(caseStyle: CaseStyle.upperCase)
 enum Roles {
-  @MappableValue("WAREHOUSE_MANAGER") warehouseManager,
-  @MappableValue("DISTRIBUTOR") distributor,
+  @MappableValue("WAREHOUSE_MANAGER")
+  warehouseManager,
+  @MappableValue("DISTRIBUTOR")
+  distributor,
+  @MappableValue("COMMUNITY_DISTRIBUTOR")
+  communityDistributor,
   ;
 }

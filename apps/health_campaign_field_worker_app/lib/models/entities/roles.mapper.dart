@@ -29,6 +29,8 @@ class RolesMapper extends EnumMapper<Roles> {
         return Roles.warehouseManager;
       case "DISTRIBUTOR":
         return Roles.distributor;
+      case "COMMUNITY_DISTRIBUTOR":
+        return Roles.communityDistributor;
       default:
         throw MapperException.unknownEnumValue(value);
     }
@@ -41,6 +43,8 @@ class RolesMapper extends EnumMapper<Roles> {
         return "WAREHOUSE_MANAGER";
       case Roles.distributor:
         return "DISTRIBUTOR";
+      case Roles.communityDistributor:
+        return "COMMUNITY_DISTRIBUTOR";
     }
   }
 }
