@@ -111,7 +111,7 @@ final dynamic sampleCloseHouseholdFlows = {
               "order": 4,
               "value": "",
               "format": "scanner",
-              "hidden": false,
+              "hidden": true,
               "tooltip": "",
               "helpText": "",
               "infoText": "",
