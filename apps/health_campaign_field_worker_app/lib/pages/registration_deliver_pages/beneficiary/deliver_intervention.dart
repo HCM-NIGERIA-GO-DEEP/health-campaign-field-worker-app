@@ -1,5 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:collection/collection.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/stock.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/services/location_bloc.dart';
@@ -8,9 +10,7 @@ import 'package:digit_ui_components/utils/component_utils.dart';
 import 'package:digit_ui_components/widgets/atoms/digit_stepper.dart';
 import 'package:digit_ui_components/widgets/atoms/pop_up_card.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
-import 'package:digit_ui_components/widgets/molecules/show_pop_up.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/scheduler.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/delivery_intervention/deliver_intervention.dart';
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/search_households/search_households.dart';
@@ -19,17 +19,19 @@ import 'package:health_campaign_field_worker_app/models/registration_deliver_mod
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/deliver_strategy_type.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
 import 'package:health_campaign_field_worker_app/router/app_router.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart' as i18;
+import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart'
+    as i18;
+import 'package:health_campaign_field_worker_app/utils/stock_calculation_utils.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/back_navigation_help_header.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/beneficiary/resource_beneficiary_card.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/localized.dart';
-import 'package:intl/intl.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import '../../../blocs/registration_deliver/household_overview/household_overview.dart';
+import '../../../models/entities/roles_type.dart';
 import '../../../models/registration_deliver_model/entities/registration_delivery_enums.dart';
-import '../../../utils/registration_deliver_utils/extensions/extensions.dart';
+import '../../../utils/extensions/extensions.dart';
 import '../../../widgets/registartion_deliver/component_wrapper/product_variant_bloc_wrapper.dart';
 
 @RoutePage()
@@ -82,33 +84,41 @@ class DeliverInterventionPageState
       ProjectBeneficiaryModel projectBeneficiary) async {
     final lat = locationState.latitude;
     final long = locationState.longitude;
-    context.read<DeliverInterventionBloc>().add(
-          DeliverInterventionSubmitEvent(
-              task: _getTaskModel(
-                context,
-                form: form,
-                oldTask: RegistrationDeliverySingleton().beneficiaryType ==
-                        BeneficiaryType.household
-                    ? deliverInterventionState.tasks?.lastOrNull
-                    : null,
-                projectBeneficiaryClientReferenceId:
-                    projectBeneficiary.clientReferenceId,
-                dose: deliverInterventionState.dose,
-                cycle: deliverInterventionState.cycle,
-                deliveryStrategy: DeliverStrategyType.direct.toValue(),
-                address: householdMember.members?.first.address?.first,
-                latitude: lat,
-                longitude: long,
-              ),
-              isEditing: (deliverInterventionState.tasks ?? []).isNotEmpty &&
-                      RegistrationDeliverySingleton().beneficiaryType ==
-                          BeneficiaryType.household
-                  ? true
-                  : false,
-              boundaryModel: RegistrationDeliverySingleton().boundary!,
-              navigateToSummary: false,
-              householdMemberWrapper: householdMember),
-        );
+    final deliverInterventionBloc = context.read<DeliverInterventionBloc>();
+    final submitState = deliverInterventionBloc.stream.firstWhere(
+      (state) => !state.loading,
+    );
+    deliverInterventionBloc.add(
+      DeliverInterventionSubmitEvent(
+          task: _getTaskModel(
+            context,
+            form: form,
+            oldTask: RegistrationDeliverySingleton().beneficiaryType ==
+                    BeneficiaryType.household
+                ? deliverInterventionState.tasks?.lastOrNull
+                : null,
+            projectBeneficiaryClientReferenceId:
+                projectBeneficiary.clientReferenceId,
+            dose: deliverInterventionState.dose,
+            cycle: deliverInterventionState.cycle,
+            deliveryStrategy: DeliverStrategyType.direct.toValue(),
+            address: householdMember.members?.first.address?.first,
+            latitude: lat,
+            longitude: long,
+          ),
+          isEditing: (deliverInterventionState.tasks ?? []).isNotEmpty &&
+                  RegistrationDeliverySingleton().beneficiaryType ==
+                      BeneficiaryType.household
+              ? true
+              : false,
+          boundaryModel: RegistrationDeliverySingleton().boundary!,
+          navigateToSummary: false,
+          householdMemberWrapper: householdMember),
+    );
+    await submitState;
+    if (!context.mounted) return;
+    await _refreshStockInHandAfterTaskSave(context);
+    if (!context.mounted) return;
     final household = householdMember.household;
     if (household?.isSchoolHousehold ?? false) {
       context.router.push(BeneficiaryAcknowledgementRoute());
@@ -117,6 +127,127 @@ class DeliverInterventionPageState
         HouseholdAcknowledgementRoute(enableViewHousehold: false),
       );
     }
+  }
+
+  Future<void> _refreshStockInHandAfterTaskSave(BuildContext context) async {
+    await _resolveStockInHandForBednet(context);
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  Future<int?> _resolveStockInHandForBednet(BuildContext context) async {
+    final projectId = RegistrationDeliverySingleton().projectId;
+    if (projectId == null || projectId.isEmpty) return null;
+
+    final facilityId = await _resolveCurrentFacilityId(context);
+    final productVariantId = await _resolveBednetProductVariantId(context);
+    if (facilityId == null ||
+        facilityId.isEmpty ||
+        productVariantId == null ||
+        productVariantId.isEmpty) {
+      return null;
+    }
+
+    final stockRepo =
+        context.read<LocalRepository<StockModel, StockSearchModel>>()
+            as StockLocalRepository;
+    final taskRepo = context.read<LocalRepository<TaskModel, TaskSearchModel>>()
+        as TaskLocalRepository;
+
+    final receivedStocks = await stockRepo.search(
+      StockSearchModel(receiverId: facilityId),
+    );
+    final sentStocks = await stockRepo.search(
+      StockSearchModel(senderId: facilityId),
+    );
+
+    final allStocksMap = <String, StockModel>{};
+    for (final stock in receivedStocks) {
+      allStocksMap[stock.clientReferenceId] = stock;
+    }
+    for (final stock in sentStocks) {
+      allStocksMap[stock.clientReferenceId] = stock;
+    }
+
+    final allStocks = allStocksMap.values.toList();
+    final tasks = await taskRepo.search(
+      TaskSearchModel(projectId: projectId),
+      context.loggedInUserUuid,
+    );
+    final effectiveMap =
+        StockCalculationUtils.calculateEffectiveStockInHandForProducts(
+      stockList: allStocks,
+      tasks: tasks,
+      facilityId: facilityId,
+      productIds: [productVariantId],
+      loggedInUserUuid: context.loggedInUserUuid,
+      bednetStatusKey: kBednetTaskAdministrationStatusKey,
+      bednetSuccessStatus: kBednetTaskAdministrationSuccessStatus,
+      fallbackPupilsPresentKey: kBednetTaskPupilsPresentKey,
+      singleFallbackProductId: productVariantId,
+    );
+    return effectiveMap[productVariantId]?.toInt();
+  }
+
+  Future<String?> _resolveCurrentFacilityId(BuildContext context) async {
+    final projectId = context.projectId;
+    if (projectId.isEmpty) return null;
+
+    final isDistributor = context.loggedInUserRoles
+        .any((role) => role.code == RolesType.distributor.toValue());
+    if (isDistributor) {
+      return context.loggedInUserUuid;
+    }
+
+    final projectFacilityRepo = context.read<
+        LocalRepository<ProjectFacilityModel, ProjectFacilitySearchModel>>();
+    final projectFacilities = await projectFacilityRepo.search(
+      ProjectFacilitySearchModel(projectId: [projectId]),
+    );
+
+    final currentFacilities = projectFacilities.where((pf) {
+      final facilityLevel =
+          _additionalFieldValue(pf.additionalFields?.fields, 'facilityLevel');
+      return facilityLevel.isEmpty || facilityLevel.toLowerCase() == 'current';
+    }).toList();
+
+    if (currentFacilities.isNotEmpty) return currentFacilities.first.facilityId;
+    if (projectFacilities.isNotEmpty) return projectFacilities.first.facilityId;
+    return null;
+  }
+
+  Future<String?> _resolveBednetProductVariantId(BuildContext context) async {
+    final projectId = context.projectId;
+    if (projectId.isEmpty) return null;
+
+    final projectResourceRepo = context.read<
+        LocalRepository<ProjectResourceModel, ProjectResourceSearchModel>>();
+    final resources = await projectResourceRepo.search(
+      ProjectResourceSearchModel(projectId: [projectId]),
+    );
+    if (resources.isEmpty) return null;
+
+    ProjectResourceModel? preferred;
+    for (final resource in resources) {
+      final name = resource.resource.name?.toLowerCase() ?? '';
+      if (name.contains('bednet') ||
+          name.contains('llin') ||
+          (name.contains('net') && name.contains('bed'))) {
+        preferred = resource;
+        break;
+      }
+    }
+    preferred ??= resources.first;
+    return preferred.resource.productVariantId;
+  }
+
+  String _additionalFieldValue(List<AdditionalField>? fields, String key) {
+    if (fields == null) return '';
+    return fields
+            .firstWhereOrNull((field) => field.key == key)
+            ?.value
+            ?.toString() ??
+        '';
   }
 
   void handleLocationState(
@@ -212,7 +343,8 @@ class DeliverInterventionPageState
                                   ?.projectType
                                   ?.resources
                                   ?.map((r) => DeliveryProductVariant(
-                                      productVariantId: r.productVariantId, name: ''))
+                                      productVariantId: r.productVariantId,
+                                      name: ''))
                                   .toList();
 
                       final int numberOfDoses = (RegistrationDeliverySingleton()
@@ -228,7 +360,7 @@ class DeliverInterventionPageState
                               0
                           : 0;
 
-                      final steps = generateSteps(numberOfDoses);
+                      generateSteps(numberOfDoses);
                       // if ((productVariants ?? []).isEmpty && context.mounted) {
                       //   SchedulerBinding.instance.addPostFrameCallback((_) {
                       //     showCustomPopup(
@@ -315,16 +447,14 @@ class DeliverInterventionPageState
                                                                     .value
                                                                 as List<
                                                                     ProductVariantModel?>);
-                                                        final hasEmptyResources =
-                                                            hasEmptyOrNullResources(
-                                                                deliveredProducts);
-                                                        final hasZeroQuantity =
-                                                            hasEmptyOrZeroQuantity(
-                                                                form);
-                                                        final hasDuplicates =
-                                                            hasDuplicateResources(
-                                                                deliveredProducts,
-                                                                form);
+                                                        hasEmptyOrNullResources(
+                                                            deliveredProducts);
+                                                        hasEmptyOrZeroQuantity(
+                                                            form);
+                                                        hasDuplicateResources(
+                                                          deliveredProducts,
+                                                          form,
+                                                        );
 
                                                         // if (hasEmptyResources) {
                                                         //   Toast.showToast(
@@ -354,51 +484,73 @@ class DeliverInterventionPageState
                                                         //       type: ToastType
                                                         //           .error);
                                                         // } else {
-                                                          final submit = await showDialog<bool>(
-                                                            context: context,
-                                                            builder: (ctx) => Popup(
-                                                              title: localizations.translate(
-                                                                  i18.deliverIntervention.dialogTitle),
-                                                              description: localizations.translate(
-                                                                  i18.deliverIntervention.dialogContent),
-                                                              actions: [
-                                                                DigitButton(
-                                                                    label: localizations.translate(
-                                                                        i18.common.coreCommonSubmit),
-                                                                    onPressed: () {
-                                                                      Navigator.of(context,
-                                                                              rootNavigator: true)
-                                                                          .pop(true);
-                                                                    },
-                                                                    type: DigitButtonType.primary,
-                                                                    size: DigitButtonSize.large),
-                                                                DigitButton(
-                                                                    label: localizations.translate(
-                                                                        i18.common.coreCommonCancel),
-                                                                    onPressed: () => Navigator.of(context,
-                                                                            rootNavigator: true)
-                                                                        .pop(false),
-                                                                    type: DigitButtonType.secondary,
-                                                                    size: DigitButtonSize.large),
-                                                              ],
-                                                            ),
+                                                        final submit =
+                                                            await showDialog<
+                                                                bool>(
+                                                          context: context,
+                                                          builder: (ctx) =>
+                                                              Popup(
+                                                            title: localizations
+                                                                .translate(i18
+                                                                    .deliverIntervention
+                                                                    .dialogTitle),
+                                                            description: localizations
+                                                                .translate(i18
+                                                                    .deliverIntervention
+                                                                    .dialogContent),
+                                                            actions: [
+                                                              DigitButton(
+                                                                  label: localizations
+                                                                      .translate(i18
+                                                                          .common
+                                                                          .coreCommonSubmit),
+                                                                  onPressed:
+                                                                      () {
+                                                                    Navigator.of(
+                                                                            context,
+                                                                            rootNavigator:
+                                                                                true)
+                                                                        .pop(
+                                                                            true);
+                                                                  },
+                                                                  type: DigitButtonType
+                                                                      .primary,
+                                                                  size: DigitButtonSize
+                                                                      .large),
+                                                              DigitButton(
+                                                                  label: localizations
+                                                                      .translate(i18
+                                                                          .common
+                                                                          .coreCommonCancel),
+                                                                  onPressed: () => Navigator.of(
+                                                                          context,
+                                                                          rootNavigator:
+                                                                              true)
+                                                                      .pop(
+                                                                          false),
+                                                                  type: DigitButtonType
+                                                                      .secondary,
+                                                                  size: DigitButtonSize
+                                                                      .large),
+                                                            ],
+                                                          ),
+                                                        );
+                                                        if (submit ?? false) {
+                                                          context
+                                                              .read<
+                                                                  LocationBloc>()
+                                                              .add(
+                                                                  const LoadLocationEvent());
+                                                          handleLocationState(
+                                                            locationState,
+                                                            context,
+                                                            deliveryInterventionState,
+                                                            form,
+                                                            householdMemberWrapper,
+                                                            projectBeneficiary!
+                                                                .first,
                                                           );
-                                                          if (submit ?? false) {
-                                                            context
-                                                                .read<
-                                                                    LocationBloc>()
-                                                                .add(
-                                                                    const LoadLocationEvent());
-                                                            handleLocationState(
-                                                              locationState,
-                                                              context,
-                                                              deliveryInterventionState,
-                                                              form,
-                                                              householdMemberWrapper,
-                                                              projectBeneficiary!
-                                                                  .first,
-                                                            );
-                                                          }
+                                                        }
                                                         // }
                                                       },
                                                     );
@@ -410,7 +562,8 @@ class DeliverInterventionPageState
                                     ),
                                     header: const Column(children: [
                                       Padding(
-                                        padding: EdgeInsets.only(bottom:spacer2),
+                                        padding:
+                                            EdgeInsets.only(bottom: spacer2),
                                         child: BackNavigationHelpHeaderWidget(
                                           showHelp: false,
                                         ),
@@ -428,7 +581,12 @@ class DeliverInterventionPageState
                                                     i18.deliverIntervention
                                                         .deliverInterventionLabel,
                                                   ),
-                                                  style: textTheme.headingXl.copyWith(color: theme.colorTheme.primary.primary2),
+                                                  style: textTheme.headingXl
+                                                      .copyWith(
+                                                          color: theme
+                                                              .colorTheme
+                                                              .primary
+                                                              .primary2),
                                                 ),
                                                 // if (RegistrationDeliverySingleton()
                                                 //         .beneficiaryType ==
@@ -510,9 +668,12 @@ class DeliverInterventionPageState
                                                     i18.deliverIntervention
                                                         .deliverInterventionResourceLabel,
                                                   ),
-                                                  style: textTheme.headingXl.copyWith(
-                                                    color: theme.colorTheme.primary.primary2
-                                                  ),
+                                                  style: textTheme.headingXl
+                                                      .copyWith(
+                                                          color: theme
+                                                              .colorTheme
+                                                              .primary
+                                                              .primary2),
                                                 ),
                                                 ..._controllers.map((e) =>
                                                     ResourceBeneficiaryCard(
@@ -521,7 +682,11 @@ class DeliverInterventionPageState
                                                           .indexOf(e),
                                                       totalItems:
                                                           _controllers.length,
-                                                      isReadOnly: RegistrationDeliverySingleton().beneficiaryType == BeneficiaryType.individual,
+                                                      isReadOnly:
+                                                          RegistrationDeliverySingleton()
+                                                                  .beneficiaryType ==
+                                                              BeneficiaryType
+                                                                  .individual,
                                                       onDelete: (index) {
                                                         (form.control(
                                                           _resourceDeliveredKey,
@@ -543,9 +708,7 @@ class DeliverInterventionPageState
                                                         });
                                                       },
                                                     )),
-                                               
                                               ]),
-                                        
                                         ],
                                       ),
                                     ],
