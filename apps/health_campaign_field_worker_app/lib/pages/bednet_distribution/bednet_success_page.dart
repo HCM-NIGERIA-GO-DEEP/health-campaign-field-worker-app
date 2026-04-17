@@ -11,14 +11,9 @@ import '../../utils/registration_deliver_utils/i18_key_constants.dart' as i18;
 import '../../utils/registration_deliver_utils/utils.dart';
 import '../../widgets/registartion_deliver/localized.dart';
 
-/// Shown **only** after successful ITN / bednet **delivery** to the household —
-/// i.e. after submitting [BednetInformHouseholdPage] (EOLIN → inform → success).
-///
-/// Normal **household registration** (search → location → household details) uses
-/// [HouseholdAcknowledgementPage] instead.
-///
-/// Do not pop the auto-route stack twice when this overlay sits on
-/// [SearchBeneficiaryPage]: use [StackRouter.root.navigate] for explicit targets.
+/// Shown as a Material route on top of the ITN chain (review → EOLIN → inform →
+/// success). "View household" must pop that entire overlay, then
+/// [StackRouter.navigate] to [CustomHouseholdOverviewRoute] (see [_onViewHouseholdDetails]).
 class BednetSuccessPage extends LocalizedStatefulWidget {
   final String eToken;
   final int itnForDelivery;
@@ -51,23 +46,24 @@ class _BednetSuccessPageState extends LocalizedState<BednetSuccessPage> {
     } catch (_) {}
   }
 
-  void _onViewHouseholdDetails() {
+  /// Pops the full ITN Material stack (success → EOLIN → review → …) until the
+  /// nested navigator is back at the first route ([CustomHouseholdOverviewPage]
+  /// under [BednetHouseholdOverviewWrapperRoute]), then aligns auto_route to that
+  /// child — same shape as [HouseholdAcknowledgementPage] (see comment there on
+  /// `navigate` vs `replace`).
+  Future<void> _onViewHouseholdDetails() async {
     if (!mounted) return;
     _dispatchHouseholdOverviewReload();
-    final root = context.router.root;
-    final nav = Navigator.of(context);
-    if (!nav.canPop()) return;
-    // Dismiss this overlay only; the route below is often [SearchBeneficiaryPage].
-    nav.pop();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      root.navigate(
-        BednetHouseholdOverviewWrapperRoute(
-          children: [
-            CustomHouseholdOverviewRoute(),
-          ],
-        ),
-      );
-    });
+    final rootRouter = context.router.root;
+    // A single [Navigator.pop] only removed success and exposed [BednetEolinAssessmentPage].
+    Navigator.of(context).popUntil((route) => route.isFirst);
+    await rootRouter.navigate(
+      BednetHouseholdOverviewWrapperRoute(
+        children: [
+          CustomHouseholdOverviewRoute(),
+        ],
+      ),
+    );
   }
 
   void _onBackToSearch() {
@@ -196,7 +192,7 @@ class _BednetSuccessPageState extends LocalizedState<BednetSuccessPage> {
                 const SizedBox(height: spacer2),
                 DigitButton(
                   label: localizations.translate(
-                    i18.acknowledgementSuccess.acknowledgementLabelText,
+                    i18.acknowledgementSuccess.actionLabelText,
                   ),
                   type: DigitButtonType.secondary,
                   size: DigitButtonSize.large,

@@ -26,10 +26,6 @@ class _BednetHouseholdLocationPageState
     extends LocalizedState<BednetHouseholdLocationPage> {
   final TextEditingController _settlementController = TextEditingController();
   final TextEditingController _gpsController = TextEditingController();
-  final FocusNode _settlementFocusNode = FocusNode();
-  final FocusNode _gpsFocusNode = FocusNode();
-  bool _settlementClearedOnFocus = false;
-  bool _gpsClearedOnFocus = false;
 
   @override
   void initState() {
@@ -37,26 +33,12 @@ class _BednetHouseholdLocationPageState
     context.read<LocationBloc>().add(const LoadLocationEvent());
     _settlementController.text =
         RegistrationDeliverySingleton().boundary?.name ?? '';
-    _settlementFocusNode.addListener(() {
-      if (_settlementFocusNode.hasFocus && !_settlementClearedOnFocus) {
-        _settlementController.clear();
-        _settlementClearedOnFocus = true;
-      }
-    });
-    _gpsFocusNode.addListener(() {
-      if (_gpsFocusNode.hasFocus && !_gpsClearedOnFocus) {
-        _gpsController.clear();
-        _gpsClearedOnFocus = true;
-      }
-    });
   }
 
   @override
   void dispose() {
     _settlementController.dispose();
     _gpsController.dispose();
-    _settlementFocusNode.dispose();
-    _gpsFocusNode.dispose();
     super.dispose();
   }
 
@@ -155,7 +137,6 @@ class _BednetHouseholdLocationPageState
                       ),
                       child: DigitTextFormInput(
                         readOnly: true,
-                        focusNode: _settlementFocusNode,
                         controller: _settlementController,
                       ),
                     ),
@@ -165,7 +146,6 @@ class _BednetHouseholdLocationPageState
                       capitalizedFirstLetter: false,
                       child: DigitTextFormInput(
                         readOnly: true,
-                        focusNode: _gpsFocusNode,
                         controller: _gpsController
                           ..text = _gpsController.text.isEmpty
                               ? (locationState.accuracy?.toStringAsFixed(6) ??

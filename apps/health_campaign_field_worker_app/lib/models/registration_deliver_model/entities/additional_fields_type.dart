@@ -49,4 +49,6 @@ enum AdditionalFieldsType {
   houseStructureTypes,
   @MappableValue("reasonOfRefusal")
   reasonOfRefusal,
+  @MappableValue("isSchool")
+  isSchool,
 }

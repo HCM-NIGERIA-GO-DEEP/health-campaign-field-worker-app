@@ -898,6 +898,7 @@ class DeliverInterventionPageState
               AdditionalFieldsType.deliveryComment.toValue(),
               deliveryComment,
             ),
+          AdditionalField(AdditionalFieldsType.isSchool.toValue(), true)
         ],
       ),
     );

@@ -69,6 +69,8 @@ class AdditionalFieldsTypeMapper extends EnumMapper<AdditionalFieldsType> {
         return AdditionalFieldsType.childrenUnder5;
       case "eolinOldNetsReturningCount":
         return AdditionalFieldsType.eolinOldNetsReturningCount;
+      case "isSchool":
+        return AdditionalFieldsType.isSchool;
       default:
         throw MapperException.unknownEnumValue(value);
     }
@@ -121,6 +123,8 @@ class AdditionalFieldsTypeMapper extends EnumMapper<AdditionalFieldsType> {
         return "childrenUnder5";
       case AdditionalFieldsType.eolinOldNetsReturningCount:
         return "eolinOldNetsReturningCount";
+      case AdditionalFieldsType.isSchool:
+        return "isSchool";
     }
   }
 }

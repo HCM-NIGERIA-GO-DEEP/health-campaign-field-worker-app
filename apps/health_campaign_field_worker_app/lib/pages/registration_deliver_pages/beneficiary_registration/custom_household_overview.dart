@@ -24,7 +24,6 @@ import '../../../widgets/registartion_deliver/table_card/table_card.dart';
 
 import '../../../router/app_router.dart';
 import '../../../widgets/registartion_deliver/member_card/custom_member_card.dart';
-import 'check_eligibility_assessment.dart';
 import 'refer_beneficiary_page.dart' show contextIsMdtUser;
 import '../../../blocs/registration_deliver/household_overview/household_overview.dart';
 import '../../../blocs/registration_deliver/search_households/search_bloc_common_wrapper.dart';
@@ -77,12 +76,10 @@ class _CustomHouseholdOverviewPageState
     // [BednetIndividualDetailsWrapperPage]'s ShowcaseWidget caused digit_showcase
     // AnchoredOverlay layout errors on a second "Add student" navigation.
     return PopScope(
-      onPopInvoked: (didPop) async {
-        context
-            .read<SearchBlocWrapper>()
-            .searchHouseholdsBloc
-            .add(const SearchHouseholdsClearEvent());
-        context.router.maybePop();
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        _goBackToSearch();
       },
       child: BlocListener<HouseholdOverviewBloc, HouseholdOverviewState>(
         listener: (context, state) {
@@ -131,11 +128,7 @@ class _CustomHouseholdOverviewPageState
                         header: Padding(
                           padding: const EdgeInsets.only(bottom: spacer2),
                           child: BackNavigationHelpHeaderWidget(
-                            handleBack: () {
-                              context
-                                  .read<SearchHouseholdsBloc>()
-                                  .add(const SearchHouseholdsEvent.clear());
-                            },
+                            handleBack: _goBackToSearch,
                           ),
                         ),
                         enableFixedDigitButton: true,
@@ -739,7 +732,8 @@ class _CustomHouseholdOverviewPageState
                                                           (projectBeneficiary ??
                                                                   [])
                                                               .isNotEmpty
-                                                      ? () => _openTbScreening(
+                                                      ? () =>
+                                                          _openBeneficiaryChecklist(
                                                             context,
                                                             e,
                                                             state
@@ -979,18 +973,12 @@ class _CustomHouseholdOverviewPageState
     );
   }
 
-  /// Opens [IndividualDetailsPage] with the same bloc wiring as
-  /// [BednetIndividualDetailsWrapperRoute], but via [Navigator] so it works when
-  /// this overview was opened with a [MaterialPageRoute] (new household flow)
-  /// where the overview AutoRoute shell is not on the stack.
-  ///
-  /// Uses Builder to preserve ShowcaseWidget context from parent route.
-  Future<void> _openTbScreening(
+  /// Opens eligibility checklist ([BeneficiaryChecklistPage]) for the child.
+  Future<void> _openBeneficiaryChecklist(
     BuildContext context,
     IndividualModel child,
     HouseholdMemberWrapper wrapper,
   ) async {
-    final householdId = wrapper.household?.clientReferenceId ?? '';
     final pbId = wrapper.projectBeneficiaries
         ?.firstWhereOrNull(
           (b) => b.beneficiaryClientReferenceId == child.clientReferenceId,
@@ -998,19 +986,19 @@ class _CustomHouseholdOverviewPageState
         ?.clientReferenceId;
     if (pbId == null || pbId.isEmpty) return;
 
+    final householdId = wrapper.household?.clientReferenceId ?? '';
     final areaCode = wrapper.headOfHousehold?.address?.first.locality?.code ??
         RegistrationDeliverySingleton().boundary?.code ??
         '';
 
-    await Navigator.of(context, rootNavigator: true).push<void>(
-      MaterialPageRoute(
-        builder: (ctx) => TbEligibilityAssessmentPage(
-          appLocalizations: localizations,
-          child: child,
-          householdClientReferenceId: householdId,
-          projectBeneficiaryClientReferenceId: pbId,
-          administrativeAreaCode: areaCode,
-        ),
+    await context.router.push<void>(
+      BeneficiaryChecklistRoute(
+        beneficiaryClientRefId: child.clientReferenceId,
+        projectBeneficiaryClientRefId: pbId,
+        householdClientReferenceId: householdId,
+        administrativeAreaCode: areaCode,
+        screeningIndividual: child,
+        appLocalizations: localizations,
       ),
     );
   }
@@ -1100,10 +1088,28 @@ class _CustomHouseholdOverviewPageState
     return {'textLabel': textLabel, 'color': color, 'icon': icon};
   }
 
-  void navigateToChecklist(
-      BuildContext ctx, String beneficiaryClientRefId) async {
-    // await context.router.push(BeneficiaryChecklistRoute(
-    // beneficiaryClientRefId: beneficiaryClientRefId));
+  Future<void> navigateToChecklist(
+    BuildContext ctx,
+    String beneficiaryClientRefId,
+  ) async {
+    await ctx.router.push<void>(
+      BeneficiaryChecklistRoute(
+        beneficiaryClientRefId: beneficiaryClientRefId,
+        appLocalizations: localizations,
+      ),
+    );
+  }
+
+  void _goBackToSearch() {
+    if (!mounted) return;
+    context
+        .read<SearchBlocWrapper>()
+        .searchHouseholdsBloc
+        .add(const SearchHouseholdsClearEvent());
+    context
+        .read<SearchHouseholdsBloc>()
+        .add(const SearchHouseholdsEvent.clear());
+    context.router.root.navigate(SearchBeneficiaryRoute());
   }
 
   void callReloadEvent({
@@ -1250,43 +1256,42 @@ class _CustomHouseholdOverviewPageState
     return null;
   }
 
-  int _countMembersUnderFive(HouseholdMemberWrapper wrapper) {
-    var n = 0;
-    for (final m in wrapper.members ?? []) {
-      final dob = m.dateOfBirth;
-      if (dob == null || dob.isEmpty) continue;
-      final age = DigitDateUtils.calculateAge(
-        DigitDateUtils.getFormattedDateToDateTime(dob) ?? DateTime.now(),
-      );
-      if (age.years < 5) n++;
-    }
-    return n;
-  }
-
-  /// True when fewer than the declared [childrenUnder5] members are registered.
+  /// Uses [childrenUnder5] from additional fields as cap; counts non-head members
+  /// under 5 (or no DOB yet) vs that cap, and enforces [HouseholdModel.memberCount].
   bool _canAddMoreChildrenUnderFive(HouseholdMemberWrapper wrapper) {
-    final cap = _childrenUnder5FromHousehold(wrapper.household);
+    final h = wrapper.household;
+    if (h == null) return false;
+    final maxMembers = h.memberCount;
+    if (maxMembers != null &&
+        maxMembers > 0 &&
+        (wrapper.members?.length ?? 0) >= maxMembers) {
+      return false;
+    }
+    final cap = _childrenUnder5FromHousehold(h);
     if (cap <= 0) return false;
-    return _countMembersUnderFive(wrapper) < cap;
+
+    return h.memberCount! < cap;
   }
 
-  /// Same parsing as [HouseHoldDetailsPage.buildForm] for children under 5.
+  /// Same field as [HouseHoldDetailsPage] / MDMS `childrenUnder5`.
   int _childrenUnder5FromHousehold(HouseholdModel? household) {
     final fields = household?.additionalFields?.fields;
     if (fields == null) return 0;
-    return int.tryParse(
-          fields
-              .firstWhere(
-                (f) => f.key == AdditionalFieldsType.childrenUnder5.toValue(),
-                orElse: () => AdditionalField(
-                  AdditionalFieldsType.childrenUnder5.toValue(),
-                  '0',
-                ),
-              )
-              .value
-              .toString(),
-        ) ??
-        0;
+    final raw = fields
+        .firstWhere(
+          (f) => f.key == AdditionalFieldsType.childrenUnder5.toValue(),
+          orElse: () => AdditionalField(
+            AdditionalFieldsType.childrenUnder5.toValue(),
+            '0',
+          ),
+        )
+        .value
+        ?.toString()
+        .trim();
+    if (raw == null || raw.isEmpty) return 0;
+    final v = num.tryParse(raw)?.toInt();
+    if (v == null) return 0;
+    return v < 0 ? 0 : v;
   }
 
   /// Prefer resolved [headOfHousehold], then any member tagged as head (same rules as [MemberCard]).
