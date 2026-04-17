@@ -68,6 +68,10 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       final isDistributor = context.loggedInUserRoles
           .any((role) => role.code == RolesType.distributor.toValue());
 
+      // Check if user is a distributor
+      final isWarehouseManager = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.warehouseManager.toValue());
+
       // Get project facilities
       final projectFacilityRepo = context.read<
           LocalRepository<ProjectFacilityModel, ProjectFacilitySearchModel>>();
@@ -91,6 +95,34 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       final facilities = await facilityRepo.search(
         FacilitySearchModel(id: facilityIds),
       );
+
+      //filter facility based on usage
+
+      String? usage = "";
+
+      final boundaryLevel = context.selectedProject.address?.boundaryType;
+
+      if (isWarehouseManager) {
+        if (boundaryLevel == Constants.stateBoundaryLevel) {
+          usage = Constants.stateFacility;
+        } else {
+          if (boundaryLevel == Constants.lgaBoundaryLevel) {
+            usage = Constants.districtFacility;
+          } else {
+            usage = Constants.dhFacility;
+          }
+        }
+      } else if (isDistributor) {
+        usage = "None";
+      } else {
+        usage = Constants.healthFacility;
+      }
+
+      final filteredFacilities = (usage == null || usage.trim().isEmpty)
+          ? facilities
+          : facilities
+              .where((facility) => (facility.usage ?? '').trim() == usage!.trim())
+              .toList();
 
       // Get project resources to know which product variants
       final projectResourceRepo = context.read<
@@ -118,17 +150,17 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       final distributorWithoutFacilities = isDistributor;
 
       final previousFacilityId = _selectedFacility?.id;
-      final autoSelectedFacility = facilities.isNotEmpty
+      final autoSelectedFacility = filteredFacilities.isNotEmpty
           ? (previousFacilityId != null
-              ? facilities.firstWhere(
+              ? filteredFacilities.firstWhere(
                   (f) => f.id == previousFacilityId,
-                  orElse: () => facilities.first,
+                  orElse: () => filteredFacilities.first,
                 )
-              : facilities.first)
+              : filteredFacilities.first)
           : null;
 
       setState(() {
-        _facilities = facilities;
+        _facilities = filteredFacilities;
         _productVariants = productVariants;
         _selectedFacility = autoSelectedFacility;
         _isLoading = false;
