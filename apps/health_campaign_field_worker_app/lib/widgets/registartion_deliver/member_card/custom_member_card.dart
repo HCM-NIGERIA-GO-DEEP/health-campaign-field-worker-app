@@ -348,8 +348,41 @@ class CustomMemberCard extends StatelessWidget {
                                                 BeneficiaryType.individual,
                                       ));
 
-                                      context.router
-                                          .push(BeneficiaryChecklistRoute());
+                                      final hoState = bloc.state;
+                                      final pbId = projectBeneficiaries
+                                              ?.firstWhereOrNull(
+                                                (b) =>
+                                                    b.beneficiaryClientReferenceId ==
+                                                    individual.clientReferenceId,
+                                              )
+                                              ?.clientReferenceId ??
+                                          projectBeneficiaryClientReferenceId;
+
+                                      context.router.push(
+                                        BeneficiaryChecklistRoute(
+                                          beneficiaryClientRefId:
+                                              individual.clientReferenceId,
+                                          projectBeneficiaryClientRefId: pbId,
+                                          householdClientReferenceId: hoState
+                                                  .householdMemberWrapper
+                                                  .household
+                                                  ?.clientReferenceId ??
+                                              '',
+                                          administrativeAreaCode: hoState
+                                                  .householdMemberWrapper
+                                                  .headOfHousehold
+                                                  ?.address
+                                                  ?.firstOrNull
+                                                  ?.locality
+                                                  ?.code ??
+                                              RegistrationDeliverySingleton()
+                                                  .boundary
+                                                  ?.code ??
+                                              '',
+                                          screeningIndividual: individual,
+                                          appLocalizations: localizations,
+                                        ),
+                                      );
                                     },
                                   )
                                 : const Offstage(),

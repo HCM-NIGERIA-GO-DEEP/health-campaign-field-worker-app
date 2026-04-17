@@ -1,40 +1,55 @@
+import 'dart:convert';
 import 'dart:math';
 
-import 'package:auto_route/auto_route.dart';
 import 'package:collection/collection.dart';
-import 'package:digit_data_model/data_model.dart';
+import 'package:digit_data_model/data_model.dart'
+    hide ReferralModel, ReferralSearchModel;
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/models/RadioButtonModel.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/utils/date_utils.dart';
 import 'package:digit_ui_components/widgets/atoms/digit_divider.dart';
-import 'package:digit_ui_components/widgets/atoms/digit_loader.dart';
 import 'package:digit_ui_components/widgets/atoms/pop_up_card.dart';
 import 'package:digit_ui_components/widgets/atoms/selection_card.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:digit_ui_components/widgets/molecules/show_pop_up.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:health_campaign_field_worker_app/blocs/registration_deliver/delivery_intervention/deliver_intervention.dart';
+import 'package:health_campaign_field_worker_app/blocs/registration_deliver/household_overview/household_overview.dart';
+import 'package:health_campaign_field_worker_app/blocs/registration_deliver/referral_management/referral_management.dart';
+import 'package:health_campaign_field_worker_app/blocs/registration_deliver/search_households/search_households.dart';
+import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/referral.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/registration_delivery_enums.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/constants.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart'
     as i18;
+import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/extensions/extensions.dart';
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/back_navigation_help_header.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/localized.dart';
 import 'package:survey_form/survey_form.dart';
 
 import '../../../models/registration_deliver_model/entities/status.dart';
+import '../../../router/app_router.dart';
+import '../beneficiary_registration/refer_beneficiary_page.dart';
 
 @RoutePage()
 class BeneficiaryChecklistPage extends LocalizedStatefulWidget {
   final String? beneficiaryClientRefId;
+  final String? projectBeneficiaryClientRefId;
+  final String? householdClientReferenceId;
+  final String? administrativeAreaCode;
+  final IndividualModel? screeningIndividual;
 
   const BeneficiaryChecklistPage({
     super.key,
     this.beneficiaryClientRefId,
+    this.projectBeneficiaryClientRefId,
+    this.householdClientReferenceId,
+    this.administrativeAreaCode,
+    this.screeningIndividual,
     super.appLocalizations,
   });
 
@@ -142,20 +157,26 @@ class _BeneficiaryChecklistPageState
                             var validChecklist = true;
 
                             for (int i = 0; i < controller.length; i++) {
-                              if (itemsAttributes?[i].required == true &&
-                                  ((itemsAttributes?[i].dataType ==
-                                              'SingleValueList' &&
-                                          visibleChecklistIndexes
-                                              .any((e) => e == i) &&
-                                          (controller[i].text == '')) ||
-                                      (itemsAttributes?[i].dataType !=
-                                              'SingleValueList' &&
-                                          (controller[i].text == '')))) {
+                              final attr = itemsAttributes?[i];
+                              if (attr == null) continue;
+                              if (!_isAttributeRequiredForSubmit(i)) continue;
+
+                              if (attr.dataType == 'SingleValueList' &&
+                                  visibleChecklistIndexes.any((e) => e == i) &&
+                                  controller[i].text == '') {
                                 return;
                               }
-                              if (itemsAttributes?[i].required == true &&
-                                  ((itemsAttributes?[i].dataType == 'Boolean' &&
-                                      (controller[i].text == '')))) {
+                              if (attr.dataType == 'MultiValueList' &&
+                                  !_multiValueListHasSelection(i)) {
+                                return;
+                              }
+                              if (attr.dataType != 'SingleValueList' &&
+                                  attr.dataType != 'MultiValueList' &&
+                                  controller[i].text == '') {
+                                return;
+                              }
+                              if (attr.dataType == 'Boolean' &&
+                                  controller[i].text == '') {
                                 setState(() {
                                   validFields = false;
                                   validChecklist = false;
@@ -167,8 +188,7 @@ class _BeneficiaryChecklistPageState
                               return;
                             }
 
-                            var decidedFlow = assessEligibility(
-                                selectedServiceDefinition!, initialAttributes!);
+                            final decidedFlow = _assessEligibilityPlanB();
 
                             showCustomPopup(
                                 context: context,
@@ -191,19 +211,19 @@ class _BeneficiaryChecklistPageState
                                                 i18.beneficiaryDetails
                                                     .ctaProceed,
                                               ),
-                                              onPressed: () {
+                                              onPressed: () async {
+                                                final router = context.router;
                                                 Navigator.of(context,
                                                         rootNavigator: true)
                                                     .pop();
-                                                DigitLoaders.overlayLoader(
-                                                    context: context);
                                                 createSubmitRequest(
                                                     decidedFlow: decidedFlow);
-                                                Navigator.of(context,
-                                                        rootNavigator: true)
-                                                    .pop();
-                                                navigateToDecidedFlow(
-                                                    context, decidedFlow);
+                                                if (!context.mounted) return;
+                                                await navigateToDecidedFlow(
+                                                  context,
+                                                  router,
+                                                  decidedFlow,
+                                                );
                                               },
                                               capitalizeLetters: false,
                                               type: DigitButtonType.primary,
@@ -389,90 +409,101 @@ class _BeneficiaryChecklistPageState
                                         description)
                                 ] else if (e.dataType == 'MultiValueList' &&
                                     !(e.code ?? '').contains('.')) ...[
-                                  Align(
-                                    alignment: Alignment.topLeft,
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(spacer2),
-                                      child: Column(
-                                        children: [
-                                          LabeledField(
-                                            label: localizations.translate(
-                                              '${value.selectedServiceDefinition?.code}.${e.code}',
+                                  if (_shouldShowMultiValueAttribute(e))
+                                    Align(
+                                      alignment: Alignment.topLeft,
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(spacer2),
+                                        child: Column(
+                                          children: [
+                                            LabeledField(
+                                              label: localizations.translate(
+                                                '${value.selectedServiceDefinition?.code}.${e.code}',
+                                              ),
+                                              description: description != null
+                                                  ? localizations.translate(
+                                                      '${value.selectedServiceDefinition?.code}.$description',
+                                                    )
+                                                  : null,
+                                              labelStyle: textTheme.headingM
+                                                  .copyWith(
+                                                      color: theme.colorTheme
+                                                          .text.primary),
+                                              descriptionStyle: textTheme.bodyS
+                                                  .copyWith(
+                                                      color: theme.colorTheme
+                                                          .text.secondary),
+                                              isRequired: (e.required ??
+                                                      false) &&
+                                                  (e.code !=
+                                                          'ADDITIONAL_SYMPTOMS' ||
+                                                      _shouldShowAdditionalSymptomsSection()),
+                                              child: BlocBuilder<ServiceBloc,
+                                                  ServiceState>(
+                                                builder: (context, state) {
+                                                  return Column(
+                                                    children: e.values!
+                                                        .map((e) =>
+                                                            DigitCheckbox(
+                                                              label: e,
+                                                              value: controller[
+                                                                      index]
+                                                                  .text
+                                                                  .split('.')
+                                                                  .contains(e),
+                                                              onChanged:
+                                                                  (value) {
+                                                                context
+                                                                    .read<
+                                                                        ServiceBloc>()
+                                                                    .add(
+                                                                      ServiceSurveyFormEvent(
+                                                                        value: e
+                                                                            .toString(),
+                                                                        submitTriggered:
+                                                                            submitTriggered,
+                                                                      ),
+                                                                    );
+                                                                final String
+                                                                    ele;
+                                                                var val =
+                                                                    controller[
+                                                                            index]
+                                                                        .text
+                                                                        .split(
+                                                                            '.');
+                                                                if (val
+                                                                    .contains(
+                                                                        e)) {
+                                                                  val.remove(e);
+                                                                  ele =
+                                                                      val.join(
+                                                                          ".");
+                                                                } else {
+                                                                  ele =
+                                                                      "${controller[index].text}.$e";
+                                                                }
+                                                                controller[index]
+                                                                        .value =
+                                                                    TextEditingController
+                                                                        .fromValue(
+                                                                  TextEditingValue(
+                                                                    text: ele,
+                                                                  ),
+                                                                ).value;
+                                                                setState(() {});
+                                                              },
+                                                            ))
+                                                        .toList(),
+                                                  );
+                                                },
+                                              ),
                                             ),
-                                            description: description != null
-                                                ? localizations.translate(
-                                                    '${value.selectedServiceDefinition?.code}.$description',
-                                                  )
-                                                : null,
-                                            labelStyle: textTheme.headingM
-                                                .copyWith(
-                                                    color: theme.colorTheme.text
-                                                        .primary),
-                                            descriptionStyle: textTheme.bodyS
-                                                .copyWith(
-                                                    color: theme.colorTheme.text
-                                                        .secondary),
-                                            isRequired: e.required ?? false,
-                                            child: BlocBuilder<ServiceBloc,
-                                                ServiceState>(
-                                              builder: (context, state) {
-                                                return Column(
-                                                  children: e.values!
-                                                      .map((e) => DigitCheckbox(
-                                                            label: e,
-                                                            value: controller[
-                                                                    index]
-                                                                .text
-                                                                .split('.')
-                                                                .contains(e),
-                                                            onChanged: (value) {
-                                                              context
-                                                                  .read<
-                                                                      ServiceBloc>()
-                                                                  .add(
-                                                                    ServiceSurveyFormEvent(
-                                                                      value: e
-                                                                          .toString(),
-                                                                      submitTriggered:
-                                                                          submitTriggered,
-                                                                    ),
-                                                                  );
-                                                              final String ele;
-                                                              var val =
-                                                                  controller[
-                                                                          index]
-                                                                      .text
-                                                                      .split(
-                                                                          '.');
-                                                              if (val.contains(
-                                                                  e)) {
-                                                                val.remove(e);
-                                                                ele = val
-                                                                    .join(".");
-                                                              } else {
-                                                                ele =
-                                                                    "${controller[index].text}.$e";
-                                                              }
-                                                              controller[index]
-                                                                      .value =
-                                                                  TextEditingController
-                                                                      .fromValue(
-                                                                TextEditingValue(
-                                                                  text: ele,
-                                                                ),
-                                                              ).value;
-                                                            },
-                                                          ))
-                                                      .toList(),
-                                                );
-                                              },
-                                            ),
-                                          ),
-                                          const DigitDivider(),
-                                        ],
+                                            const DigitDivider(),
+                                          ],
+                                        ),
                                       ),
                                     ),
-                                  ),
                                 ] else if (e.dataType == 'Boolean') ...[
                                   if (!(e.code ?? '').contains('.'))
                                     DigitCard(
@@ -614,6 +645,188 @@ class _BeneficiaryChecklistPageState
         ),
       ),
     );
+  }
+
+  static const _yesAnswer = 'YES';
+  static const _noAnswer = 'NO';
+
+  /// QUES1–QUES6 in API [order], aligned with product rules.
+  List<int> _sortedEligibilityQuestionIndices() {
+    final list = initialAttributes ?? [];
+    final entries = <({int idx, int order})>[];
+    for (var i = 0; i < list.length; i++) {
+      final c = list[i].code ?? '';
+      if (RegExp(r'^QUES[1-6]$').hasMatch(c)) {
+        entries.add((
+          idx: i,
+          order: int.tryParse(list[i].order ?? '') ?? 0,
+        ));
+      }
+    }
+    entries.sort((a, b) => a.order.compareTo(b.order));
+    return entries.map((e) => e.idx).toList();
+  }
+
+  int? _additionalSymptomsAttributeIndex() =>
+      initialAttributes?.indexWhere((a) => a.code == 'ADDITIONAL_SYMPTOMS');
+
+  int _yesCountEligibilityQuestions() {
+    var n = 0;
+    for (final i in _sortedEligibilityQuestionIndices()) {
+      if (controller[i].text.trim() == _yesAnswer) n++;
+    }
+    return n;
+  }
+
+  bool _shouldShowAdditionalSymptomsSection() =>
+      _yesCountEligibilityQuestions() >= 2;
+
+  bool _shouldShowMultiValueAttribute(AttributesModel e) {
+    if (e.code != 'ADDITIONAL_SYMPTOMS') return true;
+    return _shouldShowAdditionalSymptomsSection();
+  }
+
+  bool _multiValueListHasSelection(int index) {
+    final t = controller[index].text.trim();
+    if (t.isEmpty) return false;
+    return t.split('.').where((s) => s.isNotEmpty).isNotEmpty;
+  }
+
+  bool _isAttributeRequiredForSubmit(int i) {
+    final attr = initialAttributes?[i];
+    if (attr?.required != true) return false;
+    if (attr?.code == 'ADDITIONAL_SYMPTOMS') {
+      return _shouldShowAdditionalSymptomsSection();
+    }
+    return true;
+  }
+
+  bool _isQ1YesRestNoEligibilityPattern() {
+    final idx = _sortedEligibilityQuestionIndices();
+    if (idx.length < 6) return false;
+    if (controller[idx.first].text.trim() != _yesAnswer) return false;
+    for (var j = 1; j < 6; j++) {
+      if (controller[idx[j]].text.trim() != _noAnswer) return false;
+    }
+    return true;
+  }
+
+  /// Q1=Y and Q2–6=N → referral. ≥2 YES (after additional symptoms) → continue delivery.
+  String _assessEligibilityPlanB() {
+    if (_sortedEligibilityQuestionIndices().length < 6) {
+      return Status.toAdminister.toValue();
+    }
+    if (_isQ1YesRestNoEligibilityPattern()) {
+      return Status.beneficiaryReferred.toValue();
+    }
+    return Status.toAdminister.toValue();
+  }
+
+  /// Route args may omit [screeningIndividual] (auto_route / serialization). Resolve from bloc + members.
+  String? _beneficiaryClientRefForLookup() =>
+      widget.beneficiaryClientRefId ??
+      widget.screeningIndividual?.clientReferenceId;
+
+  HouseholdOverviewState? _tryHouseholdOverviewState(BuildContext context) {
+    try {
+      return context.read<HouseholdOverviewBloc>().state;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  IndividualModel? _resolveScreeningIndividual(BuildContext context) {
+    if (widget.screeningIndividual != null) return widget.screeningIndividual;
+    final ref = _beneficiaryClientRefForLookup();
+    if (ref == null || ref.isEmpty) return null;
+    final state = _tryHouseholdOverviewState(context);
+    if (state == null) return null;
+    final selected = state.selectedIndividual;
+    if (selected != null && selected.clientReferenceId == ref) {
+      return selected;
+    }
+    return state.householdMemberWrapper.members
+        ?.firstWhereOrNull((m) => m.clientReferenceId == ref);
+  }
+
+  String? _resolveProjectBeneficiaryClientRefId(BuildContext context) {
+    final fromRoute = widget.projectBeneficiaryClientRefId;
+    if (fromRoute != null && fromRoute.isNotEmpty) return fromRoute;
+    final ref = _beneficiaryClientRefForLookup();
+    if (ref == null || ref.isEmpty) return null;
+    final state = _tryHouseholdOverviewState(context);
+    final pbs = state?.householdMemberWrapper.projectBeneficiaries;
+    return pbs
+        ?.firstWhereOrNull((b) => b.beneficiaryClientReferenceId == ref)
+        ?.clientReferenceId;
+  }
+
+  String _resolveHouseholdClientReferenceId(BuildContext context) {
+    final fromRoute = widget.householdClientReferenceId;
+    if (fromRoute != null && fromRoute.isNotEmpty) return fromRoute;
+    final state = _tryHouseholdOverviewState(context);
+    return state?.householdMemberWrapper.household?.clientReferenceId ?? '';
+  }
+
+  String _resolveAdministrativeAreaCode(BuildContext context) {
+    final fromRoute = widget.administrativeAreaCode;
+    if (fromRoute != null && fromRoute.isNotEmpty) return fromRoute;
+    final state = _tryHouseholdOverviewState(context);
+    final addr = state?.householdMemberWrapper.headOfHousehold?.address;
+    final code = (addr != null && addr.isNotEmpty)
+        ? addr.first.locality?.code
+        : null;
+    return code ?? RegistrationDeliverySingleton().boundary?.code ?? '';
+  }
+
+  /// TB referral screen needs individual + project beneficiary; household may be empty for some households.
+  bool _canNavigateToTbRefer(BuildContext context) {
+    final individual = _resolveScreeningIndividual(context);
+    final pb = _resolveProjectBeneficiaryClientRefId(context);
+    return individual != null && (pb != null && pb.isNotEmpty);
+  }
+
+  List<String> _referralReasonCodesFromChecklist() {
+    final reasons = <String>[];
+    final idx = _sortedEligibilityQuestionIndices();
+    if (idx.isNotEmpty && controller[idx.first].text.trim() == _yesAnswer) {
+      reasons.add('TB_COUGH_TWO_WEEKS');
+    }
+    for (var i = 1; i < idx.length; i++) {
+      if (controller[idx[i]].text.trim() == _yesAnswer) {
+        reasons.add('TB_SCREENING_Q${i + 1}');
+      }
+    }
+    if (reasons.isEmpty) reasons.add('ELIGIBILITY_SCREENING');
+    return reasons;
+  }
+
+  Map<String, dynamic> _checklistPayloadMap(String decidedFlow) {
+    final idx = _sortedEligibilityQuestionIndices();
+    final map = <String, dynamic>{
+      'decidedFlow': decidedFlow,
+      'serviceDefinitionCode': selectedServiceDefinition?.code,
+    };
+    for (var i = 0; i < idx.length; i++) {
+      final code = initialAttributes?[idx[i]].code ?? 'QUES${i + 1}';
+      map[code] = controller[idx[i]].text.trim();
+    }
+    final ai = _additionalSymptomsAttributeIndex();
+    if (ai != null &&
+        (_shouldShowAdditionalSymptomsSection() ||
+            controller[ai].text.trim().isNotEmpty)) {
+      map['ADDITIONAL_SYMPTOMS'] = controller[ai].text.trim();
+    }
+    map['childClientReferenceId'] = widget.beneficiaryClientRefId;
+    return map;
+  }
+
+  void _clearAdditionalSymptomsIfHidden() {
+    final ai = _additionalSymptomsAttributeIndex();
+    if (ai == null) return;
+    if (!_shouldShowAdditionalSymptomsSection()) {
+      controller[ai].clear();
+    }
   }
 
   List<AttributesModel> getNextQuestions(
@@ -773,6 +986,7 @@ class _BeneficiaryChecklistPageState
                                             }
                                           }
                                         }
+                                        _clearAdditionalSymptomsIfHidden();
                                         // Remove corresponding controllers based on the removed attributes
                                       });
                                     },
@@ -1090,20 +1304,11 @@ class _BeneficiaryChecklistPageState
                                   submitTriggered: submitTriggered,
                                 ),
                               );
-                          final String ele;
-                          var val = controller[index].text.split('.');
-                          if (val.contains(e)) {
-                            val.remove(e);
-                            ele = val.join(".");
-                          } else {
-                            ele = "${controller[index].text}.$e";
+                          if (value.isNotEmpty) {
+                            controller[index].value = TextEditingValue(
+                              text: value.first.toString(),
+                            );
                           }
-                          controller[index].value =
-                              TextEditingController.fromValue(
-                            TextEditingValue(
-                              text: ele,
-                            ),
-                          ).value;
                         },
                       ),
                     );
@@ -1152,161 +1357,30 @@ class _BeneficiaryChecklistPageState
     );
   }
 
-  String assessEligibility(ServiceDefinitionModel serviceDefinition,
-      List<AttributesModel> initialAttributes) {
-    Map<String, int> scores = {};
-    String? precedenceFlowAnswer;
-    Map<String, String> precedenceFlowMapping = {};
-
-    var flows = serviceDefinition.additionalFields?.fields
-        .firstWhere((element) => element.key == 'flow')
-        .value;
-
-    // Debugging: Print flows
-    if (kDebugMode) {
-      print('Flows: $flows');
-    }
-
-    // Initialize scores for each flow type
-    for (var flowType in flows) {
-      scores[flowType['type']] = 0;
-    }
-
-    // Get the precedence flow attribute if defined
-    String? precedenceFlowCode = serviceDefinition.additionalFields?.fields
-        .firstWhere((element) => element.key == 'precedenceFlow')
-        .value;
-
-    AttributesModel? precedenceAttribute =
-        serviceDefinition.attributes?.firstWhereOrNull(
-      (attribute) => attribute.code == precedenceFlowCode,
-    );
-
-    // Initialize a set to track processed inputs for all attributes
-    Set<String> processedInputs = {};
-
-    for (int i = 0; i < controller.length; i++) {
-      AttributesModel attribute = initialAttributes[i];
-
-      Map<String, dynamic>? pointsMapping = attribute.additionalFields?.fields
-          .firstWhere((element) => element.key == 'pointsMapping')
-          .value;
-
-      String? input = controller[i].text.trim(); // Sanitize input
-      String key =
-          '${attribute.code}_$input'; // Combine attribute code and input for uniqueness
-
-      if (input.isNotEmpty && pointsMapping?.containsKey(input) == true) {
-        if (!processedInputs.contains(key)) {
-          processedInputs
-              .add(key); // Mark this attribute-input combination as processed
-
-          var flowPoints = pointsMapping![input];
-
-          flowPoints.forEach((flowType, points) {
-            scores[flowType] =
-                (scores[flowType] ?? 0) + (points as num).toInt();
-          });
-
-          // Assign precedenceFlowAnswer only for precedence attribute
-          if (attribute.code == precedenceFlowCode &&
-              precedenceFlowAnswer == null) {
-            precedenceFlowAnswer = input;
-          }
-
-          // Debugging: Print flowPoints and updated scores
-          if (kDebugMode) {
-            print('Input: $input, Flow Points: $flowPoints');
-            print('Updated Scores: $scores');
-          }
-        } else {
-          if (kDebugMode) {
-            print('Input already processed for attribute: $key');
-          }
-        }
-      } else {
-        if (kDebugMode) {
-          print('No valid mapping or input for attribute: ${attribute.code}');
-        }
-      }
-    }
-
-    // After loop: check if precedenceFlowAnswer is null
-    if (precedenceFlowAnswer == null) {
-      if (kDebugMode) {
-        print('No valid answer for precedence attribute was provided.');
-      }
-    }
-
-    // Final scoring and precedence resolution
-    if (kDebugMode) {
-      print('Final Scores: $scores');
-    }
-    scores.forEach((key, value) {
-      if (kDebugMode) {
-        print('$key: $value');
-      }
-    });
-
-    // Determine flows that meet the minimum score requirement
-    List<dynamic> eligibleFlows = flows
-        .where((flow) => scores[flow['type']]! >= flow['minScore'])
-        .map((flow) => flow['type'])
-        .toList();
-
-    // Handle precedence if there are eligible flows and a tie occurs
-    String finalFlow;
-    if (eligibleFlows.length > 1 &&
-        precedenceFlowAnswer != null &&
-        precedenceFlowAnswer.isNotEmpty) {
-      // Check if precedence flow is part of eligible flows
-      String? precedenceFlowFromAnswer =
-          precedenceFlowMapping[precedenceFlowAnswer];
-      if (eligibleFlows.contains(precedenceFlowFromAnswer)) {
-        finalFlow = precedenceFlowFromAnswer!;
-      } else {
-        finalFlow = finalFlow =
-            scores.entries.reduce((a, b) => a.value > b.value ? a : b).key;
-      }
-    } else if (eligibleFlows.isNotEmpty) {
-      finalFlow = finalFlow =
-          scores.entries.reduce((a, b) => a.value > b.value ? a : b).key;
-    } else {
-      finalFlow =
-          scores.entries.reduce((a, b) => a.value > b.value ? a : b).key;
-    }
-
-    if (kDebugMode) {
-      print('inputs: $controller');
-      print('Eligible Flows: $eligibleFlows');
-      print('Precedence attribute: $precedenceAttribute');
-      print('Precedence Flow: $precedenceFlowAnswer');
-      print('Precedence Flow Mapping: $precedenceFlowMapping');
-      print('Final Flow: $finalFlow');
-    }
-
-    return finalFlow;
-  }
-
   void createSubmitRequest({String? decidedFlow}) {
     List<ServiceAttributesModel> attributes = [];
     var referenceId = IdGen.i.identifier;
     for (int i = 0; i < controller.length; i++) {
       final attribute = initialAttributes;
+      final attr = attribute?[i];
+      final isHiddenAdditional = attr?.code == 'ADDITIONAL_SYMPTOMS' &&
+          !_shouldShowAdditionalSymptomsSection();
       attributes.add(ServiceAttributesModel(
-        attributeCode: '${attribute?[i].code}',
-        dataType: attribute?[i].dataType,
+        attributeCode: '${attr?.code}',
+        dataType: attr?.dataType,
         clientReferenceId: IdGen.i.identifier,
         referenceId: referenceId,
-        value: attribute?[i].dataType != 'SingleValueList'
-            ? controller[i].text.toString().trim().isNotEmpty
-                ? controller[i].text.toString()
-                : ''
-            : visibleChecklistIndexes.contains(i)
-                ? controller[i].text.toString()
-                : i18.checklist.notSelectedKey,
+        value: isHiddenAdditional
+            ? i18.checklist.notSelectedKey
+            : attr?.dataType != 'SingleValueList'
+                ? controller[i].text.toString().trim().isNotEmpty
+                    ? controller[i].text.toString()
+                    : ''
+                : visibleChecklistIndexes.contains(i)
+                    ? controller[i].text.toString()
+                    : i18.checklist.notSelectedKey,
         rowVersion: 1,
-        tenantId: attribute?[i].tenantId,
+        tenantId: attr?.tenantId,
         additionalDetails: null,
       ));
     }
@@ -1351,29 +1425,81 @@ class _BeneficiaryChecklistPageState
         );
   }
 
-  void navigateToDecidedFlow(BuildContext ctx, String decidedFlow) {
-    final statusMap = {
-      Status.beneficiaryRefused.toValue(): Status.beneficiaryRefused,
-      Status.beneficiaryReferred.toValue(): Status.beneficiaryReferred,
-      Status.toAdminister.toValue(): Status.toAdminister,
-    };
+  Future<void> navigateToDecidedFlow(
+    BuildContext navigatorContext,
+    StackRouter router,
+    String decidedFlow,
+  ) async {
+    final needsPostChecklistNav =
+        decidedFlow == Status.beneficiaryReferred.toValue() ||
+            decidedFlow == Status.toAdminister.toValue();
 
-    final status = statusMap[decidedFlow];
+    if (_canNavigateToTbRefer(navigatorContext) && needsPostChecklistNav) {
+      if (!navigatorContext.mounted) return;
+      final individual = _resolveScreeningIndividual(navigatorContext)!;
+      final pbId = _resolveProjectBeneficiaryClientRefId(navigatorContext)!;
+      await Navigator.of(navigatorContext, rootNavigator: true).push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) {
+            final tbChild = TbReferBeneficiaryPage(
+              appLocalizations: localizations,
+              projectBeneficiaryClientRefId: pbId,
+              individual: individual,
+              householdClientReferenceId:
+                  _resolveHouseholdClientReferenceId(navigatorContext),
+              administrativeAreaCode:
+                  _resolveAdministrativeAreaCode(navigatorContext),
+              referralReasons: _referralReasonCodesFromChecklist(),
+              tbScreeningPayload: jsonEncode(_checklistPayloadMap(decidedFlow)),
+            );
+            final referralRepo = navigatorContext.repository<ReferralModel,
+                ReferralSearchModel>(navigatorContext);
+            try {
+              return MultiBlocProvider(
+                providers: [
+                  BlocProvider<DeliverInterventionBloc>.value(
+                    value: navigatorContext.read<DeliverInterventionBloc>(),
+                  ),
+                  BlocProvider<SearchHouseholdsBloc>.value(
+                    value: navigatorContext.read<SearchHouseholdsBloc>(),
+                  ),
+                  BlocProvider<HouseholdOverviewBloc>.value(
+                    value: navigatorContext.read<HouseholdOverviewBloc>(),
+                  ),
+                  BlocProvider<ReferralBloc>(
+                    create: (_) => ReferralBloc(
+                      const ReferralState(),
+                      referralRepository: referralRepo,
+                    ),
+                  ),
+                ],
+                child: tbChild,
+              );
+            } catch (_) {
+              return BlocProvider<ReferralBloc>(
+                create: (c) => ReferralBloc(
+                  const ReferralState(),
+                  referralRepository: c.repository<ReferralModel,
+                      ReferralSearchModel>(c),
+                ),
+                child: tbChild,
+              );
+            }
+          },
+        ),
+      );
+      if (navigatorContext.mounted) {
+        router.maybePop();
+      }
+      return;
+    }
 
-    // switch (status) {
-    //   case Status.beneficiaryRefused:
-    //     ctx.router.navigate(RefusedDeliveryRoute());
-    //     break;
-    //   case Status.beneficiaryReferred:
-    //     ctx.router.navigate(ReferBeneficiaryRoute(
-    //         projectBeneficiaryClientRefId: widget.beneficiaryClientRefId!));
-    //     break;
-    //   case Status.toAdminister:
-    //     ctx.router.navigate(BeneficiaryDetailsRoute());
-    //     break;
-    //   default:
-    //     Navigator.of(ctx).pop();
-    //     break;
-    // }
+    if (decidedFlow == Status.beneficiaryReferred.toValue()) {
+      router.push(BeneficiaryDetailsRoute());
+      return;
+    }
+    if (decidedFlow == Status.toAdminister.toValue()) {
+      router.push(BeneficiaryDetailsRoute());
+    }
   }
 }

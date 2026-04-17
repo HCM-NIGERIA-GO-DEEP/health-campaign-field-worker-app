@@ -110,6 +110,10 @@ abstract class _$AppRouter extends RootStackRouter {
         child: BeneficiaryChecklistPage(
           key: args.key,
           beneficiaryClientRefId: args.beneficiaryClientRefId,
+          projectBeneficiaryClientRefId: args.projectBeneficiaryClientRefId,
+          householdClientReferenceId: args.householdClientReferenceId,
+          administrativeAreaCode: args.administrativeAreaCode,
+          screeningIndividual: args.screeningIndividual,
           appLocalizations: args.appLocalizations,
         ),
       );
@@ -763,6 +767,10 @@ class BeneficiaryChecklistRoute
   BeneficiaryChecklistRoute({
     Key? key,
     String? beneficiaryClientRefId,
+    String? projectBeneficiaryClientRefId,
+    String? householdClientReferenceId,
+    String? administrativeAreaCode,
+    IndividualModel? screeningIndividual,
     RegistrationDeliveryLocalization? appLocalizations,
     List<PageRouteInfo>? children,
   }) : super(
@@ -770,6 +778,10 @@ class BeneficiaryChecklistRoute
           args: BeneficiaryChecklistRouteArgs(
             key: key,
             beneficiaryClientRefId: beneficiaryClientRefId,
+            projectBeneficiaryClientRefId: projectBeneficiaryClientRefId,
+            householdClientReferenceId: householdClientReferenceId,
+            administrativeAreaCode: administrativeAreaCode,
+            screeningIndividual: screeningIndividual,
             appLocalizations: appLocalizations,
           ),
           initialChildren: children,
@@ -785,6 +797,10 @@ class BeneficiaryChecklistRouteArgs {
   const BeneficiaryChecklistRouteArgs({
     this.key,
     this.beneficiaryClientRefId,
+    this.projectBeneficiaryClientRefId,
+    this.householdClientReferenceId,
+    this.administrativeAreaCode,
+    this.screeningIndividual,
     this.appLocalizations,
   });
 
@@ -792,11 +808,19 @@ class BeneficiaryChecklistRouteArgs {
 
   final String? beneficiaryClientRefId;
 
+  final String? projectBeneficiaryClientRefId;
+
+  final String? householdClientReferenceId;
+
+  final String? administrativeAreaCode;
+
+  final IndividualModel? screeningIndividual;
+
   final RegistrationDeliveryLocalization? appLocalizations;
 
   @override
   String toString() {
-    return 'BeneficiaryChecklistRouteArgs{key: $key, beneficiaryClientRefId: $beneficiaryClientRefId, appLocalizations: $appLocalizations}';
+    return 'BeneficiaryChecklistRouteArgs{key: $key, beneficiaryClientRefId: $beneficiaryClientRefId, projectBeneficiaryClientRefId: $projectBeneficiaryClientRefId, householdClientReferenceId: $householdClientReferenceId, administrativeAreaCode: $administrativeAreaCode, screeningIndividual: $screeningIndividual, appLocalizations: $appLocalizations}';
   }
 }
 

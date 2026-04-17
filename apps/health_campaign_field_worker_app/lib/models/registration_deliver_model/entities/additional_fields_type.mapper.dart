@@ -69,6 +69,8 @@ class AdditionalFieldsTypeMapper extends EnumMapper<AdditionalFieldsType> {
         return AdditionalFieldsType.houseStructureTypes;
       case "reasonOfRefusal":
         return AdditionalFieldsType.reasonOfRefusal;
+      case "isSchool":
+        return AdditionalFieldsType.isSchool;
       default:
         throw MapperException.unknownEnumValue(value);
     }
@@ -121,6 +123,8 @@ class AdditionalFieldsTypeMapper extends EnumMapper<AdditionalFieldsType> {
         return "houseStructureTypes";
       case AdditionalFieldsType.reasonOfRefusal:
         return "reasonOfRefusal";
+      case AdditionalFieldsType.isSchool:
+        return "isSchool";
     }
   }
 }

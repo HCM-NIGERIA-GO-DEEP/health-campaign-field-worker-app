@@ -19,7 +19,8 @@ import 'package:health_campaign_field_worker_app/models/registration_deliver_mod
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/deliver_strategy_type.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
 import 'package:health_campaign_field_worker_app/router/app_router.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart' as i18;
+import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart'
+    as i18;
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/back_navigation_help_header.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/beneficiary/resource_beneficiary_card.dart';
@@ -212,7 +213,8 @@ class DeliverInterventionPageState
                                   ?.projectType
                                   ?.resources
                                   ?.map((r) => DeliveryProductVariant(
-                                      productVariantId: r.productVariantId, name: ''))
+                                      productVariantId: r.productVariantId,
+                                      name: ''))
                                   .toList();
 
                       final int numberOfDoses = (RegistrationDeliverySingleton()
@@ -354,51 +356,73 @@ class DeliverInterventionPageState
                                                         //       type: ToastType
                                                         //           .error);
                                                         // } else {
-                                                          final submit = await showDialog<bool>(
-                                                            context: context,
-                                                            builder: (ctx) => Popup(
-                                                              title: localizations.translate(
-                                                                  i18.deliverIntervention.dialogTitle),
-                                                              description: localizations.translate(
-                                                                  i18.deliverIntervention.dialogContent),
-                                                              actions: [
-                                                                DigitButton(
-                                                                    label: localizations.translate(
-                                                                        i18.common.coreCommonSubmit),
-                                                                    onPressed: () {
-                                                                      Navigator.of(context,
-                                                                              rootNavigator: true)
-                                                                          .pop(true);
-                                                                    },
-                                                                    type: DigitButtonType.primary,
-                                                                    size: DigitButtonSize.large),
-                                                                DigitButton(
-                                                                    label: localizations.translate(
-                                                                        i18.common.coreCommonCancel),
-                                                                    onPressed: () => Navigator.of(context,
-                                                                            rootNavigator: true)
-                                                                        .pop(false),
-                                                                    type: DigitButtonType.secondary,
-                                                                    size: DigitButtonSize.large),
-                                                              ],
-                                                            ),
+                                                        final submit =
+                                                            await showDialog<
+                                                                bool>(
+                                                          context: context,
+                                                          builder: (ctx) =>
+                                                              Popup(
+                                                            title: localizations
+                                                                .translate(i18
+                                                                    .deliverIntervention
+                                                                    .dialogTitle),
+                                                            description: localizations
+                                                                .translate(i18
+                                                                    .deliverIntervention
+                                                                    .dialogContent),
+                                                            actions: [
+                                                              DigitButton(
+                                                                  label: localizations
+                                                                      .translate(i18
+                                                                          .common
+                                                                          .coreCommonSubmit),
+                                                                  onPressed:
+                                                                      () {
+                                                                    Navigator.of(
+                                                                            context,
+                                                                            rootNavigator:
+                                                                                true)
+                                                                        .pop(
+                                                                            true);
+                                                                  },
+                                                                  type: DigitButtonType
+                                                                      .primary,
+                                                                  size: DigitButtonSize
+                                                                      .large),
+                                                              DigitButton(
+                                                                  label: localizations
+                                                                      .translate(i18
+                                                                          .common
+                                                                          .coreCommonCancel),
+                                                                  onPressed: () => Navigator.of(
+                                                                          context,
+                                                                          rootNavigator:
+                                                                              true)
+                                                                      .pop(
+                                                                          false),
+                                                                  type: DigitButtonType
+                                                                      .secondary,
+                                                                  size: DigitButtonSize
+                                                                      .large),
+                                                            ],
+                                                          ),
+                                                        );
+                                                        if (submit ?? false) {
+                                                          context
+                                                              .read<
+                                                                  LocationBloc>()
+                                                              .add(
+                                                                  const LoadLocationEvent());
+                                                          handleLocationState(
+                                                            locationState,
+                                                            context,
+                                                            deliveryInterventionState,
+                                                            form,
+                                                            householdMemberWrapper,
+                                                            projectBeneficiary!
+                                                                .first,
                                                           );
-                                                          if (submit ?? false) {
-                                                            context
-                                                                .read<
-                                                                    LocationBloc>()
-                                                                .add(
-                                                                    const LoadLocationEvent());
-                                                            handleLocationState(
-                                                              locationState,
-                                                              context,
-                                                              deliveryInterventionState,
-                                                              form,
-                                                              householdMemberWrapper,
-                                                              projectBeneficiary!
-                                                                  .first,
-                                                            );
-                                                          }
+                                                        }
                                                         // }
                                                       },
                                                     );
@@ -410,7 +434,8 @@ class DeliverInterventionPageState
                                     ),
                                     header: const Column(children: [
                                       Padding(
-                                        padding: EdgeInsets.only(bottom:spacer2),
+                                        padding:
+                                            EdgeInsets.only(bottom: spacer2),
                                         child: BackNavigationHelpHeaderWidget(
                                           showHelp: false,
                                         ),
@@ -428,7 +453,12 @@ class DeliverInterventionPageState
                                                     i18.deliverIntervention
                                                         .deliverInterventionLabel,
                                                   ),
-                                                  style: textTheme.headingXl.copyWith(color: theme.colorTheme.primary.primary2),
+                                                  style: textTheme.headingXl
+                                                      .copyWith(
+                                                          color: theme
+                                                              .colorTheme
+                                                              .primary
+                                                              .primary2),
                                                 ),
                                                 // if (RegistrationDeliverySingleton()
                                                 //         .beneficiaryType ==
@@ -510,9 +540,12 @@ class DeliverInterventionPageState
                                                     i18.deliverIntervention
                                                         .deliverInterventionResourceLabel,
                                                   ),
-                                                  style: textTheme.headingXl.copyWith(
-                                                    color: theme.colorTheme.primary.primary2
-                                                  ),
+                                                  style: textTheme.headingXl
+                                                      .copyWith(
+                                                          color: theme
+                                                              .colorTheme
+                                                              .primary
+                                                              .primary2),
                                                 ),
                                                 ..._controllers.map((e) =>
                                                     ResourceBeneficiaryCard(
@@ -521,7 +554,11 @@ class DeliverInterventionPageState
                                                           .indexOf(e),
                                                       totalItems:
                                                           _controllers.length,
-                                                      isReadOnly: RegistrationDeliverySingleton().beneficiaryType == BeneficiaryType.individual,
+                                                      isReadOnly:
+                                                          RegistrationDeliverySingleton()
+                                                                  .beneficiaryType ==
+                                                              BeneficiaryType
+                                                                  .individual,
                                                       onDelete: (index) {
                                                         (form.control(
                                                           _resourceDeliveredKey,
@@ -543,9 +580,7 @@ class DeliverInterventionPageState
                                                         });
                                                       },
                                                     )),
-                                               
                                               ]),
-                                        
                                         ],
                                       ),
                                     ],
@@ -735,6 +770,7 @@ class DeliverInterventionPageState
               AdditionalFieldsType.deliveryComment.toValue(),
               deliveryComment,
             ),
+          AdditionalField(AdditionalFieldsType.isSchool.toValue(), true)
         ],
       ),
     );

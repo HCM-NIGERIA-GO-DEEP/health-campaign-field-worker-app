@@ -10,7 +10,8 @@ import 'package:health_campaign_field_worker_app/blocs/registration_deliver/deli
 import 'package:health_campaign_field_worker_app/blocs/registration_deliver/household_overview/household_overview.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/additional_fields_type.dart';
 import 'package:health_campaign_field_worker_app/models/registration_deliver_model/entities/status.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart' as i18;
+import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart'
+    as i18;
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/back_navigation_help_header.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/localized.dart';
@@ -323,6 +324,7 @@ class RefusedDeliveryPageState extends LocalizedState<RefusedDeliveryPage> {
               AdditionalFieldsType.deliveryComment.toValue(),
               refusalComment,
             ),
+          AdditionalField(AdditionalFieldsType.isSchool.toValue(), true)
         ],
       ),
     );

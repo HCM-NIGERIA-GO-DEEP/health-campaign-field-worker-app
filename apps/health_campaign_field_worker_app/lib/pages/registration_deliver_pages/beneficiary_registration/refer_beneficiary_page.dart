@@ -51,7 +51,8 @@ class TbReferBeneficiaryPage extends LocalizedStatefulWidget {
   State<TbReferBeneficiaryPage> createState() => _TbReferBeneficiaryPageState();
 }
 
-class _TbReferBeneficiaryPageState extends LocalizedState<TbReferBeneficiaryPage> {
+class _TbReferBeneficiaryPageState
+    extends LocalizedState<TbReferBeneficiaryPage> {
   final _busy = ValueNotifier<bool>(false);
   FacilityModel? _selected;
 
@@ -74,8 +75,8 @@ class _TbReferBeneficiaryPageState extends LocalizedState<TbReferBeneficiaryPage
   }
 
   Future<void> _pickFacility(List<FacilityModel> healthFacilities) async {
-    final picked = await Navigator.of(context, rootNavigator: true)
-        .push<FacilityModel>(
+    final picked =
+        await Navigator.of(context, rootNavigator: true).push<FacilityModel>(
       MaterialPageRoute(
         builder: (ctx) => _TbFacilitySearchPage(
           facilities: healthFacilities,
@@ -91,29 +92,33 @@ class _TbReferBeneficiaryPageState extends LocalizedState<TbReferBeneficiaryPage
   Future<void> _submit(List<FacilityModel> healthFacilities) async {
     if (_selected == null) return;
 
+    final referralBloc = context.read<ReferralBloc>();
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (ctx) => Popup(
-        title: localizations.translate(i18_rd.deliverIntervention.dialogTitle),
-        type: PopUpType.simple,
-        description:
-            localizations.translate(i18_rd.deliverIntervention.dialogContent),
-        actions: [
-          DigitButton(
-            label: localizations.translate(i18_rd.common.coreCommonSubmit),
-            onPressed: () =>
-                Navigator.of(context, rootNavigator: true).pop(true),
-            type: DigitButtonType.primary,
-            size: DigitButtonSize.large,
-          ),
-          DigitButton(
-            label: localizations.translate(i18_rd.common.coreCommonCancel),
-            onPressed: () =>
-                Navigator.of(context, rootNavigator: true).pop(false),
-            type: DigitButtonType.secondary,
-            size: DigitButtonSize.large,
-          ),
-        ],
+      builder: (dialogContext) => BlocProvider<ReferralBloc>.value(
+        value: referralBloc,
+        child: Popup(
+          title: localizations.translate(i18_rd.deliverIntervention.dialogTitle),
+          type: PopUpType.simple,
+          description:
+              localizations.translate(i18_rd.deliverIntervention.dialogContent),
+          actions: [
+            DigitButton(
+              label: localizations.translate(i18_rd.common.coreCommonSubmit),
+              onPressed: () =>
+                  Navigator.of(dialogContext, rootNavigator: true).pop(true),
+              type: DigitButtonType.primary,
+              size: DigitButtonSize.large,
+            ),
+            DigitButton(
+              label: localizations.translate(i18_rd.common.coreCommonCancel),
+              onPressed: () =>
+                  Navigator.of(dialogContext, rootNavigator: true).pop(false),
+              type: DigitButtonType.secondary,
+              size: DigitButtonSize.large,
+            ),
+          ],
+        ),
       ),
     );
     if (confirm != true || !mounted) return;
@@ -231,11 +236,14 @@ class _TbReferBeneficiaryPageState extends LocalizedState<TbReferBeneficiaryPage
           );
 
       if (!mounted) return;
-      context.read<SearchHouseholdsBloc>().add(const SearchHouseholdsEvent.clear());
+      context
+          .read<SearchHouseholdsBloc>()
+          .add(const SearchHouseholdsEvent.clear());
       context.read<HouseholdOverviewBloc>().add(
             HouseholdOverviewReloadEvent(
               projectId: context.projectId,
-              projectBeneficiaryType: RegistrationDeliverySingleton().beneficiaryType!,
+              projectBeneficiaryType:
+                  RegistrationDeliverySingleton().beneficiaryType!,
             ),
           );
 
@@ -258,7 +266,9 @@ class _TbReferBeneficiaryPageState extends LocalizedState<TbReferBeneficiaryPage
                 final projectFacilities = facilities
                     .where((e) => e.usage == Constants.healthFacility)
                     .toList();
-                return projectFacilities.isEmpty ? allFacilities : projectFacilities;
+                return projectFacilities.isEmpty
+                    ? allFacilities
+                    : projectFacilities;
               },
             ) ??
             [];
@@ -296,7 +306,8 @@ class _TbReferBeneficiaryPageState extends LocalizedState<TbReferBeneficiaryPage
                       _readOnlyRow(
                         theme,
                         localizations.translate(
-                          i18_local.referBeneficiary.administrationUnitFormLabel,
+                          i18_local
+                              .referBeneficiary.administrationUnitFormLabel,
                         ),
                         localizations.translate(widget.administrativeAreaCode),
                       ),
@@ -411,9 +422,8 @@ class _TbFacilitySearchPage extends StatelessWidget {
           final filtered = q.isEmpty
               ? facilities
               : facilities.where((f) {
-                  final name = localizations
-                      .translate('FAC_${f.id}')
-                      .toLowerCase();
+                  final name =
+                      localizations.translate('FAC_${f.id}').toLowerCase();
                   final id = f.id.toLowerCase();
                   return name.contains(q) || id.contains(q);
                 }).toList();

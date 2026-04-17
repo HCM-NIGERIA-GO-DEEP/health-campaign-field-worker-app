@@ -52,7 +52,8 @@ void requestBednetRegistrationLocalizationModules(BuildContext context) {
   context.read<LocalizationBloc>().add(
         LocalizationEvent.onLoadLocalization(
           module: 'hcm-household,hcm-closedhousehold,hcm-beneficiary,'
-              'hcm-member,hcm-delivery,hcm-home,hcm-common,hcm-scanner',
+              'hcm-member,hcm-delivery,hcm-home,hcm-common,hcm-scanner'
+              'hcm-checklist',
           tenantId: envConfig.variables.tenantId,
           locale: locale,
           path: Constants.localizationApiPath,
@@ -136,18 +137,20 @@ class BednetDistributionWrapperPage extends StatelessWidget
       HouseholdOpLogManager(isar),
     );
 
-    final individual = context.repository<IndividualModel, IndividualSearchModel>();
-    final household = context.repository<HouseholdModel, HouseholdSearchModel>();
+    final individual =
+        context.repository<IndividualModel, IndividualSearchModel>();
+    final household =
+        context.repository<HouseholdModel, HouseholdSearchModel>();
     final householdMember =
         context.repository<HouseholdMemberModel, HouseholdMemberSearchModel>();
-    final projectBeneficiary =
-        context.repository<ProjectBeneficiaryModel, ProjectBeneficiarySearchModel>();
+    final projectBeneficiary = context
+        .repository<ProjectBeneficiaryModel, ProjectBeneficiarySearchModel>();
     final task = context.repository<TaskModel, TaskSearchModel>();
     final sideEffect =
         context.repository<SideEffectModel, SideEffectSearchModel>();
     final referral = context.repository<ReferralModel, ReferralSearchModel>();
-    final serviceDefinition = context.repository<ServiceDefinitionModel,
-        ServiceDefinitionSearchModel>();
+    final serviceDefinition = context
+        .repository<ServiceDefinitionModel, ServiceDefinitionSearchModel>();
 
     return MultiBlocProvider(
       providers: [
@@ -296,10 +299,8 @@ void _syncRegistrationDeliverySingleton(
     selectedBeneficiaryType: context.beneficiaryType,
     projectType: context.selectedProjectType,
     selectedProject: context.selectedProject,
-    genderOptions:
-        appConfiguration.genderOptions?.map((e) => e.code).toList(),
-    idTypeOptions:
-        appConfiguration.idTypeOptions?.map((e) => e.code).toList(),
+    genderOptions: appConfiguration.genderOptions?.map((e) => e.code).toList(),
+    idTypeOptions: appConfiguration.idTypeOptions?.map((e) => e.code).toList(),
     householdDeletionReasonOptions: appConfiguration
         .householdDeletionReasonOptions
         ?.map((e) => e.code)
@@ -308,11 +309,9 @@ void _syncRegistrationDeliverySingleton(
         .householdMemberDeletionReasonOptions
         ?.map((e) => e.code)
         .toList(),
-    deliveryCommentOptions: appConfiguration.deliveryCommentOptions
-        ?.map((e) => e.code)
-        .toList(),
-    symptomsTypes:
-        appConfiguration.symptomsTypes?.map((e) => e.code).toList(),
+    deliveryCommentOptions:
+        appConfiguration.deliveryCommentOptions?.map((e) => e.code).toList(),
+    symptomsTypes: appConfiguration.symptomsTypes?.map((e) => e.code).toList(),
     searchHouseHoldFilter: appConfiguration.searchHouseHoldFilters
         ?.where((e) => e.active)
         .map((e) => e.code)
