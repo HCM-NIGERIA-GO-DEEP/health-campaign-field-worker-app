@@ -58,6 +58,46 @@ class PanelCardWidget extends ResolvedFlowWidget {
       }
     }
 
+    // Build additionalDetails (List<Text>) if provided
+    final additionalDetailsConfig = json['additionalDetails'] as List<dynamic>?;
+    List<Text>? additionalDetails;
+
+    if (additionalDetailsConfig != null && additionalDetailsConfig.isNotEmpty) {
+      final texts = <Text>[];
+      try {
+        for (var detailJson in additionalDetailsConfig) {
+          if (detailJson is Map<String, dynamic>) {
+            final resolvedValue = resolveTemplate(
+              detailJson['value'] ?? detailJson['label'] ?? '',
+              evalContext,
+              localization: localization,
+              screenKey: resolved.screenKey,
+              stateData: resolved.stateData,
+            );
+            final properties =
+                detailJson['properties'] as Map<String, dynamic>?;
+            final isBold = properties?['style'] == 'bold';
+            texts.add(Text(
+              resolvedValue,
+              style: (Theme.of(context).textTheme.headlineSmall ??
+                      const TextStyle())
+                  .copyWith(
+                color: Colors.white,
+                fontWeight: isBold ? FontWeight.bold : null,
+              ),
+            ));
+          }
+        }
+        if (texts.isNotEmpty) {
+          additionalDetails = texts;
+        }
+      } catch (e, stackTrace) {
+        debugPrint('Error building additionalDetails: $e');
+        debugPrint('StackTrace: $stackTrace');
+        additionalDetails = null;
+      }
+    }
+
     // Build additional widgets if provided
     final additionalWidgetsConfig =
         json['additionalWidgets'] as List<dynamic>?;
@@ -91,6 +131,7 @@ class PanelCardWidget extends ResolvedFlowWidget {
       title: label,
       type: PanelType.success,
       description: description,
+      additionalDetails: additionalDetails,
       additionWidgets: additionalWidgets,
       actions: [
         if (primaryAction != null)
