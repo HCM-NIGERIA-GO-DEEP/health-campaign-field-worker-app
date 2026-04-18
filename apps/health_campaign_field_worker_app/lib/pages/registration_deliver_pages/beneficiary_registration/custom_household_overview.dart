@@ -397,19 +397,29 @@ class _CustomHouseholdOverviewPageState
                                               padding:
                                                   const EdgeInsets.all(spacer2),
                                               child: Text(
-                                                RegistrationDeliverySingleton()
-                                                                .householdType !=
-                                                            null &&
-                                                        RegistrationDeliverySingleton()
-                                                                .householdType ==
-                                                            HouseholdType
-                                                                .community
+                                                state
+                                                            .householdMemberWrapper
+                                                            .household
+                                                            ?.isSchoolHousehold ==
+                                                        true
                                                     ? localizations.translate(
                                                         i18.householdOverView
-                                                            .clfOverviewLabel)
-                                                    : localizations.translate(i18
-                                                        .householdOverView
-                                                        .householdOverViewLabel),
+                                                            .schoolOverViewLabel,
+                                                      )
+                                                    : RegistrationDeliverySingleton()
+                                                                    .householdType !=
+                                                                null &&
+                                                            RegistrationDeliverySingleton()
+                                                                    .householdType ==
+                                                                HouseholdType
+                                                                    .community
+                                                        ? localizations
+                                                            .translate(i18
+                                                                .householdOverView
+                                                                .clfOverviewLabel)
+                                                        : localizations.translate(i18
+                                                            .householdOverView
+                                                            .householdOverViewLabel),
                                                 style: textTheme.headingXl
                                                     .copyWith(
                                                         color: theme.colorTheme
@@ -476,10 +486,19 @@ class _CustomHouseholdOverviewPageState
                                                 children: [
                                                   DigitTableCard(
                                                     element: {
-                                                      localizations.translate(i18
-                                                              .householdOverView
-                                                              .householdOverViewHouseholdHeadNameLabel):
-                                                          () {
+                                                      localizations.translate(
+                                                        state
+                                                                    .householdMemberWrapper
+                                                                    .household
+                                                                    ?.isSchoolHousehold ==
+                                                                true
+                                                            ? i18
+                                                                .householdOverView
+                                                                .schoolOverViewSchoolHeadNameLabel
+                                                            : i18
+                                                                .householdOverView
+                                                                .householdOverViewHouseholdHeadNameLabel,
+                                                      ): () {
                                                         final headName =
                                                             _overviewHouseholdHeadDisplayName(
                                                           state
@@ -722,11 +741,11 @@ class _CustomHouseholdOverviewPageState
                                                   tasks: taskData,
                                                   sideEffects: sideEffectData,
                                                   tbAssessmentAction: !isHead &&
-                                                          beneficiaryType ==
-                                                              BeneficiaryType
-                                                                  .individual &&
-                                                          yearsAge != null &&
-                                                          yearsAge < 5 &&
+                                                          state
+                                                                  .householdMemberWrapper
+                                                                  .household
+                                                                  ?.isSchoolHousehold !=
+                                                              true &&
                                                           contextIsMdtUser(
                                                               context) &&
                                                           (projectBeneficiary ??
@@ -1261,16 +1280,12 @@ class _CustomHouseholdOverviewPageState
   bool _canAddMoreChildrenUnderFive(HouseholdMemberWrapper wrapper) {
     final h = wrapper.household;
     if (h == null) return false;
-    final maxMembers = h.memberCount;
-    if (maxMembers != null &&
-        maxMembers > 0 &&
-        (wrapper.members?.length ?? 0) >= maxMembers) {
-      return false;
-    }
+    final householdMembers = wrapper.members?.length ?? 0;
+
     final cap = _childrenUnder5FromHousehold(h);
     if (cap <= 0) return false;
 
-    return h.memberCount! < cap;
+    return householdMembers <= cap;
   }
 
   /// Same field as [HouseHoldDetailsPage] / MDMS `childrenUnder5`.

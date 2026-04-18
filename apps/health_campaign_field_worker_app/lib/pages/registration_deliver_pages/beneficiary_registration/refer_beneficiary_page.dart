@@ -1,5 +1,4 @@
-import 'package:digit_data_model/data_model.dart'
-    hide ReferralModel, ReferralAdditionalFields;
+import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/blocs/facility/facility.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/enum/app_enums.dart';
@@ -12,11 +11,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../blocs/registration_deliver/app_localization.dart';
 import '../../../blocs/registration_deliver/delivery_intervention/deliver_intervention.dart';
-import '../../../blocs/registration_deliver/referral_management/referral_management.dart';
 import '../../../blocs/registration_deliver/household_overview/household_overview.dart';
 import '../../../blocs/registration_deliver/search_households/search_households.dart';
 import '../../../models/entities/roles_type.dart';
-import '../../../models/registration_deliver_model/entities/referral.dart';
 import '../../../models/registration_deliver_model/entities/status.dart';
 import '../../../utils/environment_config.dart';
 import '../../../utils/registration_deliver_utils/i18_key_constants.dart'
@@ -92,92 +89,88 @@ class _TbReferBeneficiaryPageState
   Future<void> _submit(List<FacilityModel> healthFacilities) async {
     if (_selected == null) return;
 
-    final referralBloc = context.read<ReferralBloc>();
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => BlocProvider<ReferralBloc>.value(
-        value: referralBloc,
-        child: Popup(
-          title: localizations.translate(i18_rd.deliverIntervention.dialogTitle),
-          type: PopUpType.simple,
-          description:
-              localizations.translate(i18_rd.deliverIntervention.dialogContent),
-          actions: [
-            DigitButton(
-              label: localizations.translate(i18_rd.common.coreCommonSubmit),
-              onPressed: () =>
-                  Navigator.of(dialogContext, rootNavigator: true).pop(true),
-              type: DigitButtonType.primary,
-              size: DigitButtonSize.large,
-            ),
-            DigitButton(
-              label: localizations.translate(i18_rd.common.coreCommonCancel),
-              onPressed: () =>
-                  Navigator.of(dialogContext, rootNavigator: true).pop(false),
-              type: DigitButtonType.secondary,
-              size: DigitButtonSize.large,
-            ),
-          ],
-        ),
+      builder: (dialogContext) => Popup(
+        title: localizations.translate(i18_rd.deliverIntervention.dialogTitle),
+        type: PopUpType.simple,
+        description:
+            localizations.translate(i18_rd.deliverIntervention.dialogContent),
+        actions: [
+          DigitButton(
+            label: localizations.translate(i18_rd.common.coreCommonSubmit),
+            onPressed: () =>
+                Navigator.of(dialogContext, rootNavigator: true).pop(true),
+            type: DigitButtonType.primary,
+            size: DigitButtonSize.large,
+          ),
+          DigitButton(
+            label: localizations.translate(i18_rd.common.coreCommonCancel),
+            onPressed: () =>
+                Navigator.of(dialogContext, rootNavigator: true).pop(false),
+            type: DigitButtonType.secondary,
+            size: DigitButtonSize.large,
+          ),
+        ],
       ),
     );
     if (confirm != true || !mounted) return;
 
     _busy.value = true;
+    _busy.value = true;
     final facility = _selected!;
 
     try {
-      context.read<ReferralBloc>().add(
-            ReferralSubmitEvent(
-              ReferralModel(
-                clientReferenceId: IdGen.i.identifier,
-                projectId: context.projectId,
-                projectBeneficiaryClientReferenceId:
-                    widget.projectBeneficiaryClientRefId,
-                referrerId: context.loggedInUserUuid,
-                recipientId: facility.id,
-                recipientType: 'FACILITY',
-                reasons: widget.referralReasons.isNotEmpty
-                    ? widget.referralReasons
-                    : ['TB_SCREENING'],
-                tenantId: envConfig.variables.tenantId,
-                rowVersion: 1,
-                auditDetails: AuditDetails(
-                  createdBy: context.loggedInUserUuid,
-                  createdTime: DateTime.now().millisecondsSinceEpoch,
-                  lastModifiedBy: context.loggedInUserUuid,
-                  lastModifiedTime: DateTime.now().millisecondsSinceEpoch,
-                ),
-                clientAuditDetails: ClientAuditDetails(
-                  createdBy: context.loggedInUserUuid,
-                  createdTime: DateTime.now().millisecondsSinceEpoch,
-                  lastModifiedBy: context.loggedInUserUuid,
-                  lastModifiedTime: DateTime.now().millisecondsSinceEpoch,
-                ),
-                additionalFields: ReferralAdditionalFields(
-                  version: 1,
-                  fields: [
-                    const AdditionalField('referralType', 'tbScreening'),
-                    AdditionalField(
-                      'childClientReferenceId',
-                      widget.individual.clientReferenceId,
-                    ),
-                    AdditionalField(
-                      'householdClientReferenceId',
-                      widget.householdClientReferenceId,
-                    ),
-                    AdditionalField(
-                      'administrativeAreaCode',
-                      widget.administrativeAreaCode,
-                    ),
-                    AdditionalField(
-                      'tbScreeningData',
-                      widget.tbScreeningPayload,
-                    ),
-                  ],
-                ),
+      await context
+          .read<LocalRepository<ReferralModel, ReferralSearchModel>>()
+          .create(
+            ReferralModel(
+              clientReferenceId: IdGen.i.identifier,
+              projectId: context.projectId,
+              projectBeneficiaryClientReferenceId:
+                  widget.projectBeneficiaryClientRefId,
+              referrerId: context.loggedInUserUuid,
+              recipientId: facility.id,
+              recipientType: 'FACILITY',
+              reasons: widget.referralReasons.isNotEmpty
+                  ? widget.referralReasons
+                  : ['TB_SCREENING'],
+              tenantId: envConfig.variables.tenantId,
+              rowVersion: 1,
+              auditDetails: AuditDetails(
+                createdBy: context.loggedInUserUuid,
+                createdTime: DateTime.now().millisecondsSinceEpoch,
+                lastModifiedBy: context.loggedInUserUuid,
+                lastModifiedTime: DateTime.now().millisecondsSinceEpoch,
               ),
-              false,
+              clientAuditDetails: ClientAuditDetails(
+                createdBy: context.loggedInUserUuid,
+                createdTime: DateTime.now().millisecondsSinceEpoch,
+                lastModifiedBy: context.loggedInUserUuid,
+                lastModifiedTime: DateTime.now().millisecondsSinceEpoch,
+              ),
+              additionalFields: ReferralAdditionalFields(
+                version: 1,
+                fields: [
+                  const AdditionalField('referralType', 'tbScreening'),
+                  AdditionalField(
+                    'childClientReferenceId',
+                    widget.individual.clientReferenceId,
+                  ),
+                  AdditionalField(
+                    'householdClientReferenceId',
+                    widget.householdClientReferenceId,
+                  ),
+                  AdditionalField(
+                    'administrativeAreaCode',
+                    widget.administrativeAreaCode,
+                  ),
+                  AdditionalField(
+                    'tbScreeningData',
+                    widget.tbScreeningPayload,
+                  ),
+                ],
+              ),
             ),
           );
 
@@ -281,82 +274,16 @@ class _TbReferBeneficiaryPageState
         }
 
         return Scaffold(
-          body: Column(
-            children: [
-              const CustomBackNavigationHelpHeaderWidget(showHelp: false),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(spacer2),
-                  child: DigitCard(
-                    children: [
-                      Text(
-                        localizations.translate(
-                          i18_local.referBeneficiary.referralDetails,
-                        ),
-                        style: theme.textTheme.displayMedium,
-                      ),
-                      const SizedBox(height: spacer2),
-                      _readOnlyRow(
-                        theme,
-                        localizations.translate(
-                          i18_local.referBeneficiary.dateOfReferralLabel,
-                        ),
-                        dateStr,
-                      ),
-                      _readOnlyRow(
-                        theme,
-                        localizations.translate(
-                          i18_local
-                              .referBeneficiary.administrationUnitFormLabel,
-                        ),
-                        localizations.translate(widget.administrativeAreaCode),
-                      ),
-                      _readOnlyRow(
-                        theme,
-                        localizations.translate(
-                          i18_local.referBeneficiary.referredByLabel,
-                        ),
-                        context.loggedInUser.userName ?? '',
-                      ),
-                      const SizedBox(height: spacer2),
-                      Text(
-                        localizations.translate(
-                          i18_local.referBeneficiary.referredToLabel,
-                        ),
-                        style: theme.textTheme.titleSmall,
-                      ),
-                      const SizedBox(height: spacer1),
-                      InkWell(
-                        onTap: healthFacilities.isEmpty
-                            ? null
-                            : () => _pickFacility(healthFacilities),
-                        child: InputDecorator(
-                          decoration: InputDecoration(
-                            border: const OutlineInputBorder(),
-                            errorText: _selected == null
-                                ? localizations.translate(
-                                    i18_local.common.corecommonRequired,
-                                  )
-                                : null,
-                          ),
-                          child: Text(
-                            _selected == null
-                                ? localizations.translate(
-                                    i18_local.common.searchByName,
-                                  )
-                                : localizations.translate(
-                                    'FAC_${_selected!.id}',
-                                  ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.all(spacer2),
-                child: ValueListenableBuilder<bool>(
+          body: ScrollableContent(
+            header: const Column(
+              children: [
+                CustomBackNavigationHelpHeaderWidget(showHelp: false),
+              ],
+            ),
+            footer: DigitCard(
+              margin: const EdgeInsets.only(top: spacer2),
+              children: [
+                ValueListenableBuilder<bool>(
                   valueListenable: _busy,
                   builder: (context, busy, _) {
                     return DigitButton(
@@ -371,6 +298,73 @@ class _TbReferBeneficiaryPageState
                     );
                   },
                 ),
+              ],
+            ),
+            children: [
+              DigitCard(
+                children: [
+                  Text(
+                    localizations.translate(
+                      i18_local.referBeneficiary.referralDetails,
+                    ),
+                    style: theme.textTheme.headlineLarge,
+                    selectionColor: theme.primaryColor,
+                  ),
+                  const SizedBox(height: spacer2),
+                  _readOnlyRow(
+                    theme,
+                    localizations.translate(
+                      i18_local.referBeneficiary.dateOfReferralLabel,
+                    ),
+                    dateStr,
+                  ),
+                  _readOnlyRow(
+                    theme,
+                    localizations.translate(
+                      i18_local.referBeneficiary.administrationUnitFormLabel,
+                    ),
+                    localizations.translate(widget.administrativeAreaCode),
+                  ),
+                  _readOnlyRow(
+                    theme,
+                    localizations.translate(
+                      i18_local.referBeneficiary.referredByLabel,
+                    ),
+                    context.loggedInUser.userName ?? '',
+                  ),
+                  const SizedBox(height: spacer2),
+                  Text(
+                    localizations.translate(
+                      i18_local.referBeneficiary.referredToLabel,
+                    ),
+                    style: theme.textTheme.titleSmall,
+                  ),
+                  const SizedBox(height: spacer1),
+                  InkWell(
+                    onTap: healthFacilities.isEmpty
+                        ? null
+                        : () => _pickFacility(healthFacilities),
+                    child: InputDecorator(
+                      decoration: InputDecoration(
+                        border: const OutlineInputBorder(),
+                        errorText: _selected == null
+                            ? localizations.translate(
+                                i18_local.common.corecommonRequired,
+                              )
+                            : null,
+                      ),
+                      child: Text(
+                        _selected == null
+                            ? localizations.translate(
+                                i18_local.common.searchByName,
+                              )
+                            : localizations.translate(
+                                'FAC_${_selected!.id}',
+                              ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -473,4 +467,15 @@ bool contextIsMdtUser(BuildContext context) {
   final roles = context.loggedInUser.roles.map((e) => e.code).toSet();
   return roles.contains(RolesType.distributor.toValue()) ||
       roles.contains(RolesType.communityDistributor.toValue());
+}
+
+/// Returns true when the logged-in user has the COMMUNITY_DISTRIBUTOR role.
+/// Used to drive TB-assessment flow vs. Deliver-Interventions flow in [CustomMemberCard].
+bool contextIsCommunityDistributor(BuildContext context) {
+  try {
+    final roles = context.loggedInUser.roles.map((e) => e.code).toSet();
+    return roles.contains(RolesType.communityDistributor.toValue());
+  } catch (_) {
+    return false;
+  }
 }

@@ -186,6 +186,7 @@ class StockCalculationUtils {
     required String facilityId,
     required List<String> productIds,
     String? loggedInUserUuid,
+    bool isDistributor = false,
   }) {
     final result = <String, double>{};
 
@@ -195,6 +196,7 @@ class StockCalculationUtils {
         facilityId: facilityId,
         productId: productId,
         loggedInUserUuid: loggedInUserUuid,
+        isDistributor: isDistributor,
       );
       result[productId] = metrics['stockInHand'] ?? 0.0;
     }
@@ -215,6 +217,7 @@ class StockCalculationUtils {
     required String bednetStatusKey,
     required String bednetSuccessStatus,
     String? fallbackPupilsPresentKey,
+    String? fallbackItnDeliveredKey,
     String? singleFallbackProductId,
   }) {
     bool isBednetTask(TaskModel task) {
@@ -243,13 +246,12 @@ class StockCalculationUtils {
       }
       if (hasResource) continue;
 
-      if (fallbackPupilsPresentKey != null &&
-          fallbackPupilsPresentKey.isNotEmpty &&
-          singleFallbackProductId != null &&
+      if (singleFallbackProductId != null &&
           singleFallbackProductId.isNotEmpty) {
         for (final field
             in task.additionalFields?.fields ?? const <AdditionalField>[]) {
-          if (field.key == fallbackPupilsPresentKey) {
+          if ((fallbackPupilsPresentKey != null && field.key == fallbackPupilsPresentKey) ||
+              (fallbackItnDeliveredKey != null && field.key == fallbackItnDeliveredKey)) {
             final qty =
                 num.tryParse(field.value?.toString() ?? '')?.toDouble() ?? 0;
             consumed[singleFallbackProductId] =
@@ -273,13 +275,16 @@ class StockCalculationUtils {
     required String bednetStatusKey,
     required String bednetSuccessStatus,
     String? fallbackPupilsPresentKey,
+    String? fallbackItnDeliveredKey,
     String? singleFallbackProductId,
+    bool isDistributor = false,
   }) {
     final rawBalances = calculateStockInHandForProducts(
       stockList: stockList,
       facilityId: facilityId,
       productIds: productIds,
       loggedInUserUuid: loggedInUserUuid,
+      isDistributor: isDistributor,
     );
     final consumedByProduct = calculateBednetConsumedByProduct(
       tasks: tasks,
@@ -287,6 +292,7 @@ class StockCalculationUtils {
       bednetStatusKey: bednetStatusKey,
       bednetSuccessStatus: bednetSuccessStatus,
       fallbackPupilsPresentKey: fallbackPupilsPresentKey,
+      fallbackItnDeliveredKey: fallbackItnDeliveredKey,
       singleFallbackProductId: singleFallbackProductId,
     );
 

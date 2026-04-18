@@ -15,6 +15,8 @@ import '../../../router/app_router.dart';
 import '../../../utils/utils.dart';
 import '../../../utils/i18_key_constants.dart' as i18Local;
 import '../../../widgets/header/back_navigation_help_header.dart';
+import '../../registration_deliver_pages/beneficiary_registration/refer_beneficiary_page.dart'
+    show contextIsCommunityDistributor;
 
 @RoutePage()
 class CustomSummaryReportPage extends LocalizedStatefulWidget {
@@ -48,7 +50,9 @@ class _CustomSummaryReportState
 
   static const _dateKey = 'dateKey';
   static const _schoolVisitedKey = 'schoolVisitedKey';
-  static const _bednetDeliveredKey = 'bednetDeliveredKey';
+  static const _schoolBednetDeliveredKey = 'schoolBednetDeliveredKey';
+  static const _householdVisitedKey = 'householdVisitedKey';
+  static const _householdBednetDeliveredKey = 'householdBednetDeliveredKey';
   static const _bednetRemainigKey = 'bednetRemainigKey';
 
   String _calculatePercentage(dynamic value, int total) {
@@ -68,8 +72,8 @@ class _CustomSummaryReportState
   Widget build(BuildContext context) {
     return Scaffold(
       body: BlocBuilder<SummaryReportBloc, SummaryReportState>(
-        builder: (context, sumamryReportState) {
-          if (sumamryReportState is SummaryReportLoadingState) {
+        builder: (context, summaryReportState) {
+          if (summaryReportState is SummaryReportLoadingState) {
             return const Center(
               child: CircularProgressIndicator(),
             );
@@ -105,82 +109,138 @@ class _CustomSummaryReportState
                   ),
                 ),
               ),
-              if (sumamryReportState is SummaryReportDataState)
+              if (summaryReportState is SummaryReportDataState)
                 ReactiveFormBuilder(
                   form: _form,
                   builder: (ctx, form, child) {
-                    return SizedBox(
-                      height: 400,
-                      child: _ReportDetailsContent(
-                        title: localizations
-                            .translate(i18Local.homeShowcase.summaryReport),
-                        data: DigitGridData(
-                          columns: [
-                            DigitGridColumn(
-                              label: 'Date',
-                              key: _dateKey,
-                              width: 120,
-                            ),
-                            DigitGridColumn(
-                              label: 'No. of school visited',
-                              key: _schoolVisitedKey,
-                              width: 180,
-                            ),
-                            DigitGridColumn(
-                              label: 'No. of Bednet delivered',
-                              key: _bednetDeliveredKey,
-                              width: 180,
-                            ),
-                            DigitGridColumn(
-                              label: 'No. of Bednet remaining',
-                              key: _bednetRemainigKey,
-                              width: 180,
-                            ),
-                          ],
-                          rows: [
-                            ...() {
-                              final rows = <DigitGridRow>[];
-
-                              for (final entry
-                                  in sumamryReportState.data.entries) {
-                                final metrics = entry.value;
-                                rows.add(
-                                  DigitGridRow(
-                                    [
-                                      DigitGridCell(
+                    return Column(
+                      children: [
+                        // Conditional Rendering based on Role
+                        if (contextIsCommunityDistributor(context))
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionTitle(
+                                  'Household Distribution Report'),
+                              SizedBox(
+                                height: 300,
+                                child: _ReportDetailsContent(
+                                  title: 'Household Distribution Report',
+                                  data: DigitGridData(
+                                    columns: [
+                                      DigitGridColumn(
+                                        label: 'Date',
                                         key: _dateKey,
-                                        value: entry.key,
+                                        width: 120,
                                       ),
-                                      DigitGridCell(
-                                        key: _schoolVisitedKey,
-                                        value:
-                                            '${metrics[_schoolVisitedKey] ?? 0}',
+                                      DigitGridColumn(
+                                        label: 'No. of household visited',
+                                        key: _householdVisitedKey,
+                                        width: 180,
                                       ),
-                                      DigitGridCell(
-                                        key: _bednetDeliveredKey,
-                                        value:
-                                            '${metrics[_bednetDeliveredKey] ?? 0}',
-                                      ),
-                                      DigitGridCell(
-                                        key: _bednetRemainigKey,
-                                        value:
-                                            '${metrics[_bednetRemainigKey] ?? 0}',
+                                      DigitGridColumn(
+                                        label: 'No. of Bednet delivered',
+                                        key: _householdBednetDeliveredKey,
+                                        width: 180,
                                       ),
                                     ],
+                                    rows: summaryReportState.data.entries
+                                        .toList()
+                                        .reversed
+                                        .map((entry) {
+                                      final metrics = entry.value;
+                                      return DigitGridRow([
+                                        DigitGridCell(
+                                            key: _dateKey, value: entry.key),
+                                        DigitGridCell(
+                                          key: _householdVisitedKey,
+                                          value:
+                                              '${metrics[_householdVisitedKey] ?? 0}',
+                                        ),
+                                        DigitGridCell(
+                                          key: _householdBednetDeliveredKey,
+                                          value:
+                                              '${metrics[_householdBednetDeliveredKey] ?? 0}',
+                                        ),
+                                      ]);
+                                    }).toList(),
                                   ),
-                                );
-                              }
-                              return rows.reversed.toList();
-                            }(),
-                          ],
-                        ),
-                      ),
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _buildSectionTitle('School Distribution Report'),
+                              SizedBox(
+                                height: 300,
+                                child: _ReportDetailsContent(
+                                  title: 'School Distribution Report',
+                                  data: DigitGridData(
+                                    columns: [
+                                      DigitGridColumn(
+                                        label: 'Date',
+                                        key: _dateKey,
+                                        width: 120,
+                                      ),
+                                      DigitGridColumn(
+                                        label: 'No. of school visited',
+                                        key: _schoolVisitedKey,
+                                        width: 180,
+                                      ),
+                                      DigitGridColumn(
+                                        label: 'No. of Bednet delivered',
+                                        key: _schoolBednetDeliveredKey,
+                                        width: 180,
+                                      ),
+                                    ],
+                                    rows: summaryReportState.data.entries
+                                        .toList()
+                                        .reversed
+                                        .map((entry) {
+                                      final metrics = entry.value;
+                                      return DigitGridRow([
+                                        DigitGridCell(
+                                            key: _dateKey, value: entry.key),
+                                        DigitGridCell(
+                                          key: _schoolVisitedKey,
+                                          value:
+                                              '${metrics[_schoolVisitedKey] ?? 0}',
+                                        ),
+                                        DigitGridCell(
+                                          key: _schoolBednetDeliveredKey,
+                                          value:
+                                              '${metrics[_schoolBednetDeliveredKey] ?? 0}',
+                                        ),
+                                      ]);
+                                    }).toList(),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                      ],
                     );
                   },
                 ),
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildSectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Text(
+        title,
+        style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF005A7A),
+            ),
       ),
     );
   }

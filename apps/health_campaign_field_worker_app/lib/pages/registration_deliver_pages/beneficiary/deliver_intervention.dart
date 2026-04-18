@@ -105,6 +105,7 @@ class DeliverInterventionPageState
             address: householdMember.members?.first.address?.first,
             latitude: lat,
             longitude: long,
+            household: householdMember.household,
           ),
           isEditing: (deliverInterventionState.tasks ?? []).isNotEmpty &&
                   RegistrationDeliverySingleton().beneficiaryType ==
@@ -174,6 +175,8 @@ class DeliverInterventionPageState
       TaskSearchModel(projectId: projectId),
       context.loggedInUserUuid,
     );
+    final isDistributor = context.loggedInUserRoles
+        .any((role) => role.code == RolesType.distributor.toValue());
     final effectiveMap =
         StockCalculationUtils.calculateEffectiveStockInHandForProducts(
       stockList: allStocks,
@@ -184,7 +187,9 @@ class DeliverInterventionPageState
       bednetStatusKey: kBednetTaskAdministrationStatusKey,
       bednetSuccessStatus: kBednetTaskAdministrationSuccessStatus,
       fallbackPupilsPresentKey: kBednetTaskPupilsPresentKey,
+      fallbackItnDeliveredKey: 'itnDeliveredCount',
       singleFallbackProductId: productVariantId,
+      isDistributor: isDistributor,
     );
     return effectiveMap[productVariantId]?.toInt();
   }
@@ -792,6 +797,7 @@ class DeliverInterventionPageState
     String? deliveryStrategy,
     String? projectBeneficiaryClientReferenceId,
     AddressModel? address,
+    HouseholdModel? household,
     double? latitude,
     double? longitude,
   }) {
@@ -846,6 +852,14 @@ class DeliverInterventionPageState
                 ),
               ))
           .toList(),
+    );
+
+    var bednetCount = 0;
+    for (final resource in task.resources ?? <TaskResourceModel>[]) {
+      bednetCount += int.tryParse(resource.quantity.toString()) ?? 0;
+    }
+
+    task = task.copyWith(
       address: address?.copyWith(
         relatedClientReferenceId: clientReferenceId,
         id: null,
@@ -898,7 +912,25 @@ class DeliverInterventionPageState
               AdditionalFieldsType.deliveryComment.toValue(),
               deliveryComment,
             ),
-          AdditionalField(AdditionalFieldsType.isSchool.toValue(), true)
+          AdditionalField(AdditionalFieldsType.isSchool.toValue(), household?.isSchoolHousehold ?? false),
+          if (household != null)
+            AdditionalField(
+              'householdClientReferenceId',
+              household.clientReferenceId,
+            ),
+            AdditionalField(
+              'schoolId',
+              household!.additionalFields!.fields
+                  .firstWhere((e) => e.key == 'schoolId')
+                  .value
+                  .toString(),
+            ),
+          AdditionalField('bednetCount', bednetCount),
+          if (household != null)
+            AdditionalField(
+              'schoolName',
+              household.bednetDisplayName,
+            ),
         ],
       ),
     );

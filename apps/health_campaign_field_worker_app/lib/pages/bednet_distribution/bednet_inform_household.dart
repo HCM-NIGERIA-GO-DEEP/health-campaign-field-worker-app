@@ -12,13 +12,18 @@ import '../../models/bednet_distribution/bednet_distribution_models.dart';
 import '../../models/entities/additional_fields_type.dart';
 import '../../models/registration_deliver_model/entities/status.dart';
 import 'package:digit_data_model/models/entities/address_type.dart';
-import '../../utils/registration_deliver_utils/extensions/extensions.dart';
+import '../../utils/extensions/extensions.dart';
 import '../../utils/registration_deliver_utils/utils.dart';
 
 import '../../utils/registration_deliver_utils/i18_key_constants.dart' as i18;
 import '../../widgets/header/back_navigation_help_header.dart';
 import '../../widgets/registartion_deliver/localized.dart';
 import 'bednet_success_page.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/stock.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
+import '../../utils/stock_calculation_utils.dart';
+import '../../models/entities/roles_type.dart';
+import '../../utils/extensions/extensions.dart';
 
 class BednetInformHouseholdPage extends LocalizedStatefulWidget {
   final String eToken;
@@ -201,7 +206,7 @@ class _BednetInformHouseholdPageState
         LocalRepository<ProjectBeneficiaryModel,
             ProjectBeneficiarySearchModel>>();
     final householdRepo = context
-        .repository<HouseholdModel, HouseholdSearchModel>(context);
+        .repository<HouseholdModel, HouseholdSearchModel>();
     final taskLocalRepository =
         context.read<LocalRepository<TaskModel, TaskSearchModel>>();
 
@@ -355,6 +360,8 @@ class _BednetInformHouseholdPageState
       AdditionalField('householdClientReferenceId', household.clientReferenceId),
       AdditionalField('eToken', widget.eToken),
       AdditionalField('itnDeliveredCount', widget.itnForDelivery),
+      const AdditionalField('isSchool', false),
+      AdditionalField('bednetCount', widget.itnForDelivery),
     ];
 
     final address = (baseAddr ??
@@ -424,6 +431,8 @@ class _BednetInformHouseholdPageState
         ),
       );
     }
+    
+    await _refreshStockInHandAfterTaskSave(context);
   }
 
   void _openSubmitDialog() async {
@@ -504,5 +513,132 @@ class _BednetInformHouseholdPageState
       boundary: boundary,
       navigateToSummary: false,
     ));
+    
+    await _refreshStockInHandAfterTaskSave(context);
+  }
+
+  Future<void> _refreshStockInHandAfterTaskSave(BuildContext context) async {
+    await _resolveStockInHandForBednet(context);
+    if (!mounted) return;
+    setState(() {});
+  }
+
+  Future<int?> _resolveStockInHandForBednet(BuildContext context) async {
+    final projectId = RegistrationDeliverySingleton().projectId;
+    if (projectId == null || projectId.isEmpty) return null;
+
+    final facilityId = await _resolveCurrentFacilityId(context);
+    final productVariantId = await _resolveBednetProductVariantId(context);
+    if (facilityId == null ||
+        facilityId.isEmpty ||
+        productVariantId == null ||
+        productVariantId.isEmpty) {
+      return null;
+    }
+
+    final stockRepo =
+        context.read<LocalRepository<StockModel, StockSearchModel>>()
+            as StockLocalRepository;
+    final taskRepo = context.read<LocalRepository<TaskModel, TaskSearchModel>>()
+        as TaskLocalRepository;
+
+    final receivedStocks = await stockRepo.search(
+      StockSearchModel(receiverId: facilityId),
+    );
+    final sentStocks = await stockRepo.search(
+      StockSearchModel(senderId: facilityId),
+    );
+
+    final allStocksMap = <String, StockModel>{};
+    for (final stock in receivedStocks) {
+      allStocksMap[stock.clientReferenceId] = stock;
+    }
+    for (final stock in sentStocks) {
+      allStocksMap[stock.clientReferenceId] = stock;
+    }
+
+    final allStocks = allStocksMap.values.toList();
+    final tasks = await taskRepo.search(
+      TaskSearchModel(projectId: projectId),
+      context.loggedInUserUuid,
+    );
+    final isDistributor = context.loggedInUserRoles
+        .any((role) => role.code == RolesType.distributor.toValue());
+    final effectiveMap =
+        StockCalculationUtils.calculateEffectiveStockInHandForProducts(
+      stockList: allStocks,
+      tasks: tasks,
+      facilityId: facilityId,
+      productIds: [productVariantId],
+      loggedInUserUuid: context.loggedInUserUuid,
+      bednetStatusKey: kBednetTaskAdministrationStatusKey,
+      bednetSuccessStatus: kBednetTaskAdministrationSuccessStatus,
+      fallbackPupilsPresentKey: kBednetTaskPupilsPresentKey,
+      fallbackItnDeliveredKey: 'itnDeliveredCount',
+      singleFallbackProductId: productVariantId,
+      isDistributor: isDistributor,
+    );
+    return effectiveMap[productVariantId]?.toInt();
+  }
+
+  Future<String?> _resolveCurrentFacilityId(BuildContext context) async {
+    final projectId = context.projectId;
+    if (projectId.isEmpty) return null;
+
+    final isDistributor = context.loggedInUserRoles
+        .any((role) => role.code == RolesType.distributor.toValue());
+    if (isDistributor) {
+      return context.loggedInUserUuid;
+    }
+
+    final projectFacilityRepo = context.read<
+        LocalRepository<ProjectFacilityModel, ProjectFacilitySearchModel>>();
+    final projectFacilities = await projectFacilityRepo.search(
+      ProjectFacilitySearchModel(projectId: [projectId]),
+    );
+
+    final currentFacilities = projectFacilities.where((pf) {
+      final facilityLevel =
+          _additionalFieldValue(pf.additionalFields?.fields, 'facilityLevel');
+      return facilityLevel.isEmpty || facilityLevel.toLowerCase() == 'current';
+    }).toList();
+
+    if (currentFacilities.isNotEmpty) return currentFacilities.first.facilityId;
+    if (projectFacilities.isNotEmpty) return projectFacilities.first.facilityId;
+    return null;
+  }
+
+  Future<String?> _resolveBednetProductVariantId(BuildContext context) async {
+    final projectId = context.projectId;
+    if (projectId.isEmpty) return null;
+
+    final projectResourceRepo = context.read<
+        LocalRepository<ProjectResourceModel, ProjectResourceSearchModel>>();
+    final resources = await projectResourceRepo.search(
+      ProjectResourceSearchModel(projectId: [projectId]),
+    );
+    if (resources.isEmpty) return null;
+
+    ProjectResourceModel? preferred;
+    for (final resource in resources) {
+      final name = resource.resource.name?.toLowerCase() ?? '';
+      if (name.contains('bednet') ||
+          name.contains('llin') ||
+          (name.contains('net') && name.contains('bed'))) {
+        preferred = resource;
+        break;
+      }
+    }
+    preferred ??= resources.first;
+    return preferred.resource.productVariantId;
+  }
+
+  String _additionalFieldValue(List<AdditionalField>? fields, String key) {
+    if (fields == null) return '';
+    return fields
+            .firstWhereOrNull((field) => field.key == key)
+            ?.value
+            ?.toString() ??
+        '';
   }
 }

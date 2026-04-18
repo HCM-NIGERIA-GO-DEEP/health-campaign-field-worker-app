@@ -269,19 +269,16 @@ class MemberCard extends StatelessWidget {
                                     type: DigitButtonType.primary,
                                     size: DigitButtonSize.medium,
                                     label: (!checkStatus(
-                                                  tasks,
-                                                  context.selectedCycle,
-                                                ) &&
+                                              tasks,
+                                              context.selectedCycle,
+                                            ) &&
                                             !isBeneficiaryRefused &&
                                             !isBeneficiaryAbsent)
                                         ? localizations.translate(
                                             i18.householdOverView
                                                 .viewDeliveryLabel,
                                           )
-                                        : localizations.translate(
-                                            i18.householdOverView
-                                                .householdOverViewActionText,
-                                          ),
+                                        : "Deliver Intervention",
                                     onPressed: () {
                                       final bloc =
                                           context.read<HouseholdOverviewBloc>();
@@ -588,8 +585,7 @@ class MemberCard extends StatelessWidget {
                             label: localizations.translate(
                               i18.memberCard.tbAssessmentButton,
                             ),
-                            isDisabled:
-                                (projectBeneficiaries ?? []).isEmpty,
+                            isDisabled: (projectBeneficiaries ?? []).isEmpty,
                             type: DigitButtonType.secondary,
                             size: DigitButtonSize.medium,
                             mainAxisSize: MainAxisSize.max,

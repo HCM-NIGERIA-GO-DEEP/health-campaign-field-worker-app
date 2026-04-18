@@ -23,7 +23,8 @@ import 'package:health_campaign_field_worker_app/models/registration_deliver_mod
 import 'package:health_campaign_field_worker_app/pages/bednet_distribution/bednet_household_review.dart';
 import 'package:health_campaign_field_worker_app/pages/registration_deliver_pages/beneficiary/widgets/past_delivery.dart';
 import 'package:health_campaign_field_worker_app/router/app_router.dart';
-import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart' as i18;
+import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/i18_key_constants.dart'
+    as i18;
 import 'package:health_campaign_field_worker_app/utils/registration_deliver_utils/utils.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/back_navigation_help_header.dart';
 import 'package:health_campaign_field_worker_app/widgets/registartion_deliver/component_wrapper/product_variant_bloc_wrapper.dart';
@@ -149,12 +150,12 @@ class BeneficiaryDetailsPageState
                             DeliverInterventionState>(
                           builder: (context, deliverState) {
                             final isItnHousehold =
-                                RegistrationDeliverySingleton().beneficiaryType ==
+                                RegistrationDeliverySingleton()
+                                        .beneficiaryType ==
                                     BeneficiaryType.household;
                             if (isItnHousehold) {
                               return DigitCard(
-                                margin:
-                                    const EdgeInsets.only(top: spacer2),
+                                margin: const EdgeInsets.only(top: spacer2),
                                 children: [
                                   DigitButton(
                                     label: localizations.translate(
@@ -179,90 +180,86 @@ class BeneficiaryDetailsPageState
 
                             return cycles != null && cycles.isNotEmpty
                                 // ? deliverState.hasCycleArrived
-                                    ? DigitCard(
-                                        margin:
-                                            const EdgeInsets.only(top: spacer2),
-                                        children: [
-                                            DigitButton(
-                                              label:
-                                                  '${localizations.translate(i18.beneficiaryDetails.recordDelivery)} ',
-                                                  // '${(deliverState.cycle == 0 ? (deliverState.cycle + 1) : deliverState.cycle).toString()} ${localizations.translate(i18.deliverIntervention.dose)} ',
-                                                  // '${(deliverState.dose).toString()}',
-                                              type: DigitButtonType.primary,
-                                              size: DigitButtonSize.large,
-                                              mainAxisSize: MainAxisSize.max,
-                                              onPressed: () async {
-                                                final selectedCycle = cycles
-                                                    .firstWhereOrNull((c) =>
-                                                        c.id ==
-                                                        deliverState.cycle);
-                                                if (selectedCycle != null) {
-                                                  bloc.add(
-                                                    DeliverInterventionEvent
-                                                        .selectFutureCycleDose(
-                                                      dose: deliverState.dose,
-                                                      cycle:
-                                                          RegistrationDeliverySingleton()
-                                                              .projectType!
-                                                              .cycles!
-                                                              .firstWhere((c) =>
-                                                                  c.id ==
-                                                                  deliverState
-                                                                      .cycle),
-                                                      individualModel: state
-                                                          .selectedIndividual,
-                                                    ),
-                                                  );
-                                                  showCustomPopup(
-                                                    context: context,
-                                                    builder: (popUpContext) => Popup(
-                                                        title: localizations
-                                                            .translate(i18
-                                                                .beneficiaryDetails
-                                                                .resourcesTobeDelivered),
-                                                        type: PopUpType.simple,
-                                                        contentPadding:
-                                                            EdgeInsets.zero,
-                                                        additionalWidgets: [
-                                                          buildTableContent(
-                                                              deliverState,
+                                ? DigitCard(
+                                    margin: const EdgeInsets.only(top: spacer2),
+                                    children: [
+                                        DigitButton(
+                                          label:
+                                              '${localizations.translate(i18.beneficiaryDetails.recordDelivery)} ',
+                                          // '${(deliverState.cycle == 0 ? (deliverState.cycle + 1) : deliverState.cycle).toString()} ${localizations.translate(i18.deliverIntervention.dose)} ',
+                                          // '${(deliverState.dose).toString()}',
+                                          type: DigitButtonType.primary,
+                                          size: DigitButtonSize.large,
+                                          mainAxisSize: MainAxisSize.max,
+                                          onPressed: () async {
+                                            final selectedCycle =
+                                                cycles.firstWhereOrNull((c) =>
+                                                    c.id == deliverState.cycle);
+                                            if (selectedCycle != null) {
+                                              bloc.add(
+                                                DeliverInterventionEvent
+                                                    .selectFutureCycleDose(
+                                                  dose: deliverState.dose,
+                                                  cycle:
+                                                      RegistrationDeliverySingleton()
+                                                          .projectType!
+                                                          .cycles!
+                                                          .firstWhere((c) =>
+                                                              c.id ==
+                                                              deliverState
+                                                                  .cycle),
+                                                  individualModel:
+                                                      state.selectedIndividual,
+                                                ),
+                                              );
+                                              showCustomPopup(
+                                                context: context,
+                                                builder: (popUpContext) => Popup(
+                                                    title: localizations
+                                                        .translate(i18
+                                                            .beneficiaryDetails
+                                                            .resourcesTobeDelivered),
+                                                    type: PopUpType.simple,
+                                                    contentPadding:
+                                                        EdgeInsets.zero,
+                                                    additionalWidgets: [
+                                                      buildTableContent(
+                                                          deliverState,
+                                                          context,
+                                                          variant,
+                                                          state
+                                                              .selectedIndividual,
+                                                          state
+                                                              .householdMemberWrapper
+                                                              .household),
+                                                    ],
+                                                    actions: [
+                                                      DigitButton(
+                                                          label: localizations
+                                                              .translate(i18
+                                                                  .beneficiaryDetails
+                                                                  .ctaProceed),
+                                                          onPressed: () {
+                                                            Navigator.of(
                                                               context,
-                                                              variant,
-                                                              state
-                                                                  .selectedIndividual,
-                                                              state
-                                                                  .householdMemberWrapper
-                                                                  .household),
-                                                        ],
-                                                        actions: [
-                                                          DigitButton(
-                                                              label: localizations
-                                                                  .translate(i18
-                                                                      .beneficiaryDetails
-                                                                      .ctaProceed),
-                                                              onPressed: () {
-                                                                Navigator.of(
-                                                                  context,
-                                                                  rootNavigator:
-                                                                      true,
-                                                                ).pop();
-                                                                router.push(
-                                                                  DeliverInterventionRoute(),
-                                                                );
-                                                              },
-                                                              type:
-                                                                  DigitButtonType
-                                                                      .primary,
-                                                              size:
-                                                                  DigitButtonSize
-                                                                      .large),
-                                                        ]),
-                                                  );
-                                                }
-                                              },
-                                            ),
-                                          ])
-                                    // : const SizedBox.shrink()
+                                                              rootNavigator:
+                                                                  true,
+                                                            ).pop();
+                                                            router.push(
+                                                              DeliverInterventionRoute(),
+                                                            );
+                                                          },
+                                                          type: DigitButtonType
+                                                              .primary,
+                                                          size: DigitButtonSize
+                                                              .large),
+                                                    ]),
+                                              );
+                                            }
+                                          },
+                                        ),
+                                      ])
+                                // : const SizedBox.shrink()
                                 : DigitCard(
                                     margin: const EdgeInsets.only(top: spacer2),
                                     children: [
@@ -308,7 +305,6 @@ class BeneficiaryDetailsPageState
                                         : state.selectedIndividual?.name
                                                 ?.givenName ??
                                             '--',
-                                    
                                     localizations.translate(
                                       i18.common.coreCommonAge,
                                     ): () {
@@ -353,7 +349,6 @@ class BeneficiaryDetailsPageState
                                         : state.selectedIndividual?.gender?.name
                                                 .sentenceCase ??
                                             '--',
-                                    
                                     localizations.translate(i18
                                         .deliverIntervention
                                         .dateOfRegistrationLabel): () {
@@ -445,8 +440,7 @@ class BeneficiaryDetailsPageState
     final theme = Theme.of(context);
     final textTheme = theme.digitTextTheme(context);
     final t = taskData?.lastOrNull;
-    final delivered =
-        t?.status == Status.administeredSuccess.toValue();
+    final delivered = t?.status == Status.administeredSuccess.toValue();
     int? completedMs;
     final raw = t?.additionalFields?.fields
         .firstWhereOrNull((f) => f.key == kBednetTaskDistributionDateKey)
@@ -482,8 +476,7 @@ class BeneficiaryDetailsPageState
             highlightedRows: const [0],
             columns: [
               DigitTableColumn(
-                header: localizations
-                    .translate(i18.beneficiaryDetails.itnDeliveryNoColumnHeader),
+                header: "Delivery No.",
                 cellValue: 'delivery',
               ),
               DigitTableColumn(
@@ -609,8 +602,8 @@ class BeneficiaryDetailsPageState
     final raw = household?.additionalFields?.fields
         .firstWhere(
           (f) => f.key == household_af.AdditionalFieldsType.eToken.toValue(),
-          orElse: () =>
-              AdditionalField(household_af.AdditionalFieldsType.eToken.toValue(), ''),
+          orElse: () => AdditionalField(
+              household_af.AdditionalFieldsType.eToken.toValue(), ''),
         )
         .value
         ?.toString()

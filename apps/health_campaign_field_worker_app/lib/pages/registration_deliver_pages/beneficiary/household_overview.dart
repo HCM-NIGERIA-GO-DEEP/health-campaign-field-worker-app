@@ -77,32 +77,31 @@ class _HouseholdOverviewPageState
         context.router.maybePop();
       },
       child: BlocListener<HouseholdOverviewBloc, HouseholdOverviewState>(
-        listener: (context, state) {
-          if (state.loading) {
-            _hasSeenLoading = true;
-            return;
-          }
+          listener: (context, state) {
+        if (state.loading) {
+          _hasSeenLoading = true;
+          return;
+        }
 
-          if ((state.householdMemberWrapper.members ?? []).isNotEmpty) {
-            _redirectedToAddHead = false;
-          }
+        if ((state.householdMemberWrapper.members ?? []).isNotEmpty) {
+          _redirectedToAddHead = false;
+        }
 
-          if (!_hasSeenLoading || _redirectedToAddHead) return;
+        if (!_hasSeenLoading || _redirectedToAddHead) return;
 
-          final household = state.householdMemberWrapper.household;
-          if ((state.householdMemberWrapper.members ?? []).isEmpty &&
-              household != null) {
-            _redirectedToAddHead = true;
-            final address = household.address;
-            if (address != null && context.mounted) {
-              Future.microtask(
-                  () => addIndividual(context, household, isHeadOfHousehold: true));
-            }
+        final household = state.householdMemberWrapper.household;
+        if ((state.householdMemberWrapper.members ?? []).isEmpty &&
+            household != null) {
+          _redirectedToAddHead = true;
+          final address = household.address;
+          if (address != null && context.mounted) {
+            Future.microtask(() =>
+                addIndividual(context, household, isHeadOfHousehold: true));
           }
-        },
-        child: BlocBuilder<HouseholdOverviewBloc, HouseholdOverviewState>(
-          builder: (ctx, state) {
-            return Scaffold(
+        }
+      }, child: BlocBuilder<HouseholdOverviewBloc, HouseholdOverviewState>(
+        builder: (ctx, state) {
+          return Scaffold(
             body: state.loading
                 ? const Center(child: CircularProgressIndicator())
                 : NotificationListener<ScrollNotification>(
@@ -139,10 +138,9 @@ class _HouseholdOverviewPageState
                             onPressed: () => addIndividual(
                               context,
                               state.householdMemberWrapper.household!,
-                              isHeadOfHousehold: (state.householdMemberWrapper
-                                          .members ??
-                                      [])
-                                  .isEmpty,
+                              isHeadOfHousehold:
+                                  (state.householdMemberWrapper.members ?? [])
+                                      .isEmpty,
                             ),
                             label: localizations.translate(
                               i18.householdOverView
@@ -373,7 +371,8 @@ class _HouseholdOverviewPageState
                                             padding:
                                                 const EdgeInsets.all(spacer2),
                                             child: Text(
-                                              state.householdMemberWrapper
+                                              state
+                                                          .householdMemberWrapper
                                                           .household
                                                           ?.isSchoolHousehold ==
                                                       true
@@ -388,12 +387,12 @@ class _HouseholdOverviewPageState
                                                                   .householdType ==
                                                               HouseholdType
                                                                   .community
-                                                  ? localizations.translate(i18
-                                                      .householdOverView
-                                                      .clfOverviewLabel)
-                                                  : localizations.translate(i18
-                                                      .householdOverView
-                                                      .householdOverViewLabel),
+                                                      ? localizations.translate(
+                                                          i18.householdOverView
+                                                              .clfOverviewLabel)
+                                                      : localizations.translate(i18
+                                                          .householdOverView
+                                                          .householdOverViewLabel),
                                               style: textTheme.headingXl
                                                   .copyWith(
                                                       color: theme.colorTheme
@@ -471,8 +470,7 @@ class _HouseholdOverviewPageState
                                                           : i18
                                                               .householdOverView
                                                               .householdOverViewHouseholdHeadNameLabel,
-                                                    ):
-                                                        () {
+                                                    ): () {
                                                       final headName =
                                                           _overviewHouseholdHeadDisplayName(
                                                         state
@@ -551,11 +549,9 @@ class _HouseholdOverviewPageState
                                         ),
 
                                         Column(
-                                          children:
-                                              _membersOrderedHeadFirst(
+                                          children: _membersOrderedHeadFirst(
                                             state.householdMemberWrapper,
-                                          )
-                                              .map(
+                                          ).map(
                                             (e) {
                                               final wrapper =
                                                   state.householdMemberWrapper;
@@ -735,8 +731,7 @@ class _HouseholdOverviewPageState
                                                   );
 
                                                   callReloadEvent(
-                                                      offset: 0,
-                                                      limit: limit);
+                                                      offset: 0, limit: limit);
                                                 },
                                                 setAsHeadAction: () {
                                                   ctx
@@ -851,8 +846,8 @@ class _HouseholdOverviewPageState
                                                     //             : null,
                                                     //         sideEffectData,
                                                     //       )
-                                                    //     : 
-                                                        false,
+                                                    //     :
+                                                    false,
                                                 name: e.name?.givenName ??
                                                     ' - - ',
                                                 years: (e.dateOfBirth == null
@@ -922,8 +917,8 @@ class _HouseholdOverviewPageState
                     ),
                   ),
           );
-        },)
-      ),
+        },
+      )),
     );
   }
 
