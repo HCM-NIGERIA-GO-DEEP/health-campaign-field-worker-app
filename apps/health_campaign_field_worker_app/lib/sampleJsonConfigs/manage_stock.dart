@@ -167,7 +167,8 @@ final dynamic sampleInventoryFlows = {
                 ]
               }
             }
-          ]
+          ],
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
         },
         {
           "format": "menu_card",
@@ -194,7 +195,8 @@ final dynamic sampleInventoryFlows = {
                 ]
               }
             }
-          ]
+          ],
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
         },
         {
           "format": "menu_card",

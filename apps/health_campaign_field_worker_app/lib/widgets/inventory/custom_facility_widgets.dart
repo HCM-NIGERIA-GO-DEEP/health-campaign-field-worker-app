@@ -313,7 +313,9 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
     final transactionType =
         navigationParams['transactionType']?.toString() ?? '';
     final stockEntryType = navigationParams['stockEntryType']?.toString() ?? '';
-    final isReturnFlow = stockEntryType == 'RETURNED';
+    final isReturnFlow = stockEntryType == 'RETURNED' ||
+        stockEntryType == 'LOSS' ||
+        stockEntryType == 'DAMAGED';
     final isLessExcessFlow = stockEntryType == 'LESS_EXCESS';
 
     final deliveryTeamCode = _getDeliveryTeamCodeFromConfig(transactionType);
@@ -328,6 +330,9 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
         )
         .toList()
         .isNotEmpty;
+
+    final isCommunityDistributor = context.loggedInUserRoles
+        .any((role) => role.code == RolesType.communityDistributor.toValue());
 
     // Get wrapper data for project facilities
     var wrapperData = stateData?.stateWrapper;
@@ -383,7 +388,11 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
     //       transactionType == 'RECEIPT') {
     //     if (isToField) return facilityLevel == 'current';
     //     if (isFromField) return facilityLevel == 'parent';
-    //   }
+    //   }  else if (stockEntryType == 'LOSS' || stockEntryType == 'DAMAGED') {
+    // For loss and damaged, to field should show parent facility
+    //   if (isToField) return facilityLevel == 'parent';
+    //   if (isFromField) return facilityLevel == 'current';
+    // }
 
     //   return true;
     // }).toList();
@@ -457,6 +466,12 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
         }
       } else if (isDistributor) {
         if (isToField) {
+          usage = Constants.dhFacility;
+        } else {
+          usage = "None";
+        }
+      } else if (isCommunityDistributor) {
+        if (isToField) {
           usage = Constants.healthFacility;
         } else {
           usage = "None";
@@ -503,7 +518,7 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
       ));
     }
 
-    if (isDistributor && isFromField) {
+    if ((isDistributor || isCommunityDistributor) && isFromField) {
       facilities.add(DropdownItem(
         code: context.loggedInUserUuid,
         name: localizations.translate('DELIVERY_TEAM'),
