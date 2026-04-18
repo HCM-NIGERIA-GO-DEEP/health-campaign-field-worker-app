@@ -335,17 +335,13 @@ class RefusedDeliveryPageState extends LocalizedState<RefusedDeliveryPage> {
               'householdClientReferenceId',
               household.clientReferenceId,
             ),
-          if (household?.additionalFields?.fields
-                  .firstWhereOrNull((e) => e.key == 'schoolId')
-                  ?.value !=
-              null)
             AdditionalField(
               'schoolId',
               household!.additionalFields!.fields
                   .firstWhere((e) => e.key == 'schoolId')
                   .value
                   .toString(),
-            )
+            ),
         ],
       ),
     );

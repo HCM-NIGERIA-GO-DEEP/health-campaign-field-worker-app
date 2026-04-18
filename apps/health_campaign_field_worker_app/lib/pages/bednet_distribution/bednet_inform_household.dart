@@ -360,6 +360,8 @@ class _BednetInformHouseholdPageState
       AdditionalField('householdClientReferenceId', household.clientReferenceId),
       AdditionalField('eToken', widget.eToken),
       AdditionalField('itnDeliveredCount', widget.itnForDelivery),
+      const AdditionalField('isSchool', false),
+      AdditionalField('bednetCount', widget.itnForDelivery),
     ];
 
     final address = (baseAddr ??

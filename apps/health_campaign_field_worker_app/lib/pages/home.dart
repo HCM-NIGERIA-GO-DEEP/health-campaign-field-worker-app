@@ -3104,16 +3104,14 @@ class _HomePageState extends LocalizedState<HomePage> {
     ];
 
     final List<String> filteredLabels = homeItemsLabel
-        .where((element) =>
-            state.actionsWrapper.actions
-                .map((e) => e.displayName)
-                .toList()
-                .contains(element) ||
-            element == i18.home.db)
+        .where((element) => state.actionsWrapper.actions
+            .map((e) => e.displayName)
+            .toList()
+            .contains(element))
         .toList();
 
     final showcaseKeys = filteredLabels
-        // .where((f) => f != i18.home.db)
+        .where((f) => f != i18.home.db)
         .map((label) => homeItemsShowcaseMap[label]!)
         .toList();
 

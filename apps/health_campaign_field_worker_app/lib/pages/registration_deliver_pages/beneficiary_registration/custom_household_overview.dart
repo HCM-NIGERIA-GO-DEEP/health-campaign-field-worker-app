@@ -746,8 +746,6 @@ class _CustomHouseholdOverviewPageState
                                                                   .household
                                                                   ?.isSchoolHousehold !=
                                                               true &&
-                                                          yearsAge != null &&
-                                                          yearsAge < 5 &&
                                                           contextIsMdtUser(
                                                               context) &&
                                                           (projectBeneficiary ??

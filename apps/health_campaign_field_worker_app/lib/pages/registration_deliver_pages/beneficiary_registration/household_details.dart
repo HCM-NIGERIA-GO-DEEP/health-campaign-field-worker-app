@@ -579,7 +579,7 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                         .value as int?) ??
                                     0;
                                 final maxChildrenAllowed =
-                                    max(0, currentMemberCount - 1);
+                                    max(0, currentMemberCount);
                                 // Auto-clamp when member count drops or cap is exceeded
                                 if (currentChildrenCount > maxChildrenAllowed) {
                                   WidgetsBinding.instance
