@@ -300,7 +300,7 @@ class _BeneficiaryChecklistPageState
                                           ),
                                           description: description != null
                                               ? localizations.translate(
-                                                  '${value.selectedServiceDefinition?.code}.$description',
+                                                  '${selectedServiceDefinition?.code}.$description',
                                                 )
                                               : null,
                                           labelStyle: textTheme.headingM
@@ -361,7 +361,7 @@ class _BeneficiaryChecklistPageState
                                         LabeledField(
                                           label: localizations
                                               .translate(
-                                                '${value.selectedServiceDefinition?.code}.${e.code}',
+                                                '${selectedServiceDefinition?.code}.${e.code}',
                                               )
                                               .trim(),
                                           isRequired: e.required ?? false,
@@ -376,7 +376,7 @@ class _BeneficiaryChecklistPageState
                                                       .secondary),
                                           description: description != null
                                               ? localizations.translate(
-                                                  '${value.selectedServiceDefinition?.code}.$description',
+                                                  '${selectedServiceDefinition?.code}.$description',
                                                 )
                                               : null,
                                           child: DigitTextFormInput(
@@ -419,11 +419,11 @@ class _BeneficiaryChecklistPageState
                                           children: [
                                             LabeledField(
                                               label: localizations.translate(
-                                                '${value.selectedServiceDefinition?.code}.${e.code}',
+                                                '${selectedServiceDefinition?.code}.${e.code}',
                                               ),
                                               description: description != null
                                                   ? localizations.translate(
-                                                      '${value.selectedServiceDefinition?.code}.$description',
+                                                      '${selectedServiceDefinition?.code}.$description',
                                                     )
                                                   : null,
                                               labelStyle: textTheme.headingM
@@ -446,7 +446,8 @@ class _BeneficiaryChecklistPageState
                                                     children: e.values!
                                                         .map((e) =>
                                                             DigitCheckbox(
-                                                              label: e,
+                                                              label: localizations.translate(
+                                                                  '${selectedServiceDefinition?.code}.$e'),
                                                               value: controller[
                                                                       index]
                                                                   .text
@@ -522,7 +523,7 @@ class _BeneficiaryChecklistPageState
                                                 capitalizedFirstLetter: false,
                                                 description: description != null
                                                     ? localizations.translate(
-                                                        '${value.selectedServiceDefinition?.code}.$description',
+                                                        '${selectedServiceDefinition?.code}.$description',
                                                       )
                                                     : null,
                                                 labelStyle: textTheme.headingM
