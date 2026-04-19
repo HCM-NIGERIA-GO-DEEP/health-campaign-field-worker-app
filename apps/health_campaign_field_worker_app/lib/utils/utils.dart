@@ -589,6 +589,7 @@ class RegistrationDeliverySingleton {
   String? _registrationConfig;
   String? _deliveryConfig;
   int? _stockCount;
+  String? _currentFacilityId;
 
   void setBoundary({required BoundaryModel boundary}) {
     _boundaryModel = boundary;
@@ -620,6 +621,7 @@ class RegistrationDeliverySingleton {
     required UserModel? loggedInUser,
     required int? beneficiaryIdMinCount,
     required int? beneficiaryIdBatchSize,
+    required String? currentFacilityId,
   }) {
     _loggedInUserUuid = loggedInUserUuid;
     _maxRadius = maxRadius;
@@ -642,10 +644,15 @@ class RegistrationDeliverySingleton {
     _loggedInUser = loggedInUser;
     _beneficiaryIdMinCount = beneficiaryIdMinCount;
     _beneficiaryIdBatchSize = beneficiaryIdBatchSize;
+    _currentFacilityId = currentFacilityId;
   }
 
   void setTenantId(String tenantId) {
     _tenantId = tenantId;
+  }
+
+  void setFacilityId(String facilityId) {
+    _currentFacilityId = facilityId;
   }
 
   void setHouseholdType(HouseholdType? householdType) {
@@ -726,6 +733,8 @@ class RegistrationDeliverySingleton {
   String? get deliveryConfig => _deliveryConfig;
 
   int? get stockCount => _stockCount;
+
+  String? get facilityId => _currentFacilityId;
 }
 
 void attemptSyncUp(BuildContext context) async {

@@ -334,6 +334,9 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
     final isCommunityDistributor = context.loggedInUserRoles
         .any((role) => role.code == RolesType.communityDistributor.toValue());
 
+    final isHFS = context.loggedInUserRoles.any(
+        (role) => role.code == RolesType.healthFacilitySupervisor.toValue());
+
     // Get wrapper data for project facilities
     var wrapperData = stateData?.stateWrapper;
     if (wrapperData == null) {
@@ -425,13 +428,17 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
             }
           } else {
             if (isFromField) {
-              usage = Constants.dhFacility;
+              if (isHFS) {
+                usage = Constants.healthFacility;
+              } else {
+                usage = Constants.dhFacility;
+              }
             } else {
               usage = "None";
             }
           }
         }
-      } else if (isDistributor) {
+      } else if (isDistributor || isCommunityDistributor) {
         usage = "None";
       } else {
         if (isToField) {
@@ -458,7 +465,11 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
             }
           } else {
             if (isFromField) {
-              usage = Constants.dhFacility;
+              if (isHFS) {
+                usage = Constants.healthFacility;
+              } else {
+                usage = Constants.dhFacility;
+              }
             } else {
               usage = Constants.districtFacility;
             }
@@ -478,7 +489,11 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
         }
       } else {
         if (isFromField) {
-          usage = Constants.dhFacility;
+          if (isHFS) {
+            usage = Constants.healthFacility;
+          } else {
+            usage = Constants.dhFacility;
+          }
         } else {
           usage = Constants.districtFacility;
         }
@@ -579,7 +594,9 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
             (transactionType == 'DISPATCHED' ||
                 transactionType == 'ISSUED' ||
                 isLessExcessFlow) &&
-            (selectedValue == null || selectedValue.isEmpty) &&
+            (selectedValue == null ||
+                selectedValue.isEmpty ||
+                selectedValue != null) &&
             facilities.isNotEmpty) {
           final currentFacility = facilities.first.code;
           selectedValue = currentFacility;

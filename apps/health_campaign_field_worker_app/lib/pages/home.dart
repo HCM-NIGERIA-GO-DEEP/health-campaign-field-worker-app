@@ -1595,13 +1595,19 @@ class _HomePageState extends LocalizedState<HomePage> {
           )
           .toList()
           .isNotEmpty;
+      final isCommunityDistributor = context.loggedInUserRoles
+          .where(
+            (role) => role.code == RolesType.communityDistributor.toValue(),
+          )
+          .toList()
+          .isNotEmpty;
       final isWareHouseMgr = context.loggedInUserRoles
           .where((role) => role.code == RolesType.warehouseManager.toValue())
           .toList()
           .isNotEmpty;
 
       // For distributors who are not warehouse managers, return their user UUID
-      if (isDistributor && !isWareHouseMgr) {
+      if ((isDistributor || isCommunityDistributor) && !isWareHouseMgr) {
         return context.loggedInUserUuid ?? '';
       }
 
@@ -1634,6 +1640,16 @@ class _HomePageState extends LocalizedState<HomePage> {
 
         if (projectFacilities == null || projectFacilities.isEmpty) {
           return '';
+        }
+
+        final isHFS = context.loggedInUserRoles
+            .where((role) =>
+                role.code == RolesType.healthFacilitySupervisor.toValue())
+            .toList()
+            .isNotEmpty;
+
+        if (isHFS) {
+          return RegistrationDeliverySingleton().facilityId;
         }
 
         // Return first facility ID (user's assigned facility)
@@ -3109,6 +3125,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             .toList()
             .contains(element))
         .toList();
+//    filteredLabels.add(i18.home.db);
 
     final showcaseKeys = filteredLabels
         .where((f) => f != i18.home.db)
@@ -3120,6 +3137,7 @@ class _HomePageState extends LocalizedState<HomePage> {
     if (envConfig.variables.envType == EnvType.demo && kReleaseMode) {
       filteredLabels.remove(i18.home.db);
     }
+
     final List<Widget> widgetList =
         filteredLabels.map((label) => homeItemsMap[label]!).toList();
 
@@ -3198,52 +3216,50 @@ void setPackagesSingleton(BuildContext context) {
           maxAge: context.selectedProjectType?.validMaxAge,
         );
         RegistrationDeliverySingleton().setInitialData(
-          loggedInUserUuid: context.loggedInUserUuid,
-          maxRadius: appConfiguration.maxRadius!,
-          projectId: context.projectId,
-          selectedBeneficiaryType: context.beneficiaryType,
-          projectType: context.selectedProjectType,
-          selectedProject: context.selectedProject,
-          genderOptions: (appConfiguration.genderOptions ?? [])
-              .map((e) => e.code)
-              .toList(),
-          idTypeOptions: (appConfiguration.idTypeOptions ?? [])
-              .map((e) => e.code)
-              .toList(),
-          householdDeletionReasonOptions:
-              (appConfiguration.householdDeletionReasonOptions ?? [])
-                  .map((e) => e.code)
-                  .toList(),
-          householdMemberDeletionReasonOptions:
-              (appConfiguration.householdMemberDeletionReasonOptions ?? [])
-                  .map((e) => e.code)
-                  .toList(),
-          deliveryCommentOptions:
-              (appConfiguration.deliveryCommentOptions ?? [])
-                  .map((e) => e.code)
-                  .toList(),
-          symptomsTypes: (appConfiguration.symptomsTypes ?? [])
-              .map((e) => e.code)
-              .toList(),
-          searchHouseHoldFilter: (appConfiguration.searchHouseHoldFilters ?? [])
-              .map((e) => e.code)
-              .toList(),
-          searchCLFFilters: (appConfiguration.searchCLFFilters ?? [])
-              .map((e) => e.code)
-              .toList(),
-          referralReasons: (appConfiguration.referralReasons ?? [])
-              .map((e) => e.code)
-              .toList(),
-          houseStructureTypes: (appConfiguration.houseStructureTypes ?? [])
-              .map((e) => e.code)
-              .toList(),
-          refusalReasons: (appConfiguration.refusalReasons ?? [])
-              .map((e) => e.code)
-              .toList(),
-          loggedInUser: context.loggedInUserModel,
-          beneficiaryIdMinCount: 25,
-          beneficiaryIdBatchSize: 100,
-        );
+            loggedInUserUuid: context.loggedInUserUuid,
+            maxRadius: appConfiguration.maxRadius!,
+            projectId: context.projectId,
+            selectedBeneficiaryType: context.beneficiaryType,
+            projectType: context.selectedProjectType,
+            selectedProject: context.selectedProject,
+            genderOptions: (appConfiguration.genderOptions ?? [])
+                .map((e) => e.code)
+                .toList(),
+            idTypeOptions: (appConfiguration.idTypeOptions ?? [])
+                .map((e) => e.code)
+                .toList(),
+            householdDeletionReasonOptions:
+                (appConfiguration.householdDeletionReasonOptions ?? [])
+                    .map((e) => e.code)
+                    .toList(),
+            householdMemberDeletionReasonOptions:
+                (appConfiguration.householdMemberDeletionReasonOptions ?? [])
+                    .map((e) => e.code)
+                    .toList(),
+            deliveryCommentOptions: (appConfiguration.deliveryCommentOptions ?? [])
+                .map((e) => e.code)
+                .toList(),
+            symptomsTypes: (appConfiguration.symptomsTypes ?? [])
+                .map((e) => e.code)
+                .toList(),
+            searchHouseHoldFilter: (appConfiguration.searchHouseHoldFilters ?? [])
+                .map((e) => e.code)
+                .toList(),
+            searchCLFFilters: (appConfiguration.searchCLFFilters ?? [])
+                .map((e) => e.code)
+                .toList(),
+            referralReasons: (appConfiguration.referralReasons ?? [])
+                .map((e) => e.code)
+                .toList(),
+            houseStructureTypes: (appConfiguration.houseStructureTypes ?? [])
+                .map((e) => e.code)
+                .toList(),
+            refusalReasons:
+                (appConfiguration.refusalReasons ?? []).map((e) => e.code).toList(),
+            loggedInUser: context.loggedInUserModel,
+            beneficiaryIdMinCount: 25,
+            beneficiaryIdBatchSize: 100,
+            currentFacilityId: '');
         FlowBuilderSingleton().setInitialData(
           loggedInUser: context.loggedInUserModel,
           loggedInUserUuid: context.loggedInUserUuid,
@@ -3290,41 +3306,41 @@ void setPackagesSingleton(BuildContext context) {
         );
 
         RegistrationDeliverySingleton().setInitialData(
-          beneficiaryIdMinCount:
-              appConfiguration.beneficiaryIdConfig?.first.minCount.toInt(),
-          beneficiaryIdBatchSize:
-              appConfiguration.beneficiaryIdConfig?.first.batchSize.toInt(),
-          loggedInUserUuid: context.loggedInUserUuid,
-          maxRadius: appConfiguration.maxRadius!,
-          projectId: context.projectId,
-          selectedBeneficiaryType: context.beneficiaryType,
-          projectType: context.selectedProjectType,
-          selectedProject: context.selectedProject,
-          genderOptions:
-              appConfiguration.genderOptions!.map((e) => e.code).toList(),
-          idTypeOptions:
-              appConfiguration.idTypeOptions!.map((e) => e.code).toList(),
-          householdDeletionReasonOptions: appConfiguration
-              .householdDeletionReasonOptions!
-              .map((e) => e.code)
-              .toList(),
-          householdMemberDeletionReasonOptions: appConfiguration
-              .householdMemberDeletionReasonOptions!
-              .map((e) => e.code)
-              .toList(),
-          deliveryCommentOptions: appConfiguration.deliveryCommentOptions!
-              .map((e) => e.code)
-              .toList(),
-          symptomsTypes:
-              appConfiguration.symptomsTypes!.map((e) => e.code).toList(),
-          referralReasons:
-              appConfiguration.referralReasons!.map((e) => e.code).toList(),
-          searchHouseHoldFilter: [],
-          searchCLFFilters: [],
-          houseStructureTypes: [],
-          refusalReasons: [],
-          loggedInUser: context.loggedInUserModel,
-        );
+            beneficiaryIdMinCount:
+                appConfiguration.beneficiaryIdConfig?.first.minCount.toInt(),
+            beneficiaryIdBatchSize:
+                appConfiguration.beneficiaryIdConfig?.first.batchSize.toInt(),
+            loggedInUserUuid: context.loggedInUserUuid,
+            maxRadius: appConfiguration.maxRadius!,
+            projectId: context.projectId,
+            selectedBeneficiaryType: context.beneficiaryType,
+            projectType: context.selectedProjectType,
+            selectedProject: context.selectedProject,
+            genderOptions:
+                appConfiguration.genderOptions!.map((e) => e.code).toList(),
+            idTypeOptions:
+                appConfiguration.idTypeOptions!.map((e) => e.code).toList(),
+            householdDeletionReasonOptions: appConfiguration
+                .householdDeletionReasonOptions!
+                .map((e) => e.code)
+                .toList(),
+            householdMemberDeletionReasonOptions: appConfiguration
+                .householdMemberDeletionReasonOptions!
+                .map((e) => e.code)
+                .toList(),
+            deliveryCommentOptions: appConfiguration.deliveryCommentOptions!
+                .map((e) => e.code)
+                .toList(),
+            symptomsTypes:
+                appConfiguration.symptomsTypes!.map((e) => e.code).toList(),
+            referralReasons:
+                appConfiguration.referralReasons!.map((e) => e.code).toList(),
+            searchHouseHoldFilter: [],
+            searchCLFFilters: [],
+            houseStructureTypes: [],
+            refusalReasons: [],
+            loggedInUser: context.loggedInUserModel,
+            currentFacilityId: '');
         RegistrationDeliverySingleton()
             .setTenantId(envConfig.variables.tenantId);
 

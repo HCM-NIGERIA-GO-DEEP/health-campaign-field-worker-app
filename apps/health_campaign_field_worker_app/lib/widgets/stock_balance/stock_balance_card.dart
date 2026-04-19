@@ -68,9 +68,13 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       final isDistributor = context.loggedInUserRoles
           .any((role) => role.code == RolesType.distributor.toValue());
 
-      // Check if user is a distributor
+      // Check if user is a warehouse manager
       final isWarehouseManager = context.loggedInUserRoles
           .any((role) => role.code == RolesType.warehouseManager.toValue());
+
+      // Check if user is a health facility supervisor
+      final isHealthFacilitySupervisor = context.loggedInUserRoles.any(
+          (role) => role.code == RolesType.healthFacilitySupervisor.toValue());
 
       // Get project facilities
       final projectFacilityRepo = context.read<
@@ -118,10 +122,15 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
         usage = Constants.healthFacility;
       }
 
+      if (isHealthFacilitySupervisor) {
+        usage = Constants.healthFacility;
+      }
+
       final filteredFacilities = (usage == null || usage.trim().isEmpty)
           ? facilities
           : facilities
-              .where((facility) => (facility.usage ?? '').trim() == usage!.trim())
+              .where(
+                  (facility) => (facility.usage ?? '').trim() == usage!.trim())
               .toList();
 
       // Get project resources to know which product variants
@@ -172,6 +181,7 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
         _setupStockListener(context.loggedInUserUuid);
       } else if (autoSelectedFacility != null) {
         _setupStockListener(autoSelectedFacility.id);
+        RegistrationDeliverySingleton().setFacilityId(autoSelectedFacility.id);
       }
     } catch (e) {
       if (mounted) {
@@ -288,6 +298,7 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
                   _selectedFacility = selected;
                 });
                 _setupStockListener(selected.id);
+                RegistrationDeliverySingleton().setFacilityId(selected.id);
               },
             ),
           ),

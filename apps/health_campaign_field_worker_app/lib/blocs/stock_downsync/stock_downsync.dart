@@ -16,6 +16,7 @@ import '../../data/repositories/remote/bandwidth_check.dart';
 import '../../models/downsync/downsync.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/background_service.dart';
+import '../../utils/constants.dart';
 
 part 'stock_downsync.freezed.dart';
 
@@ -67,7 +68,10 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
   /// Build the StockSearchModel based on user role
   Future<StockSearchModel?> _buildStockSearchModel(String projectId) async {
     final userObject = await localSecureStore.userRequestModel;
-    final userRoles = userObject!.roles.map((e) => e.code);
+    if (userObject == null) return null;
+
+    final userRoles = userObject.roles.map((e) => e.code);
+    final selectedProject = await localSecureStore.selectedProject;
 
     final projectFacilities = await projectFacilityLocalRepository.search(
       ProjectFacilitySearchModel(projectId: [projectId]),
@@ -82,6 +86,57 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
       return facilityLevel == null || facilityLevel == 'current';
     }).toList();
 
+    // Check if user is a distributor
+    final isDistributor = userObject.roles
+        .any((role) => role.code == RolesType.distributor.toValue());
+
+    // Check if user is a warehouse manager
+    final isWarehouseManager = userObject.roles
+        .any((role) => role.code == RolesType.warehouseManager.toValue());
+
+    // Check if user is a health facility supervisor
+    final isHealthFacilitySupervisor = userObject.roles.any(
+        (role) => role.code == RolesType.healthFacilitySupervisor.toValue());
+
+    final facilityIds = currentFacilities.map((pf) => pf.facilityId).toList();
+    final facilities = await facilityLocalRepository.search(
+      FacilitySearchModel(id: facilityIds),
+    );
+
+    // Filter facility based on usage, same as stock balance card.
+
+    String? usage = "";
+
+    final boundaryLevel = selectedProject?.address?.boundaryType;
+
+    if (isWarehouseManager) {
+      if (boundaryLevel == Constants.stateBoundaryLevel) {
+        usage = Constants.stateFacility;
+      } else {
+        if (boundaryLevel == Constants.lgaBoundaryLevel) {
+          usage = Constants.districtFacility;
+        } else {
+          usage = Constants.dhFacility;
+        }
+      }
+    } else if (isDistributor) {
+      usage = "None";
+    } else {
+      usage = Constants.healthFacility;
+    }
+
+    if (isHealthFacilitySupervisor) {
+      usage = Constants.healthFacility;
+    }
+
+    final filteredFacilities = (usage == null || usage.trim().isEmpty)
+        ? facilities
+        : facilities
+            .where((facility) => (facility.usage ?? '').trim() == usage!.trim())
+            .toList();
+
+    final filteredFacilityIds = filteredFacilities.map((e) => e.id).toList();
+
     final projectResources = await projectResourceLocalRepository.search(
       ProjectResourceSearchModel(projectId: [projectId]),
     );
@@ -94,11 +149,11 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
     List<String> receiverIds = [];
 
     if (userRoles.contains(RolesType.healthFacilitySupervisor.toValue())) {
-      receiverIds = currentFacilities.map((e) => e.facilityId).toList();
+      receiverIds = filteredFacilityIds;
     } else if (userRoles.contains(RolesType.healthFacilityWorker.toValue())) {
-      receiverIds = currentFacilities.map((e) => e.facilityId).toList();
+      receiverIds = filteredFacilityIds;
     } else if (userRoles.contains(RolesType.warehouseManager.toValue())) {
-      receiverIds = currentFacilities.map((e) => e.facilityId).toList();
+      receiverIds = filteredFacilityIds;
     } else if (userRoles.contains(RolesType.communityDistributor.toValue()) ||
         userRoles.contains(RolesType.distributor.toValue())) {
       receiverIds = [userObject.uuid];

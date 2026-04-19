@@ -144,7 +144,8 @@ final dynamic inventoryReportFlows = {
                 ]
               }
             }
-          ]
+          ],
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
         },
         {
           "type": "template",
@@ -165,7 +166,8 @@ final dynamic inventoryReportFlows = {
                 ]
               }
             }
-          ]
+          ],
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
         },
         {
           "type": "template",
@@ -186,7 +188,8 @@ final dynamic inventoryReportFlows = {
                 ]
               }
             }
-          ]
+          ],
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
         },
         {
           "type": "template",
@@ -207,7 +210,8 @@ final dynamic inventoryReportFlows = {
                 ]
               }
             }
-          ]
+          ],
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
         },
         {
           "type": "template",

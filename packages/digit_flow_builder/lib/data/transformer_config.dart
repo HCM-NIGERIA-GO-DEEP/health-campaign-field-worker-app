@@ -725,8 +725,10 @@ final jsonConfig = {
           "transactionReason":
               "__switch:__context:stockEntryType:{RECEIPT:__value:RECEIVED,RETURNED:__value:RETURNED,ISSUED:__value:null,DAMAGED:stockDetails.transactionReason,LOSS:stockDetails.transactionReason}",
           "transactingPartyId": "stockDetails.transactingPartyId",
-          "senderId": "stockDetails.facilityFromWhich",
-          "senderType": "__value:WAREHOUSE",
+          "senderId":
+              "__switch:__context:secondaryType:{STAFF:stockDetails.deliveryTeam,default:stockDetails.facilityFromWhich}",
+          "senderType":
+              "__switch:__context:secondaryType:{STAFF:__value:STAFF,default:__value:WAREHOUSE}",
           "receiverId":
               "__switch:__context:receiverPartyType:{STAFF:warehouseDetails.teamCode,default:warehouseDetails.facilityToWhich}",
           "receiverType":
