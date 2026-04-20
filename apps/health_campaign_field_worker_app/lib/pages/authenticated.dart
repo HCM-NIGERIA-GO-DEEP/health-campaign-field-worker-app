@@ -692,7 +692,7 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                                   rootNavigator: true,
                                 ).pop(true);
                               },
-                              type: DigitButtonType.primary,
+                              type: DigitButtonType.secondary,
                               size: DigitButtonSize.large)
                         ],
                       ),
