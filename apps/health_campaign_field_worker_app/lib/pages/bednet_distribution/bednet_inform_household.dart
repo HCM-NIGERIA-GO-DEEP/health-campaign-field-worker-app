@@ -380,6 +380,29 @@ class _BednetInformHouseholdPageState
       tenantId: tenantId,
     );
 
+    final productVariantId = await _resolveBednetProductVariantId(context);
+
+    final resource = productVariantId == null
+        ? null
+        : TaskResourceModel(
+            clientReferenceId: IdGen.i.identifier,
+            taskclientReferenceId: clientRef,
+            productVariantId: productVariantId,
+            quantity: widget.itnForDelivery.toString(),
+            isDelivered: true,
+            tenantId: tenantId,
+            taskId: existing?.id,
+            rowVersion: existing?.rowVersion ?? 1,
+            auditDetails: AuditDetails(
+              createdBy: userUuid,
+              createdTime: now,
+            ),
+            clientAuditDetails: ClientAuditDetails(
+              createdBy: userUuid,
+              createdTime: now,
+            ),
+          );
+
     final TaskModel task;
     if (existing != null) {
       task = existing.copyWith(
@@ -389,6 +412,7 @@ class _BednetInformHouseholdPageState
           fields: fields,
         ),
         address: address,
+        resources: resource == null ? null : [resource],
       );
     } else {
       task = TaskModel(
@@ -411,6 +435,7 @@ class _BednetInformHouseholdPageState
         createdDate: now,
         address: address,
         additionalFields: TaskAdditionalFields(version: 1, fields: fields),
+        resources: resource == null ? null : [resource],
       );
     }
 

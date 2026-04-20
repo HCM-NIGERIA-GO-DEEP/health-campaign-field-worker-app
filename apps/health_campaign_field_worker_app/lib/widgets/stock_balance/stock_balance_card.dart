@@ -235,6 +235,12 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
         bednetSuccessStatus: kBednetTaskAdministrationSuccessStatus,
       );
       if (!mounted) return;
+      
+      // Calculate total stock across all products
+      final totalBalance = balances.values.fold(0.0, (sum, val) => sum + val);
+      // Update singleton for use in other pages
+      RegistrationDeliverySingleton().setStockCount(totalBalance.toInt());
+
       setState(() {
         _stockBalances = balances;
       });

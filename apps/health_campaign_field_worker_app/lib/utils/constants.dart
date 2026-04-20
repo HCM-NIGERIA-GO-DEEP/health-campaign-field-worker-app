@@ -127,6 +127,8 @@ class Constants {
     'hcm-delivery',
     'hcm-closedhousehold',
     'hcm-reports',
+    'hcm-checklist',
+    'hcm-bednet',
   ];
 
   // Modules to load when inside packages

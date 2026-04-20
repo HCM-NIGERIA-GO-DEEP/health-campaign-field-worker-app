@@ -331,46 +331,48 @@ class CustomMemberCard extends StatelessWidget {
                               contextIsCommunityDistributor(context);
 
                           return DigitButton(
-                                  mainAxisSize: MainAxisSize.max,
-                                  isDisabled:
-                                      (projectBeneficiaries ?? []).isEmpty
-                                          ? true
-                                          : false,
-                                  type: DigitButtonType.primary,
-                                  size: DigitButtonSize.medium,
-                                  label: isCommunityDistributor
-                                      ? 'TB assessment'
-                                      : 'Deliver Interventions',
-                                  onPressed: () {
-                                    final bloc =
-                                        context.read<HouseholdOverviewBloc>();
+                            mainAxisSize: MainAxisSize.max,
+                            isDisabled: (projectBeneficiaries ?? []).isEmpty
+                                ? true
+                                : false,
+                            type: DigitButtonType.primary,
+                            size: DigitButtonSize.medium,
+                            label: isCommunityDistributor
+                                ? 'TB assessment'
+                                : localizations.translate(
+                                    i18.householdOverView
+                                        .studentRecordDeliveryLabel,
+                                  ),
+                            onPressed: () {
+                              final bloc =
+                                  context.read<HouseholdOverviewBloc>();
 
-                                    bloc.add(
-                                      HouseholdOverviewEvent.selectedIndividual(
-                                        individualModel: individual,
-                                      ),
-                                    );
-                                    bloc.add(HouseholdOverviewReloadEvent(
-                                      projectId: RegistrationDeliverySingleton()
-                                          .projectId!,
-                                      projectBeneficiaryType:
-                                          RegistrationDeliverySingleton()
-                                                  .beneficiaryType ??
-                                              BeneficiaryType.individual,
-                                    ));
+                              bloc.add(
+                                HouseholdOverviewEvent.selectedIndividual(
+                                  individualModel: individual,
+                                ),
+                              );
+                              bloc.add(HouseholdOverviewReloadEvent(
+                                projectId:
+                                    RegistrationDeliverySingleton().projectId!,
+                                projectBeneficiaryType:
+                                    RegistrationDeliverySingleton()
+                                            .beneficiaryType ??
+                                        BeneficiaryType.individual,
+                              ));
 
-                                    if (isCommunityDistributor &&
-                                        tbAssessmentAction != null) {
-                                      // Household flow with MDT/CD user → TB checklist
-                                      tbAssessmentAction!();
-                                    } else {
-                                      // School flow or non-CD user → Deliver Interventions
-                                      context.router.push(
-                                        BeneficiaryDetailsRoute(),
-                                      );
-                                    }
-                                  },
+                              if (isCommunityDistributor &&
+                                  tbAssessmentAction != null) {
+                                // Household flow with MDT/CD user → TB checklist
+                                tbAssessmentAction!();
+                              } else {
+                                // School flow or non-CD user → Deliver Interventions
+                                context.router.push(
+                                  BeneficiaryDetailsRoute(),
                                 );
+                              }
+                            },
+                          );
                         }(),
                         const SizedBox(
                           height: 10,

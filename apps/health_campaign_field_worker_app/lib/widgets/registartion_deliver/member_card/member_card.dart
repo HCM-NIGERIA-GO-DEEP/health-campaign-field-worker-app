@@ -278,7 +278,10 @@ class MemberCard extends StatelessWidget {
                                             i18.householdOverView
                                                 .viewDeliveryLabel,
                                           )
-                                        : "Deliver Intervention",
+                                        : localizations.translate(
+                                            i18.householdOverView
+                                                .studentRecordDeliveryLabel,
+                                          ),
                                     onPressed: () {
                                       final bloc =
                                           context.read<HouseholdOverviewBloc>();

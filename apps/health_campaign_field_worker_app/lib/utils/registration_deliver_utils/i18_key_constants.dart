@@ -224,8 +224,7 @@ class BeneficiaryDetails {
       'BENEFICIARY_DETAILS_ITN_DELIVERY_NO_HEADER';
 
   /// ITN household table: first row label (e.g. "Delivery 1").
-  String get itnFirstDeliveryRowLabel =>
-      'BENEFICIARY_DETAILS_ITN_DELIVERY_1';
+  String get itnFirstDeliveryRowLabel => 'BENEFICIARY_DETAILS_ITN_DELIVERY_1';
 
   String get beneficiaryDeliveryStrategy =>
       'BENEFICIARY_DETAILS_DELIVERY_STRATEGY';
@@ -321,6 +320,12 @@ class BeneficiaryDetails {
   String get householdMemberPlural => 'BENEFICIARY_HOUSEHOLD_MEMBERS';
 
   String get totalMembers => 'TOTAL_HOUSEHOLD_MEMBERS';
+
+  String get insufficientStockHeading => 'INSUFFICIENT_STOCK_HEADING';
+
+  String get insufficientStockDescription => 'INSUFFICIENT_STOCK_DESCRIPTION';
+
+  String get goToHome => 'GO_TO_HOME_SCREEN';
 }
 
 class IndividualDetails {
@@ -603,6 +608,7 @@ class HouseholdOverView {
       'HOUSEHOLD_OVER_VIEW_ADD_STUDENT_CHILD_LIMIT';
   String get householdOverViewAddHeadText =>
       'HOUSEHOLD_OVER_VIEW_ADD_HEAD_TEXT';
+  String get studentRecordDeliveryLabel => 'STUDENTS_LIST_RECORD_DELIVERY';
 }
 
 class MemberCard {
@@ -1153,7 +1159,8 @@ class TbScreening {
   String get q5 => 'TB_SCREENING_Q5_NOT_EATING';
   String get q6 => 'TB_SCREENING_Q6_LESS_PLAYFUL';
 
-  String get additionalSymptomsTitle => 'TB_SCREENING_ADDITIONAL_SYMPTOMS_TITLE';
+  String get additionalSymptomsTitle =>
+      'TB_SCREENING_ADDITIONAL_SYMPTOMS_TITLE';
 
   String get symptomNightSweats => 'TB_SCREENING_SYMPTOM_NIGHT_SWEATS';
   String get symptomFatigue => 'TB_SCREENING_SYMPTOM_FATIGUE';

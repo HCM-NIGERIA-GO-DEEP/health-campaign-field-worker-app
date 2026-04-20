@@ -2,6 +2,7 @@ import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/blocs/facility/facility.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/enum/app_enums.dart';
+import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/theme/spacers.dart';
 import 'package:digit_ui_components/widgets/atoms/digit_button.dart';
 import 'package:digit_ui_components/widgets/atoms/pop_up_card.dart';
@@ -21,6 +22,7 @@ import '../../../utils/registration_deliver_utils/i18_key_constants.dart'
 import '../../../utils/registration_deliver_utils/utils.dart';
 import '../../../utils/utils.dart' hide RegistrationDeliverySingleton;
 import '../../../widgets/custom_back_navigation.dart';
+import '../../../widgets/registartion_deliver/back_navigation_help_header.dart';
 import '../../../widgets/registartion_deliver/localized.dart';
 import 'package:registration_delivery/utils/i18_key_constants.dart' as i18_rd;
 
@@ -250,7 +252,8 @@ class _TbReferBeneficiaryPageState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final dateStr = DateFormat('dd/MM/yyyy').format(DateTime.now());
+    final textTheme = theme.digitTextTheme(context);
+    final dateStr = DateFormat('dd MMM yyyy').format(DateTime.now());
 
     return BlocBuilder<FacilityBloc, FacilityState>(
       builder: (ctx, facilityState) {
@@ -300,90 +303,88 @@ class _TbReferBeneficiaryPageState
                 ),
               ],
             ),
-            children: [
-              DigitCard(
-                children: [
-                  Text(
-                    localizations.translate(
-                      i18_local.referBeneficiary.referralDetails,
-                    ),
-                    style: theme.textTheme.headlineLarge,
-                    selectionColor: theme.primaryColor,
-                  ),
-                  const SizedBox(height: spacer2),
-                  _readOnlyRow(
-                    theme,
-                    localizations.translate(
-                      i18_local.referBeneficiary.dateOfReferralLabel,
-                    ),
-                    dateStr,
-                  ),
-                  _readOnlyRow(
-                    theme,
-                    localizations.translate(
-                      i18_local.referBeneficiary.administrationUnitFormLabel,
-                    ),
-                    localizations.translate(widget.administrativeAreaCode),
-                  ),
-                  _readOnlyRow(
-                    theme,
-                    localizations.translate(
-                      i18_local.referBeneficiary.referredByLabel,
-                    ),
-                    context.loggedInUser.userName ?? '',
-                  ),
-                  const SizedBox(height: spacer2),
-                  Text(
-                    localizations.translate(
-                      i18_local.referBeneficiary.referredToLabel,
-                    ),
-                    style: theme.textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: spacer1),
-                  InkWell(
-                    onTap: healthFacilities.isEmpty
-                        ? null
-                        : () => _pickFacility(healthFacilities),
-                    child: InputDecorator(
-                      decoration: InputDecoration(
-                        border: const OutlineInputBorder(),
-                        errorText: _selected == null
-                            ? localizations.translate(
-                                i18_local.common.corecommonRequired,
-                              )
-                            : null,
+            slivers: [
+              SliverToBoxAdapter(
+                child: DigitCard(
+                  margin: const EdgeInsets.symmetric(horizontal: spacer2),
+                  children: [
+                    Text(
+                      localizations.translate(
+                        i18_local.referBeneficiary.referralDetails,
                       ),
-                      child: Text(
-                        _selected == null
-                            ? localizations.translate(
-                                i18_local.common.searchByName,
-                              )
-                            : localizations.translate(
-                                'FAC_${_selected!.id}',
-                              ),
+                      style: textTheme.headingXl.copyWith(
+                        color: theme.colorTheme.primary.primary2,
                       ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: spacer2),
+                    LabeledField(
+                      label: localizations.translate(
+                        i18_local.referBeneficiary.dateOfReferralLabel,
+                      ),
+                      child: DigitDateFormInput(
+                        readOnly: true,
+                        initialValue: dateStr,
+                        initialDate: DateTime.now(),
+                        cancelText: localizations.translate(
+                          i18_local.common.coreCommonCancel,
+                        ),
+                        confirmText: localizations.translate(
+                          i18_local.common.coreCommonOk,
+                        ),
+                      ),
+                    ),
+                    LabeledField(
+                      label: localizations.translate(
+                        i18_local.referBeneficiary.administrationUnitFormLabel,
+                      ),
+                      child: DigitTextFormInput(
+                        readOnly: true,
+                        initialValue: localizations.translate(
+                          widget.administrativeAreaCode,
+                        ),
+                      ),
+                    ),
+                    LabeledField(
+                      label: localizations.translate(
+                        i18_local.referBeneficiary.referredToLabel,
+                      ),
+                      child: DigitTextFormInput(
+                        readOnly: true,
+                        initialValue: context.loggedInUser.userName ?? '',
+                      ),
+                    ),
+                    InkWell(
+                      onTap: healthFacilities.isEmpty
+                          ? null
+                          : () => _pickFacility(healthFacilities),
+                      child: IgnorePointer(
+                        child: LabeledField(
+                          label: localizations.translate(
+                            i18_local.referBeneficiary.referredByLabel,
+                          ),
+                          isRequired: true,
+                          child: DigitSearchFormInput(
+                            initialValue: _selected == null
+                                ? ''
+                                : localizations.translate(
+                                    'FAC_${_selected!.id}',
+                                  ),
+                            onSuffixTap: (value) async {
+                              if (healthFacilities.isNotEmpty) {
+                                _pickFacility(healthFacilities);
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         );
       },
-    );
-  }
-
-  Widget _readOnlyRow(ThemeData theme, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: spacer2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label, style: theme.textTheme.titleSmall),
-          const SizedBox(height: spacer1),
-          Text(value, style: theme.textTheme.bodyLarge),
-        ],
-      ),
     );
   }
 }
@@ -424,6 +425,15 @@ class _TbFacilitySearchPage extends StatelessWidget {
 
           return Column(
             children: [
+              Padding(
+                padding: const EdgeInsets.only(bottom: spacer2),
+                child: BackNavigationHelpHeaderWidget(
+                  showHelp: false,
+                  handleBack: () {
+                    Navigator.pop(context);
+                  },
+                ),
+              ),
               Padding(
                 padding: const EdgeInsets.all(spacer2),
                 child: TextField(
@@ -469,8 +479,6 @@ bool contextIsMdtUser(BuildContext context) {
       roles.contains(RolesType.communityDistributor.toValue());
 }
 
-/// Returns true when the logged-in user has the COMMUNITY_DISTRIBUTOR role.
-/// Used to drive TB-assessment flow vs. Deliver-Interventions flow in [CustomMemberCard].
 bool contextIsCommunityDistributor(BuildContext context) {
   try {
     final roles = context.loggedInUser.roles.map((e) => e.code).toSet();

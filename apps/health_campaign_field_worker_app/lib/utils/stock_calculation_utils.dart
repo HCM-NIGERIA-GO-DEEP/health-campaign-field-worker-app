@@ -250,8 +250,10 @@ class StockCalculationUtils {
           singleFallbackProductId.isNotEmpty) {
         for (final field
             in task.additionalFields?.fields ?? const <AdditionalField>[]) {
-          if ((fallbackPupilsPresentKey != null && field.key == fallbackPupilsPresentKey) ||
-              (fallbackItnDeliveredKey != null && field.key == fallbackItnDeliveredKey)) {
+          if ((fallbackPupilsPresentKey != null &&
+                  field.key == fallbackPupilsPresentKey) ||
+              (fallbackItnDeliveredKey != null &&
+                  field.key == fallbackItnDeliveredKey)) {
             final qty =
                 num.tryParse(field.value?.toString() ?? '')?.toDouble() ?? 0;
             consumed[singleFallbackProductId] =

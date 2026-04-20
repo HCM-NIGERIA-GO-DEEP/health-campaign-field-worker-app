@@ -96,9 +96,10 @@ class _BeneficiaryChecklistPageState
           builder: (context, state) {
             state.mapOrNull(
               serviceDefinitionFetch: (value) {
+                final projectName = RegistrationDeliverySingleton().selectedProject?.name;
                 selectedServiceDefinition = value.serviceDefinitionList
-                    .where((element) => element.code.toString().contains(
-                        '${RegistrationDeliverySingleton().selectedProject!.name}.${RegistrationDeliveryEnums.eligibility.toValue()}'))
+                    .where((element) => projectName != null && element.code.toString().contains(
+                        '$projectName.${RegistrationDeliveryEnums.eligibility.toValue()}'))
                     .toList()
                     .firstOrNull;
 
@@ -466,33 +467,37 @@ class _BeneficiaryChecklistPageState
                                                                             submitTriggered,
                                                                       ),
                                                                     );
-                                                                final String
-                                                                    ele;
-                                                                var val =
+                                                                final currentText =
                                                                     controller[
                                                                             index]
-                                                                        .text
-                                                                        .split(
-                                                                            '.');
-                                                                if (val
+                                                                        .text;
+                                                                final List<String>
+                                                                    currentValues =
+                                                                    currentText
+                                                                            .isEmpty
+                                                                        ? []
+                                                                        : currentText
+                                                                            .split(
+                                                                                '.');
+                                                                if (currentValues
                                                                     .contains(
                                                                         e)) {
-                                                                  val.remove(e);
-                                                                  ele =
-                                                                      val.join(
-                                                                          ".");
+                                                                  currentValues
+                                                                      .remove(
+                                                                          e);
                                                                 } else {
-                                                                  ele =
-                                                                      "${controller[index].text}.$e";
+                                                                  currentValues.add(
+                                                                      e.toString());
                                                                 }
+                                                                final ele =
+                                                                    currentValues
+                                                                        .join(
+                                                                            '.');
                                                                 controller[index]
                                                                         .value =
-                                                                    TextEditingController
-                                                                        .fromValue(
-                                                                  TextEditingValue(
-                                                                    text: ele,
-                                                                  ),
-                                                                ).value;
+                                                                    TextEditingValue(
+                                                                  text: ele,
+                                                                );
                                                                 setState(() {});
                                                               },
                                                             ))
@@ -1216,6 +1221,7 @@ class _BeneficiaryChecklistPageState
                                 value: controller[index]
                                     .text
                                     .split('.')
+                                    .where((ele) => ele.isNotEmpty)
                                     .contains(e),
                                 onChanged: (value) {
                                   context.read<ServiceBloc>().add(
@@ -1225,13 +1231,17 @@ class _BeneficiaryChecklistPageState
                                         ),
                                       );
                                   final String ele;
-                                  var val = controller[index].text.split('.');
+                                  var val = controller[index]
+                                      .text
+                                      .split('.')
+                                      .where((element) => element.isNotEmpty)
+                                      .toList();
                                   if (val.contains(e)) {
                                     val.remove(e);
-                                    ele = val.join(".");
                                   } else {
-                                    ele = "${controller[index].text}.$e";
+                                    val.add(e);
                                   }
+                                  ele = val.join(".");
                                   controller[index].value =
                                       TextEditingController.fromValue(
                                     TextEditingValue(
