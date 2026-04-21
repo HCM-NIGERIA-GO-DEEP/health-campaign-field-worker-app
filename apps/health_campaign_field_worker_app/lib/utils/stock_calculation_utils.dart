@@ -56,7 +56,8 @@ class StockCalculationUtils {
       // For warehouse managers: match by facilityId (either as receiver or sender)
       if (isDistributor) {
         final matchesReceiver = stock.receiverId == facilityId;
-        if (!matchesReceiver) return false;
+        final matchesSender = stock.senderId == facilityId;
+        if (!matchesReceiver && !matchesSender) return false;
       } else {
         final matchesReceiver = stock.receiverId == facilityId;
         final matchesSender = stock.senderId == facilityId;
