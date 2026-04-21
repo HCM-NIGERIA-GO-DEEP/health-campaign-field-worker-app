@@ -96,10 +96,13 @@ class _BeneficiaryChecklistPageState
           builder: (context, state) {
             state.mapOrNull(
               serviceDefinitionFetch: (value) {
-                final projectName = RegistrationDeliverySingleton().selectedProject?.name;
+                final projectName =
+                    RegistrationDeliverySingleton().selectedProject?.name;
                 selectedServiceDefinition = value.serviceDefinitionList
-                    .where((element) => projectName != null && element.code.toString().contains(
-                        '$projectName.${RegistrationDeliveryEnums.eligibility.toValue()}'))
+                    .where((element) =>
+                        projectName != null &&
+                        element.code.toString().contains(
+                            '$projectName.${RegistrationDeliveryEnums.eligibility.toValue()}'))
                     .toList()
                     .firstOrNull;
 
@@ -440,70 +443,122 @@ class _BeneficiaryChecklistPageState
                                                   (e.code !=
                                                           'ADDITIONAL_SYMPTOMS' ||
                                                       _shouldShowAdditionalSymptomsSection()),
-                                              child: BlocBuilder<ServiceBloc,
-                                                  ServiceState>(
-                                                builder: (context, state) {
-                                                  return Column(
-                                                    children: e.values!
-                                                        .map((e) =>
-                                                            DigitCheckbox(
-                                                              label: localizations.translate(
-                                                                  '${selectedServiceDefinition?.code}.$e'),
-                                                              value: controller[
-                                                                      index]
-                                                                  .text
-                                                                  .split('.')
-                                                                  .contains(e),
-                                                              onChanged:
-                                                                  (value) {
-                                                                context
-                                                                    .read<
-                                                                        ServiceBloc>()
-                                                                    .add(
-                                                                      ServiceSurveyFormEvent(
-                                                                        value: e
-                                                                            .toString(),
-                                                                        submitTriggered:
-                                                                            submitTriggered,
-                                                                      ),
-                                                                    );
-                                                                final currentText =
-                                                                    controller[
-                                                                            index]
-                                                                        .text;
-                                                                final List<String>
-                                                                    currentValues =
-                                                                    currentText
-                                                                            .isEmpty
-                                                                        ? []
-                                                                        : currentText
-                                                                            .split(
-                                                                                '.');
-                                                                if (currentValues
-                                                                    .contains(
-                                                                        e)) {
-                                                                  currentValues
-                                                                      .remove(
-                                                                          e);
-                                                                } else {
-                                                                  currentValues.add(
-                                                                      e.toString());
-                                                                }
-                                                                final ele =
-                                                                    currentValues
-                                                                        .join(
-                                                                            '.');
-                                                                controller[index]
-                                                                        .value =
-                                                                    TextEditingValue(
-                                                                  text: ele,
-                                                                );
-                                                                setState(() {});
-                                                              },
-                                                            ))
-                                                        .toList(),
-                                                  );
+                                              child: FormField<String>(
+                                                autovalidateMode:
+                                                    AutovalidateMode
+                                                        .onUserInteraction,
+                                                validator: (value) {
+                                                  if (_isAttributeRequiredForSubmit(
+                                                          index) &&
+                                                      !_multiValueListHasSelection(
+                                                          index)) {
+                                                    return localizations
+                                                        .translate(
+                                                      i18.common
+                                                          .coreCommonReasonRequired,
+                                                    );
+                                                  }
+
+                                                  return null;
                                                 },
+                                                builder: (field) => BlocBuilder<
+                                                    ServiceBloc, ServiceState>(
+                                                  builder: (context, state) {
+                                                    return Column(
+                                                      children: [
+                                                        ...e.values!
+                                                            .where((val) =>
+                                                                val !=
+                                                                i18.checklist
+                                                                    .notSelectedKey)
+                                                            .map((e) =>
+                                                                DigitCheckbox(
+                                                                  label: localizations
+                                                                      .translate(
+                                                                          '${selectedServiceDefinition?.code}.$e'),
+                                                                  value: controller[
+                                                                          index]
+                                                                      .text
+                                                                      .split(
+                                                                          '.')
+                                                                      .contains(
+                                                                          e),
+                                                                  onChanged:
+                                                                      (value) {
+                                                                    context
+                                                                        .read<
+                                                                            ServiceBloc>()
+                                                                        .add(
+                                                                          ServiceSurveyFormEvent(
+                                                                            value:
+                                                                                e.toString(),
+                                                                            submitTriggered:
+                                                                                submitTriggered,
+                                                                          ),
+                                                                        );
+                                                                    final currentText =
+                                                                        controller[index]
+                                                                            .text;
+                                                                    final List<
+                                                                            String>
+                                                                        currentValues =
+                                                                        currentText.isEmpty
+                                                                            ? []
+                                                                            : currentText.split('.');
+                                                                    if (currentValues
+                                                                        .contains(
+                                                                            e)) {
+                                                                      currentValues
+                                                                          .remove(
+                                                                              e);
+                                                                    } else {
+                                                                      currentValues
+                                                                          .add(e
+                                                                              .toString());
+                                                                    }
+                                                                    final ele =
+                                                                        currentValues
+                                                                            .join('.');
+                                                                    controller[index]
+                                                                            .value =
+                                                                        TextEditingValue(
+                                                                      text: ele,
+                                                                    );
+                                                                    field.didChange(
+                                                                        ele);
+                                                                    setState(
+                                                                        () {});
+                                                                  },
+                                                                ))
+                                                            .toList(),
+                                                        if (field.hasError)
+                                                          Padding(
+                                                            padding:
+                                                                const EdgeInsets
+                                                                    .only(
+                                                                    top:
+                                                                        spacer1),
+                                                            child: Align(
+                                                              alignment: Alignment
+                                                                  .centerLeft,
+                                                              child: Text(
+                                                                field
+                                                                    .errorText!,
+                                                                style: textTheme
+                                                                    .bodyS
+                                                                    .copyWith(
+                                                                  color: theme
+                                                                      .colorTheme
+                                                                      .alert
+                                                                      .error,
+                                                                ),
+                                                              ),
+                                                            ),
+                                                          ),
+                                                      ],
+                                                    );
+                                                  },
+                                                ),
                                               ),
                                             ),
                                             const DigitDivider(),
@@ -1211,48 +1266,78 @@ class _BeneficiaryChecklistPageState
                     .copyWith(color: theme.colorTheme.text.secondary),
                 isRequired: item.required ?? false,
                 capitalizedFirstLetter: false,
-                child: BlocBuilder<ServiceBloc, ServiceState>(
-                  builder: (context, state) {
-                    return Column(
-                      children: item.values!
-                          .map((e) => DigitCheckbox(
-                                label: localizations.translate(
-                                    '${selectedServiceDefinition?.code}.${e}'),
-                                value: controller[index]
-                                    .text
-                                    .split('.')
-                                    .where((ele) => ele.isNotEmpty)
-                                    .contains(e),
-                                onChanged: (value) {
-                                  context.read<ServiceBloc>().add(
-                                        ServiceSurveyFormEvent(
-                                          value: e.toString(),
-                                          submitTriggered: submitTriggered,
-                                        ),
-                                      );
-                                  final String ele;
-                                  var val = controller[index]
-                                      .text
-                                      .split('.')
-                                      .where((element) => element.isNotEmpty)
-                                      .toList();
-                                  if (val.contains(e)) {
-                                    val.remove(e);
-                                  } else {
-                                    val.add(e);
-                                  }
-                                  ele = val.join(".");
-                                  controller[index].value =
-                                      TextEditingController.fromValue(
-                                    TextEditingValue(
-                                      text: ele,
-                                    ),
-                                  ).value;
-                                },
-                              ))
-                          .toList(),
-                    );
+                child: FormField<String>(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  validator: (value) {
+                    if (item.required == true &&
+                        !_multiValueListHasSelection(index)) {
+                      return localizations.translate(
+                        i18.common.coreCommonReasonRequired,
+                      );
+                    }
+
+                    return null;
                   },
+                  builder: (field) => BlocBuilder<ServiceBloc, ServiceState>(
+                    builder: (context, state) {
+                      return Column(
+                        children: [
+                          ...item.values!
+                              .where(
+                                  (val) => val != i18.checklist.notSelectedKey)
+                              .map((e) => DigitCheckbox(
+                                    label: localizations.translate(
+                                        '${selectedServiceDefinition?.code}.$e'),
+                                    value: controller[index]
+                                        .text
+                                        .split('.')
+                                        .where((ele) => ele.isNotEmpty)
+                                        .contains(e),
+                                    onChanged: (value) {
+                                      context.read<ServiceBloc>().add(
+                                            ServiceSurveyFormEvent(
+                                              value: e.toString(),
+                                              submitTriggered: submitTriggered,
+                                            ),
+                                          );
+                                      final currentText =
+                                          controller[index].text;
+                                      final List<String> currentValues =
+                                          currentText.isEmpty
+                                              ? []
+                                              : currentText.split('.');
+                                      if (currentValues.contains(e)) {
+                                        currentValues.remove(e);
+                                      } else {
+                                        currentValues.add(e.toString());
+                                      }
+                                      final ele = currentValues.join('.');
+                                      controller[index].value =
+                                          TextEditingValue(
+                                        text: ele,
+                                      );
+                                      field.didChange(ele);
+                                      setState(() {});
+                                    },
+                                  ))
+                              .toList(),
+                          if (field.hasError)
+                            Padding(
+                              padding: const EdgeInsets.only(top: spacer1),
+                              child: Align(
+                                alignment: Alignment.centerLeft,
+                                child: Text(
+                                  field.errorText!,
+                                  style: textTheme.bodyS.copyWith(
+                                    color: theme.colorTheme.alert.error,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
                 ),
               ),
             ),
@@ -1427,6 +1512,9 @@ class _BeneficiaryChecklistPageState
               auditDetails: AuditDetails(
                 createdBy: RegistrationDeliverySingleton().loggedInUserUuid!,
                 createdTime: DateTime.now().millisecondsSinceEpoch,
+                lastModifiedBy:
+                    RegistrationDeliverySingleton().loggedInUserUuid,
+                lastModifiedTime: DateTime.now().millisecondsSinceEpoch,
               ),
               clientAuditDetails: ClientAuditDetails(
                 createdBy: RegistrationDeliverySingleton().loggedInUserUuid!,
@@ -1452,7 +1540,8 @@ class _BeneficiaryChecklistPageState
       if (!navigatorContext.mounted) return;
       final individual = _resolveScreeningIndividual(navigatorContext)!;
       final pbId = _resolveProjectBeneficiaryClientRefId(navigatorContext)!;
-      final referred = await Navigator.of(navigatorContext, rootNavigator: true).push<bool>(
+      final referred =
+          await Navigator.of(navigatorContext, rootNavigator: true).push<bool>(
         MaterialPageRoute<bool>(
           builder: (_) {
             final tbChild = TbReferBeneficiaryPage(
@@ -1509,16 +1598,24 @@ class _BeneficiaryChecklistPageState
                   clientReferenceId: taskRef,
                   tenantId: RegistrationDeliverySingleton().tenantId,
                   rowVersion: 1,
+                  createdBy: RegistrationDeliverySingleton().loggedInUserUuid!,
+                  createdDate: DateTime.now().millisecondsSinceEpoch,
                   auditDetails: AuditDetails(
-                    createdBy: RegistrationDeliverySingleton().loggedInUserUuid!,
+                    createdBy:
+                        RegistrationDeliverySingleton().loggedInUserUuid!,
                     createdTime: DateTime.now().millisecondsSinceEpoch,
+                    lastModifiedBy:
+                        RegistrationDeliverySingleton().loggedInUserUuid,
+                    lastModifiedTime: DateTime.now().millisecondsSinceEpoch,
                   ),
                   projectId: RegistrationDeliverySingleton().projectId,
                   status: "INELIGIBLE",
                   clientAuditDetails: ClientAuditDetails(
-                    createdBy: RegistrationDeliverySingleton().loggedInUserUuid!,
+                    createdBy:
+                        RegistrationDeliverySingleton().loggedInUserUuid!,
                     createdTime: DateTime.now().millisecondsSinceEpoch,
-                    lastModifiedBy: RegistrationDeliverySingleton().loggedInUserUuid!,
+                    lastModifiedBy:
+                        RegistrationDeliverySingleton().loggedInUserUuid!,
                     lastModifiedTime: DateTime.now().millisecondsSinceEpoch,
                   ),
                   additionalFields: TaskAdditionalFields(
@@ -1540,7 +1637,7 @@ class _BeneficiaryChecklistPageState
                       ),
                     ],
                   ),
-                  address: individual.address?.first.copyWith(
+                  address: individual.address?.firstOrNull?.copyWith(
                     relatedClientReferenceId: taskRef,
                     id: null,
                   ),
@@ -1550,12 +1647,12 @@ class _BeneficiaryChecklistPageState
               ),
             );
         navigatorContext.read<HouseholdOverviewBloc>().add(
-          HouseholdOverviewReloadEvent(
-            projectId: RegistrationDeliverySingleton().projectId!,
-            projectBeneficiaryType:
-                RegistrationDeliverySingleton().beneficiaryType!,
-          ),
-        );
+              HouseholdOverviewReloadEvent(
+                projectId: RegistrationDeliverySingleton().projectId!,
+                projectBeneficiaryType:
+                    RegistrationDeliverySingleton().beneficiaryType!,
+              ),
+            );
         router.push(HouseholdAcknowledgementRoute(enableViewHousehold: true));
       }
       return;

@@ -186,9 +186,13 @@ class _TbReferBeneficiaryPageState
                 clientReferenceId: taskRef,
                 tenantId: envConfig.variables.tenantId,
                 rowVersion: 1,
+                createdBy: context.loggedInUserUuid,
+                createdDate: DateTime.now().millisecondsSinceEpoch,
                 auditDetails: AuditDetails(
                   createdBy: context.loggedInUserUuid,
                   createdTime: DateTime.now().millisecondsSinceEpoch,
+                  lastModifiedBy: context.loggedInUserUuid,
+                  lastModifiedTime: DateTime.now().millisecondsSinceEpoch,
                 ),
                 projectId: context.projectId,
                 status: Status.beneficiaryReferred.toValue(),
@@ -220,7 +224,7 @@ class _TbReferBeneficiaryPageState
                     ),
                   ],
                 ),
-                address: widget.individual.address?.first.copyWith(
+                address: widget.individual.address?.firstOrNull?.copyWith(
                   relatedClientReferenceId: taskRef,
                   id: null,
                 ),
