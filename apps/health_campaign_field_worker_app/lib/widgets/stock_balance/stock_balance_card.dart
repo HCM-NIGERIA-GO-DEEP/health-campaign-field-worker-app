@@ -226,16 +226,16 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
           isDistributor ? context.loggedInUserUuid : facilityId;
       final balances =
           StockCalculationUtils.calculateEffectiveStockInHandForProducts(
-        stockList: allStocks,
-        tasks: tasks,
-        facilityId: effectiveFacilityId,
-        productIds: productIds,
-        loggedInUserUuid: context.loggedInUserUuid,
-        bednetStatusKey: kBednetTaskAdministrationStatusKey,
-        bednetSuccessStatus: kBednetTaskAdministrationSuccessStatus,
-      );
+              stockList: allStocks,
+              tasks: tasks,
+              facilityId: effectiveFacilityId,
+              productIds: productIds,
+              loggedInUserUuid: context.loggedInUserUuid,
+              bednetStatusKey: kBednetTaskAdministrationStatusKey,
+              bednetSuccessStatus: kBednetTaskAdministrationSuccessStatus,
+              isDistributor: isDistributor);
       if (!mounted) return;
-      
+
       // Calculate total stock across all products
       final totalBalance = balances.values.fold(0.0, (sum, val) => sum + val);
       // Update singleton for use in other pages
