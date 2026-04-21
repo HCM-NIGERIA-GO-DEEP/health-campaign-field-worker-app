@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../../blocs/registration_deliver/app_localization.dart';
+import '../../../router/app_router.dart';
 import '../../../blocs/registration_deliver/delivery_intervention/deliver_intervention.dart';
 import '../../../blocs/registration_deliver/household_overview/household_overview.dart';
 import '../../../blocs/registration_deliver/search_households/search_households.dart';
@@ -281,10 +282,39 @@ class _TbReferBeneficiaryPageState
         }
 
         return Scaffold(
+          appBar: AppBar(
+            backgroundColor: theme.colorTheme.primary.primary2,
+            foregroundColor: theme.colorTheme.paper.primary,
+            actions: [
+              BlocBuilder<BoundaryBloc, BoundaryState>(
+                builder: (context, state) {
+                  final selectedBoundary = context.boundaryOrNull;
+
+                  return selectedBoundary != null
+                      ? DigitButton(
+                          label: localizations
+                              .translate(selectedBoundary.code ?? ''),
+                          suffixIcon: Icons.arrow_drop_down,
+                          type: DigitButtonType.tertiary,
+                          size: DigitButtonSize.large,
+                          onPressed: () =>
+                              context.router.push(CurrentBoundaryRoute()),
+                          iconColor: theme.colorTheme.generic.background,
+                          textColor: theme.colorTheme.generic.background,
+                        )
+                      : const SizedBox.shrink();
+                },
+              ),
+            ],
+          ),
           body: ScrollableContent(
-            header: const Column(
+            header: Column(
               children: [
-                CustomBackNavigationHelpHeaderWidget(showHelp: false),
+                BackNavigationHelpHeaderWidget(
+                  showHelp: false,
+                  handleBack: () => Navigator.of(context).pop(),
+                ),
+                const SizedBox(height: spacer2),
               ],
             ),
             footer: DigitCard(

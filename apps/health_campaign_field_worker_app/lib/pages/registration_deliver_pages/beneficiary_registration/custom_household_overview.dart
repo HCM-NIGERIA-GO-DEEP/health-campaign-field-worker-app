@@ -170,7 +170,7 @@ class _CustomHouseholdOverviewPageState
                               },
                               label: localizations.translate(
                                 i18.householdOverView
-                                    .householdOverViewAddStudentText,
+                                    .householdOverViewAddMemberText,
                               ),
                               type: DigitButtonType.primary,
                               size: DigitButtonSize.large,

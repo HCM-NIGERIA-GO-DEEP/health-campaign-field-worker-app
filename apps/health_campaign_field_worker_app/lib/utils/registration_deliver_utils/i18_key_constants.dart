@@ -602,6 +602,8 @@ class HouseholdOverView {
       'HOUSEHOLD_OVER_VIEW__ADD_ACTION_TEXT';
   String get householdOverViewAddStudentText =>
       'HOUSEHOLD_OVER_VIEW_ADD_STUDENT_TEXT';
+  String get householdOverViewAddMemberText =>
+      'HOUSEHOLD_OVER_VIEW_ADD_MEMBER_TEXT';
 
   /// Shown when [children under 5] members already match the declared count.
   String get addStudentChildLimitReached =>
