@@ -99,7 +99,7 @@ class HomePage extends LocalizedStatefulWidget {
 }
 
 class _HomePageState extends LocalizedState<HomePage> {
-  bool skipProgressBar = true;
+  bool skipProgressBar = false;
   final storage = const FlutterSecureStorage();
   late StreamSubscription<List<ConnectivityResult>> subscription;
   bool isTriggerLocalisation = true;

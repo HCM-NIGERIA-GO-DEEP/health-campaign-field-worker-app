@@ -150,7 +150,30 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                   appBar: AppBar(
                     backgroundColor: theme.colorTheme.primary.primary2,
                     foregroundColor: theme.colorTheme.paper.primary,
-                    actions: null,
+                    actions: [
+                      if (showDrawer)
+                        BlocBuilder<BoundaryBloc, BoundaryState>(
+                          builder: (context, state) {
+                            final selectedBoundary = context.boundaryOrNull;
+
+                            return selectedBoundary != null
+                                ? DigitButton(
+                                    label: AppLocalizations.of(context)
+                                        .translate(selectedBoundary.code ?? ''),
+                                    suffixIcon: Icons.arrow_drop_down,
+                                    type: DigitButtonType.tertiary,
+                                    size: DigitButtonSize.large,
+                                    onPressed: () => context.router
+                                        .push(CurrentBoundaryRoute()),
+                                    iconColor:
+                                        theme.colorTheme.generic.background,
+                                    textColor:
+                                        theme.colorTheme.generic.background,
+                                  )
+                                : const SizedBox.shrink();
+                          },
+                        ),
+                    ],
                   ),
                   drawer: showDrawer ? drawerWidget(context) : null,
                   body: MultiBlocProvider(
