@@ -163,8 +163,13 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                                     suffixIcon: Icons.arrow_drop_down,
                                     type: DigitButtonType.tertiary,
                                     size: DigitButtonSize.large,
-                                    onPressed: () => context.router
-                                        .push(CurrentBoundaryRoute()),
+                                    onPressed: () {
+                                      if (context.router.topRoute.name !=
+                                          CurrentBoundaryRoute.name) {
+                                        context.router
+                                            .push(CurrentBoundaryRoute());
+                                      }
+                                    },
                                     iconColor:
                                         theme.colorTheme.generic.background,
                                     textColor:

@@ -2,6 +2,7 @@ import 'dart:math' show max;
 
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_data_model/models/entities/household_type.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/atoms/pop_up_card.dart';
@@ -317,8 +318,6 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                   var fieldMap = {
                                     for (var f in existingFields) f.key: f
                                   };
-                                  // Do not add placeholder e-Token with an empty value: the
-                                  // service validates each field value length as 1–10000.
                                   fieldMap[
                                       AdditionalFieldsType.latitude
                                           .toValue()] = AdditionalField(
@@ -359,6 +358,7 @@ class HouseHoldDetailsPageState extends LocalizedState<HouseHoldDetailsPage> {
                                     latitude: addressModel?.latitude,
                                     longitude: addressModel?.longitude,
                                     additionalFields: newAdditionalFields,
+                                    householdType: HouseholdType.family,
                                   );
 
                                   final individual = IndividualModel(

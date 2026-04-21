@@ -522,10 +522,8 @@ class _HouseholdOverviewPageState
                                                     localizations.translate(
                                                       i18.deliverIntervention
                                                           .memberCountText,
-                                                    ): state
-                                                            .householdMemberWrapper
-                                                            .household
-                                                            ?.memberCount ??
+                                                    ): state.householdMemberWrapper
+                                                            .members?.length ??
                                                         state
                                                             .householdMemberWrapper
                                                             .household

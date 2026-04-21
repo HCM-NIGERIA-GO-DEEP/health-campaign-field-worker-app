@@ -128,17 +128,17 @@ class _CustomSummaryReportState
                                   title: 'Household Distribution Report',
                                   data: DigitGridData(
                                     columns: [
-                                      DigitGridColumn(
+                                      const DigitGridColumn(
                                         label: 'Date',
                                         key: _dateKey,
                                         width: 120,
                                       ),
-                                      DigitGridColumn(
+                                      const DigitGridColumn(
                                         label: 'No. of household visited',
                                         key: _householdVisitedKey,
                                         width: 180,
                                       ),
-                                      DigitGridColumn(
+                                      const DigitGridColumn(
                                         label: 'No. of Bednet delivered',
                                         key: _householdBednetDeliveredKey,
                                         width: 180,

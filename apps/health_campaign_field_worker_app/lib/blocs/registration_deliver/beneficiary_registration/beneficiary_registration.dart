@@ -239,18 +239,7 @@ class BeneficiaryRegistrationBloc
             final householdToCreate = value.isHeadOfHousehold &&
                     headGiven != null &&
                     headGiven.isNotEmpty
-                ? household.copyWith(
-                    additionalFields: HouseholdAdditionalFields(
-                      version: household.additionalFields?.version ?? 1,
-                      fields: [
-                        ...(household.additionalFields?.fields ?? []),
-                        AdditionalField(
-                          'schoolHead',
-                          headGiven,
-                        ),
-                      ],
-                    ),
-                  )
+                ? householdWithBednetSchoolHeadName(household, headGiven)
                 : household;
 
             await householdRepository.create(
@@ -593,6 +582,17 @@ class BeneficiaryRegistrationBloc
       editIndividual: (value) async {
         emit(value.copyWith(loading: true));
         try {
+          final members = await householdMemberRepository.search(
+            HouseholdMemberSearchModel(
+              householdClientReferenceId: [
+                event.householdModel.clientReferenceId,
+              ],
+              individualClientReferenceId: [
+                event.model.clientReferenceId,
+              ],
+            ),
+          );
+
           final individual = event.model.copyWith(
             address: [
               event.addressModel.copyWith(
@@ -600,6 +600,25 @@ class BeneficiaryRegistrationBloc
               ),
             ],
           );
+
+          if (members.isNotEmpty && members.first.isHeadOfHousehold) {
+            final headGiven = event.model.name?.givenName?.trim();
+            if (headGiven != null && headGiven.isNotEmpty) {
+              final householdToUpdate = householdWithBednetSchoolHeadName(
+                event.householdModel,
+                headGiven,
+              );
+              final existingHousehold =
+                  (await householdRepository.search(HouseholdSearchModel(
+                clientReferenceId: [householdToUpdate.clientReferenceId],
+              )))
+                      .firstOrNull;
+              await householdRepository.update(householdToUpdate.copyWith(
+                id: existingHousehold?.id,
+                rowVersion: existingHousehold?.rowVersion ?? 1,
+              ));
+            }
+          }
 
           final projectBeneficiary = await projectBeneficiaryRepository.search(
             ProjectBeneficiarySearchModel(

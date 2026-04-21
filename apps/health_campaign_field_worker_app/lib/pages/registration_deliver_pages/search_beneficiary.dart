@@ -248,11 +248,16 @@ class _SearchBeneficiaryPageState
               //   child:
               BlocBuilder<LocationBloc, LocationState>(
                 builder: (context, locationState) {
+                  final filteredMembers = searchHouseholdsState.householdMembers
+                      .where((element) =>
+                          element.household != null &&
+                          !isSchoolHousehold(element.household!))
+                      .toList();
+
                   return SliverList(
                     delegate: SliverChildBuilderDelegate(
                       (ctx, index) {
-                        final i = searchHouseholdsState.householdMembers
-                            .elementAt(index);
+                        final i = filteredMembers.elementAt(index);
                         final distance = calculateDistance(
                           Coordinate(
                             lat,
@@ -320,7 +325,7 @@ class _SearchBeneficiaryPageState
                           ),
                         );
                       },
-                      childCount: searchHouseholdsState.householdMembers.length,
+                      childCount: filteredMembers.length,
                     ),
                   );
                 },
@@ -506,6 +511,26 @@ class _SearchBeneficiaryPageState
     );
   }
 
+  bool isSchoolHousehold(HouseholdModel household) {
+    final fields =
+        household.additionalFields?.fields ?? const <AdditionalField>[];
+    final map = <String, Object?>{
+      for (final field in fields)
+        field.key.toLowerCase(): field.value as Object?,
+    };
+    final typeField = map['type']?.toString().toLowerCase();
+    if (typeField == 'school') return true;
+    if (map['schoolname'] != null &&
+        map['schoolname'].toString().trim().isNotEmpty) {
+      return true;
+    }
+    if (map['schoolid'] != null &&
+        map['schoolid'].toString().trim().isNotEmpty) {
+      return true;
+    }
+    return false;
+  }
+
   void triggerGlobalSearchEvent({bool isPagination = false}) {
     if (!isPagination) {
       blocWrapper.clearEvent();
@@ -533,7 +558,8 @@ class _SearchBeneficiaryPageState
           limit: isPagination
               ? blocWrapper.individualGlobalSearchBloc.state.limit
               : limit,
-          householdType: RegistrationDeliverySingleton().householdType,
+          householdType: RegistrationDeliverySingleton().householdType ??
+              HouseholdType.family,
         )));
       }
     } else {
@@ -558,7 +584,8 @@ class _SearchBeneficiaryPageState
           limit: isPagination
               ? blocWrapper.houseHoldGlobalSearchBloc.state.limit
               : limit,
-          householdType: RegistrationDeliverySingleton().householdType,
+          householdType: RegistrationDeliverySingleton().householdType ??
+              HouseholdType.family,
         )));
       }
     }
