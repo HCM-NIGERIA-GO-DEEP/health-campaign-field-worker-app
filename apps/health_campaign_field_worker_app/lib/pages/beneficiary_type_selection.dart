@@ -31,67 +31,74 @@ class _BeneficiaryTypeSelectionPageState
       (role) => role.code == RolesType.communityDistributor.toValue(),
     );
 
-    return Scaffold(
-      body: ScrollableContent(
-        enableFixedDigitButton: false,
-        header: const BackNavigationHelpHeaderWidget(showHelp: false),
-        slivers: [
-          SliverToBoxAdapter(
-            child: Padding(
-              padding: const EdgeInsets.all(spacer2),
-              child: DigitCard(
-                children: [
-                  Text(
-                    'Choose your beneficiary type',
-                    style: textTheme.headingXl.copyWith(
-                      color: const Color(0xFF005A7A),
+    return PopScope(
+      canPop: false,
+      onPopInvoked: (didPop) {
+        if (didPop) return;
+        context.router.replaceAll([HomeRoute()]);
+      },
+      child: Scaffold(
+        body: ScrollableContent(
+          enableFixedDigitButton: false,
+          header: const BackNavigationHelpHeaderWidget(showHelp: false),
+          slivers: [
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.all(spacer2),
+                child: DigitCard(
+                  children: [
+                    Text(
+                      'Choose your beneficiary type',
+                      style: textTheme.headingXl.copyWith(
+                        color: const Color(0xFF005A7A),
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: spacer3),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _BeneficiaryTypeCard(
-                          icon: Icons.storefront,
-                          label: 'School',
-                          enabled: !isCommunityDistributor,
-                          onTap: () => _checkStockAndProceed(
-                            context,
-                            onSuccess: () =>
-                                context.router.push(const SelectSchoolRoute()),
-                            descriptionText:
-                                AppLocalizations.of(context).translate(
-                              i18.beneficiaryDetails
-                                  .insufficientStockDescription,
+                    const SizedBox(height: spacer3),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _BeneficiaryTypeCard(
+                            icon: Icons.storefront,
+                            label: 'School',
+                            enabled: !isCommunityDistributor,
+                            onTap: () => _checkStockAndProceed(
+                              context,
+                              onSuccess: () => context.router
+                                  .push(const SelectSchoolRoute()),
+                              descriptionText:
+                                  AppLocalizations.of(context).translate(
+                                i18.beneficiaryDetails
+                                    .insufficientStockDescription,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: spacer2),
-                      Expanded(
-                        child: _BeneficiaryTypeCard(
-                          icon: Icons.house,
-                          label: 'Household',
-                          enabled: isCommunityDistributor,
-                          onTap: () => _checkStockAndProceed(
-                            context,
-                            onSuccess: () =>
-                                context.router.push(SearchBeneficiaryRoute()),
-                            descriptionText:
-                                AppLocalizations.of(context).translate(
-                              i18.beneficiaryDetails
-                                  .insufficientStockDescription,
+                        const SizedBox(width: spacer2),
+                        Expanded(
+                          child: _BeneficiaryTypeCard(
+                            icon: Icons.house,
+                            label: 'Household',
+                            enabled: isCommunityDistributor,
+                            onTap: () => _checkStockAndProceed(
+                              context,
+                              onSuccess: () =>
+                                  context.router.push(SearchBeneficiaryRoute()),
+                              descriptionText:
+                                  AppLocalizations.of(context).translate(
+                                i18.beneficiaryDetails
+                                    .insufficientStockDescription,
+                              ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -127,6 +134,7 @@ class _BeneficiaryTypeSelectionPageState
                   popupContext,
                   rootNavigator: true,
                 ).pop();
+                context.router.replaceAll([HomeRoute()]);
               },
               type: DigitButtonType.primary,
               size: DigitButtonSize.large,

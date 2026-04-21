@@ -812,6 +812,7 @@ class DeliverInterventionPageState
       ),
       tenantId: RegistrationDeliverySingleton().tenantId,
       rowVersion: 1,
+      createdBy: RegistrationDeliverySingleton().loggedInUserUuid,
       auditDetails: AuditDetails(
         createdBy: RegistrationDeliverySingleton().loggedInUserUuid!,
         createdTime: context.millisecondsSinceEpoch(),
@@ -896,6 +897,14 @@ class DeliverInterventionPageState
             AdditionalFieldsType.deliveryStrategy.toValue(),
             deliveryStrategy,
           ),
+          AdditionalField(
+            kBednetTaskAdministrationStatusKey,
+            kBednetTaskAdministrationSuccessStatus,
+          ),
+          AdditionalField(
+            kBednetTaskDistributionDateKey,
+            DateTime.now().millisecondsSinceEpoch,
+          ),
           if (latitude != null)
             AdditionalField(
               AdditionalFieldsType.latitude.toValue(),
@@ -912,25 +921,29 @@ class DeliverInterventionPageState
               AdditionalFieldsType.deliveryComment.toValue(),
               deliveryComment,
             ),
-          AdditionalField(AdditionalFieldsType.isSchool.toValue(), household?.isSchoolHousehold ?? false),
-          if (household != null)
+          AdditionalField(
+            AdditionalFieldsType.isSchool.toValue(),
+            household?.isSchoolHousehold ?? false,
+          ),
+          if (household != null) ...[
             AdditionalField(
               'householdClientReferenceId',
               household.clientReferenceId,
             ),
             AdditionalField(
               'schoolId',
-              household!.additionalFields!.fields
-                  .firstWhere((e) => e.key == 'schoolId')
-                  .value
-                  .toString(),
+              household.additionalFields?.fields
+                      .firstWhereOrNull((e) => e.key == 'schoolId')
+                      ?.value
+                      ?.toString() ??
+                  '',
             ),
-          AdditionalField('bednetCount', bednetCount),
-          if (household != null)
             AdditionalField(
               'schoolName',
               household.bednetDisplayName,
             ),
+          ],
+          AdditionalField('bednetCount', bednetCount),
         ],
       ),
     );

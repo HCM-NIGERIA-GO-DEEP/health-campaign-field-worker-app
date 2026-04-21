@@ -163,6 +163,8 @@ class Constants {
     'hcm-delivery',
     'hcm-closedhousehold',
     'hcm-reports',
+    'hcm-checklist',
+    'hcm-bednet',
   ];
   static const String surveyFormPreviewDateFormat = 'dd MMMM yyyy';
   static const String defaultDateFormat = 'dd/MM/yyyy';
