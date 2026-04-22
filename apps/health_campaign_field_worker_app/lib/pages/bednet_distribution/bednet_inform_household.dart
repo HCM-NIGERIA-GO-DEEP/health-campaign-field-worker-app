@@ -324,16 +324,18 @@ class _BednetInformHouseholdPageState
     // Submit dialog already requires boundary; keep guard if singleton changes.
     if (projectId == null || boundary == null) return;
 
-    final existing = (await taskRepo.search(
+    final tasks = await taskRepo.search(
       TaskSearchModel(
         projectId: projectId,
         projectBeneficiaryClientReferenceId: [
           projectBeneficiary.clientReferenceId,
         ],
       ),
-    )).firstOrNull;
+    );
 
-    if (existing?.status == Status.administeredSuccess.toValue()) {
+    if (tasks.any(
+      (element) => element.status == Status.administeredSuccess.toValue(),
+    )) {
       return;
     }
 
@@ -349,7 +351,7 @@ class _BednetInformHouseholdPageState
         0.0;
 
     final baseAddr = head.address?.firstOrNull ?? household.address;
-    final clientRef = existing?.clientReferenceId ?? IdGen.i.identifier;
+    final clientRef = IdGen.i.identifier;
 
     final fields = <AdditionalField>[
       const AdditionalField(
@@ -391,53 +393,20 @@ class _BednetInformHouseholdPageState
             quantity: widget.itnForDelivery.toString(),
             isDelivered: true,
             tenantId: tenantId,
-            taskId: existing?.id,
-            rowVersion: existing?.rowVersion ?? 1,
+            rowVersion: 1,
             auditDetails: AuditDetails(
+              lastModifiedBy: userUuid,
+              lastModifiedTime: now,
               createdBy: userUuid,
               createdTime: now,
             ),
             clientAuditDetails: ClientAuditDetails(
+              lastModifiedBy: userUuid,
+              lastModifiedTime: now,
               createdBy: userUuid,
               createdTime: now,
             ),
           );
-
-    final TaskModel task;
-    if (existing != null) {
-      task = existing.copyWith(
-        status: Status.administeredSuccess.toValue(),
-        additionalFields: TaskAdditionalFields(
-          version: existing.additionalFields?.version ?? 1,
-          fields: fields,
-        ),
-        address: address,
-        resources: resource == null ? null : [resource],
-      );
-    } else {
-      task = TaskModel(
-        projectBeneficiaryClientReferenceId:
-            projectBeneficiary.clientReferenceId,
-        clientReferenceId: clientRef,
-        tenantId: tenantId,
-        rowVersion: 1,
-        auditDetails: AuditDetails(
-          createdBy: userUuid,
-          createdTime: now,
-        ),
-        clientAuditDetails: ClientAuditDetails(
-          createdBy: userUuid,
-          createdTime: now,
-        ),
-        projectId: projectId,
-        createdBy: userUuid,
-        status: Status.administeredSuccess.toValue(),
-        createdDate: now,
-        address: address,
-        additionalFields: TaskAdditionalFields(version: 1, fields: fields),
-        resources: resource == null ? null : [resource],
-      );
-    }
 
     final code = boundary.code;
     final name = boundary.name;
@@ -445,17 +414,33 @@ class _BednetInformHouseholdPageState
         ? null
         : LocalityModel(code: code, name: name);
 
-    if (existing != null) {
-      await taskRepo.update(task);
-    } else {
-      await taskRepo.create(
-        task.copyWith(
-          address: task.address?.copyWith(
-            locality: localityModel,
-          ),
-        ),
-      );
-    }
+    final task = TaskModel(
+      projectBeneficiaryClientReferenceId: projectBeneficiary.clientReferenceId,
+      clientReferenceId: clientRef,
+      tenantId: tenantId,
+      rowVersion: 1,
+      auditDetails: AuditDetails(
+        lastModifiedBy: userUuid,
+        lastModifiedTime: now,
+        createdBy: userUuid,
+        createdTime: now,
+      ),
+      clientAuditDetails: ClientAuditDetails(
+        lastModifiedBy: userUuid,
+        lastModifiedTime: now,
+        createdBy: userUuid,
+        createdTime: now,
+      ),
+      projectId: projectId,
+      createdBy: userUuid,
+      status: Status.administeredSuccess.toValue(),
+      createdDate: now,
+      address: address.copyWith(locality: localityModel),
+      additionalFields: TaskAdditionalFields(version: 1, fields: fields),
+      resources: resource == null ? null : [resource],
+    );
+
+    await taskRepo.create(task);
     
     await _refreshStockInHandAfterTaskSave(context);
   }

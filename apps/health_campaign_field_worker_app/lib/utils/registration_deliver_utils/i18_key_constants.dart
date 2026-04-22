@@ -339,6 +339,8 @@ class IndividualDetails {
 
   String get checkboxLabelText => 'HEAD_OF_HOUSEHOLD_LABEL_TEXT';
 
+  String get checkboxSchoolHeadLabelText => 'HEAD_OF_SCHOOL_LABEL_TEXT';
+
   String get idTypeLabelText => 'ID_TYPE_LABEL_TEXT';
 
   String get idNumberLabelText => 'ID_NUMBER_LABEL_TEXT';

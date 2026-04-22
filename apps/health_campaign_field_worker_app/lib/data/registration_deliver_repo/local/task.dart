@@ -31,7 +31,7 @@ class TaskLocalRepository extends LocalRepository<TaskModel, TaskSearchModel> {
         ),
       ])
         ..where(
-          buildOr([
+          buildAnd([
             if (query.projectId != null)
               sql.task.projectId.equals(
                 query.projectId!,
@@ -211,6 +211,10 @@ class TaskLocalRepository extends LocalRepository<TaskModel, TaskSearchModel> {
 
       final results = await (selectQuery
             ..where(buildAnd([
+              if (query.projectId != null)
+                sql.task.projectId.equals(
+                  query.projectId!,
+                ),
               if (query.clientReferenceId != null)
                 sql.task.clientReferenceId.isIn(
                   query.clientReferenceId!,

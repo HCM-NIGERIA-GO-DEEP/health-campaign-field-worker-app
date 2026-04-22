@@ -30,10 +30,6 @@ class BeneficiaryAcknowledgementPage extends LocalizedStatefulWidget {
 
 class BeneficiaryAcknowledgementPageState
     extends LocalizedState<BeneficiaryAcknowledgementPage> {
-  void _popOverviewStackToRoot(BuildContext context) {
-    final parent = context.router.parent() as StackRouter;
-    parent.popUntilRoot();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -54,23 +50,29 @@ class BeneficiaryAcknowledgementPageState
                 actions: [
                   DigitButton(
                     label: 'View School Details',
-                    onPressed: () {
+                    onPressed: () async {
                       context
                           .read<SearchHouseholdsBloc>()
                           .add(const SearchHouseholdsEvent.clear());
-                      _popOverviewStackToRoot(context);
-                      context.router.push(const SchoolDetailsRoute());
+                      await context.router.navigate(
+                        BednetHouseholdOverviewWrapperRoute(
+                          children: [
+                            const SchoolDetailsRoute(),
+                          ],
+                        ),
+                      );
                     },
                     type: DigitButtonType.primary,
                     size: DigitButtonSize.large,
                   ),
                   DigitButton(
                     label: 'Back to School Selection',
-                    onPressed: () {
+                    onPressed: () async {
                       context
                           .read<SearchHouseholdsBloc>()
                           .add(const SearchHouseholdsEvent.clear());
-                      _popOverviewStackToRoot(context);
+                      final parent = context.router.parent() as StackRouter;
+                      parent.popUntilRoot();
                       context.router.push(const SelectSchoolRoute());
                     },
                     type: DigitButtonType.secondary,

@@ -150,13 +150,13 @@ class AppRouter extends _$AppRouter {
               path: 'search-beneficiary',
             ),
             AutoRoute(
-              page: SchoolDetailsRoute.page,
-              path: 'school-details',
-            ),
-            AutoRoute(
               page: BednetHouseholdOverviewWrapperRoute.page,
               path: 'overview',
               children: [
+                AutoRoute(
+                  page: SchoolDetailsRoute.page,
+                  path: 'details',
+                ),
                 AutoRoute(
                   page: HouseholdOverviewRoute.page,
                   path: '',
@@ -231,25 +231,7 @@ class AppRouter extends _$AppRouter {
           path: 'select-project-facilities',
         ),
 
-        // AutoRoute(
-        //   page: BednetDistributionWrapperRoute.page,
-        //   path: 'bednet-distribution',
-        //   children: [
-        //     AutoRoute(
-        //       page: SelectSchoolRoute.page,
-        //       path: '',
-        //       initial: true,
-        //     ),
-        //     AutoRoute(
-        //       page: SchoolDetailsRoute.page,
-        //       path: 'school-details',
-        //     ),
-        //     AutoRoute(
-        //       page: BednetDistributionSuccessRoute.page,
-        //       path: 'success',
-        //     ),
-        //   ],
-        // ),
+
 
         AutoRoute(
           page: CustomSummaryReportRoute.page,

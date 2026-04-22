@@ -26,7 +26,9 @@ class SelectSchoolPage extends StatelessWidget {
           current.error == null,
       listener: (context, state) {
         if (!context.mounted) return;
-        context.router.push(const SchoolDetailsRoute());
+        context.router.push(BednetHouseholdOverviewWrapperRoute(
+          children: [const SchoolDetailsRoute()],
+        ));
       },
       child: BlocBuilder<BednetDistributionBloc, BednetDistributionState>(
         builder: (context, state) {
