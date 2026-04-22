@@ -477,13 +477,13 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
         }
       } else if (isCommunityDistributor) {
         if (isToField) {
-          usage = Constants.healthFacility;
+          usage = Constants.dhFacility;
         } else {
           usage = "None";
         }
       } else if (isDistributor) {
         if (isToField) {
-          usage = Constants.dhFacility;
+          usage = Constants.healthFacility;
         } else {
           usage = "None";
         }

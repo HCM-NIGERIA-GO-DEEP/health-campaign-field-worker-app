@@ -8,6 +8,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // import 'package:shared_preferences/shared_preferences.dart';
 
+import '../widgets/task_functions.dart';
+
 /// Configuration for a module's flow navigation
 class FlowModuleConfig {
   /// The key used to retrieve schema from app_config_schemas (e.g., 'COMPLAINTS', 'CLOSEHOUSEHOLD')
@@ -57,6 +59,8 @@ class FlowNavigationUtils {
 
       // Initialize widget registry
       WidgetRegistry.initialize();
+      // Register app-specific fn:* helpers used in json flows
+      registerTaskFunctions();
 
       // Get schema from shared preferences
       final prefs = await SharedPreferences.getInstance();
