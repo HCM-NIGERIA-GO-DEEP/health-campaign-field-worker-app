@@ -1,8 +1,9 @@
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:digit_data_model/data/repositories/package_repository/local/project_beneficiary.dart';
+import '../../data/registration_deliver_repo/local/task.dart';
 import 'package:digit_data_model/data_model.dart';
+import '../../models/registration_deliver_model/entities/status.dart';
 import 'package:digit_ui_components/theme/spacers.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
@@ -29,10 +30,13 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
 
   @override
   void didChangeDependencies() {
-    final repository = context.read<
-            LocalRepository<ProjectBeneficiaryModel,
-                ProjectBeneficiarySearchModel>>()
-        as ProjectBeneficiaryLocalRepository;
+    // final repository = context.read<
+    //         LocalRepository<ProjectBeneficiaryModel,
+    //             ProjectBeneficiarySearchModel>>()
+    //     as ProjectBeneficiaryLocalRepository;
+    final repository =
+        context.read<LocalRepository<TaskModel, TaskSearchModel>>()
+            as TaskLocalRepository;
 
     final now = DateTime.now();
     final gte = DateTime(
@@ -52,17 +56,25 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
     );
 
     repository.listenToChanges(
-      query: ProjectBeneficiarySearchModel(
-        projectId: [context.projectId.toString()],
+      query: TaskSearchModel(
+        projectId: context.projectId.toString(),
       ),
       listener: (data) {
         if (mounted) {
           setState(() {
             current = data
                 .where((element) =>
-                    element.dateOfRegistrationTime.isAfter(gte) &&
+                    (element.clientAuditDetails?.createdTime != null &&
+                        DateTime.fromMillisecondsSinceEpoch(
+                          element.clientAuditDetails!.createdTime,
+                        ).isAfter(gte) &&
+                        DateTime.fromMillisecondsSinceEpoch(
+                          element.clientAuditDetails!.createdTime,
+                        ).isBefore(lte)) &&
                     (element.isDeleted == false || element.isDeleted == null) &&
-                    element.dateOfRegistrationTime.isBefore(lte))
+                    element.status == Status.administeredSuccess.toValue() &&
+                    element.createdBy ==
+                        RegistrationDeliverySingleton().loggedInUserUuid)
                 .length;
           });
         }

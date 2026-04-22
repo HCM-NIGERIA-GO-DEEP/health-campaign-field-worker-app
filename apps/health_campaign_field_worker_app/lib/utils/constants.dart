@@ -11,7 +11,7 @@ import 'package:digit_data_model/data/repositories/package_repository/local/refe
 import 'package:digit_data_model/data/repositories/package_repository/local/side_effect.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/stock.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/stock_reconciliation.dart';
-import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
+import '../data/registration_deliver_repo/local/task.dart';
 import 'package:digit_data_model/data/repositories/package_repository/oplog/oplog.dart';
 import 'package:digit_data_model/data/repositories/package_repository/remote/attendance_logs.dart';
 import 'package:digit_data_model/data/repositories/package_repository/remote/attendance_register.dart';

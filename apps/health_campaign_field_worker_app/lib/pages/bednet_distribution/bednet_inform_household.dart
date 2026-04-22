@@ -20,7 +20,7 @@ import '../../widgets/header/back_navigation_help_header.dart';
 import '../../widgets/registartion_deliver/localized.dart';
 import 'bednet_success_page.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/stock.dart';
-import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
+import '../../data/registration_deliver_repo/local/task.dart';
 import '../../utils/stock_calculation_utils.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/extensions/extensions.dart';
