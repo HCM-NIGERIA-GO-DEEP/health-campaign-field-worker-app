@@ -103,7 +103,9 @@ class StockCalculationUtils {
           }
         } else if (transactionType == 'DISPATCHED') {
           // For DISPATCHED: LOSS/DAMAGED are counted against distributor
-          if (status == 'ACCEPTED') {
+          if (status == 'ACCEPTED' &&
+              !(transactionReason == 'RETURNED' ||
+                  stockEntryType == 'RETURNED')) {
             stockReceived += quantity;
           }
           // Count LOSS/DAMAGED as lost/damaged
