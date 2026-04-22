@@ -112,6 +112,9 @@ class StockCalculationUtils {
           } else if (stockEntryType == 'DAMAGED') {
             stockDamaged += quantity;
           }
+          if (transactionReason == 'RETURNED' || stockEntryType == 'RETURNED') {
+            stockReturned += quantity;
+          }
         }
         continue;
       }

@@ -422,8 +422,14 @@ class _HomePageState extends LocalizedState<HomePage> {
     FunctionRegistry.register('getSenderOrReceiver', (args, stateData) {
       if (args.isEmpty) return 'receiverId';
       final reportType = args.first?.toString() ?? '';
-      // For dispatch/damage/loss the warehouse is the sender
-      const senderTypes = {'dispatch', 'damage', 'loss'};
+      const senderTypes = {
+        'dispatch',
+        'damage',
+        'loss',
+        'returned',
+        'less',
+        'excess'
+      };
       return senderTypes.contains(reportType) ? 'senderId' : 'receiverId';
     });
 
