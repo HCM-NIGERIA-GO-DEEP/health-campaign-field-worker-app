@@ -1,7 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/stock.dart';
-import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
+import '../../../data/registration_deliver_repo/local/task.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/services/location_bloc.dart';
@@ -821,6 +821,7 @@ class DeliverInterventionPageState
         createdBy: RegistrationDeliverySingleton().loggedInUserUuid!,
         createdTime: context.millisecondsSinceEpoch(),
       ),
+      createdDate: context.millisecondsSinceEpoch(),
     );
 
     // Extract productvariantList from the form

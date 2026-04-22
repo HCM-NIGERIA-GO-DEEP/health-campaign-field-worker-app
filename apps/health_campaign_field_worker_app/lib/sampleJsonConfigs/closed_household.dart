@@ -95,7 +95,7 @@ final dynamic sampleCloseHouseholdFlows = {
               "includeInForm": true,
               "validations": [
                 {
-                  "type": "min",
+                  "type": "minLength",
                   "value": 3,
                   "message":
                       "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_headName_MIN_LENGTH_ERROR"

@@ -1,7 +1,7 @@
 import 'dart:math';
 
 import 'package:digit_data_model/data/repositories/package_repository/local/stock.dart';
-import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
+import '../../data/registration_deliver_repo/local/task.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
