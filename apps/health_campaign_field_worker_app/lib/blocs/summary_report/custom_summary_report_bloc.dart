@@ -108,6 +108,8 @@ class SummaryReportBloc extends Bloc<SummaryReportEvent, SummaryReportState> {
       'totalPupilPresent',
       'bednetcount',
       'bednetCount',
+      'itndeliveredcount',
+      'itnDeliveredCount',
     ];
 
     for (final task in allTasks) {
@@ -117,22 +119,28 @@ class SummaryReportBloc extends Bloc<SummaryReportEvent, SummaryReportState> {
       final fields = task.additionalFields?.fields ?? [];
       final isSchool = fields.any(
         (f) =>
-            f.key == AdditionalFieldsType.isSchool.toValue() &&
-            (f.value == true || f.value == 'true'),
+            (f.key == AdditionalFieldsType.isSchool.toValue() &&
+                (f.value == true || f.value == 'true')) ||
+            (f.key == 'type' && f.value?.toString().toLowerCase() == 'school'),
       );
 
-      // Extract delivery count
-      var delivered = _readIntFromTaskFields(
-        task.additionalFields,
-        presentPupilKeys,
-      );
-
-      // Fallback 1: Resource quantity
-      if (delivered == 0 && task.resources != null) {
+      // Extract delivery count from resources primarily
+      int delivered = 0;
+      if (task.resources != null) {
         for (final r in task.resources!) {
-          final q = int.tryParse(r.quantity.toString()) ?? 0;
-          delivered += q;
+          final q = r.quantity;
+          if (q != null) {
+            delivered += (num.tryParse(q.toString().trim()) ?? 0).toInt();
+          }
         }
+      }
+
+      // Fallback to additional fields if resources are missing or zero
+      if (delivered == 0) {
+        delivered = _readIntFromTaskFields(
+          task.additionalFields,
+          presentPupilKeys,
+        );
       }
 
       if (isSchool) {

@@ -49,10 +49,11 @@ class SchoolDetailsPage extends StatelessWidget {
                     MapEntry('School Name', school.bednetDisplayName),
                     MapEntry('School Head', school.bednetSchoolHead),
                     MapEntry(
-                      'Student Count',
-                      school.bednetPupilCount.toString(),
+                      'Student Total Count',
+                      school.memberCount.toString(),
                     ),
-                    MapEntry('Community', school.bednetCommunity),
+                    MapEntry('Community',
+                        school.boundaryCode ?? school.bednetCommunity),
                   ],
                 ),
               )

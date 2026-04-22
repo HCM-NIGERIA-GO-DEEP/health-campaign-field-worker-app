@@ -297,8 +297,12 @@ class _TbReferBeneficiaryPageState
                           suffixIcon: Icons.arrow_drop_down,
                           type: DigitButtonType.tertiary,
                           size: DigitButtonSize.large,
-                          onPressed: () =>
-                              context.router.push(CurrentBoundaryRoute()),
+                          onPressed: () {
+                            if (context.router.topRoute.name !=
+                                CurrentBoundaryRoute.name) {
+                              context.router.push(CurrentBoundaryRoute());
+                            }
+                          },
                           iconColor: theme.colorTheme.generic.background,
                           textColor: theme.colorTheme.generic.background,
                         )
@@ -380,7 +384,7 @@ class _TbReferBeneficiaryPageState
                     ),
                     LabeledField(
                       label: localizations.translate(
-                        i18_local.referBeneficiary.referredToLabel,
+                        i18_local.referBeneficiary.referredByLabel,
                       ),
                       child: DigitTextFormInput(
                         readOnly: true,
@@ -394,7 +398,7 @@ class _TbReferBeneficiaryPageState
                       child: IgnorePointer(
                         child: LabeledField(
                           label: localizations.translate(
-                            i18_local.referBeneficiary.referredByLabel,
+                            i18_local.referBeneficiary.referredToLabel,
                           ),
                           isRequired: true,
                           child: DigitSearchFormInput(

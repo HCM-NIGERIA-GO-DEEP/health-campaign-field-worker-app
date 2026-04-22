@@ -97,7 +97,14 @@ extension BednetHouseholdFields on HouseholdModel {
   }
 
   String get bednetSchoolHead => _readString(
-        const ['schoolhead', 'school_head', 'headteacher'],
+        const [
+          'schoolhead',
+          'school_head',
+          'headteacher',
+          'headname',
+          'head_name',
+          'head_of_household'
+        ],
         'N/A',
       );
 
@@ -236,7 +243,10 @@ HouseholdModel householdWithBednetSchoolHeadName(
     final k = f.key.toLowerCase();
     return k != 'schoolhead' &&
         k != 'school_head' &&
-        k != 'headteacher';
+        k != 'headteacher' &&
+        k != 'headname' &&
+        k != 'head_name' &&
+        k != 'head_of_household';
   }).toList();
   final trimmed = givenName.trim();
   return household.copyWith(
@@ -244,6 +254,7 @@ HouseholdModel householdWithBednetSchoolHeadName(
       version: household.additionalFields?.version ?? 1,
       fields: [
         ...filtered,
+        if (trimmed.isNotEmpty) AdditionalField('headName', trimmed),
         if (trimmed.isNotEmpty) AdditionalField('schoolHead', trimmed),
       ],
     ),
