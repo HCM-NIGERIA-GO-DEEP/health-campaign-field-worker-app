@@ -17,7 +17,6 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:recase/recase.dart';
 import 'package:sync_service/data/sync_service.dart';
 import 'package:sync_service/models/bandwidth/bandwidth_model.dart';
-import 'package:sync_service/utils/utils.dart' as sync_utils;
 
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../data/local_store/no_sql/schema/service_registry.dart';
@@ -122,7 +121,8 @@ void onStart(ServiceInstance service) async {
   final _isar = await isarFuture;
 
   // Initialize encrypted database for background service
-  final encryptionKey = await LocalSecureStore.instance.getOrCreateDbEncryptionKey();
+  final encryptionKey =
+      await LocalSecureStore.instance.getOrCreateDbEncryptionKey();
   _sql = LocalSqlDataStore(encryptionKey: encryptionKey);
 
   final userRequestModel = await LocalSecureStore.instance.userRequestModel;
@@ -167,20 +167,20 @@ void onStart(ServiceInstance service) async {
                   .first.backgroundServiceConfig!.batteryPercentCutOff!) {
             service.invoke("stopService");
           } else {
-            final FlutterLocalNotificationsPlugin
-                flutterLocalNotificationsPlugin =
-                FlutterLocalNotificationsPlugin();
             final isSyncAlreadyRunning = await SyncLock.isLocked();
-            debugPrint('BG_SYNC: locked=$isSyncAlreadyRunning, frequencyCount=$frequencyCount');
+            debugPrint(
+                'BG_SYNC: locked=$isSyncAlreadyRunning, frequencyCount=$frequencyCount');
             if (frequencyCount != null && !isSyncAlreadyRunning) {
               final serviceRegistryList =
                   await _isar.serviceRegistrys.where().findAll();
-              debugPrint('BG_SYNC: serviceRegistryList=${serviceRegistryList.length}');
+              debugPrint(
+                  'BG_SYNC: serviceRegistryList=${serviceRegistryList.length}');
               if (serviceRegistryList.isNotEmpty) {
                 final bandwidthService = serviceRegistryList.firstWhereOrNull(
                   (element) => element.service == 'BANDWIDTH-CHECK',
                 );
-                debugPrint('BG_SYNC: bandwidthService=${bandwidthService?.service}');
+                debugPrint(
+                    'BG_SYNC: bandwidthService=${bandwidthService?.service}');
                 if (bandwidthService != null &&
                     bandwidthService.actions.isNotEmpty) {
                   final bandwidthPath = bandwidthService.actions.first.path;
@@ -209,45 +209,11 @@ void onStart(ServiceInstance service) async {
                       sum / speedArray.length,
                       appConfiguration,
                     );
-                    final BandwidthModel bandwidthModel = BandwidthModel.fromJson({
+                    final BandwidthModel bandwidthModel =
+                        BandwidthModel.fromJson({
                       'userId': userRequestModel?.uuid,
                       'batchSize': configuredBatchSize,
                     });
-                    flutterLocalNotificationsPlugin.show(
-                      888,
-                      'Auto Sync',
-                      'Speed : ${speedArray.isNotEmpty && speedArray.firstOrNull != null ? double.tryParse(speedArray.first.toString())?.toStringAsFixed(2) ?? '0' : '0'}Mb/ps - BatchSize : $configuredBatchSize',
-                      const NotificationDetails(
-                        android: AndroidNotificationDetails(
-                          "my_foreground",
-                          'AUTO SYNC',
-                          icon: 'ic_bg_service_small',
-                          ongoing: true,
-                        ),
-                      ),
-                    );
-                    // Listen to sync progress and update notification
-                    final progressSub = sync_utils.SyncServiceSingleton()
-                        .progressStream
-                        .listen((progress) {
-                      final direction = progress.operation == 'syncUp'
-                          ? '↑ Uploading'
-                          : '↓ Downloading';
-                      flutterLocalNotificationsPlugin.show(
-                        888,
-                        'Auto Sync',
-                        '$direction: ${progress.entityType}',
-                        const NotificationDetails(
-                          android: AndroidNotificationDetails(
-                            "my_foreground",
-                            'AUTO SYNC',
-                            icon: 'ic_bg_service_small',
-                            ongoing: true,
-                          ),
-                        ),
-                      );
-                    });
-
                     final localRepos = Constants.getLocalRepositories(
                       _sql,
                       _isar,
@@ -260,10 +226,11 @@ void onStart(ServiceInstance service) async {
                     // Re-check lock right before sync since bandwidth
                     // checks may have taken significant time.
                     final isLockedBeforeSync = await SyncLock.isLocked();
-                    debugPrint('BG_SYNC: lock status before performSync=$isLockedBeforeSync');
+                    debugPrint(
+                        'BG_SYNC: lock status before performSync=$isLockedBeforeSync');
                     if (isLockedBeforeSync) {
-                      debugPrint('BG_SYNC: Lock acquired by another process during bandwidth check, skipping sync');
-                      await progressSub.cancel();
+                      debugPrint(
+                          'BG_SYNC: Lock acquired by another process during bandwidth check, skipping sync');
                       service.invoke('serviceRunning', {
                         "enablesManualSync": true,
                       });
@@ -278,34 +245,14 @@ void onStart(ServiceInstance service) async {
                         bandwidthModel: bandwidthModel,
                         service: service,
                       );
-                      debugPrint('BG_SYNC: performSync completed=$isSyncCompleted');
+                      debugPrint(
+                          'BG_SYNC: performSync completed=$isSyncCompleted');
                       if (!isSyncCompleted) {
-                        debugPrint('BG_SYNC: performSync returned false — lock was not acquired');
+                        debugPrint(
+                            'BG_SYNC: performSync returned false — lock was not acquired');
                       }
                     } catch (e) {
                       debugPrint('BG_SYNC: performSync failed with error: $e');
-                    }
-
-                    await progressSub.cancel();
-
-                    if (isSyncCompleted) {
-                      // Show last synced time in notification
-                      final now = DateTime.now();
-                      final timeStr =
-                          '${now.hour.toString().padLeft(2, '0')}:${now.minute.toString().padLeft(2, '0')}';
-                      flutterLocalNotificationsPlugin.show(
-                        888,
-                        'Auto Sync',
-                        'Last synced at $timeStr',
-                        const NotificationDetails(
-                          android: AndroidNotificationDetails(
-                            "my_foreground",
-                            'AUTO SYNC',
-                            icon: 'ic_bg_service_small',
-                            ongoing: true,
-                          ),
-                        ),
-                      );
                     }
                   }
                 }
