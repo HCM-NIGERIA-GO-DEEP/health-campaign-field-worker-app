@@ -52,6 +52,7 @@ class _BoundarySelectionPageState
   late StreamSubscription syncSubscription;
   var leastLevelBoundaries;
   final String setLocale = "en_MZ";
+  bool doFilter = false;
 
   @override
   void initState() {
@@ -110,6 +111,8 @@ class _BoundarySelectionPageState
         .isNotEmpty;
 
     bool isHealthFacilityWorkerOnly = isHealthFacilityWorker && !isDistributor;
+    // set the param to enable or disable filter of labelList and other boundary conditions
+    doFilter = enableFilter();
 
     return PopScope(
       canPop: shouldPop,
@@ -128,7 +131,8 @@ class _BoundarySelectionPageState
                     );
                   }
 
-                  final labelList = state.selectedBoundaryMap.keys.toList();
+                  final labelList =
+                      filterBoundaryLabelListBasedOnRole(doFilter, state);
 
                   return initState.maybeWhen(
                     orElse: () => const Offstage(),
@@ -1020,9 +1024,26 @@ class _BoundarySelectionPageState
         );
   }
 
+  bool enableFilter() {
+    return context.isWarehouseManager || context.isHealthFacilitySupervisor;
+  }
+
+  dynamic filterBoundaryLabelListBasedOnRole(
+      bool doFilter, BoundaryState state) {
+    final labelList = state.selectedBoundaryMap.keys.toList();
+    if (doFilter) {
+      final filteredLabelList =
+          labelList.isNotEmpty ? [labelList.first] : labelList;
+
+      return filteredLabelList;
+    }
+
+    return labelList;
+  }
+
   FormGroup buildForm(BoundaryState state, AppConfiguration appConfiguration) {
     formControls = {};
-    final labelList = state.selectedBoundaryMap.keys.toList();
+    final labelList = filterBoundaryLabelListBasedOnRole(doFilter, state);
     if (state.boundaryList.isNotEmpty) {
       final finalCodes = state.boundaryList.map((e) => e.code!).toList();
 

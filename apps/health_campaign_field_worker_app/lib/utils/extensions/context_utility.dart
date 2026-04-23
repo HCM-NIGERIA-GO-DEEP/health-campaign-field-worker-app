@@ -238,6 +238,37 @@ extension ContextUtilityExtensions on BuildContext {
     return false;
   }
 
+  bool get isWarehouseManager {
+    try {
+      bool isWarehouseManager = loggedInUserRoles
+          .where((role) => role.code == RolesType.warehouseManager.toValue())
+          .toList()
+          .isNotEmpty;
+
+      return isWarehouseManager;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  bool get isHealthFacilitySupervisor {
+    try {
+      // todo : verify this make this healthFacilitySupervsior as per kebbi
+      bool isDownSyncEnabled = loggedInUserRoles
+          .where(
+            (role) =>
+                role.code == RolesType.healthFacilityWorker.toValue() ||
+                role.code == RolesType.healthFacilitySupervisor.toValue(),
+          )
+          .toList()
+          .isNotEmpty;
+
+      return isDownSyncEnabled;
+    } catch (_) {
+      return false;
+    }
+  }
+
   NetworkManager get networkManager => read<NetworkManager>();
 
   DataRepository<D, R>
