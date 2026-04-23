@@ -369,7 +369,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       final individualId = attendee?["individualId"];
 
       var attendanceCollectionData =
-          widgetData["attendanceCollection"]?[individualId];
+          widgetData?["attendanceCollection"]?[individualId];
 
       if (attendanceCollectionData == 'present') {
         currentStatus = 1.0;
@@ -592,8 +592,17 @@ class _HomePageState extends LocalizedState<HomePage> {
       return items;
     });
 
+    FunctionRegistry.register('anyAttendanceSelected', (args, stateData) {
+      if (args.isEmpty || args.first == null) return true;
+
+      final widgetData = args.first;
+      final attendanceCollection = widgetData?['attendanceCollection'] as Map?;
+
+      return (attendanceCollection == null || attendanceCollection.isEmpty);
+    });
+
     FunctionRegistry.register('allAttendanceSelected', (args, stateData) {
-      if (args.isEmpty || args.first == null) return false;
+      if (args.isEmpty || args.first == null) return true;
 
       final widgetData = args.first;
       final attendanceRegisterModel = args.length > 1 ? args[1] : null;
