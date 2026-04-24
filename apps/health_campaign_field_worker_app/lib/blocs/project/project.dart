@@ -378,7 +378,6 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
   }
 
   FutureOr<void> _loadProjectFacilities(ProjectModel project) async {
-
     final userObject = await localSecureStore.userRequestModel;
     final assignedBoundaryType = project.address?.boundaryType;
     List<String>? boundaryTypes;
@@ -438,10 +437,9 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       if (apiEndPoint.isNotEmpty) {
         context.read<PushNotificationBloc>().add(
               PushNotificationEvent.registerToken(
-                apiEndPoint: apiEndPoint,
-                facilityIds: currentFacilityIds,
-                userObject: userObject
-              ),
+                  apiEndPoint: apiEndPoint,
+                  facilityIds: currentFacilityIds,
+                  userObject: userObject),
             );
       }
     }
@@ -980,6 +978,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       final stockSearchModel = StockSearchModel(
         receiverId: receiverIds.first,
         senderId: receiverIds.first,
+        campaignNumber: project.referenceID,
       );
 
       final existingDownSyncData =
@@ -1006,6 +1005,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         stockSearchModel,
         offSet: 0,
         lastSyncedTime: lastSyncedTime,
+        includeOnlyUpdatedByOthers: true,
       );
 
       if (totalCount <= 0) return;
@@ -1021,6 +1021,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
           offSet: offset,
           limit: batchSize,
           lastSyncedTime: lastSyncedTime,
+          includeOnlyUpdatedByOthers: true,
         );
 
         if (stockEntries.isEmpty) break;
@@ -1041,14 +1042,15 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
       await downSyncStockBalances(project.id);
 
+      // NOTE: Added this to create user action if there is no existing record but stock balance is there
       // After stock download, calculate and create/update UserAction balance records
-      await _createStockBalanceUserActions(
-        project: project,
-        receiverIds: receiverIds,
-        productVariantIds: productVariantIds,
-        userRoles: userRoles,
-        userObject: userObject,
-      );
+      // await _createStockBalanceUserActions(
+      //   project: project,
+      //   receiverIds: receiverIds,
+      //   productVariantIds: productVariantIds,
+      //   userRoles: userRoles,
+      //   userObject: userObject,
+      // );
 
       debugPrint(
           'SILENT_STOCK_DOWNSYNC: Completed. Synced $syncedCount/$totalCount');

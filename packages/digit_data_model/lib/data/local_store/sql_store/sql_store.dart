@@ -144,7 +144,7 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
 
   /// The `schemaVersion` getter returns the schema version of the database.
   @override
-  int get schemaVersion => 6; // Increment schema version
+  int get schemaVersion => 9; // Increment schema version
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -314,6 +314,15 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
             } catch (e) {
               if (kDebugMode) {
                 print("Failed to add columns for attendee, tag");
+              }
+            }
+          }
+          if (from < 9) {
+            try {
+              await migrator.addColumn(stock, stock.campaignNumber);
+            } catch (e) {
+              if (kDebugMode) {
+                print("Failed to add columns for stock, campaignNumber");
               }
             }
           }
