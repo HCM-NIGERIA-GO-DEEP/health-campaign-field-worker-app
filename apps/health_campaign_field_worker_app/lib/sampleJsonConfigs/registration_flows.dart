@@ -374,6 +374,7 @@ final dynamic sampleFlows = {
                   "type": "template",
                   "value": "{{fn:getInsufficientStockMessage()}}",
                   "format": "textTemplate",
+                  "fieldName": "insufficientStockMessageText",
                 },
               ],
               "type": "default",
@@ -1693,6 +1694,7 @@ final dynamic sampleFlows = {
             {
               "label": "UNABLETODELIVERY_FLOW_HEADING",
               "format": "button",
+              "fieldName": "unableToDeliverSubmitButton",
               "onAction": [
                 {
                   "actionType": "NAVIGATION",
@@ -2694,6 +2696,7 @@ final dynamic sampleFlows = {
               "label":
                   "APPONE_DELIVERYFLOW_DELIVERYDETAILS_ACTIONS_SUBMIT_LABEL",
               "format": "button",
+              "fieldName": "deliveryChecklistSubmitButton",
               "onAction": [
                 {
                   "actionType": "NAVIGATION",
@@ -2961,6 +2964,7 @@ final dynamic sampleFlows = {
               "label":
                   "APPONE_REGISTRATION_DELIVERYDETAILS_ACTION_BUTTON_LABEL_1",
               "format": "button",
+              "fieldName": "deliveryDetailsSubmitButton",
               "onAction": [
                 {
                   "actionType": "NAVIGATION",
@@ -3443,6 +3447,7 @@ final dynamic sampleFlows = {
             {
               "label": "REDOSE_SUBMIT_BUTTON_LABEL",
               "format": "button",
+              "fieldName": "redoseSubmitButton",
               "onAction": [
                 {
                   "actionType": "NAVIGATION",
@@ -3777,6 +3782,7 @@ final dynamic sampleFlows = {
               "label":
                   "APPONE_REGISTRATION_DELIVERYDETAILS_ACTION_BUTTON_LABEL_1",
               "format": "button",
+              "fieldName": "eligibilityChecklistSubmitButton",
               "onAction": [
                 {
                   "actionType": "NAVIGATION",
@@ -4545,6 +4551,7 @@ final dynamic sampleFlows = {
               "label":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_ACTION_BUTTON_LABEL_addmember",
               "format": "button",
+              "fieldName": "addMemberSubmitButton",
               "onAction": [
                 {
                   "actionType": "NAVIGATION",
@@ -4552,8 +4559,7 @@ final dynamic sampleFlows = {
                     "data": [
                       {
                         "key": "selectedIndividualClientReferenceId",
-                        "value":
-                            "{{formData.individual.clientReferenceId}}"
+                        "value": "{{formData.individual.clientReferenceId}}"
                       },
                       {
                         "key": "selectedIndividualIdentifierId",
@@ -5137,8 +5143,7 @@ final dynamic sampleFlows = {
               },
               {
                 "key": "selectedIndividualAgeInMonths",
-                "value":
-                    "{{fn:formatDate(formData.dobPicker, 'ageInMonths')}}"
+                "value": "{{fn:formatDate(formData.dobPicker, 'ageInMonths')}}"
               },
               {
                 "key": "cycleIndex",
@@ -5280,6 +5285,7 @@ final dynamic sampleFlows = {
               "type": "template",
               "format": "textTemplate",
               "value": "{{formData.beneficiaryDetails.identifiers}}",
+              "fieldName": "acknowledgementIdentifierText",
               "properties": {
                 "style": "bodyS",
                 "separatedBy": ", ",
@@ -5348,6 +5354,7 @@ final dynamic sampleFlows = {
             {
               "label": "REFER_BENEFICIARY_SUBMIT_BUTTON",
               "format": "button",
+              "fieldName": "referBeneficiarySubmitButton",
               "onAction": [
                 {
                   "actionType": "NAVIGATION",
@@ -5828,6 +5835,7 @@ final dynamic sampleFlows = {
               "label":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_ACTION_BUTTON_LABEL_1",
               "format": "button",
+              "fieldName": "householdBeneficiaryDetailsSubmitButton",
               "onAction": [
                 {
                   "actionType": "NAVIGATION",
@@ -6376,6 +6384,7 @@ final dynamic sampleFlows = {
               "label":
                   "APPONE_REGISTRATION_HOUSEHOLDDETAILS_ACTION_BUTTON_LABEL_1",
               "format": "button",
+              "fieldName": "householdDetailsSubmitButton",
               "onAction": [
                 {
                   "actionType": "NAVIGATION",
@@ -6739,6 +6748,7 @@ final dynamic sampleFlows = {
               "label":
                   "APPONE_REGISTRATION_BENEFICIARY_LOCATION_ACTION_BUTTON_LABEL_1",
               "format": "button",
+              "fieldName": "beneficiaryLocationSubmitButton",
               "onAction": [
                 {
                   "actionType": "NAVIGATION",
