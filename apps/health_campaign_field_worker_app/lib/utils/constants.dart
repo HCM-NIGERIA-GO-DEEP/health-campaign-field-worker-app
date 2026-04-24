@@ -268,16 +268,22 @@ class Constants {
     final appConfigs = await isar.appConfigurations.where().findAll();
     final config = appConfigs.firstOrNull;
 
-    final enableCrashlytics = false;
-    // config?.firebaseConfig?.enableCrashlytics ?? false; // TODO: Remove hardcoding and uncomment above
-    // if (enableCrashlytics) {
-    //   await firebase_services.initialize(
-    //     options: DefaultFirebaseOptions.currentPlatform,
-    //     onErrorMessage: (value) {
-    //       AppLogger.instance.error(title: 'CRASHLYTICS', message: value);
-    //     },
-    //   );
-    // }
+    // Always initialize Firebase Core (required for FCM, analytics, etc.)
+    await firebase_services.initialize(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+
+    final enableCrashlytics =
+        config?.firebaseConfig?.enableCrashlytics ?? false;
+
+    if (enableCrashlytics) {
+      await firebase_services.initialize(
+        options: DefaultFirebaseOptions.currentPlatform,
+        onErrorMessage: (value) {
+          AppLogger.instance.error(title: 'CRASHLYTICS', message: value);
+        },
+      );
+    }
 
     _version = version;
   }
