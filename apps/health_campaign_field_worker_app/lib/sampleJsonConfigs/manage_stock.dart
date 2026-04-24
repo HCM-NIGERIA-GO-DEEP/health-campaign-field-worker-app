@@ -25,8 +25,8 @@ final dynamic sampleInventoryFlows = {
       ],
       "footer": [
         {
-          "type": "template",
           "format": "button",
+          "type": "template",
           "fieldName": "manageStockViewTransactionsButton",
           "label":
               "APP_CONFIG_INVENTORY_manageStock_VIEW_TRANSACTIONS_FOOTER_BUTTON_LABEL",
@@ -92,9 +92,9 @@ final dynamic sampleInventoryFlows = {
       },
       "body": [
         {
-          "type": "template",
           "format": "menu_card",
-          "fieldName": "manageStockRecordReceiptCard",
+          "type": "template",
+          "fieldName": "manageStockRecordStockReceiptCard",
           "heading":
               "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_RECEIPT_HEADING",
           "description":
@@ -109,17 +109,34 @@ final dynamic sampleInventoryFlows = {
                 "data": []
               }
             }
+            // {
+            //   "actionType": "NAVIGATION",
+            //   "properties": {
+            //     "type": "FORM",
+            //     "name": "RECORDSTOCK",
+            //     "data": [
+            //       {"key": "stockEntryType", "value": "RECEIPT"},
+            //       {"key": "transactionType", "value": "RECEIVED"},
+            //       {"key": "primaryRole", "value": "RECEIVER"},
+            //       {"key": "secondaryRole", "value": "SENDER"},
+            //       {
+            //         "key": "mrnNumber",
+            //         "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
+            //       }
+            //     ]
+            //   }
+            // }
           ]
         },
         {
-          "type": "template",
           "format": "menu_card",
-          "fieldName": "manageStockRecordIssuedCard",
+          "type": "template",
+          "fieldName": "manageStockRecordStockIssuedCard",
           "heading":
               "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_ISSUED_HEADING",
           "description":
               "APP_CONFIG_INVENTORY_manageStock_CREATE_RECORDS_FOR_STOCK_SENT_OUT_FROM_THE_WAREHOUSE_DESCRIPTION",
-          "icon": "FileDownload",
+          "icon": 'FileDownload',
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -132,15 +149,15 @@ final dynamic sampleInventoryFlows = {
           ]
         },
         {
-          "type": "template",
           "format": "menu_card",
-          "fieldName": "manageStockRecordDamagedCard",
+          "type": "template",
+          "fieldName": "manageStockRecordStockDamagedCard",
           "heading":
               "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_DAMAGED_HEADING",
           "visible": "{{fn:hasRole('WAREHOUSE_MANAGER')}} == false",
           "description":
               "APP_CONFIG_INVENTORY_manageStock_RECORD_THE_LIST_OF_RESOURCES_DAMAGED_DURING_CAMPAIGN_OPERATIONS_DESCRIPTION",
-          "icon": "Store",
+          "icon": 'Store',
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -162,14 +179,14 @@ final dynamic sampleInventoryFlows = {
           ]
         },
         {
-          "type": "template",
           "format": "menu_card",
-          "fieldName": "manageStockRecordLossCard",
+          "type": "template",
+          "fieldName": "manageStockRecordStockLossCard",
           "heading":
               "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_LOSS_HEADING",
           "description":
               "APP_CONFIG_INVENTORY_manageStock_RECORD_THE_LIST_OF_RESOURCES_LOST_DURING_CAMPAIGN_OPERATIONS_DESCRIPTION",
-          "icon": "Store",
+          "icon": 'Store',
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -191,8 +208,8 @@ final dynamic sampleInventoryFlows = {
           ]
         },
         {
-          "type": "template",
           "format": "menu_card",
+          "type": "template",
           "fieldName": "manageStockRecordLessExcessCard",
           "heading": "INVENTORY_RECORD_LESS_EXCESS_HEADING",
           "description": "INVENTORY_RECORD_LESS_EXCESS_DESCRIPTION",
@@ -217,7 +234,7 @@ final dynamic sampleInventoryFlows = {
               }
             }
           ]
-        }
+        },
       ]
     },
     {
@@ -257,8 +274,8 @@ final dynamic sampleInventoryFlows = {
       ],
       "footer": [
         {
-          "type": "template",
           "format": "button",
+          "type": "template",
           "fieldName": "returnOrIssueSelectionNextButton",
           "label":
               "APP_CONFIG_INVENTORY_returnOrIssueSelection_NEXT_BUTTON_LABEL",
@@ -296,10 +313,7 @@ final dynamic sampleInventoryFlows = {
               ]
             },
             {
-              "condition": {
-                "expression":
-                    "transactionType == RETURNED || transactionTypeDistributor == RETURNED"
-              },
+              "condition": {"expression": "transactionType == RETURNED"},
               "actions": [
                 {
                   "actionType": "NAVIGATION",
@@ -333,9 +347,9 @@ final dynamic sampleInventoryFlows = {
       ],
       "body": [
         {
-          "type": "template",
           "format": "card",
-          "fieldName": "returnOrIssueSelectionCard",
+          "type": "template",
+          "fieldName": "returnOrIssueSelectionContainerCard",
           "children": [
             {
               "type": "template",
@@ -356,14 +370,14 @@ final dynamic sampleInventoryFlows = {
                   "code": "RETURNED"
                 }
               ],
-              "visible": "{{fn:hasRole('DISTRIBUTOR')}} == false"
+              "visible": "{{fn:hasRole('DISTRIBUTOR')}} == false",
             },
             {
               "type": "template",
               "format": "dropdownTemplate",
               "label":
                   "APP_CONFIG_INVENTORY_returnOrIssueSelection_TRANSACTION_TYPE_LABEL",
-              "fieldName": "transactionTypeDistributor",
+              "fieldName": "transactionType",
               "valueKey": "code",
               "enums": [
                 {
@@ -376,7 +390,7 @@ final dynamic sampleInventoryFlows = {
               "showWhenSingleOption": true
             }
           ]
-        }
+        },
       ]
     },
     {
@@ -444,7 +458,7 @@ final dynamic sampleInventoryFlows = {
               }
             ]
           }
-        }
+        },
       ],
       "wrapperConfig": {
         "wrapperName": "ScanStockWrapper",
@@ -461,8 +475,8 @@ final dynamic sampleInventoryFlows = {
       },
       "body": [
         {
-          "type": "template",
           "format": "qrScanner",
+          "type": "template",
           "label": "INVENTORY_SCAN_MRN_LABEL",
           "scanType": "qr",
           "fieldName": "scanPage.scannedMrn",
@@ -577,7 +591,7 @@ final dynamic sampleInventoryFlows = {
               "helpText": "",
               "infoText": "",
               "readOnly": true,
-              "fieldName": "lessExcessDateOfEntry",
+              "fieldName": "dateOfEntry",
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": true,
@@ -604,7 +618,7 @@ final dynamic sampleInventoryFlows = {
               "helpText": "",
               "infoText": "",
               "readOnly": false,
-              "fieldName": "lessExcessAdministrativeArea",
+              "fieldName": "administrativeArea",
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
@@ -632,7 +646,7 @@ final dynamic sampleInventoryFlows = {
                   "MANAGESTOCK_WAREHOUSE_label_facilityToWhich_HELPTEXT_LABEL",
               "infoText": "",
               "readOnly": false,
-              "fieldName": "lessExcessFacilityToWhich",
+              "fieldName": "facilityToWhich",
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
@@ -668,7 +682,7 @@ final dynamic sampleInventoryFlows = {
               "errorMessage": "",
               "isMultiSelect": false,
               "includeInForm": true,
-              "enums": []
+              "enums": [],
             },
             {
               "type": "string",
@@ -677,7 +691,7 @@ final dynamic sampleInventoryFlows = {
                 "expression": [
                   {
                     "condition":
-                        "warehouseDetails.lessExcessFacilityToWhich==DELIVERY_TEAM"
+                        "warehouseDetails.facilityToWhich==DELIVERY_TEAM"
                   }
                 ]
               },
@@ -691,7 +705,7 @@ final dynamic sampleInventoryFlows = {
               "helpText": "",
               "infoText": "",
               "readOnly": false,
-              "fieldName": "lessExcessTeamCode",
+              "fieldName": "teamCode",
               "mandatory": false,
               "deleteFlag": false,
               "innerLabel": "",
@@ -709,7 +723,7 @@ final dynamic sampleInventoryFlows = {
               "errorMessage": "",
               "isMultiSelect": false,
               "dropDownOptions": []
-            }
+            },
           ],
           "navigateTo": {"name": "stockDetails", "type": "form"}
         },
@@ -761,7 +775,7 @@ final dynamic sampleInventoryFlows = {
                   "Select the facility from which the stock is being received",
               "infoText": "",
               "readOnly": false,
-              "fieldName": "lessExcessFacilityFromWhich",
+              "fieldName": "facilityFromWhich",
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
@@ -834,7 +848,7 @@ final dynamic sampleInventoryFlows = {
               ],
               "errorMessage": "",
               "isMultiSelect": false,
-              "enums": []
+              "enums": [],
             },
             {
               "type": "string",
@@ -851,6 +865,13 @@ final dynamic sampleInventoryFlows = {
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
+              // "validations": [
+              //   {
+              //     "type": "required",
+              //     "value": true,
+              //     "message": "Transport type is required"
+              //   }
+              // ],
               "errorMessage": "",
               "isMultiSelect": false,
               "enums": [
@@ -873,10 +894,17 @@ final dynamic sampleInventoryFlows = {
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
+              // "validations": [
+              //   {
+              //     "type": "required",
+              //     "value": true,
+              //     "message": "Vehicle number is required"
+              //   }
+              // ],
               "errorMessage": "",
               "isMultiSelect": false,
               "enums": null
-            }
+            },
           ],
           "value": null,
           "required": null,
@@ -962,6 +990,33 @@ final dynamic sampleInventoryFlows = {
               "isMultiSelect": false,
               "enums": null
             },
+            // {
+            //   "type": "string",
+            //   "label": "APPONE_INVENTORY_EXPIRY_DATE_LABEL",
+            //   "order": 3,
+            //   "value": "",
+            //   "format": "date",
+            //   "hidden": false,
+            //   "tooltip": "",
+            //   "helpText": "Select the expiry date",
+            //   "infoText": "",
+            //   "readOnly": false,
+            //   "fieldName": "expiryDate",
+            //   "deleteFlag": false,
+            //   "innerLabel": "",
+            //   "systemDate": false,
+            //   "visibilityCondition": {},
+            //   "validations": [
+            //     {
+            //       "type": "required",
+            //       "value": true,
+            //       "message": "Expiry date is required"
+            //     }
+            //   ],
+            //   "errorMessage": "",
+            //   "isMultiSelect": false,
+            //   "enums": null
+            // },
             {
               "type": "integer",
               "label": "APPONE_INVENTORY_QUANTITY_SENT_LABEL",
@@ -1334,8 +1389,8 @@ final dynamic sampleInventoryFlows = {
               "systemDate": false,
               "errorMessage": "",
               "isMultiSelect": false,
-              "enums": []
-            }
+              "enums": [],
+            },
           ],
           "value": null,
           "required": null,
@@ -1354,7 +1409,7 @@ final dynamic sampleInventoryFlows = {
           "includeInSummary": null,
           "autoEnable": null,
           "navigateTo": {"name": "stock-acknowledgement", "type": "template"}
-        }
+        },
       ],
       "onAction": [
         {
@@ -1765,7 +1820,7 @@ final dynamic sampleInventoryFlows = {
                 "expression": [
                   {
                     "condition":
-                        "lessExcessDetails.lessExcessFacilityFromWhich==DELIVERY_TEAM"
+                        "lessExcessDetails.facilityFromWhich==DELIVERY_TEAM"
                   }
                 ]
               },
@@ -1778,7 +1833,7 @@ final dynamic sampleInventoryFlows = {
               "helpText": "Scan Team Code",
               "infoText": "",
               "readOnly": false,
-              "fieldName": "lessExcessDeliveryTeam",
+              "fieldName": "deliveryTeam",
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
@@ -1792,7 +1847,7 @@ final dynamic sampleInventoryFlows = {
               ],
               "errorMessage": "",
               "isMultiSelect": false,
-              "enums": []
+              "enums": [],
             },
             {
               "type": "integer",
@@ -1805,7 +1860,7 @@ final dynamic sampleInventoryFlows = {
               "helpText": "Enter the quantity",
               "infoText": "",
               "readOnly": false,
-              "fieldName": "lessExcessQuantity",
+              "fieldName": "quantity",
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
@@ -1943,8 +1998,8 @@ final dynamic sampleInventoryFlows = {
       "description": "",
       "body": [
         {
-          "type": "template",
           "format": "panelCard",
+          "type": "template",
           "fieldName": "stockSuccessPanelCard",
           "label": "INVENTORY_STOCK_SUCCESS_LABEL",
           "description":
@@ -1981,7 +2036,7 @@ final dynamic sampleInventoryFlows = {
                   "type": "TEMPLATE",
                   "name": "manageStock",
                   "navigationMode": "popUntilAndReplace",
-                  "popUntilPageName": "manageStock"
+                  "popUntilPageName": "manageStock",
                 }
               }
             ]
@@ -2002,7 +2057,7 @@ final dynamic sampleInventoryFlows = {
           "onAction": [
             {"actionType": "BACK_NAVIGATION", "properties": {}}
           ]
-        }
+        },
       ],
       "footer": [],
       "initActions": [
@@ -2033,7 +2088,7 @@ final dynamic sampleInventoryFlows = {
         "groupBy": "additionalFields.fields.mrnNumber",
         "filters": [],
         "relations": [
-          {"name": "stock", "entity": "StockModel"}
+          {"name": "stock", "entity": "StockModel"},
         ],
         "searchConfig": {
           "primary": "stock",
@@ -2043,27 +2098,27 @@ final dynamic sampleInventoryFlows = {
       },
       "body": [
         {
-          "type": "template",
           "format": "infoCard",
-          "fieldName": "viewTransactionInfoCard",
-          "visible": "{{fn:hasResults('StockModel')}} == false",
+          "type": "template",
+          "fieldName": "viewTransactionEmptyStateInfoCard",
+          "hidden": "{{fn:hasResults('StockModel')}} == true",
           "label": "INVENTORY_NO_TRANSACTIONS_LABEL",
           "description": "INVENTORY_NO_TRANSACTIONS_DESCRIPTION"
         },
         {
-          "type": "template",
           "format": "listView",
-          "visible": "{{ context.stock.isNotEmpty }}",
-          "fieldName": "viewTransactionListView",
+          "type": "template",
+          "hidden": "{{ context.stock.isEmpty }}",
+          "fieldName": "listView",
           "dataSource": "StockModel",
           "child": {
-            "type": "template",
             "format": "card",
-            "fieldName": "viewTransactionCard",
+            "type": "template",
+            "fieldName": "viewTransactionListCard",
             "children": [
               {
-                "type": "template",
                 "format": "row",
+                "type": "template",
                 "fieldName": "viewTransactionHeaderRow",
                 "properties": {
                   "mainAxisAlignment": "spaceBetween",
@@ -2077,8 +2132,8 @@ final dynamic sampleInventoryFlows = {
                     "label": "MRN {{item.groupKey}}"
                   },
                   {
-                    "type": "template",
                     "format": "textTemplate",
+                    "type": "template",
                     "fieldName": "viewTransactionDateText",
                     "value":
                         "{{fn:formatDate(item.items[0].dateOfEntry, 'date', dd MMM yyyy)}}"
@@ -2086,8 +2141,8 @@ final dynamic sampleInventoryFlows = {
                 ]
               },
               {
-                "type": "template",
                 "format": "row",
+                "type": "template",
                 "fieldName": "viewTransactionPartyRow",
                 "properties": {
                   "mainAxisAlignment": "spaceBetween",
@@ -2095,8 +2150,8 @@ final dynamic sampleInventoryFlows = {
                 },
                 "children": [
                   {
-                    "type": "template",
                     "format": "column",
+                    "type": "template",
                     "fieldName": "viewTransactionPartyColumn",
                     "properties": {
                       "mainAxisAlignment": "spaceBetween",
@@ -2104,15 +2159,15 @@ final dynamic sampleInventoryFlows = {
                     },
                     "children": [
                       {
-                        "type": "template",
                         "format": "textTemplate",
+                        "type": "template",
                         "fieldName": "viewTransactionPartyLabelText",
                         "value":
                             "{{fn:getFirstPagePartyLabel(item.items[0].additionalFields.fields)}}"
                       },
                       {
-                        "type": "template",
                         "format": "textTemplate",
+                        "type": "template",
                         "fieldName": "viewTransactionPartyValueText",
                         "value":
                             "{{fn:getFirstPageParty(item.items[0].additionalFields.fields, item.items[0].senderId, item.items[0].receiverId)}}"
@@ -2120,8 +2175,8 @@ final dynamic sampleInventoryFlows = {
                     ]
                   },
                   {
-                    "type": "template",
                     "format": "actionPopup",
+                    "type": "template",
                     "fieldName": "viewTransactionQrPopup",
                     "label": "INVENTORY_VIEW_QR_LABEL",
                     "properties": {
@@ -2137,8 +2192,8 @@ final dynamic sampleInventoryFlows = {
                         "barrierDismissible": true,
                         "body": [
                           {
-                            "type": "template",
                             "format": "qr_view",
+                            "type": "template",
                             "fieldName": "viewTransactionQrView",
                             "data":
                                 "{{item.items[0].additionalFields.fields.mrnNumber}}",
@@ -2157,21 +2212,21 @@ final dynamic sampleInventoryFlows = {
                 ]
               },
               {
-                "type": "template",
                 "format": "listView",
-                "fieldName": "viewTransactionGroupedItems",
+                "type": "template",
+                "fieldName": "viewTransactionGroupedItemsList",
                 "dataSource": "item.items",
                 "child": {
-                  "type": "template",
                   "format": "textTemplate",
+                  "type": "template",
                   "fieldName": "viewTransactionGroupedItemText",
                   "value":
                       "{{item.additionalFields.fields.sku}}: {{item.quantity}}"
                 }
               },
               {
-                "type": "template",
                 "format": "button",
+                "type": "template",
                 "fieldName": "viewTransactionSelectButton",
                 "label": "INVENTORY_SELECT_TRANSACTION_LABEL",
                 "properties": {
@@ -2198,10 +2253,10 @@ final dynamic sampleInventoryFlows = {
                     }
                   }
                 ]
-              }
+              },
             ]
           },
-          "properties": {"spacing": "spacer4"}
+          "properties": {"spacing": "spacer4"},
         }
       ]
     },
@@ -2246,27 +2301,30 @@ final dynamic sampleInventoryFlows = {
         "rootEntity": "StockModel",
         "filters": [],
         "relations": [
-          {"name": "stock", "entity": "StockModel"}
+          {
+            "name": "stock",
+            "entity": "StockModel",
+          }
         ],
         "searchConfig": {
           "primary": "stock",
-          "select": ["stock"]
+          "select": ["stock"],
         }
       },
       "body": [
         {
-          "type": "template",
           "format": "listView",
+          "type": "template",
           "fieldName": "stockItems",
           "dataSource": "StockModel",
           "child": {
-            "type": "template",
             "format": "card",
+            "type": "template",
             "fieldName": "viewTransactionDetailsCard",
             "children": [
               {
-                "type": "template",
                 "format": "labelPairList",
+                "type": "template",
                 "fieldName": "viewTransactionDetailsLabelPairList",
                 "data": [
                   {
@@ -2299,6 +2357,11 @@ final dynamic sampleInventoryFlows = {
                     "key": "INVENTORY_BATCH_NUMBER_LABEL",
                     "value": "{{item.additionalFields.fields.batchNumber}}"
                   },
+                  // {
+                  //   "key": "INVENTORY_EXPIRY_LABEL",
+                  //   "value":
+                  //       "{{fn:formatDate(item.additionalFields.fields.expiryDate, 'date', dd MMM yyyy)}}"
+                  // },
                   {
                     "key":
                         "{{fn:getQuantityLabel(item.additionalFields.fields.sku)}}",
@@ -2312,7 +2375,7 @@ final dynamic sampleInventoryFlows = {
               }
             ]
           },
-          "properties": {"spacing": "spacer4"}
+          "properties": {"spacing": "spacer4"},
         }
       ]
     },
@@ -2359,7 +2422,7 @@ final dynamic sampleInventoryFlows = {
                 "key": "additionalFields",
                 "value": "IN_TRANSIT",
                 "operation": "contains"
-              }
+              },
             ]
           }
         }
@@ -2381,28 +2444,28 @@ final dynamic sampleInventoryFlows = {
       },
       "body": [
         {
-          "type": "template",
           "format": "infoCard",
-          "fieldName": "incomingTransactionsInfoCard",
-          "visible": "{{fn:hasResults('StockModel')}} == false",
+          "type": "template",
+          "fieldName": "incomingTransactionsEmptyStateInfoCard",
+          "hidden": "{{fn:hasResults('StockModel')}} == true",
           "label": "INVENTORY_NO_INCOMING_TRANSACTIONS_LABEL",
           "description": "INVENTORY_NO_INCOMING_TRANSACTIONS_DESCRIPTION"
         },
         {
-          "type": "template",
           "format": "listView",
-          "visible": "{{fn:hasResults('StockModel')}} == true",
+          "type": "template",
+          "hidden": "{{fn:hasResults('StockModel')}} == false",
           "fieldName": "incomingList",
           "dataSource": "StockModel",
           "properties": {"spacing": "spacer4"},
           "child": {
-            "type": "template",
             "format": "card",
-            "fieldName": "incomingTransactionsCard",
+            "type": "template",
+            "fieldName": "incomingTransactionsListCard",
             "children": [
               {
-                "type": "template",
                 "format": "row",
+                "type": "template",
                 "fieldName": "incomingTransactionsHeaderRow",
                 "properties": {
                   "mainAxisAlignment": "spaceBetween",
@@ -2416,8 +2479,8 @@ final dynamic sampleInventoryFlows = {
                     "label": "MRN {{item.groupKey}}"
                   },
                   {
-                    "type": "template",
                     "format": "textTemplate",
+                    "type": "template",
                     "fieldName": "incomingTransactionsDateText",
                     "value":
                         "{{fn:formatDate(item.items[0].dateOfEntry, 'date', dd MMM yyyy)}}"
@@ -2425,8 +2488,8 @@ final dynamic sampleInventoryFlows = {
                 ]
               },
               {
-                "type": "template",
                 "format": "row",
+                "type": "template",
                 "fieldName": "incomingTransactionsPartyRow",
                 "properties": {
                   "mainAxisAlignment": "spaceBetween",
@@ -2434,23 +2497,23 @@ final dynamic sampleInventoryFlows = {
                 },
                 "children": [
                   {
-                    "type": "template",
                     "format": "column",
-                    "fieldName": "incomingTransactionsSenderColumn",
+                    "type": "template",
+                    "fieldName": "incomingTransactionsPartyColumn",
                     "properties": {
                       "mainAxisAlignment": "spaceBetween",
                       "mainAxisSize": "min"
                     },
                     "children": [
                       {
-                        "type": "template",
                         "format": "textTemplate",
+                        "type": "template",
                         "fieldName": "incomingTransactionsSenderLabelText",
                         "value": "APP_CONFIG_INVENTORY_SENDER_LABEL"
                       },
                       {
-                        "type": "template",
                         "format": "textTemplate",
+                        "type": "template",
                         "fieldName": "incomingTransactionsSenderValueText",
                         "value":
                             "{{fn:getFacilityName(item.items[0].senderId)}}"
@@ -2458,29 +2521,29 @@ final dynamic sampleInventoryFlows = {
                     ]
                   },
                   {
-                    "type": "template",
                     "format": "textTemplate",
-                    "fieldName": "incomingTransactionsTypeText",
+                    "type": "template",
+                    "fieldName": "incomingTransactionsTransactionTypeText",
                     "value": "{{item.items[0].transactionType}}"
                   }
                 ]
               },
               {
-                "type": "template",
                 "format": "listView",
-                "fieldName": "incomingTransactionsGroupedItems",
+                "type": "template",
+                "fieldName": "incomingTransactionsGroupedItemsList",
                 "dataSource": "item.items",
                 "child": {
-                  "type": "template",
                   "format": "textTemplate",
+                  "type": "template",
                   "fieldName": "incomingTransactionsGroupedItemText",
                   "value":
                       "{{item.additionalFields.fields.sku}}: {{item.quantity}}"
                 }
               },
               {
-                "type": "template",
                 "format": "button",
+                "type": "template",
                 "fieldName": "incomingTransactionsSelectButton",
                 "label": "INVENTORY_SELECT_LABEL",
                 "visible": "{{item.items[0].transactionType == 'DISPATCHED'}}",
@@ -2569,9 +2632,9 @@ final dynamic sampleInventoryFlows = {
           ]
         },
         {
-          "type": "template",
           "format": "helpLink",
-          "fieldName": "stockReceiptHelpLink",
+          "type": "template",
+          "fieldName": "stockReceiptDetailsHelpLink",
           "label": "CORE_COMMON_HELP"
         }
       ],
@@ -2663,6 +2726,7 @@ final dynamic sampleInventoryFlows = {
             "configName": "stockReject",
             "forceCreate": true,
             "data": [
+              // {"key": "stockEntryType", "value": "RETURNED"},
               {"key": "transactionType", "value": "DISPATCHED"},
               {"key": "primaryRole", "value": "SENDER"},
               {"key": "secondaryRole", "value": "RECEIVER"},
@@ -2736,7 +2800,7 @@ final dynamic sampleInventoryFlows = {
               }
             ]
           }
-        }
+        },
       ],
       "wrapperConfig": {
         "wrapperName": "StockReceiptDetailsWrapper",
@@ -2820,7 +2884,7 @@ final dynamic sampleInventoryFlows = {
               "helpText": "Enter waybill number",
               "infoText": "",
               "readOnly": false,
-              "fieldName": "receiptWayBillNumber",
+              "fieldName": "wayBillNumber",
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
@@ -2841,7 +2905,7 @@ final dynamic sampleInventoryFlows = {
               "helpText": "Enter batch number",
               "infoText": "",
               "readOnly": false,
-              "fieldName": "receiptBatchNumber",
+              "fieldName": "batchNumber",
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
@@ -2851,6 +2915,26 @@ final dynamic sampleInventoryFlows = {
               "isMultiSelect": false,
               "enums": null
             },
+            // {
+            //   "type": "string",
+            //   "label": "INVENTORY_EXPIRY_LABEL",
+            //   "order": 6,
+            //   "value": "",
+            //   "format": "date",
+            //   "hidden": false,
+            //   "tooltip": "",
+            //   "helpText": "Select the expiry date",
+            //   "infoText": "",
+            //   "readOnly": false,
+            //   "fieldName": "expiryDate",
+            //   "deleteFlag": false,
+            //   "innerLabel": "",
+            //   "systemDate": false,
+            //   "visibilityCondition": {},
+            //   "errorMessage": "",
+            //   "isMultiSelect": false,
+            //   "enums": null
+            // },
             {
               "type": "integer",
               "label": "INVENTORY_QUANTITY_SENT_BY_WAREHOUSE_LABEL",
@@ -2862,7 +2946,7 @@ final dynamic sampleInventoryFlows = {
               "helpText": "Enter the quantity of blisters sent by warehouse",
               "infoText": "",
               "readOnly": true,
-              "fieldName": "receiptQuantity",
+              "fieldName": "quantity",
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
@@ -2894,7 +2978,7 @@ final dynamic sampleInventoryFlows = {
               "helpText": "Add any comments",
               "infoText": "",
               "readOnly": false,
-              "fieldName": "receiptComment",
+              "fieldName": "comment",
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
