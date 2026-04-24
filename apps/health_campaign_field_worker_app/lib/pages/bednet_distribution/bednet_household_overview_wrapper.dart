@@ -192,7 +192,10 @@ class BednetHouseholdOverviewWrapperPage extends StatelessWidget
             referralDataRepository: referral,
             beneficiaryType: beneficiaryType,
             individualGlobalSearchRepository: individualGlobalSearchRepository,
-          ),
+          )..add(HouseholdOverviewReloadEvent(
+              projectId: projectId,
+              projectBeneficiaryType: beneficiaryType,
+            )),
         ),
         BlocProvider(
           create: (_) => DeliverInterventionBloc(

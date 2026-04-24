@@ -492,10 +492,7 @@ class IndividualDetailsPageState extends LocalizedState<IndividualDetailsPage> {
                                       ? localizations.translate(i18
                                           .individualDetails
                                           .clfCheckboxLabelText)
-                                      : localizations.translate(
-                                          i18.individualDetails
-                                              .checkboxLabelText,
-                                        ),
+                                      : "School Head",
                                   value: widget.isHeadOfHousehold,
                                   readOnly: widget.isHeadOfHousehold,
                                   onChanged: (_) {},

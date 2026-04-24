@@ -258,9 +258,7 @@ class _BeneficiaryChecklistPageState
                             Padding(
                               padding: const EdgeInsets.only(bottom: spacer2),
                               child: Text(
-                                '${localizations.translate(
-                                  selectedServiceDefinition!.code.toString(),
-                                )} ${localizations.translate(i18.checklist.checklist)}',
+                                'TB Checklist',
                                 style: textTheme.headingXl.copyWith(
                                     color: theme.colorTheme.primary.primary2),
                               ),

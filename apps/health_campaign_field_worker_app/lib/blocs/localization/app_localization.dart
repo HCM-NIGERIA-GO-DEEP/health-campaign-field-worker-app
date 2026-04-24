@@ -26,9 +26,16 @@ class AppLocalizations {
     final listOfLocalizations =
         await LocalizationLocalRepository().returnLocalizationFromSQL(sql);
 
-    _localizedStrings.clear();
-
-    _localizedStrings.addAll(listOfLocalizations);
+    for (var localization in listOfLocalizations) {
+      final index = _localizedStrings.indexWhere(
+        (element) => element.code == localization.code,
+      );
+      if (index != -1) {
+        _localizedStrings[index] = localization;
+      } else {
+        _localizedStrings.add(localization);
+      }
+    }
 
     return _localizedStrings.isNotEmpty ? true : false;
   }

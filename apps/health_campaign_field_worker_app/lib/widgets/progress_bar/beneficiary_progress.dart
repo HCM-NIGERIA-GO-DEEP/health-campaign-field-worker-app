@@ -58,24 +58,28 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
     repository.listenToChanges(
       query: TaskSearchModel(
         projectId: context.projectId.toString(),
+        createdBy: RegistrationDeliverySingleton().loggedInUserUuid,
       ),
       listener: (data) {
         if (mounted) {
           setState(() {
             current = data
                 .where((element) =>
-                    (element.clientAuditDetails?.createdTime != null &&
-                        DateTime.fromMillisecondsSinceEpoch(
-                          element.clientAuditDetails!.createdTime,
-                        ).isAfter(gte) &&
-                        DateTime.fromMillisecondsSinceEpoch(
-                          element.clientAuditDetails!.createdTime,
-                        ).isBefore(lte)) &&
                     (element.isDeleted == false || element.isDeleted == null) &&
-                    element.status == Status.administeredSuccess.toValue() &&
-                    element.createdBy ==
-                        RegistrationDeliverySingleton().loggedInUserUuid)
-                .length;
+                    (element.createdDate != null ||
+                        element.clientAuditDetails?.createdTime != null ||
+                        element.clientAuditDetails?.lastModifiedTime != null))
+                .where((element) {
+              final ms = element.createdDate ??
+                  element.clientAuditDetails?.lastModifiedTime ??
+                  element.clientAuditDetails?.createdTime;
+              if (ms == null) return false;
+              final taskDate = DateTime.fromMillisecondsSinceEpoch(ms);
+
+              return taskDate.isAfter(gte) &&
+                  taskDate.isBefore(lte) &&
+                  element.status == Status.administeredSuccess.toValue();
+            }).length;
           });
         }
       },
