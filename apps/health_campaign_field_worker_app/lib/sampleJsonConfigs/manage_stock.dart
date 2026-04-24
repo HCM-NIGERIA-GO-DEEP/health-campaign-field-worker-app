@@ -772,7 +772,7 @@ final dynamic sampleInventoryFlows = {
                 {
                   "type": "notEqualTo",
                   "value": "warehouseDetails.facilityToWhich",
-                  "message": "Facility from and to must be different"
+                  "message": "INVENTORY_FACILITY_FROM_TO_MUST_BE_DIFFERENT_MESSAGE"
                 },
                 {
                   "type": "facilityHierarchy",
@@ -1394,7 +1394,7 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "Failed to fetch config."}
+                "properties": {"message": "INVENTORY_FETCH_CONFIG_FAILED_MESSAGE"}
               }
             ]
           }
@@ -1406,7 +1406,7 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "Failed to create stock."}
+                "properties": {"message": "INVENTORY_CREATE_STOCK_FAILED_MESSAGE"}
               }
             ]
           }
@@ -1418,7 +1418,7 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "Failed to update stock balance."}
+                "properties": {"message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"}
               }
             ]
           }
@@ -1433,7 +1433,7 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "Navigation failed."}
+                "properties": {"message": "INVENTORY_NAVIGATION_FAILED_MESSAGE"}
               }
             ],
             "data": [
@@ -1821,7 +1821,7 @@ final dynamic sampleInventoryFlows = {
                 {
                   "type": "regex",
                   "value": r"^[0-9]+$",
-                  "message": "Please enter a valid number"
+                  "message": "INVENTORY_VALID_NUMBER_REQUIRED_MESSAGE"
                 }
               ],
               "errorMessage": "",
@@ -1889,7 +1889,7 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "Failed to fetch config."}
+                "properties": {"message": "INVENTORY_FETCH_CONFIG_FAILED_MESSAGE"}
               }
             ]
           }
@@ -1901,7 +1901,7 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "Failed to create stock."}
+                "properties": {"message": "INVENTORY_CREATE_STOCK_FAILED_MESSAGE"}
               }
             ]
           }
@@ -1913,7 +1913,7 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "Failed to update stock balance."}
+                "properties": {"message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"}
               }
             ]
           }
@@ -1928,7 +1928,7 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "Navigation failed."}
+                "properties": {"message": "INVENTORY_NAVIGATION_FAILED_MESSAGE"}
               }
             ],
             "data": [
@@ -2612,7 +2612,7 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "Failed to fetch config."}
+                "properties": {"message": "INVENTORY_FETCH_CONFIG_FAILED_MESSAGE"}
               }
             ]
           }
@@ -2641,7 +2641,7 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "Failed to update stock balance."}
+                "properties": {"message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"}
               }
             ]
           }
@@ -2693,7 +2693,7 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "Failed to fetch config."}
+                "properties": {"message": "INVENTORY_FETCH_CONFIG_FAILED_MESSAGE"}
               }
             ]
           }
@@ -2878,12 +2878,12 @@ final dynamic sampleInventoryFlows = {
                 {
                   "type": "required",
                   "value": true,
-                  "message": "Quantity is required"
+                  "message": "INVENTORY_QUANTITY_REQUIRED_MESSAGE"
                 },
                 {
                   "type": "regex",
                   "value": r"^[0-9]+$",
-                  "message": "Please enter a valid number"
+                  "message": "INVENTORY_VALID_NUMBER_REQUIRED_MESSAGE"
                 }
               ],
               "errorMessage": "",
