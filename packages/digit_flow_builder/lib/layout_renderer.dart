@@ -288,7 +288,23 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
         debugPrint('LayoutRenderer: REBUILD - screenKey=$screenKey, '
             'wrapperLength=$currentWrapperLength, isLoading=$isLoading');
 
-        return LocalizationContext(
+        final onSystemBackActions =
+            widget.config['onSystemBack'] as List<dynamic>?;
+        final hasOnSystemBack =
+            onSystemBackActions != null && onSystemBackActions.isNotEmpty;
+
+        return PopScope(
+          canPop: !hasOnSystemBack,
+          onPopInvoked: (didPop) async {
+            if (didPop) return;
+            if (!hasOnSystemBack) return;
+            await _handleConfiguredSystemBack(
+              context,
+              onSystemBackActions,
+              compositeKey,
+            );
+          },
+          child: LocalizationContext(
           localization: localizations,
           child: NotificationListener<ScrollNotification>(
             onNotification: (notification) =>
@@ -443,7 +459,30 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
               ],
             ),
           ),
+          ),
         );
+      },
+    );
+  }
+
+  /// Executes screen-level `onSystemBack` actions configured in the JSON.
+  /// Used by [PopScope] when canPop is false to override the default
+  /// Android system back behaviour for this screen only.
+  Future<void> _handleConfiguredSystemBack(
+    BuildContext context,
+    List<dynamic> onSystemBackActions,
+    String compositeKey,
+  ) async {
+    final navParams =
+        FlowCrudStateRegistry().getNavigationParams(compositeKey) ?? {};
+
+    await ActionHandler.executeActions(
+      onSystemBackActions,
+      context,
+      {
+        'wrappers': const [],
+        '_compositeKey': compositeKey,
+        'navigation': navParams,
       },
     );
   }
