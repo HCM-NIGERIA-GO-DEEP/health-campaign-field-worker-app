@@ -1114,7 +1114,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
       // Fetch from server
       final remoteBalances = await userActionRemoteRepository.search(
-        UserActionSearchModel(clientReferenceId: balanceKeys),
+        UserActionSearchModel(clientReferenceId: balanceKeys, projectId: projectId),
       );
 
       if (remoteBalances.isEmpty) return;
