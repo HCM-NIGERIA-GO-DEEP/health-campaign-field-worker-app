@@ -88,21 +88,30 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     _hasInitializedProtection = true;
   }
 
+  /// Flows in which the in-app back navigation header and the
+  /// Android system back button must be disabled.
+  static const Set<String> _backDisabledSchemas = {'CHECKLIST'};
+
+  bool get _isBackDisabled =>
+      _backDisabledSchemas.contains(widget.currentSchemaKey);
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocBuilder<FormsBloc, FormsState>(
-        builder: (context, state) {
-          final schemaObject = state.cachedSchemas[widget.currentSchemaKey];
-          if (schemaObject == null) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return PopScope(
+      canPop: !_isBackDisabled,
+      child: Scaffold(
+        body: BlocBuilder<FormsBloc, FormsState>(
+          builder: (context, state) {
+            final schemaObject = state.cachedSchemas[widget.currentSchemaKey];
+            if (schemaObject == null) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (widget.isSummary) {
-            return _buildSummaryPage(context, schemaObject);
-          }
+            if (widget.isSummary) {
+              return _buildSummaryPage(context, schemaObject);
+            }
 
-          final schema = schemaObject.pages[widget.pageName];
+            final schema = schemaObject.pages[widget.pageName];
 
           // Update screen protection based on current page's preventScreenCapture flag (only once)
           if (!_hasInitializedProtection) {
@@ -148,15 +157,15 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                 builder: (context, formGroup, child) {
                   return ScrollableContent(
                     enableFixedDigitButton: true,
-                    header: const Column(
+                    header: Column(
                       children: [
                         Padding(
-                          padding: EdgeInsets.all(spacer2),
+                          padding: const EdgeInsets.all(spacer2),
                           child: BackNavigationHelpHeaderWidget(
-                            showBackNavigation: true,
+                            showBackNavigation: !_isBackDisabled,
                           ),
                         ),
-                        SizedBox.shrink()
+                        const SizedBox.shrink()
                       ],
                     ),
                     footer: DigitCard(
@@ -805,6 +814,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
           );
         },
       ),
+    ),
     );
   }
 
