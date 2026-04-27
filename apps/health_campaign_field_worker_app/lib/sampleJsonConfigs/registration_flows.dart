@@ -3192,12 +3192,6 @@ final dynamic sampleFlows = {
             {
               "type": "string",
               "enums": [
-                {"code": "BENEFICIARY_ABSENT", "name": "BENEFICIARY_ABSENT"},
-                {"code": "BENEFICIARY_REFUSED", "name": "BENEFICIARY_REFUSED"},
-                {
-                  "code": "INSUFFICIENT_RESOURCES",
-                  "name": "INSUFFICIENT_RESOURCES"
-                },
                 {"code": "SUCCESSFUL_DELIVERY", "name": "SUCCESSFUL_DELIVERY"}
               ],
               "label":
@@ -4558,43 +4552,12 @@ final dynamic sampleFlows = {
                   "properties": {
                     "data": [
                       {
-                        "key": "selectedIndividualClientReferenceId",
-                        "value": "{{formData.individual.clientReferenceId}}"
+                        "key": "householdId",
+                        "value": "{{formData.household.clientReferenceId}}"
                       },
-                      {
-                        "key": "selectedIndividualIdentifierId",
-                        "value":
-                            "{{formData.individual.identifiers.0.identifierId}}"
-                      },
-                      {
-                        "key": "HouseholdClientReferenceId",
-                        "value": "{{navigation.HouseholdClientReferenceId}}"
-                      },
-                      {
-                        "key": "ProjectBeneficiaryClientReferenceId",
-                        "value":
-                            "{{formData.projectBeneficiary.clientReferenceId}}"
-                      },
-                      {
-                        "key": "selectedIndividualName",
-                        "value": "{{formData.nameOfIndividual}}"
-                      },
-                      {
-                        "key": "selectedIndividualGender",
-                        "value": "{{formData.gender}}"
-                      },
-                      {
-                        "key": "selectedIndividualAgeInMonths",
-                        "value":
-                            "{{fn:formatDate(formData.dobPicker, 'ageInMonths')}}"
-                      },
-                      {
-                        "key": "cycleIndex",
-                        "value": "{{contextData.0.currentRunningCycle}}"
-                      }
                     ],
-                    "name": "CHECKLIST",
-                    "type": "FORM"
+                    "name": "ACKNOWLEDGEMENT",
+                    "type": "template",
                   }
                 }
               ],
@@ -4677,40 +4640,12 @@ final dynamic sampleFlows = {
           "navigateTo": {
             "data": [
               {
-                "key": "selectedIndividualClientReferenceId",
-                "value": "{{formData.individual.clientReferenceId}}"
+                "key": "householdId",
+                "value": "{{formData.household.clientReferenceId}}"
               },
-              {
-                "key": "selectedIndividualIdentifierId",
-                "value": "{{formData.individual.identifiers.0.identifierId}}"
-              },
-              {
-                "key": "HouseholdClientReferenceId",
-                "value": "{{navigation.HouseholdClientReferenceId}}"
-              },
-              {
-                "key": "ProjectBeneficiaryClientReferenceId",
-                "value": "{{formData.projectBeneficiary.clientReferenceId}}"
-              },
-              {
-                "key": "selectedIndividualName",
-                "value": "{{formData.nameOfIndividual}}"
-              },
-              {
-                "key": "selectedIndividualGender",
-                "value": "{{formData.gender}}"
-              },
-              {
-                "key": "selectedIndividualAgeInMonths",
-                "value": "{{fn:formatDate(formData.dobPicker, 'ageInMonths')}}"
-              },
-              {
-                "key": "cycleIndex",
-                "value": "{{contextData.0.currentRunningCycle}}"
-              }
             ],
-            "name": "CHECKLIST",
-            "type": "FORM"
+            "name": "ACKNOWLEDGEMENT",
+            "type": "template",
           },
           "properties": [
             {
@@ -5115,43 +5050,12 @@ final dynamic sampleFlows = {
           "properties": {
             "data": [
               {
-                "key": "selectedIndividualClientReferenceId",
-                "value":
-                    "{{contextData.entities.IndividualModel.clientReferenceId}}"
-              },
-              {
-                "key": "selectedIndividualIdentifierId",
-                "value":
-                    "{{contextData.entities.IndividualModel.identifiers.0.identifierId}}"
-              },
-              {
                 "key": "HouseholdClientReferenceId",
                 "value": "{{navigation.HouseholdClientReferenceId}}"
               },
-              {
-                "key": "ProjectBeneficiaryClientReferenceId",
-                "value":
-                    "{{contextData.entities.ProjectBeneficiaryModel.clientReferenceId}}"
-              },
-              {
-                "key": "selectedIndividualName",
-                "value": "{{formData.nameOfIndividual}}"
-              },
-              {
-                "key": "selectedIndividualGender",
-                "value": "{{formData.gender}}"
-              },
-              {
-                "key": "selectedIndividualAgeInMonths",
-                "value": "{{fn:formatDate(formData.dobPicker, 'ageInMonths')}}"
-              },
-              {
-                "key": "cycleIndex",
-                "value": "{{contextData.0.currentRunningCycle}}"
-              }
             ],
-            "name": "CHECKLIST",
-            "type": "FORM",
+            "name": "ACKNOWLEDGEMENT",
+            "type": "TEMPLATE",
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
@@ -6608,7 +6512,7 @@ final dynamic sampleFlows = {
                   "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount",
               "order": 2,
               "range": {
-                "max": "10",
+                "max": "30",
                 "min": "0",
                 "errorMessage":
                     "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_max_message"
@@ -6642,7 +6546,7 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "max",
-                  "value": "10",
+                  "value": "30",
                   "message":
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_max_message"
                 }
@@ -6678,7 +6582,7 @@ final dynamic sampleFlows = {
               "label": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount",
               "order": 4,
               "range": {
-                "max": "10",
+                "max": "30",
                 "min": "1",
                 "errorMessage":
                     "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount_max_message"
@@ -6713,7 +6617,7 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "max",
-                  "value": "10",
+                  "value": "30",
                   "message":
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount_max_message"
                 }
