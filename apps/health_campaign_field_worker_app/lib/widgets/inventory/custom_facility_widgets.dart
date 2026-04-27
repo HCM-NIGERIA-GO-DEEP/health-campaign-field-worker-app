@@ -94,6 +94,45 @@ class _FacilityCardContent extends StatelessWidget {
     required this.localizations,
   });
 
+  bool _allowsDeliveryTeamFromValidation({required String transactionType}) {
+    final validations = fieldSchema.validations;
+    if (validations == null || validations.isEmpty) return false;
+
+    final mode =
+        (transactionType == 'DISPATCHED' || transactionType == 'ISSUED')
+            ? 'forIssue'
+            : 'forReceipt';
+
+    for (final validation in validations) {
+      if (validation.type != 'facilityHierarchy') continue;
+
+      final rawValue = validation.value;
+      if (rawValue is! Map) continue;
+
+      final rawHierarchy = rawValue['hierarchyMapping'];
+      if (rawHierarchy is! Map) continue;
+
+      for (final mappingEntry in rawHierarchy.entries) {
+        final levelConfig = mappingEntry.value;
+        if (levelConfig is! Map) continue;
+
+        final options = levelConfig[mode];
+        if (options is! List) continue;
+
+        final hasDeliveryTeam = options
+            .map((e) => e?.toString())
+            .whereType<String>()
+            .any((entry) => entry.toUpperCase() == 'DELIVERY_TEAM');
+
+        if (hasDeliveryTeam) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
   /// Read current selected value from form data or form control
   String? _getCurrentValue(AbstractControl<dynamic>? control) {
     // First try form control (most up-to-date after user interaction)
@@ -144,6 +183,8 @@ class _FacilityCardContent extends StatelessWidget {
             .any((role) => role.code == RolesType.distributor.toValue()) ||
         context.loggedInUserRoles.any(
             (role) => role.code == RolesType.communityDistributor.toValue());
+    final hasDeliveryTeamInValidation =
+        _allowsDeliveryTeamFromValidation(transactionType: transactionType);
 
     final isWareHouseMgr = context.loggedInUserRoles
         .any((role) => role.code == RolesType.warehouseManager.toValue());
@@ -202,7 +243,7 @@ class _FacilityCardContent extends StatelessWidget {
         if (isFromField) return facilityLevel == 'current';
       } else if (transactionType == 'RECEIVED' ||
           transactionType == 'RECEIPT') {
-        if (isToField) return facilityLevel == 'current';
+        if (isToField) return facilityLevel == 'parent';
         if (isFromField) return facilityLevel == 'parent';
       } else if (stockEntryType == 'LOSS' || stockEntryType == 'DAMAGED') {
         // For loss and damaged, to field should show parent facility
@@ -222,7 +263,8 @@ class _FacilityCardContent extends StatelessWidget {
     // Build facility dropdown items
     var facilities = <DropdownItem>[];
 
-    final showDeliveryTeam = hasDeliveryTeamInConfig &&
+    final showDeliveryTeam = (hasDeliveryTeamInConfig ||
+            (isToField && hasDeliveryTeamInValidation)) &&
         ((isToField &&
                 !isReturnFlow &&
                 (transactionType == 'DISPATCHED' ||
