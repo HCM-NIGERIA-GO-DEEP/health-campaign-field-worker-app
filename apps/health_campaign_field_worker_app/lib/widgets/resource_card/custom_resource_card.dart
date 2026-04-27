@@ -148,8 +148,12 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
     final pages =
         context.read<FormsBloc>().state.cachedSchemas[widget.pageSchema]?.pages;
 
-    bool isReadOnlyFromSchema = false;
-    String? labelFromSchema;
+    bool isReadOnlyFromSchema = widget.readOnly;
+    String? labelFromSchema = widget.label;
+    _requiredValidationMessage = null;
+    _minValidationMessage = null;
+    _duplicateValidationMessage = null;
+    _validationMessages = null;
 
     void walk(Map<String, PropertySchema> node, List<String> pathSoFar) {
       for (final entry in node.entries) {
@@ -198,8 +202,9 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
       }
     }
 
-    // Kick off the recursive search
-    walk(pages!, []);
+    if (pages != null && pages.isNotEmpty) {
+      walk(pages, []);
+    }
 
     return ReactiveWrapperField<dynamic>(
       formControlName: _resourceCardKey,

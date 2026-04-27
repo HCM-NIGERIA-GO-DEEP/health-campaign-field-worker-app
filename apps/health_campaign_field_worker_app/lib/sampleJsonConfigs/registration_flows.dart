@@ -135,7 +135,12 @@ final dynamic sampleFlows = {
             "onAction": [
               {
                 "actionType": "NAVIGATION",
-                "properties": {"name": "searchBeneficiary", "type": "TEMPLATE"}
+                "properties": {
+                  "name": "searchBeneficiary",
+                  "type": "TEMPLATE",
+                  "navigationMode": "popUntilAndPush",
+                  "popUntilPageName": "searchBeneficiary"
+                }
               }
             ],
             "fieldName": "goBack",
