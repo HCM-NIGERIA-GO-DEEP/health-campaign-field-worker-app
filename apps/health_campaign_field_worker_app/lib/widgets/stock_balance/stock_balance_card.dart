@@ -265,7 +265,7 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
 
       // Search directly with clientReferenceIds
       final actions = await userActionRepo.search(
-        UserActionSearchModel(clientReferenceId: balanceKeys),
+        UserActionSearchModel(clientReferenceId: balanceKeys, projectId: context.selectedProject.id),
       );
 
       for (final action in actions) {
