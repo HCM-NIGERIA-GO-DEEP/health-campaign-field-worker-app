@@ -131,93 +131,93 @@ final dynamic sampleInventoryFlows = {
             }
           ]
         },
-        {
-          "format": "menu_card",
-          "type": "template",
-          "fieldName": "manageStockRecordStockDamagedCard",
-          "heading":
-              "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_DAMAGED_HEADING",
-          "visible": "{{fn:hasRole('WAREHOUSE_MANAGER')}} == false",
-          "description":
-              "APP_CONFIG_INVENTORY_manageStock_RECORD_THE_LIST_OF_RESOURCES_DAMAGED_DURING_CAMPAIGN_OPERATIONS_DESCRIPTION",
-          "icon": "Store",
-          "onAction": [
-            {
-              "actionType": "NAVIGATION",
-              "properties": {
-                "type": "FORM",
-                "name": "RECORDSTOCK",
-                "data": [
-                  {"key": "stockEntryType", "value": "DAMAGED"},
-                  {"key": "transactionType", "value": "DISPATCHED"},
-                  {"key": "primaryRole", "value": "SENDER"},
-                  {"key": "secondaryRole", "value": "RECEIVER"},
-                  {
-                    "key": "mrnNumber",
-                    "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
-                  }
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "format": "menu_card",
-          "type": "template",
-          "fieldName": "manageStockRecordStockLossCard",
-          "heading":
-              "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_LOSS_HEADING",
-          "description":
-              "APP_CONFIG_INVENTORY_manageStock_RECORD_THE_LIST_OF_RESOURCES_LOST_DURING_CAMPAIGN_OPERATIONS_DESCRIPTION",
-          "icon": "Store",
-          "onAction": [
-            {
-              "actionType": "NAVIGATION",
-              "properties": {
-                "type": "FORM",
-                "name": "RECORDSTOCK",
-                "data": [
-                  {"key": "stockEntryType", "value": "LOSS"},
-                  {"key": "transactionType", "value": "DISPATCHED"},
-                  {"key": "primaryRole", "value": "SENDER"},
-                  {"key": "secondaryRole", "value": "RECEIVER"},
-                  {
-                    "key": "mrnNumber",
-                    "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
-                  }
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "format": "menu_card",
-          "type": "template",
-          "fieldName": "manageStockRecordLessExcessCard",
-          "heading": "INVENTORY_RECORD_LESS_EXCESS_HEADING",
-          "description": "INVENTORY_RECORD_LESS_EXCESS_DESCRIPTION",
-          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
-          "icon": "Store",
-          "onAction": [
-            {
-              "actionType": "NAVIGATION",
-              "properties": {
-                "type": "FORM",
-                "name": "RECORDLESSEXCESS",
-                "data": [
-                  {"key": "stockEntryType", "value": "LESS_EXCESS"},
-                  {"key": "transactionType", "value": "RECEIVED"},
-                  {"key": "primaryRole", "value": "SENDER"},
-                  {"key": "secondaryRole", "value": "RECEIVER"},
-                  {
-                    "key": "mrnNumber",
-                    "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
-                  }
-                ]
-              }
-            }
-          ]
-        }
+        // {
+        //   "format": "menu_card",
+        //   "type": "template",
+        //   "fieldName": "manageStockRecordStockDamagedCard",
+        //   "heading":
+        //       "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_DAMAGED_HEADING",
+        //   "visible": "{{fn:hasRole('WAREHOUSE_MANAGER')}} == false",
+        //   "description":
+        //       "APP_CONFIG_INVENTORY_manageStock_RECORD_THE_LIST_OF_RESOURCES_DAMAGED_DURING_CAMPAIGN_OPERATIONS_DESCRIPTION",
+        //   "icon": "Store",
+        //   "onAction": [
+        //     {
+        //       "actionType": "NAVIGATION",
+        //       "properties": {
+        //         "type": "FORM",
+        //         "name": "RECORDSTOCK",
+        //         "data": [
+        //           {"key": "stockEntryType", "value": "DAMAGED"},
+        //           {"key": "transactionType", "value": "DISPATCHED"},
+        //           {"key": "primaryRole", "value": "SENDER"},
+        //           {"key": "secondaryRole", "value": "RECEIVER"},
+        //           {
+        //             "key": "mrnNumber",
+        //             "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
+        //           }
+        //         ]
+        //       }
+        //     }
+        //   ]
+        // },
+        // {
+        //   "format": "menu_card",
+        //   "type": "template",
+        //   "fieldName": "manageStockRecordStockLossCard",
+        //   "heading":
+        //       "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_LOSS_HEADING",
+        //   "description":
+        //       "APP_CONFIG_INVENTORY_manageStock_RECORD_THE_LIST_OF_RESOURCES_LOST_DURING_CAMPAIGN_OPERATIONS_DESCRIPTION",
+        //   "icon": "Store",
+        //   "onAction": [
+        //     {
+        //       "actionType": "NAVIGATION",
+        //       "properties": {
+        //         "type": "FORM",
+        //         "name": "RECORDSTOCK",
+        //         "data": [
+        //           {"key": "stockEntryType", "value": "LOSS"},
+        //           {"key": "transactionType", "value": "DISPATCHED"},
+        //           {"key": "primaryRole", "value": "SENDER"},
+        //           {"key": "secondaryRole", "value": "RECEIVER"},
+        //           {
+        //             "key": "mrnNumber",
+        //             "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
+        //           }
+        //         ]
+        //       }
+        //     }
+        //   ]
+        // },
+        // {
+        //   "format": "menu_card",
+        //   "type": "template",
+        //   "fieldName": "manageStockRecordLessExcessCard",
+        //   "heading": "INVENTORY_RECORD_LESS_EXCESS_HEADING",
+        //   "description": "INVENTORY_RECORD_LESS_EXCESS_DESCRIPTION",
+        //   "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
+        //   "icon": "Store",
+        //   "onAction": [
+        //     {
+        //       "actionType": "NAVIGATION",
+        //       "properties": {
+        //         "type": "FORM",
+        //         "name": "RECORDLESSEXCESS",
+        //         "data": [
+        //           {"key": "stockEntryType", "value": "LESS_EXCESS"},
+        //           {"key": "transactionType", "value": "RECEIVED"},
+        //           {"key": "primaryRole", "value": "SENDER"},
+        //           {"key": "secondaryRole", "value": "RECEIVER"},
+        //           {
+        //             "key": "mrnNumber",
+        //             "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
+        //           }
+        //         ]
+        //       }
+        //     }
+        //   ]
+        // }
       ]
     },
     {
@@ -644,15 +644,15 @@ final dynamic sampleInventoryFlows = {
                   "value": {
                     "hierarchyMapping": {
                       "State": {
-                        "forReceipt": ["LGA Facility"],
-                        "forIssue": ["LGA Facility"]
-                      },
-                      "LGA": {
-                        "forReceipt": ["State Facility"],
+                        "forReceipt": ["Health Facility"],
                         "forIssue": ["Health Facility"]
                       },
+                      // "LGA": {
+                      //   "forReceipt": ["State Facility"],
+                      //   "forIssue": ["Health Facility"]
+                      // },
                       "Health Facility": {
-                        "forReceipt": ["LGA Facility"],
+                        "forReceipt": ["State Facility"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
                     },
@@ -772,7 +772,8 @@ final dynamic sampleInventoryFlows = {
                 {
                   "type": "notEqualTo",
                   "value": "warehouseDetails.facilityToWhich",
-                  "message": "INVENTORY_FACILITY_FROM_TO_MUST_BE_DIFFERENT_MESSAGE"
+                  "message":
+                      "INVENTORY_FACILITY_FROM_TO_MUST_BE_DIFFERENT_MESSAGE"
                 },
                 {
                   "type": "facilityHierarchy",
@@ -1394,7 +1395,9 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "INVENTORY_FETCH_CONFIG_FAILED_MESSAGE"}
+                "properties": {
+                  "message": "INVENTORY_FETCH_CONFIG_FAILED_MESSAGE"
+                }
               }
             ]
           }
@@ -1406,7 +1409,9 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "INVENTORY_CREATE_STOCK_FAILED_MESSAGE"}
+                "properties": {
+                  "message": "INVENTORY_CREATE_STOCK_FAILED_MESSAGE"
+                }
               }
             ]
           }
@@ -1418,7 +1423,9 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"}
+                "properties": {
+                  "message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"
+                }
               }
             ]
           }
@@ -1889,7 +1896,9 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "INVENTORY_FETCH_CONFIG_FAILED_MESSAGE"}
+                "properties": {
+                  "message": "INVENTORY_FETCH_CONFIG_FAILED_MESSAGE"
+                }
               }
             ]
           }
@@ -1901,7 +1910,9 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "INVENTORY_CREATE_STOCK_FAILED_MESSAGE"}
+                "properties": {
+                  "message": "INVENTORY_CREATE_STOCK_FAILED_MESSAGE"
+                }
               }
             ]
           }
@@ -1913,7 +1924,9 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"}
+                "properties": {
+                  "message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"
+                }
               }
             ]
           }
@@ -2612,7 +2625,9 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "INVENTORY_FETCH_CONFIG_FAILED_MESSAGE"}
+                "properties": {
+                  "message": "INVENTORY_FETCH_CONFIG_FAILED_MESSAGE"
+                }
               }
             ]
           }
@@ -2641,7 +2656,9 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"}
+                "properties": {
+                  "message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"
+                }
               }
             ]
           }
@@ -2693,7 +2710,9 @@ final dynamic sampleInventoryFlows = {
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
-                "properties": {"message": "INVENTORY_FETCH_CONFIG_FAILED_MESSAGE"}
+                "properties": {
+                  "message": "INVENTORY_FETCH_CONFIG_FAILED_MESSAGE"
+                }
               }
             ]
           }
