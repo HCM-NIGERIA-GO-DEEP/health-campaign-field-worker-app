@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:attendance_management/utils/utils.dart';
 import 'package:collection/collection.dart';
@@ -1411,10 +1412,10 @@ class _HomePageState extends LocalizedState<HomePage> {
               barrierDismissible: false,
             );
           },
-          getBatchSize: (batchSize, projectId) {
+          getBatchSize: (batchSize, projectModel) {
             context.read<StockDownSyncBloc>().add(
                   StockDownSyncCheckTotalCountEvent(
-                    projectId: projectId,
+                    projectModel: projectModel,
                     batchSize: batchSize,
                   ),
                 );
@@ -1428,7 +1429,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                       ? i18.common.stockDataFound
                       : i18.common.stockNoDataFound,
                 ),
-                projectId: context.projectId,
+                projectModel: context.selectedProject,
                 boundaries: [],
                 batchSize: batchSize,
                 totalCount: initialServerCount,
@@ -1463,7 +1464,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                   title: localizations.translate(
                     i18.beneficiaryDetails.dataDownloadInProgress,
                   ),
-                  projectId: context.projectId,
+                  projectModel: context.selectedProject,
                   boundaries: [],
                   syncCount: syncCount,
                   totalCount: totalCount,
@@ -1508,7 +1509,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                           i18.common.coreCommonDownloadFailed,
                         ),
                         appConfiguartion: appConfiguration,
-                        projectId: context.projectId,
+                        projectModel: context.selectedProject,
                         boundaries: [],
                         primaryButtonLabel: localizations.translate(
                           i18.syncDialog.retryButtonLabel,
@@ -1534,7 +1535,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                           i18.common.coreCommonDownloadFailed,
                         ),
                         appConfiguartion: appConfiguration,
-                        projectId: context.projectId,
+                        projectModel: context.selectedProject,
                         boundaries: [],
                         primaryButtonLabel: localizations.translate(
                           i18.syncDialog.retryButtonLabel,
@@ -1559,7 +1560,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                 content: localizations.translate(
                   i18.beneficiaryDetails.insufficientStorageContent,
                 ),
-                projectId: context.projectId,
+                projectModel: context.selectedProject,
                 boundaries: [],
                 primaryButtonLabel: localizations.translate(
                   i18.common.coreCommonOk,
@@ -2023,32 +2024,34 @@ class _HomePageState extends LocalizedState<HomePage> {
                   dynamicEntityModelListener: EntityModelMapMapper(),
                 );
                 try {
-                  // if (false) {
-                  //   final allSchemas =
-                  //       json.decode(schemaJsonRaw!) as Map<String, dynamic>;
-                  //   final data = allSchemas['REGISTRATION'];
-                  //
-                  //   final registrationDeliveryData = data?['data'];
-                  //   final flowsData = (registrationDeliveryData['flows']
-                  //               as List<dynamic>?)
-                  //           ?.map((e) => Map<String, dynamic>.from(e as Map))
-                  //           .toList() ??
-                  //       [];
-                  //   FlowRegistry.setConfig(flowsData);
-                  //   NavigationRegistry.setupNavigation(ctx);
-                  //
-                  //   ctx.router.push(
-                  //     FlowBuilderHomeRoute(
-                  //         pageName: registrationDeliveryData["initialPage"]),
-                  //   );
-                  // } else {
-                  FlowRegistry.setConfig(
-                      sampleFlows["flows"] as List<Map<String, dynamic>>);
-                  NavigationRegistry.setupNavigation(ctx);
-                  ctx.router.push(
-                    FlowBuilderHomeRoute(pageName: sampleFlows["initialPage"]),
-                  );
-                  // }
+                  if (schemaJsonRaw != null) {
+                    final allSchemas =
+                        json.decode(schemaJsonRaw) as Map<String, dynamic>;
+                    final data = allSchemas['REGISTRATION'];
+
+                    final registrationDeliveryData = data?['data'];
+                    final flowsData = (registrationDeliveryData['flows']
+                                as List<dynamic>?)
+                            ?.map((e) => Map<String, dynamic>.from(e as Map))
+                            .toList() ??
+                        [];
+                    FlowRegistry.setConfig(flowsData);
+                    NavigationRegistry.setupNavigation(ctx);
+
+                    ctx.router.push(
+                      FlowBuilderHomeRoute(
+                          pageName: registrationDeliveryData["initialPage"]),
+                    );
+                  } else {
+                    FlowRegistry.setConfig(
+                        sampleFlows["flows"] as List<Map<String, dynamic>>);
+                    NavigationRegistry.setupNavigation(ctx);
+                    ctx.router.push(
+                      FlowBuilderHomeRoute(
+                          pageName: sampleFlows["initialPage"]),
+                    );
+                    // }
+                  }
                 } catch (e) {
                   debugPrint('error $e');
                 }
@@ -2758,7 +2761,7 @@ void setPackagesSingleton(BuildContext context) {
               ? appConfiguration.transitPostType!.map((e) => e.code).toList()
               : [],
           loggedInUserUuid: context.loggedInUserUuid,
-          projectId: context.selectedProject.id,
+          projectId: context.projectId,
           minAge: context.selectedProjectType?.validMinAge,
           maxAge: context.selectedProjectType?.validMaxAge,
         );
