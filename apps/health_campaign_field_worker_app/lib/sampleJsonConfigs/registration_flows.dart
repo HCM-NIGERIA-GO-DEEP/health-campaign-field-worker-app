@@ -4607,7 +4607,7 @@ final dynamic sampleFlows = {
                       },
                       {
                         "key": "cycleIndex",
-                        "value": "{{contextData.0.currentRunningCycle}}"
+                        "value": "{{contextData.0.cycleIndex}}"
                       }
                     ],
                     "name": "CHECKLIST",
@@ -4723,7 +4723,7 @@ final dynamic sampleFlows = {
               },
               {
                 "key": "cycleIndex",
-                "value": "{{contextData.0.currentRunningCycle}}"
+                "value": "{{contextData.0.cycleIndex}}"
               }
             ],
             "name": "CHECKLIST",
@@ -5164,7 +5164,7 @@ final dynamic sampleFlows = {
               },
               {
                 "key": "cycleIndex",
-                "value": "{{contextData.0.currentRunningCycle}}"
+                "value": "{{contextData.0.cycleIndex}}"
               }
             ],
             "name": "CHECKLIST",
