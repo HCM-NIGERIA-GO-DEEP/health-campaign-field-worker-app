@@ -174,6 +174,17 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
           }
           break;
 
+        case 'regex':
+          if (rule.value is String && (rule.value as String).isNotEmpty) {
+            final pattern = RegExp(rule.value as String);
+            validators.add(Validators.delegate((control) {
+              final value = control.value?.toString();
+              if (value == null || value.isEmpty) return null;
+              return pattern.hasMatch(value) ? null : {'regex': true};
+            }) as Validator<T>);
+          }
+          break;
+
         case 'required':
           if (rule.value == true) {
             validators.add(Validators.required as Validator<T>);

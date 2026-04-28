@@ -46,6 +46,9 @@ Map<String, String Function(Object)> buildValidationMessages(
       case 'pattern':
         messages['pattern'] = (_) => finalMessage;
         break;
+      case 'regex':
+        messages['regex'] = (_) => finalMessage;
+        break;
       case 'notEqualTo':
         messages['notEqualTo'] = (_) => finalMessage;
         break;
