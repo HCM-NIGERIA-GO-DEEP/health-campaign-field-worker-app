@@ -3883,7 +3883,7 @@ final dynamic sampleFlows = {
               ],
               "condition": {
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==NO"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==NO"
               }
             },
             {
@@ -3948,7 +3948,7 @@ final dynamic sampleFlows = {
               ],
               "condition": {
                 "expression":
-                    "eligibilityChecklist.ec1==YES && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec4==YES"
+                    "eligibilityChecklist.ec1==YES && eligibilityChecklist.ec2==YES && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec4==YES"
               }
             },
             {
@@ -4039,7 +4039,7 @@ final dynamic sampleFlows = {
               ],
               "condition": {
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==NO"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==NO"
               }
             },
             {
@@ -4192,12 +4192,7 @@ final dynamic sampleFlows = {
               ],
               "includeInSummary": true,
               "required.message":
-                  "APPONE_ELIGIBILITYCHECKLIST_QUESTION_2_LABEL_REQUIRED_MESSAGE",
-              "visibilityCondition": {
-                "expression": [
-                  {"condition": "eligibilityChecklist.ec1==YES"}
-                ]
-              }
+                  "APPONE_ELIGIBILITYCHECKLIST_QUESTION_2_LABEL_REQUIRED_MESSAGE"
             },
             {
               "type": "string",
@@ -4341,7 +4336,7 @@ final dynamic sampleFlows = {
               {
                 "value": "To Administer",
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==NO"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==NO"
               },
               {
                 "value": "Ineligible flow",
