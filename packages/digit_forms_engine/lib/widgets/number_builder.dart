@@ -57,7 +57,16 @@ class JsonSchemaNumberBuilder extends JsonSchemaBuilder<int> {
                   form.control(formControlName).value = null;
                   return;
                 }
-                form.control(formControlName).value = int.parse(value);
+                try {
+                  form.control(formControlName).value = int.parse(value);
+                } catch (e) {
+                  form.control(formControlName).value = null;
+                  form
+                      .control(formControlName)
+                      .setErrors({'invalidNumber': true});
+                  return;
+                }
+
                 if (getMinLength(validations) != null &&
                     value.length < getMinLength(validations)!) {
                   form.control(formControlName).setErrors({'minLength': true});
