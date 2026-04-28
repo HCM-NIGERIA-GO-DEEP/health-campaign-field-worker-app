@@ -52,39 +52,36 @@ class JsonSchemaNumberBuilder extends JsonSchemaBuilder<int> {
               keyboardType: inputType,
               initialValue: form.control(formControlName).value?.toString(),
               onChange: (value) {
-                form.control(formControlName).markAsTouched();
+                final control = form.control(formControlName);
+                control.markAsTouched();
                 if (value.isEmpty) {
-                  form.control(formControlName).value = null;
+                  control.value = null;
                   return;
                 }
-                form.control(formControlName).value = int.parse(value);
+                try {
+                  control.value = int.parse(value);
+                } catch (e) {
+                  control.value = null;
+                  control.setErrors({'invalidNumber': true});
+                  return;
+                }
+
                 if (getMinLength(validations) != null &&
                     value.length < getMinLength(validations)!) {
-                  form.control(formControlName).setErrors({'minLength': true});
+                  // Merge with existing validator errors (e.g. regex) instead of replacing them
+                  control.setErrors({...control.errors, 'minLength': true});
                 } else {
-                  form.control(formControlName).removeError('minLength');
+                  control.removeError('minLength');
                 }
               },
-              errorMessage: _getNumberErrorMessage(field.control, context),
-              inputFormatters: inputFormatter != null ? [inputFormatter] : null,
+              errorMessage: field.errorText,
+              inputFormatters: inputFormatter != null
+                  ? [inputFormatter]
+                  : [FilteringTextInputFormatter.digitsOnly],
             ),
           ),
         );
       },
     );
-  }
-
-  String? _getNumberErrorMessage(
-      AbstractControl<dynamic> control, BuildContext context) {
-    final loc = FormLocalization.of(context);
-
-    for (final rule in validations ?? []) {
-      if (control.hasError(rule.type) && control.touched) {
-        /// todo: need to create a constant
-        return loc.translate(rule.message ?? 'Invalid');
-      }
-    }
-
-    return null;
   }
 }
