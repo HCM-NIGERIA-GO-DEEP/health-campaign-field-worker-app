@@ -20,7 +20,7 @@ class Constants {
   static const String checklistViewDateFormat = 'dd/MM/yyyy hh:mm a';
 }
 
-int? minFromValidations(List<ValidationRule>? validations) {
+int? minFromValidations(List<ValidationRule>? validations, FormGroup form) {
   if (validations == null) return null;
 
   final rule = validations.firstWhere(
@@ -30,12 +30,26 @@ int? minFromValidations(List<ValidationRule>? validations) {
 
   if (rule.value == null) return null;
 
+  if (rule.value is String && rule.value.toString().startsWith('{{')) {
+    // Extract the key from the template string, e.g. "{{formData.memberCount}}" -> "formData.memberCount"
+    final key = rule.value.toString().replaceAll(RegExp(r'[{}]'), '').trim();
+    // Get the value from the form using the extracted key
+    final dynamic valueFromForm = form.control(key).value;
+    if (valueFromForm is int) {
+      return valueFromForm;
+    } else if (valueFromForm is String) {
+      return int.tryParse(valueFromForm);
+    } else {
+      return null;
+    }
+  }
+
   return rule.value is int
       ? rule.value as int
       : int.tryParse(rule.value.toString());
 }
 
-int? maxFromValidations(List<ValidationRule>? validations) {
+int? maxFromValidations(List<ValidationRule>? validations, FormGroup form) {
   if (validations == null) return null;
 
   final rule = validations.firstWhere(
@@ -44,6 +58,20 @@ int? maxFromValidations(List<ValidationRule>? validations) {
   );
 
   if (rule.value == null) return null;
+
+  if (rule.value is String && rule.value.toString().startsWith('{{')) {
+    // Extract the key from the template string, e.g. "{{formData.memberCount}}" -> "formData.memberCount"
+    final key = rule.value.toString().replaceAll(RegExp(r'[{}]'), '').trim();
+    // Get the value from the form using the extracted key
+    final dynamic valueFromForm = form.control(key).value;
+    if (valueFromForm is int) {
+      return valueFromForm;
+    } else if (valueFromForm is String) {
+      return int.tryParse(valueFromForm);
+    } else {
+      return null;
+    }
+  }
 
   return rule.value is int
       ? rule.value as int
