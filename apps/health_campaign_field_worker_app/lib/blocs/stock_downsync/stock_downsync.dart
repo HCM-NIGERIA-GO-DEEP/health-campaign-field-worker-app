@@ -347,7 +347,7 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
 
       // Fetch from server
       final remoteBalances = await userActionRemoteRepository.search(
-        UserActionSearchModel(clientReferenceId: balanceKeys),
+        UserActionSearchModel(clientReferenceId: balanceKeys, projectId: projectId),
       );
 
       if (remoteBalances.isEmpty) return;
