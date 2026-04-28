@@ -1470,22 +1470,43 @@ final dynamic sampleFlows = {
                           "properties": {"parentScreenKey": "searchBeneficiary"}
                         },
                         {
-                          "actionType": "NAVIGATION",
-                          "properties": {
-                            "data": [
-                              {
-                                "key": "HouseholdClientReferenceId",
-                                "value":
-                                    "{{contextData.0.household.HouseholdModel.clientReferenceId}}"
-                              },
-                              {
-                                "key": "UNIQUE_BENEFICIARY_ID",
-                                "value": "{{latestBeneficiaryId}}"
+                          "condition": {
+                            "expression":
+                                "{{fn:countMembersInAgeRange(contextData.0.members)}} >= {{fn:getAdditionalFieldValue(contextData.0.household.HouseholdModel.additionalFields.fields, 'childrenCount')}}"
+                          },
+                          "actions": [
+                            {
+                              "actionType": "SHOW_TOAST",
+                              "properties": {
+                                "message":
+                                    "REGISTRATION_SEARCH_BENEFICIARY_CHILDREN_COUNT_EXCEEDED",
+                                "type": "error"
                               }
-                            ],
-                            "name": "ADD_MEMBER",
-                            "type": "FORM"
-                          }
+                            }
+                          ]
+                        },
+                        {
+                          "condition": {"expression": "DEFAULT"},
+                          "actions": [
+                            {
+                              "actionType": "NAVIGATION",
+                              "properties": {
+                                "data": [
+                                  {
+                                    "key": "HouseholdClientReferenceId",
+                                    "value":
+                                        "{{contextData.0.household.HouseholdModel.clientReferenceId}}"
+                                  },
+                                  {
+                                    "key": "UNIQUE_BENEFICIARY_ID",
+                                    "value": "{{latestBeneficiaryId}}"
+                                  }
+                                ],
+                                "name": "ADD_MEMBER",
+                                "type": "FORM"
+                              }
+                            }
+                          ]
                         }
                       ],
                       "fieldName": "clearFilter",
@@ -6546,7 +6567,7 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "max",
-                  "value": "{{memberCount}}",
+                  "value": "{{memberCount - 1}}",
                   "message":
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_max_message"
                 },
@@ -6611,7 +6632,7 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "min",
-                  "value": "1",
+                  "value": "{{childrenCount + 1}}",
                   "message":
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount_min_message"
                 },
