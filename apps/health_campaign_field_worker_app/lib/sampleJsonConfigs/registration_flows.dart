@@ -4279,7 +4279,54 @@ final dynamic sampleFlows = {
               ],
               "includeInSummary": true,
               "required.message":
-                  "APPONE_ELIGIBILITYCHECKLIST_QUESTION_4_LABEL_REQUIRED_MESSAGE"
+                  "APPONE_ELIGIBILITYCHECKLIST_QUESTION_4_LABEL_REQUIRED_MESSAGE",
+              "visibilityCondition": {
+                "expression": [
+                  {"condition": "eligibilityChecklist.ec3==YES"}
+                ]
+              }
+            },
+            {
+              "type": "string",
+              "enums": [
+                {"code": "YES", "name": "QUESTION_5_YES"},
+                {"code": "NO", "name": "QUESTION_5_NO"}
+              ],
+              "label": "APPONE_ELIGIBILITYCHECKLIST_QUESTION_5_LABEL",
+              "order": 3,
+              "value": "",
+              "format": "radio",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "required": true,
+              "fieldName": "ec5",
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_ELIGIBILITYCHECKLIST_QUESTION_5_LABEL_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": "",
+              "includeInForm": true,
+              "isMultiSelect": false,
+              "dropDownOptions": [
+                {"code": "YES", "name": "QUESTION_5_YES"},
+                {"code": "NO", "name": "QUESTION_5_NO"}
+              ],
+              "includeInSummary": true,
+              "required.message":
+                  "APPONE_ELIGIBILITYCHECKLIST_QUESTION_5_LABEL_REQUIRED_MESSAGE"
             }
           ],
           "actionLabel":
