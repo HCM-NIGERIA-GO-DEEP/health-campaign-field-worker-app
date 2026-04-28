@@ -203,6 +203,11 @@ final dynamic sampleFlows = {
                       "{{contextData.0.individuals.IndividualModel.identifiers.0.identifierId}}"
                 },
                 {
+                  "key": "HOME_BENEFICIARY_ID_LABEL",
+                  "value":
+                      "{{contextData.0.projectBeneficiaries.ProjectBeneficiaryModel.clientReferenceId}}"
+                },
+                {
                   "key": "AGE",
                   "value":
                       "{{fn:formatDate(contextData.0.individuals.IndividualModel.dateOfBirth, 'age')}}"
@@ -939,6 +944,29 @@ final dynamic sampleFlows = {
                 "type": "template",
                 "format": "card",
                 "children": [
+                  {
+                    "type": "template",
+                    "format": "card",
+                    "fieldName": "beneficiaryIdBox",
+                    "properties": {"type": "tertiary", "bottomGap": 12},
+                    "children": [
+                      {
+                        "type": "template",
+                        "format": "row",
+                        "fieldName": "beneficiaryIdRow",
+                        "properties": {"mainAxisAlignment": "center"},
+                        "children": [
+                          {
+                            "type": "template",
+                            "value":
+                                "{{item.projectBeneficiary.0.beneficiaryClientReferenceId}}",
+                            "format": "textTemplate",
+                            "fieldName": "beneficiaryIdValue"
+                          }
+                        ]
+                      }
+                    ]
+                  },
                   {
                     "type": "template",
                     "format": "row",
