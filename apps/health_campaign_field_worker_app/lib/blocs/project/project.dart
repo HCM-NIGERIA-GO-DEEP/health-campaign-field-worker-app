@@ -1044,13 +1044,13 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
       // NOTE: Added this to create user action if there is no existing record but stock balance is there
       // After stock download, calculate and create/update UserAction balance records
-      await _createStockBalanceUserActions(
-        project: project,
-        receiverIds: receiverIds,
-        productVariantIds: productVariantIds,
-        userRoles: userRoles,
-        userObject: userObject,
-      );
+      // await _createStockBalanceUserActions(
+      //   project: project,
+      //   receiverIds: receiverIds,
+      //   productVariantIds: productVariantIds,
+      //   userRoles: userRoles,
+      //   userObject: userObject,
+      // );
 
       debugPrint(
           'SILENT_STOCK_DOWNSYNC: Completed. Synced $syncedCount/$totalCount');
@@ -1114,7 +1114,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
       // Fetch from server
       final remoteBalances = await userActionRemoteRepository.search(
-        UserActionSearchModel(clientReferenceId: balanceKeys, projectId: projectId),
+        UserActionSearchModel(
+            clientReferenceId: balanceKeys, projectId: projectId),
       );
 
       if (remoteBalances.isEmpty) return;
