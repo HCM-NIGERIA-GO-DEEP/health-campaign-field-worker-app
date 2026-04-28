@@ -148,8 +148,9 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
     final pages =
         context.read<FormsBloc>().state.cachedSchemas[widget.pageSchema]?.pages;
 
-    bool isReadOnlyFromSchema = false;
-    String? labelFromSchema;
+    bool isReadOnlyFromSchema = widget.readOnly;
+    String? labelFromSchema = widget.label;
+    bool foundResourceCard = false;
 
     void walk(Map<String, PropertySchema> node, List<String> pathSoFar) {
       for (final entry in node.entries) {
@@ -159,6 +160,7 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
         final currentPath = [...pathSoFar, key];
 
         if (key == _resourceCardKey) {
+          foundResourceCard = true;
           // Found it; pull values
           isReadOnlyFromSchema =
               (schema.readOnly == true) || (schema.displayOnly == true);
@@ -192,13 +194,11 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
 
         if (schema.properties != null && schema.properties!.isNotEmpty) {
           walk(schema.properties!, currentPath);
-          if (labelFromSchema != null || isReadOnlyFromSchema)
-            return; // early exit
+          if (foundResourceCard) return; // early exit
         }
       }
     }
 
-    // Kick off the recursive search
     walk(pages!, []);
 
     return ReactiveWrapperField<dynamic>(
@@ -255,34 +255,39 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
                       ),
                     ],
                     Column(
-                      children: _controllers.isEmpty ? [] : List.generate(_controllers.length * 2 - 1, (i) {
-                        if (i.isOdd) {
-                          return const SizedBox(height: 16); // Middle spacing
-                        }
-                        final index = i ~/ 2;
-                        final controller = _controllers[index];
-                        return ResourceBeneficiaryCard(
-                          maxQuantity: _maxQuantities[index],
-                          readOnly: isReadOnlyFromSchema,
-                          form: form,
-                          cardIndex: index,
-                          totalItems: _controllers.length,
-                          variants: productVariants,
-                          onProductChanged: (index, product) {
-                            setState(() {
-                              _maxQuantities[index] = product.quantity;
-                            });
-                          },
-                          onDelete: (index) {
-                            (form.control(_resourceDeliveredKey) as FormArray)
-                                .removeAt(index);
-                            (form.control(_quantityDistributedKey) as FormArray)
-                                .removeAt(index);
-                            _controllers.removeAt(index);
-                            setState(() {});
-                          },
-                        );
-                      }),
+                      children: _controllers.isEmpty
+                          ? []
+                          : List.generate(_controllers.length * 2 - 1, (i) {
+                              if (i.isOdd) {
+                                return const SizedBox(
+                                    height: 16); // Middle spacing
+                              }
+                              final index = i ~/ 2;
+                              final controller = _controllers[index];
+                              return ResourceBeneficiaryCard(
+                                maxQuantity: _maxQuantities[index],
+                                readOnly: isReadOnlyFromSchema,
+                                form: form,
+                                cardIndex: index,
+                                totalItems: _controllers.length,
+                                variants: productVariants,
+                                onProductChanged: (index, product) {
+                                  setState(() {
+                                    _maxQuantities[index] = product.quantity;
+                                  });
+                                },
+                                onDelete: (index) {
+                                  (form.control(_resourceDeliveredKey)
+                                          as FormArray)
+                                      .removeAt(index);
+                                  (form.control(_quantityDistributedKey)
+                                          as FormArray)
+                                      .removeAt(index);
+                                  _controllers.removeAt(index);
+                                  setState(() {});
+                                },
+                              );
+                            }),
                     ),
                     const SizedBox(
                       height: spacer4,
