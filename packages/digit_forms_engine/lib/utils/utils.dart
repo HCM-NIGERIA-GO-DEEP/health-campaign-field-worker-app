@@ -20,6 +20,29 @@ class Constants {
   static const String checklistViewDateFormat = 'dd/MM/yyyy hh:mm a';
 }
 
+// Resolves a template value like "{{formData.memberCount}}" or "{{formData.memberCount + 1}}"
+// to an integer by reading the referenced form control and applying an optional +/- offset.
+int? _resolveTemplateValue(String template, FormGroup form) {
+  final inner = template.replaceAll(RegExp(r'[{}]'), '').trim();
+
+  final operatorMatch = RegExp(r'^(.+?)\s*([+-])\s*(\d+)$').firstMatch(inner);
+  if (operatorMatch != null) {
+    final key = operatorMatch.group(1)!.trim();
+    final op = operatorMatch.group(2)!;
+    final offset = int.parse(operatorMatch.group(3)!);
+
+    final dynamic raw = form.control(key).value;
+    final int? base = raw is int ? raw : int.tryParse(raw.toString());
+    if (base == null) return null;
+    return op == '+' ? base + offset : base - offset;
+  }
+
+  final dynamic raw = form.control(inner).value;
+  if (raw is int) return raw;
+  if (raw is String) return int.tryParse(raw);
+  return null;
+}
+
 int? minFromValidations(List<ValidationRule>? validations, FormGroup form) {
   if (validations == null) return null;
 
@@ -31,17 +54,7 @@ int? minFromValidations(List<ValidationRule>? validations, FormGroup form) {
   if (rule.value == null) return null;
 
   if (rule.value is String && rule.value.toString().startsWith('{{')) {
-    // Extract the key from the template string, e.g. "{{formData.memberCount}}" -> "formData.memberCount"
-    final key = rule.value.toString().replaceAll(RegExp(r'[{}]'), '').trim();
-    // Get the value from the form using the extracted key
-    final dynamic valueFromForm = form.control(key).value;
-    if (valueFromForm is int) {
-      return valueFromForm;
-    } else if (valueFromForm is String) {
-      return int.tryParse(valueFromForm);
-    } else {
-      return null;
-    }
+    return _resolveTemplateValue(rule.value.toString(), form);
   }
 
   return rule.value is int
@@ -60,17 +73,7 @@ int? maxFromValidations(List<ValidationRule>? validations, FormGroup form) {
   if (rule.value == null) return null;
 
   if (rule.value is String && rule.value.toString().startsWith('{{')) {
-    // Extract the key from the template string, e.g. "{{formData.memberCount}}" -> "formData.memberCount"
-    final key = rule.value.toString().replaceAll(RegExp(r'[{}]'), '').trim();
-    // Get the value from the form using the extracted key
-    final dynamic valueFromForm = form.control(key).value;
-    if (valueFromForm is int) {
-      return valueFromForm;
-    } else if (valueFromForm is String) {
-      return int.tryParse(valueFromForm);
-    } else {
-      return null;
-    }
+    return _resolveTemplateValue(rule.value.toString(), form);
   }
 
   return rule.value is int
