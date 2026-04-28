@@ -6546,10 +6546,10 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "max",
-                  "value": "30",
+                  "value": "{{memberCount}}",
                   "message":
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_max_message"
-                }
+                },
               ],
               "errorMessage": "",
               "isMultiSelect": false
