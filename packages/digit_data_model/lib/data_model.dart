@@ -57,6 +57,7 @@ export 'data/repositories/remote/project_staff.dart';
 export 'data/repositories/remote/user.dart';
 export 'models/entities/address.dart';
 export 'models/entities/attributes.dart';
+export 'models/entities/beneficiary_info.dart';
 export 'models/entities/beneficiary_type.dart';
 export 'models/entities/blood_group.dart';
 export 'models/entities/boundary.dart';
@@ -278,5 +279,6 @@ enum DataModelType {
   attendance,
   userLocation,
   userAction,
-  uniqueId
+  uniqueId,
+  beneficiaryInfo
 }

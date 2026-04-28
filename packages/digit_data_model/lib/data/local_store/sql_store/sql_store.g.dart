@@ -5291,6 +5291,1134 @@ class NameCompanion extends UpdateCompanion<NameData> {
   }
 }
 
+class $BeneficiaryInfoTable extends BeneficiaryInfo
+    with TableInfo<$BeneficiaryInfoTable, BeneficiaryInfoData> {
+  @override
+  final GeneratedDatabase attachedDatabase;
+  final String? _alias;
+  $BeneficiaryInfoTable(this.attachedDatabase, [this._alias]);
+  static const VerificationMeta _idMeta = const VerificationMeta('id');
+  @override
+  late final GeneratedColumn<String> id = GeneratedColumn<String>(
+      'id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _householdClientReferenceIdMeta =
+      const VerificationMeta('householdClientReferenceId');
+  @override
+  late final GeneratedColumn<String> householdClientReferenceId =
+      GeneratedColumn<String>(
+          'household_client_reference_id', aliasedName, false,
+          type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _givenNameMeta =
+      const VerificationMeta('givenName');
+  @override
+  late final GeneratedColumn<String> givenName = GeneratedColumn<String>(
+      'given_name', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _identifierTypeMeta =
+      const VerificationMeta('identifierType');
+  @override
+  late final GeneratedColumn<String> identifierType = GeneratedColumn<String>(
+      'identifier_type', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _identifierIdMeta =
+      const VerificationMeta('identifierId');
+  @override
+  late final GeneratedColumn<String> identifierId = GeneratedColumn<String>(
+      'identifier_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isHeadMeta = const VerificationMeta('isHead');
+  @override
+  late final GeneratedColumn<bool> isHead = GeneratedColumn<bool>(
+      'is_head', aliasedName, true,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_head" IN (0, 1))'));
+  static const VerificationMeta _statusMeta = const VerificationMeta('status');
+  @override
+  late final GeneratedColumn<String> status = GeneratedColumn<String>(
+      'status', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _mobileNumberMeta =
+      const VerificationMeta('mobileNumber');
+  @override
+  late final GeneratedColumn<String> mobileNumber = GeneratedColumn<String>(
+      'mobile_number', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _latitudeMeta =
+      const VerificationMeta('latitude');
+  @override
+  late final GeneratedColumn<double> latitude = GeneratedColumn<double>(
+      'latitude', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _longitudeMeta =
+      const VerificationMeta('longitude');
+  @override
+  late final GeneratedColumn<double> longitude = GeneratedColumn<double>(
+      'longitude', aliasedName, true,
+      type: DriftSqlType.double, requiredDuringInsert: false);
+  static const VerificationMeta _auditCreatedByMeta =
+      const VerificationMeta('auditCreatedBy');
+  @override
+  late final GeneratedColumn<String> auditCreatedBy = GeneratedColumn<String>(
+      'audit_created_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _nonRecoverableErrorMeta =
+      const VerificationMeta('nonRecoverableError');
+  @override
+  late final GeneratedColumn<bool> nonRecoverableError = GeneratedColumn<bool>(
+      'non_recoverable_error', aliasedName, true,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints: GeneratedColumn.constraintIsAlways(
+          'CHECK ("non_recoverable_error" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _auditCreatedTimeMeta =
+      const VerificationMeta('auditCreatedTime');
+  @override
+  late final GeneratedColumn<int> auditCreatedTime = GeneratedColumn<int>(
+      'audit_created_time', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _clientCreatedTimeMeta =
+      const VerificationMeta('clientCreatedTime');
+  @override
+  late final GeneratedColumn<int> clientCreatedTime = GeneratedColumn<int>(
+      'client_created_time', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _clientModifiedByMeta =
+      const VerificationMeta('clientModifiedBy');
+  @override
+  late final GeneratedColumn<String> clientModifiedBy = GeneratedColumn<String>(
+      'client_modified_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _clientCreatedByMeta =
+      const VerificationMeta('clientCreatedBy');
+  @override
+  late final GeneratedColumn<String> clientCreatedBy = GeneratedColumn<String>(
+      'client_created_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _clientModifiedTimeMeta =
+      const VerificationMeta('clientModifiedTime');
+  @override
+  late final GeneratedColumn<int> clientModifiedTime = GeneratedColumn<int>(
+      'client_modified_time', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _auditModifiedByMeta =
+      const VerificationMeta('auditModifiedBy');
+  @override
+  late final GeneratedColumn<String> auditModifiedBy = GeneratedColumn<String>(
+      'audit_modified_by', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _auditModifiedTimeMeta =
+      const VerificationMeta('auditModifiedTime');
+  @override
+  late final GeneratedColumn<int> auditModifiedTime = GeneratedColumn<int>(
+      'audit_modified_time', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _clientReferenceIdMeta =
+      const VerificationMeta('clientReferenceId');
+  @override
+  late final GeneratedColumn<String> clientReferenceId =
+      GeneratedColumn<String>('client_reference_id', aliasedName, false,
+          type: DriftSqlType.string, requiredDuringInsert: true);
+  static const VerificationMeta _tenantIdMeta =
+      const VerificationMeta('tenantId');
+  @override
+  late final GeneratedColumn<String> tenantId = GeneratedColumn<String>(
+      'tenant_id', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  static const VerificationMeta _isDeletedMeta =
+      const VerificationMeta('isDeleted');
+  @override
+  late final GeneratedColumn<bool> isDeleted = GeneratedColumn<bool>(
+      'is_deleted', aliasedName, true,
+      type: DriftSqlType.bool,
+      requiredDuringInsert: false,
+      defaultConstraints:
+          GeneratedColumn.constraintIsAlways('CHECK ("is_deleted" IN (0, 1))'),
+      defaultValue: const Constant(false));
+  static const VerificationMeta _rowVersionMeta =
+      const VerificationMeta('rowVersion');
+  @override
+  late final GeneratedColumn<int> rowVersion = GeneratedColumn<int>(
+      'row_version', aliasedName, true,
+      type: DriftSqlType.int, requiredDuringInsert: false);
+  static const VerificationMeta _additionalFieldsMeta =
+      const VerificationMeta('additionalFields');
+  @override
+  late final GeneratedColumn<String> additionalFields = GeneratedColumn<String>(
+      'additional_fields', aliasedName, true,
+      type: DriftSqlType.string, requiredDuringInsert: false);
+  @override
+  List<GeneratedColumn> get $columns => [
+        id,
+        householdClientReferenceId,
+        givenName,
+        identifierType,
+        identifierId,
+        isHead,
+        status,
+        mobileNumber,
+        latitude,
+        longitude,
+        auditCreatedBy,
+        nonRecoverableError,
+        auditCreatedTime,
+        clientCreatedTime,
+        clientModifiedBy,
+        clientCreatedBy,
+        clientModifiedTime,
+        auditModifiedBy,
+        auditModifiedTime,
+        clientReferenceId,
+        tenantId,
+        isDeleted,
+        rowVersion,
+        additionalFields
+      ];
+  @override
+  String get aliasedName => _alias ?? actualTableName;
+  @override
+  String get actualTableName => $name;
+  static const String $name = 'beneficiary_info';
+  @override
+  VerificationContext validateIntegrity(
+      Insertable<BeneficiaryInfoData> instance,
+      {bool isInserting = false}) {
+    final context = VerificationContext();
+    final data = instance.toColumns(true);
+    if (data.containsKey('id')) {
+      context.handle(_idMeta, id.isAcceptableOrUnknown(data['id']!, _idMeta));
+    }
+    if (data.containsKey('household_client_reference_id')) {
+      context.handle(
+          _householdClientReferenceIdMeta,
+          householdClientReferenceId.isAcceptableOrUnknown(
+              data['household_client_reference_id']!,
+              _householdClientReferenceIdMeta));
+    } else if (isInserting) {
+      context.missing(_householdClientReferenceIdMeta);
+    }
+    if (data.containsKey('given_name')) {
+      context.handle(_givenNameMeta,
+          givenName.isAcceptableOrUnknown(data['given_name']!, _givenNameMeta));
+    }
+    if (data.containsKey('identifier_type')) {
+      context.handle(
+          _identifierTypeMeta,
+          identifierType.isAcceptableOrUnknown(
+              data['identifier_type']!, _identifierTypeMeta));
+    }
+    if (data.containsKey('identifier_id')) {
+      context.handle(
+          _identifierIdMeta,
+          identifierId.isAcceptableOrUnknown(
+              data['identifier_id']!, _identifierIdMeta));
+    }
+    if (data.containsKey('is_head')) {
+      context.handle(_isHeadMeta,
+          isHead.isAcceptableOrUnknown(data['is_head']!, _isHeadMeta));
+    }
+    if (data.containsKey('status')) {
+      context.handle(_statusMeta,
+          status.isAcceptableOrUnknown(data['status']!, _statusMeta));
+    }
+    if (data.containsKey('mobile_number')) {
+      context.handle(
+          _mobileNumberMeta,
+          mobileNumber.isAcceptableOrUnknown(
+              data['mobile_number']!, _mobileNumberMeta));
+    }
+    if (data.containsKey('latitude')) {
+      context.handle(_latitudeMeta,
+          latitude.isAcceptableOrUnknown(data['latitude']!, _latitudeMeta));
+    }
+    if (data.containsKey('longitude')) {
+      context.handle(_longitudeMeta,
+          longitude.isAcceptableOrUnknown(data['longitude']!, _longitudeMeta));
+    }
+    if (data.containsKey('audit_created_by')) {
+      context.handle(
+          _auditCreatedByMeta,
+          auditCreatedBy.isAcceptableOrUnknown(
+              data['audit_created_by']!, _auditCreatedByMeta));
+    }
+    if (data.containsKey('non_recoverable_error')) {
+      context.handle(
+          _nonRecoverableErrorMeta,
+          nonRecoverableError.isAcceptableOrUnknown(
+              data['non_recoverable_error']!, _nonRecoverableErrorMeta));
+    }
+    if (data.containsKey('audit_created_time')) {
+      context.handle(
+          _auditCreatedTimeMeta,
+          auditCreatedTime.isAcceptableOrUnknown(
+              data['audit_created_time']!, _auditCreatedTimeMeta));
+    }
+    if (data.containsKey('client_created_time')) {
+      context.handle(
+          _clientCreatedTimeMeta,
+          clientCreatedTime.isAcceptableOrUnknown(
+              data['client_created_time']!, _clientCreatedTimeMeta));
+    }
+    if (data.containsKey('client_modified_by')) {
+      context.handle(
+          _clientModifiedByMeta,
+          clientModifiedBy.isAcceptableOrUnknown(
+              data['client_modified_by']!, _clientModifiedByMeta));
+    }
+    if (data.containsKey('client_created_by')) {
+      context.handle(
+          _clientCreatedByMeta,
+          clientCreatedBy.isAcceptableOrUnknown(
+              data['client_created_by']!, _clientCreatedByMeta));
+    }
+    if (data.containsKey('client_modified_time')) {
+      context.handle(
+          _clientModifiedTimeMeta,
+          clientModifiedTime.isAcceptableOrUnknown(
+              data['client_modified_time']!, _clientModifiedTimeMeta));
+    }
+    if (data.containsKey('audit_modified_by')) {
+      context.handle(
+          _auditModifiedByMeta,
+          auditModifiedBy.isAcceptableOrUnknown(
+              data['audit_modified_by']!, _auditModifiedByMeta));
+    }
+    if (data.containsKey('audit_modified_time')) {
+      context.handle(
+          _auditModifiedTimeMeta,
+          auditModifiedTime.isAcceptableOrUnknown(
+              data['audit_modified_time']!, _auditModifiedTimeMeta));
+    }
+    if (data.containsKey('client_reference_id')) {
+      context.handle(
+          _clientReferenceIdMeta,
+          clientReferenceId.isAcceptableOrUnknown(
+              data['client_reference_id']!, _clientReferenceIdMeta));
+    } else if (isInserting) {
+      context.missing(_clientReferenceIdMeta);
+    }
+    if (data.containsKey('tenant_id')) {
+      context.handle(_tenantIdMeta,
+          tenantId.isAcceptableOrUnknown(data['tenant_id']!, _tenantIdMeta));
+    }
+    if (data.containsKey('is_deleted')) {
+      context.handle(_isDeletedMeta,
+          isDeleted.isAcceptableOrUnknown(data['is_deleted']!, _isDeletedMeta));
+    }
+    if (data.containsKey('row_version')) {
+      context.handle(
+          _rowVersionMeta,
+          rowVersion.isAcceptableOrUnknown(
+              data['row_version']!, _rowVersionMeta));
+    }
+    if (data.containsKey('additional_fields')) {
+      context.handle(
+          _additionalFieldsMeta,
+          additionalFields.isAcceptableOrUnknown(
+              data['additional_fields']!, _additionalFieldsMeta));
+    }
+    return context;
+  }
+
+  @override
+  Set<GeneratedColumn> get $primaryKey => {auditCreatedBy, clientReferenceId};
+  @override
+  BeneficiaryInfoData map(Map<String, dynamic> data, {String? tablePrefix}) {
+    final effectivePrefix = tablePrefix != null ? '$tablePrefix.' : '';
+    return BeneficiaryInfoData(
+      id: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}id']),
+      householdClientReferenceId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string,
+          data['${effectivePrefix}household_client_reference_id'])!,
+      givenName: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}given_name']),
+      identifierType: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}identifier_type']),
+      identifierId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}identifier_id']),
+      isHead: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_head']),
+      status: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}status']),
+      mobileNumber: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}mobile_number']),
+      latitude: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}latitude']),
+      longitude: attachedDatabase.typeMapping
+          .read(DriftSqlType.double, data['${effectivePrefix}longitude']),
+      auditCreatedBy: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}audit_created_by']),
+      nonRecoverableError: attachedDatabase.typeMapping.read(
+          DriftSqlType.bool, data['${effectivePrefix}non_recoverable_error']),
+      auditCreatedTime: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}audit_created_time']),
+      clientCreatedTime: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}client_created_time']),
+      clientModifiedBy: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}client_modified_by']),
+      clientCreatedBy: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}client_created_by']),
+      clientModifiedTime: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}client_modified_time']),
+      auditModifiedBy: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}audit_modified_by']),
+      auditModifiedTime: attachedDatabase.typeMapping.read(
+          DriftSqlType.int, data['${effectivePrefix}audit_modified_time']),
+      clientReferenceId: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}client_reference_id'])!,
+      tenantId: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}tenant_id']),
+      isDeleted: attachedDatabase.typeMapping
+          .read(DriftSqlType.bool, data['${effectivePrefix}is_deleted']),
+      rowVersion: attachedDatabase.typeMapping
+          .read(DriftSqlType.int, data['${effectivePrefix}row_version']),
+      additionalFields: attachedDatabase.typeMapping.read(
+          DriftSqlType.string, data['${effectivePrefix}additional_fields']),
+    );
+  }
+
+  @override
+  $BeneficiaryInfoTable createAlias(String alias) {
+    return $BeneficiaryInfoTable(attachedDatabase, alias);
+  }
+}
+
+class BeneficiaryInfoData extends DataClass
+    implements Insertable<BeneficiaryInfoData> {
+  final String? id;
+  final String householdClientReferenceId;
+  final String? givenName;
+  final String? identifierType;
+  final String? identifierId;
+  final bool? isHead;
+  final String? status;
+  final String? mobileNumber;
+  final double? latitude;
+  final double? longitude;
+  final String? auditCreatedBy;
+  final bool? nonRecoverableError;
+  final int? auditCreatedTime;
+  final int? clientCreatedTime;
+  final String? clientModifiedBy;
+  final String? clientCreatedBy;
+  final int? clientModifiedTime;
+  final String? auditModifiedBy;
+  final int? auditModifiedTime;
+  final String clientReferenceId;
+  final String? tenantId;
+  final bool? isDeleted;
+  final int? rowVersion;
+  final String? additionalFields;
+  const BeneficiaryInfoData(
+      {this.id,
+      required this.householdClientReferenceId,
+      this.givenName,
+      this.identifierType,
+      this.identifierId,
+      this.isHead,
+      this.status,
+      this.mobileNumber,
+      this.latitude,
+      this.longitude,
+      this.auditCreatedBy,
+      this.nonRecoverableError,
+      this.auditCreatedTime,
+      this.clientCreatedTime,
+      this.clientModifiedBy,
+      this.clientCreatedBy,
+      this.clientModifiedTime,
+      this.auditModifiedBy,
+      this.auditModifiedTime,
+      required this.clientReferenceId,
+      this.tenantId,
+      this.isDeleted,
+      this.rowVersion,
+      this.additionalFields});
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (!nullToAbsent || id != null) {
+      map['id'] = Variable<String>(id);
+    }
+    map['household_client_reference_id'] =
+        Variable<String>(householdClientReferenceId);
+    if (!nullToAbsent || givenName != null) {
+      map['given_name'] = Variable<String>(givenName);
+    }
+    if (!nullToAbsent || identifierType != null) {
+      map['identifier_type'] = Variable<String>(identifierType);
+    }
+    if (!nullToAbsent || identifierId != null) {
+      map['identifier_id'] = Variable<String>(identifierId);
+    }
+    if (!nullToAbsent || isHead != null) {
+      map['is_head'] = Variable<bool>(isHead);
+    }
+    if (!nullToAbsent || status != null) {
+      map['status'] = Variable<String>(status);
+    }
+    if (!nullToAbsent || mobileNumber != null) {
+      map['mobile_number'] = Variable<String>(mobileNumber);
+    }
+    if (!nullToAbsent || latitude != null) {
+      map['latitude'] = Variable<double>(latitude);
+    }
+    if (!nullToAbsent || longitude != null) {
+      map['longitude'] = Variable<double>(longitude);
+    }
+    if (!nullToAbsent || auditCreatedBy != null) {
+      map['audit_created_by'] = Variable<String>(auditCreatedBy);
+    }
+    if (!nullToAbsent || nonRecoverableError != null) {
+      map['non_recoverable_error'] = Variable<bool>(nonRecoverableError);
+    }
+    if (!nullToAbsent || auditCreatedTime != null) {
+      map['audit_created_time'] = Variable<int>(auditCreatedTime);
+    }
+    if (!nullToAbsent || clientCreatedTime != null) {
+      map['client_created_time'] = Variable<int>(clientCreatedTime);
+    }
+    if (!nullToAbsent || clientModifiedBy != null) {
+      map['client_modified_by'] = Variable<String>(clientModifiedBy);
+    }
+    if (!nullToAbsent || clientCreatedBy != null) {
+      map['client_created_by'] = Variable<String>(clientCreatedBy);
+    }
+    if (!nullToAbsent || clientModifiedTime != null) {
+      map['client_modified_time'] = Variable<int>(clientModifiedTime);
+    }
+    if (!nullToAbsent || auditModifiedBy != null) {
+      map['audit_modified_by'] = Variable<String>(auditModifiedBy);
+    }
+    if (!nullToAbsent || auditModifiedTime != null) {
+      map['audit_modified_time'] = Variable<int>(auditModifiedTime);
+    }
+    map['client_reference_id'] = Variable<String>(clientReferenceId);
+    if (!nullToAbsent || tenantId != null) {
+      map['tenant_id'] = Variable<String>(tenantId);
+    }
+    if (!nullToAbsent || isDeleted != null) {
+      map['is_deleted'] = Variable<bool>(isDeleted);
+    }
+    if (!nullToAbsent || rowVersion != null) {
+      map['row_version'] = Variable<int>(rowVersion);
+    }
+    if (!nullToAbsent || additionalFields != null) {
+      map['additional_fields'] = Variable<String>(additionalFields);
+    }
+    return map;
+  }
+
+  BeneficiaryInfoCompanion toCompanion(bool nullToAbsent) {
+    return BeneficiaryInfoCompanion(
+      id: id == null && nullToAbsent ? const Value.absent() : Value(id),
+      householdClientReferenceId: Value(householdClientReferenceId),
+      givenName: givenName == null && nullToAbsent
+          ? const Value.absent()
+          : Value(givenName),
+      identifierType: identifierType == null && nullToAbsent
+          ? const Value.absent()
+          : Value(identifierType),
+      identifierId: identifierId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(identifierId),
+      isHead:
+          isHead == null && nullToAbsent ? const Value.absent() : Value(isHead),
+      status:
+          status == null && nullToAbsent ? const Value.absent() : Value(status),
+      mobileNumber: mobileNumber == null && nullToAbsent
+          ? const Value.absent()
+          : Value(mobileNumber),
+      latitude: latitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(latitude),
+      longitude: longitude == null && nullToAbsent
+          ? const Value.absent()
+          : Value(longitude),
+      auditCreatedBy: auditCreatedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(auditCreatedBy),
+      nonRecoverableError: nonRecoverableError == null && nullToAbsent
+          ? const Value.absent()
+          : Value(nonRecoverableError),
+      auditCreatedTime: auditCreatedTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(auditCreatedTime),
+      clientCreatedTime: clientCreatedTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientCreatedTime),
+      clientModifiedBy: clientModifiedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientModifiedBy),
+      clientCreatedBy: clientCreatedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientCreatedBy),
+      clientModifiedTime: clientModifiedTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(clientModifiedTime),
+      auditModifiedBy: auditModifiedBy == null && nullToAbsent
+          ? const Value.absent()
+          : Value(auditModifiedBy),
+      auditModifiedTime: auditModifiedTime == null && nullToAbsent
+          ? const Value.absent()
+          : Value(auditModifiedTime),
+      clientReferenceId: Value(clientReferenceId),
+      tenantId: tenantId == null && nullToAbsent
+          ? const Value.absent()
+          : Value(tenantId),
+      isDeleted: isDeleted == null && nullToAbsent
+          ? const Value.absent()
+          : Value(isDeleted),
+      rowVersion: rowVersion == null && nullToAbsent
+          ? const Value.absent()
+          : Value(rowVersion),
+      additionalFields: additionalFields == null && nullToAbsent
+          ? const Value.absent()
+          : Value(additionalFields),
+    );
+  }
+
+  factory BeneficiaryInfoData.fromJson(Map<String, dynamic> json,
+      {ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return BeneficiaryInfoData(
+      id: serializer.fromJson<String?>(json['id']),
+      householdClientReferenceId:
+          serializer.fromJson<String>(json['householdClientReferenceId']),
+      givenName: serializer.fromJson<String?>(json['givenName']),
+      identifierType: serializer.fromJson<String?>(json['identifierType']),
+      identifierId: serializer.fromJson<String?>(json['identifierId']),
+      isHead: serializer.fromJson<bool?>(json['isHead']),
+      status: serializer.fromJson<String?>(json['status']),
+      mobileNumber: serializer.fromJson<String?>(json['mobileNumber']),
+      latitude: serializer.fromJson<double?>(json['latitude']),
+      longitude: serializer.fromJson<double?>(json['longitude']),
+      auditCreatedBy: serializer.fromJson<String?>(json['auditCreatedBy']),
+      nonRecoverableError:
+          serializer.fromJson<bool?>(json['nonRecoverableError']),
+      auditCreatedTime: serializer.fromJson<int?>(json['auditCreatedTime']),
+      clientCreatedTime: serializer.fromJson<int?>(json['clientCreatedTime']),
+      clientModifiedBy: serializer.fromJson<String?>(json['clientModifiedBy']),
+      clientCreatedBy: serializer.fromJson<String?>(json['clientCreatedBy']),
+      clientModifiedTime: serializer.fromJson<int?>(json['clientModifiedTime']),
+      auditModifiedBy: serializer.fromJson<String?>(json['auditModifiedBy']),
+      auditModifiedTime: serializer.fromJson<int?>(json['auditModifiedTime']),
+      clientReferenceId: serializer.fromJson<String>(json['clientReferenceId']),
+      tenantId: serializer.fromJson<String?>(json['tenantId']),
+      isDeleted: serializer.fromJson<bool?>(json['isDeleted']),
+      rowVersion: serializer.fromJson<int?>(json['rowVersion']),
+      additionalFields: serializer.fromJson<String?>(json['additionalFields']),
+    );
+  }
+  @override
+  Map<String, dynamic> toJson({ValueSerializer? serializer}) {
+    serializer ??= driftRuntimeOptions.defaultSerializer;
+    return <String, dynamic>{
+      'id': serializer.toJson<String?>(id),
+      'householdClientReferenceId':
+          serializer.toJson<String>(householdClientReferenceId),
+      'givenName': serializer.toJson<String?>(givenName),
+      'identifierType': serializer.toJson<String?>(identifierType),
+      'identifierId': serializer.toJson<String?>(identifierId),
+      'isHead': serializer.toJson<bool?>(isHead),
+      'status': serializer.toJson<String?>(status),
+      'mobileNumber': serializer.toJson<String?>(mobileNumber),
+      'latitude': serializer.toJson<double?>(latitude),
+      'longitude': serializer.toJson<double?>(longitude),
+      'auditCreatedBy': serializer.toJson<String?>(auditCreatedBy),
+      'nonRecoverableError': serializer.toJson<bool?>(nonRecoverableError),
+      'auditCreatedTime': serializer.toJson<int?>(auditCreatedTime),
+      'clientCreatedTime': serializer.toJson<int?>(clientCreatedTime),
+      'clientModifiedBy': serializer.toJson<String?>(clientModifiedBy),
+      'clientCreatedBy': serializer.toJson<String?>(clientCreatedBy),
+      'clientModifiedTime': serializer.toJson<int?>(clientModifiedTime),
+      'auditModifiedBy': serializer.toJson<String?>(auditModifiedBy),
+      'auditModifiedTime': serializer.toJson<int?>(auditModifiedTime),
+      'clientReferenceId': serializer.toJson<String>(clientReferenceId),
+      'tenantId': serializer.toJson<String?>(tenantId),
+      'isDeleted': serializer.toJson<bool?>(isDeleted),
+      'rowVersion': serializer.toJson<int?>(rowVersion),
+      'additionalFields': serializer.toJson<String?>(additionalFields),
+    };
+  }
+
+  BeneficiaryInfoData copyWith(
+          {Value<String?> id = const Value.absent(),
+          String? householdClientReferenceId,
+          Value<String?> givenName = const Value.absent(),
+          Value<String?> identifierType = const Value.absent(),
+          Value<String?> identifierId = const Value.absent(),
+          Value<bool?> isHead = const Value.absent(),
+          Value<String?> status = const Value.absent(),
+          Value<String?> mobileNumber = const Value.absent(),
+          Value<double?> latitude = const Value.absent(),
+          Value<double?> longitude = const Value.absent(),
+          Value<String?> auditCreatedBy = const Value.absent(),
+          Value<bool?> nonRecoverableError = const Value.absent(),
+          Value<int?> auditCreatedTime = const Value.absent(),
+          Value<int?> clientCreatedTime = const Value.absent(),
+          Value<String?> clientModifiedBy = const Value.absent(),
+          Value<String?> clientCreatedBy = const Value.absent(),
+          Value<int?> clientModifiedTime = const Value.absent(),
+          Value<String?> auditModifiedBy = const Value.absent(),
+          Value<int?> auditModifiedTime = const Value.absent(),
+          String? clientReferenceId,
+          Value<String?> tenantId = const Value.absent(),
+          Value<bool?> isDeleted = const Value.absent(),
+          Value<int?> rowVersion = const Value.absent(),
+          Value<String?> additionalFields = const Value.absent()}) =>
+      BeneficiaryInfoData(
+        id: id.present ? id.value : this.id,
+        householdClientReferenceId:
+            householdClientReferenceId ?? this.householdClientReferenceId,
+        givenName: givenName.present ? givenName.value : this.givenName,
+        identifierType:
+            identifierType.present ? identifierType.value : this.identifierType,
+        identifierId:
+            identifierId.present ? identifierId.value : this.identifierId,
+        isHead: isHead.present ? isHead.value : this.isHead,
+        status: status.present ? status.value : this.status,
+        mobileNumber:
+            mobileNumber.present ? mobileNumber.value : this.mobileNumber,
+        latitude: latitude.present ? latitude.value : this.latitude,
+        longitude: longitude.present ? longitude.value : this.longitude,
+        auditCreatedBy:
+            auditCreatedBy.present ? auditCreatedBy.value : this.auditCreatedBy,
+        nonRecoverableError: nonRecoverableError.present
+            ? nonRecoverableError.value
+            : this.nonRecoverableError,
+        auditCreatedTime: auditCreatedTime.present
+            ? auditCreatedTime.value
+            : this.auditCreatedTime,
+        clientCreatedTime: clientCreatedTime.present
+            ? clientCreatedTime.value
+            : this.clientCreatedTime,
+        clientModifiedBy: clientModifiedBy.present
+            ? clientModifiedBy.value
+            : this.clientModifiedBy,
+        clientCreatedBy: clientCreatedBy.present
+            ? clientCreatedBy.value
+            : this.clientCreatedBy,
+        clientModifiedTime: clientModifiedTime.present
+            ? clientModifiedTime.value
+            : this.clientModifiedTime,
+        auditModifiedBy: auditModifiedBy.present
+            ? auditModifiedBy.value
+            : this.auditModifiedBy,
+        auditModifiedTime: auditModifiedTime.present
+            ? auditModifiedTime.value
+            : this.auditModifiedTime,
+        clientReferenceId: clientReferenceId ?? this.clientReferenceId,
+        tenantId: tenantId.present ? tenantId.value : this.tenantId,
+        isDeleted: isDeleted.present ? isDeleted.value : this.isDeleted,
+        rowVersion: rowVersion.present ? rowVersion.value : this.rowVersion,
+        additionalFields: additionalFields.present
+            ? additionalFields.value
+            : this.additionalFields,
+      );
+  @override
+  String toString() {
+    return (StringBuffer('BeneficiaryInfoData(')
+          ..write('id: $id, ')
+          ..write('householdClientReferenceId: $householdClientReferenceId, ')
+          ..write('givenName: $givenName, ')
+          ..write('identifierType: $identifierType, ')
+          ..write('identifierId: $identifierId, ')
+          ..write('isHead: $isHead, ')
+          ..write('status: $status, ')
+          ..write('mobileNumber: $mobileNumber, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
+          ..write('auditCreatedBy: $auditCreatedBy, ')
+          ..write('nonRecoverableError: $nonRecoverableError, ')
+          ..write('auditCreatedTime: $auditCreatedTime, ')
+          ..write('clientCreatedTime: $clientCreatedTime, ')
+          ..write('clientModifiedBy: $clientModifiedBy, ')
+          ..write('clientCreatedBy: $clientCreatedBy, ')
+          ..write('clientModifiedTime: $clientModifiedTime, ')
+          ..write('auditModifiedBy: $auditModifiedBy, ')
+          ..write('auditModifiedTime: $auditModifiedTime, ')
+          ..write('clientReferenceId: $clientReferenceId, ')
+          ..write('tenantId: $tenantId, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('rowVersion: $rowVersion, ')
+          ..write('additionalFields: $additionalFields')
+          ..write(')'))
+        .toString();
+  }
+
+  @override
+  int get hashCode => Object.hashAll([
+        id,
+        householdClientReferenceId,
+        givenName,
+        identifierType,
+        identifierId,
+        isHead,
+        status,
+        mobileNumber,
+        latitude,
+        longitude,
+        auditCreatedBy,
+        nonRecoverableError,
+        auditCreatedTime,
+        clientCreatedTime,
+        clientModifiedBy,
+        clientCreatedBy,
+        clientModifiedTime,
+        auditModifiedBy,
+        auditModifiedTime,
+        clientReferenceId,
+        tenantId,
+        isDeleted,
+        rowVersion,
+        additionalFields
+      ]);
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      (other is BeneficiaryInfoData &&
+          other.id == this.id &&
+          other.householdClientReferenceId == this.householdClientReferenceId &&
+          other.givenName == this.givenName &&
+          other.identifierType == this.identifierType &&
+          other.identifierId == this.identifierId &&
+          other.isHead == this.isHead &&
+          other.status == this.status &&
+          other.mobileNumber == this.mobileNumber &&
+          other.latitude == this.latitude &&
+          other.longitude == this.longitude &&
+          other.auditCreatedBy == this.auditCreatedBy &&
+          other.nonRecoverableError == this.nonRecoverableError &&
+          other.auditCreatedTime == this.auditCreatedTime &&
+          other.clientCreatedTime == this.clientCreatedTime &&
+          other.clientModifiedBy == this.clientModifiedBy &&
+          other.clientCreatedBy == this.clientCreatedBy &&
+          other.clientModifiedTime == this.clientModifiedTime &&
+          other.auditModifiedBy == this.auditModifiedBy &&
+          other.auditModifiedTime == this.auditModifiedTime &&
+          other.clientReferenceId == this.clientReferenceId &&
+          other.tenantId == this.tenantId &&
+          other.isDeleted == this.isDeleted &&
+          other.rowVersion == this.rowVersion &&
+          other.additionalFields == this.additionalFields);
+}
+
+class BeneficiaryInfoCompanion extends UpdateCompanion<BeneficiaryInfoData> {
+  final Value<String?> id;
+  final Value<String> householdClientReferenceId;
+  final Value<String?> givenName;
+  final Value<String?> identifierType;
+  final Value<String?> identifierId;
+  final Value<bool?> isHead;
+  final Value<String?> status;
+  final Value<String?> mobileNumber;
+  final Value<double?> latitude;
+  final Value<double?> longitude;
+  final Value<String?> auditCreatedBy;
+  final Value<bool?> nonRecoverableError;
+  final Value<int?> auditCreatedTime;
+  final Value<int?> clientCreatedTime;
+  final Value<String?> clientModifiedBy;
+  final Value<String?> clientCreatedBy;
+  final Value<int?> clientModifiedTime;
+  final Value<String?> auditModifiedBy;
+  final Value<int?> auditModifiedTime;
+  final Value<String> clientReferenceId;
+  final Value<String?> tenantId;
+  final Value<bool?> isDeleted;
+  final Value<int?> rowVersion;
+  final Value<String?> additionalFields;
+  final Value<int> rowid;
+  const BeneficiaryInfoCompanion({
+    this.id = const Value.absent(),
+    this.householdClientReferenceId = const Value.absent(),
+    this.givenName = const Value.absent(),
+    this.identifierType = const Value.absent(),
+    this.identifierId = const Value.absent(),
+    this.isHead = const Value.absent(),
+    this.status = const Value.absent(),
+    this.mobileNumber = const Value.absent(),
+    this.latitude = const Value.absent(),
+    this.longitude = const Value.absent(),
+    this.auditCreatedBy = const Value.absent(),
+    this.nonRecoverableError = const Value.absent(),
+    this.auditCreatedTime = const Value.absent(),
+    this.clientCreatedTime = const Value.absent(),
+    this.clientModifiedBy = const Value.absent(),
+    this.clientCreatedBy = const Value.absent(),
+    this.clientModifiedTime = const Value.absent(),
+    this.auditModifiedBy = const Value.absent(),
+    this.auditModifiedTime = const Value.absent(),
+    this.clientReferenceId = const Value.absent(),
+    this.tenantId = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.rowVersion = const Value.absent(),
+    this.additionalFields = const Value.absent(),
+    this.rowid = const Value.absent(),
+  });
+  BeneficiaryInfoCompanion.insert({
+    this.id = const Value.absent(),
+    required String householdClientReferenceId,
+    this.givenName = const Value.absent(),
+    this.identifierType = const Value.absent(),
+    this.identifierId = const Value.absent(),
+    this.isHead = const Value.absent(),
+    this.status = const Value.absent(),
+    this.mobileNumber = const Value.absent(),
+    this.latitude = const Value.absent(),
+    this.longitude = const Value.absent(),
+    this.auditCreatedBy = const Value.absent(),
+    this.nonRecoverableError = const Value.absent(),
+    this.auditCreatedTime = const Value.absent(),
+    this.clientCreatedTime = const Value.absent(),
+    this.clientModifiedBy = const Value.absent(),
+    this.clientCreatedBy = const Value.absent(),
+    this.clientModifiedTime = const Value.absent(),
+    this.auditModifiedBy = const Value.absent(),
+    this.auditModifiedTime = const Value.absent(),
+    required String clientReferenceId,
+    this.tenantId = const Value.absent(),
+    this.isDeleted = const Value.absent(),
+    this.rowVersion = const Value.absent(),
+    this.additionalFields = const Value.absent(),
+    this.rowid = const Value.absent(),
+  })  : householdClientReferenceId = Value(householdClientReferenceId),
+        clientReferenceId = Value(clientReferenceId);
+  static Insertable<BeneficiaryInfoData> custom({
+    Expression<String>? id,
+    Expression<String>? householdClientReferenceId,
+    Expression<String>? givenName,
+    Expression<String>? identifierType,
+    Expression<String>? identifierId,
+    Expression<bool>? isHead,
+    Expression<String>? status,
+    Expression<String>? mobileNumber,
+    Expression<double>? latitude,
+    Expression<double>? longitude,
+    Expression<String>? auditCreatedBy,
+    Expression<bool>? nonRecoverableError,
+    Expression<int>? auditCreatedTime,
+    Expression<int>? clientCreatedTime,
+    Expression<String>? clientModifiedBy,
+    Expression<String>? clientCreatedBy,
+    Expression<int>? clientModifiedTime,
+    Expression<String>? auditModifiedBy,
+    Expression<int>? auditModifiedTime,
+    Expression<String>? clientReferenceId,
+    Expression<String>? tenantId,
+    Expression<bool>? isDeleted,
+    Expression<int>? rowVersion,
+    Expression<String>? additionalFields,
+    Expression<int>? rowid,
+  }) {
+    return RawValuesInsertable({
+      if (id != null) 'id': id,
+      if (householdClientReferenceId != null)
+        'household_client_reference_id': householdClientReferenceId,
+      if (givenName != null) 'given_name': givenName,
+      if (identifierType != null) 'identifier_type': identifierType,
+      if (identifierId != null) 'identifier_id': identifierId,
+      if (isHead != null) 'is_head': isHead,
+      if (status != null) 'status': status,
+      if (mobileNumber != null) 'mobile_number': mobileNumber,
+      if (latitude != null) 'latitude': latitude,
+      if (longitude != null) 'longitude': longitude,
+      if (auditCreatedBy != null) 'audit_created_by': auditCreatedBy,
+      if (nonRecoverableError != null)
+        'non_recoverable_error': nonRecoverableError,
+      if (auditCreatedTime != null) 'audit_created_time': auditCreatedTime,
+      if (clientCreatedTime != null) 'client_created_time': clientCreatedTime,
+      if (clientModifiedBy != null) 'client_modified_by': clientModifiedBy,
+      if (clientCreatedBy != null) 'client_created_by': clientCreatedBy,
+      if (clientModifiedTime != null)
+        'client_modified_time': clientModifiedTime,
+      if (auditModifiedBy != null) 'audit_modified_by': auditModifiedBy,
+      if (auditModifiedTime != null) 'audit_modified_time': auditModifiedTime,
+      if (clientReferenceId != null) 'client_reference_id': clientReferenceId,
+      if (tenantId != null) 'tenant_id': tenantId,
+      if (isDeleted != null) 'is_deleted': isDeleted,
+      if (rowVersion != null) 'row_version': rowVersion,
+      if (additionalFields != null) 'additional_fields': additionalFields,
+      if (rowid != null) 'rowid': rowid,
+    });
+  }
+
+  BeneficiaryInfoCompanion copyWith(
+      {Value<String?>? id,
+      Value<String>? householdClientReferenceId,
+      Value<String?>? givenName,
+      Value<String?>? identifierType,
+      Value<String?>? identifierId,
+      Value<bool?>? isHead,
+      Value<String?>? status,
+      Value<String?>? mobileNumber,
+      Value<double?>? latitude,
+      Value<double?>? longitude,
+      Value<String?>? auditCreatedBy,
+      Value<bool?>? nonRecoverableError,
+      Value<int?>? auditCreatedTime,
+      Value<int?>? clientCreatedTime,
+      Value<String?>? clientModifiedBy,
+      Value<String?>? clientCreatedBy,
+      Value<int?>? clientModifiedTime,
+      Value<String?>? auditModifiedBy,
+      Value<int?>? auditModifiedTime,
+      Value<String>? clientReferenceId,
+      Value<String?>? tenantId,
+      Value<bool?>? isDeleted,
+      Value<int?>? rowVersion,
+      Value<String?>? additionalFields,
+      Value<int>? rowid}) {
+    return BeneficiaryInfoCompanion(
+      id: id ?? this.id,
+      householdClientReferenceId:
+          householdClientReferenceId ?? this.householdClientReferenceId,
+      givenName: givenName ?? this.givenName,
+      identifierType: identifierType ?? this.identifierType,
+      identifierId: identifierId ?? this.identifierId,
+      isHead: isHead ?? this.isHead,
+      status: status ?? this.status,
+      mobileNumber: mobileNumber ?? this.mobileNumber,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
+      auditCreatedBy: auditCreatedBy ?? this.auditCreatedBy,
+      nonRecoverableError: nonRecoverableError ?? this.nonRecoverableError,
+      auditCreatedTime: auditCreatedTime ?? this.auditCreatedTime,
+      clientCreatedTime: clientCreatedTime ?? this.clientCreatedTime,
+      clientModifiedBy: clientModifiedBy ?? this.clientModifiedBy,
+      clientCreatedBy: clientCreatedBy ?? this.clientCreatedBy,
+      clientModifiedTime: clientModifiedTime ?? this.clientModifiedTime,
+      auditModifiedBy: auditModifiedBy ?? this.auditModifiedBy,
+      auditModifiedTime: auditModifiedTime ?? this.auditModifiedTime,
+      clientReferenceId: clientReferenceId ?? this.clientReferenceId,
+      tenantId: tenantId ?? this.tenantId,
+      isDeleted: isDeleted ?? this.isDeleted,
+      rowVersion: rowVersion ?? this.rowVersion,
+      additionalFields: additionalFields ?? this.additionalFields,
+      rowid: rowid ?? this.rowid,
+    );
+  }
+
+  @override
+  Map<String, Expression> toColumns(bool nullToAbsent) {
+    final map = <String, Expression>{};
+    if (id.present) {
+      map['id'] = Variable<String>(id.value);
+    }
+    if (householdClientReferenceId.present) {
+      map['household_client_reference_id'] =
+          Variable<String>(householdClientReferenceId.value);
+    }
+    if (givenName.present) {
+      map['given_name'] = Variable<String>(givenName.value);
+    }
+    if (identifierType.present) {
+      map['identifier_type'] = Variable<String>(identifierType.value);
+    }
+    if (identifierId.present) {
+      map['identifier_id'] = Variable<String>(identifierId.value);
+    }
+    if (isHead.present) {
+      map['is_head'] = Variable<bool>(isHead.value);
+    }
+    if (status.present) {
+      map['status'] = Variable<String>(status.value);
+    }
+    if (mobileNumber.present) {
+      map['mobile_number'] = Variable<String>(mobileNumber.value);
+    }
+    if (latitude.present) {
+      map['latitude'] = Variable<double>(latitude.value);
+    }
+    if (longitude.present) {
+      map['longitude'] = Variable<double>(longitude.value);
+    }
+    if (auditCreatedBy.present) {
+      map['audit_created_by'] = Variable<String>(auditCreatedBy.value);
+    }
+    if (nonRecoverableError.present) {
+      map['non_recoverable_error'] = Variable<bool>(nonRecoverableError.value);
+    }
+    if (auditCreatedTime.present) {
+      map['audit_created_time'] = Variable<int>(auditCreatedTime.value);
+    }
+    if (clientCreatedTime.present) {
+      map['client_created_time'] = Variable<int>(clientCreatedTime.value);
+    }
+    if (clientModifiedBy.present) {
+      map['client_modified_by'] = Variable<String>(clientModifiedBy.value);
+    }
+    if (clientCreatedBy.present) {
+      map['client_created_by'] = Variable<String>(clientCreatedBy.value);
+    }
+    if (clientModifiedTime.present) {
+      map['client_modified_time'] = Variable<int>(clientModifiedTime.value);
+    }
+    if (auditModifiedBy.present) {
+      map['audit_modified_by'] = Variable<String>(auditModifiedBy.value);
+    }
+    if (auditModifiedTime.present) {
+      map['audit_modified_time'] = Variable<int>(auditModifiedTime.value);
+    }
+    if (clientReferenceId.present) {
+      map['client_reference_id'] = Variable<String>(clientReferenceId.value);
+    }
+    if (tenantId.present) {
+      map['tenant_id'] = Variable<String>(tenantId.value);
+    }
+    if (isDeleted.present) {
+      map['is_deleted'] = Variable<bool>(isDeleted.value);
+    }
+    if (rowVersion.present) {
+      map['row_version'] = Variable<int>(rowVersion.value);
+    }
+    if (additionalFields.present) {
+      map['additional_fields'] = Variable<String>(additionalFields.value);
+    }
+    if (rowid.present) {
+      map['rowid'] = Variable<int>(rowid.value);
+    }
+    return map;
+  }
+
+  @override
+  String toString() {
+    return (StringBuffer('BeneficiaryInfoCompanion(')
+          ..write('id: $id, ')
+          ..write('householdClientReferenceId: $householdClientReferenceId, ')
+          ..write('givenName: $givenName, ')
+          ..write('identifierType: $identifierType, ')
+          ..write('identifierId: $identifierId, ')
+          ..write('isHead: $isHead, ')
+          ..write('status: $status, ')
+          ..write('mobileNumber: $mobileNumber, ')
+          ..write('latitude: $latitude, ')
+          ..write('longitude: $longitude, ')
+          ..write('auditCreatedBy: $auditCreatedBy, ')
+          ..write('nonRecoverableError: $nonRecoverableError, ')
+          ..write('auditCreatedTime: $auditCreatedTime, ')
+          ..write('clientCreatedTime: $clientCreatedTime, ')
+          ..write('clientModifiedBy: $clientModifiedBy, ')
+          ..write('clientCreatedBy: $clientCreatedBy, ')
+          ..write('clientModifiedTime: $clientModifiedTime, ')
+          ..write('auditModifiedBy: $auditModifiedBy, ')
+          ..write('auditModifiedTime: $auditModifiedTime, ')
+          ..write('clientReferenceId: $clientReferenceId, ')
+          ..write('tenantId: $tenantId, ')
+          ..write('isDeleted: $isDeleted, ')
+          ..write('rowVersion: $rowVersion, ')
+          ..write('additionalFields: $additionalFields, ')
+          ..write('rowid: $rowid')
+          ..write(')'))
+        .toString();
+  }
+}
+
 class $BoundaryTable extends Boundary
     with TableInfo<$BoundaryTable, BoundaryData> {
   @override
@@ -42373,6 +43501,8 @@ abstract class _$LocalSqlDataStore extends GeneratedDatabase {
   late final $AttendeeTable attendee = $AttendeeTable(this);
   late final $AddressTable address = $AddressTable(this);
   late final $NameTable name = $NameTable(this);
+  late final $BeneficiaryInfoTable beneficiaryInfo =
+      $BeneficiaryInfoTable(this);
   late final $BoundaryTable boundary = $BoundaryTable(this);
   late final $DocumentTable document = $DocumentTable(this);
   late final $FacilityTable facility = $FacilityTable(this);
@@ -42426,6 +43556,19 @@ abstract class _$LocalSqlDataStore extends GeneratedDatabase {
       'CREATE INDEX attendance_clientref ON attendance (client_reference_id)');
   late final Index attendanceIndividualid = Index('attendance_individualid',
       'CREATE INDEX attendance_individualid ON attendance (individual_id)');
+  late final Index addressLocalityBoundaryCode = Index(
+      'address_locality_boundary_code',
+      'CREATE INDEX address_locality_boundary_code ON address (locality_boundary_code)');
+  late final Index addressRelatedClientReferenceId = Index(
+      'address_related_client_reference_id',
+      'CREATE INDEX address_related_client_reference_id ON address (related_client_reference_id)');
+  late final Index nameGivenName = Index(
+      'name_given_name', 'CREATE INDEX name_given_name ON name (given_name)');
+  late final Index nameIndividualClientReferenceId = Index(
+      'name_individual_client_reference_id',
+      'CREATE INDEX name_individual_client_reference_id ON name (individual_client_reference_id)');
+  late final Index beneficiaryInfoLatLong = Index('beneficiary_info_lat_long',
+      'CREATE INDEX beneficiary_info_lat_long ON beneficiary_info (latitude, longitude)');
   late final Index projectClinetref = Index('project_clinetref',
       'CREATE INDEX project_clinetref ON project_beneficiary (client_reference_id)');
   late final Index projectProjectid = Index('project_projectid',
@@ -42433,6 +43576,9 @@ abstract class _$LocalSqlDataStore extends GeneratedDatabase {
   late final Index projectProjectbeneficiaryclientref = Index(
       'project_projectbeneficiaryclientref',
       'CREATE INDEX project_projectbeneficiaryclientref ON project_beneficiary (beneficiary_client_reference_id)');
+  late final Index individualClientReferenceId = Index(
+      'individual_client_reference_id',
+      'CREATE INDEX individual_client_reference_id ON individual (client_reference_id)');
   late final Index stockClientref = Index('stock_clientref',
       'CREATE INDEX stock_clientref ON stock (client_reference_id)');
   late final Index stockProductvariantid = Index('stock_productvariantid',
@@ -42499,6 +43645,7 @@ abstract class _$LocalSqlDataStore extends GeneratedDatabase {
         attendee,
         address,
         name,
+        beneficiaryInfo,
         boundary,
         document,
         facility,
@@ -42540,9 +43687,15 @@ abstract class _$LocalSqlDataStore extends GeneratedDatabase {
         uniqueIdPool,
         attendanceClientref,
         attendanceIndividualid,
+        addressLocalityBoundaryCode,
+        addressRelatedClientReferenceId,
+        nameGivenName,
+        nameIndividualClientReferenceId,
+        beneficiaryInfoLatLong,
         projectClinetref,
         projectProjectid,
         projectProjectbeneficiaryclientref,
+        individualClientReferenceId,
         stockClientref,
         stockProductvariantid,
         stockFacilityid,
@@ -44652,6 +45805,456 @@ class $$NameTableOrderingComposer
 
   ColumnOrderings<int> get auditModifiedTime => $state.composableBuilder(
       column: $state.table.auditModifiedTime,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get tenantId => $state.composableBuilder(
+      column: $state.table.tenantId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get rowVersion => $state.composableBuilder(
+      column: $state.table.rowVersion,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get additionalFields => $state.composableBuilder(
+      column: $state.table.additionalFields,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+}
+
+typedef $$BeneficiaryInfoTableInsertCompanionBuilder = BeneficiaryInfoCompanion
+    Function({
+  Value<String?> id,
+  required String householdClientReferenceId,
+  Value<String?> givenName,
+  Value<String?> identifierType,
+  Value<String?> identifierId,
+  Value<bool?> isHead,
+  Value<String?> status,
+  Value<String?> mobileNumber,
+  Value<double?> latitude,
+  Value<double?> longitude,
+  Value<String?> auditCreatedBy,
+  Value<bool?> nonRecoverableError,
+  Value<int?> auditCreatedTime,
+  Value<int?> clientCreatedTime,
+  Value<String?> clientModifiedBy,
+  Value<String?> clientCreatedBy,
+  Value<int?> clientModifiedTime,
+  Value<String?> auditModifiedBy,
+  Value<int?> auditModifiedTime,
+  required String clientReferenceId,
+  Value<String?> tenantId,
+  Value<bool?> isDeleted,
+  Value<int?> rowVersion,
+  Value<String?> additionalFields,
+  Value<int> rowid,
+});
+typedef $$BeneficiaryInfoTableUpdateCompanionBuilder = BeneficiaryInfoCompanion
+    Function({
+  Value<String?> id,
+  Value<String> householdClientReferenceId,
+  Value<String?> givenName,
+  Value<String?> identifierType,
+  Value<String?> identifierId,
+  Value<bool?> isHead,
+  Value<String?> status,
+  Value<String?> mobileNumber,
+  Value<double?> latitude,
+  Value<double?> longitude,
+  Value<String?> auditCreatedBy,
+  Value<bool?> nonRecoverableError,
+  Value<int?> auditCreatedTime,
+  Value<int?> clientCreatedTime,
+  Value<String?> clientModifiedBy,
+  Value<String?> clientCreatedBy,
+  Value<int?> clientModifiedTime,
+  Value<String?> auditModifiedBy,
+  Value<int?> auditModifiedTime,
+  Value<String> clientReferenceId,
+  Value<String?> tenantId,
+  Value<bool?> isDeleted,
+  Value<int?> rowVersion,
+  Value<String?> additionalFields,
+  Value<int> rowid,
+});
+
+class $$BeneficiaryInfoTableTableManager extends RootTableManager<
+    _$LocalSqlDataStore,
+    $BeneficiaryInfoTable,
+    BeneficiaryInfoData,
+    $$BeneficiaryInfoTableFilterComposer,
+    $$BeneficiaryInfoTableOrderingComposer,
+    $$BeneficiaryInfoTableProcessedTableManager,
+    $$BeneficiaryInfoTableInsertCompanionBuilder,
+    $$BeneficiaryInfoTableUpdateCompanionBuilder> {
+  $$BeneficiaryInfoTableTableManager(
+      _$LocalSqlDataStore db, $BeneficiaryInfoTable table)
+      : super(TableManagerState(
+          db: db,
+          table: table,
+          filteringComposer:
+              $$BeneficiaryInfoTableFilterComposer(ComposerState(db, table)),
+          orderingComposer:
+              $$BeneficiaryInfoTableOrderingComposer(ComposerState(db, table)),
+          getChildManagerBuilder: (p) =>
+              $$BeneficiaryInfoTableProcessedTableManager(p),
+          getUpdateCompanionBuilder: ({
+            Value<String?> id = const Value.absent(),
+            Value<String> householdClientReferenceId = const Value.absent(),
+            Value<String?> givenName = const Value.absent(),
+            Value<String?> identifierType = const Value.absent(),
+            Value<String?> identifierId = const Value.absent(),
+            Value<bool?> isHead = const Value.absent(),
+            Value<String?> status = const Value.absent(),
+            Value<String?> mobileNumber = const Value.absent(),
+            Value<double?> latitude = const Value.absent(),
+            Value<double?> longitude = const Value.absent(),
+            Value<String?> auditCreatedBy = const Value.absent(),
+            Value<bool?> nonRecoverableError = const Value.absent(),
+            Value<int?> auditCreatedTime = const Value.absent(),
+            Value<int?> clientCreatedTime = const Value.absent(),
+            Value<String?> clientModifiedBy = const Value.absent(),
+            Value<String?> clientCreatedBy = const Value.absent(),
+            Value<int?> clientModifiedTime = const Value.absent(),
+            Value<String?> auditModifiedBy = const Value.absent(),
+            Value<int?> auditModifiedTime = const Value.absent(),
+            Value<String> clientReferenceId = const Value.absent(),
+            Value<String?> tenantId = const Value.absent(),
+            Value<bool?> isDeleted = const Value.absent(),
+            Value<int?> rowVersion = const Value.absent(),
+            Value<String?> additionalFields = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BeneficiaryInfoCompanion(
+            id: id,
+            householdClientReferenceId: householdClientReferenceId,
+            givenName: givenName,
+            identifierType: identifierType,
+            identifierId: identifierId,
+            isHead: isHead,
+            status: status,
+            mobileNumber: mobileNumber,
+            latitude: latitude,
+            longitude: longitude,
+            auditCreatedBy: auditCreatedBy,
+            nonRecoverableError: nonRecoverableError,
+            auditCreatedTime: auditCreatedTime,
+            clientCreatedTime: clientCreatedTime,
+            clientModifiedBy: clientModifiedBy,
+            clientCreatedBy: clientCreatedBy,
+            clientModifiedTime: clientModifiedTime,
+            auditModifiedBy: auditModifiedBy,
+            auditModifiedTime: auditModifiedTime,
+            clientReferenceId: clientReferenceId,
+            tenantId: tenantId,
+            isDeleted: isDeleted,
+            rowVersion: rowVersion,
+            additionalFields: additionalFields,
+            rowid: rowid,
+          ),
+          getInsertCompanionBuilder: ({
+            Value<String?> id = const Value.absent(),
+            required String householdClientReferenceId,
+            Value<String?> givenName = const Value.absent(),
+            Value<String?> identifierType = const Value.absent(),
+            Value<String?> identifierId = const Value.absent(),
+            Value<bool?> isHead = const Value.absent(),
+            Value<String?> status = const Value.absent(),
+            Value<String?> mobileNumber = const Value.absent(),
+            Value<double?> latitude = const Value.absent(),
+            Value<double?> longitude = const Value.absent(),
+            Value<String?> auditCreatedBy = const Value.absent(),
+            Value<bool?> nonRecoverableError = const Value.absent(),
+            Value<int?> auditCreatedTime = const Value.absent(),
+            Value<int?> clientCreatedTime = const Value.absent(),
+            Value<String?> clientModifiedBy = const Value.absent(),
+            Value<String?> clientCreatedBy = const Value.absent(),
+            Value<int?> clientModifiedTime = const Value.absent(),
+            Value<String?> auditModifiedBy = const Value.absent(),
+            Value<int?> auditModifiedTime = const Value.absent(),
+            required String clientReferenceId,
+            Value<String?> tenantId = const Value.absent(),
+            Value<bool?> isDeleted = const Value.absent(),
+            Value<int?> rowVersion = const Value.absent(),
+            Value<String?> additionalFields = const Value.absent(),
+            Value<int> rowid = const Value.absent(),
+          }) =>
+              BeneficiaryInfoCompanion.insert(
+            id: id,
+            householdClientReferenceId: householdClientReferenceId,
+            givenName: givenName,
+            identifierType: identifierType,
+            identifierId: identifierId,
+            isHead: isHead,
+            status: status,
+            mobileNumber: mobileNumber,
+            latitude: latitude,
+            longitude: longitude,
+            auditCreatedBy: auditCreatedBy,
+            nonRecoverableError: nonRecoverableError,
+            auditCreatedTime: auditCreatedTime,
+            clientCreatedTime: clientCreatedTime,
+            clientModifiedBy: clientModifiedBy,
+            clientCreatedBy: clientCreatedBy,
+            clientModifiedTime: clientModifiedTime,
+            auditModifiedBy: auditModifiedBy,
+            auditModifiedTime: auditModifiedTime,
+            clientReferenceId: clientReferenceId,
+            tenantId: tenantId,
+            isDeleted: isDeleted,
+            rowVersion: rowVersion,
+            additionalFields: additionalFields,
+            rowid: rowid,
+          ),
+        ));
+}
+
+class $$BeneficiaryInfoTableProcessedTableManager extends ProcessedTableManager<
+    _$LocalSqlDataStore,
+    $BeneficiaryInfoTable,
+    BeneficiaryInfoData,
+    $$BeneficiaryInfoTableFilterComposer,
+    $$BeneficiaryInfoTableOrderingComposer,
+    $$BeneficiaryInfoTableProcessedTableManager,
+    $$BeneficiaryInfoTableInsertCompanionBuilder,
+    $$BeneficiaryInfoTableUpdateCompanionBuilder> {
+  $$BeneficiaryInfoTableProcessedTableManager(super.$state);
+}
+
+class $$BeneficiaryInfoTableFilterComposer
+    extends FilterComposer<_$LocalSqlDataStore, $BeneficiaryInfoTable> {
+  $$BeneficiaryInfoTableFilterComposer(super.$state);
+  ColumnFilters<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get householdClientReferenceId =>
+      $state.composableBuilder(
+          column: $state.table.householdClientReferenceId,
+          builder: (column, joinBuilders) =>
+              ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get givenName => $state.composableBuilder(
+      column: $state.table.givenName,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get identifierType => $state.composableBuilder(
+      column: $state.table.identifierType,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get identifierId => $state.composableBuilder(
+      column: $state.table.identifierId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isHead => $state.composableBuilder(
+      column: $state.table.isHead,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get mobileNumber => $state.composableBuilder(
+      column: $state.table.mobileNumber,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get latitude => $state.composableBuilder(
+      column: $state.table.latitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<double> get longitude => $state.composableBuilder(
+      column: $state.table.longitude,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get auditCreatedBy => $state.composableBuilder(
+      column: $state.table.auditCreatedBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get nonRecoverableError => $state.composableBuilder(
+      column: $state.table.nonRecoverableError,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get auditCreatedTime => $state.composableBuilder(
+      column: $state.table.auditCreatedTime,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get clientCreatedTime => $state.composableBuilder(
+      column: $state.table.clientCreatedTime,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get clientModifiedBy => $state.composableBuilder(
+      column: $state.table.clientModifiedBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get clientCreatedBy => $state.composableBuilder(
+      column: $state.table.clientCreatedBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get clientModifiedTime => $state.composableBuilder(
+      column: $state.table.clientModifiedTime,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get auditModifiedBy => $state.composableBuilder(
+      column: $state.table.auditModifiedBy,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get auditModifiedTime => $state.composableBuilder(
+      column: $state.table.auditModifiedTime,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get clientReferenceId => $state.composableBuilder(
+      column: $state.table.clientReferenceId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get tenantId => $state.composableBuilder(
+      column: $state.table.tenantId,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<bool> get isDeleted => $state.composableBuilder(
+      column: $state.table.isDeleted,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<int> get rowVersion => $state.composableBuilder(
+      column: $state.table.rowVersion,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+
+  ColumnFilters<String> get additionalFields => $state.composableBuilder(
+      column: $state.table.additionalFields,
+      builder: (column, joinBuilders) =>
+          ColumnFilters(column, joinBuilders: joinBuilders));
+}
+
+class $$BeneficiaryInfoTableOrderingComposer
+    extends OrderingComposer<_$LocalSqlDataStore, $BeneficiaryInfoTable> {
+  $$BeneficiaryInfoTableOrderingComposer(super.$state);
+  ColumnOrderings<String> get id => $state.composableBuilder(
+      column: $state.table.id,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get householdClientReferenceId =>
+      $state.composableBuilder(
+          column: $state.table.householdClientReferenceId,
+          builder: (column, joinBuilders) =>
+              ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get givenName => $state.composableBuilder(
+      column: $state.table.givenName,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get identifierType => $state.composableBuilder(
+      column: $state.table.identifierType,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get identifierId => $state.composableBuilder(
+      column: $state.table.identifierId,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get isHead => $state.composableBuilder(
+      column: $state.table.isHead,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get status => $state.composableBuilder(
+      column: $state.table.status,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get mobileNumber => $state.composableBuilder(
+      column: $state.table.mobileNumber,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get latitude => $state.composableBuilder(
+      column: $state.table.latitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<double> get longitude => $state.composableBuilder(
+      column: $state.table.longitude,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get auditCreatedBy => $state.composableBuilder(
+      column: $state.table.auditCreatedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<bool> get nonRecoverableError => $state.composableBuilder(
+      column: $state.table.nonRecoverableError,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get auditCreatedTime => $state.composableBuilder(
+      column: $state.table.auditCreatedTime,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get clientCreatedTime => $state.composableBuilder(
+      column: $state.table.clientCreatedTime,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get clientModifiedBy => $state.composableBuilder(
+      column: $state.table.clientModifiedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get clientCreatedBy => $state.composableBuilder(
+      column: $state.table.clientCreatedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get clientModifiedTime => $state.composableBuilder(
+      column: $state.table.clientModifiedTime,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get auditModifiedBy => $state.composableBuilder(
+      column: $state.table.auditModifiedBy,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<int> get auditModifiedTime => $state.composableBuilder(
+      column: $state.table.auditModifiedTime,
+      builder: (column, joinBuilders) =>
+          ColumnOrderings(column, joinBuilders: joinBuilders));
+
+  ColumnOrderings<String> get clientReferenceId => $state.composableBuilder(
+      column: $state.table.clientReferenceId,
       builder: (column, joinBuilders) =>
           ColumnOrderings(column, joinBuilders: joinBuilders));
 
@@ -59536,6 +61139,8 @@ class _$LocalSqlDataStoreManager {
   $$AddressTableTableManager get address =>
       $$AddressTableTableManager(_db, _db.address);
   $$NameTableTableManager get name => $$NameTableTableManager(_db, _db.name);
+  $$BeneficiaryInfoTableTableManager get beneficiaryInfo =>
+      $$BeneficiaryInfoTableTableManager(_db, _db.beneficiaryInfo);
   $$BoundaryTableTableManager get boundary =>
       $$BoundaryTableTableManager(_db, _db.boundary);
   $$DocumentTableTableManager get document =>

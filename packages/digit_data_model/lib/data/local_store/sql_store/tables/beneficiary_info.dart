@@ -1,22 +1,17 @@
-// Generated using mason. Do not modify by hand
-
-import 'package:digit_data_model/models/entities/blood_group.dart';
-import 'package:digit_data_model/models/entities/gender.dart';
 import 'package:drift/drift.dart';
 
-@TableIndex(name: 'individual_client_reference_id', columns: {#clientReferenceId})
-class Individual extends Table {
+@TableIndex(name: 'beneficiary_info_lat_long', columns: {#latitude, #longitude})
+class BeneficiaryInfo extends Table {
   TextColumn get id => text().nullable()();
-  TextColumn get individualId => text().nullable()();
-  TextColumn get userId => text().nullable()();
-  TextColumn get userUuid => text().nullable()();
-  TextColumn get dateOfBirth => text().nullable()();
+  TextColumn get householdClientReferenceId => text()();
+  TextColumn get givenName => text().nullable()();
+  TextColumn get identifierType => text().nullable()();
+  TextColumn get identifierId => text().nullable()();
+  BoolColumn get isHead => boolean().nullable()();
+  TextColumn get status => text().nullable()();
   TextColumn get mobileNumber => text().nullable()();
-  TextColumn get altContactNumber => text().nullable()();
-  TextColumn get email => text().nullable()();
-  TextColumn get fatherName => text().nullable()();
-  TextColumn get husbandName => text().nullable()();
-  TextColumn get photo => text().nullable()();
+  RealColumn get latitude => real().nullable()();
+  RealColumn get longitude => real().nullable()();
   TextColumn get auditCreatedBy => text().nullable()();
   BoolColumn get nonRecoverableError => boolean().nullable().withDefault(const Constant(false))();
   IntColumn get auditCreatedTime => integer().nullable()();
@@ -30,9 +25,6 @@ class Individual extends Table {
   TextColumn get tenantId => text().nullable()();
   BoolColumn get isDeleted => boolean().nullable().withDefault(const Constant(false))();
   IntColumn get rowVersion => integer().nullable()();
-  IntColumn get bloodGroup => intEnum<BloodGroup>().nullable()();
-  IntColumn get gender => intEnum<Gender>().nullable()();
-  
   TextColumn get additionalFields => text().nullable()();
 
   @override

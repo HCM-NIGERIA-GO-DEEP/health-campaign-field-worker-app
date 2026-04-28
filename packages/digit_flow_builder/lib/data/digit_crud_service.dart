@@ -59,7 +59,10 @@ class DigitCrudService extends CrudService {
     } else if (entity is AttendanceLogModel) {
       return context
           .repository<AttendanceLogModel, AttendanceLogSearchModel>(context);
-    } else {
+    } else if (entity is BeneficiaryInfoModel) {
+      return context
+          .repository<BeneficiaryInfoModel, BeneficiaryInfoSearchModel>(context);
+    }else {
       return context.repository<EntityModel, EntitySearchModel>(context);
     }
   }
@@ -124,6 +127,8 @@ class EntityModelMapMapper extends DynamicEntityModelListener {
       case 'attendance':
       case 'attendanceLog':
         return AttendanceLogModelMapper.fromMap(normalizedMapAttendance);
+      case 'beneficiaryInfo':
+        return BeneficiaryInfoModelMapper.fromMap(normalizedMap);
       case 'name':
         return NameModelMapper.fromMap(normalizedMap);
       default:

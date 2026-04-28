@@ -1950,14 +1950,14 @@ final dynamic sampleFlows = {
               "properties": {
                 "data": [
                   {"key": "", "value": 5, "operation": "within"},
-                  {
-                    "key": "localityBoundaryCode",
-                    "root": "address",
-                    "value": "{{singleton.boundary.code}}",
-                    "operation": "equals"
-                  }
+                  // {
+                  //   "key": "localityBoundaryCode",
+                  //   "root": "address",
+                  //   "value": "{{singleton.boundary.code}}",
+                  //   "operation": "equals"
+                  // }
                 ],
-                "name": "address",
+                "name": "beneficiaryInfo",
                 "type": "field.value==true ? SEARCH_EVENT : CLEAR_STATE"
               }
             }
@@ -2008,14 +2008,14 @@ final dynamic sampleFlows = {
                         "value": "field.value",
                         "operation": "contains"
                       },
-                      {
-                        "key": "localityBoundaryCode",
-                        "root": "address",
-                        "value": "{{singleton.boundary.code}}",
-                        "operation": "equals"
-                      }
+                      // {
+                      //   "key": "localityBoundaryCode",
+                      //   "root": "address",
+                      //   "value": "{{singleton.boundary.code}}",
+                      //   "operation": "equals"
+                      // }
                     ],
-                    "name": "identifier",
+                    "name": "beneficiaryInfo",
                     "type": "field.value==true ? SEARCH_EVENT : CLEAR_EVENT"
                   }
                 }
@@ -2033,14 +2033,14 @@ final dynamic sampleFlows = {
                         "value": "field.value",
                         "operation": "contains"
                       },
-                      {
-                        "key": "localityBoundaryCode",
-                        "root": "address",
-                        "value": "{{singleton.boundary.code}}",
-                        "operation": "equals"
-                      }
+                      // {
+                      //   "key": "localityBoundaryCode",
+                      //   "root": "address",
+                      //   "value": "{{singleton.boundary.code}}",
+                      //   "operation": "equals"
+                      // }
                     ],
-                    "name": "name",
+                    "name": "beneficiaryInfo",
                     "type": "field.value==true ? SEARCH_EVENT : CLEAR_EVENT"
                   }
                 }
@@ -2276,12 +2276,12 @@ final dynamic sampleFlows = {
           "suffixIcon": "FilterAlt"
         },
         {
-          "data": "members",
+          "data": "contextData.0.BeneficiaryInfoModel",
           "type": "template",
           "child": {
             "type": "template",
             "format": "card",
-            "visible": "{{fn:length(item.projectBeneficiaries)}} > 0",
+            // "visible": "{{fn:length(item.BeneficiaryInfoModel)}} > 0",
             "children": [
               {
                 "type": "template",
@@ -2289,7 +2289,7 @@ final dynamic sampleFlows = {
                 "children": [
                   {
                     "type": "template",
-                    "value": "{{ item.headIndividual.0.name.givenName }}",
+                    "value": "{{ item.BeneficiaryInfoModel.givenName }}",
                     "format": "textTemplate",
                     "fieldName": "headOfHousehold"
                   },
@@ -2307,7 +2307,7 @@ final dynamic sampleFlows = {
                                 {
                                   "key": "HouseholdClientReferenceId",
                                   "value":
-                                      "{{ item.HouseholdModel.clientReferenceId }}"
+                                      "{{ item.BeneficiaryInfoModel.householdClientReferenceId }}"
                                 }
                               ],
                               "name": "householdOverview",
@@ -2339,7 +2339,7 @@ final dynamic sampleFlows = {
                                 {
                                   "key": "HouseholdClientReferenceId",
                                   "value":
-                                      "{{ item.HouseholdModel.clientReferenceId }}"
+                                      "{{ item.BeneficiaryInfoModel.householdClientReferenceId }}"
                                 },
                                 {"key": "isEdit", "value": "true"},
                                 {"key": "isClosedHousehold", "value": "true"}
@@ -2374,7 +2374,7 @@ final dynamic sampleFlows = {
                       "header": "BENEFICIARY",
                       "hidden": false,
                       "isActive": true,
-                      "cellValue": "{{item.name.givenName}}"
+                      "cellValue": "{{item.givenName}}"
                     },
                     {
                       "header": "AGE_OF_BENEFICIARY",
@@ -2613,86 +2613,14 @@ final dynamic sampleFlows = {
       "description": "REGISTRATION_SEARCH_BENEFICIARY_DESC",
       "wrapperConfig": {
         "filters": [],
-        "relations": [
-          {
-            "name": "members",
-            "match": {
-              "field": "householdClientReferenceId",
-              "equalsFrom": "clientReferenceId"
-            },
-            "entity": "HouseholdMemberModel"
-          },
-          {
-            "name": "headOfHousehold",
-            "match": {
-              "field": "householdClientReferenceId",
-              "equalsFrom": "clientReferenceId"
-            },
-            "entity": "HouseholdMemberModel",
-            "filters": [
-              {"field": "isHeadOfHousehold", "equals": true}
-            ]
-          },
-          {
-            "name": "headIndividual",
-            "match": {
-              "field": "clientReferenceId",
-              "equalsFrom": "headOfHousehold.individualClientReferenceId"
-            },
-            "entity": "IndividualModel"
-          },
-          {
-            "name": "individuals",
-            "match": {
-              "field": "clientReferenceId",
-              "inFrom": "members.individualClientReferenceId"
-            },
-            "entity": "IndividualModel"
-          },
-          {
-            "name": "projectBeneficiaries",
-            "match": {
-              "field": "beneficiaryClientReferenceId",
-              "inFrom": "individuals.clientReferenceId"
-            },
-            "entity": "ProjectBeneficiaryModel"
-          },
-          {
-            "name": "tasks",
-            "match": {
-              "field": "projectBeneficiaryClientReferenceId",
-              "inFrom": "projectBeneficiaries.clientReferenceId"
-            },
-            "entity": "TaskModel"
-          },
-          {
-            "name": "sideEffects",
-            "match": {
-              "field": "clientReferenceId",
-              "equalsFrom": "clientReferenceId"
-            },
-            "entity": "SideEffectModel"
-          },
-          {
-            "name": "hFReferral",
-            "match": {
-              "field": "beneficiaryId",
-              "equalsFrom": "individual.identifiers.0.identifierId"
-            },
-            "entity": "HFReferralModel"
-          }
-        ],
-        "rootEntity": "HouseholdModel",
-        "wrapperName": "HouseholdWrapper",
+        "relations": [],
+        "rootEntity": "BeneficiaryInfoModel",
+        "wrapperName": "beneficiaryInfo",
         "searchConfig": {
           "select": [
-            "household",
-            "individual",
-            "householdMember",
-            "projectBeneficiary",
-            "task"
+            "beneficiaryInfo"
           ],
-          "primary": "household",
+          "primary": "beneficiaryInfo",
           "pagination": {"limit": 5, "maxItems": 15}
         }
       },

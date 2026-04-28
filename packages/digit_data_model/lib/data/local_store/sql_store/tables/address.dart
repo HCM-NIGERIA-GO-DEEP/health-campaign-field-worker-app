@@ -5,6 +5,12 @@ import 'package:drift/drift.dart';
 import '../../../../models/entities/address_type.dart';
 
 @DataClassName('Addres')
+@TableIndex(
+    name: 'address_locality_boundary_code',
+    columns: {#localityBoundaryCode})
+@TableIndex(
+    name: 'address_related_client_reference_id',
+    columns: {#relatedClientReferenceId})
 class Address extends Table {
   TextColumn get id => text().nullable()();
   TextColumn get relatedClientReferenceId => text().nullable()();

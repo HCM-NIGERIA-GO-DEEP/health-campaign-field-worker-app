@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:digit_data_model/data/repositories/local/beneficiary_info.dart';
 import 'package:digit_data_model/data/repositories/local/attendance_logs.dart';
 import 'package:digit_data_model/data/repositories/local/attendance_register.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/hf_referral.dart';
@@ -309,6 +310,13 @@ class NetworkManagerProviderWrapper extends StatelessWidget {
         create: (_) => UserActionLocalRepository(
           sql,
           UserActionOpLogManager(isar),
+        ),
+      ),
+      RepositoryProvider<
+          LocalRepository<BeneficiaryInfoModel, BeneficiaryInfoSearchModel>>(
+        create: (_) => BeneficiaryInfoLocalRepository(
+          sql,
+          BeneficiaryInfoOpLogManager(isar),
         ),
       ),
       RepositoryProvider<

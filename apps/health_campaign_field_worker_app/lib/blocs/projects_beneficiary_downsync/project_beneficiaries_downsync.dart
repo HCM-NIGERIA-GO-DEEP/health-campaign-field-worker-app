@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/hf_referral.dart';
 import 'package:disk_space_update/disk_space_update.dart';
@@ -48,6 +49,8 @@ class BeneficiaryDownSyncBloc
       hfReferralLocalRepository;
   final LocalRepository<ServiceModel, ServiceSearchModel>
       serviceLocalRepository;
+  final LocalRepository<BeneficiaryInfoModel, BeneficiaryInfoSearchModel>
+      beneficiaryInfoLocalRepository;
 
   BeneficiaryDownSyncBloc({
     required this.individualLocalRepository,
@@ -62,6 +65,7 @@ class BeneficiaryDownSyncBloc
     required this.referralLocalRepository,
     required this.hfReferralLocalRepository,
     required this.serviceLocalRepository,
+    required this.beneficiaryInfoLocalRepository,
   }) : super(const BeneficiaryDownSyncState._()) {
     on(_handleDownSyncOfBeneficiaries);
     on(_handleCheckTotalCount);
@@ -233,7 +237,11 @@ class BeneficiaryDownSyncBloc
                 hfReferralLocalRepository,
                 serviceLocalRepository,
               ]);
+
+              await _writeToBeneficiaryInfo(downSyncResults);
+
               // Update the local downSync data for the boundary with the new values
+
               totalCount = downSyncResults["DownsyncCriteria"]["totalCount"];
 
               await downSyncLocalRepository.update(DownsyncModel(
@@ -435,6 +443,8 @@ class BeneficiaryDownSyncBloc
                 serviceLocalRepository,
               ]);
 
+              await _writeToBeneficiaryInfo(downSyncResults);
+
               totalCount = downSyncResults["DownsyncCriteria"]["totalCount"];
 
               await downSyncLocalRepository.update(DownsyncModel(
@@ -559,6 +569,67 @@ class BeneficiaryDownSyncBloc
 
     if (kDebugMode) {
       print("Data successfully written to ${file.path}");
+    }
+  }
+
+  Future<void> _writeToBeneficiaryInfo(Map<String, dynamic> response) async {
+    try {
+      final List<dynamic> individualsResponse = response["Individuals"] ?? [];
+      final List<dynamic> householdsResponse = response["Households"] ?? [];
+      final List<dynamic> householdMembersResponse =
+          response["HouseholdMembers"] ?? [];
+
+      final individuals = individualsResponse
+          .whereType<Map<String, dynamic>>()
+          .map((e) => IndividualModelMapper.fromMap(e))
+          .toList();
+
+      final households = householdsResponse
+          .whereType<Map<String, dynamic>>()
+          .map((e) => HouseholdModelMapper.fromMap(e))
+          .toList();
+
+      final householdMembers = householdMembersResponse
+          .whereType<Map<String, dynamic>>()
+          .map((e) => HouseholdMemberModelMapper.fromMap(e))
+          .toList();
+
+      final List<BeneficiaryInfoModel> beneficiaryInfoList = [];
+
+      for (final member in householdMembers) {
+        final individual = individuals.firstWhereOrNull(
+          (i) => i.clientReferenceId == member.individualClientReferenceId,
+        );
+        final household = households.firstWhereOrNull(
+          (h) => h.clientReferenceId == member.householdClientReferenceId,
+        );
+
+        if (individual != null && household != null) {
+          beneficiaryInfoList.add(
+            BeneficiaryInfoModel(
+              clientReferenceId: individual.clientReferenceId,
+              householdClientReferenceId: household.clientReferenceId,
+              givenName: individual.name?.givenName,
+              identifierType: individual.identifiers?.firstOrNull?.identifierType,
+              identifierId: individual.identifiers?.firstOrNull?.identifierId,
+              isHead: member.isHeadOfHousehold,
+              latitude: household.address?.latitude,
+              longitude: household.address?.longitude,
+              tenantId: individual.tenantId,
+              auditDetails: individual.auditDetails,
+              clientAuditDetails: individual.clientAuditDetails,
+            ),
+          );
+        }
+      }
+
+      if (beneficiaryInfoList.isNotEmpty) {
+        await beneficiaryInfoLocalRepository.bulkCreate(beneficiaryInfoList);
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print("Error writing to BeneficiaryInfo: $e");
+      }
     }
   }
 

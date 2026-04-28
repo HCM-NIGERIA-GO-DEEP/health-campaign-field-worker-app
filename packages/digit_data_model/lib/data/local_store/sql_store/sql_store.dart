@@ -20,6 +20,7 @@ import '../../../models/entities/household_type.dart';
 import '../../../models/entities/pgr_application_status.dart';
 import 'tables/address.dart';
 import 'tables/attributes.dart';
+import 'tables/beneficiary_info.dart';
 import 'tables/boundary.dart';
 import 'tables/document.dart';
 import 'tables/downsync.dart';
@@ -87,6 +88,7 @@ enum DatabaseMigrationResult {
   Attendee,
   Address,
   Name,
+  BeneficiaryInfo,
   Boundary,
   Document,
   Facility,

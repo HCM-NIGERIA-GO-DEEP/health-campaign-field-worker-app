@@ -275,6 +275,32 @@ class StockReconciliationOpLogManager
       entity.nonRecoverableError;
 }
 
+class BeneficiaryInfoOpLogManager extends OpLogManager<BeneficiaryInfoModel> {
+  BeneficiaryInfoOpLogManager(super.isar);
+
+  @override
+  BeneficiaryInfoModel applyServerGeneratedIdToEntity(
+    BeneficiaryInfoModel entity,
+    String serverGeneratedId,
+    int rowVersion,
+  ) =>
+      entity.copyWith(id: serverGeneratedId, rowVersion: rowVersion);
+
+  @override
+  String getClientReferenceId(BeneficiaryInfoModel entity) =>
+      entity.clientReferenceId;
+
+  @override
+  String? getServerGeneratedId(BeneficiaryInfoModel entity) => entity.id;
+
+  @override
+  int? getRowVersion(BeneficiaryInfoModel entity) => entity.rowVersion;
+
+  @override
+  bool? getNonRecoverableError(BeneficiaryInfoModel entity) =>
+      entity.nonRecoverableError;
+}
+
 class PgrServiceOpLogManager extends OpLogManager<PgrServiceModel> {
   PgrServiceOpLogManager(super.isar);
 

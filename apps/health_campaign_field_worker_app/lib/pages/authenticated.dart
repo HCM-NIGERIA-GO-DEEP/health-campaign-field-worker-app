@@ -245,7 +245,11 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                           serviceLocalRepository: ctx.read<
                               LocalRepository<ServiceModel,
                                   ServiceSearchModel>>(),
-                        ),
+                          beneficiaryInfoLocalRepository: ctx.read<
+                              LocalRepository<BeneficiaryInfoModel,
+                                  BeneficiaryInfoSearchModel>>(),
+                          ),
+
                       ),
                       BlocProvider(
                         create: (ctx) => StockDownSyncBloc(
