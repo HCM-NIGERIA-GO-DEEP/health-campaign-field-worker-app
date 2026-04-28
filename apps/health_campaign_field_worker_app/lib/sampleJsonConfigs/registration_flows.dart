@@ -3883,7 +3883,7 @@ final dynamic sampleFlows = {
               ],
               "condition": {
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==NO"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec4==NO && eligibilityChecklist.ec5==NO"
               }
             },
             {
@@ -3892,12 +3892,6 @@ final dynamic sampleFlows = {
                   "actionType": "NAVIGATION",
                   "properties": {
                     "data": [
-                      {"key": "ec1", "value": "{{eligibilityChecklist.ec1}}"},
-                      {"key": "ec2", "value": "{{eligibilityChecklist.ec2}}"},
-                      {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
-                      {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
-                      {"key": "ec5", "value": "{{eligibilityChecklist.ec5}}"},
-                      {"key": "sourceFlow", "value": "CHECKLIST"},
                       {
                         "key": "selectedIndividualClientReferenceId",
                         "value":
@@ -3915,26 +3909,10 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                      },
-                      {
-                        "key": "selectedIndividualName",
-                        "value": "{{navigation.selectedIndividualName}}"
-                      },
-                      {
-                        "key": "selectedIndividualGender",
-                        "value": "{{navigation.selectedIndividualGender}}"
-                      },
-                      {
-                        "key": "selectedIndividualAgeInMonths",
-                        "value": "{{navigation.selectedIndividualAgeInMonths}}"
-                      },
-                      {
-                        "key": "cycleIndex",
-                        "value": "{{navigation.cycleIndex}}"
-                      },
+                      }
                     ],
-                    "name": "REFER_BENEFICIARY",
-                    "type": "FORM",
+                    "name": "beneficiaryDetails",
+                    "type": "TEMPLATE",
                     "onError": [
                       {
                         "actionType": "SHOW_TOAST",
@@ -3948,7 +3926,7 @@ final dynamic sampleFlows = {
               ],
               "condition": {
                 "expression":
-                    "eligibilityChecklist.ec1==YES && eligibilityChecklist.ec2==YES && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec4==YES"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==YES  && eligibilityChecklist.ec5==NO"
               }
             },
             {
@@ -4037,10 +4015,7 @@ final dynamic sampleFlows = {
                   }
                 }
               ],
-              "condition": {
-                "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==NO"
-              }
+              "condition": {"expression": "eligibilityChecklist.ec5==YES"}
             },
             {
               "actions": [
@@ -4339,9 +4314,13 @@ final dynamic sampleFlows = {
                     "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==NO"
               },
               {
-                "value": "Ineligible flow",
+                "value": "To Administer",
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==YES"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec4==NO && eligibilityChecklist.ec5==NO"
+              },
+              {
+                "value": "Ineligible flow",
+                "expression": "eligibilityChecklist.ec5==YES"
               },
               {"value": "referral flow", "expression": "DEFAULT"}
             ],
@@ -4398,7 +4377,50 @@ final dynamic sampleFlows = {
           ],
           "condition": {
             "expression":
-                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec4==NO"
+                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO &&eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==NO"
+          }
+        },
+        {
+          "actions": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {
+                    "key": "selectedIndividualClientReferenceId",
+                    "value":
+                        "{{navigation.selectedIndividualClientReferenceId}}"
+                  },
+                  {
+                    "key": "selectedIndividualIdentifierId",
+                    "value": "{{navigation.selectedIndividualIdentifierId}}"
+                  },
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{ navigation.HouseholdClientReferenceId }}"
+                  },
+                  {
+                    "key": "ProjectBeneficiaryClientReferenceId",
+                    "value":
+                        "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                  }
+                ],
+                "name": "beneficiaryDetails",
+                "type": "TEMPLATE",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Navigation failed."}
+                  }
+                ],
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "householdOverview"
+              }
+            }
+          ],
+          "condition": {
+            "expression":
+                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec4==NO && eligibilityChecklist.ec5==NO"
           }
         },
         {
@@ -4411,6 +4433,7 @@ final dynamic sampleFlows = {
                   {"key": "ec2", "value": "{{eligibilityChecklist.ec2}}"},
                   {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
                   {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
+                  {"key": "ec5", "value": "{{eligibilityChecklist.ec5}}"},
                   {"key": "sourceFlow", "value": "CHECKLIST"},
                   {
                     "key": "selectedIndividualClientReferenceId",
@@ -4457,10 +4480,7 @@ final dynamic sampleFlows = {
               }
             }
           ],
-          "condition": {
-            "expression":
-                "eligibilityChecklist.ec1==YES && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec4==YES"
-          }
+          "condition": {"expression": "DEFAULT"}
         },
         {
           "actions": [
@@ -4546,71 +4566,9 @@ final dynamic sampleFlows = {
               }
             }
           ],
-          "condition": {
-            "expression":
-                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec4==YES"
-          }
-        },
-        {
-          "actions": [
-            {
-              "actionType": "NAVIGATION",
-              "properties": {
-                "data": [
-                  {"key": "ec1", "value": "{{eligibilityChecklist.ec1}}"},
-                  {"key": "ec2", "value": "{{eligibilityChecklist.ec2}}"},
-                  {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
-                  {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
-                  {"key": "sourceFlow", "value": "CHECKLIST"},
-                  {
-                    "key": "selectedIndividualClientReferenceId",
-                    "value":
-                        "{{navigation.selectedIndividualClientReferenceId}}"
-                  },
-                  {
-                    "key": "selectedIndividualIdentifierId",
-                    "value": "{{navigation.selectedIndividualIdentifierId}}"
-                  },
-                  {
-                    "key": "HouseholdClientReferenceId",
-                    "value": "{{ navigation.HouseholdClientReferenceId }}"
-                  },
-                  {
-                    "key": "ProjectBeneficiaryClientReferenceId",
-                    "value":
-                        "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                  },
-                  {
-                    "key": "selectedIndividualName",
-                    "value": "{{navigation.selectedIndividualName}}"
-                  },
-                  {
-                    "key": "selectedIndividualGender",
-                    "value": "{{navigation.selectedIndividualGender}}"
-                  },
-                  {
-                    "key": "selectedIndividualAgeInMonths",
-                    "value": "{{navigation.selectedIndividualAgeInMonths}}"
-                  },
-                  {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"}
-                ],
-                "name": "REFER_BENEFICIARY",
-                "type": "FORM",
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {"message": "Navigation failed."}
-                  }
-                ],
-                "navigationMode": "popUntilAndPush",
-                "popUntilPageName": "householdOverview"
-              }
-            }
-          ],
-          "condition": {"expression": "DEFAULT"}
+          "condition": {"expression": "eligibilityChecklist.ec5==YES"}
         }
       ],
-      "isSelected": true,
       "screenType": "FORM",
       "initActions": [],
       "wrapperConfig": {},
@@ -5780,6 +5738,7 @@ final dynamic sampleFlows = {
               {"key": "ec2", "value": "{{navigation.ec2}}"},
               {"key": "ec3", "value": "{{navigation.ec3}}"},
               {"key": "ec4", "value": "{{navigation.ec4}}"},
+              {"key": "ec5", "value": "{{navigation.ec5}}"},
               {
                 "key": "referralReasons",
                 "value": "{{fn:getSymptomsReferral(navigation)}}"
