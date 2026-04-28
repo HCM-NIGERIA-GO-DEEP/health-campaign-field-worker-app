@@ -4742,10 +4742,7 @@ final dynamic sampleFlows = {
                 "key": "selectedIndividualAgeInMonths",
                 "value": "{{fn:formatDate(formData.dobPicker, 'ageInMonths')}}"
               },
-              {
-                "key": "cycleIndex",
-                "value": "{{contextData.0.cycleIndex}}"
-              }
+              {"key": "cycleIndex", "value": "{{contextData.0.cycleIndex}}"}
             ],
             "name": "CHECKLIST",
             "type": "FORM"
@@ -5183,10 +5180,7 @@ final dynamic sampleFlows = {
                 "key": "selectedIndividualAgeInMonths",
                 "value": "{{fn:formatDate(formData.dobPicker, 'ageInMonths')}}"
               },
-              {
-                "key": "cycleIndex",
-                "value": "{{contextData.0.cycleIndex}}"
-              }
+              {"key": "cycleIndex", "value": "{{contextData.0.cycleIndex}}"}
             ],
             "name": "CHECKLIST",
             "type": "FORM",
@@ -6442,22 +6436,6 @@ final dynamic sampleFlows = {
           "summary": false,
           "version": 1,
           "onAction": [
-            {
-              "condition": {
-                "expression":
-                    "{{householdDetails.childrenCount}} > {{householdDetails.memberCount}}"
-              },
-              "actions": [
-                {
-                  "actionType": "SHOW_TOAST",
-                  "properties": {
-                    "message":
-                        "REGISTRATION_SEARCH_BENEFICIARY_CHILDREN_COUNT_EXCEEDED",
-                    "type": "error"
-                  }
-                }
-              ]
-            },
             {
               "actions": [
                 {
