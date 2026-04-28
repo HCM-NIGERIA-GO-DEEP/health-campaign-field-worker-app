@@ -64,6 +64,7 @@ import '../utils/i18_key_constants.dart' as i18;
 import '../utils/least_level_boundary_singleton.dart';
 import '../utils/stock_downsync_utils.dart';
 import '../utils/utils.dart';
+import '../utils/performance_data_generator.dart';
 import '../widgets/attendance/attendance_qr_scanner_button.dart';
 import '../widgets/attendance/custom_row_widget.dart';
 import '../widgets/attendance/group_list_view_widget.dart';
@@ -1631,11 +1632,25 @@ class _HomePageState extends LocalizedState<HomePage> {
                   ),
               ],
             ),
-            footer: Padding(
-              padding: const EdgeInsets.only(bottom: spacer2),
-              child: PoweredByDigit(
-                version: Constants().version,
-              ),
+            footer: Column(
+              children: [
+                DigitButton(
+                  label: 'Generate Performance Data (1L HH)',
+                  onPressed: () async {
+                    final db = context.read<LocalSqlDataStore>();
+                    await populateLargeDataset(db);
+                  },
+                  type: DigitButtonType.primary,
+                  size: DigitButtonSize.medium,
+                ),
+                const SizedBox(height: spacer2),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: spacer2),
+                  child: PoweredByDigit(
+                    version: Constants().version,
+                  ),
+                ),
+              ],
             ),
             children: [
               const SizedBox(height: spacer2 * 2),
