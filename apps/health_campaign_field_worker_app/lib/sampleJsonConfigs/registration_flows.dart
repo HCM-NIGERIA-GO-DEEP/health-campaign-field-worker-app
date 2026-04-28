@@ -3948,7 +3948,7 @@ final dynamic sampleFlows = {
               ],
               "condition": {
                 "expression":
-                    "eligibilityChecklist.ec1==YES && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec5==YES"
+                    "eligibilityChecklist.ec1==YES && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec4==YES"
               }
             },
             {
@@ -4039,7 +4039,7 @@ final dynamic sampleFlows = {
               ],
               "condition": {
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==YES"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==NO"
               }
             },
             {
@@ -4341,7 +4341,7 @@ final dynamic sampleFlows = {
               {
                 "value": "To Administer",
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec4==NO && eligibilityChecklist.ec5==NO"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==NO"
               },
               {
                 "value": "Ineligible flow",
