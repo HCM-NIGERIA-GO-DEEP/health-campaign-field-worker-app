@@ -4284,7 +4284,7 @@ final dynamic sampleFlows = {
                   "APPONE_ELIGIBILITYCHECKLIST_QUESTION_4_LABEL_REQUIRED_MESSAGE",
               "visibilityCondition": {
                 "expression": [
-                  {"condition": "eligibilityChecklist.ec3==YES"}
+                  {"condition": "eligibilityChecklist.ec3==NO"}
                 ]
               }
             },
