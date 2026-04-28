@@ -6422,6 +6422,22 @@ final dynamic sampleFlows = {
           "version": 1,
           "onAction": [
             {
+              "condition": {
+                "expression":
+                    "{{householdDetails.childrenCount}} > {{householdDetails.memberCount}}"
+              },
+              "actions": [
+                {
+                  "actionType": "SHOW_TOAST",
+                  "properties": {
+                    "message":
+                        "REGISTRATION_SEARCH_BENEFICIARY_CHILDREN_COUNT_EXCEEDED",
+                    "type": "error"
+                  }
+                }
+              ]
+            },
+            {
               "actions": [
                 {
                   "actionType": "FETCH_TRANSFORMER_CONFIG",
