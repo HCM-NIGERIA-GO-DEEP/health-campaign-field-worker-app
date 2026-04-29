@@ -32,7 +32,9 @@ final dynamic sampleFlows = {
                     }
                   ],
                   "name": "householdOverview",
-                  "type": "TEMPLATE"
+                  "type": "TEMPLATE",
+                  "navigationMode": "popUntilAndPush",
+                  "popUntilPageName": "searchBeneficiary"
                 }
               }
             ],
@@ -1442,7 +1444,6 @@ final dynamic sampleFlows = {
               "schemaCode": null,
             },
             {
-              "icon": "AddIcon",
               "type": "template",
               "visible":
                   "{{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==false",
@@ -1450,7 +1451,6 @@ final dynamic sampleFlows = {
               "format": "actionPopup",
               "fieldName": "beneficiaryIdMinCheck",
               "properties": {
-                "prefixIcon": "AddIcon",
                 "size": "medium",
                 "type": "tertiary",
                 "popupConfig": {
@@ -1522,7 +1522,7 @@ final dynamic sampleFlows = {
                   "showCloseButton": true,
                   "barrierDismissible": true
                 },
-                "mainAxisSize": "min",
+                "mainAxisSize": "max",
                 "mainAxisAlignment": "center"
               },
               "schemaCode": null,
@@ -1859,7 +1859,6 @@ final dynamic sampleFlows = {
         {
           "actionType": "CREATE_EVENT",
           "properties": {
-            "entity": "TASK",
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
@@ -2260,6 +2259,50 @@ final dynamic sampleFlows = {
                     "label": "OPEN",
                     "format": "button",
                     "onAction": [
+                      {
+                        "actions": [
+                          {
+                            "actionType": "REVERSE_TRANSFORM",
+                            "properties": {
+                              "data": [
+                                {
+                                  "key": "entities",
+                                  "value": "{{item.HouseholdModel}}"
+                                },
+                                {
+                                  "key": "entities",
+                                  "value": "{{item.headIndividual}}"
+                                }
+                              ],
+                              "configName": "beneficiaryRegistration",
+                              "entityTypes": [
+                                "HouseholdModel",
+                                "IndividualModel"
+                              ]
+                            }
+                          },
+                          {
+                            "actionType": "NAVIGATION",
+                            "properties": {
+                              "data": [
+                                {
+                                  "key": "HouseholdClientReferenceId",
+                                  "value":
+                                      "{{ item.HouseholdModel.clientReferenceId }}"
+                                },
+                                {"key": "isEdit", "value": "true"},
+                                {"key": "isNotBeneficiary", "value": "true"}
+                              ],
+                              "name": "HOUSEHOLD",
+                              "type": "FORM"
+                            }
+                          }
+                        ],
+                        "condition": {
+                          "expression":
+                              "{{fn:length(item.projectBeneficiaries)}}<=0"
+                        }
+                      },
                       {
                         "actions": [
                           {
@@ -2750,7 +2793,6 @@ final dynamic sampleFlows = {
             {
               "actionType": "CREATE_EVENT",
               "properties": {
-                "entity": "HOUSEHOLD, INDIVIDUAL, PROJECTBENEFICIARY, MEMBER",
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",
@@ -2797,7 +2839,6 @@ final dynamic sampleFlows = {
                 {
                   "actionType": "CREATE_EVENT",
                   "properties": {
-                    "entity": "TaskModel",
                     "onError": [
                       {
                         "actionType": "SHOW_TOAST",
@@ -3017,7 +3058,6 @@ final dynamic sampleFlows = {
             {
               "actionType": "CREATE_EVENT",
               "properties": {
-                "entity": "HOUSEHOLD, INDIVIDUAL, PROJECTBENEFICIARY, MEMBER",
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",
@@ -3064,7 +3104,6 @@ final dynamic sampleFlows = {
                 {
                   "actionType": "CREATE_EVENT",
                   "properties": {
-                    "entity": "TaskModel",
                     "onError": [
                       {
                         "actionType": "SHOW_TOAST",
@@ -3319,7 +3358,6 @@ final dynamic sampleFlows = {
         {
           "actionType": "CREATE_EVENT",
           "properties": {
-            "entity": "HOUSEHOLD, INDIVIDUAL, PROJECTBENEFICIARY, MEMBER",
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
@@ -3372,7 +3410,6 @@ final dynamic sampleFlows = {
             {
               "actionType": "CREATE_EVENT",
               "properties": {
-                "entity": "TaskModel",
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",
@@ -3493,7 +3530,6 @@ final dynamic sampleFlows = {
             {
               "actionType": "CREATE_EVENT",
               "properties": {
-                "entity": "TASK",
                 "status": "VISITED",
                 "onError": [
                   {
@@ -3708,7 +3744,6 @@ final dynamic sampleFlows = {
         {
           "actionType": "CREATE_EVENT",
           "properties": {
-            "entity": "TASK",
             "status": "VISITED",
             "onError": [
               {
@@ -3884,7 +3919,7 @@ final dynamic sampleFlows = {
               ],
               "condition": {
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==YES  && eligibilityChecklist.ec5==NO"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec5==NO"
               }
             },
             {
@@ -3926,7 +3961,6 @@ final dynamic sampleFlows = {
                 {
                   "actionType": "CREATE_EVENT",
                   "properties": {
-                    "entity": "TASK",
                     "onError": [
                       {
                         "actionType": "SHOW_TOAST",
@@ -4274,7 +4308,7 @@ final dynamic sampleFlows = {
               {
                 "value": "To Administer",
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec4==NO && eligibilityChecklist.ec5==NO"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec5==NO"
               },
               {
                 "value": "Ineligible flow",
@@ -4335,7 +4369,7 @@ final dynamic sampleFlows = {
           ],
           "condition": {
             "expression":
-                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO &&eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==NO"
+                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO &&eligibilityChecklist.ec3==NO && eligibilityChecklist.ec4==NO && eligibilityChecklist.ec5==NO"
           }
         },
         {
@@ -4378,7 +4412,7 @@ final dynamic sampleFlows = {
           ],
           "condition": {
             "expression":
-                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec4==NO && eligibilityChecklist.ec5==NO"
+                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec5==NO"
           }
         },
         {
@@ -4479,7 +4513,6 @@ final dynamic sampleFlows = {
             {
               "actionType": "CREATE_EVENT",
               "properties": {
-                "entity": "TASK",
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",
@@ -4641,12 +4674,7 @@ final dynamic sampleFlows = {
             },
             {
               "actions": [
-                {
-                  "actionType": "CREATE_EVENT",
-                  "properties": {
-                    "entity": "INDIVIDUAL, PROJECTBENEFICIARY, MEMBER"
-                  }
-                }
+                {"actionType": "CREATE_EVENT", "properties": {}}
               ],
               "condition": {"expression": "DEFAULT"}
             },
@@ -5098,10 +5126,7 @@ final dynamic sampleFlows = {
                 ]
               }
             },
-            {
-              "actionType": "CREATE_EVENT",
-              "properties": {"entity": "INDIVIDUAL, PROJECTBENEFICIARY, MEMBER"}
-            }
+            {"actionType": "CREATE_EVENT", "properties": {}}
           ],
           "condition": {"expression": "DEFAULT"}
         },
@@ -5450,7 +5475,6 @@ final dynamic sampleFlows = {
                   },
                   {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"}
                 ],
-                "entity": "HFREFERRAL",
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",
@@ -5750,7 +5774,6 @@ final dynamic sampleFlows = {
               },
               {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"}
             ],
-            "entity": "HFREFERRAL",
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
@@ -5984,8 +6007,6 @@ final dynamic sampleFlows = {
                 {
                   "actionType": "CREATE_EVENT",
                   "properties": {
-                    "entity":
-                        "HOUSEHOLD, INDIVIDUAL, PROJECTBENEFICIARY, MEMBER",
                     "onError": [
                       {
                         "actionType": "SHOW_TOAST",
@@ -6524,8 +6545,6 @@ final dynamic sampleFlows = {
                 {
                   "actionType": "CREATE_EVENT",
                   "properties": {
-                    "entity":
-                        "HOUSEHOLD, INDIVIDUAL, PROJECTBENEFICIARY, MEMBER",
                     "onError": [
                       {
                         "actionType": "SHOW_TOAST",
@@ -6888,8 +6907,6 @@ final dynamic sampleFlows = {
                 {
                   "actionType": "CREATE_EVENT",
                   "properties": {
-                    "entity":
-                        "HOUSEHOLD, INDIVIDUAL, PROJECTBENEFICIARY, MEMBER",
                     "onError": [
                       {
                         "actionType": "SHOW_TOAST",
@@ -7281,13 +7298,83 @@ final dynamic sampleFlows = {
                     "properties": {"message": "Failed to fetch config."}
                   }
                 ],
+                "createEntities": ["ProjectBeneficiaryModel"],
+                "configName": "beneficiaryRegistration"
+              }
+            },
+            {
+              "actionType": "CREATE_EVENT",
+              "properties": {
+                "entity": "ProjectBeneficiaryModel",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "Failed to update closed household."
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "UPDATE_EVENT",
+              "properties": {
+                "entity": "HouseholdModel",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "Failed to update closed household."
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value":
+                        "{{contextData.entities.HouseholdModel.clientReferenceId}}"
+                  }
+                ],
+                "name": "householdOverview",
+                "type": "TEMPLATE",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Navigation failed."}
+                  }
+                ],
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "searchBeneficiary"
+              }
+            }
+          ],
+          "condition": {
+            "type": "custom",
+            "expression": "isEdit==true && isNotBeneficiary==true"
+          }
+        },
+        {
+          "actions": [
+            {
+              "actionType": "FETCH_TRANSFORMER_CONFIG",
+              "properties": {
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to fetch config."}
+                  }
+                ],
                 "configName": "householdConsentRegistration"
               }
             },
             {
               "actionType": "CREATE_EVENT",
               "properties": {
-                "entity": "HOUSEHOLD",
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",
@@ -7458,7 +7545,6 @@ final dynamic sampleFlows = {
             {
               "actionType": "CREATE_EVENT",
               "properties": {
-                "entity": "HOUSEHOLD, INDIVIDUAL, PROJECTBENEFICIARY, MEMBER",
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",
