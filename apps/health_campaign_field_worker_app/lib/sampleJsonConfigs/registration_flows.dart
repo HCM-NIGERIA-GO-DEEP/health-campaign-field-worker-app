@@ -1465,7 +1465,6 @@ final dynamic sampleFlows = {
               "schemaCode": null,
             },
             {
-              "icon": "AddIcon",
               "type": "template",
               "visible":
                   "{{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==false",
@@ -1473,7 +1472,6 @@ final dynamic sampleFlows = {
               "format": "actionPopup",
               "fieldName": "beneficiaryIdMinCheck",
               "properties": {
-                "prefixIcon": "AddIcon",
                 "size": "medium",
                 "type": "tertiary",
                 "popupConfig": {
@@ -1566,7 +1564,7 @@ final dynamic sampleFlows = {
                   "showCloseButton": true,
                   "barrierDismissible": true
                 },
-                "mainAxisSize": "min",
+                "mainAxisSize": "max",
                 "mainAxisAlignment": "center"
               },
               "schemaCode": null,
