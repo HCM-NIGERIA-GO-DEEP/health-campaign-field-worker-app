@@ -153,7 +153,8 @@ class _HomePageState extends LocalizedState<HomePage> {
         final beneficiaryDetails =
             stateAccessor.getPageData('beneficiaryDetails');
 
-        if (beneficiaryDetails != null) {
+        if (beneficiaryDetails != null &&
+            stateAccessor.currentPageName == 'DELIVERY') {
           // DELIVERY flow
           return ResourceCard(
             stateData: beneficiaryDetails,
