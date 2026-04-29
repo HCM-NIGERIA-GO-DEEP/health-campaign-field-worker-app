@@ -32,7 +32,9 @@ final dynamic sampleFlows = {
                     }
                   ],
                   "name": "householdOverview",
-                  "type": "TEMPLATE"
+                  "type": "TEMPLATE",
+                  "navigationMode": "popUntilAndPush",
+                  "popUntilPageName": "searchBeneficiary"
                 }
               }
             ],
@@ -3926,7 +3928,7 @@ final dynamic sampleFlows = {
               ],
               "condition": {
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==YES  && eligibilityChecklist.ec5==NO"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec5==NO"
               }
             },
             {
@@ -4316,7 +4318,7 @@ final dynamic sampleFlows = {
               {
                 "value": "To Administer",
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec4==NO && eligibilityChecklist.ec5==NO"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec5==NO"
               },
               {
                 "value": "Ineligible flow",
@@ -4377,7 +4379,7 @@ final dynamic sampleFlows = {
           ],
           "condition": {
             "expression":
-                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO &&eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==NO"
+                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO &&eligibilityChecklist.ec3==NO && eligibilityChecklist.ec4==NO && eligibilityChecklist.ec5==NO"
           }
         },
         {
@@ -4420,7 +4422,7 @@ final dynamic sampleFlows = {
           ],
           "condition": {
             "expression":
-                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec4==NO && eligibilityChecklist.ec5==NO"
+                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec5==NO"
           }
         },
         {
