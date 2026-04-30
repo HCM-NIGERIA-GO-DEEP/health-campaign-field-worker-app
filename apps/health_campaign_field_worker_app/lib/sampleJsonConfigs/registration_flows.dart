@@ -2107,6 +2107,10 @@ final dynamic sampleFlows = {
                   "onAction": [
                     {
                       "actionType": "CLEAR_STATE",
+                      "properties": {"name": "address", "triggerSearch": false}
+                    },
+                    {
+                      "actionType": "CLEAR_STATE",
                       "properties": {
                         "name": "task",
                         "filterKeys": [
@@ -2114,7 +2118,7 @@ final dynamic sampleFlows = {
                           "projectBeneficiary",
                           "projectId"
                         ],
-                        "widgetKeys": ["selectedStatus"],
+                        "widgetKeys": ["selectedStatus", "proximitySearch"],
                         "triggerSearch": true
                       }
                     }
@@ -2145,6 +2149,7 @@ final dynamic sampleFlows = {
                           "projectBeneficiary",
                           "projectId"
                         ],
+                        "widgetKeys": ["proximitySearch"],
                         "triggerSearch": false
                       }
                     },
