@@ -2054,7 +2054,12 @@ final dynamic sampleFlows = {
           "fieldName": "searchBar",
           "mandatory": true,
           "validations": [
-            {"type": "minSearchChars", "value": 2}
+            {"type": "minSearchChars", "value": 2},
+            {
+              "type": "minSearchChars",
+              "value": 12,
+              "condition": {"expression": "{{idSearch}}==true"}
+            }
           ],
           "minSearchChars": 2
         },
