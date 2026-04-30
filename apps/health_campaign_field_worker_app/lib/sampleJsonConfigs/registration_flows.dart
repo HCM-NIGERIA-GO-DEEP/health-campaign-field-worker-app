@@ -4350,7 +4350,7 @@ final dynamic sampleFlows = {
               {
                 "value": "To Administer",
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec5==NO"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec4==NO && eligibilityChecklist.ec5==NO"
               },
               {
                 "value": "To Administer",
