@@ -4470,65 +4470,6 @@ final dynamic sampleFlows = {
         {
           "actions": [
             {
-              "actionType": "NAVIGATION",
-              "properties": {
-                "data": [
-                  {"key": "ec1", "value": "{{eligibilityChecklist.ec1}}"},
-                  {"key": "ec2", "value": "{{eligibilityChecklist.ec2}}"},
-                  {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
-                  {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
-                  {"key": "ec5", "value": "{{eligibilityChecklist.ec5}}"},
-                  {"key": "sourceFlow", "value": "CHECKLIST"},
-                  {
-                    "key": "selectedIndividualClientReferenceId",
-                    "value":
-                        "{{navigation.selectedIndividualClientReferenceId}}"
-                  },
-                  {
-                    "key": "selectedIndividualIdentifierId",
-                    "value": "{{navigation.selectedIndividualIdentifierId}}"
-                  },
-                  {
-                    "key": "HouseholdClientReferenceId",
-                    "value": "{{ navigation.HouseholdClientReferenceId }}"
-                  },
-                  {
-                    "key": "ProjectBeneficiaryClientReferenceId",
-                    "value":
-                        "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                  },
-                  {
-                    "key": "selectedIndividualName",
-                    "value": "{{navigation.selectedIndividualName}}"
-                  },
-                  {
-                    "key": "selectedIndividualGender",
-                    "value": "{{navigation.selectedIndividualGender}}"
-                  },
-                  {
-                    "key": "selectedIndividualAgeInMonths",
-                    "value": "{{navigation.selectedIndividualAgeInMonths}}"
-                  },
-                  {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"}
-                ],
-                "name": "REFER_BENEFICIARY",
-                "type": "FORM",
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {"message": "Navigation failed."}
-                  }
-                ],
-                "navigationMode": "popUntilAndPush",
-                "popUntilPageName": "householdOverview"
-              }
-            }
-          ],
-          "condition": {"expression": "DEFAULT"}
-        },
-        {
-          "actions": [
-            {
               "actionType": "FETCH_TRANSFORMER_CONFIG",
               "properties": {
                 "data": [
@@ -4610,6 +4551,65 @@ final dynamic sampleFlows = {
             }
           ],
           "condition": {"expression": "eligibilityChecklist.ec5==YES"}
+        },
+        {
+          "actions": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {"key": "ec1", "value": "{{eligibilityChecklist.ec1}}"},
+                  {"key": "ec2", "value": "{{eligibilityChecklist.ec2}}"},
+                  {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
+                  {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
+                  {"key": "ec5", "value": "{{eligibilityChecklist.ec5}}"},
+                  {"key": "sourceFlow", "value": "CHECKLIST"},
+                  {
+                    "key": "selectedIndividualClientReferenceId",
+                    "value":
+                        "{{navigation.selectedIndividualClientReferenceId}}"
+                  },
+                  {
+                    "key": "selectedIndividualIdentifierId",
+                    "value": "{{navigation.selectedIndividualIdentifierId}}"
+                  },
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{ navigation.HouseholdClientReferenceId }}"
+                  },
+                  {
+                    "key": "ProjectBeneficiaryClientReferenceId",
+                    "value":
+                        "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                  },
+                  {
+                    "key": "selectedIndividualName",
+                    "value": "{{navigation.selectedIndividualName}}"
+                  },
+                  {
+                    "key": "selectedIndividualGender",
+                    "value": "{{navigation.selectedIndividualGender}}"
+                  },
+                  {
+                    "key": "selectedIndividualAgeInMonths",
+                    "value": "{{navigation.selectedIndividualAgeInMonths}}"
+                  },
+                  {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"}
+                ],
+                "name": "REFER_BENEFICIARY",
+                "type": "FORM",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Navigation failed."}
+                  }
+                ],
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "householdOverview"
+              }
+            }
+          ],
+          "condition": {"expression": "DEFAULT"}
         }
       ],
       "screenType": "FORM",
