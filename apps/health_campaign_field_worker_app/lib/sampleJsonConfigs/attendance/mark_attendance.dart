@@ -152,7 +152,7 @@ final dynamic markAttendanceFlow = {
       "fieldName": "submitAttendance",
       "label": "CORE_COMMON_SUBMIT",
       "disabled":
-          "{{fn:allAttendanceSelected(widgetData, contextData.0.AttendanceRegisterModel)}}",
+          "{{fn:allAttendanceSelected(widgetData, contextData.0.AttendanceRegisterModel)}}==false",
       "onAction": [],
       "properties": {
         "type": "secondary",
@@ -464,7 +464,7 @@ final dynamic markAttendanceFlow = {
     },
     {
       "items":
-          "{{fn:todayAttendeesList(widgetData, contextData.0.attendees, contextData.0.attendanceLog, contextData.0.AttendanceRegisterModel)}}",
+          "{{fn:todayAttendeesList(widgetData, contextData.0.attendees, contextData.0.AttendanceRegisterModel)}}",
       "type": "template",
       "format": "groupListView",
       "fieldName": "groupListView",
@@ -495,13 +495,6 @@ final dynamic markAttendanceFlow = {
           "absentValue": "ABSENT"
         }
       ],
-      "init": {
-        "actionType": "CUSTOM_DATA",
-        "properties": {
-          "widgetData":
-              "{{fn:initializeAttendanceCollection(contextData.0.attendees, contextData.0.attendanceLog)}}"
-        }
-      },
       "child": {
         "type": "template",
         "format": "card",
@@ -642,7 +635,7 @@ final dynamic markAttendanceFlow = {
                         "fieldKey": "{{item.entity.individualId}}",
                         "groupKey": "signatureCollection",
                         "signatureData":
-                            "{{fn:getExistingSignature(item.entity.individualId, contextData.0.attendanceLog)}}",
+                            "{{fn:getExistingSignature(item.entity.individualId, contextData.0.attendanceRegisterModel)}}",
                         "clearSignatureLabel":
                             "MARK_ATTENDANCE_CLEAR_SIGNATURE_LABEL",
                         "saveSignatureLabel": "MARK_ATTENDANCE_CONFIRM_LABEL",
@@ -662,7 +655,7 @@ final dynamic markAttendanceFlow = {
                               "individualName":
                                   "{{item.entity.first.individual.name.givenName}}",
                               "existingSignatureData":
-                                  "{{fn:getExistingSignature(item.entity.individualId, contextData.0.attendanceLog)}}",
+                                  "{{fn:getExistingSignature(item.entity.individualId, contextData.0.attendanceRegisterModel)}}",
                               "currentSignatureData":
                                   "{{fn:getCurrentSignature(widgetData, item.entity.individualId)}}",
                               "compareSignatureLabel":
