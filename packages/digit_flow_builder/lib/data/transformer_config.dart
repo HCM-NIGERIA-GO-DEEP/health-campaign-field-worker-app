@@ -242,7 +242,8 @@ final jsonConfig = {
             "childrenCount": "householdDetails.childrenCount",
             "pregnantWomenCount": "householdDetails.pregnantWomenCount",
             "memberCount": "householdDetails.memberCount",
-            "caregiverConsent": "caregiverConsent.consentToParticipate"
+            "caregiverConsent": "caregiverConsent.consentToParticipate",
+            "negativeConsentReason": "caregiverConsent.negativeConsentReason"
           }
         }
       }

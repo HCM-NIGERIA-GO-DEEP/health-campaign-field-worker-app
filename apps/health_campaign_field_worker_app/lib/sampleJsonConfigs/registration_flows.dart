@@ -7301,6 +7301,50 @@ final dynamic sampleFlows = {
               "required.message":
                   "APPONE_REGISTRATION_CAREGIVER_CONSENT_label_consentToParticipate_mandatory_message"
             },
+            {
+              "type": "string",
+              "label":
+                  "APPONE_REGISTRATION_CAREGIVER_CONSENT_label_negativeConsentReason",
+              "order": 2,
+              "value": "",
+              "format": "text",
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": null,
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "negativeConsentReason",
+              "mandatory": false,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": false,
+              "lengthRange": {
+                "minLength": "2",
+                "errorMessage":
+                    "APPONE_REGISTRATION_CAREGIVER_CONSENT_label_negativeConsentReason_min_message"
+              },
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_REGISTRATION_CAREGIVER_CONSENT_label_negativeConsentReason_mandatory_message"
+                },
+                {
+                  "type": "minLength",
+                  "value": "2",
+                  "message":
+                      "APPONE_REGISTRATION_CAREGIVER_CONSENT_label_negativeConsentReason_min_message"
+                }
+              ],
+              "errorMessage": "",
+              "visibilityCondition": {
+                "expression": [
+                  {"condition": "caregiverConsent.consentToParticipate==FALSE"}
+                ]
+              }
+            },
           ],
           "actionLabel":
               "APPONE_REGISTRATION_CAREGIVER_CONSENT_ACTION_BUTTON_LABEL_1",
