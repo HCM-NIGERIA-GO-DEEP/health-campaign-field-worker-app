@@ -399,8 +399,8 @@ final dynamic sampleFlows = {
                   "type": "template",
                   "value": "{{fn:getInsufficientStockMessage()}}",
                   "format": "textTemplate",
-                  "fieldName": "insufficientStockMessageText",
-                },
+                  "fieldName": "insufficientStockMessageText"
+                }
               ],
               "type": "default",
               "title": "INSUFFICIENT_STOCK_TITLE",
@@ -938,7 +938,7 @@ final dynamic sampleFlows = {
                             "label":
                                 "{{ item.individual.0.identifiers.0.identifierId }}",
                             "format": "tag",
-                            "fieldName": "isHead",
+                            "fieldName": "isHead"
                           },
                           {
                             "type": "template",
@@ -946,8 +946,8 @@ final dynamic sampleFlows = {
                                 "{{fn:hasBeneficiaryId(item.individual.0.identifiers.0)}}==false",
                             "label": "NO_BENEFICIARY_ID",
                             "format": "tag",
-                            "fieldName": "isHead",
-                          },
+                            "fieldName": "isHead"
+                          }
                         ]
                       },
                       {
@@ -1006,7 +1006,7 @@ final dynamic sampleFlows = {
                             "condition": {
                               "type": "custom",
                               "expression":
-                                  "{{fn:hasBeneficiaryId(item.individual.0.identifiers.0)}}==false",
+                                  "{{fn:hasBeneficiaryId(item.individual.0.identifiers.0)}}==false"
                             }
                           },
                           {
@@ -1044,7 +1044,7 @@ final dynamic sampleFlows = {
                                     {
                                       "key": "isHead",
                                       "value": "{{fn:isHead(item.member)}}"
-                                    },
+                                    }
                                   ],
                                   "name": "ADD_MEMBER",
                                   "type": "FORM"
@@ -1054,9 +1054,9 @@ final dynamic sampleFlows = {
                             "condition": {
                               "type": "custom",
                               "expression":
-                                  "{{fn:hasBeneficiaryId(item.individual.0.identifiers.0)}}==true",
+                                  "{{fn:hasBeneficiaryId(item.individual.0.identifiers.0)}}==true"
                             }
-                          },
+                          }
                         ],
                         "fieldName": "editIndividualButton",
                         "properties": {
@@ -1462,7 +1462,7 @@ final dynamic sampleFlows = {
                 "mainAxisSize": "max",
                 "mainAxisAlignment": "center"
               },
-              "schemaCode": null,
+              "schemaCode": null
             },
             {
               "type": "template",
@@ -1567,8 +1567,8 @@ final dynamic sampleFlows = {
                 "mainAxisSize": "max",
                 "mainAxisAlignment": "center"
               },
-              "schemaCode": null,
-            },
+              "schemaCode": null
+            }
           ],
           "properties": {"type": "primary", "cardType": "primary"},
           "schemaCode": null
@@ -1822,7 +1822,7 @@ final dynamic sampleFlows = {
               "errorMessage": "",
               "includeInForm": true,
               "isMultiSelect": false,
-              "includeInSummary": true,
+              "includeInSummary": true
             },
             {
               "type": "string",
@@ -2551,7 +2551,7 @@ final dynamic sampleFlows = {
             "mainAxisSize": "max",
             "mainAxisAlignment": "center"
           },
-          "schemaCode": null,
+          "schemaCode": null
         },
         {
           "type": "template",
@@ -2914,7 +2914,7 @@ final dynamic sampleFlows = {
                       }
                     ]
                   }
-                },
+                }
               ],
               "condition": {"expression": "doseIndex == 1"}
             },
@@ -3179,7 +3179,7 @@ final dynamic sampleFlows = {
                       }
                     ]
                   }
-                },
+                }
               ],
               "condition": {"expression": "doseIndex == 1"}
             },
@@ -3358,7 +3358,7 @@ final dynamic sampleFlows = {
               "errorMessage": "",
               "includeInForm": true,
               "isMultiSelect": false,
-              "includeInSummary": true,
+              "includeInSummary": true
             }
           ],
           "actionLabel":
@@ -3481,7 +3481,7 @@ final dynamic sampleFlows = {
                   }
                 ]
               }
-            },
+            }
           ],
           "condition": {"expression": "doseIndex == 1"}
         },
@@ -4106,7 +4106,7 @@ final dynamic sampleFlows = {
                       {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
                       {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
                       {"key": "ec5", "value": "{{eligibilityChecklist.ec5}}"},
-                      {"key": "sourceFlow", "value": "CHECKLIST"},
+                      {"key": "sourceFlow", "value": "CHECKLIST"}
                     ],
                     "name": "REFER_BENEFICIARY",
                     "type": "FORM",
@@ -5359,7 +5359,7 @@ final dynamic sampleFlows = {
                 "style": "bodyS",
                 "separatedBy": ", ",
                 "replaceAll": [
-                  {"searchValue": ",", "replaceValue": ":"},
+                  {"searchValue": ",", "replaceValue": ":"}
                 ]
               }
             }
@@ -5404,7 +5404,7 @@ final dynamic sampleFlows = {
               }
             ]
           }
-        },
+        }
       ],
       "footer": []
     },
@@ -6715,7 +6715,7 @@ final dynamic sampleFlows = {
                   "value": "{{memberCount - 1}}",
                   "message":
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_max_message"
-                },
+                }
               ],
               "errorMessage": "",
               "isMultiSelect": false
@@ -7356,7 +7356,7 @@ final dynamic sampleFlows = {
                   {"condition": "caregiverConsent.consentToParticipate==FALSE"}
                 ]
               }
-            },
+            }
           ],
           "actionLabel":
               "APPONE_REGISTRATION_CAREGIVER_CONSENT_ACTION_BUTTON_LABEL_1",
@@ -7387,8 +7387,8 @@ final dynamic sampleFlows = {
                 "type": "submit"
               }
             }
-          ],
-        },
+          ]
+        }
       ],
       "summary": false,
       "version": 3,
@@ -7820,8 +7820,8 @@ final dynamic sampleFlows = {
             "properties": {"type": "primary"}
           }
         }
-      ],
-    },
+      ]
+    }
   ],
   "order": 1,
   "active": true,
