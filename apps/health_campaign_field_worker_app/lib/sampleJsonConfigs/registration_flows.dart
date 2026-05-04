@@ -244,6 +244,18 @@ final dynamic sampleFlows = {
                   "hideIfNull": true
                 },
                 {
+                  "key": "WEIGHT",
+                  "value":
+                      "{{contextData.0.individuals.IndividualModel.additionalFields.weight}}",
+                  "hideIfNull": true
+                },
+                {
+                  "key": "HEIGHT",
+                  "value":
+                      "{{contextData.0.individuals.IndividualModel.additionalFields.height}}",
+                  "hideIfNull": true
+                },
+                {
                   "key": "DATE_OF_REGISTRATION",
                   "value":
                       "{{fn:formatDate(contextData.0.projectBeneficiaries.ProjectBeneficiaryModel.dateOfRegistration, 'date', dd MMM yyyy)}}"
@@ -5561,8 +5573,90 @@ final dynamic sampleFlows = {
             {
               "type": "string",
               "label":
-                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_phone_addmember",
+                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_weight_addmember",
               "order": 6,
+              "value": "",
+              "format": "text",
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition":
+                        "calculateAgeInMonths(beneficiaryDetails.dobPicker)>1 && calculateAgeInMonths(beneficiaryDetails.dobPicker)<12"
+                  }
+                ]
+              },
+              "isMdms": false,
+              "tooltip": "",
+              "helpText":
+                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_weight_helpText_addmember",
+              "infoText": "",
+              "readOnly": false,
+              "required": true,
+              "fieldName": "weight",
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": false,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_weight_mandatory_message_addmember"
+                }
+              ],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "required.message":
+                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_weight_mandatory_message_addmember"
+            },
+            {
+              "type": "string",
+              "label":
+                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_height_addmember",
+              "order": 7,
+              "value": "",
+              "format": "text",
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition":
+                        "calculateAgeInMonths(beneficiaryDetails.dobPicker)>=12 && calculateAgeInMonths(beneficiaryDetails.dobPicker)<=59"
+                  }
+                ]
+              },
+              "isMdms": false,
+              "tooltip": "",
+              "helpText":
+                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_height_helpText_addmember",
+              "infoText": "",
+              "readOnly": false,
+              "required": true,
+              "fieldName": "height",
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": false,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_height_mandatory_message_addmember"
+                }
+              ],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "required.message":
+                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_height_mandatory_message_addmember"
+            },
+            {
+              "type": "string",
+              "label":
+                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_phone_addmember",
+              "order": 8,
               "value": "",
               "format": "mobileNumber",
               "visibilityCondition": {
@@ -5614,7 +5708,7 @@ final dynamic sampleFlows = {
               "type": "string",
               "label":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_scanner_addmember",
-              "order": 7,
+              "order": 9,
               "value": "",
               "format": "scanner",
               "hidden": true,
