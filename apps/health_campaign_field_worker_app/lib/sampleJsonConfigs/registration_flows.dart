@@ -6706,6 +6706,12 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "max",
+                  "value": "100",
+                  "message":
+                      "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_max_message"
+                },
+                {
+                  "type": "relativeMax",
                   "value": "{{memberCount - 1}}",
                   "message":
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_max_message"
@@ -6771,6 +6777,12 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "min",
+                  "value": "0",
+                  "message":
+                      "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount_min_message"
+                },
+                {
+                  "type": "relativeMin",
                   "value": "{{childrenCount + 1}}",
                   "message":
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount_min_message"

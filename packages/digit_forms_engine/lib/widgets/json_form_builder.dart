@@ -578,8 +578,12 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
           formControlName: widget.formControlName,
           label: translateIfPresent(widget.schema.label, localizations),
           tooltipText: translateIfPresent(widget.schema.tooltip, localizations),
-          minValue: minFromValidations(widget.schema.validations ?? [], form),
-          maxValue: maxFromValidations(widget.schema.validations ?? [], form),
+          minValue: minFromValidations(widget.schema.validations ?? []),
+          maxValue: maxFromValidations(widget.schema.validations ?? []),
+          relativeMinValue:
+              relativeMinFromValidations(widget.schema.validations ?? [], form),
+          relativeMaxValue:
+              relativeMaxFromValidations(widget.schema.validations ?? [], form),
           readOnly: _isReadOnly,
           validations: widget.schema.validations,
           isRequired: hasRequiredValidation(widget.schema.validations),
