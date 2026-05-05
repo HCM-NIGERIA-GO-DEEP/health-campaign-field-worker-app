@@ -1568,8 +1568,7 @@ final dynamic sampleInventoryFlows = {
               "format": "custom",
               "hidden": false,
               "tooltip": "",
-              "helpText":
-                  "Select the facility to which the stock is being sent",
+              "helpText": "INVENTORY_SELECT_FACILITY_TO_WHICH_HELPTEXT",
               "infoText": "",
               "readOnly": false,
               "fieldName": "facilityToWhich",
@@ -1726,8 +1725,7 @@ final dynamic sampleInventoryFlows = {
               "format": "custom",
               "hidden": false,
               "tooltip": "",
-              "helpText":
-                  "Select the facility from which the stock is being received",
+              "helpText": "INVENTORY_SELECT_FACILITY_FROM_WHICH_HELPTEXT",
               "infoText": "",
               "readOnly": false,
               "fieldName": "facilityFromWhich",
