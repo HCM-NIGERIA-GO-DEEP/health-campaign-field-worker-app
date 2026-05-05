@@ -24,6 +24,8 @@ mixin _$GlobalSearchParameters {
   List<SearchFilter> get filters => throw _privateConstructorUsedError;
   List<String> get select => throw _privateConstructorUsedError;
   PaginationParams? get pagination => throw _privateConstructorUsedError;
+  GroupedPaginationParams? get groupedPagination =>
+      throw _privateConstructorUsedError;
   List<RelationshipMapping> get relationshipMappings =>
       throw _privateConstructorUsedError;
   List<NestedModelMapping> get nestedMappings =>
@@ -60,6 +62,7 @@ abstract class $GlobalSearchParametersCopyWith<$Res> {
       {List<SearchFilter> filters,
       List<String> select,
       PaginationParams? pagination,
+      GroupedPaginationParams? groupedPagination,
       List<RelationshipMapping> relationshipMappings,
       List<NestedModelMapping> nestedMappings,
       String? primaryModel,
@@ -68,6 +71,7 @@ abstract class $GlobalSearchParametersCopyWith<$Res> {
       SearchOrderBy? orderBy});
 
   $PaginationParamsCopyWith<$Res>? get pagination;
+  $GroupedPaginationParamsCopyWith<$Res>? get groupedPagination;
   $SearchOrderByCopyWith<$Res>? get orderBy;
 }
 
@@ -88,6 +92,7 @@ class _$GlobalSearchParametersCopyWithImpl<$Res,
     Object? filters = null,
     Object? select = null,
     Object? pagination = freezed,
+    Object? groupedPagination = freezed,
     Object? relationshipMappings = null,
     Object? nestedMappings = null,
     Object? primaryModel = freezed,
@@ -108,6 +113,10 @@ class _$GlobalSearchParametersCopyWithImpl<$Res,
           ? _value.pagination
           : pagination // ignore: cast_nullable_to_non_nullable
               as PaginationParams?,
+      groupedPagination: freezed == groupedPagination
+          ? _value.groupedPagination
+          : groupedPagination // ignore: cast_nullable_to_non_nullable
+              as GroupedPaginationParams?,
       relationshipMappings: null == relationshipMappings
           ? _value.relationshipMappings
           : relationshipMappings // ignore: cast_nullable_to_non_nullable
@@ -149,6 +158,19 @@ class _$GlobalSearchParametersCopyWithImpl<$Res,
 
   @override
   @pragma('vm:prefer-inline')
+  $GroupedPaginationParamsCopyWith<$Res>? get groupedPagination {
+    if (_value.groupedPagination == null) {
+      return null;
+    }
+
+    return $GroupedPaginationParamsCopyWith<$Res>(_value.groupedPagination!,
+        (value) {
+      return _then(_value.copyWith(groupedPagination: value) as $Val);
+    });
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
   $SearchOrderByCopyWith<$Res>? get orderBy {
     if (_value.orderBy == null) {
       return null;
@@ -173,6 +195,7 @@ abstract class _$$GlobalSearchParametersImplCopyWith<$Res>
       {List<SearchFilter> filters,
       List<String> select,
       PaginationParams? pagination,
+      GroupedPaginationParams? groupedPagination,
       List<RelationshipMapping> relationshipMappings,
       List<NestedModelMapping> nestedMappings,
       String? primaryModel,
@@ -182,6 +205,8 @@ abstract class _$$GlobalSearchParametersImplCopyWith<$Res>
 
   @override
   $PaginationParamsCopyWith<$Res>? get pagination;
+  @override
+  $GroupedPaginationParamsCopyWith<$Res>? get groupedPagination;
   @override
   $SearchOrderByCopyWith<$Res>? get orderBy;
 }
@@ -202,6 +227,7 @@ class __$$GlobalSearchParametersImplCopyWithImpl<$Res>
     Object? filters = null,
     Object? select = null,
     Object? pagination = freezed,
+    Object? groupedPagination = freezed,
     Object? relationshipMappings = null,
     Object? nestedMappings = null,
     Object? primaryModel = freezed,
@@ -222,6 +248,10 @@ class __$$GlobalSearchParametersImplCopyWithImpl<$Res>
           ? _value.pagination
           : pagination // ignore: cast_nullable_to_non_nullable
               as PaginationParams?,
+      groupedPagination: freezed == groupedPagination
+          ? _value.groupedPagination
+          : groupedPagination // ignore: cast_nullable_to_non_nullable
+              as GroupedPaginationParams?,
       relationshipMappings: null == relationshipMappings
           ? _value._relationshipMappings
           : relationshipMappings // ignore: cast_nullable_to_non_nullable
@@ -257,6 +287,7 @@ class _$GlobalSearchParametersImpl implements _GlobalSearchParameters {
       {required final List<SearchFilter> filters,
       required final List<String> select,
       this.pagination,
+      this.groupedPagination,
       final List<RelationshipMapping> relationshipMappings = const [],
       final List<NestedModelMapping> nestedMappings = const [],
       this.primaryModel,
@@ -289,6 +320,8 @@ class _$GlobalSearchParametersImpl implements _GlobalSearchParameters {
 
   @override
   final PaginationParams? pagination;
+  @override
+  final GroupedPaginationParams? groupedPagination;
   final List<RelationshipMapping> _relationshipMappings;
   @override
   @JsonKey()
@@ -330,7 +363,7 @@ class _$GlobalSearchParametersImpl implements _GlobalSearchParameters {
 
   @override
   String toString() {
-    return 'GlobalSearchParameters(filters: $filters, select: $select, pagination: $pagination, relationshipMappings: $relationshipMappings, nestedMappings: $nestedMappings, primaryModel: $primaryModel, primaryKeyField: $primaryKeyField, filterLogic: $filterLogic, orderBy: $orderBy)';
+    return 'GlobalSearchParameters(filters: $filters, select: $select, pagination: $pagination, groupedPagination: $groupedPagination, relationshipMappings: $relationshipMappings, nestedMappings: $nestedMappings, primaryModel: $primaryModel, primaryKeyField: $primaryKeyField, filterLogic: $filterLogic, orderBy: $orderBy)';
   }
 
   @override
@@ -342,6 +375,8 @@ class _$GlobalSearchParametersImpl implements _GlobalSearchParameters {
             const DeepCollectionEquality().equals(other._select, _select) &&
             (identical(other.pagination, pagination) ||
                 other.pagination == pagination) &&
+            (identical(other.groupedPagination, groupedPagination) ||
+                other.groupedPagination == groupedPagination) &&
             const DeepCollectionEquality()
                 .equals(other._relationshipMappings, _relationshipMappings) &&
             const DeepCollectionEquality()
@@ -362,6 +397,7 @@ class _$GlobalSearchParametersImpl implements _GlobalSearchParameters {
       const DeepCollectionEquality().hash(_filters),
       const DeepCollectionEquality().hash(_select),
       pagination,
+      groupedPagination,
       const DeepCollectionEquality().hash(_relationshipMappings),
       const DeepCollectionEquality().hash(_nestedMappings),
       primaryModel,
@@ -389,6 +425,7 @@ abstract class _GlobalSearchParameters implements GlobalSearchParameters {
       {required final List<SearchFilter> filters,
       required final List<String> select,
       final PaginationParams? pagination,
+      final GroupedPaginationParams? groupedPagination,
       final List<RelationshipMapping> relationshipMappings,
       final List<NestedModelMapping> nestedMappings,
       final String? primaryModel,
@@ -405,6 +442,8 @@ abstract class _GlobalSearchParameters implements GlobalSearchParameters {
   List<String> get select;
   @override
   PaginationParams? get pagination;
+  @override
+  GroupedPaginationParams? get groupedPagination;
   @override
   List<RelationshipMapping> get relationshipMappings;
   @override
@@ -979,6 +1018,184 @@ abstract class _PaginationParams implements PaginationParams {
   @JsonKey(ignore: true)
   _$$PaginationParamsImplCopyWith<_$PaginationParamsImpl> get copyWith =>
       throw _privateConstructorUsedError;
+}
+
+GroupedPaginationParams _$GroupedPaginationParamsFromJson(
+    Map<String, dynamic> json) {
+  return _GroupedPaginationParams.fromJson(json);
+}
+
+/// @nodoc
+mixin _$GroupedPaginationParams {
+  String get groupBy => throw _privateConstructorUsedError;
+  int get limit => throw _privateConstructorUsedError;
+  int get offset => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $GroupedPaginationParamsCopyWith<GroupedPaginationParams> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $GroupedPaginationParamsCopyWith<$Res> {
+  factory $GroupedPaginationParamsCopyWith(GroupedPaginationParams value,
+          $Res Function(GroupedPaginationParams) then) =
+      _$GroupedPaginationParamsCopyWithImpl<$Res, GroupedPaginationParams>;
+  @useResult
+  $Res call({String groupBy, int limit, int offset});
+}
+
+/// @nodoc
+class _$GroupedPaginationParamsCopyWithImpl<$Res,
+        $Val extends GroupedPaginationParams>
+    implements $GroupedPaginationParamsCopyWith<$Res> {
+  _$GroupedPaginationParamsCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? groupBy = null,
+    Object? limit = null,
+    Object? offset = null,
+  }) {
+    return _then(_value.copyWith(
+      groupBy: null == groupBy
+          ? _value.groupBy
+          : groupBy // ignore: cast_nullable_to_non_nullable
+              as String,
+      limit: null == limit
+          ? _value.limit
+          : limit // ignore: cast_nullable_to_non_nullable
+              as int,
+      offset: null == offset
+          ? _value.offset
+          : offset // ignore: cast_nullable_to_non_nullable
+              as int,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$GroupedPaginationParamsImplCopyWith<$Res>
+    implements $GroupedPaginationParamsCopyWith<$Res> {
+  factory _$$GroupedPaginationParamsImplCopyWith(
+          _$GroupedPaginationParamsImpl value,
+          $Res Function(_$GroupedPaginationParamsImpl) then) =
+      __$$GroupedPaginationParamsImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String groupBy, int limit, int offset});
+}
+
+/// @nodoc
+class __$$GroupedPaginationParamsImplCopyWithImpl<$Res>
+    extends _$GroupedPaginationParamsCopyWithImpl<$Res,
+        _$GroupedPaginationParamsImpl>
+    implements _$$GroupedPaginationParamsImplCopyWith<$Res> {
+  __$$GroupedPaginationParamsImplCopyWithImpl(
+      _$GroupedPaginationParamsImpl _value,
+      $Res Function(_$GroupedPaginationParamsImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? groupBy = null,
+    Object? limit = null,
+    Object? offset = null,
+  }) {
+    return _then(_$GroupedPaginationParamsImpl(
+      groupBy: null == groupBy
+          ? _value.groupBy
+          : groupBy // ignore: cast_nullable_to_non_nullable
+              as String,
+      limit: null == limit
+          ? _value.limit
+          : limit // ignore: cast_nullable_to_non_nullable
+              as int,
+      offset: null == offset
+          ? _value.offset
+          : offset // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$GroupedPaginationParamsImpl implements _GroupedPaginationParams {
+  const _$GroupedPaginationParamsImpl(
+      {required this.groupBy, required this.limit, required this.offset});
+
+  factory _$GroupedPaginationParamsImpl.fromJson(Map<String, dynamic> json) =>
+      _$$GroupedPaginationParamsImplFromJson(json);
+
+  @override
+  final String groupBy;
+  @override
+  final int limit;
+  @override
+  final int offset;
+
+  @override
+  String toString() {
+    return 'GroupedPaginationParams(groupBy: $groupBy, limit: $limit, offset: $offset)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$GroupedPaginationParamsImpl &&
+            (identical(other.groupBy, groupBy) || other.groupBy == groupBy) &&
+            (identical(other.limit, limit) || other.limit == limit) &&
+            (identical(other.offset, offset) || other.offset == offset));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, groupBy, limit, offset);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$GroupedPaginationParamsImplCopyWith<_$GroupedPaginationParamsImpl>
+      get copyWith => __$$GroupedPaginationParamsImplCopyWithImpl<
+          _$GroupedPaginationParamsImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$GroupedPaginationParamsImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _GroupedPaginationParams implements GroupedPaginationParams {
+  const factory _GroupedPaginationParams(
+      {required final String groupBy,
+      required final int limit,
+      required final int offset}) = _$GroupedPaginationParamsImpl;
+
+  factory _GroupedPaginationParams.fromJson(Map<String, dynamic> json) =
+      _$GroupedPaginationParamsImpl.fromJson;
+
+  @override
+  String get groupBy;
+  @override
+  int get limit;
+  @override
+  int get offset;
+  @override
+  @JsonKey(ignore: true)
+  _$$GroupedPaginationParamsImplCopyWith<_$GroupedPaginationParamsImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 RelationshipMapping _$RelationshipMappingFromJson(Map<String, dynamic> json) {

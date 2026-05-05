@@ -180,6 +180,22 @@ class RefreshSearchExecutor extends ActionExecutor {
       return contextData;
     }
 
+    GroupedPaginationParams? groupedPagination;
+    final groupedPaginationConfig =
+        config?['wrapperConfig']?['searchConfig']?['groupedPagination'];
+    if (groupedPaginationConfig != null) {
+      final groupBy = groupedPaginationConfig['groupBy'] as String?;
+      if (groupBy != null && groupBy.isNotEmpty) {
+        groupedPagination = GroupedPaginationParams(
+          groupBy: groupBy,
+          limit: limit,
+          offset: offset,
+        );
+        debugPrint(
+            'REFRESH_SEARCH: Using grouped pagination - groupBy=$groupBy, offset=$offset, limit=$limit');
+      }
+    }
+
     // Build search params with pagination
     final searchParams = GlobalSearchParameters(
       filters: filters,
@@ -188,6 +204,7 @@ class RefreshSearchExecutor extends ActionExecutor {
               ?.cast<String>() ??
           [],
       pagination: PaginationParams(offset: offset, limit: limit),
+      groupedPagination: groupedPagination,
     );
 
     // Set mode in registry - FlowCrudBloc.onTransition will handle it

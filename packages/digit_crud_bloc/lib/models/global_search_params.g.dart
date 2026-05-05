@@ -18,6 +18,10 @@ _$GlobalSearchParametersImpl _$$GlobalSearchParametersImplFromJson(
           ? null
           : PaginationParams.fromJson(
               json['pagination'] as Map<String, dynamic>),
+      groupedPagination: json['groupedPagination'] == null
+          ? null
+          : GroupedPaginationParams.fromJson(
+              json['groupedPagination'] as Map<String, dynamic>),
       relationshipMappings: (json['relationshipMappings'] as List<dynamic>?)
               ?.map((e) =>
                   RelationshipMapping.fromJson(e as Map<String, dynamic>))
@@ -44,6 +48,7 @@ Map<String, dynamic> _$$GlobalSearchParametersImplToJson(
       'filters': instance.filters,
       'select': instance.select,
       'pagination': instance.pagination,
+      'groupedPagination': instance.groupedPagination,
       'relationshipMappings': instance.relationshipMappings,
       'nestedMappings': instance.nestedMappings,
       'primaryModel': instance.primaryModel,
@@ -98,6 +103,22 @@ _$PaginationParamsImpl _$$PaginationParamsImplFromJson(
 Map<String, dynamic> _$$PaginationParamsImplToJson(
         _$PaginationParamsImpl instance) =>
     <String, dynamic>{
+      'limit': instance.limit,
+      'offset': instance.offset,
+    };
+
+_$GroupedPaginationParamsImpl _$$GroupedPaginationParamsImplFromJson(
+        Map<String, dynamic> json) =>
+    _$GroupedPaginationParamsImpl(
+      groupBy: json['groupBy'] as String,
+      limit: (json['limit'] as num).toInt(),
+      offset: (json['offset'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$$GroupedPaginationParamsImplToJson(
+        _$GroupedPaginationParamsImpl instance) =>
+    <String, dynamic>{
+      'groupBy': instance.groupBy,
       'limit': instance.limit,
       'offset': instance.offset,
     };

@@ -41,6 +41,7 @@ class SearchEntityRepository extends LocalRepository {
   /// [primaryKeyField] - Primary key field name (required for multi-table filters).
   /// [filterLogic] - How to combine filters across tables (AND/OR).
   /// [pagination] - Pagination parameters.
+  /// [groupedPagination] - Pagination parameters applied to grouped primary rows.
   /// [orderBy] - Ordering configuration.
   ///
   /// Returns a tuple of (grouped results by model name, total count).
@@ -53,6 +54,7 @@ class SearchEntityRepository extends LocalRepository {
     String? primaryKeyField,
     MultiTableFilterLogic filterLogic = MultiTableFilterLogic.and,
     PaginationParams? pagination,
+    GroupedPaginationParams? groupedPagination,
     SearchOrderBy? orderBy,
   }) async {
     // Validate inputs
@@ -72,6 +74,7 @@ class SearchEntityRepository extends LocalRepository {
         primaryKeyField: primaryKeyField ?? _inferPrimaryKeyField(primaryTable),
         filterLogic: filterLogic,
         pagination: pagination,
+        groupedPagination: groupedPagination,
         orderBy: orderBy,
       );
     } catch (e, stackTrace) {
@@ -127,6 +130,7 @@ class SearchEntityRepository extends LocalRepository {
     required String primaryKeyField,
     required MultiTableFilterLogic filterLogic,
     required PaginationParams? pagination,
+    required GroupedPaginationParams? groupedPagination,
     required SearchOrderBy? orderBy,
   }) async {
     final queriedModels = <String>{};
@@ -167,6 +171,7 @@ class SearchEntityRepository extends LocalRepository {
       filters: primaryFilters,
       select: select,
       pagination: pagination,
+      groupedPagination: groupedPagination,
       isPrimaryTable: true,
       onCountFetched: (count) {
         totalCount = count;

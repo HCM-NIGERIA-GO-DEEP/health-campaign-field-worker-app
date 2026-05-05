@@ -432,6 +432,22 @@ class SearchExecutor extends ActionExecutor {
       }
     }
 
+    GroupedPaginationParams? groupedPagination;
+    final groupedPaginationConfig =
+        config?['wrapperConfig']?['searchConfig']?['groupedPagination'];
+    if (groupedPaginationConfig != null && pagination != null) {
+      final groupBy = groupedPaginationConfig['groupBy'] as String?;
+      if (groupBy != null && groupBy.isNotEmpty) {
+        groupedPagination = GroupedPaginationParams(
+          groupBy: groupBy,
+          limit: pagination.limit,
+          offset: pagination.offset,
+        );
+        debugPrint(
+            'SEARCH_EVENT: Using grouped pagination - groupBy=$groupBy, offset=${pagination.offset}, limit=${pagination.limit}');
+      }
+    }
+
     // Get primaryModel and select from config
     final primaryModel = config?['wrapperConfig']?['searchConfig']?['primary'];
     final select = (config?['wrapperConfig']?['searchConfig']?['select'] as List?)
@@ -449,6 +465,7 @@ class SearchExecutor extends ActionExecutor {
       primaryModel: primaryModel,
       select: select,
       pagination: pagination,
+      groupedPagination: groupedPagination,
       orderBy: orderBy,
       filterLogic: filterLogic,
     );
@@ -577,6 +594,30 @@ class SearchExecutor extends ActionExecutor {
       orderBy = SearchOrderBy.fromJson(accumulatedOrderBy);
     }
 
+    PaginationParams? pagination;
+    final paginationConfig =
+        config?['wrapperConfig']?['searchConfig']?['pagination'];
+    if (paginationConfig != null) {
+      final limit = paginationConfig['limit'] as int?;
+      if (limit != null) {
+        pagination = PaginationParams(offset: 0, limit: limit);
+      }
+    }
+
+    GroupedPaginationParams? groupedPagination;
+    final groupedPaginationConfig =
+        config?['wrapperConfig']?['searchConfig']?['groupedPagination'];
+    if (groupedPaginationConfig != null && pagination != null) {
+      final groupBy = groupedPaginationConfig['groupBy'] as String?;
+      if (groupBy != null && groupBy.isNotEmpty) {
+        groupedPagination = GroupedPaginationParams(
+          groupBy: groupBy,
+          limit: pagination.limit,
+          offset: pagination.offset,
+        );
+      }
+    }
+
     // Build search params
     final searchParams = GlobalSearchParameters(
       filters: filters,
@@ -584,7 +625,8 @@ class SearchExecutor extends ActionExecutor {
       select: (config?['wrapperConfig']?['searchConfig']?['select'] as List?)
               ?.cast<String>() ??
           [],
-      pagination: null,
+      pagination: pagination,
+      groupedPagination: groupedPagination,
       orderBy: orderBy,
       filterLogic: MultiTableFilterLogic.and,
     );

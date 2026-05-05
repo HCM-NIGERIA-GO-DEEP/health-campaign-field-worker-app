@@ -2621,7 +2621,10 @@ final dynamic sampleFlows = {
             "beneficiaryInfo"
           ],
           "primary": "beneficiaryInfo",
-          "pagination": {"limit": 5, "maxItems": 15}
+          "pagination": {"limit": 5, "maxItems": 15},
+          "groupedPagination": {
+            "groupBy": "householdClientReferenceId"
+          }
         }
       },
       "scrollListener": {

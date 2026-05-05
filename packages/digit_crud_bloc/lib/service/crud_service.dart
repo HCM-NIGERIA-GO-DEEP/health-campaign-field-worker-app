@@ -117,6 +117,7 @@ class CrudService {
         primaryKeyField: query.primaryKeyField,
         filterLogic: query.filterLogic,
         pagination: query.pagination,
+        groupedPagination: query.groupedPagination,
         orderBy: query.orderBy,
       );
     } catch (e, stackTrace) {

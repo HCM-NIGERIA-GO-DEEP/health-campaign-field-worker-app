@@ -144,12 +144,124 @@ class QueryBuilder {
     return args;
   }
 
+  static String _quoteSqlIdentifier(String identifier) {
+    return '"${identifier.replaceAll('"', '""')}"';
+  }
+
+  static Map<String, dynamic> _mapCustomSelectRow(
+    QueryRow row,
+    dynamic dynamicTable,
+    String table,
+  ) {
+    final rowMap = <String, dynamic>{};
+
+    for (final column in dynamicTable.$columns) {
+      if (column is GeneratedColumnWithTypeConverter) {
+        final sqlValue = row.readNullableWithType(column.type, column.$name);
+        rowMap[column.$name] = column.converter.fromSql(sqlValue);
+      } else {
+        rowMap[column.$name] =
+            row.readNullableWithType(column.type, column.$name);
+      }
+    }
+
+    rowMap['modelName'] = _snakeToCamel(table);
+    _decodeAdditionalFields(rowMap);
+
+    return rowMap;
+  }
+
+  static void _decodeAdditionalFields(Map<String, dynamic> rowMap) {
+    if (rowMap.containsKey('additional_fields')) {
+      final raw = rowMap['additional_fields'];
+      if (raw is String && raw.trim().isNotEmpty) {
+        try {
+          final decoded = jsonDecode(raw);
+          if (decoded is Map<String, dynamic>) {
+            rowMap['additional_fields'] = decoded;
+          }
+        } catch (e) {
+          debugPrint('Failed to decode additional_fields JSON: $e');
+        }
+      }
+    }
+  }
+
+  static Future<List<Map<String, dynamic>>> _queryGroupedRawTable({
+    required LocalSqlDataStore sql,
+    required String table,
+    required dynamic dynamicTable,
+    required List<SearchFilter> filters,
+    required GroupedPaginationParams groupedPagination,
+    void Function(int count)? onCountFetched,
+  }) async {
+    if (filters.any((filter) => filter.operator == 'within')) {
+      throw UnsupportedError(
+        "Grouped pagination does not support the 'within' operator yet.",
+      );
+    }
+
+    final groupColumnName = camelToSnake(groupedPagination.groupBy);
+    final groupColumnExists = dynamicTable.$columns.any(
+      (column) => column.$name == groupColumnName,
+    );
+
+    if (!groupColumnExists) {
+      throw Exception('Group column $groupColumnName not found in $table');
+    }
+
+    final tableName = camelToSnake(table);
+    final quotedTable = _quoteSqlIdentifier(tableName);
+    final quotedGroupColumn = _quoteSqlIdentifier(groupColumnName);
+    final tableFilters = filters.where((f) => f.root == table).toList();
+    final rawWhereClause = buildWhereClauseRaw(tableFilters);
+    final whereClause =
+        rawWhereClause.trim().isEmpty ? '1 = 1' : rawWhereClause;
+    final whereArgs = buildWhereArgs(tableFilters);
+
+    if (onCountFetched != null) {
+      final countQuery = sql.customSelect(
+        'SELECT COUNT(DISTINCT $quotedGroupColumn) AS total '
+        'FROM $quotedTable WHERE $whereClause',
+        variables: whereArgs,
+        readsFrom: {dynamicTable},
+      );
+
+      final rawResults = await countQuery.get();
+      onCountFetched(rawResults.first.read<int>('total'));
+    }
+
+    final dataQuery = sql.customSelect(
+      'SELECT * FROM $quotedTable '
+      'WHERE $quotedGroupColumn IN ('
+      'SELECT $quotedGroupColumn FROM $quotedTable '
+      'WHERE $whereClause '
+      'GROUP BY $quotedGroupColumn '
+      'ORDER BY $quotedGroupColumn ASC '
+      'LIMIT ? OFFSET ?'
+      ') '
+      'ORDER BY $quotedGroupColumn ASC',
+      variables: [
+        ...whereArgs,
+        Variable.withInt(groupedPagination.limit),
+        Variable.withInt(groupedPagination.offset),
+      ],
+      readsFrom: {dynamicTable},
+    );
+
+    final results = await dataQuery.get();
+    return results
+        .map((row) => _mapCustomSelectRow(row, dynamicTable, table))
+        .toList();
+  }
+
   static Future<List<Map<String, dynamic>>> queryRawTable({
     required LocalSqlDataStore sql,
     required String table,
     required List<SearchFilter> filters,
     required List<String> select,
     PaginationParams? pagination,
+    GroupedPaginationParams? groupedPagination,
     bool isPrimaryTable = false,
     void Function(int count)? onCountFetched,
     SearchOrderBy? orderBy,
@@ -158,6 +270,17 @@ class QueryBuilder {
       (t) => t.actualTableName == camelToSnake(table),
       orElse: () => throw Exception('Table $table not found'),
     );
+
+    if (groupedPagination != null && isPrimaryTable) {
+      return _queryGroupedRawTable(
+        sql: sql,
+        table: table,
+        dynamicTable: dynamicTable,
+        filters: filters,
+        groupedPagination: groupedPagination,
+        onCountFetched: onCountFetched,
+      );
+    }
 
     final List<Expression<bool>> whereClauses = [];
 
@@ -400,19 +523,7 @@ class QueryBuilder {
 
       rowMap['modelName'] = _snakeToCamel(table);
 
-      if (rowMap.containsKey('additional_fields')) {
-        final raw = rowMap['additional_fields'];
-        if (raw is String && raw.trim().isNotEmpty) {
-          try {
-            final decoded = jsonDecode(raw);
-            if (decoded is Map<String, dynamic>) {
-              rowMap['additional_fields'] = decoded;
-            }
-          } catch (e) {
-            debugPrint('Failed to decode additional_fields JSON: $e');
-          }
-        }
-      }
+      _decodeAdditionalFields(rowMap);
 
       return rowMap;
     }).toList();

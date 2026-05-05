@@ -24,6 +24,7 @@ class GlobalSearchParameters with _$GlobalSearchParameters {
     required List<SearchFilter> filters,
     required List<String> select,
     PaginationParams? pagination,
+    GroupedPaginationParams? groupedPagination,
     @Default([]) List<RelationshipMapping> relationshipMappings,
     @Default([]) List<NestedModelMapping> nestedMappings,
 
@@ -80,6 +81,18 @@ class PaginationParams with _$PaginationParams {
 
   factory PaginationParams.fromJson(Map<String, dynamic> json) =>
       _$PaginationParamsFromJson(json);
+}
+
+@freezed
+class GroupedPaginationParams with _$GroupedPaginationParams {
+  const factory GroupedPaginationParams({
+    required String groupBy,
+    required int limit,
+    required int offset,
+  }) = _GroupedPaginationParams;
+
+  factory GroupedPaginationParams.fromJson(Map<String, dynamic> json) =>
+      _$GroupedPaginationParamsFromJson(json);
 }
 
 @freezed
