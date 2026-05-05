@@ -287,6 +287,52 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
         debugPrint('LayoutRenderer: REBUILD - screenKey=$screenKey, '
             'wrapperLength=$currentWrapperLength, isLoading=$isLoading');
 
+        final footerActions = actions.isNotEmpty
+            ? DigitCard(
+                children: actions
+                    .map((e) => LayoutMapper.map(
+                          preprocessConfigWithState(e, stateData),
+                          stateData,
+                          context,
+                          screenKey: screenKey,
+                          (action) {
+                            ActionHandler.execute(action, context, {
+                              'wrappers': const [],
+                              '_compositeKey': compositeKey,
+                            });
+                          },
+                        ))
+                    .toList(),
+              )
+            : null;
+
+        final spacedBodyWidgets = body
+            .map((e) {
+              final processed = preprocessConfigWithState(e, stateData);
+              return CrudItemContext(
+                stateData: stateData,
+                screenKey: screenKey,
+                compositeKey: compositeKey,
+                child: LayoutMapper.map(
+                  processed,
+                  stateData,
+                  context,
+                  (action) {
+                    ActionHandler.execute(action, context, {
+                      'wrappers': const [],
+                      '_compositeKey': compositeKey,
+                    });
+                  },
+                  compositeKey: compositeKey,
+                ),
+              );
+            })
+            .expand((widget) => [widget, const SizedBox(height: 16)])
+            .toList();
+        if (spacedBodyWidgets.isNotEmpty) {
+          spacedBodyWidgets.removeLast();
+        }
+
         return LocalizationContext(
           localization: localizations,
           child: NotificationListener<ScrollNotification>(
@@ -295,11 +341,20 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
             child: Stack(
               children: [
                 Scaffold(
-                  body: ScrollableContent(
-                    header: headers.isNotEmpty
-                        ? Padding(
+                  bottomNavigationBar: footerActions,
+                  body: CustomScrollView(
+                    // Nested Scaffold + SliverFillRemaining + Expanded inside
+                    // ScrollableContent inflated scroll extent (reports blank/black
+                    // when overscrolling). Single scaffold + intrinsic-height column.
+                    physics: const ClampingScrollPhysics(),
+                    slivers: [
+                      if (headers.isNotEmpty)
+                        SliverToBoxAdapter(
+                          child: Padding(
                             padding: const EdgeInsets.only(
-                                top: spacer4, left: spacer4),
+                              top: spacer4,
+                              left: spacer4,
+                            ),
                             child: Row(
                               children: headers
                                   .map((e) => LayoutMapper.map(
@@ -317,128 +372,90 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
                                       ))
                                   .toList(),
                             ),
-                          )
-                        : null,
-                    enableFixedDigitButton: actions.isNotEmpty ? true : false,
-                    footer: actions.isNotEmpty
-                        ? DigitCard(
-                            children: actions
-                                .map((e) => LayoutMapper.map(
-                                      preprocessConfigWithState(e, stateData),
-                                      stateData,
-                                      context,
-                                      screenKey: screenKey,
-                                      (action) {
-                                        ActionHandler.execute(action, context, {
-                                          'wrappers': const [],
-                                          '_compositeKey': compositeKey,
-                                        });
-                                      },
-                                    ))
-                                .toList(),
-                          )
-                        : null,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(spacer4),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Tag(
-                              label: localizations.translate(
-                                  FlowBuilderSingleton().boundary?.code ?? ""),
-                              isIcon: true,
-                              customTextStyle: Theme.of(context)
-                                  .digitTextTheme(context)
-                                  .bodyS
-                                  .copyWith(
+                          ),
+                        ),
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.all(spacer4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Tag(
+                                label: localizations.translate(
+                                  FlowBuilderSingleton().boundary?.code ?? ''),
+                                isIcon: true,
+                                customTextStyle: Theme.of(context)
+                                    .digitTextTheme(context)
+                                    .bodyS
+                                    .copyWith(
                                       color: Theme.of(context)
                                           .colorTheme
                                           .alert
-                                          .info),
-                              type: TagType.monochrome,
-                              customIcon: Icon(
-                                Icons.location_on_outlined,
-                                color: Theme.of(context).colorTheme.alert.info,
-                                size: 16,
+                                          .info,
+                                    ),
+                                type: TagType.monochrome,
+                                customIcon: Icon(
+                                  Icons.location_on_outlined,
+                                  color:
+                                      Theme.of(context).colorTheme.alert.info,
+                                  size: 16,
+                                ),
+                                themeData: TagThemeData(
+                                  monochromeBackgroundColor: Theme.of(context)
+                                      .colorTheme
+                                      .alert
+                                      .infoBg,
+                                  iconLabelGap: spacer1,
+                                ),
                               ),
-                              themeData: TagThemeData(
-                                  monochromeBackgroundColor:
-                                      Theme.of(context).colorTheme.alert.infoBg,
-                                  iconLabelGap: spacer1),
-                            ),
-                            const SizedBox(height: spacer2),
-                            DigitTextBlock(
-                              padding: EdgeInsets.zero,
-                              heading: (widget.config['heading'] != null &&
-                                      localizations
-                                          .translate(widget.config['heading'])
-                                          .trim()
-                                          .isNotEmpty)
-                                  ? localizations
-                                      .translate(widget.config['heading'])
-                                  : null,
-                              headingStyle: Theme.of(context)
-                                  .digitTextTheme(context)
-                                  .headingXl
-                                  .copyWith(
+                              const SizedBox(height: spacer2),
+                              DigitTextBlock(
+                                padding: EdgeInsets.zero,
+                                heading: (widget.config['heading'] != null &&
+                                        localizations
+                                            .translate(widget.config['heading'])
+                                            .trim()
+                                            .isNotEmpty)
+                                    ? localizations
+                                        .translate(widget.config['heading'])
+                                    : null,
+                                headingStyle: Theme.of(context)
+                                    .digitTextTheme(context)
+                                    .headingXl
+                                    .copyWith(
                                       color: Theme.of(context)
                                           .colorTheme
                                           .primary
-                                          .primary2),
-                              description: (widget.config['description'] !=
-                                          null &&
-                                      localizations
-                                          .translate(
-                                              widget.config['description'])
-                                          .trim()
-                                          .isNotEmpty)
-                                  ? localizations
-                                      .translate(widget.config['description'])
-                                  : null,
-                            ),
-                            const SizedBox(height: spacer4),
-                            ...body
-                                .map((e) {
-                                  final processed =
-                                      preprocessConfigWithState(e, stateData);
-
-                                  return CrudItemContext(
-                                    stateData: stateData,
-                                    screenKey: screenKey,
-                                    compositeKey: compositeKey,
-                                    child: LayoutMapper.map(
-                                      processed,
-                                      stateData,
-                                      context,
-                                      (action) {
-                                        ActionHandler.execute(action, context, {
-                                          'wrappers': const [],
-                                          '_compositeKey': compositeKey,
-                                        });
-                                      },
-                                      compositeKey: compositeKey,
+                                          .primary2,
                                     ),
-                                  );
-                                })
-                                .expand((widget) => [
-                                      widget,
-                                      const SizedBox(height: 16),
-                                    ])
-                                .toList()
-                              ..removeLast(),
-                            // Scroll loading indicator at bottom of content
-                            if (_showLoadingIndicator && isLoading)
-                              Padding(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 16.0),
-                                child: Center(
-                                  child: DigitLoaders.inlineLoader(),
-                                ),
+                                description: (widget.config['description'] !=
+                                            null &&
+                                        localizations
+                                            .translate(
+                                              widget.config['description'],
+                                            )
+                                            .trim()
+                                            .isNotEmpty)
+                                    ? localizations
+                                        .translate(widget.config['description'])
+                                    : null,
                               ),
-                          ],
+                              const SizedBox(height: spacer4),
+                              ...spacedBodyWidgets,
+                              if (_showLoadingIndicator && isLoading)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16.0,
+                                  ),
+                                  child: Center(
+                                    child: DigitLoaders.inlineLoader(),
+                                  ),
+                                ),
+                            ],
+                          ),
                         ),
-                      )
+                      ),
                     ],
                   ),
                 ),
