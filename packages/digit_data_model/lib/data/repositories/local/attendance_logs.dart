@@ -95,6 +95,27 @@ class AttendanceLogsLocalRepository
   }
 
   @override
+  FutureOr<void> update(
+    AttendanceLogModel entity, {
+    bool createOpLog = true,
+    DataOperation dataOperation = DataOperation.update,
+  }) async {
+    return retryLocalCallOperation(() async {
+      final logCompanion = entity.companion;
+
+      await sql.batch((batch) async {
+        batch.insert(
+          sql.attendance,
+          logCompanion,
+          mode: InsertMode.insertOrReplace,
+        );
+      });
+
+      await super.update(entity, createOpLog: createOpLog);
+    });
+  }
+
+  @override
   FutureOr<void> bulkCreate(
     List<AttendanceLogModel> entities,
   ) async {
