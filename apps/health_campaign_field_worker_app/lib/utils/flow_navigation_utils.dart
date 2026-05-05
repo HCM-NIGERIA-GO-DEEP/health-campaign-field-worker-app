@@ -3,12 +3,14 @@ import 'package:digit_crud_bloc/digit_crud_bloc.dart';
 import 'package:digit_flow_builder/data/digit_crud_service.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/router/flow_builder_routes.gm.dart';
+import 'package:digit_flow_builder/widgets/flow_widget_interface.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 // import 'package:shared_preferences/shared_preferences.dart';
 
 import '../widgets/task_functions.dart';
+import '../widgets/flow/app_table_widget.dart';
 
 /// Configuration for a module's flow navigation
 class FlowModuleConfig {
@@ -59,6 +61,8 @@ class FlowNavigationUtils {
 
       // Initialize widget registry
       WidgetRegistry.initialize();
+      // Override package table renderer with app-local implementation.
+      FlowWidgetFactory.register(AppTableWidget());
       // Register app-specific fn:* helpers used in json flows
       registerTaskFunctions();
 
