@@ -566,9 +566,12 @@ final dynamic sampleComplaintFlows = {
               "mandatory": true,
               "deleteFlag": false,
               "enums": [
-                {"code": "SyncNotWorking", "name": "Sync Not Working"},
-                {"code": "NotEnoughStock", "name": "Not Enough Stock"},
-                {"code": "Other", "name": "Other"}
+                {"code": "Other", "name": "Other"},
+                {"code": "PerformanceIssue", "name": "Performance Issue"},
+                {"code": "SecurityIssues", "name": "Security Issues"},
+                {"code": "DataIssues", "name": "Data Issues"},
+                {"code": "UserAccountIssues", "name": "User Account Issues"},
+                {"code": "TechnicalIssues", "name": "Technical Issues"}
               ],
               "innerLabel": "",
               "schemaCode": "RAINMAKER-PGR.ServiceDefs",
