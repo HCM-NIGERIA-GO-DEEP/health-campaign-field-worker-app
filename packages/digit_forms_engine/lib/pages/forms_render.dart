@@ -262,6 +262,17 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                 if (hasErrors) {
                                   _isSubmitting = false;
                                   setState(() {});
+                                  // Show error toast
+                                  final errorMessage = localizations.translate(
+                                      'CORE_COMMON_VALIDATION_ERROR');
+                                  Toast.showToast(
+                                    context,
+                                    message: errorMessage ==
+                                            'CORE_COMMON_VALIDATION_ERROR'
+                                        ? 'CORE_COMMON_VALIDATION_ERROR'
+                                        : errorMessage,
+                                    type: ToastType.error,
+                                  );
                                   return;
                                 }
 
