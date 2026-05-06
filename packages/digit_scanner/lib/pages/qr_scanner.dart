@@ -533,6 +533,7 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
         ),
         _manualSerialNoFormKey: FormControl<String>(),
         _manualExpiryDateFormKey: FormControl<DateTime>(
+          value: DateTime.now(),
           validators: [Validators.required],
         ),
       });
@@ -617,23 +618,22 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                                 try {
                                   final serialized = DigitScannerUtils()
                                       .serializeGs1Barcodes([parsed]);
-                                  final isDuplicate =
-                                      await widget.duplicateCheckFn!(
-                                          serialized);
+                                  final isDuplicate = await widget
+                                      .duplicateCheckFn!(serialized);
                                   if (isDuplicate) {
                                     Toast.showToast(
                                       context,
                                       type: ToastType.error,
-                                      message: localizations.translate(
-                                          widget.duplicateCheckMessage ??
-                                              i18.scanner
-                                                  .resourceAlreadyScanned),
+                                      message: localizations.translate(widget
+                                              .duplicateCheckMessage ??
+                                          i18.scanner.resourceAlreadyScanned),
                                       sentenceCaseEnabled: false,
                                     );
                                     return;
                                   }
                                 } catch (e) {
-                                  debugPrint('Duplicate check failed (GS1 manual entry): $e');
+                                  debugPrint(
+                                      'Duplicate check failed (GS1 manual entry): $e');
                                   Toast.showToast(
                                     context,
                                     type: ToastType.error,
@@ -743,23 +743,22 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                               // Per-scan duplicate check
                               if (widget.duplicateCheckFn != null) {
                                 try {
-                                  final isDuplicate =
-                                      await widget.duplicateCheckFn!(
-                                          manualValue);
+                                  final isDuplicate = await widget
+                                      .duplicateCheckFn!(manualValue);
                                   if (isDuplicate) {
                                     Toast.showToast(
                                       context,
                                       type: ToastType.error,
-                                      message: localizations.translate(
-                                          widget.duplicateCheckMessage ??
-                                              i18.scanner
-                                                  .resourceAlreadyScanned),
+                                      message: localizations.translate(widget
+                                              .duplicateCheckMessage ??
+                                          i18.scanner.resourceAlreadyScanned),
                                       sentenceCaseEnabled: false,
                                     );
                                     return;
                                   }
                                 } catch (e) {
-                                  debugPrint('Duplicate check failed (QR manual entry GS1 mode): $e');
+                                  debugPrint(
+                                      'Duplicate check failed (QR manual entry GS1 mode): $e');
                                   Toast.showToast(
                                     context,
                                     type: ToastType.error,
@@ -844,12 +843,10 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                             ReactiveWrapperField(
                               formControlName: _manualGtinFormKey,
                               validationMessages: {
-                                'required': (object) =>
-                                    localizations.translate(
+                                'required': (object) => localizations.translate(
                                       i18.scanner.gtinRequired,
                                     ),
-                                'pattern': (object) =>
-                                    localizations.translate(
+                                'pattern': (object) => localizations.translate(
                                       i18.scanner.gtinPatternError,
                                     ),
                               },
@@ -1027,14 +1024,14 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                                     type: ToastType.error,
                                     message: localizations.translate(
                                         widget.duplicateCheckMessage ??
-                                            i18.scanner
-                                                .resourceAlreadyScanned),
+                                            i18.scanner.resourceAlreadyScanned),
                                     sentenceCaseEnabled: false,
                                   );
                                   return;
                                 }
                               } catch (e) {
-                                debugPrint('Duplicate check failed (QR manual entry): $e');
+                                debugPrint(
+                                    'Duplicate check failed (QR manual entry): $e');
                                 Toast.showToast(
                                   context,
                                   type: ToastType.error,
