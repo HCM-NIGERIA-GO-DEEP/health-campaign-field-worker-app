@@ -1405,7 +1405,7 @@ final dynamic sampleInventoryFlows = {
         {
           "actionType": "CREATE_EVENT",
           "properties": {
-            "entity": "STOCK",
+            "entity": "StockModel",
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
