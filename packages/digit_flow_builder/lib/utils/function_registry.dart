@@ -312,6 +312,112 @@ void initializeFunctionRegistry() {
     }
   });
 
+  FunctionRegistry.register('formatAgeDate', (args, stateData) {
+    if (args.isEmpty) return '--';
+
+    final rawValue = args.first;
+    if (rawValue == null) return '--';
+
+    String? rawType = args.length > 1 ? args[1]?.toString() : null;
+
+    if (rawType != null) {
+      rawType = rawType.replaceAll(RegExp(r'^\{\{\s*|\s*\}\}$'), '');
+    }
+
+    // now safely remove quotes and lowercase
+    final type =
+        rawType?.replaceAll(RegExp("^['\"]|['\"]\$"), '').toLowerCase() ?? '';
+
+    final format = args.length > 2
+        ? args[2]?.replaceAll(RegExp(r'^\{\{\s*|\s*\}\}$'), '').toString()
+        : null;
+
+    // handle timestamps passed as int
+    DateTime? parseDate(dynamic value) {
+      if (value is int) {
+        return DateTime.fromMillisecondsSinceEpoch(value);
+      }
+      if (value is String) {
+        // Try parsing as int timestamp first
+        final timestamp = int.tryParse(value);
+        if (timestamp != null) {
+          return DateTime.fromMillisecondsSinceEpoch(timestamp);
+        }
+
+        // Otherwise, parse as formatted date string
+        return DigitDateUtils.getFormattedDateToDateTime(value);
+      }
+      if (value is DateTime) {
+        return DigitDateUtils.getFormattedDateToDateTime(rawType!);
+      }
+      return null;
+    }
+
+    switch (type) {
+      case 'age':
+        final dob = parseDate(rawValue);
+        if (dob == null) return '--';
+        final age = DigitDateUtils.calculateAge(dob);
+        return "${age.years}y ${age.months}m";
+
+      case 'date':
+        final date = parseDate(rawValue);
+        if (date == null) return '--';
+        return DateFormat(format ?? "dd MMM yyyy").format(date);
+
+      case 'datetime':
+        final date = parseDate(rawValue);
+        if (date == null) return '--';
+        return DateFormat(format ?? "dd MMM yyyy HH:mm").format(date);
+
+      case 'ageinmonths':
+        DateTime? birthDate;
+
+        if (rawValue is int) {
+          birthDate = DateTime.fromMillisecondsSinceEpoch(rawValue);
+        } else if (rawValue is String) {
+          // Try parsing as timestamp first
+          final timestamp = int.tryParse(rawValue);
+          if (timestamp != null) {
+            birthDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
+          } else if (rawValue.contains('/')) {
+            // Handle dd/MM/yyyy format
+            try {
+              final parts = rawValue.split('/');
+              if (parts.length == 3) {
+                final day = int.parse(parts[0]);
+                final month = int.parse(parts[1]);
+                final year = int.parse(parts[2]);
+                birthDate = DateTime(year, month, day);
+              }
+            } catch (_) {
+              // Fall through to DateTime.tryParse
+            }
+          }
+          // Try parsing as ISO date string
+          birthDate ??= DateTime.tryParse(rawValue);
+        } else if (rawValue is DateTime) {
+          birthDate = rawValue;
+        }
+
+        if (birthDate == null) return 0;
+
+        final now = DateTime.now();
+        final months =
+            (now.year - birthDate.year) * 12 + (now.month - birthDate.month);
+
+        // Adjust if the day hasn't occurred yet this month
+        if (now.day < birthDate.day) {
+          return months - 1;
+        }
+
+        return months;
+
+      default:
+        return rawValue.toString();
+    }
+  });
+
   /// Registers a function to check eligibility for a task based on age and
   /// recorded side effects.
   ///

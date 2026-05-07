@@ -4780,15 +4780,15 @@ final dynamic sampleFlows = {
               },
               {
                 "key": "selectedIndividualName",
-                "value": "{{formData.nameOfIndividual}}"
+                "value": "{{formData.individual.name.familyName}}"
               },
               {
                 "key": "selectedIndividualGender",
-                "value": "{{formData.gender}}"
+                "value": "{{formData.individual.gender}}"
               },
               {
                 "key": "selectedIndividualAgeInMonths",
-                "value": "{{fn:formatDate(formData.dobPicker, 'ageInMonths')}}"
+                "value": "{{fn:formatAgeDate(formData, 'ageinmonths1')}}"
               },
               {"key": "cycleIndex", "value": "{{contextData.0.cycleIndex}}"}
             ],
@@ -5215,15 +5215,17 @@ final dynamic sampleFlows = {
               },
               {
                 "key": "selectedIndividualName",
-                "value": "{{formData.nameOfIndividual}}"
+                "value":
+                    "{{contextData.entities.IndividualModel.name.givenName}}"
               },
               {
                 "key": "selectedIndividualGender",
-                "value": "{{formData.gender}}"
+                "value": "{{contextData.entities.IndividualModel.gender}}"
               },
               {
                 "key": "selectedIndividualAgeInMonths",
-                "value": "{{fn:formatDate(formData.dobPicker, 'ageInMonths')}}"
+                "value":
+                    "{{fn:formatAgeDate(contextData.entities.IndividualModel.dateOfBirth, 'ageinmonths')}}"
               },
               {"key": "cycleIndex", "value": "{{contextData.0.cycleIndex}}"}
             ],
