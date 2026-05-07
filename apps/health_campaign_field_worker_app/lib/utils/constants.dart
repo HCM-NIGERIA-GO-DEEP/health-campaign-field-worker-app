@@ -162,10 +162,16 @@ class Constants {
   static const String healthFacility = 'Health Facility';
   static const String lgaBoundaryLevel = 'LGA';
   static const String provincialBoundaryLevel = 'Provincia';
-  static const String centralFacility = 'Central Facility';
-  static const String stateBoundaryLevel = 'State';
-  static const String stateFacility = 'State Facility';
-  static const String lgaFacility = 'LGA Facility';
+  static const String centralFacility = 'Storing Resource';
+  static const String stateBoundaryLevel = 'STATE';
+  static const String stateFacility = 'Regional Facility';
+
+  /// Matches MDMS `Facility.usage` for district-level storing sites (inventory).
+  static const String districtFacility = 'District Facility';
+
+  /// Matches MDMS `Facility.usage` for DH / warehouse rows.
+  static const String dhFacility = 'Warehouse';
+  static const String lgaFacility = 'District Facility';
   static const String deviceSwitch = 'DEVICE_SWITCH';
   static const String other = 'OTHER';
   static const String deviceSwitchReason = 'DEVICE_SWITCH_REASON';
@@ -394,7 +400,7 @@ class Constants {
         .firstWhereOrNull((element) => element.service == service)
         ?.actions
         .firstWhereOrNull((element) =>
-    element.entityName == entityName && element.action == action)
+            element.entityName == entityName && element.action == action)
         ?.path;
 
     return actionResult ?? '';

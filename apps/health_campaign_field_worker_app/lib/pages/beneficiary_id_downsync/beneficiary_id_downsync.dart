@@ -63,9 +63,7 @@ class _BeneficiaryIdDownSyncState extends State<BeneficiaryIdDownSyncPage> {
             final beneficiaryIdMinCount =
                 appConfiguration.beneficiaryIdConfig?.first.minCount.toInt() ??
                     0;
-            final beneficiaryIdBatchSize =
-                appConfiguration.beneficiaryIdConfig?.first.batchSize.toInt() ??
-                    10;
+            final beneficiaryIdBatchSize = 50;
             final tenantId = envConfig.variables.tenantId;
 
             return BlocProvider<UniqueIdBloc>(

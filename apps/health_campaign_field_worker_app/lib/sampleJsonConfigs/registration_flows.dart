@@ -2447,8 +2447,7 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "template",
-                  "label":
-                      "REGISTRATION_SEARCH_BENEFICIARY_DOWNLOAD_ID",
+                  "label": "REGISTRATION_SEARCH_BENEFICIARY_DOWNLOAD_ID",
                   "format": "button",
                   "onAction": [
                     {

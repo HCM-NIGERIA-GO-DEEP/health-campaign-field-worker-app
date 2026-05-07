@@ -1,4 +1,4 @@
-import 'package:digit_data_model/models/entities/project_facility.dart';
+import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/blocs/flow_crud_bloc.dart';
 import 'package:digit_forms_engine/blocs/forms/forms.dart';
 import 'package:digit_forms_engine/models/property_schema/property_schema.dart';
@@ -8,8 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
+import '../../blocs/project/project.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/extensions/extensions.dart';
+import '../../utils/facility_usage_filter.dart';
 import '../localized.dart';
 
 class FacilityCard extends LocalizedStatefulWidget {
@@ -77,7 +79,7 @@ class _FacilityCardState extends LocalizedState<FacilityCard> {
   }
 }
 
-class _FacilityCardContent extends StatelessWidget {
+class _FacilityCardContent extends StatefulWidget {
   final String formKey;
   final String dependantFormKey;
   final PropertySchema fieldSchema;
@@ -94,15 +96,105 @@ class _FacilityCardContent extends StatelessWidget {
     required this.localizations,
   });
 
+  @override
+  State<_FacilityCardContent> createState() => _FacilityCardContentState();
+}
+
+class _FacilityCardContentState extends State<_FacilityCardContent> {
+  bool _requestedFacilitiesLoad = false;
+  bool _isLoadingFacilitiesFromDb = false;
+  List<FacilityModel> _facilitiesForProject = const [];
+
+  String get formKey => widget.formKey;
+  String get dependantFormKey => widget.dependantFormKey;
+  PropertySchema get fieldSchema => widget.fieldSchema;
+  String get pageSchema => widget.pageSchema;
+  dynamic get stateData => widget.stateData;
+  dynamic get localizations => widget.localizations;
+
+  void _maybeLoadFacilitiesForSelectedProject() {
+    if (_requestedFacilitiesLoad) return;
+
+    FacilityBloc? facilityBloc;
+    try {
+      facilityBloc = context.read<FacilityBloc>();
+    } catch (_) {
+      facilityBloc = null;
+    }
+    if (facilityBloc == null) return;
+
+    String? projectId;
+    try {
+      projectId = context.read<ProjectBloc>().state.selectedProject?.id;
+    } catch (_) {
+      projectId = null;
+    }
+    if (projectId == null || projectId.isEmpty) return;
+
+    _requestedFacilitiesLoad = true;
+    facilityBloc.add(
+      FacilityEvent.loadForProjectId(
+        projectId: projectId,
+        loadAllProjects: false,
+      ),
+    );
+  }
+
+  void _scheduleFacilityDetailsLoadIfNeeded(
+    List<ProjectFacilityModel> currentLevelProjectFacilities,
+    String usageForFilter,
+  ) {
+    if (usageForFilter.trim().isEmpty || usageForFilter == 'None') return;
+    if (currentLevelProjectFacilities.isEmpty) return;
+    if (_facilitiesForProject.isNotEmpty || _isLoadingFacilitiesFromDb) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_facilitiesForProject.isNotEmpty || _isLoadingFacilitiesFromDb) return;
+      _loadFacilitiesForCurrentProject(currentLevelProjectFacilities);
+    });
+  }
+
+  Future<void> _loadFacilitiesForCurrentProject(
+    List<ProjectFacilityModel> projectFacilities,
+  ) async {
+    if (_isLoadingFacilitiesFromDb || projectFacilities.isEmpty) return;
+
+    setState(() {
+      _isLoadingFacilitiesFromDb = true;
+    });
+
+    try {
+      final facilityIds =
+          projectFacilities.map((pf) => pf.facilityId).toSet().toList();
+
+      final facilityRepo =
+          context.read<LocalRepository<FacilityModel, FacilitySearchModel>>();
+
+      final facilities = await facilityRepo.search(
+        FacilitySearchModel(id: facilityIds),
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _facilitiesForProject = facilities;
+        _isLoadingFacilitiesFromDb = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoadingFacilitiesFromDb = false;
+      });
+    }
+  }
+
   /// Read current selected value from form data or form control
   String? _getCurrentValue(AbstractControl<dynamic>? control) {
-    // First try form control (most up-to-date after user interaction)
     final controlValue = control?.value?.toString();
     if (controlValue != null && controlValue.isNotEmpty) {
       return controlValue;
     }
 
-    // Fallback to stateData.formData (for prefilled values)
     final formData = stateData?.formData as Map<String, dynamic>?;
     if (formData == null) return null;
 
@@ -125,6 +217,15 @@ class _FacilityCardContent extends StatelessWidget {
   }
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _maybeLoadFacilitiesForSelectedProject();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final navigationParams =
         FlowCrudStateRegistry().getNavigationParams('FORM::$pageSchema') ??
@@ -138,17 +239,42 @@ class _FacilityCardContent extends StatelessWidget {
         stockEntryType == 'DAMAGED';
     final isLessExcessFlow = stockEntryType == 'LESS_EXCESS';
 
-    const deliveryTeamCode = 'DELIVERY_TEAM';
+    final deliveryTeamCodeFromSchema =
+        getDeliveryTeamCodeFromFacilityHierarchy(fieldSchema, transactionType);
+    final deliveryTeamCode = deliveryTeamCodeFromSchema ?? 'DELIVERY_TEAM';
 
-    final hasDeliveryTeamInConfig = context.loggedInUserRoles
-            .any((role) => role.code == RolesType.distributor.toValue()) ||
+    final roleBasedDeliveryTeam = context.loggedInUserRoles.any(
+          (role) => role.code == RolesType.distributor.toValue(),
+        ) ||
         context.loggedInUserRoles.any(
-            (role) => role.code == RolesType.communityDistributor.toValue());
+          (role) => role.code == RolesType.communityDistributor.toValue(),
+        );
+
+    final hasDeliveryTeamInConfig =
+        deliveryTeamCodeFromSchema != null || roleBasedDeliveryTeam;
 
     final isWareHouseMgr = context.loggedInUserRoles
         .any((role) => role.code == RolesType.warehouseManager.toValue());
 
-    // Get wrapper data for project facilities
+    final isDistributor = context.loggedInUserRoles.any(
+      (role) => role.code == RolesType.distributor.toValue(),
+    );
+
+    final isCommunityDistributor = context.loggedInUserRoles.any(
+      (role) => role.code == RolesType.communityDistributor.toValue(),
+    );
+
+    final isHfs = context.loggedInUserRoles.any(
+      (role) => role.code == RolesType.healthFacilitySupervisor.toValue(),
+    );
+
+    String? boundaryLevel;
+    try {
+      boundaryLevel = context.read<ProjectBloc>().state.selectedProject?.address?.boundaryType;
+    } catch (_) {
+      boundaryLevel = null;
+    }
+
     var wrapperData = stateData?.stateWrapper;
     if (wrapperData == null) {
       final formState = FlowCrudStateRegistry().get('FORM::$pageSchema') ??
@@ -178,48 +304,40 @@ class _FacilityCardContent extends StatelessWidget {
     final isToField = formKey == 'facilityToWhich';
     final isFromField = formKey == 'facilityFromWhich';
 
-    // Filter facilities
-    final filteredFacilities = projectFacilities.where((e) {
-      final model = e as ProjectFacilityModel;
-      final facilityLevel = model.additionalFields?.fields
-          .where((f) => f.key == 'facilityLevel')
-          .firstOrNull
-          ?.value;
+    final typedProjectFacilities =
+        projectFacilities.cast<ProjectFacilityModel>().toList();
 
-      if (facilityLevel == null) return true;
+    final usageResolution = resolveFacilityUsageForInventory(
+      stockEntryType: stockEntryType,
+      transactionType: transactionType,
+      isToField: isToField,
+      isFromField: isFromField,
+      boundaryType: boundaryLevel,
+      isWareHouseMgr: isWareHouseMgr,
+      isDistributor: isDistributor,
+      isCommunityDistributor: isCommunityDistributor,
+      isHfs: isHfs,
+    );
 
-      if (isLessExcessFlow) {
-        if (isToField) return facilityLevel == 'parent';
-        if (isFromField && !isWareHouseMgr) return false;
-        if (isFromField) return facilityLevel == 'current';
-      } else if (isReturnFlow) {
-        if (isToField && !isWareHouseMgr) return facilityLevel == 'current';
-        if (isToField) return facilityLevel == 'parent';
-        if (isFromField) return facilityLevel == 'current';
-      } else if (transactionType == 'DISPATCHED' ||
-          transactionType == 'ISSUED') {
-        if (isToField) return facilityLevel == 'child';
-        if (isFromField) return facilityLevel == 'current';
-      } else if (transactionType == 'RECEIVED' ||
-          transactionType == 'RECEIPT') {
-        if (isToField) return facilityLevel == 'current';
-        if (isFromField) return facilityLevel == 'parent';
-      } else if (stockEntryType == 'LOSS' || stockEntryType == 'DAMAGED') {
-        // For loss and damaged, to field should show parent facility
-        if (isToField && !isWareHouseMgr) return facilityLevel == 'current';
-        if (isToField) return facilityLevel == 'parent';
-        if (isFromField) return facilityLevel == 'current';
-      }
+    final currentLevelForLoad =
+        filterProjectFacilitiesToCurrentLevel(typedProjectFacilities);
+    _scheduleFacilityDetailsLoadIfNeeded(
+      currentLevelForLoad,
+      usageResolution.usage,
+    );
 
-      return true;
-    }).toList();
+    final filteredFacilities = filterProjectFacilitiesByFacilityUsage(
+      projectFacilities: typedProjectFacilities,
+      facilitiesFromDb: _facilitiesForProject,
+      isLoadingFacilitiesFromDb: _isLoadingFacilitiesFromDb,
+      usage: usageResolution.usage,
+      additionalUsage: usageResolution.additionalUsage,
+    );
 
-    // Check if there are child facilities (for warehouse managers at lowest level)
     final hasNoChildFacilities = isToField &&
         (transactionType == 'DISPATCHED' || transactionType == 'ISSUED') &&
         filteredFacilities.isEmpty;
 
-    // Build facility dropdown items
     var facilities = <DropdownItem>[];
 
     final showDeliveryTeam = hasDeliveryTeamInConfig &&
@@ -231,15 +349,15 @@ class _FacilityCardContent extends StatelessWidget {
             (isFromField &&
                 !isWareHouseMgr &&
                 (isReturnFlow || isLessExcessFlow)));
+
     if (showDeliveryTeam) {
       facilities.add(DropdownItem(
-        code: deliveryTeamCode!,
+        code: deliveryTeamCode,
         name: localizations.translate('DELIVERY_TEAM'),
       ));
     }
 
-    facilities.addAll(filteredFacilities.map((e) {
-      final model = e as ProjectFacilityModel;
+    facilities.addAll(filteredFacilities.map((model) {
       final facilityId = model.facilityId;
       final isUuid = facilityId.contains('-') && !facilityId.startsWith('F-');
       return DropdownItem(
@@ -252,10 +370,8 @@ class _FacilityCardContent extends StatelessWidget {
       formControlName: formKey,
       schema: fieldSchema,
       builder: (field) {
-        // Read selected value from the form control (source of truth)
         var selectedValue = _getCurrentValue(field.control);
 
-        // For return flow, auto-prefill delivery team if no value yet (distributors only)
         if (isReturnFlow &&
             isFromField &&
             hasDeliveryTeamInConfig &&
@@ -275,7 +391,6 @@ class _FacilityCardContent extends StatelessWidget {
                     value: deliveryTeamCode,
                   ),
                 );
-            // Auto-fill team code with logged-in user ID
             context.read<FormsBloc>().add(
                   FormsEvent.updateField(
                     schemaKey: pageSchema,
@@ -287,7 +402,6 @@ class _FacilityCardContent extends StatelessWidget {
           });
         }
 
-        // For LESS_EXCESS, auto-prefill from field with delivery team for distributors
         if (isLessExcessFlow &&
             isFromField &&
             hasDeliveryTeamInConfig &&
@@ -318,9 +432,10 @@ class _FacilityCardContent extends StatelessWidget {
           });
         }
 
-        // For ISSUED/DISPATCHED, auto-prefill the from field with current facility
         if (isFromField &&
-            (transactionType == 'DISPATCHED' || transactionType == 'ISSUED') &&
+            (transactionType == 'DISPATCHED' ||
+                transactionType == 'ISSUED' ||
+                isLessExcessFlow) &&
             (selectedValue == null || selectedValue.isEmpty) &&
             facilities.isNotEmpty) {
           final currentFacility = facilities.first.code;
@@ -348,7 +463,6 @@ class _FacilityCardContent extends StatelessWidget {
                   )
                 : null;
 
-        // From field is always read-only
         final isReadOnlyFrom = isFromField;
 
         return LabeledField(

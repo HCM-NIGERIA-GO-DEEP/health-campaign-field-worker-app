@@ -378,7 +378,6 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
   }
 
   FutureOr<void> _loadProjectFacilities(ProjectModel project) async {
-
     final userObject = await localSecureStore.userRequestModel;
     final assignedBoundaryType = project.address?.boundaryType;
     List<String>? boundaryTypes;
@@ -407,9 +406,9 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
     final projectFacilities = await projectFacilityRemoteRepository.search(
       ProjectFacilitySearchModel(
-        projectId: [project.id],
-        boundaryTypes: boundaryTypes,
-      ),
+          // projectId: [project.id],
+          // boundaryTypes: boundaryTypes,
+          ),
     );
 
     await projectFacilityLocalRepository.bulkCreate(projectFacilities);
@@ -438,10 +437,9 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       if (apiEndPoint.isNotEmpty) {
         context.read<PushNotificationBloc>().add(
               PushNotificationEvent.registerToken(
-                apiEndPoint: apiEndPoint,
-                facilityIds: currentFacilityIds,
-                userObject: userObject
-              ),
+                  apiEndPoint: apiEndPoint,
+                  facilityIds: currentFacilityIds,
+                  userObject: userObject),
             );
       }
     }

@@ -1421,7 +1421,8 @@ void initializeFunctionRegistry() {
 
     if (identifier == null) return false;
 
-    if (identifier["identifierType"] == 'UNIQUE_BENEFICIARY_ID') {
+    if (identifier["identifierType"] == 'UNIQUE_BENEFICIARY_ID' ||
+        identifier["identifierType"] == 'DEFAULT') {
       return true;
     }
 
