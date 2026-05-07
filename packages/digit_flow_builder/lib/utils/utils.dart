@@ -205,11 +205,21 @@ dynamic resolveNavigationDataValue({
   dynamic stateWrapperFirst,
   required Map<String, dynamic> contextData,
 }) {
-  dynamic resolvedValue =
-      resolveValue(rawValue, stateFormData ?? stateWrapperFirst);
+  // If the template references `contextData.*` (e.g. action entities), try the
+  // action contextData first — stateFormData does not carry `entities`, and an
+  // fn: wrapper would otherwise short-circuit on the function's null-default
+  // return value before the fallback runs.
+  final preferActionContext = rawValue is String &&
+      rawValue.contains('contextData.');
+
+  dynamic resolvedValue = preferActionContext
+      ? resolveValue(rawValue, contextData)
+      : resolveValue(rawValue, stateFormData ?? stateWrapperFirst);
 
   if (resolvedValue == null || resolvedValue == rawValue) {
-    resolvedValue = resolveValue(rawValue, contextData);
+    resolvedValue = preferActionContext
+        ? resolveValue(rawValue, stateFormData ?? stateWrapperFirst)
+        : resolveValue(rawValue, contextData);
   }
 
   // Fallback for unresolved template values like {{ec1}} when form data is
