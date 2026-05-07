@@ -908,6 +908,7 @@ class SyncServiceMapper extends SyncEntityMapperListener {
 
       case DataModelType.userAction:
         var projectId = FlowBuilderSingleton().projectId;
+        if (projectId == null) return [];
         responseEntities = await remote.search(UserActionSearchModel(
           clientReferenceId: entities
               .whereType<UserActionModel>()
