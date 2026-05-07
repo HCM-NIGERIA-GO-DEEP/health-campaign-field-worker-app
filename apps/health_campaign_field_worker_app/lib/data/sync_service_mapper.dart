@@ -907,12 +907,13 @@ class SyncServiceMapper extends SyncEntityMapperListener {
       //   break;
 
       case DataModelType.userAction:
+        var projectId = FlowBuilderSingleton().projectId;
         responseEntities = await remote.search(UserActionSearchModel(
           clientReferenceId: entities
               .whereType<UserActionModel>()
               .map((e) => e.clientReferenceId)
               .toList(),
-          projectId: FlowBuilderSingleton().projectId,
+          projectId: projectId,
         ));
 
         for (var element in operationGroupedEntity.value) {
