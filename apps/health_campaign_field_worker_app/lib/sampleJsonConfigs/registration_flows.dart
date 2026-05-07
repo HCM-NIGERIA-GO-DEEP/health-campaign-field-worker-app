@@ -4788,7 +4788,7 @@ final dynamic sampleFlows = {
               },
               {
                 "key": "selectedIndividualAgeInMonths",
-                "value": "{{fn:formatAgeDate(formData, 'ageinmonths')}}"
+                "value": "{{fn:formatDate(formData, 'ageinmonths')}}"
               },
               {"key": "cycleIndex", "value": "{{contextData.0.cycleIndex}}"}
             ],
@@ -5225,7 +5225,7 @@ final dynamic sampleFlows = {
               {
                 "key": "selectedIndividualAgeInMonths",
                 "value":
-                    "{{fn:formatAgeDate(contextData.entities.IndividualModel.dateOfBirth, 'ageinmonths')}}"
+                    "{{fn:formatDate(contextData.entities.IndividualModel.dateOfBirth, 'ageinmonths')}}"
               },
               {"key": "cycleIndex", "value": "{{contextData.0.cycleIndex}}"}
             ],
