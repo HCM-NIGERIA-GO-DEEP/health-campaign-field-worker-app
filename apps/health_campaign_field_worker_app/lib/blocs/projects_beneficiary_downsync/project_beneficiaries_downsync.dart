@@ -16,6 +16,7 @@ import '../../data/local_store/no_sql/schema/app_configuration.dart';
 import '../../data/local_store/secure_store/secure_store.dart';
 import '../../data/repositories/remote/bandwidth_check.dart';
 import '../../models/downsync/downsync.dart';
+import '../../services/beneficiary_file_downsync_importer.dart';
 import '../../utils/background_service.dart';
 import '../../utils/environment_config.dart';
 import '../../utils/utils.dart';
@@ -26,6 +27,10 @@ typedef BeneficiaryDownSyncEmitter = Emitter<BeneficiaryDownSyncState>;
 
 class BeneficiaryDownSyncBloc
     extends Bloc<BeneficiaryDownSyncEvent, BeneficiaryDownSyncState> {
+  static const int _paginatedDownsyncStorageKbPerRecord = 150;
+  static const int _fileDownsyncStorageKbPerRecord = 5;
+  static const int _storageSafetyMultiplier = 2;
+
   final LocalRepository<IndividualModel, IndividualSearchModel>
       individualLocalRepository;
   final RemoteRepository<DownsyncModel, DownsyncSearchModel>
@@ -142,9 +147,10 @@ class BeneficiaryDownSyncBloc
         ),
       );
       if (initialResults.isNotEmpty) {
-        // Current response from server is String, Expecting it to be int
-        //[TODO: Need to move the dynamic keys to constants
-        int serverTotalCount = initialResults["DownsyncCriteria"]["totalCount"];
+        final downloadLinks = _downloadLinksFrom(initialResults);
+        final serverTotalCount = downloadLinks.isNotEmpty
+            ? _downloadLinksRecordCount(downloadLinks)
+            : initialResults["DownsyncCriteria"]["totalCount"] as int;
 
         emit(BeneficiaryDownSyncState.dataFound(
           serverTotalCount,
@@ -164,32 +170,138 @@ class BeneficiaryDownSyncBloc
     BeneficiaryDownSyncEmitter emit,
   ) async {
     emit(const BeneficiaryDownSyncState.loading(true));
-    double? diskSpace = 0;
-    // [TODO: Move the function DiskSpace.getFreeDiskSpace to utils
-    diskSpace = await DiskSpace
-        .getFreeDiskSpace; // Returns the device available space in MB
-    // diskSpace in MB * 1000 comparison with serverTotalCount * 150KB * Number of entities * 2
-    if ((diskSpace ?? 0) * 1000 < (event.initialServerCount * 150 * 2)) {
-      emit(const BeneficiaryDownSyncState.insufficientStorage());
-    } else {
-      try {
-        while (true) {
-          // Check each time, till the loop runs the offset, limit, totalCount, lastSyncTime from Local DB of DownSync Model
-          final existingDownSyncData =
-              await downSyncLocalRepository.search(DownsyncSearchModel(
-            locality: event.boundaryCode,
-          ));
+    try {
+      final existingDownSyncDataForFileCheck =
+          await downSyncLocalRepository.search(DownsyncSearchModel(
+        locality: event.boundaryCode,
+      ));
+      final existingLastSyncedTime = existingDownSyncDataForFileCheck.isEmpty
+          ? null
+          : existingDownSyncDataForFileCheck.first.lastSyncedTime;
 
-          int offset = existingDownSyncData.isEmpty
-              ? 0
-              : existingDownSyncData.first.offset ?? 0;
-          int totalCount = event.initialServerCount;
-          int? lastSyncedTime = existingDownSyncData.isEmpty
-              ? null
-              : existingDownSyncData.first.lastSyncedTime;
-          if (existingDownSyncData.isEmpty) {
-            await downSyncLocalRepository.create(DownsyncModel(
+      if (existingLastSyncedTime == null) {
+        final linkResults = await downSyncRemoteRepository.downSync(
+          DownsyncSearchModel(
+            locality: event.boundaryCode,
+            offset: 0,
+            limit: 0,
+            totalCount: event.initialServerCount,
+            tenantId: envConfig.variables.tenantId,
+            projectId: event.projectModel.id,
+            isDeleted: true,
+          ),
+        );
+        final downloadLinks = _downloadLinksFrom(linkResults);
+
+        if (downloadLinks.isNotEmpty) {
+          final totalCount = _downloadLinksRecordCount(downloadLinks);
+          if (await _hasInsufficientStorage(
+            totalCount,
+            kbPerRecord: _fileDownsyncStorageKbPerRecord,
+          )) {
+            emit(const BeneficiaryDownSyncState.insufficientStorage());
+            await LocalSecureStore.instance.setManualSyncTrigger(false);
+            return;
+          }
+
+          await _importDownloadLinks(
+            links: downloadLinks,
+            projectId: event.projectModel.id,
+            boundaryCode: event.boundaryCode,
+            boundaryName: event.boundaryName,
+            totalCount: totalCount,
+            emitProgress: (imported, total) {
+              emit(BeneficiaryDownSyncState.inProgress(imported, total));
+            },
+          );
+
+          final result = DownsyncModel(
+            offset: totalCount,
+            lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
+            totalCount: totalCount,
+            locality: event.boundaryCode,
+            boundaryName: event.boundaryName,
+          );
+          await LocalSecureStore.instance.setManualSyncTrigger(false);
+          emit(BeneficiaryDownSyncState.success(result));
+          return;
+        }
+      }
+
+      if (await _hasInsufficientStorage(
+        event.initialServerCount,
+        kbPerRecord: _paginatedDownsyncStorageKbPerRecord,
+      )) {
+        emit(const BeneficiaryDownSyncState.insufficientStorage());
+        await LocalSecureStore.instance.setManualSyncTrigger(false);
+        return;
+      }
+
+      while (true) {
+        // Check each time, till the loop runs the offset, limit, totalCount, lastSyncTime from Local DB of DownSync Model
+        final existingDownSyncData =
+            await downSyncLocalRepository.search(DownsyncSearchModel(
+          locality: event.boundaryCode,
+        ));
+
+        int offset = existingDownSyncData.isEmpty
+            ? 0
+            : existingDownSyncData.first.offset ?? 0;
+        int totalCount = event.initialServerCount;
+        int? lastSyncedTime = existingDownSyncData.isEmpty
+            ? null
+            : existingDownSyncData.first.lastSyncedTime;
+        if (existingDownSyncData.isEmpty) {
+          await downSyncLocalRepository.create(DownsyncModel(
+            offset: offset,
+            limit: event.batchSize,
+            lastSyncedTime: lastSyncedTime,
+            totalCount: totalCount,
+            locality: event.boundaryCode,
+            boundaryName: event.boundaryName,
+          ));
+        }
+
+        if (offset < totalCount) {
+          emit(BeneficiaryDownSyncState.inProgress(offset, totalCount));
+          //Make the batch API call
+          final downSyncResults = await downSyncRemoteRepository.downSync(
+            DownsyncSearchModel(
+              locality: event.boundaryCode,
               offset: offset,
+              limit: event.batchSize,
+              totalCount: totalCount,
+              tenantId: envConfig.variables.tenantId,
+              projectId: event.projectModel.id,
+              lastSyncedTime: lastSyncedTime,
+              isDeleted: true,
+            ),
+          );
+          emit(BeneficiaryDownSyncState.inProgress(
+              offset, downSyncResults["DownsyncCriteria"]["totalCount"]));
+
+          // check if the API response is there or it failed
+          if (downSyncResults.isNotEmpty) {
+            await writeToFile(event.projectModel.id, event.boundaryCode,
+                event.boundaryName, downSyncResults);
+            await SyncServiceSingleton()
+                .entityMapper
+                ?.writeToEntityDB(downSyncResults, [
+              individualLocalRepository,
+              householdLocalRepository,
+              householdMemberLocalRepository,
+              projectBeneficiaryLocalRepository,
+              taskLocalRepository,
+              sideEffectLocalRepository,
+              referralLocalRepository,
+              hfReferralLocalRepository,
+              serviceLocalRepository,
+            ]);
+            // Update the local downSync data for the boundary with the new values
+            totalCount = downSyncResults["DownsyncCriteria"]["totalCount"];
+
+            await downSyncLocalRepository.update(DownsyncModel(
+              offset: offset + event.batchSize,
               limit: event.batchSize,
               lastSyncedTime: lastSyncedTime,
               totalCount: totalCount,
@@ -197,87 +309,38 @@ class BeneficiaryDownSyncBloc
               boundaryName: event.boundaryName,
             ));
           }
-
-          if (offset < totalCount) {
-            emit(BeneficiaryDownSyncState.inProgress(offset, totalCount));
-            //Make the batch API call
-            final downSyncResults = await downSyncRemoteRepository.downSync(
-              DownsyncSearchModel(
-                locality: event.boundaryCode,
-                offset: offset,
-                limit: event.batchSize,
-                totalCount: totalCount,
-                tenantId: envConfig.variables.tenantId,
-                projectId: event.projectModel.id,
-                lastSyncedTime: lastSyncedTime,
-                isDeleted: true,
-              ),
-            );
-            emit(BeneficiaryDownSyncState.inProgress(
-                offset, downSyncResults["DownsyncCriteria"]["totalCount"]));
-
-            // check if the API response is there or it failed
-            if (downSyncResults.isNotEmpty) {
-              await writeToFile(event.projectModel.id, event.boundaryCode,
-                  event.boundaryName, downSyncResults);
-              await SyncServiceSingleton()
-                  .entityMapper
-                  ?.writeToEntityDB(downSyncResults, [
-                individualLocalRepository,
-                householdLocalRepository,
-                householdMemberLocalRepository,
-                projectBeneficiaryLocalRepository,
-                taskLocalRepository,
-                sideEffectLocalRepository,
-                referralLocalRepository,
-                hfReferralLocalRepository,
-                serviceLocalRepository,
-              ]);
-              // Update the local downSync data for the boundary with the new values
-              totalCount = downSyncResults["DownsyncCriteria"]["totalCount"];
-
-              await downSyncLocalRepository.update(DownsyncModel(
-                offset: offset + event.batchSize,
-                limit: event.batchSize,
-                lastSyncedTime: lastSyncedTime,
-                totalCount: totalCount,
-                locality: event.boundaryCode,
-                boundaryName: event.boundaryName,
-              ));
-            }
-            // When API response failed
-            else {
-              emit(const BeneficiaryDownSyncState.failed());
-              await LocalSecureStore.instance.setManualSyncTrigger(false);
-              break;
-            }
-          } else {
-            await downSyncLocalRepository.update(
-              existingDownSyncData.first.copyWith(
-                offset: 0,
-                limit: 0,
-                totalCount: totalCount,
-                locality: event.boundaryCode,
-                boundaryName: event.boundaryName,
-                lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
-              ),
-            );
-            final result = DownsyncModel(
-              offset: totalCount,
-              lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
+          // When API response failed
+          else {
+            emit(const BeneficiaryDownSyncState.failed());
+            await LocalSecureStore.instance.setManualSyncTrigger(false);
+            break;
+          }
+        } else {
+          await downSyncLocalRepository.update(
+            existingDownSyncData.first.copyWith(
+              offset: 0,
+              limit: 0,
               totalCount: totalCount,
               locality: event.boundaryCode,
               boundaryName: event.boundaryName,
-            );
-            await LocalSecureStore.instance.setManualSyncTrigger(false);
-            emit(BeneficiaryDownSyncState.success(result));
-            break; // If offset is greater than or equal to totalCount, exit the loop
-          }
+              lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
+            ),
+          );
+          final result = DownsyncModel(
+            offset: totalCount,
+            lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
+            totalCount: totalCount,
+            locality: event.boundaryCode,
+            boundaryName: event.boundaryName,
+          );
+          await LocalSecureStore.instance.setManualSyncTrigger(false);
+          emit(BeneficiaryDownSyncState.success(result));
+          break; // If offset is greater than or equal to totalCount, exit the loop
         }
-      } catch (e) {
-        await LocalSecureStore.instance.setManualSyncTrigger(false);
-        emit(const BeneficiaryDownSyncState.failed());
       }
+    } catch (e) {
+      await LocalSecureStore.instance.setManualSyncTrigger(false);
+      emit(const BeneficiaryDownSyncState.failed());
     }
   }
 
@@ -323,7 +386,10 @@ class BeneficiaryDownSyncBloc
         );
 
         if (initialResults.isNotEmpty) {
-          final count = initialResults["DownsyncCriteria"]["totalCount"] as int;
+          final downloadLinks = _downloadLinksFrom(initialResults);
+          final count = downloadLinks.isNotEmpty
+              ? _downloadLinksRecordCount(downloadLinks)
+              : initialResults["DownsyncCriteria"]["totalCount"] as int;
           if (count > 0) {
             boundaryCounts[boundaryCode] = count;
             totalServerCount += count;
@@ -364,9 +430,71 @@ class BeneficiaryDownSyncBloc
         int boundaryTotalCount = event.boundaryCounts[boundaryCode] ?? 0;
         if (boundaryTotalCount == 0) continue;
 
-        // Check disk space
-        double? diskSpace = await DiskSpace.getFreeDiskSpace;
-        if ((diskSpace ?? 0) * 1000 < (boundaryTotalCount * 150 * 2)) {
+        final existingDownSyncDataForFileCheck =
+            await downSyncLocalRepository.search(DownsyncSearchModel(
+          locality: boundaryCode,
+        ));
+        final existingLastSyncedTime = existingDownSyncDataForFileCheck.isEmpty
+            ? null
+            : existingDownSyncDataForFileCheck.first.lastSyncedTime;
+
+        if (existingLastSyncedTime == null) {
+          final linkResults = await downSyncRemoteRepository.downSync(
+            DownsyncSearchModel(
+              locality: boundaryCode,
+              offset: 0,
+              limit: 0,
+              totalCount: boundaryTotalCount,
+              tenantId: envConfig.variables.tenantId,
+              projectId: event.projectModel.id,
+              isDeleted: true,
+            ),
+          );
+          final downloadLinks = _downloadLinksFrom(linkResults);
+
+          if (downloadLinks.isNotEmpty) {
+            final totalCount = _downloadLinksRecordCount(downloadLinks);
+            if (await _hasInsufficientStorage(
+              totalCount,
+              kbPerRecord: _fileDownsyncStorageKbPerRecord,
+            )) {
+              emit(const BeneficiaryDownSyncState.insufficientStorage());
+              await LocalSecureStore.instance.setManualSyncTrigger(false);
+              return;
+            }
+
+            await _importDownloadLinks(
+              links: downloadLinks,
+              projectId: event.projectModel.id,
+              boundaryCode: boundaryCode,
+              boundaryName: boundaryName,
+              totalCount: totalCount,
+              emitProgress: (imported, total) {
+                emit(BeneficiaryDownSyncState.multiBoundaryInProgress(
+                  i,
+                  boundaries.length,
+                  boundaryName,
+                  imported,
+                  total,
+                ));
+              },
+            );
+
+            completedResults.add(DownsyncModel(
+              offset: totalCount,
+              lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
+              totalCount: totalCount,
+              locality: boundaryCode,
+              boundaryName: boundaryName,
+            ));
+            continue;
+          }
+        }
+
+        if (await _hasInsufficientStorage(
+          boundaryTotalCount,
+          kbPerRecord: _paginatedDownsyncStorageKbPerRecord,
+        )) {
           emit(const BeneficiaryDownSyncState.insufficientStorage());
           await LocalSecureStore.instance.setManualSyncTrigger(false);
           return;
@@ -419,8 +547,8 @@ class BeneficiaryDownSyncBloc
             );
 
             if (downSyncResults.isNotEmpty) {
-              await writeToFile(
-                  event.projectModel.id, boundaryCode, boundaryName, downSyncResults);
+              await writeToFile(event.projectModel.id, boundaryCode,
+                  boundaryName, downSyncResults);
               await SyncServiceSingleton()
                   .entityMapper
                   ?.writeToEntityDB(downSyncResults, [
@@ -480,6 +608,98 @@ class BeneficiaryDownSyncBloc
       await LocalSecureStore.instance.setManualSyncTrigger(false);
       emit(const BeneficiaryDownSyncState.failed());
     }
+  }
+
+  List<BeneficiaryDownloadLink> _downloadLinksFrom(
+    Map<String, dynamic> response,
+  ) {
+    final links = response['DownloadLinks'];
+    if (links is! List) return [];
+
+    return links
+        .whereType<Map<String, dynamic>>()
+        .map(BeneficiaryDownloadLink.fromMap)
+        .where((link) => link.url.isNotEmpty && link.recordCount > 0)
+        .toList();
+  }
+
+  int _downloadLinksRecordCount(List<BeneficiaryDownloadLink> links) {
+    return links.fold<int>(0, (total, link) => total + link.recordCount);
+  }
+
+  Future<bool> _hasInsufficientStorage(
+    int recordCount, {
+    required int kbPerRecord,
+  }) async {
+    final diskSpaceMb = await DiskSpace.getFreeDiskSpace;
+    final availableKb = (diskSpaceMb ?? 0) * 1000;
+    final requiredKb = recordCount * kbPerRecord * _storageSafetyMultiplier;
+
+    return availableKb < requiredKb;
+  }
+
+  Future<void> _importDownloadLinks({
+    required List<BeneficiaryDownloadLink> links,
+    required String? projectId,
+    required String boundaryCode,
+    required String boundaryName,
+    required int totalCount,
+    required void Function(int imported, int totalCount) emitProgress,
+  }) async {
+    final existingDownSyncData =
+        await downSyncLocalRepository.search(DownsyncSearchModel(
+      locality: boundaryCode,
+    ));
+
+    if (existingDownSyncData.isEmpty) {
+      await downSyncLocalRepository.create(DownsyncModel(
+        offset: 0,
+        limit: 0,
+        lastSyncedTime: null,
+        totalCount: totalCount,
+        locality: boundaryCode,
+        boundaryName: boundaryName,
+        projectId: projectId,
+      ));
+    }
+
+    final importer = BeneficiaryFileDownsyncImporter(
+      dio: downSyncRemoteRepository.dio,
+      individualLocalRepository: individualLocalRepository,
+      householdLocalRepository: householdLocalRepository,
+      householdMemberLocalRepository: householdMemberLocalRepository,
+      projectBeneficiaryLocalRepository: projectBeneficiaryLocalRepository,
+      taskLocalRepository: taskLocalRepository,
+      sideEffectLocalRepository: sideEffectLocalRepository,
+      referralLocalRepository: referralLocalRepository,
+      hfReferralLocalRepository: hfReferralLocalRepository,
+      serviceLocalRepository: serviceLocalRepository,
+    );
+
+    await importer.importLinks(
+      links,
+      onProgress: (importedCount, _) async {
+        emitProgress(importedCount, totalCount);
+        await downSyncLocalRepository.update(DownsyncModel(
+          offset: importedCount,
+          limit: 0,
+          totalCount: totalCount,
+          locality: boundaryCode,
+          boundaryName: boundaryName,
+          projectId: projectId,
+        ));
+      },
+    );
+
+    await downSyncLocalRepository.update(DownsyncModel(
+      offset: totalCount,
+      limit: 0,
+      lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
+      totalCount: totalCount,
+      locality: boundaryCode,
+      boundaryName: boundaryName,
+      projectId: projectId,
+    ));
   }
 
   writeToFile(
