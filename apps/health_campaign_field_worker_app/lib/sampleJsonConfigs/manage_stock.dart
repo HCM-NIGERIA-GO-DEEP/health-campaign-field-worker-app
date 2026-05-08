@@ -701,6 +701,12 @@ final dynamic sampleInventoryFlows = {
                   "value": true,
                   "message":
                       "APPONE_MANAGESTOCK_WAREHOUSE_label_facilityToWhich_mandatory_message"
+                },
+                {
+                  "type": "isGS1Code",
+                  "value": false,
+                  "message":
+                      "APPONE_MANAGESTOCK_WAREHOUSE_label_isGS1Code_message"
                 }
               ],
               "errorMessage": "",
@@ -1643,6 +1649,12 @@ final dynamic sampleInventoryFlows = {
                   "value": true,
                   "message":
                       "APPONE_MANAGESTOCK_WAREHOUSE_label_facilityToWhich_mandatory_message"
+                },
+                {
+                  "type": "isGS1Code",
+                  "value": false,
+                  "message":
+                      "APPONE_MANAGESTOCK_WAREHOUSE_label_isGS1Code_message"
                 }
               ],
               "errorMessage": "",

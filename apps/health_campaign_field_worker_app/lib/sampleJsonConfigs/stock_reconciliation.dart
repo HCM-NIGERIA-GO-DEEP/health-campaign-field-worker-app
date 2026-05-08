@@ -220,7 +220,7 @@ final dynamic stockReconciliationFlows = {
         {
           "actionType": "CREATE_EVENT",
           "properties": {
-            "entity": "STOCK_RECONCILIATION",
+            "entity": "StockReconciliationModel",
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
