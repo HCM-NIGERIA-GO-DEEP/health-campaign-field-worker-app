@@ -1408,6 +1408,47 @@ final dynamic sampleFlows = {
                       "mainAxisAlignment": "center",
                       "bottomGap": 16
                     }
+                  },
+                  {
+                    "type": "template",
+                    "label": "ITN_DELIVERED",
+                    "format": "tag",
+                    "visible":
+                        "{{fn:isHead(item.member)}}==true && {{fn:isItnDelivered(item.task)}}==true",
+                    "fieldName": "itnDeliveredTag",
+                    "properties": {"tagType": "success", "bottomGap": 16}
+                  },
+                  {
+                    "type": "template",
+                    "label": "DELIVER_ITN",
+                    "format": "button",
+                    "visible":
+                        "{{fn:isHead(item.member)}}==true && {{fn:isItnDelivered(item.task)}}==false && {{fn:allMembersHaveSmcTasks(contextData.0.household.HouseholdModel.memberCount, item.projectBeneficiary.0.clientReferenceId)}}==true",
+                    "onAction": [
+                      {
+                        "actionType": "NAVIGATION",
+                        "properties": {
+                          "data": [
+                            {
+                              "key": "HouseholdClientReferenceId",
+                              "value":
+                                  "{{item.member.0.householdClientReferenceId}}"
+                            }
+                          ],
+                          "name": "itnDeliveryDetails",
+                          "type": "TEMPLATE"
+                        }
+                      }
+                    ],
+                    "fieldName": "deliverItnButton",
+                    "mandatory": true,
+                    "properties": {
+                      "size": "medium",
+                      "type": "primary",
+                      "mainAxisSize": "max",
+                      "mainAxisAlignment": "center",
+                      "bottomGap": 16
+                    }
                   }
                 ],
                 "fieldName": "memberCard",
@@ -7528,6 +7569,689 @@ final dynamic sampleFlows = {
           }
         }
       ],
+    },
+    {
+      "body": [
+        {
+          "type": "template",
+          "format": "card",
+          "children": [
+            {
+              "data": [
+                {
+                  "key": "ITN_HOUSEHOLD_HEAD_NAME",
+                  "value":
+                      "{{contextData.0.headIndividual.IndividualModel.name.givenName}}",
+                  "isActive": true
+                },
+                {
+                  "key": "ITN_MEMBER_COUNT",
+                  "value":
+                      "{{contextData.0.household.HouseholdModel.memberCount}}",
+                  "isActive": true
+                },
+                {
+                  "key": "ITN_COUNT",
+                  "value":
+                      "{{fn:calculateItnCount(contextData.0.household.HouseholdModel.memberCount)}}",
+                  "isActive": true
+                }
+              ],
+              "type": "template",
+              "format": "labelPairList",
+              "fieldName": "itnHouseholdDetails"
+            }
+          ],
+          "fieldName": "itnHouseholdDetailsCard",
+          "properties": {"type": "primary"},
+          "schemaCode": null
+        },
+        {
+          "type": "template",
+          "format": "card",
+          "children": [
+            {
+              "data": [
+                {
+                  "key": "ITN_HEAD_MOBILE_NUMBER",
+                  "value":
+                      "{{contextData.0.headIndividual.IndividualModel.mobileNumber}}",
+                  "hideIfNull": true,
+                  "isActive": true
+                },
+                {
+                  "key": "ITN_E_TOKEN",
+                  "value": "{{latestEToken}}",
+                  "isActive": true
+                }
+              ],
+              "type": "template",
+              "format": "labelPairList",
+              "fieldName": "itnTokenDetails"
+            }
+          ],
+          "fieldName": "itnTokenCard",
+          "properties": {"type": "primary"},
+          "schemaCode": null
+        },
+        {
+          "type": "template",
+          "format": "card",
+          "children": [
+            {
+              "type": "template",
+              "value": "ITN_DELIVERY_INSTRUCTION_MESSAGE",
+              "format": "textTemplate",
+              "fieldName": "itnInstructionText",
+              "properties": {"style": "bodyS"}
+            }
+          ],
+          "fieldName": "itnInstructionCard",
+          "properties": {"type": "info"},
+          "schemaCode": null
+        }
+      ],
+      "name": "itnDeliveryDetails",
+      "order": 14,
+      "footer": [
+        {
+          "type": "template",
+          "label": "ITN_DELIVERY_NEXT_BUTTON_LABEL",
+          "format": "actionPopup",
+          "fieldName": "itnInsufficientStockPopUp",
+          "visible":
+              "{{fn:hasStockForItnDelivery(contextData.0.household.HouseholdModel.memberCount, contextData.0.eligibleProductVariants)}}==false",
+          "properties": {
+            "icon": "Warning",
+            "size": "large",
+            "type": "primary",
+            "suffixIcon": null,
+            "popupConfig": {
+              "body": [
+                {
+                  "type": "template",
+                  "value": "{{fn:getInsufficientStockMessage()}}",
+                  "format": "textTemplate"
+                }
+              ],
+              "type": "default",
+              "title": "INSUFFICIENT_STOCK_TITLE",
+              "titleIcon": "Warning",
+              "footerActions": [
+                {
+                  "type": "template",
+                  "label": "GO_BACK",
+                  "format": "button",
+                  "onAction": [
+                    {
+                      "actionType": "CLOSE_POPUP",
+                      "properties": {"parentScreenKey": "itnDeliveryDetails"}
+                    }
+                  ],
+                  "fieldName": "closeItnStockPopUp",
+                  "properties": {
+                    "size": "large",
+                    "type": "primary",
+                    "mainAxisSize": "max"
+                  }
+                }
+              ],
+              "showCloseButton": true,
+              "barrierDismissible": true
+            },
+            "mainAxisSize": "max",
+            "mainAxisAlignment": "center"
+          },
+          "schemaCode": null,
+          "suffixIcon": null
+        },
+        {
+          "type": "template",
+          "label": "ITN_DELIVERY_NEXT_BUTTON_LABEL",
+          "format": "button",
+          "visible":
+              "{{fn:hasStockForItnDelivery(contextData.0.household.HouseholdModel.memberCount, contextData.0.eligibleProductVariants)}}==true",
+          "onAction": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  },
+                  {
+                    "key": "itnCount",
+                    "value":
+                        "{{fn:calculateItnCount(contextData.0.household.HouseholdModel.memberCount)}}"
+                  },
+                  {"key": "eToken", "value": "{{latestEToken}}"},
+                  {
+                    "key": "HouseholdProjectBeneficiaryClientReferenceId",
+                    "value":
+                        "{{contextData.0.projectBeneficiary.ProjectBeneficiaryModel.clientReferenceId}}"
+                  }
+                ],
+                "name": "ITN_HEALTH_TALK",
+                "type": "FORM"
+              }
+            }
+          ],
+          "fieldName": "itnNextButton",
+          "mandatory": true,
+          "properties": {
+            "size": "large",
+            "type": "primary",
+            "mainAxisSize": "max",
+            "mainAxisAlignment": "center"
+          }
+        }
+      ],
+      "header": [
+        {
+          "type": "template",
+          "label": "ITN_DELIVERY_BACK",
+          "format": "backLink",
+          "onAction": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  }
+                ],
+                "name": "householdOverview",
+                "type": "TEMPLATE"
+              }
+            }
+          ],
+          "fieldName": "itnDeliveryBack",
+          "mandatory": true
+        }
+      ],
+      "heading": "ITN_DELIVERY_DETAILS_HEADING",
+      "category": "ITN",
+      "navigateTo": null,
+      "screenType": "TEMPLATE",
+      "description": "ITN_DELIVERY_DETAILS_DESC",
+      "initActions": [
+        {"actionType": "LOAD_E_TOKEN_POOL"},
+        {
+          "actionType": "SEARCH_EVENT",
+          "properties": {
+            "data": [
+              {
+                "key": "clientReferenceId",
+                "value": "{{navigation.HouseholdClientReferenceId}}",
+                "operation": "equals"
+              }
+            ],
+            "name": "household",
+            "type": "SEARCH_EVENT"
+          }
+        }
+      ],
+      "wrapperConfig": {
+        "filters": [],
+        "relations": [
+          {
+            "name": "household",
+            "match": {
+              "field": "clientReferenceId",
+              "equalsFrom": "clientReferenceId"
+            },
+            "entity": "HouseholdModel"
+          },
+          {
+            "name": "headOfHousehold",
+            "match": {
+              "field": "householdClientReferenceId",
+              "equalsFrom": "clientReferenceId"
+            },
+            "entity": "HouseholdMemberModel",
+            "filters": [
+              {"field": "isHeadOfHousehold", "equals": true}
+            ]
+          },
+          {
+            "name": "headIndividual",
+            "match": {
+              "field": "clientReferenceId",
+              "equalsFrom": "headOfHousehold.individualClientReferenceId"
+            },
+            "entity": "IndividualModel"
+          },
+          {
+            "name": "projectBeneficiary",
+            "match": {
+              "field": "beneficiaryClientReferenceId",
+              "equalsFrom": "headOfHousehold.individualClientReferenceId"
+            },
+            "entity": "ProjectBeneficiaryModel"
+          }
+        ],
+        "rootEntity": "HouseholdModel",
+        "wrapperName": "HouseholdWrapper",
+        "searchConfig": {
+          "select": [
+            "household",
+            "individual",
+            "householdMember",
+            "projectBeneficiary"
+          ],
+          "primary": "household"
+        }
+      },
+      "submitCondition": null,
+      "preventScreenCapture": false
+    },
+    {
+      "name": "ITN_HEALTH_TALK",
+      "order": 15,
+      "pages": [
+        {
+          "body": null,
+          "flow": "ITN_HEALTH_TALK",
+          "page": "ItnHealthTalk",
+          "type": "object",
+          "label": "ITN_HEALTH_TALK_SCREEN_HEADING",
+          "order": 1,
+          "footer": [
+            {
+              "label": "ITN_HEALTH_TALK_SUBMIT_LABEL",
+              "format": "button",
+              "onAction": [
+                {
+                  "actionType": "NAVIGATION",
+                  "properties": {
+                    "name": "household-acknowledgement",
+                    "type": "template"
+                  }
+                }
+              ],
+              "properties": {
+                "size": "large",
+                "type": "primary",
+                "mainAxisSize": "max",
+                "mainAxisAlignment": "center"
+              }
+            }
+          ],
+          "module": "REGISTRATION",
+          "heading": "ITN_HEALTH_TALK_SCREEN_HEADING",
+          "summary": false,
+          "version": 1,
+          "onAction": [
+            {
+              "actionType": "FETCH_TRANSFORMER_CONFIG",
+              "properties": {
+                "data": [
+                  {
+                    "key": "HouseholdProjectBeneficiaryClientReferenceId",
+                    "value":
+                        "{{navigation.HouseholdProjectBeneficiaryClientReferenceId}}"
+                  },
+                  {"key": "itnCount", "value": "{{navigation.itnCount}}"},
+                  {"key": "eToken", "value": "{{navigation.eToken}}"}
+                ],
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to fetch ITN config."}
+                  }
+                ],
+                "configName": "itnDeliveryConfig"
+              }
+            },
+            {
+              "actionType": "CREATE_EVENT",
+              "properties": {
+                "entity": "TASK",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "Failed to record ITN distribution."
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "UPDATE_STOCK_BALANCE",
+              "properties": {
+                "entity": "TaskModel",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "Failed to update ITN stock balance."
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  },
+                  {"key": "itnCount", "value": "{{navigation.itnCount}}"},
+                  {"key": "eToken", "value": "{{navigation.eToken}}"}
+                ],
+                "name": "itnSuccess",
+                "type": "TEMPLATE",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Navigation failed."}
+                  }
+                ],
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "householdOverview"
+              }
+            }
+          ],
+          "navigateTo": {
+            "name": "household-acknowledgement",
+            "type": "template"
+          },
+          "properties": [
+            {
+              "type": "boolean",
+              "label": "ITN_HEALTH_TALK_ACTION1_LABEL",
+              "order": 1,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "itnAction1",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "ITN_HEALTH_TALK_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "ITN_HEALTH_TALK_ACTION2_LABEL",
+              "order": 2,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "itnAction2",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "ITN_HEALTH_TALK_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "ITN_HEALTH_TALK_ACTION3_LABEL",
+              "order": 3,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "itnAction3",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "ITN_HEALTH_TALK_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            }
+          ],
+          "actionLabel": "ITN_HEALTH_TALK_SUBMIT_LABEL",
+          "description": "ITN_HEALTH_TALK_SCREEN_DESCRIPTION",
+          "showTabView": false,
+          "showAlertPopUp": {
+            "title": "ITN_HEALTH_TALK_CONFIRM_TITLE",
+            "conditions": [
+              {
+                "value": "ITN_HEALTH_TALK_CONFIRM_MESSAGE",
+                "expression": "DEFAULT"
+              }
+            ],
+            "description": "ITN_HEALTH_TALK_CONFIRM_DESCRIPTION",
+            "primaryActionLabel": "ITN_HEALTH_TALK_CONFIRM_SUBMIT",
+            "secondaryActionLabel": "ITN_HEALTH_TALK_CONFIRM_CANCEL"
+          },
+          "submitCondition": null,
+          "preventScreenCapture": false,
+          "conditionalNavigateTo": null
+        }
+      ],
+      "summary": false,
+      "version": 1,
+      "category": "ITN",
+      "disabled": false,
+      "onAction": [
+        {
+          "actionType": "FETCH_TRANSFORMER_CONFIG",
+          "properties": {
+            "data": [
+              {
+                "key": "HouseholdProjectBeneficiaryClientReferenceId",
+                "value":
+                    "{{navigation.HouseholdProjectBeneficiaryClientReferenceId}}"
+              },
+              {"key": "itnCount", "value": "{{navigation.itnCount}}"},
+              {"key": "eToken", "value": "{{navigation.eToken}}"}
+            ],
+            "onError": [
+              {
+                "actionType": "SHOW_TOAST",
+                "properties": {"message": "Failed to fetch ITN config."}
+              }
+            ],
+            "configName": "itnDeliveryConfig"
+          }
+        },
+        {
+          "actionType": "CREATE_EVENT",
+          "properties": {
+            "entity": "TASK",
+            "onError": [
+              {
+                "actionType": "SHOW_TOAST",
+                "properties": {"message": "Failed to record ITN distribution."}
+              }
+            ]
+          }
+        },
+        {
+          "actionType": "UPDATE_STOCK_BALANCE",
+          "properties": {
+            "entity": "TaskModel",
+            "onError": [
+              {
+                "actionType": "SHOW_TOAST",
+                "properties": {"message": "Failed to update ITN stock balance."}
+              }
+            ]
+          }
+        },
+        {
+          "actionType": "NAVIGATION",
+          "properties": {
+            "data": [
+              {
+                "key": "HouseholdClientReferenceId",
+                "value": "{{navigation.HouseholdClientReferenceId}}"
+              },
+              {"key": "itnCount", "value": "{{navigation.itnCount}}"},
+              {"key": "eToken", "value": "{{navigation.eToken}}"}
+            ],
+            "name": "itnSuccess",
+            "type": "TEMPLATE",
+            "onError": [
+              {
+                "actionType": "SHOW_TOAST",
+                "properties": {"message": "Navigation failed."}
+              }
+            ],
+            "navigationMode": "popUntilAndPush",
+            "popUntilPageName": "householdOverview"
+          }
+        }
+      ],
+      "isSelected": true,
+      "screenType": "FORM",
+      "initActions": [],
+      "wrapperConfig": {},
+      "scrollListener": {}
+    },
+    {
+      "body": [
+        {
+          "type": "template",
+          "label": "ITN_SUCCESS_PANEL_CARD_HEADING",
+          "format": "panelCard",
+          "heading": "ITN_SUCCESS_PANEL_CARD_HEADING",
+          "fieldName": "itnSuccessCard",
+          "mandatory": true,
+          "properties": {"type": "success"},
+          "description": "ITN_SUCCESS_PANEL_CARD_DESC",
+          "children": [
+            {
+              "data": [
+                {
+                  "key": "ITN_SUCCESS_ITN_COUNT",
+                  "value": "{{navigation.itnCount}}",
+                  "isActive": true
+                },
+                {
+                  "key": "ITN_SUCCESS_E_TOKEN",
+                  "value": "{{navigation.eToken}}",
+                  "isActive": true
+                }
+              ],
+              "type": "template",
+              "format": "labelPairList",
+              "fieldName": "itnSuccessDetails"
+            }
+          ],
+          "primaryAction": {
+            "type": "template",
+            "label": "VIEW_HOUSEHOLD_DETAILS",
+            "format": "button",
+            "hidden": false,
+            "onAction": [
+              {
+                "actionType": "NAVIGATION",
+                "properties": {
+                  "data": [
+                    {
+                      "key": "HouseholdClientReferenceId",
+                      "value": "{{navigation.HouseholdClientReferenceId}}"
+                    }
+                  ],
+                  "name": "householdOverview",
+                  "type": "TEMPLATE"
+                }
+              }
+            ],
+            "fieldName": "viewHouseholdButton",
+            "mandatory": true,
+            "properties": {"type": "primary"}
+          },
+          "secondaryAction": {
+            "type": "template",
+            "label": "BACK_TO_SEARCH",
+            "format": "button",
+            "hidden": false,
+            "onAction": [
+              {
+                "actionType": "NAVIGATION",
+                "properties": {"name": "searchBeneficiary", "type": "TEMPLATE"}
+              }
+            ],
+            "fieldName": "backToSearch",
+            "mandatory": true,
+            "properties": {"type": "secondary"}
+          },
+          "primaryActionLabel": "VIEW_HOUSEHOLD_DETAILS",
+          "secondaryActionLabel": "BACK_TO_SEARCH"
+        }
+      ],
+      "name": "itnSuccess",
+      "order": 16,
+      "footer": [],
+      "header": [
+        {
+          "type": "template",
+          "label": "ITN_SUCCESS_BACK",
+          "format": "backLink",
+          "onAction": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  }
+                ],
+                "name": "searchBeneficiary",
+                "type": "TEMPLATE"
+              }
+            }
+          ],
+          "fieldName": "itnSuccessBack",
+          "mandatory": true
+        }
+      ],
+      "category": "ITN",
+      "navigateTo": null,
+      "screenType": "TEMPLATE",
+      "submitCondition": null,
+      "preventScreenCapture": false
     },
   ],
   "order": 1,

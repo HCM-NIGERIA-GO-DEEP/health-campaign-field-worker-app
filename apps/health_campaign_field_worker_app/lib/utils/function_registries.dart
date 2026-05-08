@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:crypto/crypto.dart';
@@ -23,6 +24,7 @@ class FunctionRegistries {
     _registerTransactionFunctions();
     _registerFacilityFunctions();
     _registerStockFunctions();
+    _registerItnFunctions();
     _registerViewTransactionFunctions();
   }
 
@@ -544,6 +546,148 @@ class FunctionRegistries {
         default:
           return receiverId;
       }
+    });
+  }
+
+  void _registerItnFunctions() {
+    FunctionRegistry.register('calculateItnCount', (args, stateData) {
+      final memberCount = int.tryParse(args.first?.toString() ?? '') ?? 0;
+      if (memberCount <= 0) return 0;
+      return min(4, (memberCount / 2).ceil());
+    });
+
+    FunctionRegistry.register('isItnDelivered', (args, stateData) {
+      if (args.isEmpty) return false;
+      final tasks = args.first;
+      if (tasks == null) return false;
+      final rawList = tasks is List ? tasks : [tasks];
+
+      // item.task may contain TaskModel objects — convert to Map following isRedoseCompleted pattern
+      final taskList = rawList.map<Map<String, dynamic>>((item) {
+        if (item is Map<String, dynamic>) return item;
+        if (item is Map) return Map<String, dynamic>.from(item);
+        try {
+          // ignore: avoid_dynamic_calls
+          return (item as dynamic).toMap() as Map<String, dynamic>;
+        } catch (_) {
+          try {
+            // ignore: avoid_dynamic_calls
+            return (item as dynamic).toJson() as Map<String, dynamic>;
+          } catch (_) {
+            return <String, dynamic>{};
+          }
+        }
+      }).toList();
+
+      for (final task in taskList) {
+        final additionalFields = task['additionalFields'];
+        final fields = additionalFields is Map
+            ? additionalFields['fields'] as List?
+            : additionalFields is List
+                ? additionalFields
+                : null;
+        if (fields == null) continue;
+        for (final field in fields) {
+          if (field is Map &&
+              field['key'] == 'taskType' &&
+              field['value'] == 'ITN_DELIVERY') {
+            return true;
+          }
+        }
+      }
+      return false;
+    });
+
+    FunctionRegistry.register('allMembersHaveSmcTasks', (args, stateData) {
+      // args[0]: total memberCount (including head), args[1]: head's projectBeneficiaryClientReferenceId
+      final memberCount = int.tryParse(args.firstOrNull?.toString() ?? '') ?? 0;
+      if (memberCount <= 1) return true;
+      final headPbRef = args.length > 1 ? args[1]?.toString() : null;
+
+      // Flatten all modelMap entries and filter by the task-identifying field,
+      // avoiding dependence on a specific key name that varies across flows
+      final allTasks = stateData.modelMap.values
+          .expand((list) => list)
+          .where(
+              (map) => map.containsKey('projectBeneficiaryClientReferenceId'))
+          .toList();
+
+      // Count distinct non-head projectBeneficiaryClientReferenceIds with at least one SMC task
+      final Set<String> nonHeadWithSmcTasks = {};
+      for (final task in allTasks) {
+        final pbRef = task['projectBeneficiaryClientReferenceId']?.toString();
+        if (pbRef == null || pbRef.isEmpty) continue;
+        if (headPbRef != null && pbRef == headPbRef) continue;
+
+        final additionalFields = task['additionalFields'];
+        final fields = additionalFields is Map
+            ? additionalFields['fields'] as List?
+            : additionalFields is List
+                ? additionalFields
+                : null;
+        bool isItn = false;
+        if (fields != null) {
+          for (final field in fields) {
+            if (field is Map &&
+                field['key'] == 'taskType' &&
+                field['value'] == 'ITN_DELIVERY') {
+              isItn = true;
+              break;
+            }
+          }
+        }
+        if (!isItn) nonHeadWithSmcTasks.add(pbRef);
+      }
+
+      // memberCount includes the head, so non-head expected = memberCount - 1
+      return nonHeadWithSmcTasks.length >= memberCount - 1;
+    });
+
+    FunctionRegistry.register('hasStockForItnDelivery', (args, stateData) {
+      if (args.length < 2) return true;
+      final memberCount = int.tryParse(args[0]?.toString() ?? '') ?? 0;
+      final eligibleProducts = args[1];
+      if (eligibleProducts == null) return true;
+      final required = min(4, (memberCount / 2).ceil()).toDouble();
+      List<dynamic> productList = [];
+      if (eligibleProducts is List) {
+        productList = eligibleProducts;
+      } else if (eligibleProducts is Map) {
+        productList = [eligibleProducts];
+      }
+      if (productList.isEmpty) return true;
+      final cache = StockBalanceCache.instance;
+      if (cache.facilityId.isEmpty) return true;
+      final List<Map<String, dynamic>> insufficientProducts = [];
+      for (final product in productList) {
+        if (product is! Map) continue;
+        final productVariantsList = product['ProductVariants'];
+        if (productVariantsList is! List) continue;
+        for (final variant in productVariantsList) {
+          if (variant is! Map) continue;
+          final productId = variant['productVariantId']?.toString();
+          final productName =
+              variant['name']?.toString() ?? productId ?? 'Unknown';
+          if (productId == null || productId.isEmpty) continue;
+          final balance = cache.cache[productId] ?? 0.0;
+          if (balance < required) {
+            insufficientProducts.add({
+              'name': productName,
+              'required': required,
+              'available': balance,
+            });
+          }
+        }
+      }
+      if (insufficientProducts.isEmpty) {
+        cache.setStockCheckResult(null);
+        return true;
+      }
+      cache.setStockCheckResult({
+        'key': 'INSUFFICIENT_STOCK',
+        'products': insufficientProducts,
+      });
+      return false;
     });
   }
 }
