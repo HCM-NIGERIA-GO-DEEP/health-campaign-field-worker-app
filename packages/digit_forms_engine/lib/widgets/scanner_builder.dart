@@ -30,6 +30,26 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
         .toList();
   }
 
+  bool get isGS1code {
+    bool defaultValue = true;
+    if (validations != null && validations!.any((v) => v.type == 'isGS1Code')) {
+      return validations!.where((e) => e.type == 'isGS1Code').first.value ==
+          true;
+    } else {
+      return defaultValue;
+    }
+  }
+
+  String formatDisplayCodes(List displayCodes) {
+    if (displayCodes.isEmpty) return '';
+    // If it's a single code, display as is
+    if (displayCodes.length == 1 && displayCodes.first.contains('||')) {
+      return displayCodes.first.toString().split("||").first.trim();
+    }
+    // If multiple codes, join with comma and space
+    return displayCodes.map((e) => e.toString()).join(', ');
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = FormLocalization.of(context);
@@ -95,6 +115,9 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
         // New format: key:value|key:value (pipe-separated key-value pairs)
         // Legacy format: GTIN,SERIAL,BATCH,EXPIRY (4 comma-separated parts)
         bool isGS1BarcodeFormat(String value) {
+          if (value.contains("||")) {
+            return false; // Invalid if double pipe exists
+          }
           // New format: contains '|' or starts with 2-digit AI code followed by ':'
           if (value.contains('|') ||
               RegExp(r'^\d{2}:').hasMatch(value.trim())) {
@@ -229,7 +252,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                         final duplicateMsg = dupeErrFn?.call(formControlName);
                         context.router.push(DigitScannerRoute(
                           validations: _toScannerValidations(),
-                          isGS1code: true,
+                          isGS1code: isGS1code,
                           isEditEnabled: true,
                           initialBarcodeData: formValue,
                           scannerId: formControlName,
@@ -263,7 +286,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                               LabelValueItem(
                                 label: label ?? 'Voucher code',
                                 // Show all QR codes comma-separated
-                                value: displayQrCodes.join(', '),
+                                value: formatDisplayCodes(displayQrCodes),
                                 labelFlex: 5,
                                 maxLines: 5,
                                 padding: EdgeInsets.zero,
@@ -294,6 +317,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                             final duplicateMsg2 = dupeErrFn2?.call(formControlName);
                             context.router.push(DigitScannerRoute(
                               validations: _toScannerValidations(),
+                              isGS1code: isGS1code,
                               isEditEnabled: true,
                               initialQrCodes: displayQrCodes,
                               scannerId: formControlName,
@@ -329,6 +353,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                           : null;
                       final duplicateMsg3 = dupeErrFn3?.call(formControlName);
                       context.router.push(DigitScannerRoute(
+                        isGS1code: isGS1code,
                         validations: _toScannerValidations(),
                         scannerId: formControlName,
                         duplicateCheckFn: duplicateCheckFn3,
