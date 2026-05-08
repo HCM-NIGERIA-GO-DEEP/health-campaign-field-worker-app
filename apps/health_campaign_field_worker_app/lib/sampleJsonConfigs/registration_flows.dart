@@ -215,7 +215,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "NAME_OF_INDIVIDUAL",
                   "value":
-                      "{{contextData.0.individuals.IndividualModel.name.givenName}}"
+                      "{{contextData.0.individuals.IndividualModel.name.givenName}} {{contextData.0.individuals.IndividualModel.name.familyName}}"
                 },
                 {
                   "key": "ID_TYPE",
@@ -891,7 +891,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "HOUSEHOLD_HEAD_NAME",
                   "value":
-                      "{{contextData.0.headIndividual.IndividualModel.name.givenName}}",
+                      "{{contextData.0.headIndividual.IndividualModel.name.givenName}} {{contextData.0.headIndividual.IndividualModel.name.familyName}}",
                   "isActive": true
                 },
                 {
@@ -1077,7 +1077,8 @@ final dynamic sampleFlows = {
                   },
                   {
                     "type": "template",
-                    "value": "{{ item.individual.0.name.givenName }}",
+                    "value":
+                        "{{ item.individual.0.name.givenName }} {{ item.individual.0.name.familyName }}",
                     "format": "textTemplate",
                     "fieldName": "individualName",
                     "properties": {"bottomGap": 16}
@@ -2302,7 +2303,8 @@ final dynamic sampleFlows = {
                 "children": [
                   {
                     "type": "template",
-                    "value": "{{ item.headIndividual.0.name.givenName }}",
+                    "value":
+                        "{{ item.headIndividual.0.name.givenName }} {{ item.headIndividual.0.name.familyName }}",
                     "format": "textTemplate",
                     "fieldName": "headOfHousehold"
                   },
@@ -2431,7 +2433,8 @@ final dynamic sampleFlows = {
                       "header": "BENEFICIARY",
                       "hidden": false,
                       "isActive": true,
-                      "cellValue": "{{item.name.givenName}}"
+                      "cellValue":
+                          "{{item.name.givenName}} {{item.name.familyName}}"
                     },
                     {
                       "header": "AGE_OF_BENEFICIARY",
@@ -6719,12 +6722,6 @@ final dynamic sampleFlows = {
                   "value": "100",
                   "message":
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_max_message"
-                },
-                {
-                  "type": "relativeMax",
-                  "value": "{{memberCount - 1}}",
-                  "message":
-                      "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_max_message"
                 }
               ],
               "errorMessage": "",
@@ -6788,12 +6785,6 @@ final dynamic sampleFlows = {
                 {
                   "type": "min",
                   "value": "0",
-                  "message":
-                      "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount_min_message"
-                },
-                {
-                  "type": "relativeMin",
-                  "value": "{{childrenCount + 1}}",
                   "message":
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount_min_message"
                 },

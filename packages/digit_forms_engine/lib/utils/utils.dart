@@ -31,12 +31,15 @@ int? _resolveTemplateValue(String template, FormGroup form) {
     final op = operatorMatch.group(2)!;
     final offset = int.parse(operatorMatch.group(3)!);
 
+    if (!form.contains(key)) return null;
     final dynamic raw = form.control(key).value;
+    if (raw == null) return null;
     final int? base = raw is int ? raw : int.tryParse(raw.toString());
     if (base == null) return null;
     return op == '+' ? base + offset : base - offset;
   }
 
+  if (!form.contains(inner)) return null;
   final dynamic raw = form.control(inner).value;
   if (raw is int) return raw;
   if (raw is String) return int.tryParse(raw);
