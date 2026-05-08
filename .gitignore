@@ -60,3 +60,5 @@ apps/health_campaign_field_worker_app/libisar.dylib
 # FVM Version Cache
 .fvm/
 .fvmrc
+
+/graphify-out
