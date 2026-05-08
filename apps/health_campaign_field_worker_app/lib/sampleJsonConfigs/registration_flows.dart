@@ -4951,6 +4951,7 @@ final dynamic sampleFlows = {
               "order": 4,
               "value": "",
               "format": "dob",
+              "hidden": false,
               "isMdms": false,
               "tooltip":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_dobPicker_tooltip_addmember",
@@ -5168,27 +5169,6 @@ final dynamic sampleFlows = {
               "properties": {
                 "entity": "IndividualModel, ProjectBeneficiaryModel"
               }
-            },
-            {
-              "actionType": "NAVIGATION",
-              "properties": {
-                "data": [
-                  {
-                    "key": "HouseholdClientReferenceId",
-                    "value": "{{navigation.HouseholdClientReferenceId}}"
-                  }
-                ],
-                "name": "householdOverview",
-                "type": "TEMPLATE",
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {"message": "Navigation failed."}
-                  }
-                ],
-                "navigationMode": "popUntilAndPush",
-                "popUntilPageName": "searchBeneficiary"
-              }
             }
           ],
           "condition": {"type": "custom", "expression": "isEdit == true"}
@@ -5209,60 +5189,60 @@ final dynamic sampleFlows = {
                 ]
               }
             },
-            {"actionType": "CREATE_EVENT", "properties": {}},
-            {
-              "actionType": "NAVIGATION",
-              "properties": {
-                "data": [
-                  {
-                    "key": "selectedIndividualClientReferenceId",
-                    "value":
-                        "{{contextData.entities.IndividualModel.clientReferenceId}}"
-                  },
-                  {
-                    "key": "selectedIndividualIdentifierId",
-                    "value":
-                        "{{contextData.entities.IndividualModel.identifiers.0.identifierId}}"
-                  },
-                  {
-                    "key": "HouseholdClientReferenceId",
-                    "value": "{{navigation.HouseholdClientReferenceId}}"
-                  },
-                  {
-                    "key": "ProjectBeneficiaryClientReferenceId",
-                    "value":
-                        "{{contextData.entities.ProjectBeneficiaryModel.clientReferenceId}}"
-                  },
-                  {
-                    "key": "selectedIndividualName",
-                    "value":
-                        "{{contextData.entities.IndividualModel.name.givenName}}"
-                  },
-                  {
-                    "key": "selectedIndividualGender",
-                    "value": "{{contextData.entities.IndividualModel.gender}}"
-                  },
-                  {
-                    "key": "selectedIndividualAgeInMonths",
-                    "value":
-                        "{{fn:formatDate(contextData.entities.IndividualModel.dateOfBirth, 'ageinmonths')}}"
-                  },
-                  {"key": "cycleIndex", "value": "{{contextData.0.cycleIndex}}"}
-                ],
-                "name": "CHECKLIST",
-                "type": "FORM",
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {"message": "Navigation failed."}
-                  }
-                ],
-                "navigationMode": "popUntilAndPush",
-                "popUntilPageName": "searchBeneficiary"
-              }
-            }
+            {"actionType": "CREATE_EVENT", "properties": {}}
           ],
           "condition": {"expression": "DEFAULT"}
+        },
+        {
+          "actionType": "NAVIGATION",
+          "properties": {
+            "data": [
+              {
+                "key": "selectedIndividualClientReferenceId",
+                "value":
+                    "{{contextData.entities.IndividualModel.clientReferenceId}}"
+              },
+              {
+                "key": "selectedIndividualIdentifierId",
+                "value":
+                    "{{contextData.entities.IndividualModel.identifiers.0.identifierId}}"
+              },
+              {
+                "key": "HouseholdClientReferenceId",
+                "value": "{{navigation.HouseholdClientReferenceId}}"
+              },
+              {
+                "key": "ProjectBeneficiaryClientReferenceId",
+                "value":
+                    "{{contextData.entities.ProjectBeneficiaryModel.clientReferenceId}}"
+              },
+              {
+                "key": "selectedIndividualName",
+                "value":
+                    "{{contextData.entities.IndividualModel.name.givenName}}"
+              },
+              {
+                "key": "selectedIndividualGender",
+                "value": "{{contextData.entities.IndividualModel.gender}}"
+              },
+              {
+                "key": "selectedIndividualAgeInMonths",
+                "value":
+                    "{{fn:formatDate(contextData.entities.IndividualModel.dateOfBirth, 'ageinmonths')}}"
+              },
+              {"key": "cycleIndex", "value": "{{contextData.0.cycleIndex}}"}
+            ],
+            "name": "CHECKLIST",
+            "type": "FORM",
+            "onError": [
+              {
+                "actionType": "SHOW_TOAST",
+                "properties": {"message": "Navigation failed."}
+              }
+            ],
+            "navigationMode": "popUntilAndPush",
+            "popUntilPageName": "searchBeneficiary"
+          }
         }
       ],
       "isSelected": true,
