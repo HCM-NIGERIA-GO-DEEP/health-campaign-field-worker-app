@@ -7,7 +7,6 @@ import 'package:digit_data_model/models/entities/address_type.dart';
 import 'package:digit_data_model/models/entities/hf_referral.dart';
 import 'package:digit_data_model/models/entities/household_type.dart';
 import 'package:dio/dio.dart';
-import 'package:path_provider/path_provider.dart';
 import 'package:survey_form/models/entities/service.dart';
 
 class BeneficiaryDownloadLink {
@@ -56,7 +55,7 @@ typedef BeneficiaryFileProgress = FutureOr<void> Function(
 );
 
 class BeneficiaryFileDownsyncImporter {
-  static const int _batchSize = 1000;
+  static const int _batchSize = 100;
 
   final Dio dio;
   final LocalRepository<IndividualModel, IndividualSearchModel>
@@ -100,33 +99,26 @@ class BeneficiaryFileDownsyncImporter {
     for (final link in links) {
       if (link.url.isEmpty) continue;
 
-      final file = await _download(link);
-      try {
-        await for (final rawLine in _readNdjsonLines(file)) {
-          final line = rawLine.trim();
-          if (line.isEmpty) continue;
+      await for (final rawLine in _readNdjsonLines(link)) {
+        final line = rawLine.trim();
+        if (line.isEmpty) continue;
 
-          final decoded = jsonDecode(line);
-          if (decoded is! Map<String, dynamic>) continue;
+        final decoded = jsonDecode(line);
+        if (decoded is! Map<String, dynamic>) continue;
 
-          await _addDecodedLine(decoded);
+        await _addDecodedLine(decoded);
 
-          totalImported += 1;
-          final type = decoded['_t']?.toString() ?? link.fileType;
-          counters[type] = (counters[type] ?? 0) + 1;
+        totalImported += 1;
+        final type = decoded['_t']?.toString() ?? link.fileType;
+        counters[type] = (counters[type] ?? 0) + 1;
 
-          if (totalImported % _batchSize == 0) {
-            await _flush();
-            await onProgress?.call(totalImported, Map.of(counters));
-          }
-        }
-        await _flush();
-        await onProgress?.call(totalImported, Map.of(counters));
-      } finally {
-        if (await file.exists()) {
-          await file.delete();
+        if (totalImported % _batchSize == 0) {
+          await _flush();
+          await onProgress?.call(totalImported, Map.of(counters));
         }
       }
+      await _flush();
+      await onProgress?.call(totalImported, Map.of(counters));
     }
 
     return BeneficiaryFileDownsyncResult(
@@ -145,36 +137,43 @@ class BeneficiaryFileDownsyncImporter {
   final List<HFReferralModel> _hfReferrals = [];
   final List<ServiceModel> _services = [];
 
-  Future<File> _download(BeneficiaryDownloadLink link) async {
-    final tempDir = await getTemporaryDirectory();
-    final file = File(
-      '${tempDir.path}/beneficiary_downsync_${DateTime.now().microsecondsSinceEpoch}_${link.fileType}.ndjson',
-    );
-
-    await dio.download(
+  Stream<String> _readNdjsonLines(BeneficiaryDownloadLink link) async* {
+    final response = await dio.get<ResponseBody>(
       link.url,
-      file.path,
-      options: Options(responseType: ResponseType.bytes),
+      options: Options(responseType: ResponseType.stream),
     );
 
-    return file;
+    final body = response.data;
+    if (body == null) return;
+
+    final source = body.stream.map<List<int>>((chunk) => chunk);
+    final iterator = StreamIterator<List<int>>(source);
+
+    try {
+      if (!await iterator.moveNext()) return;
+
+      final first = iterator.current;
+      final isGzip = first.length >= 2 && first[0] == 0x1f && first[1] == 0x8b;
+
+      final bytes = _pullBytes(iterator, first);
+      final decodedStream = isGzip
+          ? bytes.transform(gzip.decoder).transform(utf8.decoder)
+          : bytes.transform(utf8.decoder);
+
+      yield* decodedStream.transform(const LineSplitter());
+    } finally {
+      await iterator.cancel();
+    }
   }
 
-  Stream<String> _readNdjsonLines(File file) async* {
-    final firstBytes = await file.openRead(0, 2).fold<List<int>>(
-      <int>[],
-      (previous, bytes) => previous..addAll(bytes),
-    );
-    final isGzip = firstBytes.length >= 2 &&
-        firstBytes[0] == 0x1f &&
-        firstBytes[1] == 0x8b;
-
-    final stream = file.openRead();
-    final decodedStream = isGzip
-        ? stream.transform(gzip.decoder).transform(utf8.decoder)
-        : stream.transform(utf8.decoder);
-
-    yield* decodedStream.transform(const LineSplitter());
+  Stream<List<int>> _pullBytes(
+    StreamIterator<List<int>> iterator,
+    List<int> first,
+  ) async* {
+    yield first;
+    while (await iterator.moveNext()) {
+      yield iterator.current;
+    }
   }
 
   Future<void> _addDecodedLine(Map<String, dynamic> raw) async {
