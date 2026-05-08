@@ -1411,7 +1411,7 @@ void initializeFunctionRegistry() {
       symptoms.add('FEVER');
     }
     if (symptoms.isEmpty) {
-      symptoms.add('DRUG_SE_CC');
+      symptoms.add('DRUG_SE_PC');
     }
 
     return symptoms.join(',');
