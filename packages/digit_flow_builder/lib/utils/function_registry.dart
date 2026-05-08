@@ -1409,8 +1409,9 @@ void initializeFunctionRegistry() {
     if (ec1 == 'YES') symptoms.add('SICK');
     if (ec2 == 'YES') {
       symptoms.add('FEVER');
-    } else {
-      symptoms.add('DRUG_SE_PC');
+    }
+    if (symptoms.isEmpty) {
+      symptoms.add('DRUG_SE_CC');
     }
 
     return symptoms.join(',');
