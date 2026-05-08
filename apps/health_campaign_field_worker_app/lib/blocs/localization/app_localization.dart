@@ -26,11 +26,13 @@ class AppLocalizations {
     final listOfLocalizations =
         await LocalizationLocalRepository().returnLocalizationFromSQL(sql);
 
-    _localizedStrings.clear();
+    if (listOfLocalizations.isNotEmpty) {
+      _localizedStrings
+        ..clear()
+        ..addAll(listOfLocalizations);
+    }
 
-    _localizedStrings.addAll(listOfLocalizations);
-
-    return _localizedStrings.isNotEmpty ? true : false;
+    return _localizedStrings.isNotEmpty;
   }
 
   String translate(String localizedValues) {
