@@ -58,8 +58,7 @@ extension ContextUtilityExtensions on BuildContext {
     final primary = project.additionalDetails?.projectType?.type;
     final additional = project.additionalDetails?.additionalProjectType?.type;
 
-    // return primary == 'SMC_ITN' && additional == 'SMC_ITN';
-    return true;
+    return primary == 'SMC_ITN' && additional == 'SMC_ITN';
   }
 
   ProjectTypeModel? get selectedProjectType {

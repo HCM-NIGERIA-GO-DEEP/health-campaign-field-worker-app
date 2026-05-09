@@ -1399,8 +1399,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     final isCombinedSmcItn =
         primaryType?.type == 'SMC_ITN' && additionalType?.type == 'SMC_ITN';
 
-    // return isCombinedSmcItn ? primaryType : additionalType;
-    return primaryType;
+    return isCombinedSmcItn ? primaryType : additionalType;
   }
 
   static String? resolveProjectTypeId(ProjectModel project) {
