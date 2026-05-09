@@ -550,6 +550,15 @@ class FunctionRegistries {
   }
 
   void _registerItnFunctions() {
+    FunctionRegistry.register('isSmcPresent', (args, stateData) {
+      final project = FlowBuilderSingleton().selectedProject;
+      if (project == null) return false;
+      final primary = project.additionalDetails?.projectType?.type;
+      final additional = project.additionalDetails?.additionalProjectType?.type;
+      return primary == 'SMC_ITN' && additional == 'SMC_ITN';
+      // return true;
+    });
+
     FunctionRegistry.register('calculateItnCount', (args, stateData) {
       final memberCount = int.tryParse(args.first?.toString() ?? '') ?? 0;
       if (memberCount <= 0) return 0;
@@ -599,10 +608,35 @@ class FunctionRegistries {
     });
 
     FunctionRegistry.register('allMembersHaveSmcTasks', (args, stateData) {
-      // args[0]: total memberCount (including head), args[1]: head's projectBeneficiaryClientReferenceId
-      final memberCount = int.tryParse(args.firstOrNull?.toString() ?? '') ?? 0;
-      if (memberCount <= 1) return true;
-      final headPbRef = args.length > 1 ? args[1]?.toString() : null;
+      // args[0]: head's projectBeneficiaryClientReferenceId (to exclude head's tasks)
+      final headPbRef = args.firstOrNull?.toString();
+
+      // Read childrenCount from HouseholdModel's additionalFields
+      // (childrenCount is not a direct HouseholdModel property, so it lives in additionalFields.fields)
+      int childrenCount = 0;
+      outer:
+      for (final list in stateData.modelMap.values) {
+        for (final map in list) {
+          if (!map.containsKey('memberCount'))
+            continue; // HouseholdModel has memberCount
+          final additionalFields = map['additionalFields'];
+          final fields = additionalFields is Map
+              ? additionalFields['fields'] as List?
+              : additionalFields is List
+                  ? additionalFields
+                  : null;
+          if (fields == null) continue;
+          for (final field in fields) {
+            if (field is Map && field['key'] == 'childrenCount') {
+              childrenCount =
+                  int.tryParse(field['value']?.toString() ?? '') ?? 0;
+              break outer;
+            }
+          }
+        }
+      }
+
+      if (childrenCount <= 0) return true;
 
       // Flatten all modelMap entries and filter by the task-identifying field,
       // avoiding dependence on a specific key name that varies across flows
@@ -612,35 +646,16 @@ class FunctionRegistries {
               (map) => map.containsKey('projectBeneficiaryClientReferenceId'))
           .toList();
 
-      // Count distinct non-head projectBeneficiaryClientReferenceIds with at least one SMC task
-      final Set<String> nonHeadWithSmcTasks = {};
+      // Count distinct non-head members with ANY task (SMC, Unable to Deliver, etc.)
+      final Set<String> nonHeadWithAnyTask = {};
       for (final task in allTasks) {
         final pbRef = task['projectBeneficiaryClientReferenceId']?.toString();
         if (pbRef == null || pbRef.isEmpty) continue;
         if (headPbRef != null && pbRef == headPbRef) continue;
-
-        final additionalFields = task['additionalFields'];
-        final fields = additionalFields is Map
-            ? additionalFields['fields'] as List?
-            : additionalFields is List
-                ? additionalFields
-                : null;
-        bool isItn = false;
-        if (fields != null) {
-          for (final field in fields) {
-            if (field is Map &&
-                field['key'] == 'taskType' &&
-                field['value'] == 'ITN_DELIVERY') {
-              isItn = true;
-              break;
-            }
-          }
-        }
-        if (!isItn) nonHeadWithSmcTasks.add(pbRef);
+        nonHeadWithAnyTask.add(pbRef);
       }
 
-      // memberCount includes the head, so non-head expected = memberCount - 1
-      return nonHeadWithSmcTasks.length >= memberCount - 1;
+      return nonHeadWithAnyTask.length >= childrenCount;
     });
 
     FunctionRegistry.register('hasStockForItnDelivery', (args, stateData) {

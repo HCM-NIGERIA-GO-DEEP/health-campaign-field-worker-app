@@ -6,7 +6,8 @@ final jsonConfig = {
       "HouseholdModel": {
         "mappings": {
           "id": "housing.id",
-          "memberCount": "householdDetails.memberCount",
+          "memberCount":
+              "__switch:navigation.smcProject:{true:householdDetails.memberCount,default:itnHouseholdDetails.memberCount}",
           "latitude": "beneficiaryLocation.latLng[0]",
           "longitude": "beneficiaryLocation.latLng[1]",
           "nonRecoverableError": "errors.nonRecoverable",
@@ -50,7 +51,8 @@ final jsonConfig = {
           "additionalFields": {
             "childrenCount": "householdDetails.childrenCount",
             "pregnantWomenCount": "householdDetails.pregnantWomenCount",
-            "memberCount": "householdDetails.memberCount",
+            "memberCount":
+                "__switch:navigation.smcProject:{true:householdDetails.memberCount,default:itnHouseholdDetails.memberCount}",
             "caregiverConsent": "caregiverConsent.consentToParticipate"
           }
         }
@@ -62,7 +64,8 @@ final jsonConfig = {
           "userId": "personalDetails.userId",
           "userUuid": "personalDetails.uuid",
           "dateOfBirth": "beneficiaryDetails.dobPicker",
-          "mobileNumber": "beneficiaryDetails.phone",
+          "mobileNumber":
+              "__switch:navigation.smcProject:{true:beneficiaryDetails.phone,default:itnHouseholdDetails.phone}",
           "altContactNumber": "contactInfo.altContact",
           "email": "contactInfo.email",
           "fatherName": "family.fatherName",
@@ -77,7 +80,8 @@ final jsonConfig = {
           "name": {
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
-            "givenName": "beneficiaryDetails.nameOfIndividual",
+            "givenName":
+                "__switch:navigation.smcProject:{true:beneficiaryDetails.nameOfIndividual,default:itnHouseholdDetails.nameOfIndividual}",
             "familyName": "beneficiaryDetails.familyname",
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit",
@@ -162,7 +166,8 @@ final jsonConfig = {
 
           /// Note: Generate uuid
           "rowVersion": "meta.rowVersion",
-          "dateOfRegistration": "householdDetails.dateOfRegistration",
+          "dateOfRegistration":
+              "__switch:navigation.smcProject:{true:householdDetails.dateOfRegistration,default:itnHouseholdDetails.dateOfRegistration}",
           "additionalFields": "additionalInfo.fields",
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
@@ -177,7 +182,8 @@ final jsonConfig = {
           "individualId": "members.individualId",
           "individualClientReferenceId":
               "__ref:IndividualModel.clientReferenceId",
-          "isHeadOfHousehold": "beneficiaryDetails.isHeadOfFamily",
+          "isHeadOfHousehold":
+              "__switch:navigation.smcProject:{true:beneficiaryDetails.isHeadOfFamily,default:itnHouseholdDetails.isHeadOfFamily}",
           "nonRecoverableError": "errors.nonRecoverable",
           "clientReferenceId": "__generate:uuid",
 
