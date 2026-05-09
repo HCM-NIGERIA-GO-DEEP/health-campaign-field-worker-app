@@ -583,8 +583,7 @@ final dynamic sampleFlows = {
             }
           },
           "deliveryLength": {
-            "from":
-                "{{singleton.selectedProject.additionalDetails.projectType.cycles}}",
+            "from": "{{singleton.projectType.cycles}}",
             "order": 3,
             "where": {
               "left": "{{id}}",
@@ -605,8 +604,7 @@ final dynamic sampleFlows = {
             }
           },
           "currentRunningCycle": {
-            "from":
-                "{{singleton.selectedProject.additionalDetails.projectType.cycles}}",
+            "from": "{{singleton.projectType.cycles}}",
             "order": 1,
             "where": [
               {"left": "{{startDate}}", "right": "{{now}}", "operator": "lt"},
@@ -679,8 +677,7 @@ final dynamic sampleFlows = {
         "wrapperName": "DeliveryWrapper",
         "computedList": {
           "pastCycles": {
-            "from":
-                "{{singleton.selectedProject.additionalDetails.projectType.cycles}}",
+            "from": "{{singleton.projectType.cycles}}",
             "order": 6,
             "where": {
               "left": "{{item.id}}",
@@ -698,8 +695,7 @@ final dynamic sampleFlows = {
             }
           },
           "targetCycle": {
-            "from":
-                "{{singleton.selectedProject.additionalDetails.projectType.cycles}}",
+            "from": "{{singleton.projectType.cycles}}",
             "order": 1,
             "where": {
               "left": "{{id}}",
@@ -1711,8 +1707,7 @@ final dynamic sampleFlows = {
         ],
         "computed": {
           "currentRunningCycle": {
-            "from":
-                "{{singleton.selectedProject.additionalDetails.projectType.cycles}}",
+            "from": "{{singleton.projectType.cycles}}",
             "order": 1,
             "where": [
               {"left": "{{startDate}}", "right": "{{now}}", "operator": "lt"},
@@ -6567,10 +6562,10 @@ final dynamic sampleFlows = {
               "type": "integer",
               "label":
                   "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount",
-              "order": 2,
+              "order": 3,
               "value": "0",
               "format": "numeric",
-              "hidden": true,
+              "hidden": false,
               "isMdms": false,
               "tooltip": "",
               "helpText": "",
@@ -6582,9 +6577,16 @@ final dynamic sampleFlows = {
               "innerLabel": "",
               "schemaCode": null,
               "systemDate": false,
-              "validations": [],
+              "validations": [
+                {
+                  "type": "max",
+                  "value": "{{memberCount}}",
+                  "message":
+                      "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_max_message"
+                }
+              ],
               "errorMessage": "",
-              "isMultiSelect": false
+              "isMultiSelect": false,
             },
             {
               "type": "integer",
@@ -6612,7 +6614,7 @@ final dynamic sampleFlows = {
             {
               "type": "integer",
               "label": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount",
-              "order": 4,
+              "order": 2,
               "range": {
                 "max": "10",
                 "min": "1",

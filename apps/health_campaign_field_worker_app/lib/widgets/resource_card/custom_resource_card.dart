@@ -494,7 +494,7 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
     final variants = productVariants;
 
     final int count =
-        context.selectedProject.additionalDetails?.projectType?.cycles == null
+        context.selectedProjectType?.cycles == null
             ? 1
             : productVariants?.length ?? 0;
 

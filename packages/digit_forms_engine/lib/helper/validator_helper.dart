@@ -42,6 +42,17 @@ dynamic _resolveNavigationValue(dynamic value, String? schemaKey) {
   return navParams[key];
 }
 
+/// Resolves a value that may be a field reference (e.g., "{{memberCount}}")
+/// Returns the extracted field name or null if not a field reference
+String? _extractFieldReference(dynamic value) {
+  if (value is! String) return null;
+  if (!value.startsWith('{{') || !value.endsWith('}}')) return null;
+  
+  // Extract field name from {{fieldName}}
+  final fieldName = value.substring(2, value.length - 2).trim();
+  return fieldName.isNotEmpty ? fieldName : null;
+}
+
 List<Validator<T>> buildValidators<T>(PropertySchema schema,
     {String? schemaKey}) {
   final List<Validator<T>> validators = [];
@@ -96,6 +107,37 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
               }
               return null;
             }) as Validator<T>);
+          } else if (rule.value is String &&
+              (rule.value.startsWith('{{') && rule.value.endsWith('}}'))) {
+            // Handle field reference like {{memberCount}}
+            final fieldRef = _extractFieldReference(rule.value);
+            if (fieldRef != null) {
+              validators.add(Validators.delegate((control) {
+                if (control.value == null) return null;
+                final numValue = num.tryParse(control.value.toString());
+                if (numValue == null) return null;
+                
+                // Try to get the referenced field's value from the form
+                try {
+                  final parent = control.parent;
+                  if (parent is FormGroup && parent.controls.containsKey(fieldRef)) {
+                    final refControl = parent.control(fieldRef);
+                    final refValue = parseIntValue(refControl.value);
+                    if (refValue != null && numValue < refValue) {
+                      return {
+                        'min': {'min': refValue, 'actual': numValue}
+                      };
+                    }
+                  }
+                } catch (e) {
+                  // If field not found or error, skip validation
+                  if (kDebugMode) {
+                    print('Error resolving field reference "$fieldRef": $e');
+                  }
+                }
+                return null;
+              }) as Validator<T>);
+            }
           } else {
             final parsedValue = parseIntValue(rule.value);
             if (parsedValue != null) {
@@ -137,6 +179,37 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
               }
               return null;
             }) as Validator<T>);
+          } else if (rule.value is String &&
+              (rule.value.startsWith('{{') && rule.value.endsWith('}}'))) {
+            // Handle field reference like {{memberCount}}
+            final fieldRef = _extractFieldReference(rule.value);
+            if (fieldRef != null) {
+              validators.add(Validators.delegate((control) {
+                if (control.value == null) return null;
+                final numValue = num.tryParse(control.value.toString());
+                if (numValue == null) return null;
+                
+                // Try to get the referenced field's value from the form
+                try {
+                  final parent = control.parent;
+                  if (parent is FormGroup && parent.controls.containsKey(fieldRef)) {
+                    final refControl = parent.control(fieldRef);
+                    final refValue = parseIntValue(refControl.value);
+                    if (refValue != null && numValue > refValue) {
+                      return {
+                        'max': {'max': refValue, 'actual': numValue}
+                      };
+                    }
+                  }
+                } catch (e) {
+                  // If field not found or error, skip validation
+                  if (kDebugMode) {
+                    print('Error resolving field reference "$fieldRef": $e');
+                  }
+                }
+                return null;
+              }) as Validator<T>);
+            }
           } else {
             final parsedValue = parseIntValue(rule.value);
             if (parsedValue != null) {

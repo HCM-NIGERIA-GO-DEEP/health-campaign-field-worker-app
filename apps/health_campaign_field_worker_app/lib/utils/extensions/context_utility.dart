@@ -37,37 +37,45 @@ extension ContextUtilityExtensions on BuildContext {
   }
 
   ProjectCycle? get selectedCycle {
-    final projectBloc = _get<ProjectBloc>();
-
-    final projectState = projectBloc.state;
-    final selectedCycle =
-        projectState.selectedProject?.additionalDetails?.projectType?.cycles
-            ?.where(
-              (e) =>
-                  (e.startDate) < DateTime.now().millisecondsSinceEpoch &&
-                  (e.endDate) > DateTime.now().millisecondsSinceEpoch,
-            )
-            .firstOrNull;
+    final selectedCycle = selectedProjectType?.cycles
+        ?.where(
+          (e) =>
+              (e.startDate) < DateTime.now().millisecondsSinceEpoch &&
+              (e.endDate) > DateTime.now().millisecondsSinceEpoch,
+        )
+        .firstOrNull;
 
     return selectedCycle;
   }
 
+  bool get isSmcPresent {
+    final projectBloc = _get<ProjectBloc>();
+    final projectState = projectBloc.state;
+    final project = projectState.selectedProject;
+
+    if (project == null) return false;
+
+    final primary = project.additionalDetails?.projectType?.type;
+    final additional = project.additionalDetails?.additionalProjectType?.type;
+
+    return primary == 'SMC_ITN' && additional == 'SMC_ITN';
+  }
+
   ProjectTypeModel? get selectedProjectType {
     final projectBloc = _get<ProjectBloc>();
-
     final projectState = projectBloc.state;
-    final projectType =
-        projectState.selectedProject?.additionalDetails?.projectType;
+    final project = projectState.selectedProject;
 
-    return projectType;
+      if (project == null) return null;
+
+    final primaryType = project.additionalDetails?.projectType;
+    final additionalType = project.additionalDetails?.additionalProjectType;
+
+    return isSmcPresent ? primaryType : additionalType;
   }
 
   List<String> get cycles {
-    final projectBloc = _get<ProjectBloc>();
-
-    final projectState = projectBloc.state;
-    var projectCycles =
-        projectState.selectedProject?.additionalDetails?.projectType?.cycles;
+    var projectCycles = selectedProjectType?.cycles;
 
     if (projectCycles != null && (projectCycles.isNotEmpty)) {
       List<String> resultList = [];
@@ -83,12 +91,8 @@ extension ContextUtilityExtensions on BuildContext {
   }
 
   BeneficiaryType get beneficiaryType {
-    final projectBloc = _get<ProjectBloc>();
-
-    final projectState = projectBloc.state;
-
-    final BeneficiaryType? selectedBeneficiary = projectState
-        .selectedProject?.additionalDetails?.projectType?.beneficiaryType;
+    final BeneficiaryType? selectedBeneficiary =
+        selectedProjectType?.beneficiaryType;
 
     if (selectedBeneficiary == null) {
       throw AppException('No beneficiary type is selected');

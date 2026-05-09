@@ -324,14 +324,11 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
           isar,
         );
 
-        String? additionalProjectTypeId =
-            projects.first.additionalDetails?.projectType?.id;
+        final resolvedProjectTypeId = resolveProjectTypeId(projects.first);
 
         emit(state.copyWith(
           projectType: projectTypes.projectTypeWrapper?.projectTypes
-              .where((element) =>
-                  element.id ==
-                  (additionalProjectTypeId ?? projects.first.projectTypeId))
+              .where((element) => element.id == resolvedProjectTypeId)
               .toList()
               .firstOrNull,
         ));
@@ -645,11 +642,12 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
             action: ApiOperation.search.toValue(),
             entityName: DashboardResponseModel.schemaName);
 
+        final resolvedProjectType = _getResolvedProjectType(event.model);
         final filteredDashboardConfig = filterDashboardConfig(
             dashboardConfig.isNotEmpty
                 ? dashboardConfig.first.dashboardConfigs
                 : null,
-            event.model.additionalDetails?.projectType?.code ?? "");
+            resolvedProjectType?.code ?? "");
 
         if (filteredDashboardConfig.isNotEmpty &&
             filteredDashboardConfig.first?.enableDashboard == true &&
@@ -778,15 +776,10 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         isar,
       );
 
-      String? additionalProjectTypeId =
-          event.model.additionalDetails?.projectType?.id;
+      final resolvedProjectTypeId = resolveProjectTypeId(event.model);
 
       final selectedProjectType = projectType.projectTypeWrapper?.projectTypes
-          .where(
-            (element) =>
-                element.id ==
-                (additionalProjectTypeId ?? event.model.projectTypeId),
-          )
+          .where((element) => element.id == resolvedProjectTypeId)
           .toList()
           .firstOrNull;
       final currentRunningCycle = selectedProjectType?.cycles
@@ -1397,6 +1390,21 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
     // ✅ Finally, store the full formConfigs (including updated FORM ones)
     await storeSchema(formConfigs);
+  }
+
+  static ProjectTypeModel? _getResolvedProjectType(ProjectModel project) {
+    final primaryType = project.additionalDetails?.projectType;
+    final additionalType = project.additionalDetails?.additionalProjectType;
+
+    final isCombinedSmcItn =
+        primaryType?.type == 'SMC_ITN' && additionalType?.type == 'SMC_ITN';
+
+    return isCombinedSmcItn ? primaryType : additionalType;
+  }
+
+  static String? resolveProjectTypeId(ProjectModel project) {
+    final resolvedType = _getResolvedProjectType(project);
+    return resolvedType?.id ?? project.projectTypeId;
   }
 
   FutureOr<int> _getBatchSize() async {

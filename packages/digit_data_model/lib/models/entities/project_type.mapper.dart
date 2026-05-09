@@ -28,6 +28,9 @@ class ProjectTypeModelMapper extends SubClassMapperBase<ProjectTypeModel> {
   static String? _$id(ProjectTypeModel v) => v.id;
   static const Field<ProjectTypeModel, String> _f$id =
       Field('id', _$id, opt: true);
+  static String? _$type(ProjectTypeModel v) => v.type;
+  static const Field<ProjectTypeModel, String> _f$type =
+      Field('type', _$type, opt: true);
   static String? _$name(ProjectTypeModel v) => v.name;
   static const Field<ProjectTypeModel, String> _f$name =
       Field('name', _$name, opt: true);
@@ -88,6 +91,7 @@ class ProjectTypeModelMapper extends SubClassMapperBase<ProjectTypeModel> {
   final MappableFields<ProjectTypeModel> fields = const {
     #additionalFields: _f$additionalFields,
     #id: _f$id,
+    #type: _f$type,
     #name: _f$name,
     #code: _f$code,
     #group: _f$group,
@@ -120,6 +124,7 @@ class ProjectTypeModelMapper extends SubClassMapperBase<ProjectTypeModel> {
     return ProjectTypeModel(
         additionalFields: data.dec(_f$additionalFields),
         id: data.dec(_f$id),
+        type: data.dec(_f$type),
         name: data.dec(_f$name),
         code: data.dec(_f$code),
         group: data.dec(_f$group),
@@ -214,6 +219,7 @@ abstract class ProjectTypeModelCopyWith<$R, $In extends ProjectTypeModel, $Out>
   $R call(
       {ProjectTypeAdditionalFields? additionalFields,
       String? id,
+      String? type,
       String? name,
       String? code,
       String? group,
@@ -291,6 +297,7 @@ class _ProjectTypeModelCopyWithImpl<$R, $Out>
   $R call(
           {Object? additionalFields = $none,
           Object? id = $none,
+          Object? type = $none,
           Object? name = $none,
           Object? code = $none,
           Object? group = $none,
@@ -310,6 +317,7 @@ class _ProjectTypeModelCopyWithImpl<$R, $Out>
       $apply(FieldCopyWithData({
         if (additionalFields != $none) #additionalFields: additionalFields,
         if (id != $none) #id: id,
+        if (type != $none) #type: type,
         if (name != $none) #name: name,
         if (code != $none) #code: code,
         if (group != $none) #group: group,
@@ -335,6 +343,7 @@ class _ProjectTypeModelCopyWithImpl<$R, $Out>
       additionalFields:
           data.get(#additionalFields, or: $value.additionalFields),
       id: data.get(#id, or: $value.id),
+      type: data.get(#type, or: $value.type),
       name: data.get(#name, or: $value.name),
       code: data.get(#code, or: $value.code),
       group: data.get(#group, or: $value.group),

@@ -9,6 +9,7 @@ class ProjectTypeModel extends EntityModel with ProjectTypeModelMappable {
   static const schemaName = 'ProjectType';
 
   final String? id;
+  final String? type;
   final int? validMinAge;
   final int? validMaxAge;
   final String? name;
@@ -27,6 +28,7 @@ class ProjectTypeModel extends EntityModel with ProjectTypeModelMappable {
   ProjectTypeModel({
     this.additionalFields,
     this.id,
+    this.type,
     this.name,
     this.code,
     this.group,
