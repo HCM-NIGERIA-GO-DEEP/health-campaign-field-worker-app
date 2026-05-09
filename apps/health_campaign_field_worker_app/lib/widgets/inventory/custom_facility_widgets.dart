@@ -150,7 +150,8 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (_facilitiesForProject.isNotEmpty || _isLoadingFacilitiesFromDb) return;
+      if (_facilitiesForProject.isNotEmpty || _isLoadingFacilitiesFromDb)
+        return;
       _loadFacilitiesForCurrentProject(currentLevelProjectFacilities);
     });
   }
@@ -265,12 +266,19 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
     );
 
     final isHfs = context.loggedInUserRoles.any(
-      (role) => role.code == RolesType.healthFacilitySupervisor.toValue(),
+      (role) =>
+          role.code == RolesType.healthFacilitySupervisor.toValue() ||
+          role.code == RolesType.healthFacilityWorker.toValue(),
     );
 
     String? boundaryLevel;
     try {
-      boundaryLevel = context.read<ProjectBloc>().state.selectedProject?.address?.boundaryType;
+      boundaryLevel = context
+          .read<ProjectBloc>()
+          .state
+          .selectedProject
+          ?.address
+          ?.boundaryType;
     } catch (_) {
       boundaryLevel = null;
     }

@@ -33,6 +33,7 @@ class HomeItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.digitTextTheme(context);
+    final iconColor = theme.colorTheme.primary.primary1;
 
     return DigitCard(
         onPressed: onPressed,
@@ -50,6 +51,9 @@ class HomeItemCard extends StatelessWidget {
                   customIcon,
                   width: customIconSize ?? 25,
                   height: customIconSize ?? 25,
+                  colorFilter: onPressed == null
+                      ? ColorFilter.mode(theme.disabledColor, BlendMode.srcIn)
+                      : ColorFilter.mode(iconColor, BlendMode.srcIn),
                 ),
               ),
             ),
@@ -60,7 +64,7 @@ class HomeItemCard extends StatelessWidget {
                 icon,
                 color: onPressed == null
                     ? theme.disabledColor
-                    : theme.colorTheme.primary.primary1,
+                    : iconColor,
                 size: iconSize ?? 40,
               ),
             ),

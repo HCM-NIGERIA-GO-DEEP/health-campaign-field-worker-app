@@ -600,10 +600,9 @@ packages:
   digit_ui_components:
     dependency: "direct main"
     description:
-      name: digit_ui_components
-      sha256: dca1305d280dd65250beb0a9bbb9d6d04cc8f848e7134c5ebc5839ec75acd785
-      url: "https://pub.dev"
-    source: hosted
+      path: "../../packages/digit_ui_components"
+      relative: true
+    source: path
     version: "0.3.0+3"
   dio:
     dependency: "direct main"

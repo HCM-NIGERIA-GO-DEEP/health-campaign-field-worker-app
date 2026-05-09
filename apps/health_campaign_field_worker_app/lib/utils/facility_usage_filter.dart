@@ -110,11 +110,14 @@ FacilityUsageResolution resolveFacilityUsageForInventory({
     }
   }
 
-  // final additionalUsage =  null;
+  final additionalUsage = (usage == Constants.healthFacility &&
+          boundaryType == Constants.stateBoundaryLevel)
+      ? Constants.districtFacility
+      : null;
 
   return FacilityUsageResolution(
     usage: usage,
-    additionalUsage: null,
+    additionalUsage: additionalUsage,
     showTeamOption: showTeamOption,
   );
 }
