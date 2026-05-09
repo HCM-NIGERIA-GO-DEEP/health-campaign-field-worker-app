@@ -3896,71 +3896,7 @@ final dynamic sampleFlows = {
               ],
               "condition": {
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec4==NO"
-              }
-            },
-            {
-              "actions": [
-                {
-                  "actionType": "NAVIGATION",
-                  "properties": {
-                    "data": [
-                      {"key": "ec1", "value": "{{eligibilityChecklist.ec1}}"},
-                      {"key": "ec2", "value": "{{eligibilityChecklist.ec2}}"},
-                      {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
-                      {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
-                      {"key": "sourceFlow", "value": "CHECKLIST"},
-                      {
-                        "key": "selectedIndividualClientReferenceId",
-                        "value":
-                            "{{navigation.selectedIndividualClientReferenceId}}"
-                      },
-                      {
-                        "key": "selectedIndividualIdentifierId",
-                        "value": "{{navigation.selectedIndividualIdentifierId}}"
-                      },
-                      {
-                        "key": "HouseholdClientReferenceId",
-                        "value": "{{ navigation.HouseholdClientReferenceId }}"
-                      },
-                      {
-                        "key": "ProjectBeneficiaryClientReferenceId",
-                        "value":
-                            "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                      },
-                      {
-                        "key": "selectedIndividualName",
-                        "value": "{{navigation.selectedIndividualName}}"
-                      },
-                      {
-                        "key": "selectedIndividualGender",
-                        "value": "{{navigation.selectedIndividualGender}}"
-                      },
-                      {
-                        "key": "selectedIndividualAgeInMonths",
-                        "value": "{{navigation.selectedIndividualAgeInMonths}}"
-                      },
-                      {
-                        "key": "cycleIndex",
-                        "value": "{{navigation.cycleIndex}}"
-                      },
-                    ],
-                    "name": "REFER_BENEFICIARY",
-                    "type": "FORM",
-                    "onError": [
-                      {
-                        "actionType": "SHOW_TOAST",
-                        "properties": {"message": "Navigation failed."}
-                      }
-                    ],
-                    "navigationMode": "popUntilAndPush",
-                    "popUntilPageName": "householdOverview"
-                  }
-                }
-              ],
-              "condition": {
-                "expression":
-                    "eligibilityChecklist.ec1==YES && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec4==YES"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec4==NO && ((eligibilityChecklist.ec3==YES && {{navigation.selectedIndividualAgeInMonths}}>=3 && {{navigation.selectedIndividualAgeInMonths}}<=59) || (eligibilityChecklist.ec3==NO && eligibilityChecklist.ec3a==NO))"
               }
             },
             {
@@ -4051,7 +3987,7 @@ final dynamic sampleFlows = {
               ],
               "condition": {
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec4==YES"
+                    "eligibilityChecklist.ec4==YES && (eligibilityChecklist.ec3==YES && ({{navigation.selectedIndividualAgeInMonths}}<3 || {{navigation.selectedIndividualAgeInMonths}}>60))"
               }
             },
             {
@@ -4060,6 +3996,12 @@ final dynamic sampleFlows = {
                   "actionType": "NAVIGATION",
                   "properties": {
                     "data": [
+                      {"key": "ec1", "value": "{{eligibilityChecklist.ec1}}"},
+                      {"key": "ec2", "value": "{{eligibilityChecklist.ec2}}"},
+                      {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
+                      {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
+                      {"key": "ec3a", "value": "{{eligibilityChecklist.ec3a}}"},
+                      {"key": "sourceFlow", "value": "CHECKLIST"},
                       {
                         "key": "selectedIndividualClientReferenceId",
                         "value":
@@ -4094,14 +4036,52 @@ final dynamic sampleFlows = {
                         "key": "cycleIndex",
                         "value": "{{navigation.cycleIndex}}"
                       },
-                      {"key": "ec1", "value": "{{eligibilityChecklist.ec1}}"},
-                      {"key": "ec2", "value": "{{eligibilityChecklist.ec2}}"},
-                      {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
-                      {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
-                      {"key": "sourceFlow", "value": "CHECKLIST"},
                     ],
                     "name": "REFER_BENEFICIARY",
                     "type": "FORM",
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {"message": "Navigation failed."}
+                      }
+                    ],
+                    "navigationMode": "popUntilAndPush",
+                    "popUntilPageName": "householdOverview"
+                  }
+                }
+              ],
+              "condition": {
+                "expression":
+                    "(eligibilityChecklist.ec1==YES || eligibilityChecklist.ec2==YES || (eligibilityChecklist.ec3==NO && eligibilityChecklist.ec3a==YES))"
+              }
+            },
+            {
+              "actions": [
+                {
+                  "actionType": "NAVIGATION",
+                  "properties": {
+                    "data": [
+                      {
+                        "key": "selectedIndividualClientReferenceId",
+                        "value":
+                            "{{navigation.selectedIndividualClientReferenceId}}"
+                      },
+                      {
+                        "key": "selectedIndividualIdentifierId",
+                        "value": "{{navigation.selectedIndividualIdentifierId}}"
+                      },
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value": "{{ navigation.HouseholdClientReferenceId }}"
+                      },
+                      {
+                        "key": "ProjectBeneficiaryClientReferenceId",
+                        "value":
+                            "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      }
+                    ],
+                    "name": "beneficiaryDetails",
+                    "type": "TEMPLATE",
                     "onError": [
                       {
                         "actionType": "SHOW_TOAST",
@@ -4204,11 +4184,6 @@ final dynamic sampleFlows = {
               "includeInSummary": true,
               "required.message":
                   "APPONE_ELIGIBILITYCHECKLIST_QUESTION_2_LABEL_REQUIRED_MESSAGE",
-              "visibilityCondition": {
-                "expression": [
-                  {"condition": "eligibilityChecklist.ec1==YES"}
-                ]
-              }
             },
             {
               "type": "string",
@@ -4252,6 +4227,53 @@ final dynamic sampleFlows = {
               "required.message":
                   "APPONE_ELIGIBILITYCHECKLIST_QUESTION_3_LABEL_REQUIRED_MESSAGE"
             },
+             {
+              "type": "string",
+              "enums": [
+                {"code": "YES", "name": "QUESTION_3A_YES"},
+                {"code": "NO", "name": "QUESTION_3A_NO"}
+              ],
+              "label": "APPONE_ELIGIBILITYCHECKLIST_QUESTION_3A_LABEL",
+              "order": 4,
+              "value": "",
+              "format": "radio",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "required": true,
+              "fieldName": "ec3a",
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_ELIGIBILITYCHECKLIST_QUESTION_3A_LABEL_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": "",
+              "includeInForm": true,
+              "isMultiSelect": false,
+              "dropDownOptions": [
+                {"code": "YES", "name": "QUESTION_3A_YES"},
+                {"code": "NO", "name": "QUESTION_3A_NO"}
+              ],
+              "includeInSummary": true,
+              "required.message":
+                  "APPONE_ELIGIBILITYCHECKLIST_QUESTION_3A_LABEL_REQUIRED_MESSAGE",
+                  "visibilityCondition": {
+                "expression": [
+                  {"condition": "eligibilityChecklist.ec3==NO"}
+                ]
+              }
+            },
             {
               "type": "string",
               "enums": [
@@ -4259,7 +4281,7 @@ final dynamic sampleFlows = {
                 {"code": "NO", "name": "QUESTION_4_NO"}
               ],
               "label": "APPONE_ELIGIBILITYCHECKLIST_QUESTION_4_LABEL",
-              "order": 3,
+              "order": 4,
               "value": "",
               "format": "radio",
               "hidden": false,
@@ -4305,14 +4327,19 @@ final dynamic sampleFlows = {
               {
                 "value": "To Administer",
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec4==NO"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec4==NO && ((eligibilityChecklist.ec3==YES && {{navigation.selectedIndividualAgeInMonths}}>=3 && {{navigation.selectedIndividualAgeInMonths}}<=59) || (eligibilityChecklist.ec3==NO && eligibilityChecklist.ec3a==NO))"
               },
               {
-                "value": "Ineligible flow",
+                "value": "referral flow",
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec4==YES"
+                    "(eligibilityChecklist.ec1==YES || eligibilityChecklist.ec2==YES || (eligibilityChecklist.ec3==NO && eligibilityChecklist.ec3a==YES))"
               },
-              {"value": "referral flow", "expression": "DEFAULT"}
+              {
+                "value": "Ineligible Flow",
+                "expression":
+                    "eligibilityChecklist.ec4==YES && (eligibilityChecklist.ec3==YES && ({{navigation.selectedIndividualAgeInMonths}}<3 || {{navigation.selectedIndividualAgeInMonths}}>60))"
+              },
+              {"value": "To Administer", "expression": "DEFAULT"}
             ],
             "description": "APPONE_ELIGIBILITYCHECKLIST_ALERT_DESCRIPTION",
             "primaryActionLabel": "ACTION_SUBMIT",
@@ -4968,9 +4995,9 @@ final dynamic sampleFlows = {
               "schemaCode": null,
               "systemDate": false,
               "lengthRange": {
-                "maxLength": 10,
-                "minLength": 10,
-                "errorMessage": "MOBILE_LENGTH_10_DIGIT_ERROR_ADDMEMBER"
+                "maxLength": 11,
+                "minLength": 11,
+                "errorMessage": "MOBILE_LENGTH_11_DIGIT_ERROR_ADDMEMBER"
               },
               "validations": [
                 {
@@ -4980,13 +5007,13 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "minLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGIT_ERROR_ADDMEMBER"
+                  "value": 11,
+                  "message": "MOBILE_LENGTH_11_DIGIT_ERROR_ADDMEMBER"
                 },
                 {
                   "type": "maxLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGIT_ERROR_ADDMEMBER"
+                  "value": 11,
+                  "message": "MOBILE_LENGTH_11_DIGIT_ERROR_ADDMEMBER"
                 }
               ],
               "errorMessage": "",
@@ -6172,7 +6199,7 @@ final dynamic sampleFlows = {
               "order": 5,
               "value": "",
               "format": "dob",
-              "hidden": false,
+              "hidden": true,
               "isMdms": false,
               "tooltip":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_dobPicker_tooltip",
@@ -6263,9 +6290,9 @@ final dynamic sampleFlows = {
               "schemaCode": null,
               "systemDate": false,
               "lengthRange": {
-                "maxLength": 10,
-                "minLength": 10,
-                "errorMessage": "MOBILE_LENGTH_10_DIGIT_ERROR"
+                "maxLength": 11,
+                "minLength": 11,
+                "errorMessage": "MOBILE_LENGTH_11_DIGIT_ERROR"
               },
               "validations": [
                 {
@@ -6275,13 +6302,13 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "minLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGIT_ERROR"
+                  "value": 11,
+                  "message": "MOBILE_LENGTH_11_DIGIT_ERROR"
                 },
                 {
                   "type": "maxLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGIT_ERROR"
+                  "value": 11,
+                  "message": "MOBILE_LENGTH_11_DIGIT_ERROR"
                 }
               ],
               "errorMessage": "",
@@ -6616,7 +6643,7 @@ final dynamic sampleFlows = {
               "label": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount",
               "order": 2,
               "range": {
-                "max": "10",
+                "max": "100",
                 "min": "1",
                 "errorMessage":
                     "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount_max_message"
@@ -6651,7 +6678,7 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "max",
-                  "value": "10",
+                  "value": "100",
                   "message":
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount_max_message"
                 }
