@@ -56,6 +56,7 @@ FacilityUsageResolution resolveFacilityUsageForInventory({
           if (isFromField) {
             usage = Constants.healthFacility;
           } else {
+            showTeamOption = true;
             usage = 'None';
           }
         } else {
@@ -142,8 +143,9 @@ List<ProjectFacilityModel> filterProjectFacilitiesToCurrentLevel(
 ///
 /// When [usage] is non-empty, scopes to [filterProjectFacilitiesToCurrentLevel]
 /// first, then restricts to facility IDs whose usage matches [usage] or
-/// [additionalUsage]. While [facilitiesFromDb] is still empty and not loading,
-/// returns current-level facilities unchanged so the UI can load DB rows first.
+/// [additionalUsage]. When [facilitiesFromDb] is empty, this returns an empty
+/// list so callers can wait for DB-backed usage filtering instead of showing an
+/// unfiltered current-level fallback.
 List<ProjectFacilityModel> filterProjectFacilitiesByFacilityUsage({
   required List<ProjectFacilityModel> projectFacilities,
   required List<FacilityModel> facilitiesFromDb,
@@ -165,12 +167,8 @@ List<ProjectFacilityModel> filterProjectFacilitiesByFacilityUsage({
     return currentLevelProjectFacilities;
   }
 
-  if (facilitiesFromDb.isEmpty && !isLoadingFacilitiesFromDb) {
-    return currentLevelProjectFacilities;
-  }
-
   if (facilitiesFromDb.isEmpty) {
-    return currentLevelProjectFacilities;
+    return <ProjectFacilityModel>[];
   }
 
   final primaryUsage = usage.trim();
