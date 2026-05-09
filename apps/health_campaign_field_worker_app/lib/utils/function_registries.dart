@@ -555,7 +555,7 @@ class FunctionRegistries {
       if (project == null) return false;
       final primary = project.additionalDetails?.projectType?.type;
       final additional = project.additionalDetails?.additionalProjectType?.type;
-      return primary == 'SMC_ITN' && additional == 'SMC_ITN';
+      return primary == null || primary == 'SMC_ITN' || additional == 'SMC_ITN';
       // return true;
     });
 
