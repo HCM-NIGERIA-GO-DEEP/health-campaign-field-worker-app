@@ -704,6 +704,51 @@ class FunctionRegistries {
       });
       return false;
     });
+
+    FunctionRegistry.register('canAddMember', (args, stateData) {
+      if (args.length < 2) return true;
+
+      final additionalFieldsArg = args[0];
+      final individualsArg = args[1];
+
+      int childrenCount = 0;
+
+      // Extract childrenCount from additionalFields
+      if (additionalFieldsArg != null && additionalFieldsArg is Map) {
+        final fields = additionalFieldsArg['fields'];
+        if (fields != null && fields is List) {
+          for (var field in fields) {
+            if (field is Map && field['key'] == 'childrenCount') {
+              childrenCount = int.tryParse(field['value'].toString()) ?? 0;
+              break;
+            }
+          }
+        }
+      }
+
+      // If childrenCount is 0 or negative, allow adding
+      if (childrenCount <= 0) return false;
+
+      // If individuals is null, allow adding
+      if (individualsArg == null) return true;
+
+      int addedIndividualsCount = 0;
+      int addedChildrenCount = 0;
+
+      if (individualsArg is List) {
+        addedIndividualsCount = individualsArg.length;
+        // Subtract 1 for the head member (head is not a child)
+        addedChildrenCount =
+            addedIndividualsCount > 0 ? addedIndividualsCount - 1 : 0;
+      }
+
+      if (kDebugMode) {
+        print(
+            'canAddMember - childrenCount: $childrenCount, addedIndividualsCount: $addedIndividualsCount, addedChildrenCount: $addedChildrenCount');
+      }
+
+      return addedChildrenCount < childrenCount;
+    });
   }
 }
 

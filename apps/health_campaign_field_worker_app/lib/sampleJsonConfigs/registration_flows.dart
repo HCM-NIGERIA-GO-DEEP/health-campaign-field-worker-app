@@ -856,48 +856,48 @@ final dynamic sampleFlows = {
           "type": "template",
           "format": "card",
           "children": [
-            // {
-            //   "format": "row",
-            //   "children": [
-            //     {
-            //       "type": "template",
-            //       "label": "REGISTRATION_EDIT_HOUSEHOLD_BUTTON_LABEL",
-            //       "format": "button",
-            //       "onAction": [
-            //         {
-            //           "actionType": "REVERSE_TRANSFORM",
-            //           "properties": {
-            //             "configName": "beneficiaryRegistration",
-            //             "entityTypes": ["HouseholdModel"]
-            //           }
-            //         },
-            //         {
-            //           "actionType": "NAVIGATION",
-            //           "properties": {
-            //             "data": [
-            //               {
-            //                 "key": "HouseholdClientReferenceId",
-            //                 "value": "{{ context.household.clientReferenceId }}"
-            //               },
-            //               {"key": "isEdit", "value": "true"}
-            //             ],
-            //             "name": "HOUSEHOLD",
-            //             "type": "FORM"
-            //           }
-            //         }
-            //       ],
-            //       "fieldName": "householdEditButton",
-            //       "properties": {
-            //         "icon": "Edit",
-            //         "size": "large",
-            //         "type": "tertiary",
-            //         "mainAxisSize": "min",
-            //         "mainAxisAlignment": "center"
-            //       }
-            //     }
-            //   ],
-            //   "properties": {"mainAxisAlignment": "end"}
-            // },
+            {
+              "format": "row",
+              "children": [
+                {
+                  "type": "template",
+                  "label": "REGISTRATION_EDIT_HOUSEHOLD_BUTTON_LABEL",
+                  "format": "button",
+                  "onAction": [
+                    {
+                      "actionType": "REVERSE_TRANSFORM",
+                      "properties": {
+                        "configName": "beneficiaryRegistration",
+                        "entityTypes": ["HouseholdModel"]
+                      }
+                    },
+                    {
+                      "actionType": "NAVIGATION",
+                      "properties": {
+                        "data": [
+                          {
+                            "key": "HouseholdClientReferenceId",
+                            "value": "{{ context.household.clientReferenceId }}"
+                          },
+                          {"key": "isEdit", "value": "true"}
+                        ],
+                        "name": "HOUSEHOLD",
+                        "type": "FORM"
+                      }
+                    }
+                  ],
+                  "fieldName": "householdEditButton",
+                  "properties": {
+                    "icon": "Edit",
+                    "size": "large",
+                    "type": "tertiary",
+                    "mainAxisSize": "min",
+                    "mainAxisAlignment": "center"
+                  }
+                }
+              ],
+              "properties": {"mainAxisAlignment": "end"}
+            },
             {
               "data": [
                 {
@@ -1498,7 +1498,7 @@ final dynamic sampleFlows = {
               "label": "ADD_MEMBER",
               "format": "button",
               "visible":
-                  "{{fn:isSmcPresent()}}==true && {{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==true",
+                  "{{fn:isSmcPresent()}}==true && {{fn:canAddMember(contextData.0.household.HouseholdModel.additionalFields, contextData.0.members)}} && {{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==true",
               "onAction": [
                 {
                   "actionType": "NAVIGATION",
@@ -1533,7 +1533,7 @@ final dynamic sampleFlows = {
               "icon": "AddIcon",
               "type": "template",
               "visible":
-                  "{{fn:isSmcPresent()}}==true && {{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==false",
+                  "{{fn:isSmcPresent()}}==true && {{fn:canAddMember(contextData.0.household.HouseholdModel.additionalFields, contextData.0.members)}} && {{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==false",
               "label": "ADD_MEMBER",
               "format": "actionPopup",
               "fieldName": "beneficiaryIdMinCheck",
@@ -4269,7 +4269,7 @@ final dynamic sampleFlows = {
               "required.message":
                   "APPONE_ELIGIBILITYCHECKLIST_QUESTION_3_LABEL_REQUIRED_MESSAGE"
             },
-             {
+            {
               "type": "string",
               "enums": [
                 {"code": "YES", "name": "QUESTION_3A_YES"},
@@ -4310,7 +4310,7 @@ final dynamic sampleFlows = {
               "includeInSummary": true,
               "required.message":
                   "APPONE_ELIGIBILITYCHECKLIST_QUESTION_3A_LABEL_REQUIRED_MESSAGE",
-                  "visibilityCondition": {
+              "visibilityCondition": {
                 "expression": [
                   {"condition": "eligibilityChecklist.ec3==NO"}
                 ]
@@ -4927,6 +4927,11 @@ final dynamic sampleFlows = {
               "format": "dob",
               "hidden": false,
               "isMdms": false,
+              "visibilityCondition": {
+                "expression": [
+                  {"condition": "navigation.isHead==false"}
+                ]
+              },
               "tooltip":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_dobPicker_tooltip_addmember",
               "ageRange": {
