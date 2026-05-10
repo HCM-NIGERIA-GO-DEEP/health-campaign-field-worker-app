@@ -403,9 +403,9 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
     final projectFacilities = await projectFacilityRemoteRepository.search(
       ProjectFacilitySearchModel(
-          // projectId: [project.id],
-          // boundaryTypes: boundaryTypes,
-          ),
+        projectId: [project.id],
+        // boundaryTypes: boundaryTypes,
+      ),
     );
 
     await projectFacilityLocalRepository.bulkCreate(projectFacilities);
@@ -1396,8 +1396,9 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     final primaryType = project.additionalDetails?.projectType;
     final additionalType = project.additionalDetails?.additionalProjectType;
 
-    final isCombinedSmcItn =
-        primaryType?.type == null || primaryType?.type == 'SMC_ITN' || additionalType?.type == 'SMC_ITN';
+    final isCombinedSmcItn = primaryType?.type == null ||
+        primaryType?.type == 'SMC_ITN' ||
+        additionalType?.type == 'SMC_ITN';
 
     return isCombinedSmcItn ? primaryType : additionalType;
   }

@@ -228,10 +228,12 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
 
   @override
   Widget build(BuildContext context) {
-    final navigationParams =
-        FlowCrudStateRegistry().getNavigationParams('FORM::$pageSchema') ??
-            FlowCrudStateRegistry().getNavigationParams(pageSchema) ??
-            {};
+    // Union both keys — plain [pageSchema] often holds stockEntryType from
+    // NAVIGATION actions; a sparse `FORM::` map must not hide those keys.
+    final navigationParams = <String, dynamic>{
+      ...?FlowCrudStateRegistry().getNavigationParams('FORM::$pageSchema'),
+      ...?FlowCrudStateRegistry().getNavigationParams(pageSchema),
+    };
     final transactionType =
         navigationParams['transactionType']?.toString() ?? '';
     final stockEntryType = navigationParams['stockEntryType']?.toString() ?? '';
@@ -327,10 +329,10 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
       isHfs: isHfs,
     );
 
-    final currentLevelForLoad =
-        filterProjectFacilitiesToCurrentLevel(typedProjectFacilities);
+    // final currentLevelForLoad =
+    //     filterProjectFacilitiesToCurrentLevel(typedProjectFacilities);
     _scheduleFacilityDetailsLoadIfNeeded(
-      currentLevelForLoad,
+      typedProjectFacilities,
       usageResolution.usage,
     );
 

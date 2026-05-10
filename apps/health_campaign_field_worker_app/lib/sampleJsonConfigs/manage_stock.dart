@@ -715,6 +715,9 @@ final dynamic sampleInventoryFlows = {
           "description": "APPONE_INVENTORY_STOCKDETAILS_SCREEN_DESCRIPTION",
           "actionLabel": "APPONE_INVENTORY_STOCKDETAILS_ACTION_BUTTON_LABEL",
           "properties": [
+            // Product list: LGA usage → Bednet SKUs; Health Facility → SPAQ in SKU/variation;
+            // intersection of source (facilityFromWhich + source showTeamOption) and dest (facilityToWhich).
+            // Nav: inventoryProductSourceFacilityId, inventoryProductDestinationFacilityId.
             {
               "type": "dynamic",
               "label": "APPONE_INVENTORY_PRODUCTDETAILS_LABEL",

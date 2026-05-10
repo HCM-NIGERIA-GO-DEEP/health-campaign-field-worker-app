@@ -13,6 +13,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
+import '../../blocs/project/project.dart';
+import '../../models/entities/roles_type.dart';
+import '../../utils/extensions/extensions.dart';
+import '../../utils/facility_usage_filter.dart';
+import '../../utils/inventory_product_filter.dart';
 import '../../utils/stock_calculation_utils.dart';
 import '../localized.dart';
 
@@ -45,6 +50,14 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
   Map<String, double> _stockInHandMap = {};
   bool _stockSearchTriggered = false;
 
+  /// Last published source|dest composite (avoid spamming navigation registry).
+  String? _lastPublishedInventoryNavKey;
+
+  /// Cached [FacilityModel]s by id for usage-based product filtering.
+  final Map<String, FacilityModel> _facilityByIdCache = {};
+
+  bool _facilityUsageLoadInFlight = false;
+
   @override
   void initState() {
     super.initState();
@@ -52,72 +65,312 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
     // It will be called in build() when localizations is ready
   }
 
-  /// Gets the facility ID from the previous page's form data (warehouseDetails.facilityToWhich)
-  /// Reads from FormsBloc state which stores all page data
-  String? _getFacilityIdFromFormData(BuildContext context) {
-    // For stock-in-hand, we need the source facility (where stock is held)
-    // For ISSUED: source = current user's facility (getUserFacilityId)
-    // For RECEIPT/others: source = facilityToWhich
-    final navigationParams = FlowCrudStateRegistry()
-            .getNavigationParams('FORM::${widget.pageSchema}') ??
-        FlowCrudStateRegistry().getNavigationParams(widget.pageSchema) ??
-        {};
-    final transactionType =
-        navigationParams['transactionType']?.toString() ?? '';
-    final isIssue =
-        transactionType == 'DISPATCHED' || transactionType == 'ISSUED';
-    final isReturn = transactionType == 'RETURNED';
+  /// Merge both registry keys: NAVIGATION often stores under plain [pageSchema] only;
+  /// plain map should win on duplicate keys so `stockEntryType` is never dropped.
+  Map<String, dynamic> _navigationParams(BuildContext context) {
+    final formKey = 'FORM::${widget.pageSchema}';
+    final plainKey = widget.pageSchema;
+    return {
+      ...?FlowCrudStateRegistry().getNavigationParams(formKey),
+      ...?FlowCrudStateRegistry().getNavigationParams(plainKey),
+    };
+  }
 
-    // For issue, use current user's facility directly
-    if (isIssue || isReturn) {
-      final stateData = widget.stateData is CrudStateData
-          ? widget.stateData as CrudStateData
-          : CrudStateData({}, []);
-      final userFacilityId = FunctionRegistry.call(
-        'getUserFacilityId',
-        [],
-        stateData,
-      );
-      if (userFacilityId != null && userFacilityId.toString().isNotEmpty) {
-        debugPrint(
-            'ProductSelectionCard: Using getUserFacilityId for issue: $userFacilityId');
-        return userFacilityId.toString();
-      }
+  String? _projectBoundaryType(BuildContext context) {
+    try {
+      return context.read<ProjectBloc>().state.selectedProject?.address?.boundaryType;
+    } catch (_) {
+      return null;
     }
+  }
 
+  /// Reads destination (`facilityToWhich`) and raw source (`facilityFromWhich`) ids from form state.
+  ({String? destinationId, String? sourceRawId}) _readSourceDestinationFacilityIds(
+    BuildContext context,
+  ) {
     final formsState = context.read<FormsBloc>().state;
     final schema = formsState.cachedSchemas[widget.pageSchema];
 
+    String? dest;
+    String? sourceRaw;
+
     if (schema != null) {
-      final warehouseDetailsPage = schema.pages['warehouseDetails'];
-      if (warehouseDetailsPage?.properties != null) {
-        final facilityField =
-            warehouseDetailsPage!.properties!['facilityToWhich'];
-        if (facilityField?.value != null) {
-          debugPrint(
-              'ProductSelectionCard: Found facilityId from FormsBloc: ${facilityField!.value}');
-          return facilityField.value.toString();
-        }
+      final warehouse = schema.pages['warehouseDetails'];
+      final toField = warehouse?.properties?['facilityToWhich'];
+      if (toField?.value != null && toField!.value.toString().isNotEmpty) {
+        dest = toField.value.toString();
+      }
+
+      final stock = schema.pages['stockDetails'];
+      final fromField = stock?.properties?['facilityFromWhich'];
+      if (fromField?.value != null &&
+          fromField!.value.toString().isNotEmpty) {
+        sourceRaw = fromField.value.toString();
       }
     }
 
-    // Fallback: Try stateData.formData
     final formData = widget.stateData?.formData as Map<String, dynamic>?;
     if (formData != null) {
-      final facilityId = formData['warehouseDetails.facilityToWhich'] ??
-          formData['facilityToWhich'] ??
-          (formData['warehouseDetails']
-              as Map<String, dynamic>?)?['facilityToWhich'];
+      dest ??= _stringFromForm(formData, [
+        'warehouseDetails.facilityToWhich',
+        'facilityToWhich',
+      ], parentKey: 'warehouseDetails', field: 'facilityToWhich');
 
-      if (facilityId != null) {
-        debugPrint(
-            'ProductSelectionCard: Found facilityId from formData: $facilityId');
-        return facilityId.toString();
-      }
+      sourceRaw ??= _stringFromForm(formData, [
+        'stockDetails.facilityFromWhich',
+        'facilityFromWhich',
+      ], parentKey: 'stockDetails', field: 'facilityFromWhich');
     }
 
-    debugPrint('ProductSelectionCard: facilityId not found');
+    return (destinationId: dest, sourceRawId: sourceRaw);
+  }
+
+  String? _stringFromForm(
+    Map<String, dynamic> formData,
+    List<String> flatKeys, {
+    String? parentKey,
+    String? field,
+  }) {
+    for (final k in flatKeys) {
+      final v = formData[k];
+      if (v != null && v.toString().isNotEmpty) return v.toString();
+    }
+    if (parentKey != null && field != null) {
+      final nested = formData[parentKey];
+      if (nested is Map<String, dynamic>) {
+        final v = nested[field];
+        if (v != null && v.toString().isNotEmpty) return v.toString();
+      }
+    }
     return null;
+  }
+
+  String? _getUserFacilityIdString() {
+    final stateData = widget.stateData is CrudStateData
+        ? widget.stateData as CrudStateData
+        : CrudStateData({}, []);
+    final id = FunctionRegistry.call('getUserFacilityId', [], stateData);
+    if (id == null || id.toString().isEmpty) return null;
+    return id.toString();
+  }
+
+  /// Source facility id used for stock balances / issuance — physical site, not DELIVERY_TEAM.
+  String? _resolvePhysicalSourceFacilityId(
+    BuildContext context, {
+    required FacilityUsageResolution sourceResolution,
+    required String? sourceRawFromForm,
+  }) {
+    final raw = sourceRawFromForm?.trim();
+    if (raw != null &&
+        raw.isNotEmpty &&
+        !isInventoryDeliveryTeamCode(raw)) {
+      return raw;
+    }
+    if (sourceResolution.showTeamOption ||
+        isInventoryDeliveryTeamCode(raw)) {
+      final u = _getUserFacilityIdString();
+      if (u != null && u.isNotEmpty) {
+        debugPrint(
+            'ProductSelectionCard: physical source = getUserFacilityId (team/source rule): $u');
+        return u;
+      }
+    }
+    final fallback = _getUserFacilityIdString();
+    if (fallback != null && fallback.isNotEmpty) {
+      debugPrint(
+          'ProductSelectionCard: physical source fallback getUserFacilityId: $fallback');
+      return fallback;
+    }
+    return raw;
+  }
+
+  Future<void> _ensureFacilitiesLoadedForUsage(
+    BuildContext context,
+    List<String> ids,
+  ) async {
+    final normalized = ids
+        .where((e) => e.isNotEmpty && !isInventoryDeliveryTeamCode(e))
+        .toSet()
+        .toList();
+    final missing =
+        normalized.where((id) => !_facilityByIdCache.containsKey(id)).toList();
+    if (missing.isEmpty) return;
+    if (_facilityUsageLoadInFlight) return;
+    _facilityUsageLoadInFlight = true;
+
+    try {
+      final repo =
+          context.read<LocalRepository<FacilityModel, FacilitySearchModel>>();
+      final rows = await repo.search(FacilitySearchModel(id: missing));
+      if (!mounted) return;
+      setState(() {
+        for (final f in rows) {
+          _facilityByIdCache[f.id] = f;
+        }
+      });
+    } catch (e, st) {
+      debugPrint('ProductSelectionCard: facility usage load failed: $e\n$st');
+    } finally {
+      _facilityUsageLoadInFlight = false;
+    }
+  }
+
+  /// Combined source + destination usage filtering (see [filterProductVariantsBySourceAndDestinationUsage]).
+  bool _pendingFacilityUsageLoad(String? facilityId) {
+    if (facilityId == null || facilityId.isEmpty) return false;
+    if (isInventoryDeliveryTeamCode(facilityId)) return false;
+    return !_facilityByIdCache.containsKey(facilityId);
+  }
+
+  List<ProductVariantModel> _filterProductVariantsByInventoryRules(
+    BuildContext context,
+    List<ProductVariantModel> variants,
+  ) {
+    final nav = _navigationParams(context);
+    final stockEntryType = nav['stockEntryType']?.toString() ?? '';
+    final transactionType = nav['transactionType']?.toString() ?? '';
+
+    final roles = context.loggedInUserRoles;
+    final isWareHouseMgr =
+        roles.any((r) => r.code == RolesType.warehouseManager.toValue());
+    final isDistributor =
+        roles.any((r) => r.code == RolesType.distributor.toValue());
+    final isCommunityDistributor =
+        roles.any((r) => r.code == RolesType.communityDistributor.toValue());
+    final isHfs = roles.any(
+      (r) => r.code == RolesType.healthFacilitySupervisor.toValue(),
+    );
+
+    final boundaryType = _projectBoundaryType(context);
+
+    final sourceResolution = resolveFacilityUsageForInventory(
+      stockEntryType: stockEntryType,
+      transactionType: transactionType,
+      isToField: false,
+      isFromField: true,
+      boundaryType: boundaryType,
+      isWareHouseMgr: isWareHouseMgr,
+      isDistributor: isDistributor,
+      isCommunityDistributor: isCommunityDistributor,
+      isHfs: isHfs,
+    );
+
+    final destResolution = resolveFacilityUsageForInventory(
+      stockEntryType: stockEntryType,
+      transactionType: transactionType,
+      isToField: true,
+      isFromField: false,
+      boundaryType: boundaryType,
+      isWareHouseMgr: isWareHouseMgr,
+      isDistributor: isDistributor,
+      isCommunityDistributor: isCommunityDistributor,
+      isHfs: isHfs,
+    );
+
+    final picks = _readSourceDestinationFacilityIds(context);
+    final physicalSourceId = _resolvePhysicalSourceFacilityId(
+      context,
+      sourceResolution: sourceResolution,
+      sourceRawFromForm: picks.sourceRawId,
+    );
+    final destinationId = picks.destinationId;
+
+    if (_pendingFacilityUsageLoad(physicalSourceId) ||
+        _pendingFacilityUsageLoad(destinationId)) {
+      debugPrint(
+        'ProductSelectionCard: waiting for facility usage load '
+        '(source=$physicalSourceId, dest=$destinationId)',
+      );
+      return <ProductVariantModel>[];
+    }
+
+    final sourceUsage = physicalSourceId != null
+        ? _facilityByIdCache[physicalSourceId]?.usage
+        : null;
+    final destUsage =
+        destinationId != null ? _facilityByIdCache[destinationId]?.usage : null;
+
+    debugPrint(
+      'ProductSelectionCard: filter usages — sourceId=$physicalSourceId '
+      'usage=$sourceUsage (showTeamOption=${sourceResolution.showTeamOption}), '
+      'destId=$destinationId usage=$destUsage (dest showTeamOption ignored=${destResolution.showTeamOption})',
+    );
+
+    return filterProductVariantsBySourceAndDestinationUsage(
+      variants: variants,
+      sourceFacilityUsage: sourceUsage,
+      destinationFacilityUsage: destUsage,
+    );
+  }
+
+  /// Publishes source + destination facility ids for downstream templates.
+  ///
+  /// Must union **both** `FORM::<schema>` and `<schema>` maps before writing:
+  /// [FlowCrudStateRegistry.updateNavigationParams] replaces the entire map; flow
+  /// often stores `stockEntryType` only on the plain key. Writing only to
+  /// `FORM::` with an empty merge previously wiped ISSUED context — facility
+  /// dropdowns then resolved wrong usage (source vs destination).
+  void _publishInventoryFacilitiesToNavigation({
+    String? physicalSourceId,
+    String? destinationId,
+  }) {
+    final composite = '${physicalSourceId ?? ''}|${destinationId ?? ''}';
+    if (composite == _lastPublishedInventoryNavKey) return;
+    _lastPublishedInventoryNavKey = composite;
+
+    final formKey = 'FORM::${widget.pageSchema}';
+    final plainKey = widget.pageSchema;
+    final mergedBase = <String, dynamic>{
+      ...?FlowCrudStateRegistry().getNavigationParams(formKey),
+      ...?FlowCrudStateRegistry().getNavigationParams(plainKey),
+    };
+    final nav = <String, dynamic>{
+      ...mergedBase,
+      'inventoryProductSourceFacilityId': physicalSourceId,
+      'inventoryProductDestinationFacilityId': destinationId,
+      'inventoryProductFilterFacilityId': physicalSourceId,
+      'warehouseFacilityToWhich': destinationId,
+    };
+
+    FlowCrudStateRegistry().updateNavigationParams(formKey, nav);
+    FlowCrudStateRegistry().updateNavigationParams(plainKey, nav);
+  }
+
+  /// Stock search: balances at the physical **source** facility.
+  String? _getFacilityIdFromFormData(BuildContext context) {
+    final nav = _navigationParams(context);
+    final stockEntryType = nav['stockEntryType']?.toString() ?? '';
+    final transactionType = nav['transactionType']?.toString() ?? '';
+
+    final roles = context.loggedInUserRoles;
+    final isWareHouseMgr =
+        roles.any((r) => r.code == RolesType.warehouseManager.toValue());
+    final isDistributor =
+        roles.any((r) => r.code == RolesType.distributor.toValue());
+    final isCommunityDistributor =
+        roles.any((r) => r.code == RolesType.communityDistributor.toValue());
+    final isHfs = roles.any(
+      (r) => r.code == RolesType.healthFacilitySupervisor.toValue(),
+    );
+
+    final sourceResolution = resolveFacilityUsageForInventory(
+      stockEntryType: stockEntryType,
+      transactionType: transactionType,
+      isToField: false,
+      isFromField: true,
+      boundaryType: _projectBoundaryType(context),
+      isWareHouseMgr: isWareHouseMgr,
+      isDistributor: isDistributor,
+      isCommunityDistributor: isCommunityDistributor,
+      isHfs: isHfs,
+    );
+
+    final picks = _readSourceDestinationFacilityIds(context);
+    return _resolvePhysicalSourceFacilityId(
+      context,
+      sourceResolution: sourceResolution,
+      sourceRawFromForm: picks.sourceRawId,
+    );
   }
 
   /// Triggers stock search for calculating stock in hand
@@ -608,9 +861,61 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
     }
     final wrapperList = wrapperData as List<Map<String, List<dynamic>>>;
 
-    final productVariants = wrapperList.firstWhere(
+    final rawProductVariants = wrapperList.firstWhere(
         (m) => m.containsKey('ProductVariantModel'),
         orElse: () => {'ProductVariantModel': []})['ProductVariantModel'];
+
+    final rawList = (rawProductVariants ?? [])
+        .whereType<ProductVariantModel>()
+        .toList();
+
+    final nav = _navigationParams(context);
+    final stockEntryType = nav['stockEntryType']?.toString() ?? '';
+    final transactionType = nav['transactionType']?.toString() ?? '';
+    final roles = context.loggedInUserRoles;
+    final sourceResolution = resolveFacilityUsageForInventory(
+      stockEntryType: stockEntryType,
+      transactionType: transactionType,
+      isToField: false,
+      isFromField: true,
+      boundaryType: _projectBoundaryType(context),
+      isWareHouseMgr:
+          roles.any((r) => r.code == RolesType.warehouseManager.toValue()),
+      isDistributor:
+          roles.any((r) => r.code == RolesType.distributor.toValue()),
+      isCommunityDistributor: roles.any(
+        (r) => r.code == RolesType.communityDistributor.toValue(),
+      ),
+      isHfs: roles.any(
+        (r) => r.code == RolesType.healthFacilitySupervisor.toValue(),
+      ),
+    );
+    final picks = _readSourceDestinationFacilityIds(context);
+    final physicalSourceId = _resolvePhysicalSourceFacilityId(
+      context,
+      sourceResolution: sourceResolution,
+      sourceRawFromForm: picks.sourceRawId,
+    );
+    final idsToLoad = <String>[
+      if (physicalSourceId != null && physicalSourceId.isNotEmpty)
+        physicalSourceId,
+      if (picks.destinationId != null && picks.destinationId!.isNotEmpty)
+        picks.destinationId!,
+    ];
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _publishInventoryFacilitiesToNavigation(
+        physicalSourceId: physicalSourceId,
+        destinationId: picks.destinationId,
+      );
+      if (idsToLoad.isNotEmpty) {
+        _ensureFacilitiesLoadedForUsage(context, idsToLoad);
+      }
+    });
+
+    final productVariants =
+        _filterProductVariantsByInventoryRules(context, rawList);
 
     // Initialize from formData on first build (localizations and productVariants are now available)
     if (!_initialized) {
@@ -679,7 +984,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
             emptyItemText: localizations.translate('NO_OPTIONS_AVAILABLE'),
             errorMessage: field.errorText,
             helpText: localizations.translate('SELECT_PRODUCT_VARIANTS'),
-            options: productVariants!
+            options: productVariants
                 .map((e) => DropdownItem(
                       code: e.id,
                       name: localizations.translate(e.sku ?? e.id),
@@ -693,8 +998,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
 
               // Find selected models from productVariants
               final selectedModels = selectedValues
-                  .map((v) => productVariants!
-                      .map((e) => e as ProductVariantModel)
+                  .map((v) => productVariants
                       .firstWhere((m) => m.id == v.code))
                   .toList();
 
