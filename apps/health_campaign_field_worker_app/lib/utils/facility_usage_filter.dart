@@ -51,6 +51,19 @@ FacilityUsageResolution resolveFacilityUsageForInventory({
         } else {
           usage = Constants.healthFacility;
         }
+      } else if (boundaryType == Constants.lgaBoundaryLevel) {
+        if (isFromField) {
+          usage = Constants.lgaFacility;
+        } else {
+          usage = Constants.dhFacility;
+        }
+      } else if (boundaryType == Constants.distributionHubBoundaryLevel) {
+        if (isFromField) {
+          usage = Constants.dhFacility;
+        } else {
+          usage = 'None';
+          showTeamOption = true;
+        }
       } else {
         if (isHfs) {
           if (isFromField) {
@@ -80,6 +93,18 @@ FacilityUsageResolution resolveFacilityUsageForInventory({
           usage = Constants.stateFacility;
         } else {
           usage = Constants.centralFacility;
+        }
+      } else if (boundaryType == Constants.lgaBoundaryLevel) {
+        if (isFromField) {
+          usage = Constants.lgaFacility;
+        } else {
+          usage = Constants.stateFacility;
+        }
+      } else if (boundaryType == Constants.distributionHubBoundaryLevel) {
+        if (isFromField) {
+          usage = Constants.dhFacility;
+        } else {
+          usage = Constants.healthFacility;
         }
       } else {
         if (isHfs) {

@@ -15,7 +15,8 @@ bool isInventoryDeliveryTeamCode(String? code) {
 bool isUsageLgaSide(String? usage) {
   final u = (usage ?? '').trim();
   if (u.isEmpty) return false;
-  if (u == Constants.districtFacility || u == Constants.lgaFacility) return true;
+  if (u == Constants.districtFacility || u == Constants.lgaFacility)
+    return true;
   final lower = u.toLowerCase();
   return lower.contains('lga') && !lower.contains('health');
 }
@@ -28,6 +29,16 @@ bool isUsageHealthFacility(String? usage) {
   final lower = u.toLowerCase();
   return lower.contains('health facility') ||
       (lower.contains('health') && lower.contains('facility'));
+}
+
+/// Health facility usage → products whose SKU/variation contains SPAQ.
+bool isUsageDHFacility(String? usage) {
+  final u = (usage ?? '').trim();
+  if (u.isEmpty) return false;
+  if (u == Constants.dhFacility) return true;
+  final lower = u.toLowerCase();
+  return lower.contains('dh facility') ||
+      (lower.contains('dh') && lower.contains('facility'));
 }
 
 bool matchesBednetProduct(ProductVariantModel p) {
@@ -48,6 +59,8 @@ bool productMatchesInventoryUsageSide(ProductVariantModel p, String? usage) {
   if (u.isEmpty || u == 'None') return true;
   if (isUsageLgaSide(u)) return matchesBednetProduct(p);
   if (isUsageHealthFacility(u)) return matchesSpaqProduct(p);
+  if (isUsageDHFacility(u)) return matchesSpaqProduct(p);
+
   return true;
 }
 
