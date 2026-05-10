@@ -119,7 +119,7 @@ FacilityUsageResolution resolveFacilityUsageForInventory({
       }
     } else if (isCommunityDistributor || isDistributor) {
       if (isToField) {
-        usage = Constants.healthFacility;
+        usage = Constants.dhFacility;
       } else {
         usage = 'None';
       }

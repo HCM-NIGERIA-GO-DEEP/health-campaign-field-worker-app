@@ -162,6 +162,7 @@ class Constants {
   static const String healthFacility = 'Health Facility';
   static const String lgaBoundaryLevel = 'LGA';
   static const String provincialBoundaryLevel = 'Provincia';
+  static const String distributionHubBoundaryLevel = 'DISTRIBUTIONHUB';
   static const String centralFacility = 'Storing Resource';
   static const String stateBoundaryLevel = 'STATE';
   static const String stateFacility = 'Regional Facility';
