@@ -533,6 +533,7 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
         ),
         _manualSerialNoFormKey: FormControl<String>(),
         _manualExpiryDateFormKey: FormControl<DateTime>(
+          value: DateTime.now(),
           validators: [Validators.required],
         ),
       });

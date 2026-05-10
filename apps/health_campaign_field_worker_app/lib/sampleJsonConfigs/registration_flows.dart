@@ -1512,7 +1512,8 @@ final dynamic sampleFlows = {
                       {
                         "key": "UNIQUE_BENEFICIARY_ID",
                         "value": "{{latestBeneficiaryId}}"
-                      }
+                      },
+                      {"key": "isHead", "value": "false"}
                     ],
                     "name": "ADD_MEMBER",
                     "type": "FORM"
@@ -1571,7 +1572,8 @@ final dynamic sampleFlows = {
                               {
                                 "key": "UNIQUE_BENEFICIARY_ID",
                                 "value": "{{latestBeneficiaryId}}"
-                              }
+                              },
+                              {"key": "isHead", "value": "false"}
                             ],
                             "name": "ADD_MEMBER",
                             "type": "FORM"
