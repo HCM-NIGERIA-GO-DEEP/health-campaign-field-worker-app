@@ -119,7 +119,7 @@ FacilityUsageResolution resolveFacilityUsageForInventory({
       }
     } else if (isCommunityDistributor || isDistributor) {
       if (isToField) {
-        usage = Constants.dhFacility;
+        usage = Constants.healthFacility;
       } else {
         usage = 'None';
       }
@@ -136,10 +136,13 @@ FacilityUsageResolution resolveFacilityUsageForInventory({
     }
   }
 
+// todo in future if we have to filter the facilities we can do it
   final additionalUsage = (usage == Constants.healthFacility &&
           boundaryType == Constants.stateBoundaryLevel)
       ? Constants.districtFacility
-      : null;
+      : (isCommunityDistributor || isDistributor)
+          ? Constants.dhFacility
+          : null;
 
   return FacilityUsageResolution(
     usage: usage,

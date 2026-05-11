@@ -15,8 +15,9 @@ bool isInventoryDeliveryTeamCode(String? code) {
 bool isUsageLgaSide(String? usage) {
   final u = (usage ?? '').trim();
   if (u.isEmpty) return false;
-  if (u == Constants.districtFacility || u == Constants.lgaFacility)
+  if (u == Constants.districtFacility || u == Constants.lgaFacility) {
     return true;
+  }
   final lower = u.toLowerCase();
   return lower.contains('district') && !lower.contains('health');
 }

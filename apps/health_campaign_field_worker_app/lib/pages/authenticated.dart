@@ -258,8 +258,14 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                           projectFacilityLocalRepository: ctx.read<
                               LocalRepository<ProjectFacilityModel,
                                   ProjectFacilitySearchModel>>(),
+                          projectFacilityRemoteRepository: ctx.read<
+                              RemoteRepository<ProjectFacilityModel,
+                                  ProjectFacilitySearchModel>>(),
                           facilityLocalRepository: ctx.read<
                               LocalRepository<FacilityModel,
+                                  FacilitySearchModel>>(),
+                          facilityRemoteRepository: ctx.read<
+                              RemoteRepository<FacilityModel,
                                   FacilitySearchModel>>(),
                           stockRemoteRepository: ctx.read<
                               RemoteRepository<StockModel, StockSearchModel>>(),

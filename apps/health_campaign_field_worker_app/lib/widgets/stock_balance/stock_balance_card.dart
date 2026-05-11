@@ -4,6 +4,8 @@ import 'package:collection/collection.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/stock.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/user_action.dart';
+import 'package:digit_flow_builder/utils/function_registry.dart';
+import 'package:digit_flow_builder/utils/interpolation.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
@@ -13,7 +15,7 @@ import 'package:transit_post/data/repositories/local/user_action.dart';
 
 import '../../blocs/app_initialization/app_initialization.dart';
 import '../../models/entities/roles_type.dart';
-import '../../utils/function_registries.dart';
+import '../../utils/function_registries.dart' show StockBalanceCache;
 import '../../utils/i18_key_constants.dart' as i18;
 import '../../utils/stock_calculation_utils.dart';
 import '../../utils/utils.dart';
@@ -27,7 +29,6 @@ class StockBalanceCard extends LocalizedStatefulWidget {
 }
 
 class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
-  List<FacilityModel> _facilities = [];
   FacilityModel? _selectedFacility;
   List<ProductVariantModel> _productVariants = [];
   Map<String, double> _stockBalances = {};
@@ -35,6 +36,64 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
   double _maxThreshold = 500;
   bool _isLoading = true;
   bool _isDistributor = false;
+
+  /// Same role/boundary → MDMS `Facility.usage` mapping as Osun stock balance card.
+  String _stockBalanceFacilityUsageFilter({
+    required bool isWarehouseManager,
+    required bool isDistributor,
+    required bool isCommunityDistributor,
+    required bool isHealthFacilitySupervisor,
+    required String? boundaryLevel,
+  }) {
+    var usage = '';
+
+    if (isWarehouseManager) {
+      if (boundaryLevel == Constants.stateBoundaryLevel) {
+        usage = Constants.stateFacility;
+      } else if (boundaryLevel == Constants.lgaBoundaryLevel) {
+        usage = Constants.districtFacility;
+      } else {
+        usage = Constants.dhFacility;
+      }
+    } else if (isDistributor || isCommunityDistributor) {
+      usage = 'None';
+    } else {
+      usage = Constants.healthFacility;
+    }
+
+    if (isHealthFacilitySupervisor) {
+      usage = Constants.healthFacility;
+    }
+
+    return usage;
+  }
+
+  List<FacilityModel> _filterFacilitiesByUsage(
+    List<FacilityModel> facilities,
+    String usage,
+  ) {
+    final u = usage.trim();
+    if (u.isEmpty) return facilities;
+    if (u == 'None') {
+      return facilities.where((f) => (f.usage ?? '').trim() == 'None').toList();
+    }
+    return facilities
+        .where((facility) => (facility.usage ?? '').trim() == u)
+        .toList();
+  }
+
+  FacilityModel? _pickFacilityForUser(
+    List<FacilityModel> filtered,
+    String? preferredFacilityId,
+  ) {
+    if (filtered.isEmpty) return null;
+    if (preferredFacilityId != null && preferredFacilityId.isNotEmpty) {
+      final match =
+          filtered.where((f) => f.id == preferredFacilityId).firstOrNull;
+      if (match != null) return match;
+    }
+    return filtered.first;
+  }
 
   @override
   void didChangeDependencies() {
@@ -66,9 +125,17 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
 
   Future<void> _loadData() async {
     try {
-      // Check if user is a distributor
       final isDistributor = context.loggedInUserRoles
           .any((role) => role.code == RolesType.distributor.toValue());
+      final isCommunityDistributor = context.loggedInUserRoles.any(
+        (role) => role.code == RolesType.communityDistributor.toValue(),
+      );
+      final isWarehouseManager = context.loggedInUserRoles.any(
+        (role) => role.code == RolesType.warehouseManager.toValue(),
+      );
+      final isHealthFacilitySupervisor = context.loggedInUserRoles.any(
+        (role) => role.code == RolesType.healthFacilitySupervisor.toValue(),
+      );
 
       // Get project facilities
       final projectFacilityRepo = context.read<
@@ -94,6 +161,17 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
         FacilitySearchModel(id: facilityIds),
       );
 
+      final boundaryLevel = context.selectedProject.address?.boundaryType;
+      final usageFilter = _stockBalanceFacilityUsageFilter(
+        isWarehouseManager: isWarehouseManager,
+        isDistributor: isDistributor,
+        isCommunityDistributor: isCommunityDistributor,
+        isHealthFacilitySupervisor: isHealthFacilitySupervisor,
+        boundaryLevel: boundaryLevel,
+      );
+      final filteredFacilities =
+          _filterFacilitiesByUsage(facilities, usageFilter);
+
       // Get project resources to know which product variants
       final projectResourceRepo = context.read<
           LocalRepository<ProjectResourceModel, ProjectResourceSearchModel>>();
@@ -116,27 +194,37 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
 
       if (!mounted) return;
 
+      final isDistributorRole = isDistributor || isCommunityDistributor;
+      final preferredId = FunctionRegistry.call(
+        'getUserFacilityId',
+        [],
+        CrudStateData(<String, List<Map<String, dynamic>>>{}, const []),
+      )?.toString();
+
       final previousFacilityId = _selectedFacility?.id;
-      final autoSelectedFacility = facilities.isNotEmpty
-          ? (previousFacilityId != null
-              ? facilities.firstWhere(
-                  (f) => f.id == previousFacilityId,
-                  orElse: () => facilities.first,
-                )
-              : facilities.first)
-          : null;
+      FacilityModel? autoSelectedFacility;
+      if (isDistributorRole) {
+        autoSelectedFacility = null;
+      } else if (filteredFacilities.isNotEmpty) {
+        autoSelectedFacility = _pickFacilityForUser(
+          filteredFacilities,
+          previousFacilityId ?? preferredId,
+        );
+      } else {
+        autoSelectedFacility = null;
+      }
 
       setState(() {
-        _facilities = facilities;
         _productVariants = productVariants;
         _selectedFacility = autoSelectedFacility;
         _isLoading = false;
-        _isDistributor = isDistributor;
+        _isDistributor = isDistributorRole;
       });
 
-      // Distributors always use their UUID; others use facility ID
-      final effectiveFacilityId =
-          isDistributor ? context.loggedInUserUuid : autoSelectedFacility?.id;
+      // Distributors / community distributors use UUID; others use resolved facility
+      final effectiveFacilityId = isDistributorRole
+          ? context.loggedInUserUuid
+          : autoSelectedFacility?.id;
 
       if (effectiveFacilityId != null) {
         // Load UserAction balances first (from deliveries) so UI shows them immediately
@@ -265,7 +353,9 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
 
       // Search directly with clientReferenceIds
       final actions = await userActionRepo.search(
-        UserActionSearchModel(clientReferenceId: balanceKeys),
+        UserActionSearchModel(
+            clientReferenceId: balanceKeys,
+            projectId: context.selectedProject.id),
       );
 
       for (final action in actions) {
@@ -308,35 +398,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
     return DigitCard(
       margin: const EdgeInsets.all(spacer2),
       children: [
-        // Facility selector (only show if multiple facilities and not distributor)
-        if (_facilities.length > 1 && !_isDistributor)
-          Padding(
-            padding: const EdgeInsets.only(bottom: spacer2),
-            child: DigitDropdown(
-              emptyItemText: localizations.translate('NO_FACILITIES_FOUND'),
-              items: _facilities
-                  .map((f) => DropdownItem(
-                        name: localizations.translate(f.id),
-                        code: f.id,
-                      ))
-                  .toList(),
-              selectedOption: _selectedFacility != null
-                  ? DropdownItem(
-                      name: localizations.translate(_selectedFacility!.id),
-                      code: _selectedFacility!.id,
-                    )
-                  : null,
-              onSelect: (value) {
-                final selected = _facilities.firstWhere(
-                  (f) => f.id == value.code,
-                );
-                setState(() {
-                  _selectedFacility = selected;
-                });
-                _setupStockListener(selected.id);
-              },
-            ),
-          ),
+        // No facility dropdown: balances follow the facility for this user/role
+        // (Osun-aligned usage filter + auto-select / distributor UUID).
 
         // Title
         Padding(

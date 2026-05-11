@@ -222,6 +222,23 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
     return !_facilityByIdCache.containsKey(facilityId);
   }
 
+  bool _sourceUsageCanUseRoleDefault({
+    required FacilityUsageResolution sourceResolution,
+    required bool isDistributor,
+    required bool isCommunityDistributor,
+    required String? sourceRawId,
+  }) {
+    final sourceUsage = sourceResolution.usage.trim();
+    if (sourceUsage != 'None') return false;
+
+    // For distributor/community distributor flows (including RETURNED), the
+    // source can be the team/user UUID, not a FacilityModel row. Use the
+    // role-derived `None` usage directly instead of waiting for a DB facility.
+    return isDistributor ||
+        isCommunityDistributor ||
+        isInventoryDeliveryTeamCode(sourceRawId);
+  }
+
   List<ProductVariantModel> _filterProductVariantsByInventoryRules(
     BuildContext context,
     List<ProductVariantModel> variants,
@@ -274,8 +291,15 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       sourceRawFromForm: picks.sourceRawId,
     );
     final destinationId = picks.destinationId;
+    final useRoleDefaultForSource = _sourceUsageCanUseRoleDefault(
+      sourceResolution: sourceResolution,
+      isDistributor: isDistributor,
+      isCommunityDistributor: isCommunityDistributor,
+      sourceRawId: picks.sourceRawId,
+    );
 
-    if (_pendingFacilityUsageLoad(physicalSourceId) ||
+    if ((!useRoleDefaultForSource &&
+            _pendingFacilityUsageLoad(physicalSourceId)) ||
         _pendingFacilityUsageLoad(destinationId)) {
       debugPrint(
         'ProductSelectionCard: waiting for facility usage load '
@@ -284,9 +308,11 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       return <ProductVariantModel>[];
     }
 
-    final sourceUsage = physicalSourceId != null
-        ? _facilityByIdCache[physicalSourceId]?.usage
-        : null;
+    final sourceUsage = useRoleDefaultForSource
+        ? sourceResolution.usage
+        : physicalSourceId != null
+            ? _facilityByIdCache[physicalSourceId]?.usage
+            : null;
     final destUsage =
         destinationId != null ? _facilityByIdCache[destinationId]?.usage : null;
 
@@ -873,22 +899,26 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
     final stockEntryType = nav['stockEntryType']?.toString() ?? '';
     final transactionType = nav['transactionType']?.toString() ?? '';
     final roles = context.loggedInUserRoles;
+    final isWareHouseMgr =
+        roles.any((r) => r.code == RolesType.warehouseManager.toValue());
+    final isDistributor =
+        roles.any((r) => r.code == RolesType.distributor.toValue());
+    final isCommunityDistributor = roles.any(
+      (r) => r.code == RolesType.communityDistributor.toValue(),
+    );
+    final isHfs = roles.any(
+      (r) => r.code == RolesType.healthFacilitySupervisor.toValue(),
+    );
     final sourceResolution = resolveFacilityUsageForInventory(
       stockEntryType: stockEntryType,
       transactionType: transactionType,
       isToField: false,
       isFromField: true,
       boundaryType: _projectBoundaryType(context),
-      isWareHouseMgr:
-          roles.any((r) => r.code == RolesType.warehouseManager.toValue()),
-      isDistributor:
-          roles.any((r) => r.code == RolesType.distributor.toValue()),
-      isCommunityDistributor: roles.any(
-        (r) => r.code == RolesType.communityDistributor.toValue(),
-      ),
-      isHfs: roles.any(
-        (r) => r.code == RolesType.healthFacilitySupervisor.toValue(),
-      ),
+      isWareHouseMgr: isWareHouseMgr,
+      isDistributor: isDistributor,
+      isCommunityDistributor: isCommunityDistributor,
+      isHfs: isHfs,
     );
     final picks = _readSourceDestinationFacilityIds(context);
     final physicalSourceId = _resolvePhysicalSourceFacilityId(
@@ -896,8 +926,16 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       sourceResolution: sourceResolution,
       sourceRawFromForm: picks.sourceRawId,
     );
+    final useRoleDefaultForSource = _sourceUsageCanUseRoleDefault(
+      sourceResolution: sourceResolution,
+      isDistributor: isDistributor,
+      isCommunityDistributor: isCommunityDistributor,
+      sourceRawId: picks.sourceRawId,
+    );
     final idsToLoad = <String>[
-      if (physicalSourceId != null && physicalSourceId.isNotEmpty)
+      if (!useRoleDefaultForSource &&
+          physicalSourceId != null &&
+          physicalSourceId.isNotEmpty)
         physicalSourceId,
       if (picks.destinationId != null && picks.destinationId!.isNotEmpty)
         picks.destinationId!,
