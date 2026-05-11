@@ -129,9 +129,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       );
       final isHealthFacilitySupervisor = context.loggedInUserRoles.any(
         (role) =>
-            role.code ==
-            (RolesType.healthFacilitySupervisor.toValue() ||
-                RolesType.healthFacilityWorker.toValue()),
+            role.code == RolesType.healthFacilitySupervisor.toValue() ||
+            role.code == RolesType.healthFacilityWorker.toValue(),
       );
 
       // Get project facilities
