@@ -51,7 +51,12 @@ class _EvaluationKeyDropDownState
                     .where((f) => f.key == 'facilityLevel')
                     .firstOrNull
                     ?.value;
-                return facilityLevel == null || facilityLevel == 'current';
+                final usage = pf.additionalFields?.fields
+                    .where((f) => f.key == 'usage')
+                    .firstOrNull
+                    ?.value;
+                return (facilityLevel == null || facilityLevel == 'current') &&
+                    (usage == null || usage == 'hfs');
               }).toList()),
         );
       },

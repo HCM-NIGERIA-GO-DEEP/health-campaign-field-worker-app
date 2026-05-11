@@ -584,7 +584,12 @@ class _BoundarySelectionPageState
                                             size: DigitButtonSize.large,
                                             onPressed: () async {
                                               if (!form.valid ||
-                                                  validateAllBoundarySelection()) {
+                                                  validateAllBoundarySelection(
+                                                    isDistributor:
+                                                        isDistributor,
+                                                    isHealthFacilityWorker:
+                                                        isHealthFacilityWorker,
+                                                  )) {
                                                 clickedStatus.value = false;
                                                 Toast.showToast(
                                                   context,
@@ -758,7 +763,10 @@ class _BoundarySelectionPageState
                                               capitalizedFirstLetter: false,
                                               label: localizations.translate(
                                                   '${envConfig.variables.hierarchyType}_$label'),
-                                              isRequired: true,
+                                              // isRequired: true,
+                                              isRequired: isDistributor ||
+                                                  isHealthFacilityWorker ||
+                                                  labelIndex == 0,
                                               child: isLastLevel
                                                   ? MultiSelectDropDown(
                                                       sentenceCaseEnabled:
@@ -1065,17 +1073,24 @@ class _BoundarySelectionPageState
     return fb.group(formControls);
   }
 
-  bool validateAllBoundarySelection() {
-    for (final entry in formControls.entries) {
-      final formControl = entry.value;
+  bool validateAllBoundarySelection({
+    required bool isDistributor,
+    required bool isHealthFacilityWorker,
+  }) {
+    final entries = formControls.entries.toList();
+    bool hasError = false;
 
-      if (formControl.value == null) {
+    for (int index = 0; index < entries.length; index++) {
+      final formControl = entries[index].value;
+      final isRequired = isDistributor || isHealthFacilityWorker || index == 0;
+
+      if (isRequired && formControl.value == null) {
         formControl.setErrors({'': true});
-        return true;
+        hasError = true;
       }
     }
 
-    return false;
+    return hasError;
   }
 
   void listenToSyncCount() async {
