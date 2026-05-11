@@ -15,6 +15,7 @@ import 'package:transit_post/data/repositories/local/user_action.dart';
 
 import '../../blocs/app_initialization/app_initialization.dart';
 import '../../models/entities/roles_type.dart';
+import '../../utils/facility_usage_filter.dart';
 import '../../utils/function_registries.dart' show StockBalanceCache;
 import '../../utils/i18_key_constants.dart' as i18;
 import '../../utils/product_variant_usage_filter.dart';
@@ -38,49 +39,41 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
   bool _isLoading = true;
   bool _isDistributor = false;
 
-  /// Same role/boundary → MDMS `Facility.usage` mapping as Osun stock balance card.
-  String _stockBalanceFacilityUsageFilter({
+  FacilityUsageResolution _issuedSourceUsageResolution({
     required bool isWarehouseManager,
-    required bool isDistributor,
-    required bool isCommunityDistributor,
     required bool isHealthFacilitySupervisor,
     required String? boundaryLevel,
   }) {
-    var usage = '';
-
-    if (isWarehouseManager) {
-      if (boundaryLevel == Constants.stateBoundaryLevel) {
-        usage = Constants.stateFacility;
-      } else if (boundaryLevel == Constants.lgaBoundaryLevel) {
-        usage = Constants.districtFacility;
-      } else {
-        usage = Constants.dhFacility;
-      }
-    } else if (isDistributor || isCommunityDistributor) {
-      usage = 'None';
-    } else {
-      usage = Constants.healthFacility;
-    }
-
-    if (isHealthFacilitySupervisor) {
-      usage = Constants.healthFacility;
-    }
-
-    return usage;
+    return resolveFacilityUsageForInventory(
+      stockEntryType: 'ISSUED',
+      transactionType: 'DISPATCHED',
+      isToField: false,
+      isFromField: true,
+      boundaryType: boundaryLevel,
+      isWareHouseMgr: isWarehouseManager,
+      isDistributor: false,
+      isCommunityDistributor: false,
+      isHfs: isHealthFacilitySupervisor,
+    );
   }
 
   List<FacilityModel> _filterFacilitiesByUsage(
     List<FacilityModel> facilities,
-    String usage,
+    FacilityUsageResolution usageResolution,
   ) {
-    final u = usage.trim();
-    if (u.isEmpty) return facilities;
-    if (u == 'None') {
+    final usage = usageResolution.usage.trim();
+    final additionalUsage = usageResolution.additionalUsage?.trim();
+    if (usage.isEmpty) return facilities;
+    if (usage == 'None') {
       return facilities.where((f) => (f.usage ?? '').trim() == 'None').toList();
     }
-    return facilities
-        .where((facility) => (facility.usage ?? '').trim() == u)
-        .toList();
+    return facilities.where((facility) {
+      final facilityUsage = (facility.usage ?? '').trim();
+      return facilityUsage == usage ||
+          (additionalUsage != null &&
+              additionalUsage.isNotEmpty &&
+              facilityUsage == additionalUsage);
+    }).toList();
   }
 
   FacilityModel? _pickFacilityForUser(
@@ -135,7 +128,10 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
         (role) => role.code == RolesType.warehouseManager.toValue(),
       );
       final isHealthFacilitySupervisor = context.loggedInUserRoles.any(
-        (role) => role.code == RolesType.healthFacilitySupervisor.toValue(),
+        (role) =>
+            role.code ==
+            (RolesType.healthFacilitySupervisor.toValue() ||
+                RolesType.healthFacilityWorker.toValue()),
       );
 
       // Get project facilities
@@ -163,15 +159,13 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       );
 
       final boundaryLevel = context.selectedProject.address?.boundaryType;
-      final usageFilter = _stockBalanceFacilityUsageFilter(
+      final usageResolution = _issuedSourceUsageResolution(
         isWarehouseManager: isWarehouseManager,
-        isDistributor: isDistributor,
-        isCommunityDistributor: isCommunityDistributor,
         isHealthFacilitySupervisor: isHealthFacilitySupervisor,
         boundaryLevel: boundaryLevel,
       );
       final filteredFacilities =
-          _filterFacilitiesByUsage(facilities, usageFilter);
+          _filterFacilitiesByUsage(facilities, usageResolution);
 
       // Get project resources to know which product variants
       final projectResourceRepo = context.read<
@@ -220,7 +214,7 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
           : ProductVariantUsageFilter.filterByUsages(
               variants: productVariants,
               usages: [
-                autoSelectedFacility?.usage ?? usageFilter,
+                autoSelectedFacility?.usage ?? usageResolution.usage,
               ],
             );
 

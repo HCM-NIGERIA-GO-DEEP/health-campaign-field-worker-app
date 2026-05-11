@@ -78,9 +78,14 @@ final dynamic inventoryReportFlows = {
                   {"key": "reportType", "value": "ISSUED"},
                   {
                     "key": "facilities",
-                    "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
+                    "value":
+                        "{{fn:getUsageFilteredReportFacilities(ProjectFacilityModel, FacilityModel)}}"
                   },
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                  {
+                    "key": "productVariants",
+                    "value":
+                        "{{fn:getUsageFilteredReportProductVariants(ProductVariantModel)}}"
+                  }
                 ]
               }
             }
@@ -102,9 +107,14 @@ final dynamic inventoryReportFlows = {
                   {"key": "reportType", "value": "dispatch"},
                   {
                     "key": "facilities",
-                    "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
+                    "value":
+                        "{{fn:getUsageFilteredReportFacilities(ProjectFacilityModel, FacilityModel)}}"
                   },
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                  {
+                    "key": "productVariants",
+                    "value":
+                        "{{fn:getUsageFilteredReportProductVariants(ProductVariantModel)}}"
+                  }
                 ]
               }
             }
@@ -126,9 +136,14 @@ final dynamic inventoryReportFlows = {
                   {"key": "reportType", "value": "returned"},
                   {
                     "key": "facilities",
-                    "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
+                    "value":
+                        "{{fn:getUsageFilteredReportFacilities(ProjectFacilityModel, FacilityModel)}}"
                   },
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                  {
+                    "key": "productVariants",
+                    "value":
+                        "{{fn:getUsageFilteredReportProductVariants(ProductVariantModel)}}"
+                  }
                 ]
               }
             }
@@ -151,9 +166,14 @@ final dynamic inventoryReportFlows = {
                   {"key": "reportType", "value": "damage"},
                   {
                     "key": "facilities",
-                    "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
+                    "value":
+                        "{{fn:getUsageFilteredReportFacilities(ProjectFacilityModel, FacilityModel)}}"
                   },
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                  {
+                    "key": "productVariants",
+                    "value":
+                        "{{fn:getUsageFilteredReportProductVariants(ProductVariantModel)}}"
+                  }
                 ]
               }
             }
@@ -176,9 +196,14 @@ final dynamic inventoryReportFlows = {
                   {"key": "reportType", "value": "loss"},
                   {
                     "key": "facilities",
-                    "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
+                    "value":
+                        "{{fn:getUsageFilteredReportFacilities(ProjectFacilityModel, FacilityModel)}}"
                   },
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                  {
+                    "key": "productVariants",
+                    "value":
+                        "{{fn:getUsageFilteredReportProductVariants(ProductVariantModel)}}"
+                  }
                 ]
               }
             }
@@ -201,9 +226,14 @@ final dynamic inventoryReportFlows = {
                   {"key": "reportType", "value": "excess"},
                   {
                     "key": "facilities",
-                    "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
+                    "value":
+                        "{{fn:getUsageFilteredReportFacilities(ProjectFacilityModel, FacilityModel)}}"
                   },
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                  {
+                    "key": "productVariants",
+                    "value":
+                        "{{fn:getUsageFilteredReportProductVariants(ProductVariantModel)}}"
+                  }
                 ]
               }
             }
@@ -226,9 +256,14 @@ final dynamic inventoryReportFlows = {
                   {"key": "reportType", "value": "less"},
                   {
                     "key": "facilities",
-                    "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
+                    "value":
+                        "{{fn:getUsageFilteredReportFacilities(ProjectFacilityModel, FacilityModel)}}"
                   },
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                  {
+                    "key": "productVariants",
+                    "value":
+                        "{{fn:getUsageFilteredReportProductVariants(ProductVariantModel)}}"
+                  }
                 ]
               }
             }
@@ -250,9 +285,14 @@ final dynamic inventoryReportFlows = {
                   {"key": "reportType", "value": "reconciliation"},
                   {
                     "key": "facilities",
-                    "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
+                    "value":
+                        "{{fn:getUsageFilteredReportFacilities(ProjectFacilityModel, FacilityModel)}}"
                   },
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                  {
+                    "key": "productVariants",
+                    "value":
+                        "{{fn:getUsageFilteredReportProductVariants(ProductVariantModel)}}"
+                  }
                 ]
               }
             }

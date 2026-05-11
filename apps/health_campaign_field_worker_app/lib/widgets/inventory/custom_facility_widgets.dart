@@ -104,6 +104,9 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
   bool _requestedFacilitiesLoad = false;
   bool _isLoadingFacilitiesFromDb = false;
   List<FacilityModel> _facilitiesForProject = const [];
+  bool _isLoadingStockFacilityIds = false;
+  Set<String>? _stockFacilityIdsForDistributor;
+  List<ProjectFacilityModel> _stockProjectFacilitiesForDistributor = const [];
 
   String get formKey => widget.formKey;
   String get dependantFormKey => widget.dependantFormKey;
@@ -150,8 +153,9 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (_facilitiesForProject.isNotEmpty || _isLoadingFacilitiesFromDb)
+      if (_facilitiesForProject.isNotEmpty || _isLoadingFacilitiesFromDb) {
         return;
+      }
       _loadFacilitiesForCurrentProject(currentLevelProjectFacilities);
     });
   }
@@ -217,6 +221,119 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
     return isUuid ? facilityId : localizations.translate('FAC_$facilityId');
   }
 
+  bool _isDeliveryTeamCode(String id) {
+    final value = id.trim();
+    return value == 'DELIVERY_TEAM' ||
+        value == 'Delivery Team' ||
+        value.startsWith('DELIVERY');
+  }
+
+  void _addStockFacilityCandidate(
+    Set<String> ids,
+    String? candidate,
+    String receiverId,
+  ) {
+    final value = candidate?.trim();
+    if (value == null || value.isEmpty) return;
+    if (value == receiverId) return;
+    if (_isDeliveryTeamCode(value)) return;
+    ids.add(value);
+  }
+
+  void _scheduleStockFacilityIdsLoadIfNeeded({
+    required bool enabled,
+    required String receiverId,
+    required String? projectId,
+  }) {
+    if (!enabled) return;
+    if (receiverId.isEmpty) return;
+    if (projectId == null || projectId.isEmpty) return;
+    if (_stockFacilityIdsForDistributor != null || _isLoadingStockFacilityIds) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_stockFacilityIdsForDistributor != null ||
+          _isLoadingStockFacilityIds) {
+        return;
+      }
+      _loadStockFacilitiesForDistributor(
+        receiverId: receiverId,
+        projectId: projectId,
+      );
+    });
+  }
+
+  Future<void> _loadStockFacilitiesForDistributor({
+    required String receiverId,
+    required String projectId,
+  }) async {
+    setState(() {
+      _isLoadingStockFacilityIds = true;
+    });
+
+    try {
+      final stockRepo =
+          context.read<LocalRepository<StockModel, StockSearchModel>>();
+      final projectFacilityRepo = context.read<
+          LocalRepository<ProjectFacilityModel, ProjectFacilitySearchModel>>();
+      final facilityRepo =
+          context.read<LocalRepository<FacilityModel, FacilitySearchModel>>();
+      final stocks = await stockRepo.search(
+        StockSearchModel(receiverId: receiverId),
+      );
+
+      final facilityIds = <String>{};
+      for (final stock in stocks) {
+        if (stock.receiverId != receiverId) continue;
+
+        _addStockFacilityCandidate(facilityIds, stock.senderId, receiverId);
+        _addStockFacilityCandidate(facilityIds, stock.facilityId, receiverId);
+        _addStockFacilityCandidate(
+          facilityIds,
+          stock.transactingPartyId,
+          receiverId,
+        );
+      }
+
+      final stockProjectFacilities = facilityIds.isEmpty
+          ? <ProjectFacilityModel>[]
+          : await projectFacilityRepo.search(
+              ProjectFacilitySearchModel(
+                facilityId: facilityIds.toList(),
+              ),
+            );
+
+      final stockProjectFacilityIds =
+          stockProjectFacilities.map((pf) => pf.facilityId).toSet().toList();
+      final stockFacilities = stockProjectFacilityIds.isEmpty
+          ? <FacilityModel>[]
+          : await facilityRepo.search(
+              FacilitySearchModel(id: stockProjectFacilityIds),
+            );
+
+      if (!mounted) return;
+      setState(() {
+        final facilitiesById = {
+          for (final facility in _facilitiesForProject) facility.id: facility,
+          for (final facility in stockFacilities) facility.id: facility,
+        };
+        _stockFacilityIdsForDistributor = facilityIds;
+        _stockProjectFacilitiesForDistributor = stockProjectFacilities;
+        _facilitiesForProject = facilitiesById.values.toList();
+        _isLoadingStockFacilityIds = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _stockFacilityIdsForDistributor = <String>{};
+        _stockProjectFacilitiesForDistributor = const [];
+        _isLoadingStockFacilityIds = false;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -274,15 +391,14 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
     );
 
     String? boundaryLevel;
+    String? projectId;
     try {
-      boundaryLevel = context
-          .read<ProjectBloc>()
-          .state
-          .selectedProject
-          ?.address
-          ?.boundaryType;
+      final selectedProject = context.read<ProjectBloc>().state.selectedProject;
+      boundaryLevel = selectedProject?.address?.boundaryType;
+      projectId = selectedProject?.id;
     } catch (_) {
       boundaryLevel = null;
+      projectId = null;
     }
 
     var wrapperData = stateData?.stateWrapper;
@@ -314,7 +430,7 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
     final isToField = formKey == 'facilityToWhich';
     final isFromField = formKey == 'facilityFromWhich';
 
-    final typedProjectFacilities =
+    var typedProjectFacilities =
         projectFacilities.cast<ProjectFacilityModel>().toList();
 
     final usageResolution = resolveFacilityUsageForInventory(
@@ -328,6 +444,25 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
       isCommunityDistributor: isCommunityDistributor,
       isHfs: isHfs,
     );
+
+    final isDistributorRole = isDistributor || isCommunityDistributor;
+    final shouldFilterByDistributorStockFacilities =
+        stockEntryType == 'RETURNED' && isDistributorRole && isToField;
+    _scheduleStockFacilityIdsLoadIfNeeded(
+      enabled: shouldFilterByDistributorStockFacilities,
+      receiverId: context.loggedInUserUuid,
+      projectId: projectId,
+    );
+
+    if (shouldFilterByDistributorStockFacilities &&
+        _stockProjectFacilitiesForDistributor.isNotEmpty) {
+      typedProjectFacilities = {
+        for (final facility in typedProjectFacilities)
+          facility.facilityId: facility,
+        for (final facility in _stockProjectFacilitiesForDistributor)
+          facility.facilityId: facility,
+      }.values.toList();
+    }
 
     // final currentLevelForLoad =
     //     filterProjectFacilitiesToCurrentLevel(typedProjectFacilities);
@@ -344,9 +479,18 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
       additionalUsage: usageResolution.additionalUsage,
     );
 
+    final stockScopedFacilities = shouldFilterByDistributorStockFacilities
+        ? (_stockFacilityIdsForDistributor == null
+            ? <ProjectFacilityModel>[]
+            : filteredFacilities
+                .where((facility) => _stockFacilityIdsForDistributor!
+                    .contains(facility.facilityId))
+                .toList())
+        : filteredFacilities;
+
     final hasNoChildFacilities = isToField &&
         (transactionType == 'DISPATCHED' || transactionType == 'ISSUED') &&
-        filteredFacilities.isEmpty;
+        stockScopedFacilities.isEmpty;
 
     var facilities = <DropdownItem>[];
 
@@ -367,7 +511,7 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
       ));
     }
 
-    facilities.addAll(filteredFacilities.map((model) {
+    facilities.addAll(stockScopedFacilities.map((model) {
       final facilityId = model.facilityId;
       final isUuid = facilityId.contains('-') && !facilityId.startsWith('F-');
       return DropdownItem(

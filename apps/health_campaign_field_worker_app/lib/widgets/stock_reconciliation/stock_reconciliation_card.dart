@@ -15,6 +15,8 @@ import 'package:intl/intl.dart';
 
 import '../../../utils/i18_key_constants.dart' as i18;
 import '../../models/entities/roles_type.dart';
+import '../../utils/facility_usage_filter.dart';
+import '../../utils/product_variant_usage_filter.dart';
 import '../../utils/stock_calculation_utils.dart';
 import '../../utils/utils.dart';
 import '../localized.dart';
@@ -152,6 +154,89 @@ class _StockReconciliationCardState
       ? localizations.translate('CORE_COMMON_REQUIRED')
       : null;
 
+  FacilityUsageResolution _issuedSourceUsageResolution() {
+    final roles = context.loggedInUserRoles;
+    final isWarehouseManager = roles.any(
+      (role) => role.code == RolesType.warehouseManager.toValue(),
+    );
+    final isHfs = roles.any(
+      (role) =>
+          role.code == RolesType.healthFacilitySupervisor.toValue() ||
+          role.code == RolesType.healthFacilityWorker.toValue(),
+    );
+
+    return resolveFacilityUsageForInventory(
+      stockEntryType: 'ISSUED',
+      transactionType: 'DISPATCHED',
+      isToField: false,
+      isFromField: true,
+      boundaryType: context.selectedProject.address?.boundaryType,
+      isWareHouseMgr: isWarehouseManager,
+      isDistributor: false,
+      isCommunityDistributor: false,
+      isHfs: isHfs,
+    );
+  }
+
+  List<FacilityModel> _filterFacilitiesByIssuedUsage(
+    List<FacilityModel> facilities,
+  ) {
+    final usageResolution = _issuedSourceUsageResolution();
+    final primaryUsage = usageResolution.usage.trim();
+    final additionalUsage = usageResolution.additionalUsage?.trim();
+
+    if (primaryUsage.isEmpty) return facilities;
+    if (primaryUsage == 'None') return <FacilityModel>[];
+
+    return facilities.where((facility) {
+      final usage = (facility.usage ?? '').trim();
+      return usage == primaryUsage ||
+          (additionalUsage != null &&
+              additionalUsage.isNotEmpty &&
+              usage == additionalUsage);
+    }).toList();
+  }
+
+  List<ProductVariantModel> _filterProductVariantsByIssuedUsage(
+    List<ProductVariantModel> variants,
+  ) {
+    final usage = _selectedFacility?.usage ?? _issuedSourceUsageResolution().usage;
+    return ProductVariantUsageFilter.filterByUsages(
+      variants: variants,
+      usages: [usage],
+    );
+  }
+
+  void _clearInvalidSelections({
+    required List<FacilityModel> facilities,
+    required List<ProductVariantModel> productVariants,
+  }) {
+    final selectedFacility = _selectedFacility;
+    final selectedProduct = _selectedProduct;
+    final shouldClearFacility = selectedFacility != null &&
+        !facilities.any((facility) => facility.id == selectedFacility.id);
+    final shouldClearProduct = selectedProduct != null &&
+        !productVariants.any((product) => product.id == selectedProduct.id);
+
+    if (!shouldClearFacility && !shouldClearProduct) return;
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() {
+        if (shouldClearFacility) {
+          _selectedFacility = null;
+        }
+        if (shouldClearFacility || shouldClearProduct) {
+          _selectedProduct = null;
+          _manualCountInitialized = false;
+          _needsMetricsRecalculation = false;
+          _stockMetrics = StockCalculationUtils.emptyMetrics;
+        }
+      });
+      _updateFormData();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
 
@@ -205,11 +290,19 @@ class _StockReconciliationCardState
             }
 
             // Use cached data if current data is empty (happens after stock search)
-            final displayFacilities =
+            final availableFacilities =
                 facilities.isNotEmpty ? facilities : _cachedFacilities;
-            final displayProductVariants = productVariants.isNotEmpty
+            final availableProductVariants = productVariants.isNotEmpty
                 ? productVariants
                 : _cachedProductVariants;
+            final displayFacilities =
+                _filterFacilitiesByIssuedUsage(availableFacilities);
+            final displayProductVariants =
+                _filterProductVariantsByIssuedUsage(availableProductVariants);
+            _clearInvalidSelections(
+              facilities: displayFacilities,
+              productVariants: displayProductVariants,
+            );
 
             // Recalculate stock metrics only when needed (facility/product changed)
             if (_selectedFacility != null &&
@@ -234,8 +327,8 @@ class _StockReconciliationCardState
                     errorMessage: _facilityError,
                     selectedOption: _selectedFacility != null
                         ? DropdownItem(
-                            name: localizations
-                                .translate('${_selectedFacility!.id}'),
+                            name:
+                                localizations.translate(_selectedFacility!.id),
                             code: _selectedFacility!.id,
                           )
                         : null,
@@ -243,7 +336,7 @@ class _StockReconciliationCardState
                         localizations.translate('NO_FACILITIES_FOUND'),
                     items: displayFacilities.map((facility) {
                       return DropdownItem(
-                        name: localizations.translate('${facility.id}'),
+                        name: localizations.translate(facility.id),
                         code: facility.id,
                       );
                     }).toList(),
@@ -254,6 +347,7 @@ class _StockReconciliationCardState
                       setState(() {
                         _facilityTouched = true;
                         _selectedFacility = selected;
+                        _selectedProduct = null;
                         // Reset flags when facility changes
                         _manualCountInitialized = false;
                         _needsMetricsRecalculation = true;
@@ -535,7 +629,7 @@ class _StockReconciliationCardState
       List<dynamic>? projectFacilities;
       List<dynamic>? allFacilities;
 
-      if (stateWrapper is List && stateWrapper.isNotEmpty) {
+      if (stateWrapper.isNotEmpty) {
         final firstItem = stateWrapper.first;
         if (firstItem is Map) {
           final wrapperList =

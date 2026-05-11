@@ -12,6 +12,8 @@ import 'package:flutter/material.dart';
 
 import '../models/entities/roles_type.dart';
 import 'extensions/extensions.dart';
+import 'facility_usage_filter.dart';
+import 'product_variant_usage_filter.dart';
 
 class FunctionRegistries {
   final BuildContext context;
@@ -207,6 +209,144 @@ class FunctionRegistries {
   }
 
   void _registerFacilityFunctions() {
+    FacilityUsageResolution issuedSourceUsageResolution() {
+      final roles = context.loggedInUserRoles;
+      final isWarehouseManager = roles.any(
+        (role) => role.code == RolesType.warehouseManager.toValue(),
+      );
+      final isHfs = roles.any(
+        (role) =>
+            role.code == RolesType.healthFacilitySupervisor.toValue() ||
+            role.code == RolesType.healthFacilityWorker.toValue(),
+      );
+
+      return resolveFacilityUsageForInventory(
+        stockEntryType: 'ISSUED',
+        transactionType: 'DISPATCHED',
+        isToField: false,
+        isFromField: true,
+        boundaryType: context.selectedProject.address?.boundaryType,
+        isWareHouseMgr: isWarehouseManager,
+        isDistributor: false,
+        isCommunityDistributor: false,
+        isHfs: isHfs,
+      );
+    }
+
+    String? mapFacilityUsage(dynamic facility) {
+      if (facility is FacilityModel) return facility.usage;
+      if (facility is Map) return facility['usage']?.toString();
+      return null;
+    }
+
+    String? mapFacilityId(dynamic facility) {
+      if (facility is FacilityModel) return facility.id;
+      if (facility is Map) return facility['id']?.toString();
+      return null;
+    }
+
+    String? mapProjectFacilityId(dynamic projectFacility) {
+      if (projectFacility is ProjectFacilityModel) {
+        return projectFacility.facilityId;
+      }
+      if (projectFacility is Map) {
+        return projectFacility['facilityId']?.toString();
+      }
+      return null;
+    }
+
+    bool isCurrentProjectFacility(dynamic projectFacility) {
+      if (projectFacility is ProjectFacilityModel) {
+        final facilityLevel = projectFacility.additionalFields?.fields
+            .where((f) => f.key == 'facilityLevel')
+            .firstOrNull
+            ?.value;
+        return facilityLevel == null || facilityLevel == 'current';
+      }
+      if (projectFacility is! Map) return false;
+      final additionalFields =
+          projectFacility['additionalFields'] as Map<String, dynamic>?;
+      if (additionalFields == null) return true;
+      final fields = additionalFields['fields'] as List?;
+      if (fields == null) return true;
+      for (final field in fields) {
+        if (field is Map && field['key'] == 'facilityLevel') {
+          final value = field['value'];
+          return value == null || value == 'current';
+        }
+      }
+      return true;
+    }
+
+    FunctionRegistry.register('getUsageFilteredReportFacilities',
+        (args, stateData) {
+      try {
+        final projectFacilities =
+            args.isNotEmpty ? args[0] as List<dynamic>? : null;
+        final facilities = args.length > 1 ? args[1] as List<dynamic>? : null;
+        if (projectFacilities == null ||
+            projectFacilities.isEmpty ||
+            facilities == null ||
+            facilities.isEmpty) {
+          return <dynamic>[];
+        }
+
+        final usageResolution = issuedSourceUsageResolution();
+        final primaryUsage = usageResolution.usage.trim();
+        final additionalUsage = usageResolution.additionalUsage?.trim();
+        if (primaryUsage.isEmpty) {
+          return projectFacilities.where(isCurrentProjectFacility).toList();
+        }
+        if (primaryUsage == 'None') return <dynamic>[];
+
+        final allowedFacilityIds = facilities
+            .where((facility) {
+              final usage = (mapFacilityUsage(facility) ?? '').trim();
+              return usage == primaryUsage ||
+                  (additionalUsage != null &&
+                      additionalUsage.isNotEmpty &&
+                      usage == additionalUsage);
+            })
+            .map(mapFacilityId)
+            .whereType<String>()
+            .toSet();
+
+        return projectFacilities
+            .where(isCurrentProjectFacility)
+            .where((projectFacility) {
+          final facilityId = mapProjectFacilityId(projectFacility);
+          return facilityId != null && allowedFacilityIds.contains(facilityId);
+        }).toList();
+      } catch (e) {
+        debugPrint('getUsageFilteredReportFacilities error: $e');
+        return <dynamic>[];
+      }
+    });
+
+    FunctionRegistry.register('getUsageFilteredReportProductVariants',
+        (args, stateData) {
+      try {
+        final productVariants =
+            args.isNotEmpty ? args[0] as List<dynamic>? : null;
+        if (productVariants == null || productVariants.isEmpty) {
+          return <dynamic>[];
+        }
+
+        final usage = issuedSourceUsageResolution().usage;
+        return productVariants.where((variant) {
+          final product = variant is ProductVariantModel
+              ? variant
+              : ProductVariantModelMapper.fromMap(
+                  variant as Map<String, dynamic>,
+                );
+          return ProductVariantUsageFilter.matchesUsage(product, usage);
+        }).toList();
+      } catch (e) {
+        debugPrint('getUsageFilteredReportProductVariants error: $e');
+        return <dynamic>[];
+      }
+    });
+
     FunctionRegistry.register('getUserFacilityId', (args, stateData) {
       final isDistributor = context.loggedInUserRoles
           .where((role) => role.code == RolesType.distributor.toValue())
