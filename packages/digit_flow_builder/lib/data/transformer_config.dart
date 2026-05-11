@@ -998,9 +998,10 @@ final jsonConfig = {
           "referenceIdType": "__value:PROJECT",
           "quantity": "lessExcessDetails.quantity",
           "transactionType": "__value:RECEIVED",
-          "transactionReason": "lessExcessDetails.reasonForLessExcess",
+          "transactionReason":
+              "__switch:lessExcessDetails.recordType:{LESS:__value:RETURNED,EXCESS:__value:RECEIVED}",
           "senderId": "lessExcessDetails.facilityFromWhich",
-          "senderType": "__value:WAREHOUSE",
+          "senderType": "__value:STAFF",
           "receiverId": "warehouseDetails.facilityToWhich",
           "receiverType": "__value:WAREHOUSE",
           "nonRecoverableError": "errors.nonRecoverable",
