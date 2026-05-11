@@ -18,7 +18,7 @@ bool isUsageLgaSide(String? usage) {
   if (u == Constants.districtFacility || u == Constants.lgaFacility)
     return true;
   final lower = u.toLowerCase();
-  return lower.contains('lga') && !lower.contains('health');
+  return lower.contains('district') && !lower.contains('health');
 }
 
 /// Health facility usage → products whose SKU/variation contains SPAQ.
@@ -37,7 +37,7 @@ bool isUsageDHFacility(String? usage) {
   if (u.isEmpty) return false;
   if (u == Constants.dhFacility) return true;
   final lower = u.toLowerCase();
-  return lower.contains('dh facility') ||
+  return lower.contains('warehouse') ||
       (lower.contains('dh') && lower.contains('facility'));
 }
 
@@ -59,7 +59,7 @@ bool productMatchesInventoryUsageSide(ProductVariantModel p, String? usage) {
   if (u.isEmpty || u == 'None') return true;
   if (isUsageLgaSide(u)) return matchesBednetProduct(p);
   if (isUsageHealthFacility(u)) return matchesSpaqProduct(p);
-  if (isUsageDHFacility(u)) return matchesSpaqProduct(p);
+  if (isUsageDHFacility(u)) return matchesBednetProduct(p);
 
   return true;
 }
