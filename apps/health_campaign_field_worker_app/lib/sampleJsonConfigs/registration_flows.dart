@@ -907,6 +907,13 @@ final dynamic sampleFlows = {
                   "isActive": true
                 },
                 {
+                  "key": "HOUSEHOLD_ID",
+                  "value":
+                      "{{contextData.0.household.HouseholdModel.clientReferenceId}}",
+                  "hideIfNull": true,
+                  "isActive": true
+                },
+                {
                   "key": "HOUSEHOLD_LOCALITY",
                   "value":
                       "{{contextData.0.household.HouseholdModel.address.locality.code}}",
@@ -7777,6 +7784,12 @@ final dynamic sampleFlows = {
             {
               "actionType": "NAVIGATION",
               "properties": {
+                "data": [
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{contextData.entities.HouseholdModel.clientReferenceId}}"
+                  }
+                ],
                 "name": "caregiverAcknowledgement",
                 "type": "TEMPLATE",
                 "onError": [
@@ -8087,7 +8100,7 @@ final dynamic sampleFlows = {
           "mandatory": true,
           "properties": {"type": "success"},
           "description":
-              "CAREGIVER_ACKNOWLEDGEMENT_SUCCESS_PANEL_CARD_DESCRIPTION",
+              "CAREGIVER_ACKNOWLEDGEMENT_SUCCESS_PANEL_CARD_DESCRIPTION\nID-{{navigation.HouseholdClientReferenceId}}",
           "primaryAction": {
             "type": "template",
             "label": "BACK_TO_SEARCH_BUTTON_LABEL",
