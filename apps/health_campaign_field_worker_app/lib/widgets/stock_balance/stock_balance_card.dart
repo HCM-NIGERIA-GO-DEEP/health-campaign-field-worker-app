@@ -17,6 +17,7 @@ import '../../blocs/app_initialization/app_initialization.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/function_registries.dart' show StockBalanceCache;
 import '../../utils/i18_key_constants.dart' as i18;
+import '../../utils/product_variant_usage_filter.dart';
 import '../../utils/stock_calculation_utils.dart';
 import '../../utils/utils.dart';
 import '../localized.dart';
@@ -214,8 +215,17 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
         autoSelectedFacility = null;
       }
 
+      final usageFilteredProductVariants = isDistributorRole
+          ? productVariants
+          : ProductVariantUsageFilter.filterByUsages(
+              variants: productVariants,
+              usages: [
+                autoSelectedFacility?.usage ?? usageFilter,
+              ],
+            );
+
       setState(() {
-        _productVariants = productVariants;
+        _productVariants = usageFilteredProductVariants;
         _selectedFacility = autoSelectedFacility;
         _isLoading = false;
         _isDistributor = isDistributorRole;

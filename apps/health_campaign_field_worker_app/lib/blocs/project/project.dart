@@ -999,11 +999,23 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         lastSyncedTime: lastSyncedTime,
       );
 
-      if (totalCount <= 0) return;
+      if (totalCount <= 0) {
+        final localStocks = await stockLocalRepository.search(
+          StockSearchModel(receiverId: receiverIds.first),
+        );
+        await _downsyncFacilitiesForDistributorReceivedStocks(
+          projectId: project.id,
+          userObject: userObject,
+          userRoles: userRoles,
+          stockEntries: localStocks,
+        );
+        return;
+      }
 
       const batchSize = 50;
       int offset = 0;
       int syncedCount = 0;
+      final downsyncedStocks = <String, StockModel>{};
       final currentSyncTime = DateTime.now().millisecondsSinceEpoch;
 
       while (syncedCount < totalCount) {
@@ -1017,6 +1029,9 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         if (stockEntries.isEmpty) break;
 
         await stockLocalRepository.bulkCreate(stockEntries);
+        for (final stock in stockEntries) {
+          downsyncedStocks[stock.clientReferenceId] = stock;
+        }
 
         await downSyncLocalRepository.update(DownsyncModel(
           offset: 0,
@@ -1030,21 +1045,110 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         syncedCount += stockEntries.length;
       }
 
+      await _downsyncFacilitiesForDistributorReceivedStocks(
+        projectId: project.id,
+        userObject: userObject,
+        userRoles: userRoles,
+        stockEntries: downsyncedStocks.values.toList(),
+      );
+
       await downSyncStockBalances(project.id);
 
       // After stock download, calculate and create/update UserAction balance records
-      await _createStockBalanceUserActions(
-        project: project,
-        receiverIds: receiverIds,
-        productVariantIds: productVariantIds,
-        userRoles: userRoles,
-        userObject: userObject,
-      );
+      // await _createStockBalanceUserActions(
+      //   project: project,
+      //   receiverIds: receiverIds,
+      //   productVariantIds: productVariantIds,
+      //   userRoles: userRoles,
+      //   userObject: userObject,
+      // );
 
       debugPrint(
           'SILENT_STOCK_DOWNSYNC: Completed. Synced $syncedCount/$totalCount');
     } catch (e) {
       debugPrint('SILENT_STOCK_DOWNSYNC: Error - $e');
+    }
+  }
+
+  bool _hasDistributorRole(Iterable<String> userRoles) {
+    return userRoles.contains(RolesType.distributor.toValue()) ||
+        userRoles.contains(RolesType.communityDistributor.toValue());
+  }
+
+  bool _isDeliveryTeamCode(String id) {
+    final value = id.trim();
+    return value == 'DELIVERY_TEAM' ||
+        value == 'Delivery Team' ||
+        value.startsWith('DELIVERY');
+  }
+
+  void _addStockFacilityCandidate(
+    Set<String> ids,
+    String? candidate,
+    String receiverId,
+  ) {
+    final value = candidate?.trim();
+    if (value == null || value.isEmpty) return;
+    if (value == receiverId) return;
+    if (_isDeliveryTeamCode(value)) return;
+    ids.add(value);
+  }
+
+  /// Distributor/community-distributor stock is downloaded by receiver UUID.
+  /// Persist the real facilities referenced by those stock rows so later
+  /// usage-based facility/product filters can read Facility.usage locally.
+  Future<void> _downsyncFacilitiesForDistributorReceivedStocks({
+    required String projectId,
+    required UserRequestModel userObject,
+    required Iterable<String> userRoles,
+    required List<StockModel> stockEntries,
+  }) async {
+    if (!_hasDistributorRole(userRoles) || stockEntries.isEmpty) return;
+
+    final receiverId = userObject.uuid;
+    final facilityIds = <String>{};
+
+    for (final stock in stockEntries) {
+      if (stock.receiverId != receiverId) continue;
+
+      _addStockFacilityCandidate(facilityIds, stock.senderId, receiverId);
+      _addStockFacilityCandidate(facilityIds, stock.facilityId, receiverId);
+      _addStockFacilityCandidate(
+        facilityIds,
+        stock.transactingPartyId,
+        receiverId,
+      );
+    }
+
+    if (facilityIds.isEmpty) return;
+
+    try {
+      final projectFacilities = await projectFacilityRemoteRepository.search(
+        ProjectFacilitySearchModel(
+          projectId: [projectId],
+          facilityId: facilityIds.toList(),
+        ),
+      );
+
+      if (projectFacilities.isNotEmpty) {
+        await projectFacilityLocalRepository.bulkCreate(projectFacilities);
+      }
+
+      final facilityIdsToFetch = projectFacilities.isNotEmpty
+          ? projectFacilities.map((pf) => pf.facilityId).toSet().toList()
+          : facilityIds.toList();
+
+      if (facilityIdsToFetch.isEmpty) return;
+
+      final facilities = await facilityRemoteRepository.search(
+        FacilitySearchModel(id: facilityIdsToFetch),
+      );
+
+      if (facilities.isNotEmpty) {
+        await facilityLocalRepository.bulkCreate(facilities);
+      }
+    } catch (e) {
+      debugPrint('Silent stock facility downsync failed: $e');
     }
   }
 
@@ -1103,7 +1207,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
       // Fetch from server
       final remoteBalances = await userActionRemoteRepository.search(
-        UserActionSearchModel(clientReferenceId: balanceKeys),
+        UserActionSearchModel(
+            clientReferenceId: balanceKeys, projectId: projectId),
       );
 
       if (remoteBalances.isEmpty) return;
