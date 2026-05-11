@@ -1029,6 +1029,11 @@ final dynamic sampleInventoryFlows = {
                   "type": "regex",
                   "value": r"^[0-9]+$",
                   "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
+                },
+                {
+                  "type": "pattern",
+                  "value": r"^[0-9]+$",
+                  "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
                 }
               ],
               "errorMessage": "",
@@ -1073,6 +1078,11 @@ final dynamic sampleInventoryFlows = {
                   "type": "regex",
                   "value": r"^[0-9]+$",
                   "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
+                },
+                {
+                  "type": "pattern",
+                  "value": r"^[0-9]+$",
+                  "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
                 }
               ],
               "errorMessage": "",
@@ -1115,6 +1125,11 @@ final dynamic sampleInventoryFlows = {
                 },
                 {
                   "type": "regex",
+                  "value": r"^[0-9]+$",
+                  "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
+                },
+                {
+                  "type": "pattern",
                   "value": r"^[0-9]+$",
                   "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
                 }
@@ -1169,6 +1184,11 @@ final dynamic sampleInventoryFlows = {
                   "type": "regex",
                   "value": r"^[0-9]+$",
                   "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
+                },
+                {
+                  "type": "pattern",
+                  "value": r"^[0-9]+$",
+                  "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
                 }
               ],
               "errorMessage": "",
@@ -1209,6 +1229,11 @@ final dynamic sampleInventoryFlows = {
                   "type": "regex",
                   "value": r"^[0-9]+$",
                   "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
+                },
+                {
+                  "type": "pattern",
+                  "value": r"^[0-9]+$",
+                  "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
                 }
               ],
               "errorMessage": "",
@@ -1242,6 +1267,11 @@ final dynamic sampleInventoryFlows = {
               "validations": [
                 {
                   "type": "regex",
+                  "value": r"^[0-9]+$",
+                  "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
+                },
+                {
+                  "type": "pattern",
                   "value": r"^[0-9]+$",
                   "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
                 }
@@ -1281,6 +1311,11 @@ final dynamic sampleInventoryFlows = {
                 },
                 {
                   "type": "regex",
+                  "value": r"^[0-9]+$",
+                  "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
+                },
+                {
+                  "type": "pattern",
                   "value": r"^[0-9]+$",
                   "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
                 }
@@ -1855,6 +1890,11 @@ final dynamic sampleInventoryFlows = {
                   "type": "regex",
                   "value": r"^[0-9]+$",
                   "message": "Please enter a valid number"
+                },
+                {
+                  "type": "pattern",
+                  "value": r"^[0-9]+$",
+                  "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
                 }
               ],
               "errorMessage": "",
@@ -2871,6 +2911,11 @@ final dynamic sampleInventoryFlows = {
                 },
                 {
                   "type": "regex",
+                  "value": r"^[0-9]+$",
+                  "message": "Please enter a valid number"
+                },
+                {
+                  "type": "pattern",
                   "value": r"^[0-9]+$",
                   "message": "Please enter a valid number"
                 }
