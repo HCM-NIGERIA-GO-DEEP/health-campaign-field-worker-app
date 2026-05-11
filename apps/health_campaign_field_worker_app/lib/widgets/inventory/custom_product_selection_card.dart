@@ -78,14 +78,20 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
 
   String? _projectBoundaryType(BuildContext context) {
     try {
-      return context.read<ProjectBloc>().state.selectedProject?.address?.boundaryType;
+      return context
+          .read<ProjectBloc>()
+          .state
+          .selectedProject
+          ?.address
+          ?.boundaryType;
     } catch (_) {
       return null;
     }
   }
 
   /// Reads destination (`facilityToWhich`) and raw source (`facilityFromWhich`) ids from form state.
-  ({String? destinationId, String? sourceRawId}) _readSourceDestinationFacilityIds(
+  ({String? destinationId, String? sourceRawId})
+      _readSourceDestinationFacilityIds(
     BuildContext context,
   ) {
     final formsState = context.read<FormsBloc>().state;
@@ -103,23 +109,30 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
 
       final stock = schema.pages['stockDetails'];
       final fromField = stock?.properties?['facilityFromWhich'];
-      if (fromField?.value != null &&
-          fromField!.value.toString().isNotEmpty) {
+      if (fromField?.value != null && fromField!.value.toString().isNotEmpty) {
         sourceRaw = fromField.value.toString();
       }
     }
 
     final formData = widget.stateData?.formData as Map<String, dynamic>?;
     if (formData != null) {
-      dest ??= _stringFromForm(formData, [
-        'warehouseDetails.facilityToWhich',
-        'facilityToWhich',
-      ], parentKey: 'warehouseDetails', field: 'facilityToWhich');
+      dest ??= _stringFromForm(
+          formData,
+          [
+            'warehouseDetails.facilityToWhich',
+            'facilityToWhich',
+          ],
+          parentKey: 'warehouseDetails',
+          field: 'facilityToWhich');
 
-      sourceRaw ??= _stringFromForm(formData, [
-        'stockDetails.facilityFromWhich',
-        'facilityFromWhich',
-      ], parentKey: 'stockDetails', field: 'facilityFromWhich');
+      sourceRaw ??= _stringFromForm(
+          formData,
+          [
+            'stockDetails.facilityFromWhich',
+            'facilityFromWhich',
+          ],
+          parentKey: 'stockDetails',
+          field: 'facilityFromWhich');
     }
 
     return (destinationId: dest, sourceRawId: sourceRaw);
@@ -161,13 +174,10 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
     required String? sourceRawFromForm,
   }) {
     final raw = sourceRawFromForm?.trim();
-    if (raw != null &&
-        raw.isNotEmpty &&
-        !isInventoryDeliveryTeamCode(raw)) {
+    if (raw != null && raw.isNotEmpty && !isInventoryDeliveryTeamCode(raw)) {
       return raw;
     }
-    if (sourceResolution.showTeamOption ||
-        isInventoryDeliveryTeamCode(raw)) {
+    if (sourceResolution.showTeamOption || isInventoryDeliveryTeamCode(raw)) {
       final u = _getUserFacilityIdString();
       if (u != null && u.isNotEmpty) {
         debugPrint(
@@ -255,7 +265,9 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
     final isCommunityDistributor =
         roles.any((r) => r.code == RolesType.communityDistributor.toValue());
     final isHfs = roles.any(
-      (r) => r.code == RolesType.healthFacilitySupervisor.toValue(),
+      (r) =>
+          r.code == RolesType.healthFacilitySupervisor.toValue() ||
+          r.code == RolesType.healthFacilityWorker.toValue(),
     );
 
     final boundaryType = _projectBoundaryType(context);
@@ -627,10 +639,14 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
           ValidationRule(
             type: 'max',
             value: min(maxValue, 10000000),
-            message: maxValue >10000000 ? localizations.translate('QUANTITY_CANNOT_EXCEED_STOCK_MAX_LIMIT_VALUE') :maxValue > 0
-                 ?  localizations.translate('QUANTITY_CANNOT_EXCEED_STOCK_IN_HAND_VALUE')
-                .replaceAll('{maxValue}', maxValue.toString())
-                : localizations.translate("NO_STOCK_AVAILABLE_IN_HAND"),
+            message: maxValue > 10000000
+                ? localizations
+                    .translate('QUANTITY_CANNOT_EXCEED_STOCK_MAX_LIMIT_VALUE')
+                : maxValue > 0
+                    ? localizations
+                        .translate('QUANTITY_CANNOT_EXCEED_STOCK_IN_HAND_VALUE')
+                        .replaceAll('{maxValue}', maxValue.toString())
+                    : localizations.translate("NO_STOCK_AVAILABLE_IN_HAND"),
           ),
         ];
 
@@ -891,9 +907,8 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         (m) => m.containsKey('ProductVariantModel'),
         orElse: () => {'ProductVariantModel': []})['ProductVariantModel'];
 
-    final rawList = (rawProductVariants ?? [])
-        .whereType<ProductVariantModel>()
-        .toList();
+    final rawList =
+        (rawProductVariants ?? []).whereType<ProductVariantModel>().toList();
 
     final nav = _navigationParams(context);
     final stockEntryType = nav['stockEntryType']?.toString() ?? '';
@@ -1036,8 +1051,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
 
               // Find selected models from productVariants
               final selectedModels = selectedValues
-                  .map((v) => productVariants
-                      .firstWhere((m) => m.id == v.code))
+                  .map((v) => productVariants.firstWhere((m) => m.id == v.code))
                   .toList();
 
               // Update selected products for stock calculation

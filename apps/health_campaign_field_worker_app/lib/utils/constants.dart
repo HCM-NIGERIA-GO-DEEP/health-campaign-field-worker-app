@@ -169,6 +169,7 @@ class Constants {
       RegExp(r'^(?=.{10}$)[+]*[(]{0,1}[0-9]{1,4}[)]{0,1}[-\s\./0-9]*$');
 
   static const String healthFacility = 'Health Facility';
+  static const String healthFacilityLevel = 'HEALTHFACILITY';
   static const String lgaBoundaryLevel = 'LGA';
   static const String provincialBoundaryLevel = 'Provincia';
   static const String distributionHubBoundaryLevel = 'DISTRIBUTIONHUB';

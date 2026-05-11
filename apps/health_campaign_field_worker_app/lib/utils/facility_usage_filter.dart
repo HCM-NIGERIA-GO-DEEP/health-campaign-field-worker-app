@@ -100,11 +100,13 @@ FacilityUsageResolution resolveFacilityUsageForInventory({
         } else {
           usage = Constants.stateFacility;
         }
-      } else if (boundaryType == Constants.distributionHubBoundaryLevel) {
+      } else if ((boundaryType == Constants.distributionHubBoundaryLevel ||
+              boundaryType == Constants.healthFacilityLevel) &&
+          !isHfs) {
         if (isFromField) {
           usage = Constants.dhFacility;
         } else {
-          usage = Constants.healthFacility;
+          usage = Constants.lgaFacility;
         }
       } else {
         if (isHfs) {

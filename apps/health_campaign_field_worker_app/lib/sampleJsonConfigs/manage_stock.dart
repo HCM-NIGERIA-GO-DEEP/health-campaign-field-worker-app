@@ -1957,6 +1957,11 @@ final dynamic sampleInventoryFlows = {
                 "key": "stockEntryType",
                 "value": "{{formData.lessExcessDetails.recordType}}"
               },
+              {
+                "key": "receiverPartyType",
+                "value":
+                    "{{fn:getSecondaryType(formData.warehouseDetails.facilityFromWhich)}}"
+              },
               {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"}
             ],
             "onError": [

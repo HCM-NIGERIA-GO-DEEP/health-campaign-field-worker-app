@@ -1000,10 +1000,14 @@ final jsonConfig = {
           "transactionType": "__value:RECEIVED",
           "transactionReason":
               "__switch:lessExcessDetails.recordType:{LESS:__value:RETURNED,EXCESS:__value:RECEIVED}",
-          "senderId": "lessExcessDetails.facilityFromWhich",
-          "senderType": "__value:STAFF",
-          "receiverId": "warehouseDetails.facilityToWhich",
-          "receiverType": "__value:WAREHOUSE",
+          "senderId":
+              "__switch:lessExcessDetails.recordType:{LESS:__value:__context:loggedInUserUuid,EXCESS:__value:warehouseDetails.facilityToWhich}",
+          "senderType":
+              "__switch:lessExcessDetails.recordType:{LESS:__value:STAFF,EXCESS:__value:__value:WAREHOUSE}:",
+          "receiverId":
+              "__switch:lessExcessDetails.recordType:{LESS:__value:__value:warehouseDetails.facilityToWhich,EXCESS:__context:loggedInUserUuid}",
+          "receiverType":
+              "__switch:lessExcessDetails.recordType:{LESS:__value:WAREHOUSE,EXCESS:__value:__value:STAFF}:",
           "nonRecoverableError": "errors.nonRecoverable",
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
