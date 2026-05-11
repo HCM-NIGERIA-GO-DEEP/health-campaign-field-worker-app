@@ -2419,7 +2419,7 @@ final dynamic sampleFlows = {
                         ],
                         "condition": {
                           "expression":
-                              "{{item.tasks.0.status}} != CLOSED_HOUSEHOLD"
+                              "{{fn:checkIfClosedHousehold(item.tasks.0.status)}}==false",
                         }
                       },
                       {
@@ -2461,13 +2461,13 @@ final dynamic sampleFlows = {
                         ],
                         "condition": {
                           "expression":
-                              "{{item.tasks.0.status}} == CLOSED_HOUSEHOLD"
+                              "{{fn:checkIfClosedHousehold(item.tasks.0.status)}}",
                         }
                       }
                     ],
                     "fieldName": "openMemberCard",
                     "properties": {"size": "medium", "type": "secondary"}
-                  }
+                  },
                 ],
                 "fieldName": "detailsRow",
                 "properties": {
@@ -2477,11 +2477,20 @@ final dynamic sampleFlows = {
               },
               {
                 "type": "template",
-                "label": "REGISTRATION_CLOSED_HOUSEHOLD",
-                "format": "tag",
-                "visible": "{{item.tasks.0.status}} == CLOSED_HOUSEHOLD",
-                "fieldName": "closedHouseholdTag",
-                "properties": {"tagType": "error"}
+                "format": "row",
+                "children": [
+                  {
+                    "type": "template",
+                    "label": "{{item.tasks.0.status}}",
+                    "format": "tag",
+                    "fieldName": "statusChip",
+                    "visible":
+                        "{{fn:checkIfClosedHousehold(item.tasks.0.status)}}",
+                    "properties": {"tagType": "error", "bottomGap": 16}
+                  }
+                ],
+                "fieldName": "statusRow",
+                "properties": {"mainAxisSize": "min"}
               },
               {
                 "data": {
@@ -2520,7 +2529,84 @@ final dynamic sampleFlows = {
           "fieldName": "listView",
           "properties": {"spacing": "spacer4"},
           "schemaCode": null
-        }
+        },
+        {
+          "data": "members",
+          "type": "template",
+          "child": {
+            "type": "template",
+            "format": "card",
+            "visible": "{{fn:isHouseholdWithoutMembers(item)}}",
+            "children": [
+              {
+                "type": "template",
+                "format": "row",
+                "children": [
+                  {
+                    "type": "template",
+                    "value": "{{ item.headIndividual.0.name.givenName }}",
+                    "format": "textTemplate",
+                    "fieldName": "headOfHousehold"
+                  },
+                ],
+                "fieldName": "detailsRow",
+                "properties": {
+                  "mainAxisSize": "max",
+                  "mainAxisAlignment": "spaceBetween"
+                }
+              },
+              {
+                "type": "template",
+                "format": "row",
+                "children": [
+                  {
+                    "type": "template",
+                    "label": "DECLINED_HOUSEHOLD",
+                    "format": "tag",
+                    "fieldName": "statusChip",
+                    "properties": {"tagType": "error", "bottomGap": 16}
+                  }
+                ],
+                "fieldName": "statusRow",
+                "properties": {"mainAxisSize": "min"}
+              },
+              {
+                "data": {
+                  "showPlaceholderRow": true,
+                  "columns": [
+                    {
+                      "header": "BENEFICIARY",
+                      "hidden": false,
+                      "isActive": true,
+                      "cellValue": "{{item.name.givenName}}"
+                    },
+                    {
+                      "header": "AGE_OF_BENEFICIARY",
+                      "hidden": false,
+                      "isActive": true,
+                      "cellValue": "{{fn:formatDate(item.dateOfBirth, 'age')}}"
+                    },
+                    {
+                      "header": "GENDER",
+                      "hidden": false,
+                      "isActive": true,
+                      "cellValue": "{{item.gender}}"
+                    }
+                  ]
+                },
+                "type": "template",
+                "format": "table",
+                "fieldName": "memberTable"
+              }
+            ],
+            "fieldName": "memberCard"
+          },
+          "format": "listView",
+          "hidden": false,
+          "fieldName": "listView",
+          "properties": {"spacing": "spacer4"},
+          "schemaCode": null
+        },
       ],
       "initActions": [
         {"actionType": "LOAD_UNIQUE_ID_POOL"}
@@ -3366,7 +3452,7 @@ final dynamic sampleFlows = {
               "order": 3,
               "value": "",
               "format": "dropdown",
-              "hidden": false,
+              "hidden": true,
               "isMdms": true,
               "tooltip": "",
               "helpText": "",

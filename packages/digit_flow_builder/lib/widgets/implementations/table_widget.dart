@@ -131,7 +131,42 @@ class TableWidget extends ResolvedFlowWidget {
       }
     }
 
-    if (sourceList.isEmpty) return const SizedBox.shrink();
+    if (sourceList.isEmpty) {
+      // Check if placeholder row should be shown when data is empty
+      final showPlaceholderRow = data['showPlaceholderRow'] == true;
+      
+      if (showPlaceholderRow && columns.isNotEmpty) {
+        // Create a placeholder row with "-" values
+        final placeholderRow = DigitTableRow(
+          tableRow: columns.asMap().entries.map((entry) {
+            return DigitTableData(
+              "-",
+              cellKey: 'placeholder_${entry.key}',
+              widget: const Text(
+                "-",
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            );
+          }).toList(),
+        );
+        
+        return SizedBox(
+          height: 52.0 + 64, // Height for one row + header
+          child: DigitTable(
+            enableBorder: true,
+            withRowDividers: false,
+            withColumnDividers: false,
+            showSelectedState: false,
+            showPagination: false,
+            columns: columns,
+            rows: [placeholderRow],
+          ),
+        );
+      }
+      
+      return const SizedBox.shrink();
+    }
 
     final rows = sourceList.asMap().entries.map((entry) {
       final rowItem = entry.value;
