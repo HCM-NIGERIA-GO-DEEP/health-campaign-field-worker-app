@@ -339,103 +339,112 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
                                 .toList(),
                           )
                         : null,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(spacer4),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Tag(
-                              label: localizations.translate(
-                                  FlowBuilderSingleton().boundary?.code ?? ""),
-                              isIcon: true,
-                              customTextStyle: Theme.of(context)
-                                  .digitTextTheme(context)
-                                  .bodyS
-                                  .copyWith(
-                                      color: Theme.of(context)
-                                          .colorTheme
-                                          .alert
-                                          .info),
-                              type: TagType.monochrome,
-                              customIcon: Icon(
-                                Icons.location_on_outlined,
-                                color: Theme.of(context).colorTheme.alert.info,
-                                size: 16,
+                    slivers: [
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.all(spacer4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Tag(
+                                label: localizations.translate(
+                                    FlowBuilderSingleton().boundary?.code ??
+                                        ""),
+                                isIcon: true,
+                                customTextStyle: Theme.of(context)
+                                    .digitTextTheme(context)
+                                    .bodyS
+                                    .copyWith(
+                                        color: Theme.of(context)
+                                            .colorTheme
+                                            .alert
+                                            .info),
+                                type: TagType.monochrome,
+                                customIcon: Icon(
+                                  Icons.location_on_outlined,
+                                  color:
+                                      Theme.of(context).colorTheme.alert.info,
+                                  size: 16,
+                                ),
+                                themeData: TagThemeData(
+                                    monochromeBackgroundColor:
+                                        Theme.of(context)
+                                            .colorTheme
+                                            .alert
+                                            .infoBg,
+                                    iconLabelGap: spacer1),
                               ),
-                              themeData: TagThemeData(
-                                  monochromeBackgroundColor:
-                                      Theme.of(context).colorTheme.alert.infoBg,
-                                  iconLabelGap: spacer1),
-                            ),
-                            const SizedBox(height: spacer2),
-                            DigitTextBlock(
-                              padding: EdgeInsets.zero,
-                              heading: _resolveHeading(
-                                  widget.config['heading'], screenKey),
-                              headingStyle: Theme.of(context)
-                                  .digitTextTheme(context)
-                                  .headingXl
-                                  .copyWith(
-                                      color: Theme.of(context)
-                                          .colorTheme
-                                          .primary
-                                          .primary2),
-                              description: _resolveDescription(
-                                  widget.config['description'], screenKey),
-                            ),
-                            const SizedBox(height: spacer4),
-                            ...body
-                                .asMap()
-                                .entries
-                                .map<MapEntry<bool, CrudItemContext>>((entry) {
-                              final e = entry.value;
-                              final processed =
-                                  preprocessConfigWithState(e, stateData);
-                              final isVisible = _checkWidgetVisibility(
-                                  processed, stateData, screenKey);
+                              const SizedBox(height: spacer2),
+                              DigitTextBlock(
+                                padding: EdgeInsets.zero,
+                                heading: _resolveHeading(
+                                    widget.config['heading'], screenKey),
+                                headingStyle: Theme.of(context)
+                                    .digitTextTheme(context)
+                                    .headingXl
+                                    .copyWith(
+                                        color: Theme.of(context)
+                                            .colorTheme
+                                            .primary
+                                            .primary2),
+                                description: _resolveDescription(
+                                    widget.config['description'], screenKey),
+                              ),
+                              const SizedBox(height: spacer4),
+                              ...body
+                                  .asMap()
+                                  .entries
+                                  .map<MapEntry<bool, CrudItemContext>>(
+                                      (entry) {
+                                final e = entry.value;
+                                final processed =
+                                    preprocessConfigWithState(e, stateData);
+                                final isVisible = _checkWidgetVisibility(
+                                    processed, stateData, screenKey);
 
-                              return MapEntry(
-                                isVisible,
-                                CrudItemContext(
-                                  stateData: stateData,
-                                  screenKey: screenKey,
-                                  compositeKey: compositeKey,
-                                  child: LayoutMapper.map(
-                                    processed,
-                                    stateData,
-                                    context,
-                                    (action) {
-                                      ActionHandler.execute(action, context, {
-                                        'wrappers': const [],
-                                        '_compositeKey': compositeKey,
-                                      });
-                                    },
+                                return MapEntry(
+                                  isVisible,
+                                  CrudItemContext(
+                                    stateData: stateData,
+                                    screenKey: screenKey,
                                     compositeKey: compositeKey,
+                                    child: LayoutMapper.map(
+                                      processed,
+                                      stateData,
+                                      context,
+                                      (action) {
+                                        ActionHandler.execute(action, context, {
+                                          'wrappers': const [],
+                                          '_compositeKey': compositeKey,
+                                        });
+                                      },
+                                      compositeKey: compositeKey,
+                                    ),
+                                  ),
+                                );
+                              }).expand((entry) {
+                                if (!entry.key) return <Widget>[];
+                                return <Widget>[
+                                  entry.value,
+                                  const SizedBox(height: spacer4),
+                                ];
+                              }).toList()
+                                ..removeLast(),
+                              // Scroll loading indicator at bottom of content
+                              if (_showLoadingIndicator && isLoading)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: spacer4),
+                                  child: Center(
+                                    child: DigitLoaders.inlineLoader(),
                                   ),
                                 ),
-                              );
-                            }).expand((entry) {
-                              if (!entry.key) return <Widget>[];
-                              return <Widget>[
-                                entry.value,
-                                const SizedBox(height: spacer4),
-                              ];
-                            }).toList()
-                              ..removeLast(),
-                            // Scroll loading indicator at bottom of content
-                            if (_showLoadingIndicator && isLoading)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: spacer4),
-                                child: Center(
-                                  child: DigitLoaders.inlineLoader(),
-                                ),
-                              ),
-                          ],
+                            ],
+                          ),
                         ),
-                      )
+                      ),
                     ],
+                    children: const [],
                   ),
                 ),
                 // Loading overlay when search/CRUD operation is in progress

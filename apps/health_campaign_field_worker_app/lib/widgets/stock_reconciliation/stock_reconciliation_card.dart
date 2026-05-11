@@ -307,7 +307,7 @@ class _StockReconciliationCardState
                   ),
                 ),
                 if (_selectedFacility != null && _selectedProduct != null)
-                const SizedBox(height: spacer4),
+                  const SizedBox(height: spacer4),
 
                 // Stock Metrics Display (only show if both facility and product are selected)
                 if (_selectedFacility != null && _selectedProduct != null) ...[
@@ -353,38 +353,38 @@ class _StockReconciliationCardState
                         labelFlex: 5,
                       ),
                       const DigitDivider(),
-                      if(isDistributor)
-                        ...[
-                          LabelValueItem(
-                            label: localizations.translate(
-                                i18.stockReconciliationMetrics.stockLost),
-                            value: _stockMetrics['stockLost']!.toStringAsFixed(0),
-                            labelFlex: 5,
-                          ),
-                          const DigitDivider(),
-                          LabelValueItem(
-                            label: localizations.translate(
-                                i18.stockReconciliationMetrics.stockDamaged),
-                            value:
-                            _stockMetrics['stockDamaged']!.toStringAsFixed(0),
-                            labelFlex: 5,
-                          ),
-                          const DigitDivider(),
-                          LabelValueItem(
-                            label: localizations.translate(
-                                i18.stockReconciliationMetrics.stockExcess),
-                            value: _stockMetrics['stockExcess']!.toStringAsFixed(0),
-                            labelFlex: 5,
-                          ),
-                          const DigitDivider(),
-                          LabelValueItem(
-                            label: localizations.translate(
-                                i18.stockReconciliationMetrics.stockLess),
-                            value: _stockMetrics['stockLess']!.toStringAsFixed(0),
-                            labelFlex: 5,
-                          ),
-                          const DigitDivider(),
-                        ],
+                      LabelValueItem(
+                        label: localizations.translate(
+                            i18.stockReconciliationMetrics.stockLost),
+                        value: _stockMetrics['stockLost']!.toStringAsFixed(0),
+                        labelFlex: 5,
+                      ),
+                      const DigitDivider(),
+                      if (isDistributor) ...[
+                        LabelValueItem(
+                          label: localizations.translate(
+                              i18.stockReconciliationMetrics.stockDamaged),
+                          value:
+                              _stockMetrics['stockDamaged']!.toStringAsFixed(0),
+                          labelFlex: 5,
+                        ),
+                        const DigitDivider(),
+                        LabelValueItem(
+                          label: localizations.translate(
+                              i18.stockReconciliationMetrics.stockExcess),
+                          value:
+                              _stockMetrics['stockExcess']!.toStringAsFixed(0),
+                          labelFlex: 5,
+                        ),
+                        const DigitDivider(),
+                        LabelValueItem(
+                          label: localizations.translate(
+                              i18.stockReconciliationMetrics.stockLess),
+                          value: _stockMetrics['stockLess']!.toStringAsFixed(0),
+                          labelFlex: 5,
+                        ),
+                        const DigitDivider(),
+                      ],
                       LabelValueItem(
                         label: localizations.translate(
                             i18.stockReconciliationMetrics.stockOnHand),

@@ -78,20 +78,20 @@ class _DigitTableState extends State<DigitTable> {
   SortOrder? sortOrder;
   int? sortedColumnIndex;
   List<DigitTableRow> sortedRows = [];
-  
+
   // Cache for column widths to avoid recalculation
   late Map<String, double> _columnWidthCache;
-  
+
   // Optimized frozen column state
   List<DigitTableColumn> _frozenColumns = [];
   double _frozenWidth = 0;
   bool _showFrozenColumns = false;
-  
+
   // Row height management - simplified
   List<double> rowHeights = [];
   List<GlobalKey> frozenKeys = [];
   List<GlobalKey> nonFrozenKeys = [];
-  
+
   /// Calculate total table width based on column widths
   double _calculateTableWidth() {
     double totalWidth = 0;
@@ -106,13 +106,13 @@ class _DigitTableState extends State<DigitTable> {
   bool _headerCheckboxIndeterminate = false;
   late Set<int> _selectedRowIndices = Set<int>();
   late Set<int> _highlightedRowIndices = Set<int>();
-  
+
   // Scroll controllers - simplified
   final ScrollController _horizontalScrollController = ScrollController();
   late final LinkedScrollControllerGroup _linkedScrollGroup;
   late final ScrollController _nonFrozenScrollController;
   late final ScrollController _frozenScrollController;
-  
+
   // Performance flags
   bool _isOverflowing = false;
   bool _needsRebuild = false;
@@ -121,8 +121,9 @@ class _DigitTableState extends State<DigitTable> {
   void _checkOverflow() {
     SchedulerBinding.instance.addPostFrameCallback((_) {
       if (mounted && _horizontalScrollController.hasClients) {
-        final hasOverflow =
-            _horizontalScrollController.position.maxScrollExtent > 0;
+        final position = _horizontalScrollController.position;
+        if (!position.hasContentDimensions) return;
+        final hasOverflow = position.maxScrollExtent > 0;
         if (hasOverflow != _isOverflowing) {
           setState(() => _isOverflowing = hasOverflow);
         }
@@ -130,16 +131,16 @@ class _DigitTableState extends State<DigitTable> {
     });
   }
 
-
   @override
   void initState() {
     super.initState();
     sortedRows = widget.rows;
     _selectedRowIndices = Set<int>();
     _columnWidthCache = {};
-    
+
     // Initialize keys only if needed for frozen columns
-    final validFrozenCount = widget.frozenColumnsCount.clamp(0, widget.columns.length);
+    final validFrozenCount =
+        widget.frozenColumnsCount.clamp(0, widget.columns.length);
     if (validFrozenCount > 0 && widget.rows.isNotEmpty) {
       frozenKeys = List.generate(widget.rows.length, (_) => GlobalKey());
       nonFrozenKeys = List.generate(widget.rows.length, (_) => GlobalKey());
@@ -149,20 +150,20 @@ class _DigitTableState extends State<DigitTable> {
       nonFrozenKeys = [];
       rowHeights = [];
     }
-    
+
     // Initialize linked scroll controllers for frozen columns
     _linkedScrollGroup = LinkedScrollControllerGroup();
     _nonFrozenScrollController = _linkedScrollGroup.addAndGet();
     _frozenScrollController = _linkedScrollGroup.addAndGet();
-    
-    if(widget.selectedRows.isNotEmpty) {
+
+    if (widget.selectedRows.isNotEmpty) {
       _selectedRowIndices = widget.selectedRows.toSet();
     }
-    
-    if(widget.highlightedRows.isNotEmpty) {
+
+    if (widget.highlightedRows.isNotEmpty) {
       _highlightedRowIndices = widget.highlightedRows.toSet();
     }
-    
+
     // Listen to scroll events with debouncing
     _horizontalScrollController.addListener(_onScrollDebounced);
 
@@ -173,11 +174,13 @@ class _DigitTableState extends State<DigitTable> {
   // Calculate frozen columns once instead of on every scroll
   void _updateFrozenColumns() {
     // Ensure frozen count doesn't exceed actual columns
-    final validFrozenCount = widget.frozenColumnsCount.clamp(0, widget.columns.length);
-    
+    final validFrozenCount =
+        widget.frozenColumnsCount.clamp(0, widget.columns.length);
+
     if (validFrozenCount > 0 && widget.columns.isNotEmpty) {
       _frozenColumns = widget.columns.take(validFrozenCount).toList();
-      _frozenWidth = _frozenColumns.fold(0, (sum, col) => sum + _getColumnWidth(col));
+      _frozenWidth =
+          _frozenColumns.fold(0, (sum, col) => sum + _getColumnWidth(col));
       _showFrozenColumns = true;
     } else {
       _frozenColumns = [];
@@ -185,7 +188,7 @@ class _DigitTableState extends State<DigitTable> {
       _showFrozenColumns = false;
     }
   }
-  
+
   // Debounced scroll handler for better performance
   void _onScrollDebounced() {
     _scrollDebounce?.cancel();
@@ -216,7 +219,7 @@ class _DigitTableState extends State<DigitTable> {
   @override
   void didUpdateWidget(DigitTable oldWidget) {
     super.didUpdateWidget(oldWidget);
-    
+
     if (widget.selectedRows != oldWidget.selectedRows) {
       _selectedRowIndices.addAll(widget.selectedRows);
     }
@@ -225,10 +228,11 @@ class _DigitTableState extends State<DigitTable> {
       _highlightedRowIndices.addAll(widget.highlightedRows);
     }
 
-    if(widget.rows != oldWidget.rows) {
+    if (widget.rows != oldWidget.rows) {
       sortedRows = widget.rows;
       // Update keys only if using frozen columns
-      final validFrozenCount = widget.frozenColumnsCount.clamp(0, widget.columns.length);
+      final validFrozenCount =
+          widget.frozenColumnsCount.clamp(0, widget.columns.length);
       if (validFrozenCount > 0 && widget.rows.isNotEmpty) {
         final newRowCount = widget.rows.length;
         rowHeights = List.filled(newRowCount, 52.0);
@@ -245,7 +249,7 @@ class _DigitTableState extends State<DigitTable> {
         widget.rows != oldWidget.rows) {
       _updateHeaderCheckbox();
     }
-    
+
     if (widget.frozenColumnsCount != oldWidget.frozenColumnsCount ||
         widget.columns != oldWidget.columns) {
       _columnWidthCache.clear();
@@ -281,7 +285,9 @@ class _DigitTableState extends State<DigitTable> {
         int extractNumber(String str) {
           // Use a regular expression to find a number in the string
           final match = RegExp(r'\d+').firstMatch(str);
-          return match != null ? int.parse(match.group(0)!) : -1; // return -1 if no number
+          return match != null
+              ? int.parse(match.group(0)!)
+              : -1; // return -1 if no number
         }
 
         final numA = extractNumber(columnA);
@@ -304,7 +310,7 @@ class _DigitTableState extends State<DigitTable> {
 
   Widget _buildFrozenColumns(BuildContext context, List<DigitTableRow> rows) {
     final theme = Theme.of(context);
-    
+
     // If no frozen columns or not scrolled, return empty
     if (!_showFrozenColumns || _frozenColumns.isEmpty) {
       return const SizedBox.shrink();
@@ -314,15 +320,18 @@ class _DigitTableState extends State<DigitTable> {
       left: 0,
       bottom: widget.stickyFooter ? 64 : 0,
       child: Container(
-        margin: _isOverflowing ? const EdgeInsets.only(bottom: 12) : EdgeInsets.zero,
+        margin: _isOverflowing
+            ? const EdgeInsets.only(bottom: 12)
+            : EdgeInsets.zero,
         decoration: BoxDecoration(
           color: theme.colorTheme.paper.primary,
-          boxShadow: [BoxShadow(
-            color: theme.colorTheme.text.disabled.withOpacity(0.2), 
-            spreadRadius: 0, 
-            blurRadius: 2, 
-            offset: const Offset(2, 0)
-          )],
+          boxShadow: [
+            BoxShadow(
+                color: theme.colorTheme.text.disabled.withOpacity(0.2),
+                spreadRadius: 0,
+                blurRadius: 2,
+                offset: const Offset(2, 0))
+          ],
         ),
         width: _frozenWidth,
         child: Column(
@@ -342,7 +351,9 @@ class _DigitTableState extends State<DigitTable> {
             ),
             if (_frozenColumns.isNotEmpty && rows.isNotEmpty)
               TableBody(
-                keys: frozenKeys.isNotEmpty ? frozenKeys : List.generate(rows.length, (_) => GlobalKey()),
+                keys: frozenKeys.isNotEmpty
+                    ? frozenKeys
+                    : List.generate(rows.length, (_) => GlobalKey()),
                 rowHeights: rowHeights.isNotEmpty ? rowHeights : null,
                 isFrozen: true,
                 controller: _frozenScrollController,
@@ -354,32 +365,33 @@ class _DigitTableState extends State<DigitTable> {
                 getColumnWidth: _getColumnWidth,
                 rows: rows.map((row) {
                   // Take only the frozen column cells, ensure we don't exceed available cells
-                  final cellCount = row.tableRow.length.clamp(0, _frozenColumns.length);
-                  List<DigitTableData> frozenCells = cellCount > 0 
+                  final cellCount =
+                      row.tableRow.length.clamp(0, _frozenColumns.length);
+                  List<DigitTableData> frozenCells = cellCount > 0
                       ? row.tableRow.take(cellCount).toList()
                       : [];
                   return DigitTableRow(tableRow: frozenCells);
                 }).toList(),
                 columns: _frozenColumns,
-              alternateRowColor: widget.alternateRowColor,
-              withRowDividers: widget.withRowDividers,
-              enableBorder: widget.enableBorder,
-              withColumnDividers: widget.withColumnDividers,
-              headerCheckboxValue: _headerCheckboxValue,
-              onRowCheckboxChanged: (rowIndex, isSelected) {
-                setState(() {
-                  if (isSelected) {
-                    _selectedRowIndices.add(rowIndex);
-                  } else {
-                    _selectedRowIndices.remove(rowIndex);
+                alternateRowColor: widget.alternateRowColor,
+                withRowDividers: widget.withRowDividers,
+                enableBorder: widget.enableBorder,
+                withColumnDividers: widget.withColumnDividers,
+                headerCheckboxValue: _headerCheckboxValue,
+                onRowCheckboxChanged: (rowIndex, isSelected) {
+                  setState(() {
+                    if (isSelected) {
+                      _selectedRowIndices.add(rowIndex);
+                    } else {
+                      _selectedRowIndices.remove(rowIndex);
+                    }
+                    _updateHeaderCheckbox();
+                  });
+                  if (widget.onSelectedRowsChanged != null) {
+                    widget.onSelectedRowsChanged!(_selectedRowIndices.length);
                   }
-                  _updateHeaderCheckbox();
-                });
-                if (widget.onSelectedRowsChanged != null) {
-                  widget.onSelectedRowsChanged!(_selectedRowIndices.length);
-                }
-              },
-            ),
+                },
+              ),
           ],
         ),
       ),
@@ -392,15 +404,15 @@ class _DigitTableState extends State<DigitTable> {
   double _getColumnWidth(DigitTableColumn column) {
     // Use cache key based on column header and type
     final cacheKey = '${column.header}_${column.type}';
-    
+
     // Return cached value if exists
     if (_columnWidthCache.containsKey(cacheKey)) {
       return _columnWidthCache[cacheKey]!;
     }
-    
+
     final screenSize = MediaQuery.of(context).size;
     double width;
-    
+
     // If width is provided, use responsive calculation
     if (column.width != null) {
       if (AppView.isMobileView(screenSize)) {
@@ -415,32 +427,47 @@ class _DigitTableState extends State<DigitTable> {
       switch (column.type) {
         case ColumnType.checkbox:
         case ColumnType.numeric:
-          width = AppView.isMobileView(screenSize) ? 50 : 
-                 AppView.isTabletView(screenSize) ? 70 : 100;
+          width = AppView.isMobileView(screenSize)
+              ? 50
+              : AppView.isTabletView(screenSize)
+                  ? 70
+                  : 100;
           break;
         case ColumnType.DigitButton:
         case ColumnType.dropDown:
         case ColumnType.textField:
-          width = AppView.isMobileView(screenSize) ? 120 : 
-                 AppView.isTabletView(screenSize) ? 150 : 180;
+          width = AppView.isMobileView(screenSize)
+              ? 120
+              : AppView.isTabletView(screenSize)
+                  ? 150
+                  : 180;
           break;
         case ColumnType.tags:
         case ColumnType.switchs:
-          width = AppView.isMobileView(screenSize) ? 100 : 
-                 AppView.isTabletView(screenSize) ? 130 : 160;
+          width = AppView.isMobileView(screenSize)
+              ? 100
+              : AppView.isTabletView(screenSize)
+                  ? 130
+                  : 160;
           break;
         case ColumnType.description:
-          width = AppView.isMobileView(screenSize) ? 180 : 
-                 AppView.isTabletView(screenSize) ? 220 : 280;
+          width = AppView.isMobileView(screenSize)
+              ? 180
+              : AppView.isTabletView(screenSize)
+                  ? 220
+                  : 280;
           break;
         case ColumnType.text:
         default:
-          width = AppView.isMobileView(screenSize) ? 140 : 
-                 AppView.isTabletView(screenSize) ? 170 : 202;
+          width = AppView.isMobileView(screenSize)
+              ? 140
+              : AppView.isTabletView(screenSize)
+                  ? 170
+                  : 202;
           break;
       }
     }
-    
+
     // Cache the calculated width
     _columnWidthCache[cacheKey] = width;
     return width;
@@ -473,7 +500,6 @@ class _DigitTableState extends State<DigitTable> {
     }
   }
 
-
   // Extract pagination logic
   List<DigitTableRow> _getPaginatedRows() {
     if (!widget.showPagination) return sortedRows;
@@ -483,13 +509,15 @@ class _DigitTableState extends State<DigitTable> {
     int startIndex = (currentPage - 1) * rowsPerPage;
     if (startIndex >= sortedRows.length) {
       // currentPage is stale after row count dropped — reset to last valid page
-      currentPage = (sortedRows.length / rowsPerPage).ceil().clamp(1, double.maxFinite.toInt());
+      currentPage = (sortedRows.length / rowsPerPage)
+          .ceil()
+          .clamp(1, double.maxFinite.toInt());
       startIndex = (currentPage - 1) * rowsPerPage;
     }
     final endIndex = (startIndex + rowsPerPage).clamp(0, sortedRows.length);
     return sortedRows.sublist(startIndex, endIndex);
   }
-  
+
   // Build table header widget
   Widget _buildTableHeader() {
     return TableHeader(
@@ -506,7 +534,7 @@ class _DigitTableState extends State<DigitTable> {
       onHeaderCheckboxChanged: _onHeaderCheckboxChanged,
     );
   }
-  
+
   // Handle sort action
   void _handleSort(int index, SortOrder order) {
     setState(() {
@@ -522,7 +550,7 @@ class _DigitTableState extends State<DigitTable> {
       currentPage = 1;
     });
   }
-  
+
   // Build table footer widget
   Widget _buildTableFooter(int totalPages) {
     return TableFooter(
@@ -557,7 +585,7 @@ class _DigitTableState extends State<DigitTable> {
       showRowsPerPage: widget.showRowsPerPage,
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     // Early return if no columns or rows
@@ -566,9 +594,10 @@ class _DigitTableState extends State<DigitTable> {
         child: Text('No columns configured'),
       );
     }
-    
+
     final paginatedRows = _getPaginatedRows();
-    final totalPages = sortedRows.isEmpty ? 1 : (sortedRows.length / rowsPerPage).ceil();
+    final totalPages =
+        sortedRows.isEmpty ? 1 : (sortedRows.length / rowsPerPage).ceil();
 
     return SizedBox(
       height: widget.tableHeight,
@@ -576,7 +605,9 @@ class _DigitTableState extends State<DigitTable> {
       child: Stack(
         children: [
           Padding(
-            padding: EdgeInsets.only(top: widget.stickyHeader ? 52 : 0, bottom: widget.stickyFooter ? 64 : 0),
+            padding: EdgeInsets.only(
+                top: widget.stickyHeader ? 52 : 0,
+                bottom: widget.stickyFooter ? 64 : 0),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -587,7 +618,9 @@ class _DigitTableState extends State<DigitTable> {
                       controller: _horizontalScrollController,
                       thumbVisibility: _isOverflowing,
                       child: SingleChildScrollView(
-                        padding: _isOverflowing ? const EdgeInsets.only(bottom: 12) : EdgeInsets.zero,
+                        padding: _isOverflowing
+                            ? const EdgeInsets.only(bottom: 12)
+                            : EdgeInsets.zero,
                         controller: _horizontalScrollController,
                         scrollDirection: Axis.horizontal,
                         child: SingleChildScrollView(
@@ -597,10 +630,16 @@ class _DigitTableState extends State<DigitTable> {
                             children: [
                               if (!widget.stickyHeader) _buildTableHeader(),
                               TableBody(
-                                keys: nonFrozenKeys.isNotEmpty ? nonFrozenKeys : List.generate(paginatedRows.length, (_) => GlobalKey()),
+                                keys: nonFrozenKeys.isNotEmpty
+                                    ? nonFrozenKeys
+                                    : List.generate(paginatedRows.length,
+                                        (_) => GlobalKey()),
                                 controller: _nonFrozenScrollController,
-                                tableHeight: widget.tableHeight!=null ? widget.tableHeight! - 48 : null,
-                                scrollPhysics: widget.scrollPhysicsForPagination,
+                                tableHeight: widget.tableHeight != null
+                                    ? widget.tableHeight! - 48
+                                    : null,
+                                scrollPhysics:
+                                    widget.scrollPhysicsForPagination,
                                 enableSelection: widget.showSelectedState,
                                 highlightedRows: _highlightedRowIndices,
                                 selectedRows: _selectedRowIndices,
@@ -623,11 +662,13 @@ class _DigitTableState extends State<DigitTable> {
                                     _updateHeaderCheckbox();
                                   });
                                   if (widget.onSelectedRowsChanged != null) {
-                                    widget.onSelectedRowsChanged!(_selectedRowIndices.length);
+                                    widget.onSelectedRowsChanged!(
+                                        _selectedRowIndices.length);
                                   }
                                 },
                                 expandOnRowClick: widget.expandOnRowClick,
-                                showExpandIconOnHover: widget.showExpandIconOnHover,
+                                showExpandIconOnHover:
+                                    widget.showExpandIconOnHover,
                               ),
                             ],
                           ),
@@ -648,7 +689,7 @@ class _DigitTableState extends State<DigitTable> {
                         color: const DigitColors().light.paperPrimary,
                       ),
                       child: widget.customRow!),
-                if(widget.showPagination && !widget.stickyFooter)
+                if (widget.showPagination && !widget.stickyFooter)
                   _buildTableFooter(totalPages),
               ],
             ),
