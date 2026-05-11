@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
@@ -32,7 +33,14 @@ class _CurrentBoundaryPageState extends LocalizedState<CurrentBoundaryPage> {
 
     return BlocBuilder<BoundaryBloc, BoundaryState>(
       builder: (context, state) {
-        final boundaries = state.allSelectedLastLevelBoundaries;
+        // final boundaries = state.allSelectedLastLevelBoundaries;
+        final lastSelected =
+            state.selectedBoundaryMap.values.lastWhereOrNull((v) => v != null);
+        final boundaries = state.allSelectedLastLevelBoundaries.isNotEmpty
+            ? state.allSelectedLastLevelBoundaries
+            : lastSelected != null
+                ? [lastSelected]
+                : <BoundaryModel>[];
 
         return Scaffold(
           body: ScrollableContent(

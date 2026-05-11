@@ -117,7 +117,10 @@ class Constants {
     'hcm-peer-to-peer',
     'hcm-transit-post',
     'hcm-attendance',
-    'hcm-dashboard'
+    'hcm-dashboard',
+    'hcm-admin-console',
+    'hcm-referral',
+    'hcm-registration',
   ];
 
   // Modules to load when inside packages
@@ -129,7 +132,10 @@ class Constants {
     'hcm-peer-to-peer',
     'hcm-transit-post',
     'hcm-attendance',
-    'hcm-dashboard'
+    'hcm-dashboard',
+    'hcm-admin-console',
+    'hcm-referral',
+    'hcm-registration',
   ];
 
   // Modules to load on home page and logout
@@ -142,7 +148,10 @@ class Constants {
     'hcm-peer-to-peer',
     'hcm-transit-post',
     'hcm-attendance',
-    'hcm-dashboard'
+    'hcm-dashboard',
+    'hcm-admin-console',
+    'hcm-referral',
+    'hcm-registration',
   ];
   static const String surveyFormPreviewDateFormat = 'dd MMMM yyyy';
   static const String defaultDateFormat = 'dd/MM/yyyy';

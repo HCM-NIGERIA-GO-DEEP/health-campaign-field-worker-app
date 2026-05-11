@@ -1,4 +1,5 @@
 import 'package:digit_forms_engine/helper/validator_helper.dart';
+import 'package:intl/intl.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import '../models/property_schema/property_schema.dart';
@@ -178,7 +179,11 @@ DateTime? parseDateValue(dynamic value) {
 
   if (value is String) {
     try {
-      // Try parsing as ISO date first
+      // Try parsing as dd/MM/yyyy format first
+      if (value.length == 10 && value[2] == '/' && value[5] == '/') {
+        return DateFormat('dd/MM/yyyy').parse(value);
+      }
+      // Try parsing as ISO date
       return DateTime.parse(value);
     } catch (_) {
       // Try parsing as milliseconds in string form

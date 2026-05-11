@@ -143,9 +143,11 @@ class JsonSchemaDOBBuilder extends JsonSchemaBuilder<String> {
     (int years, int months)? minAge,
     (int years, int months)? maxAge,
   ) {
-    control.removeError('required');
-    control.removeError('minAge');
-    control.removeError('maxAge');
+    final formatted = dob != null ? DateFormat('dd/MM/yyyy').format(dob) : null;
+    if (control.value != formatted) {
+      control.value = formatted;
+    }
+
     control.markAsTouched();
 
     final isRequired = validations?.any((v) => v.type == 'required') ?? false;
@@ -176,10 +178,6 @@ class JsonSchemaDOBBuilder extends JsonSchemaBuilder<String> {
         return;
       }
     }
-
-    // Store as string in "dd/MM/yyyy" format
-    final formatted = DateFormat('dd/MM/yyyy').format(dob);
-    control.value = formatted;
   }
 
   String? _getDobErrorMessage(
