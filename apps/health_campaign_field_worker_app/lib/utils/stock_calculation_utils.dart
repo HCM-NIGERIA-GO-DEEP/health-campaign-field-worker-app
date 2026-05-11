@@ -120,13 +120,15 @@ class StockCalculationUtils {
     // Use distributor calculation if user has distributor role OR if any return was made as sender
     // For distributor, partial used is also deducted from stock in hand
     final double stockInHand = hasDistributorReturns
-        ? stockReceived -
+        ? stockReceived +
+            stockExcess -
             (stockReturned +
                 stockWastage +
                 stockPartialUsed +
                 stockIssued +
                 stockDamaged +
-                stockLost)
+                stockLost +
+                stockLess)
         : stockReceived +
             stockReturned -
             (stockIssued + stockDamaged + stockLost);
