@@ -1608,6 +1608,9 @@ class _HomePageState extends LocalizedState<HomePage> {
                     ? const SizedBox.shrink()
                     : homeShowcaseData.distributorProgressBar.buildWith(
                         child: BeneficiaryProgressBar(
+                          key: const ValueKey(
+                            'distributor_progress_bar_primary',
+                          ),
                           label: localizations.translate(
                             i18.home.progressIndicatorTitle,
                           ),
@@ -1616,6 +1619,18 @@ class _HomePageState extends LocalizedState<HomePage> {
                           ),
                         ),
                       ),
+                if (!skipProgressBar)
+                  BeneficiaryProgressBar(
+                    key: const ValueKey(
+                      'distributor_progress_bar_secondary',
+                    ),
+                    label: localizations.translate(
+                      i18.home.progressIndicatorTitle,
+                    ),
+                    prefixLabel: localizations.translate(
+                      i18.home.progressIndicatorPrefixLabel,
+                    ),
+                  ),
                 /////   hfreferral progress matrics
                 if (state.actionsWrapper.actions
                     .map((e) => e.displayName)
