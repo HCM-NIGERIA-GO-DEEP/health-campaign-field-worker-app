@@ -1195,91 +1195,91 @@ final dynamic sampleInventoryFlows = {
               "isMultiSelect": false,
               "enums": null
             },
-            {
-              "type": "integer",
-              "label": "APPONE_INVENTORY_QUANTITY_WASTAGE_LABEL",
-              "order": 5,
-              "value": "",
-              "format": "text",
-              "hidden": false,
-              "tooltip": "",
-              "helpText": "",
-              "infoText": "",
-              "readOnly": false,
-              "fieldName": "quantityWastage",
-              "deleteFlag": false,
-              "innerLabel": "",
-              "visibilityCondition": {
-                "expression": [
-                  {
-                    "condition":
-                        "navigation.stockEntryType == 'RETURNED' && navigation.isDistributor && navigation.sku?.toLowerCase().includes('spaq')",
-                    "type": "custom"
-                  }
-                ]
-              },
-              "systemDate": false,
-              "validations": [
-                {
-                  "type": "required",
-                  "value": true,
-                  "message": "QUANTITY_WASTAGE_REQUIRED_ERROR_MESSAGE"
-                },
-                {
-                  "type": "regex",
-                  "value": r"^[0-9]+$",
-                  "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
-                },
-                {
-                  "type": "pattern",
-                  "value": r"^[0-9]+$",
-                  "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
-                }
-              ],
-              "errorMessage": "",
-              "isMultiSelect": false,
-              "enums": null
-            },
-            {
-              "type": "integer",
-              "label": "APPONE_INVENTORY_QUANTITY_PARTIAL_USED_LABEL",
-              "order": 6,
-              "value": "",
-              "format": "text",
-              "hidden": false,
-              "tooltip": "",
-              "helpText": "",
-              "infoText": "",
-              "readOnly": false,
-              "fieldName": "quantityPartialUsed",
-              "deleteFlag": false,
-              "innerLabel": "",
-              "visibilityCondition": {
-                "expression": [
-                  {
-                    "condition":
-                        "navigation.stockEntryType == 'RETURNED' && navigation.isDistributor && navigation.sku?.toLowerCase().includes('spaq')",
-                    "type": "custom"
-                  }
-                ]
-              },
-              "systemDate": false,
-              "validations": [
-                {
-                  "type": "regex",
-                  "value": r"^[0-9]+$",
-                  "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
-                },
-                {
-                  "type": "pattern",
-                  "value": r"^[0-9]+$",
-                  "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
-                }
-              ],
-              "errorMessage": "",
-              "isMultiSelect": false,
-              "enums": null
-            },
+            // {
+            //   "type": "integer",
+            //   "label": "APPONE_INVENTORY_QUANTITY_WASTAGE_LABEL",
+            //   "order": 5,
+            //   "value": "",
+            //   "format": "text",
+            //   "hidden": false,
+            //   "tooltip": "",
+            //   "helpText": "",
+            //   "infoText": "",
+            //   "readOnly": false,
+            //   "fieldName": "quantityWastage",
+            //   "deleteFlag": false,
+            //   "innerLabel": "",
+            //   "visibilityCondition": {
+            //     "expression": [
+            //       {
+            //         "condition":
+            //             "navigation.stockEntryType == 'RETURNED' && navigation.isDistributor && navigation.sku?.toLowerCase().includes('spaq')",
+            //         "type": "custom"
+            //       }
+            //     ]
+            //   },
+            //   "systemDate": false,
+            //   "validations": [
+            //     {
+            //       "type": "required",
+            //       "value": true,
+            //       "message": "QUANTITY_WASTAGE_REQUIRED_ERROR_MESSAGE"
+            //     },
+            //     {
+            //       "type": "regex",
+            //       "value": r"^[0-9]+$",
+            //       "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
+            //     },
+            //     {
+            //       "type": "pattern",
+            //       "value": r"^[0-9]+$",
+            //       "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
+            //     }
+            //   ],
+            //   "errorMessage": "",
+            //   "isMultiSelect": false,
+            //   "enums": null
+            // },
+            // {
+            //   "type": "integer",
+            //   "label": "APPONE_INVENTORY_QUANTITY_PARTIAL_USED_LABEL",
+            //   "order": 6,
+            //   "value": "",
+            //   "format": "text",
+            //   "hidden": false,
+            //   "tooltip": "",
+            //   "helpText": "",
+            //   "infoText": "",
+            //   "readOnly": false,
+            //   "fieldName": "quantityPartialUsed",
+            //   "deleteFlag": false,
+            //   "innerLabel": "",
+            //   "visibilityCondition": {
+            //     "expression": [
+            //       {
+            //         "condition":
+            //             "navigation.stockEntryType == 'RETURNED' && navigation.isDistributor && navigation.sku?.toLowerCase().includes('spaq')",
+            //         "type": "custom"
+            //       }
+            //     ]
+            //   },
+            //   "systemDate": false,
+            //   "validations": [
+            //     {
+            //       "type": "regex",
+            //       "value": r"^[0-9]+$",
+            //       "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
+            //     },
+            //     {
+            //       "type": "pattern",
+            //       "value": r"^[0-9]+$",
+            //       "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
+            //     }
+            //   ],
+            //   "errorMessage": "",
+            //   "isMultiSelect": false,
+            //   "enums": null
+            // },
             {
               "type": "integer",
               "label": "APPONE_INVENTORY_QUANTITY_RECEIVED_LABEL",
