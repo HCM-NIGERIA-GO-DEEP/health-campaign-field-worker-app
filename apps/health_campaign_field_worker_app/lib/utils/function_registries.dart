@@ -889,6 +889,52 @@ class FunctionRegistries {
 
       return addedChildrenCount < childrenCount;
     });
+
+    FunctionRegistry.register("isHouseholdWithoutMembers", (args, stateData) {
+      if (args == null || args.isEmpty || args.first == null) {
+        return false;
+      }
+
+      final item = args.first;
+
+      // Check if it's a Map (household object)
+      if (item is! Map) {
+        return false;
+      }
+
+      // Check if household exists
+      final household = item['HouseholdModel'];
+      if (household == null) {
+        return false;
+      }
+
+      // Check if members count is 0
+      final members = item['members'];
+      final membersCount = members is List ? members.length : 0;
+
+      // Check if individuals count is 0
+      final individuals = item['individuals'];
+      final individualsCount = individuals is List ? individuals.length : 0;
+
+      // Check if projectBeneficiaries count is 0
+      final projectBeneficiaries = item['projectBeneficiaries'];
+      final projectBeneficiariesCount =
+          projectBeneficiaries is List ? projectBeneficiaries.length : 0;
+
+      // Return true if household exists but has no members, individuals, or projectBeneficiaries
+      return membersCount == 0 &&
+          individualsCount == 0 &&
+          projectBeneficiariesCount == 0;
+    });
+
+    FunctionRegistry.register("checkIfClosedHousehold", (args, stateData) {
+      if (args == null || args.isEmpty || args.first == null) {
+        return false;
+      }
+
+      final status = args.first;
+      return status == 'CLOSED_HOUSEHOLD';
+    });
   }
 }
 

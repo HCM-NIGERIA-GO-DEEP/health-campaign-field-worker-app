@@ -1366,6 +1366,8 @@ class IndividualDetails {
   String get yearsAndMonthsErrorText => 'ERR_YEARS_AND_MONTHS';
 
   String get linkVoucherToIndividual => 'LINK_VOUCHER_TO_INDIVIDUAL';
+  String get ageValidation => 'AGE_VALIDATION';
+  String get ageValidationAddMember => 'AGE_VALIDATION_ADDMEMBER';
 }
 
 class BeneficiaryDetails {

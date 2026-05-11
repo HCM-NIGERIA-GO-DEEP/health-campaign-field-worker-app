@@ -3,7 +3,8 @@ import 'package:flutter/foundation.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import '../models/property_schema/property_schema.dart';
-
+import 'package:digit_ui_components/utils/date_utils.dart';
+import 'package:intl/intl.dart';
 // Global registry for page schemas - used by validators to access cross-page values
 final Map<String, Map<String, PropertySchema>> _pagesRegistry = {};
 
@@ -47,10 +48,64 @@ dynamic _resolveNavigationValue(dynamic value, String? schemaKey) {
 String? _extractFieldReference(dynamic value) {
   if (value is! String) return null;
   if (!value.startsWith('{{') || !value.endsWith('}}')) return null;
-  
+
   // Extract field name from {{fieldName}}
   final fieldName = value.substring(2, value.length - 2).trim();
   return fieldName.isNotEmpty ? fieldName : null;
+}
+
+bool _evaluateConditionDelegate(
+  String variable,
+  FormGroup formGroup,
+  Map<String, dynamic>? navParams,
+) {
+  if (navParams != null && navParams.containsKey(variable)) {
+    final value = navParams[variable];
+    if (value is bool) return value;
+    if (value is String) return value.toLowerCase() == 'true';
+    if (value is num) return value != 0;
+  }
+  if (formGroup.contains(variable)) {
+    final value = formGroup.control(variable).value;
+    if (value is bool) return value;
+    if (value is String) return value.toLowerCase() == 'true';
+    if (value is num) return value != 0;
+  }
+  return false;
+}
+
+(int years, int months)? _parseAgeConstraintDelegate(
+  dynamic ruleValue,
+  FormGroup formGroup,
+  Map<String, dynamic>? navParams,
+) {
+  if (ruleValue == null) return null;
+  String evaluated = ruleValue.toString().trim();
+
+  if (evaluated.startsWith('{{') && evaluated.endsWith('}}')) {
+    final expr = evaluated.substring(2, evaluated.length - 2).trim();
+    final qIndex = expr.indexOf('?');
+    final colonIndex = expr.lastIndexOf(':');
+
+    if (qIndex > 0 && colonIndex > qIndex) {
+      final condition = expr.substring(0, qIndex).trim();
+      final truePart = expr.substring(qIndex + 1, colonIndex).trim();
+      final falsePart = expr.substring(colonIndex + 1).trim();
+
+      bool conditionResult = _evaluateConditionDelegate(condition, formGroup, navParams);
+      evaluated = conditionResult ? truePart : falsePart;
+    } else {
+      evaluated = expr;
+    }
+  }
+
+  final totalMonths = int.tryParse(evaluated.trim());
+  if (totalMonths == null) return null;
+
+  final years = totalMonths ~/ 12;
+  final months = totalMonths % 12;
+
+  return (years, months);
 }
 
 List<Validator<T>> buildValidators<T>(PropertySchema schema,
@@ -116,11 +171,12 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
                 if (control.value == null) return null;
                 final numValue = num.tryParse(control.value.toString());
                 if (numValue == null) return null;
-                
+
                 // Try to get the referenced field's value from the form
                 try {
                   final parent = control.parent;
-                  if (parent is FormGroup && parent.controls.containsKey(fieldRef)) {
+                  if (parent is FormGroup &&
+                      parent.controls.containsKey(fieldRef)) {
                     final refControl = parent.control(fieldRef);
                     final refValue = parseIntValue(refControl.value);
                     if (refValue != null && numValue < refValue) {
@@ -188,11 +244,12 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
                 if (control.value == null) return null;
                 final numValue = num.tryParse(control.value.toString());
                 if (numValue == null) return null;
-                
+
                 // Try to get the referenced field's value from the form
                 try {
                   final parent = control.parent;
-                  if (parent is FormGroup && parent.controls.containsKey(fieldRef)) {
+                  if (parent is FormGroup &&
+                      parent.controls.containsKey(fieldRef)) {
                     final refControl = parent.control(fieldRef);
                     final refValue = parseIntValue(refControl.value);
                     if (refValue != null && numValue > refValue) {
@@ -250,6 +307,58 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
         case 'required':
           if (rule.value == true) {
             validators.add(Validators.required as Validator<T>);
+          }
+          break;
+
+        case 'minAge':
+          if (rule.value != null) {
+            validators.add(Validators.delegate((control) {
+              if (control.value == null || control.value.toString().isEmpty) return null;
+              final formGroup = control.parent;
+              if (formGroup is! FormGroup) return null;
+
+              final navParams = schemaKey != null ? _navigationParamsRegistry[schemaKey] : null;
+
+              final minAge = _parseAgeConstraintDelegate(rule.value, formGroup, navParams);
+              if (minAge == null) return null;
+
+              final dob = parseDateValue(control.value);
+              if (dob == null) return null;
+
+              final age = DigitDateUtils.calculateAge(dob);
+              final minValid = age.years > minAge.$1 ||
+                  (age.years == minAge.$1 && age.months >= minAge.$2);
+              if (!minValid) {
+                return {'minAge': true};
+              }
+              return null;
+            }) as Validator<T>);
+          }
+          break;
+
+        case 'maxAge':
+          if (rule.value != null) {
+            validators.add(Validators.delegate((control) {
+              if (control.value == null || control.value.toString().isEmpty) return null;
+              final formGroup = control.parent;
+              if (formGroup is! FormGroup) return null;
+
+              final navParams = schemaKey != null ? _navigationParamsRegistry[schemaKey] : null;
+
+              final maxAge = _parseAgeConstraintDelegate(rule.value, formGroup, navParams);
+              if (maxAge == null) return null;
+
+              final dob = parseDateValue(control.value);
+              if (dob == null) return null;
+
+              final age = DigitDateUtils.calculateAge(dob);
+              final maxValid = age.years < maxAge.$1 ||
+                  (age.years == maxAge.$1 && age.months <= maxAge.$2);
+              if (!maxValid) {
+                return {'maxAge': true};
+              }
+              return null;
+            }) as Validator<T>);
           }
           break;
 
