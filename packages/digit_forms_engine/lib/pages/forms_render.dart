@@ -90,10 +90,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
   /// Flows in which the in-app back navigation header and the
   /// Android system back button must be disabled.
-  static const Set<String> _backDisabledSchemas = {
-    'CHECKLIST',
-    'REFER_BENEFICIARY'
-  };
+  static const Set<String> _backDisabledSchemas = {};
 
   bool get _isBackDisabled =>
       _backDisabledSchemas.contains(widget.currentSchemaKey);

@@ -836,7 +836,12 @@ final dynamic sampleFlows = {
             "onAction": [
               {
                 "actionType": "NAVIGATION",
-                "properties": {"name": "searchBeneficiary", "type": "TEMPLATE"}
+                "properties": {
+                  "name": "searchBeneficiary",
+                  "type": "TEMPLATE",
+                  "navigationMode": "popUntil",
+                  "popUntilPageName": "searchBeneficiary"
+                }
               }
             ],
             "fieldName": "goBack",
@@ -866,7 +871,9 @@ final dynamic sampleFlows = {
                   }
                 ],
                 "name": "searchBeneficiary",
-                "type": "TEMPLATE"
+                "type": "TEMPLATE",
+                "navigationMode": "popUntil",
+                "popUntilPageName": "searchBeneficiary"
               }
             }
           ],
@@ -4687,8 +4694,8 @@ final dynamic sampleFlows = {
                         "value": "{{contextData.0.cycleIndex}}"
                       }
                     ],
-                    "name": "CHECKLIST",
-                    "type": "FORM"
+                    "name": "ACKNOWLEDGEMENT",
+                    "type": "TEMPLATE"
                   }
                 }
               ],
@@ -4795,8 +4802,8 @@ final dynamic sampleFlows = {
               },
               {"key": "cycleIndex", "value": "{{contextData.0.cycleIndex}}"}
             ],
-            "name": "CHECKLIST",
-            "type": "FORM"
+            "name": "ACKNOWLEDGEMENT",
+            "type": "TEMPLATE"
           },
           "properties": [
             {
@@ -5232,8 +5239,8 @@ final dynamic sampleFlows = {
               },
               {"key": "cycleIndex", "value": "{{contextData.0.cycleIndex}}"}
             ],
-            "name": "CHECKLIST",
-            "type": "FORM",
+            "name": "ACKNOWLEDGEMENT",
+            "type": "TEMPLATE",
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
