@@ -1952,10 +1952,15 @@ final dynamic sampleInventoryFlows = {
           "actionType": "FETCH_TRANSFORMER_CONFIG",
           "properties": {
             "configName": "stockLessExcess",
+            "formDataConfig": "FORM::RECORDLESSEXCESS",
             "data": [
               {
                 "key": "stockEntryType",
                 "value": "{{formData.lessExcessDetails.recordType}}"
+              },
+              {
+                "key": "facilityToWhich",
+                "value": "{{formData.warehouseDetails.facilityToWhich}}"
               },
               {
                 "key": "receiverPartyType",

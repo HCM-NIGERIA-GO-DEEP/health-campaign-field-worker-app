@@ -862,7 +862,7 @@ final jsonConfig = {
         "mappings": {
           "id": "stockDetails.id",
           "clientReferenceId": "__generate:uuid",
-          "facilityId": "warehouseDetails.facilityToWhich",
+          "facilityId": "__context:facilityToWhich",
           "productVariantId": "stockDetails.productdetail.id",
           "referenceId": "__context:projectId",
           "referenceIdType": "__value:PROJECT",
@@ -1001,13 +1001,13 @@ final jsonConfig = {
           "transactionReason":
               "__switch:lessExcessDetails.recordType:{LESS:__value:RETURNED,EXCESS:__value:RECEIVED}",
           "senderId":
-              "__switch:lessExcessDetails.recordType:{LESS:__value:__context:loggedInUserUuid,EXCESS:__value:warehouseDetails.facilityToWhich}",
+              "__switch:lessExcessDetails.recordType:{LESS:__context:loggedInUserUuid,EXCESS:__context:facilityToWhich}",
           "senderType":
-              "__switch:lessExcessDetails.recordType:{LESS:__value:STAFF,EXCESS:__value:__value:WAREHOUSE}:",
+              "__switch:lessExcessDetails.recordType:{LESS:__value:STAFF,EXCESS:__value:WAREHOUSE}",
           "receiverId":
-              "__switch:lessExcessDetails.recordType:{LESS:__value:__value:warehouseDetails.facilityToWhich,EXCESS:__context:loggedInUserUuid}",
+              "__switch:lessExcessDetails.recordType:{LESS:__context:facilityToWhich,EXCESS:__context:loggedInUserUuid}",
           "receiverType":
-              "__switch:lessExcessDetails.recordType:{LESS:__value:WAREHOUSE,EXCESS:__value:__value:STAFF}:",
+              "__switch:lessExcessDetails.recordType:{LESS:__value:WAREHOUSE,EXCESS:__value:STAFF}",
           "nonRecoverableError": "errors.nonRecoverable",
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
