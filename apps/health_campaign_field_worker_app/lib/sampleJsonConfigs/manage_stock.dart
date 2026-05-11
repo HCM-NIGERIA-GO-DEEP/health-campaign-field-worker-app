@@ -1213,7 +1213,7 @@ final dynamic sampleInventoryFlows = {
                 "expression": [
                   {
                     "condition":
-                        "navigation.stockEntryType == 'RETURNED' && navigation.isDistributor",
+                        "navigation.stockEntryType == 'RETURNED' && navigation.isDistributor && navigation.sku?.toLowerCase().includes('spaq')",
                     "type": "custom"
                   }
                 ]
@@ -1258,7 +1258,7 @@ final dynamic sampleInventoryFlows = {
                 "expression": [
                   {
                     "condition":
-                        "navigation.stockEntryType == 'RETURNED' && navigation.isDistributor",
+                        "navigation.stockEntryType == 'RETURNED' && navigation.isDistributor && navigation.sku?.toLowerCase().includes('spaq')",
                     "type": "custom"
                   }
                 ]
