@@ -183,17 +183,14 @@ class TableWidget extends ResolvedFlowWidget {
       );
     }).toList();
 
-    return SizedBox(
-      height: rows.length * 52.0 + 64,
-      child: DigitTable(
-        enableBorder: true,
-        withRowDividers: false,
-        withColumnDividers: false,
-        showSelectedState: false,
-        showPagination: false,
-        columns: columns,
-        rows: rows,
-      ),
+    return DigitTable(
+      enableBorder: true,
+      withRowDividers: false,
+      withColumnDividers: false,
+      showSelectedState: false,
+      showPagination: false,
+      columns: columns,
+      rows: rows,
     );
   }
 }
