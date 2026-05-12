@@ -8416,6 +8416,11 @@ final dynamic sampleFlows = {
                     "key": "HouseholdProjectBeneficiaryClientReferenceId",
                     "value":
                         "{{contextData.0.projectBeneficiary.ProjectBeneficiaryModel.clientReferenceId}}"
+                  },
+                  {
+                    "key": "productVariantId",
+                    "value":
+                        "{{contextData.0.eligibleProductVariants.0.ProductVariants.0.productVariantId}}"
                   }
                 ],
                 "name": "ITN_HEALTH_TALK",
@@ -8681,7 +8686,11 @@ final dynamic sampleFlows = {
                         "{{navigation.HouseholdProjectBeneficiaryClientReferenceId}}"
                   },
                   {"key": "itnCount", "value": "{{navigation.itnCount}}"},
-                  {"key": "eToken", "value": "{{navigation.eToken}}"}
+                  {"key": "eToken", "value": "{{navigation.eToken}}"},
+                  {
+                    "key": "productVariantId",
+                    "value": "{{navigation.productVariantId}}"
+                  }
                 ],
                 "onError": [
                   {
@@ -8869,7 +8878,11 @@ final dynamic sampleFlows = {
                     "{{navigation.HouseholdProjectBeneficiaryClientReferenceId}}"
               },
               {"key": "itnCount", "value": "{{navigation.itnCount}}"},
-              {"key": "eToken", "value": "{{navigation.eToken}}"}
+              {"key": "eToken", "value": "{{navigation.eToken}}"},
+              {
+                "key": "productVariantId",
+                "value": "{{navigation.productVariantId}}"
+              }
             ],
             "onError": [
               {

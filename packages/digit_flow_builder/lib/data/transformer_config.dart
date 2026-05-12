@@ -628,8 +628,7 @@ final jsonConfig = {
               "id": "id",
               "clientReferenceId": "__generate:uuid",
               "taskId": "taskId",
-              "productVariantId":
-                  "ItnHealthTalk.resourceCard.resourceDelivered.productId",
+              "productVariantId": "__context:productVariantId",
               "quantity": "__context:itnCount",
               "isDelivered": "__value:true",
               "deliveryComment": "__value:ITN_DISTRIBUTED",
