@@ -865,13 +865,18 @@ final dynamic sampleComplaintFlows = {
                 },
                 {
                   "type": "minLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGIT"
+                  "value": 11,
+                  "message": "MOBILE_LENGTH_11_DIGIT"
                 },
                 {
                   "type": "maxLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGIT"
+                  "value": 11,
+                  "message": "MOBILE_LENGTH_11_DIGIT"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^\\d+",
+                  "message": "MB_ONLY_NUMBERS"
                 }
               ],
               "errorMessage": "",
@@ -933,13 +938,18 @@ final dynamic sampleComplaintFlows = {
               "validations": [
                 {
                   "type": "minLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGITS"
+                  "value": 11,
+                  "message": "MOBILE_LENGTH_11_DIGITS"
                 },
                 {
                   "type": "maxLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGITS"
+                  "value": 11,
+                  "message": "MOBILE_LENGTH_11_DIGITS"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^\\d+",
+                  "message": "MB_ONLY_NUMBERS"
                 }
               ],
               "errorMessage": "",

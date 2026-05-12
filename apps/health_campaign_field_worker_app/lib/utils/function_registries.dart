@@ -891,7 +891,7 @@ class FunctionRegistries {
     });
 
     FunctionRegistry.register("isHouseholdWithoutMembers", (args, stateData) {
-      if (args == null || args.isEmpty || args.first == null) {
+      if (args.isEmpty || args.first == null) {
         return false;
       }
 
@@ -928,12 +928,31 @@ class FunctionRegistries {
     });
 
     FunctionRegistry.register("checkIfClosedHousehold", (args, stateData) {
-      if (args == null || args.isEmpty || args.first == null) {
+      if (args.isEmpty || args.first == null) {
         return false;
       }
 
       final status = args.first;
       return status == 'CLOSED_HOUSEHOLD';
+    });
+
+    FunctionRegistry.register("checkBeneficiaryAbsentOrRefused",
+        (args, stateData) {
+      if (args.isEmpty) return false;
+
+      final tasks = args.first;
+      if (tasks is! List) return false;
+
+      final statusesToCheck = ['BENEFICIARY_REFUSED', 'BENEFICIARY_ABSENT'];
+
+      for (TaskModel task in tasks) {
+        final status = task.status;
+        if (status != null && statusesToCheck.contains(status)) {
+          return true;
+        }
+      }
+
+      return false;
     });
   }
 }
