@@ -1425,7 +1425,7 @@ final dynamic sampleFlows = {
                 {
                   "condition": {
                     "expression":
-                        "{{fn:countMembersInAgeRange(contextData.0.members)}} >= {{fn:getAdditionalFieldValue(contextData.0.household.HouseholdModel.additionalFields.fields, 'memberCount')}}"
+                        "{{fn:countMembersInAgeRange(contextData.0.members)}} > {{fn:getAdditionalFieldValue(contextData.0.household.HouseholdModel.additionalFields.fields, 'memberCount')}}"
                   },
                   "actions": [
                     {
