@@ -1309,6 +1309,11 @@ final dynamic sampleInventoryFlows = {
                 "value":
                     "{{fn:getSecondaryType(formData.warehouseDetails.facilityToWhich)}}"
               },
+              {
+                "key": "teamCode",
+                "value":
+                    "{{fn:getTeamCode(formData.warehouseDetails.teamCode)}}"
+              },
               {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"}
             ],
             "onError": [

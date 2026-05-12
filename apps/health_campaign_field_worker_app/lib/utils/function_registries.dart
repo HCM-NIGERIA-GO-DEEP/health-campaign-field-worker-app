@@ -185,6 +185,15 @@ class FunctionRegistries {
       return facilityFromWhich == 'DELIVERY_TEAM' ? 'STAFF' : 'WAREHOUSE';
     });
 
+    FunctionRegistry.register('getTeamCode', (args, stateData) {
+      if (args.isEmpty) return '';
+      final teamCode = args.first?.toString() ?? '';
+      if (teamCode.contains("||")) {
+        return teamCode.split("||").last.trim();
+      }
+      return teamCode;
+    });
+
     FunctionRegistry.register('getTransactionStatusType', (args, stateData) {
       if (args.isEmpty) return 'default';
       final transactionType = args.first?.toString().toUpperCase() ?? '';
