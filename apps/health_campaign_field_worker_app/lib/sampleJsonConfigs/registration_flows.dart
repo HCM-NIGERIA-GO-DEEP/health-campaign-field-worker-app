@@ -446,7 +446,8 @@ final dynamic sampleFlows = {
                         "data": [
                           {
                             "key": "ProjectBeneficiaryClientReferenceId",
-                            "value": "{{projectBeneficiaries.0.clientReferenceId}}"
+                            "value":
+                                "{{projectBeneficiaries.0.clientReferenceId}}"
                           },
                           {
                             "key": "HouseholdClientReferenceId",
@@ -456,7 +457,10 @@ final dynamic sampleFlows = {
                             "key": "cycleIndex",
                             "value": "{{contextData.0.nextCycleId}}"
                           },
-                          {"key": "doseIndex", "value": "{{contextData.0.nextDoseId}}"},
+                          {
+                            "key": "doseIndex",
+                            "value": "{{contextData.0.nextDoseId}}"
+                          },
                           {
                             "key": "deliveryStrategy",
                             "value":
@@ -1188,7 +1192,7 @@ final dynamic sampleFlows = {
                     "visible":
                         "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task, contextData.0.currentRunningCycle)}}==false && {{fn:length(item.hFReferral)}}<=0 && {{fn:isHead(item.member)}}==false",
                     "fieldName": "notEligible",
-                    "properties": {"tagType": "error"}
+                    "properties": {"tagType": "error", "bottomGap": 16}
                   },
                   {
                     "type": "template",
@@ -1223,7 +1227,7 @@ final dynamic sampleFlows = {
                     "label": "DELIVERY",
                     "format": "button",
                     "visible":
-                        "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task,contextData.0.currentRunningCycle)}} == true  && {{fn:checkAllDoseDelivered(item.task)}} == false && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false && {{fn:isHead(item.member)}} == false",
+                        "({{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task,contextData.0.currentRunningCycle)}} == true || {{fn:checkBeneficiaryAbsentOrRefused(item.task)}} == true) && {{fn:checkAllDoseDelivered(item.task)}} == false && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false && {{fn:isHead(item.member)}} == false",
                     "onAction": [
                       {
                         "actionType": "NAVIGATION",
@@ -6852,7 +6856,7 @@ final dynamic sampleFlows = {
                 "errorMessage":
                     "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount_max_message"
               },
-              "value": "1",
+              "value": "0",
               "format": "numeric",
               "hidden": false,
               "isMdms": false,
@@ -7721,7 +7725,7 @@ final dynamic sampleFlows = {
                 "errorMessage":
                     "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount_max_message"
               },
-              "value": "1",
+              "value": "",
               "format": "numeric",
               "hidden": false,
               "isMdms": false,
@@ -8818,6 +8822,118 @@ final dynamic sampleFlows = {
               "infoText": "",
               "readOnly": false,
               "fieldName": "itnAction3",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "ITN_HEALTH_TALK_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "ITN_HEALTH_TALK_ACTION4_LABEL",
+              "order": 4,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "itnAction4",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "ITN_HEALTH_TALK_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "ITN_HEALTH_TALK_ACTION5_LABEL",
+              "order": 5,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "itnAction5",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "ITN_HEALTH_TALK_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "ITN_HEALTH_TALK_ACTION6_LABEL",
+              "order": 6,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "itnAction6",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "ITN_HEALTH_TALK_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "ITN_HEALTH_TALK_ACTION7_LABEL",
+              "order": 7,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "itnAction7",
               "required": true,
               "mandatory": true,
               "deleteFlag": false,
