@@ -67,6 +67,8 @@ final dynamic inventoryReportFlows = {
           "format": "menu_card",
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_RECIEVE_HEADING",
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_RECIEVE_DESCRIPTION",
+          "fieldName": "stockRecieved",
+          "properties": {"icon": "Assessment"},
           "icon": "Assessment",
           "onAction": [
             {
@@ -92,6 +94,8 @@ final dynamic inventoryReportFlows = {
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_ISSUED_HEADING",
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_ISSUED_DESCRIPTION",
           "icon": "Assessment",
+          "fieldName": "stockIssued",
+          "properties": {"icon": "Assessment"},
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -116,6 +120,8 @@ final dynamic inventoryReportFlows = {
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_RETURNED_HEADING",
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_RETURNED_DESCRIPTION",
           "icon": "Assessment",
+          "fieldName": "stockReturned",
+          "properties": {"icon": "Assessment"},
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -238,6 +244,8 @@ final dynamic inventoryReportFlows = {
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_RECON_HEADING",
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_RECON_DESCRIPTION",
           "icon": "Assessment",
+          "fieldName": "stockReconciliation",
+          "properties": {"icon": "Assessment"},
           "onAction": [
             {
               "actionType": "NAVIGATION",
