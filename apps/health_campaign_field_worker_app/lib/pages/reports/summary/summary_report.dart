@@ -3,7 +3,6 @@ import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/atoms/table_cell.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
-import 'package:digit_ui_components/widgets/molecules/digit_table.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -15,6 +14,7 @@ import '../../../utils/stock_calculation_utils.dart';
 import '../../../utils/utils.dart';
 import '../../../widgets/header/back_navigation_help_header.dart';
 import '../../../widgets/localized.dart';
+import '../../../widgets/summary_report/custom_summary_table.dart';
 
 @RoutePage()
 class SummaryReportPage extends LocalizedStatefulWidget {
@@ -28,6 +28,10 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
   List<_SummaryReportRow> _reportRows = [];
   List<ProductVariantModel> _productVariants = [];
   bool _isLoading = true;
+
+  double _columnWidth(String headerText) {
+    return (headerText.length * 8.5 + 32).clamp(100.0, 300.0);
+  }
 
   @override
   void initState() {
@@ -316,6 +320,25 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
     return DateFormat('dd/MM/yyyy').format(dt);
   }
 
+  Widget _buildSummaryTable(
+    List<DigitTableColumn> columns,
+    List<DigitTableRow> rows,
+  ) {
+    final headers = columns.map((c) => c.header).toList();
+
+    final rowTexts = rows.map((row) {
+      return columns.map((col) {
+        final cell = row.tableRow.firstWhere(
+          (c) => c.cellKey == col.cellValue,
+          orElse: () => DigitTableData('--', cellKey: col.cellValue),
+        );
+        return cell.label ?? '--';
+      }).toList();
+    }).toList();
+
+    return CustomSummaryTable(headers: headers, rows: rowTexts);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -485,14 +508,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           else
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: spacer2),
-              child: DigitTable(
-                enableBorder: true,
-                showPagination: false,
-                showSelectedState: false,
-                columns: columns,
-                rows: rows,
-                tableHeight: (rows.length * 50.0).clamp(100, 400),
-              ),
+              child: _buildSummaryTable(columns, rows),
             ),
           const SizedBox(height: spacer2),
         ],
