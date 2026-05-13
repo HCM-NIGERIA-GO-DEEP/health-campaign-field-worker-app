@@ -135,6 +135,104 @@ final dynamic inventoryReportFlows = {
           ]
         },
         {
+          "icon": "Assessment",
+          "type": "template",
+          "label": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_HEADING",
+          "format": "menu_card",
+          "hidden": true,
+          "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_HEADING",
+          "onAction": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {"key": "reportType", "value": "damage"},
+                  {"key": "facilities", "value": "{{FacilityModel}}"},
+                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                ],
+                "name": "reportDetails",
+                "type": "TEMPLATE"
+              }
+            }
+          ],
+          "fieldName": "stockDamaged",
+          "properties": {"icon": "Assessment"},
+          "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_DESCRIPTION"
+        },
+        {
+          "icon": "Assessment",
+          "type": "template",
+          "label": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_HEADING",
+          "format": "menu_card",
+          "hidden": true,
+          "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_HEADING",
+          "onAction": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {"key": "reportType", "value": "loss"},
+                  {"key": "facilities", "value": "{{FacilityModel}}"},
+                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                ],
+                "name": "reportDetails",
+                "type": "TEMPLATE"
+              }
+            }
+          ],
+          "fieldName": "stockLoss",
+          "properties": {"icon": "Assessment"},
+          "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_DESCRIPTION"
+        },
+        {
+          "icon": "Assessment",
+          "type": "template",
+          "format": "menu_card",
+          "hidden": true,
+          "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_EXCESS_HEADING",
+          "onAction": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {"key": "reportType", "value": "excess"},
+                  {"key": "facilities", "value": "{{FacilityModel}}"},
+                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                ],
+                "name": "reportDetails",
+                "type": "TEMPLATE"
+              }
+            }
+          ],
+          "fieldName": "stockExcess",
+          "properties": {"icon": "Assessment"},
+          "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_EXCESS_DESCRIPTION"
+        },
+        {
+          "icon": "Assessment",
+          "type": "template",
+          "format": "menu_card",
+          "hidden": true,
+          "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_LESS_HEADING",
+          "onAction": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {"key": "reportType", "value": "less"},
+                  {"key": "facilities", "value": "{{FacilityModel}}"},
+                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                ],
+                "name": "reportDetails",
+                "type": "TEMPLATE"
+              }
+            }
+          ],
+          "fieldName": "stockLess",
+          "properties": {"icon": "Assessment"},
+          "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_LESS_DESCRIPTION"
+        },
+        {
           "type": "template",
           "format": "menu_card",
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_RECON_HEADING",
