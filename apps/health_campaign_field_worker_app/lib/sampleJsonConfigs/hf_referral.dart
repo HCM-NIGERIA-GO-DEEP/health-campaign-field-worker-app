@@ -1350,7 +1350,7 @@ final dynamic sampleReferralFlows = {
                 },
                 {
                   "type": "max",
-                  "value": 1800,
+                  "value": 59,
                   "message":
                       "HFREFERRAL_REFERRAL_DETAILS_ageInMonths_VALIDATION"
                 }
