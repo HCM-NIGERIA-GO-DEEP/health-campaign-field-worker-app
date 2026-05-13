@@ -749,7 +749,8 @@ class FunctionRegistries {
 
     FunctionRegistry.register('allMembersHaveSmcTasks', (args, stateData) {
       // args[0]: head's projectBeneficiaryClientReferenceId (to exclude head's tasks)
-      final headPbRef = args.firstOrNull?.toString();
+      final headPbRef = args.first;
+      final headHfRef = args[1];
 
       // Read childrenCount from HouseholdModel's additionalFields
       // (childrenCount is not a direct HouseholdModel property, so it lives in additionalFields.fields)
@@ -792,6 +793,19 @@ class FunctionRegistries {
         final pbRef = task['projectBeneficiaryClientReferenceId']?.toString();
         if (pbRef == null || pbRef.isEmpty) continue;
         if (headPbRef != null && pbRef == headPbRef) continue;
+        nonHeadWithAnyTask.add(pbRef);
+      }
+
+      // Also check for hfReferral (for beneficiaryReferred cases where referral is created instead of task)
+      final hfReferrals = stateData.modelMap.values
+          .expand((list) => list)
+          .where((map) => map.containsKey('referralCode'))
+          .toList();
+
+      for (final referral in hfReferrals) {
+        final pbRef = referral['referralCode']?.toString();
+        if (pbRef == null || pbRef.isEmpty) continue;
+        if (headHfRef != null && pbRef == headHfRef) continue;
         nonHeadWithAnyTask.add(pbRef);
       }
 
@@ -941,15 +955,14 @@ class FunctionRegistries {
       if (args.isEmpty) return false;
 
       final tasks = args.first;
-      if (tasks is! List) return false;
+      if (tasks is! List || tasks.isEmpty) return false;
 
       final statusesToCheck = ['BENEFICIARY_REFUSED', 'BENEFICIARY_ABSENT'];
 
-      for (TaskModel task in tasks) {
-        final status = task.status;
-        if (status != null && statusesToCheck.contains(status)) {
-          return true;
-        }
+      TaskModel task = tasks.last;
+      final status = task.status;
+      if (status != null && statusesToCheck.contains(status)) {
+        return true;
       }
 
       return false;
