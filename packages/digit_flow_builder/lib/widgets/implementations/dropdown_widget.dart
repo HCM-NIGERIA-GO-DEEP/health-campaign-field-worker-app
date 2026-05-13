@@ -24,6 +24,7 @@ class DropdownWidget extends ResolvedFlowWidget {
     final label = resolved.resolvedLabel ?? '';
     final key = (json['key'] ?? json['fieldName']) as String?;
     final isRequired = json['required'] == true;
+    final displayPrefix = json['displayPrefix'] as String? ?? '';
     final displayKey = json['displayKey'] as String? ?? 'name';
     final valueKey = json['valueKey'] as String? ?? 'id';
 
@@ -43,6 +44,7 @@ class DropdownWidget extends ResolvedFlowWidget {
         label: label,
         key: key,
         isRequired: isRequired,
+        displayPrefix: displayPrefix,
         displayKey: displayKey,
         valueKey: valueKey,
         formData: resolved.formData,
@@ -75,6 +77,7 @@ class DropdownWidget extends ResolvedFlowWidget {
           label: label,
           key: key,
           isRequired: isRequired,
+          displayPrefix: displayPrefix,
           displayKey: displayKey,
           valueKey: valueKey,
           formData: formData,
@@ -95,6 +98,7 @@ class DropdownWidget extends ResolvedFlowWidget {
     required String label,
     required String? key,
     required bool isRequired,
+    required String? displayPrefix,
     required String displayKey,
     required String valueKey,
     required Map<String, dynamic> formData,
@@ -213,8 +217,8 @@ class DropdownWidget extends ResolvedFlowWidget {
     }
 
     // Build dropdown items
-    final items =
-        _buildDropdownItems(sourceData, displayKey, valueKey, context);
+    final items = _buildDropdownItems(
+        sourceData, displayPrefix, displayKey, valueKey, context);
 
     // Find selected item
     DropdownItem? selectedItem;
@@ -314,8 +318,12 @@ class DropdownWidget extends ResolvedFlowWidget {
     );
   }
 
-  List<DropdownItem> _buildDropdownItems(dynamic sourceData, String displayKey,
-      String valueKey, BuildContext context) {
+  List<DropdownItem> _buildDropdownItems(
+      dynamic sourceData,
+      String? displayPrefix,
+      String displayKey,
+      String valueKey,
+      BuildContext context) {
     final items = <DropdownItem>[];
 
     if (sourceData == null) return items;
@@ -330,7 +338,9 @@ class DropdownWidget extends ResolvedFlowWidget {
 
           if (name.isNotEmpty && code.isNotEmpty) {
             items.add(DropdownItem(
-                name: localization?.translate(name) ?? name, code: code));
+                name: localization?.translate((displayPrefix ?? '') + name) ??
+                    name,
+                code: code));
           }
         } else {
           final value = item?.toString() ?? '';

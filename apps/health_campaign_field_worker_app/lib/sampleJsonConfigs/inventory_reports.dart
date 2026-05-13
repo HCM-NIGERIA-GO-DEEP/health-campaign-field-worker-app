@@ -218,6 +218,7 @@ final dynamic inventoryReportFlows = {
               "required": true,
               "key": "selectedFacility",
               "source": "{{navigation.facilities}}",
+              "displayPrefix": "FAC_",
               "displayKey": "facilityId",
               "showWhenSingleOption": true,
               "valueKey": "facilityId",
