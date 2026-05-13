@@ -1863,7 +1863,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-complaints-${context.selectedProject.referenceID}';
+                    'hcm-complaints-${context.selectedProject.referenceID},hcm-beneficiary';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
@@ -2054,7 +2054,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                   dynamicEntityModelListener: EntityModelMapMapper(),
                 );
                 try {
-                  if (false) {
+                  if (schemaJsonRaw != null) {
                     final allSchemas =
                         json.decode(schemaJsonRaw!) as Map<String, dynamic>;
                     final data = allSchemas['REGISTRATION'];
@@ -2120,7 +2120,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-closehousehold-${context.selectedProject.referenceID}';
+                    'hcm-closehousehold-${context.selectedProject.referenceID},hcm-beneficiary';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
@@ -2208,7 +2208,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-stockreconciliation-${context.selectedProject.referenceID}';
+                'hcm-stockreconciliation-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
@@ -2351,7 +2351,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-hfreferral-${context.selectedProject.referenceID}';
+                    'hcm-hfreferral-${context.selectedProject.referenceID},hcm-beneficiary';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
@@ -2377,7 +2377,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-stockreports-${context.selectedProject.referenceID}';
+                'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
