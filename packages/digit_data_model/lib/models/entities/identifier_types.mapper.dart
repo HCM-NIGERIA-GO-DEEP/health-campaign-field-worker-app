@@ -29,6 +29,8 @@ class IdentifierTypesMapper extends EnumMapper<IdentifierTypes> {
         return IdentifierTypes.uniqueBeneficiaryID;
       case "DEFAULT":
         return IdentifierTypes.defaultID;
+      case "E_TOKEN":
+        return IdentifierTypes.eToken;
       default:
         throw MapperException.unknownEnumValue(value);
     }
@@ -41,6 +43,8 @@ class IdentifierTypesMapper extends EnumMapper<IdentifierTypes> {
         return "UNIQUE_BENEFICIARY_ID";
       case IdentifierTypes.defaultID:
         return "DEFAULT";
+      case IdentifierTypes.eToken:
+        return "E_TOKEN";
     }
   }
 }

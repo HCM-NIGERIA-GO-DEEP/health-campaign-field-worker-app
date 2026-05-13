@@ -623,7 +623,6 @@ final jsonConfig = {
         },
         "listMappings": {
           "TaskResourceModel": {
-            "listSource": "ItnHealthTalk.resourceCard",
             "mappings": {
               "id": "id",
               "clientReferenceId": "__generate:uuid",
