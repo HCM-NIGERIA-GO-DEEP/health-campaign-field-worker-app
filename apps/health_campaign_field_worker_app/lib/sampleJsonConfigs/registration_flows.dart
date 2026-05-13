@@ -8311,7 +8311,8 @@ final dynamic sampleFlows = {
                 },
                 {
                   "key": "ITN_E_TOKEN",
-                  "value": "{{latestEToken}}",
+                  "value":
+                      "{{fn:getEToken(contextData.0.headIndividual.IndividualModel)}}",
                   "isActive": true
                 }
               ],
@@ -8415,7 +8416,11 @@ final dynamic sampleFlows = {
                     "value":
                         "{{fn:calculateItnCount(contextData.0.household.HouseholdModel.memberCount)}}"
                   },
-                  {"key": "eToken", "value": "{{latestEToken}}"},
+                  {
+                    "key": "eToken",
+                    "value":
+                        "{{fn:getEToken(contextData.0.headIndividual.IndividualModel)}}"
+                  },
                   {
                     "key": "HouseholdProjectBeneficiaryClientReferenceId",
                     "value":
@@ -8658,15 +8663,7 @@ final dynamic sampleFlows = {
             {
               "label": "ITN_HEALTH_TALK_SUBMIT_LABEL",
               "format": "button",
-              "onAction": [
-                {
-                  "actionType": "NAVIGATION",
-                  "properties": {
-                    "name": "household-acknowledgement",
-                    "type": "template"
-                  }
-                }
-              ],
+              "onAction": [],
               "properties": {
                 "size": "large",
                 "type": "primary",
@@ -8758,7 +8755,7 @@ final dynamic sampleFlows = {
             }
           ],
           "navigateTo": {
-            "name": "household-acknowledgement",
+            "name": "itnSuccess",
             "type": "template"
           },
           "properties": [

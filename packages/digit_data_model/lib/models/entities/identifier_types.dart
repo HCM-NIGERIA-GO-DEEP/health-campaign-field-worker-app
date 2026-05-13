@@ -9,4 +9,6 @@ enum IdentifierTypes {
   uniqueBeneficiaryID,
   @MappableValue("DEFAULT")
   defaultID,
+  @MappableValue("E_TOKEN") // ADD THIS
+  eToken,
 }

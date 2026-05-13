@@ -1,5 +1,5 @@
-import 'package:digit_data_model/blocs/project_facility/project_facility.dart';
-import 'package:digit_data_model/models/entities/project_facility.dart';
+import 'package:digit_data_model/blocs/facility/facility.dart';
+import 'package:digit_data_model/models/entities/facility.dart';
 import 'package:digit_forms_engine/blocs/forms/forms.dart';
 import 'package:digit_forms_engine/helper/validation_message_helper.dart';
 import 'package:digit_forms_engine/models/property_schema/property_schema.dart';
@@ -32,39 +32,28 @@ class _EvaluationKeyDropDownState
   void initState() {
     super.initState();
 
-    context.read<ProjectFacilityBloc>().add(ProjectFacilityLoadEvent(
-        query: ProjectFacilitySearchModel(
-            projectId: [context.selectedProject.id])));
+    context.read<FacilityBloc>().add(
+        FacilityEvent.loadForProjectId(projectId: context.selectedProject.id));
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<ProjectFacilityBloc, ProjectFacilityState>(
+    return BlocConsumer<FacilityBloc, FacilityState>(
       listener: (context, state) {},
       builder: (context, state) {
         return state.maybeWhen(
           orElse: () => _buildDropdown(context, []),
-          fetched: (projectFacilities) => _buildDropdown(
+          fetched: (facilities, projectFacilities) => _buildDropdown(
               context,
-              projectFacilities.where((pf) {
-                final facilityLevel = pf.additionalFields?.fields
-                    .where((f) => f.key == 'facilityLevel')
-                    .firstOrNull
-                    ?.value;
-                final usage = pf.additionalFields?.fields
-                    .where((f) => f.key == 'usage')
-                    .firstOrNull
-                    ?.value;
-                return (facilityLevel == null || facilityLevel == 'current') &&
-                    (usage == null || usage == 'hfs');
+              facilities.where((f) {
+                return f.usage == Constants.healthFacility;
               }).toList()),
         );
       },
     );
   }
 
-  Widget _buildDropdown(
-      BuildContext context, List<ProjectFacilityModel> projectFacilities) {
+  Widget _buildDropdown(BuildContext context, List<FacilityModel> facilities) {
     bool isReadOnlyFromSchema = false;
     String? labelFromSchema;
     bool isRequiredFromSchema = false;
@@ -122,12 +111,12 @@ class _EvaluationKeyDropDownState
           label: localizations.translate(labelFromSchema ?? ""),
           child: Dropdown(
             readOnly: isReadOnlyFromSchema,
-            selectedOption: _mapItems(projectFacilities).firstWhere(
+            selectedOption: _mapItems(facilities).firstWhere(
               (item) => item.code == form.control(widget.formControlName).value,
               orElse: () => const DropdownItem(name: '', code: ''),
             ),
             errorMessage: field.errorText,
-            items: _mapItems(projectFacilities),
+            items: _mapItems(facilities),
             onSelect: (val) {
               form.control(widget.formControlName).markAsTouched();
               form.control(widget.formControlName).value = val.code;
@@ -147,10 +136,10 @@ class _EvaluationKeyDropDownState
     );
   }
 
-  List<DropdownItem> _mapItems(List<ProjectFacilityModel> keys) {
+  List<DropdownItem> _mapItems(List<FacilityModel> keys) {
     return keys
         .map((key) => DropdownItem(
-              name: key.facilityId,
+              name: localizations.translate('FAC_${key.id}'),
               code: key.id,
             ))
         .toList();

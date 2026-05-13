@@ -705,6 +705,31 @@ class FunctionRegistries {
       return min(4, (memberCount / 2).ceil());
     });
 
+    FunctionRegistry.register('getEToken', (args, stateData) {
+      if (args.isEmpty) return null;
+      final individual = args.first;
+      if (individual == null) return null;
+
+      final List<IdentifierModel>? identifiers;
+      if (individual is IndividualModel) {
+        identifiers = individual.identifiers;
+      } else if (individual is Map) {
+        final List? rawIds = individual['identifiers'];
+        identifiers = rawIds?.map((id) {
+          if (id is IdentifierModel) return id;
+          return IdentifierModelMapper.fromMap(Map<String, dynamic>.from(id));
+        }).toList();
+      } else {
+        identifiers = null;
+      }
+
+      if (identifiers == null) return null;
+
+      return identifiers
+          .firstWhereOrNull((id) => id.identifierType == 'E_TOKEN')
+          ?.identifierId;
+    });
+
     FunctionRegistry.register('isItnDelivered', (args, stateData) {
       if (args.isEmpty) return false;
       final tasks = args.first;
