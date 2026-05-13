@@ -414,6 +414,7 @@ final dynamic inventoryReportFlows = {
           "label": "STOCK_REPORT_DETAILS_INFO_CARD_LABEL",
           "description": "STOCK_REPORT_DETAILS_INFO_CARD_DESCRIPTION",
           "properties": {"type": "info"},
+          "fieldName": "infoCardReportDetails",
           "visible":
               "{{fn:isEmpty(selectedFacility)}} && {{fn:isEmpty(selectedProduct)}}",
         },
@@ -423,12 +424,14 @@ final dynamic inventoryReportFlows = {
           "label": "STOCK_REPORT_DETAILS_NO_RECORD_FOUND_INFO",
           "description": "STOCK_REPORT_DETAILS_NO_RECORD_FOUND_DESCRIPTION",
           "properties": {"type": "info"},
+          "fieldName": "noRecordFoundInfoReportDetails",
           "visible":
               "{{fn:isEmpty(stock)}} && {{fn:isNotEmpty(selectedFacility)}}",
         },
         {
           "type": "template",
           "format": "table",
+          "fieldName": "tableInfoReportDetails",
           "data": {
             "source": "StockModel",
             "columns": [
