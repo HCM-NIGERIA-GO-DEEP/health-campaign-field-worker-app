@@ -85,7 +85,7 @@ class SearchExecutor extends ActionExecutor {
     // Build context data that includes entities, form values, widgetData, and navigation params
     // widgetData is included at root level so templates like {{selectedStatus}} resolve directly
     final resolveContext = {
-      if (contexts != null) ...contexts,
+      if (contexts is Map) ...contexts,
       ...formData,
       ...widgetData, // Include widgetData at root for direct access
       'widgetData': widgetData, // Also include with prefix for explicit access

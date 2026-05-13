@@ -81,10 +81,6 @@ final dynamic sampleComplaintFlows = {
                           }
                         },
                         {
-                          "actionType": "CLOSE_POPUP",
-                          "properties": {"parentScreenKey": "complaintInbox"}
-                        },
-                        {
                           "actionType": "SEARCH_EVENT",
                           "properties": {
                             "data": [
@@ -103,6 +99,10 @@ final dynamic sampleComplaintFlows = {
                             ],
                             "name": "pgrService"
                           }
+                        },
+                        {
+                          "actionType": "CLOSE_POPUP",
+                          "properties": {"parentScreenKey": "complaintInbox"}
                         }
                       ],
                       "fieldName": "search",
@@ -224,7 +224,6 @@ final dynamic sampleComplaintFlows = {
                             ]
                           }
                         },
-                        {"actionType": "CLOSE_POPUP", "properties": {}},
                         {
                           "actionType": "SEARCH_EVENT",
                           "properties": {
@@ -239,22 +238,21 @@ final dynamic sampleComplaintFlows = {
                               {
                                 "key": "serviceCode",
                                 "value": "{{complaintType }}",
-                                "applyIf":
-                                    "{{complaintType }} !=null && {{complaintType }} !=null",
+                                "applyIf": "{{complaintType }} !=null",
                                 "operation": "equals"
                               },
                               {
                                 "key": "localityBoundaryCode",
                                 "root": "address",
                                 "value": "{{ locality }}",
-                                "applyIf":
-                                    "{{locality }} !=null && {{locality }} !=null",
+                                "applyIf": "{{locality }} !=null",
                                 "operation": "equals"
                               }
                             ],
                             "name": "pgrService"
                           }
-                        }
+                        },
+                        {"actionType": "CLOSE_POPUP", "properties": {}}
                       ],
                       "fieldName": "filter",
                       "properties": {
@@ -329,7 +327,6 @@ final dynamic sampleComplaintFlows = {
                       "label": "COMPLAINT_INBOX_SORT_PRIMARY_ACTION_LABEL",
                       "format": "button",
                       "onAction": [
-                        {"actionType": "CLOSE_POPUP", "properties": {}},
                         {
                           "actionType": "SEARCH_EVENT",
                           "properties": {
@@ -348,7 +345,8 @@ final dynamic sampleComplaintFlows = {
                                   "{{ sortBy }} == LATEST_FIRST ? desc : asc"
                             }
                           }
-                        }
+                        },
+                        {"actionType": "CLOSE_POPUP", "properties": {}}
                       ],
                       "fieldName": "sort",
                       "properties": {
