@@ -1476,7 +1476,7 @@ final dynamic sampleFlows = {
                     "label": "DELIVER_ITN",
                     "format": "button",
                     "visible":
-                        "{{fn:isHead(item.member)}}==true && {{fn:isItnDelivered(item.task)}}==false && {{fn:isSmcPresent()}}==true && {{fn:allMembersHaveSmcTasks(item.projectBeneficiary.0.clientReferenceId)}}==true",
+                        "{{fn:isHead(item.member)}}==true && {{fn:isItnDelivered(item.task)}}==false && {{fn:isSmcPresent()}}==true && {{fn:allMembersHaveSmcTasks(item.projectBeneficiary.0.clientReferenceId, item.projectBeneficiary.0.beneficiaryClientReferenceId)}}==true",
                     "onAction": [
                       {
                         "actionType": "NAVIGATION",
@@ -4060,6 +4060,12 @@ final dynamic sampleFlows = {
                   "actionType": "NAVIGATION",
                   "properties": {
                     "data": [
+                      {"key": "ec1", "value": "{{eligibilityChecklist.ec1}}"},
+                      {"key": "ec2", "value": "{{eligibilityChecklist.ec2}}"},
+                      {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
+                      {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
+                      {"key": "ec3a", "value": "{{eligibilityChecklist.ec3a}}"},
+                      {"key": "sourceFlow", "value": "CHECKLIST"},
                       {
                         "key": "selectedIndividualClientReferenceId",
                         "value":
@@ -4077,10 +4083,26 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                      }
+                      },
+                      {
+                        "key": "selectedIndividualName",
+                        "value": "{{navigation.selectedIndividualName}}"
+                      },
+                      {
+                        "key": "selectedIndividualGender",
+                        "value": "{{navigation.selectedIndividualGender}}"
+                      },
+                      {
+                        "key": "selectedIndividualAgeInMonths",
+                        "value": "{{navigation.selectedIndividualAgeInMonths}}"
+                      },
+                      {
+                        "key": "cycleIndex",
+                        "value": "{{navigation.cycleIndex}}"
+                      },
                     ],
-                    "name": "beneficiaryDetails",
-                    "type": "TEMPLATE",
+                    "name": "REFER_BENEFICIARY",
+                    "type": "FORM",
                     "onError": [
                       {
                         "actionType": "SHOW_TOAST",
@@ -4094,7 +4116,7 @@ final dynamic sampleFlows = {
               ],
               "condition": {
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec4==NO && ((eligibilityChecklist.ec3==YES && {{navigation.selectedIndividualAgeInMonths}}>=3 && {{navigation.selectedIndividualAgeInMonths}}<=59) || (eligibilityChecklist.ec3==NO && eligibilityChecklist.ec3a==NO))"
+                    "(eligibilityChecklist.ec1==YES || eligibilityChecklist.ec2==YES || (eligibilityChecklist.ec3==NO && eligibilityChecklist.ec3a==YES))"
               }
             },
             {
@@ -4194,12 +4216,6 @@ final dynamic sampleFlows = {
                   "actionType": "NAVIGATION",
                   "properties": {
                     "data": [
-                      {"key": "ec1", "value": "{{eligibilityChecklist.ec1}}"},
-                      {"key": "ec2", "value": "{{eligibilityChecklist.ec2}}"},
-                      {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
-                      {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
-                      {"key": "ec3a", "value": "{{eligibilityChecklist.ec3a}}"},
-                      {"key": "sourceFlow", "value": "CHECKLIST"},
                       {
                         "key": "selectedIndividualClientReferenceId",
                         "value":
@@ -4217,26 +4233,10 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                      },
-                      {
-                        "key": "selectedIndividualName",
-                        "value": "{{navigation.selectedIndividualName}}"
-                      },
-                      {
-                        "key": "selectedIndividualGender",
-                        "value": "{{navigation.selectedIndividualGender}}"
-                      },
-                      {
-                        "key": "selectedIndividualAgeInMonths",
-                        "value": "{{navigation.selectedIndividualAgeInMonths}}"
-                      },
-                      {
-                        "key": "cycleIndex",
-                        "value": "{{navigation.cycleIndex}}"
-                      },
+                      }
                     ],
-                    "name": "REFER_BENEFICIARY",
-                    "type": "FORM",
+                    "name": "beneficiaryDetails",
+                    "type": "TEMPLATE",
                     "onError": [
                       {
                         "actionType": "SHOW_TOAST",
@@ -4250,7 +4250,7 @@ final dynamic sampleFlows = {
               ],
               "condition": {
                 "expression":
-                    "(eligibilityChecklist.ec1==YES || eligibilityChecklist.ec2==YES || (eligibilityChecklist.ec3==NO && eligibilityChecklist.ec3a==YES))"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec4==NO && ((eligibilityChecklist.ec3==YES && {{navigation.selectedIndividualAgeInMonths}}>=3 && {{navigation.selectedIndividualAgeInMonths}}<=59) || (eligibilityChecklist.ec3==NO && eligibilityChecklist.ec3a==NO))"
               }
             },
             {
@@ -4558,53 +4558,11 @@ final dynamic sampleFlows = {
               "actionType": "NAVIGATION",
               "properties": {
                 "data": [
-                  {
-                    "key": "selectedIndividualClientReferenceId",
-                    "value":
-                        "{{navigation.selectedIndividualClientReferenceId}}"
-                  },
-                  {
-                    "key": "selectedIndividualIdentifierId",
-                    "value": "{{navigation.selectedIndividualIdentifierId}}"
-                  },
-                  {
-                    "key": "HouseholdClientReferenceId",
-                    "value": "{{ navigation.HouseholdClientReferenceId }}"
-                  },
-                  {
-                    "key": "ProjectBeneficiaryClientReferenceId",
-                    "value":
-                        "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                  }
-                ],
-                "name": "beneficiaryDetails",
-                "type": "TEMPLATE",
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {"message": "Navigation failed."}
-                  }
-                ],
-                "navigationMode": "popUntilAndPush",
-                "popUntilPageName": "householdOverview"
-              }
-            }
-          ],
-          "condition": {
-            "expression":
-                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec3a==NO && eligibilityChecklist.ec4==NO"
-          }
-        },
-        {
-          "actions": [
-            {
-              "actionType": "NAVIGATION",
-              "properties": {
-                "data": [
                   {"key": "ec1", "value": "{{eligibilityChecklist.ec1}}"},
                   {"key": "ec2", "value": "{{eligibilityChecklist.ec2}}"},
                   {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
                   {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
+                  {"key": "ec3a", "value": "{{eligibilityChecklist.ec3a}}"},
                   {"key": "sourceFlow", "value": "CHECKLIST"},
                   {
                     "key": "selectedIndividualClientReferenceId",
@@ -4636,7 +4594,7 @@ final dynamic sampleFlows = {
                     "key": "selectedIndividualAgeInMonths",
                     "value": "{{navigation.selectedIndividualAgeInMonths}}"
                   },
-                  {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"}
+                  {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
                 ],
                 "name": "REFER_BENEFICIARY",
                 "type": "FORM",
@@ -4653,7 +4611,7 @@ final dynamic sampleFlows = {
           ],
           "condition": {
             "expression":
-                "eligibilityChecklist.ec1==YES && eligibilityChecklist.ec3==YES && eligibilityChecklist.ec4==YES"
+                "(eligibilityChecklist.ec1==YES || eligibilityChecklist.ec2==YES || (eligibilityChecklist.ec3==NO && eligibilityChecklist.ec3a==YES))"
           }
         },
         {
@@ -4742,7 +4700,7 @@ final dynamic sampleFlows = {
           ],
           "condition": {
             "expression":
-                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec3==NO && eligibilityChecklist.ec4==YES"
+                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && !(eligibilityChecklist.ec3==NO && eligibilityChecklist.ec3a==YES) && (eligibilityChecklist.ec4==YES || (eligibilityChecklist.ec3==YES && ({{navigation.selectedIndividualAgeInMonths}}<3 || {{navigation.selectedIndividualAgeInMonths}}>60)))"
           }
         },
         {
@@ -4751,11 +4709,6 @@ final dynamic sampleFlows = {
               "actionType": "NAVIGATION",
               "properties": {
                 "data": [
-                  {"key": "ec1", "value": "{{eligibilityChecklist.ec1}}"},
-                  {"key": "ec2", "value": "{{eligibilityChecklist.ec2}}"},
-                  {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
-                  {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
-                  {"key": "sourceFlow", "value": "CHECKLIST"},
                   {
                     "key": "selectedIndividualClientReferenceId",
                     "value":
@@ -4773,23 +4726,53 @@ final dynamic sampleFlows = {
                     "key": "ProjectBeneficiaryClientReferenceId",
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                  },
-                  {
-                    "key": "selectedIndividualName",
-                    "value": "{{navigation.selectedIndividualName}}"
-                  },
-                  {
-                    "key": "selectedIndividualGender",
-                    "value": "{{navigation.selectedIndividualGender}}"
-                  },
-                  {
-                    "key": "selectedIndividualAgeInMonths",
-                    "value": "{{navigation.selectedIndividualAgeInMonths}}"
-                  },
-                  {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"}
+                  }
                 ],
-                "name": "REFER_BENEFICIARY",
-                "type": "FORM",
+                "name": "beneficiaryDetails",
+                "type": "TEMPLATE",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Navigation failed."}
+                  }
+                ],
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "householdOverview"
+              }
+            }
+          ],
+          "condition": {
+            "expression":
+                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec4==NO && ((eligibilityChecklist.ec3==YES && {{navigation.selectedIndividualAgeInMonths}}>=3 && {{navigation.selectedIndividualAgeInMonths}}<=59) || (eligibilityChecklist.ec3==NO && eligibilityChecklist.ec3a==NO))"
+          }
+        },
+        {
+          "actions": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {
+                    "key": "selectedIndividualClientReferenceId",
+                    "value":
+                        "{{navigation.selectedIndividualClientReferenceId}}"
+                  },
+                  {
+                    "key": "selectedIndividualIdentifierId",
+                    "value": "{{navigation.selectedIndividualIdentifierId}}"
+                  },
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{ navigation.HouseholdClientReferenceId }}"
+                  },
+                  {
+                    "key": "ProjectBeneficiaryClientReferenceId",
+                    "value":
+                        "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                  }
+                ],
+                "name": "beneficiaryDetails",
+                "type": "TEMPLATE",
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",

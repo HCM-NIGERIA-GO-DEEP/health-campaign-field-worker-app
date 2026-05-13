@@ -1429,6 +1429,7 @@ final jsonConfig = {
             "ec1Value": "__context:ec1",
             "ec2Value": "__context:ec2",
             "ec3Value": "__context:ec3",
+            "ec3aValue": "__context:ec3a",
             "ec4Value": "__context:ec4",
             // Referral reasons mapped from checklist: SICK for ec1=YES, FEVER for ec2=YES
             "referralReasons": "__context:referralReasons"
