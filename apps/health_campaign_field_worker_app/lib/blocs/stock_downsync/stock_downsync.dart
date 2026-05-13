@@ -5,8 +5,10 @@ import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/user_action.dart';
 import 'package:disk_space_update/disk_space_update.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:path/path.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
 import 'package:transit_post/data/repositories/remote/user_action.dart';
 
@@ -17,6 +19,7 @@ import '../../utils/stock_calculation_utils.dart';
 import '../../models/downsync/downsync.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/background_service.dart';
+import '../../utils/utils.dart';
 
 part 'stock_downsync.freezed.dart';
 
@@ -47,10 +50,13 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
 
   final UserActionLocalRepository userActionLocalRepository;
 
+  final BuildContext context;
+
   static const String _rejectedStatus = 'REJECTED';
   static const String _dispatchedTransaction = 'DISPATCHED';
 
   StockDownSyncBloc({
+    required this.context,
     required this.localSecureStore,
     required this.projectFacilityLocalRepository,
     required this.facilityLocalRepository,
@@ -251,7 +257,7 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
             offSet: 0,
             limit: event.batchSize,
             lastSyncedTime: lastSyncedTime,
-            includeOnlyUpdatedByOthers:true,
+            includeOnlyUpdatedByOthers: true,
           );
 
           if (stockEntries.isEmpty) break;
@@ -341,13 +347,15 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
       final balanceKeys = <String>[];
       for (final facilityId in facilityIds) {
         for (final productVariantId in productVariantIds) {
-          balanceKeys.add(generateBalanceKey(facilityId, productVariantId));
+          balanceKeys.add(generateBalanceKey(facilityId, productVariantId,
+              context.selectedProject.referenceID, userObject?.userName));
         }
       }
 
       // Fetch from server
       final remoteBalances = await userActionRemoteRepository.search(
-        UserActionSearchModel(clientReferenceId: balanceKeys, projectId: projectId),
+        UserActionSearchModel(
+            clientReferenceId: balanceKeys, projectId: projectId),
       );
 
       if (remoteBalances.isEmpty) return;
@@ -431,7 +439,8 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
         final quantity = double.tryParse(stock.quantity ?? '0') ?? 0;
         if (quantity <= 0) continue;
 
-        final balanceKey = generateBalanceKey(senderId, productVariantId);
+        final balanceKey = generateBalanceKey(senderId, productVariantId,
+            context.selectedProject.referenceID, userObject?.userName);
         rejectedDeltas[balanceKey] =
             (rejectedDeltas[balanceKey] ?? 0) + quantity;
       }

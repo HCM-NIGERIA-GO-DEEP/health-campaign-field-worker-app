@@ -1,9 +1,19 @@
 import 'package:digit_data_model/data_model.dart';
 
 /// Generates a balance key for UserAction STOCK_BALANCE records.
-/// Uses format: bal_{facilityId}{productVariantId}
-String generateBalanceKey(String facilityId, String productVariantId) =>
-    'bal_$facilityId$productVariantId';
+/// Uses format: bal_{facilityId}{productVariantId}{campaignId}{userName}
+String generateBalanceKey(String facilityId, String productVariantId,
+    String? campaignId, String? userName) {
+  String filterFacilityId = facilityId.replaceAll("F", "").replaceAll("-", "");
+  String filterProductVariantId =
+      productVariantId.replaceAll("PVAR", "").replaceAll("-", "");
+  String filterCampaignId =
+      campaignId?.replaceAll("CMP", "").replaceAll("-", "") ?? "";
+  String filterUserName = userName?.replaceAll("-", "") ?? "";
+  String generatedKey =
+      'b_$filterFacilityId$filterProductVariantId$filterCampaignId$filterUserName';
+  return generatedKey;
+}
 
 class StockCalculationUtils {
   static String _getAdditionalFieldValue(StockModel stock, String key) {
