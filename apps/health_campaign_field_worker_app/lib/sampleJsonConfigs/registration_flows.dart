@@ -8437,14 +8437,8 @@ final dynamic sampleFlows = {
           "format": "backLink",
           "onAction": [
             {
-              "actionType": "NAVIGATION",
+              "actionType": "BACK_NAVIGATION",
               "properties": {
-                "data": [
-                  {
-                    "key": "HouseholdClientReferenceId",
-                    "value": "{{navigation.HouseholdClientReferenceId}}"
-                  }
-                ],
                 "name": "householdOverview",
                 "type": "TEMPLATE"
               }
