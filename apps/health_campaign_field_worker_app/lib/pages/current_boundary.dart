@@ -5,9 +5,16 @@ import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../blocs/app_initialization/app_initialization.dart';
+import '../blocs/localization/localization.dart';
+import '../data/local_store/app_shared_preferences.dart';
+import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../router/app_router.dart';
+import '../utils/environment_config.dart';
 import '../utils/extensions/extensions.dart';
 import '../utils/i18_key_constants.dart' as i18;
+import '../utils/least_level_boundary_singleton.dart';
+import '../utils/utils.dart';
 import '../widgets/header/back_navigation_help_header.dart';
 import '../widgets/localized.dart';
 
@@ -26,6 +33,48 @@ class CurrentBoundaryPage extends LocalizedStatefulWidget {
 }
 
 class _CurrentBoundaryPageState extends LocalizedState<CurrentBoundaryPage> {
+  @override
+  void initState() {
+    String module =
+        "hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}";
+    triggerLocalization(module: module);
+    super.initState();
+  }
+
+  void triggerLocalization({String? module}) {
+    context.read<AppInitializationBloc>().state.maybeWhen(
+          orElse: () {},
+          initialized: (
+            AppConfiguration appConfiguration,
+            _,
+            __,
+          ) {
+            final appConfig = appConfiguration;
+            final localizationModulesList = appConfiguration.backendInterface;
+            final selectedLocale =
+                "en_MZ" ?? AppSharedPreferences().getSelectedLocale;
+            LocalizationParams()
+                .setCode(LeastLevelBoundarySingleton().boundary);
+
+            context
+                .read<LocalizationBloc>()
+                .add(LocalizationEvent.onLoadLocalization(
+                  module: module != null && module.isNotEmpty
+                      ? "$module,hcm-common,hcm-login,hcm-scanner,hcm-checklist,hcm-beneficiary"
+                      : localizationModulesList?.interfaces
+                              .where(
+                                  (e) => e.type == Modules.localizationModule)
+                              .map((e) => e.name.toString())
+                              .join(',') ??
+                          "",
+                  tenantId: envConfig.variables.tenantId,
+                  locale: selectedLocale!,
+                  path: Constants.localizationApiPath,
+                ));
+          },
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
