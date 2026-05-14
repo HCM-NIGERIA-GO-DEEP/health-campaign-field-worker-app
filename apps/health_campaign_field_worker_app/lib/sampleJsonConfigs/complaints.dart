@@ -446,6 +446,12 @@ final dynamic sampleComplaintFlows = {
         }
       ],
       "name": "complaintInbox",
+      "onSystemBack": [
+        {
+          "actionType": "BACK_NAVIGATION",
+          "properties": {"name": "HOME", "type": "HOME"}
+        }
+      ],
       "footer": [
         {
           "type": "template",
@@ -1060,6 +1066,12 @@ final dynamic sampleComplaintFlows = {
         }
       ],
       "name": "complaintAcknowledgement",
+      "onSystemBack": [
+        {
+          "actionType": "BACK_NAVIGATION",
+          "properties": {"name": "complaintInbox", "type": "TEMPLATE"}
+        }
+      ],
       "header": [
         {
           "label": "Back",
@@ -1135,6 +1147,9 @@ final dynamic sampleComplaintFlows = {
         }
       ],
       "name": "complaintView",
+      "onSystemBack": [
+        {"actionType": "BACK_NAVIGATION", "properties": {}}
+      ],
       "footer": [
         {
           "type": "template",
