@@ -6304,40 +6304,41 @@ final dynamic sampleFlows = {
               "required.message":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_familyname_mandatory_message"
             },
-            // {
-            //   "type": "boolean",
-            //   "label":
-            //       "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_isHeadOfFamily",
-            //   "order": 3,
-            //   "value": "true",
-            //   "format": "checkbox",
-            //   "hidden": false,
-            //   "isMdms": false,
-            //   "tooltip": "",
-            //   "helpText": "",
-            //   "infoText": "",
-            //   "readOnly": false,
-            //   "required": true,
-            //   "fieldName": "isHeadOfFamily",
-            //   "mandatory": true,
-            //   "showLabel": false,
-            //   "deleteFlag": false,
-            //   "innerLabel": "",
-            //   "schemaCode": null,
-            //   "systemDate": false,
-            //   "validations": [
-            //     {
-            //       "type": "required",
-            //       "value": true,
-            //       "message":
-            //           "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_isHeadOfFamily_mandatory_message"
-            //     }
-            //   ],
-            //   "errorMessage": "",
-            //   "isMultiSelect": false,
-            //   "required.message":
-            //       "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_isHeadOfFamily_mandatory_message"
-            // },
+            {
+              "type": "boolean",
+              "label":
+                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_isHeadOfFamily",
+              "order": 3,
+              "value": "true",
+              "includeInForm": true,
+              "format": "checkbox",
+              "hidden": true,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": true,
+              "required": true,
+              "fieldName": "isHeadOfFamily",
+              "mandatory": true,
+              "showLabel": false,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": false,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_isHeadOfFamily_mandatory_message"
+                }
+              ],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "required.message":
+                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_isHeadOfFamily_mandatory_message"
+            },
             {
               "type": "string",
               "enums": [
@@ -6420,40 +6421,41 @@ final dynamic sampleFlows = {
               "required.message":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_dobPicker_mandatory_message"
             },
-            // {
-            //   "type": "string",
-            //   "enums": [
-            //     {"code": "MALE", "name": "MALE"},
-            //     {"code": "FEMALE", "name": "FEMALE"}
-            //   ],
-            //   "label": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_gender",
-            //   "order": 6,
-            //   "value": "",
-            //   "format": "select",
-            //   "hidden": false,
-            //   "isMdms": true,
-            //   "tooltip": "",
-            //   "helpText": "",
-            //   "infoText": "",
-            //   "readOnly": false,
-            //   "required": true,
-            //   "fieldName": "gender",
-            //   "mandatory": true,
-            //   "deleteFlag": false,
-            //   "innerLabel": "",
-            //   "schemaCode": "common-masters.GenderType",
-            //   "systemDate": false,
-            //   "validations": [
-            //     {
-            //       "type": "required",
-            //       "value": true,
-            //       "message": "GENDER_MANDATORY_MESSAGE"
-            //     }
-            //   ],
-            //   "errorMessage": "",
-            //   "isMultiSelect": false,
-            //   "required.message": "GENDER_MANDATORY_MESSAGE"
-            // },
+            {
+              "type": "string",
+              "enums": [
+                {"code": "MALE", "name": "MALE"},
+                {"code": "FEMALE", "name": "FEMALE"}
+              ],
+              "label": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_gender",
+              "order": 6,
+              "value": "MALE",
+              "includeInForm": true,
+              "format": "select",
+              "hidden": true,
+              "isMdms": true,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": true,
+              "required": true,
+              "fieldName": "gender",
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": "common-masters.GenderType",
+              "systemDate": false,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "GENDER_MANDATORY_MESSAGE"
+                }
+              ],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "required.message": "GENDER_MANDATORY_MESSAGE"
+            },
             {
               "type": "string",
               "label": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_phone",
