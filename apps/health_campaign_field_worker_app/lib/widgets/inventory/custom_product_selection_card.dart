@@ -17,6 +17,7 @@ import '../../blocs/project/project.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/extensions/extensions.dart';
 import '../../utils/facility_usage_filter.dart';
+import '../../utils/function_registries.dart' show StockBalanceCache;
 import '../../utils/inventory_product_filter.dart';
 import '../../utils/stock_calculation_utils.dart';
 import '../localized.dart';
@@ -468,16 +469,44 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
 
       if (!mounted) return;
 
-      // Calculate stock in hand for selected products
+      // Calculate stock in hand for selected products.
+      // Mirror stock_balance_card.dart so the validation cap matches the
+      // number shown to the user on the home page:
+      //   1. Honor distributor role (different formula + uuid as facility).
+      //   2. Overlay UserAction-derived balances from StockBalanceCache,
+      //      which include delivery deductions not present in StockModel.
       final loggedInUserUuid = FlowBuilderSingleton().loggedInUserUuid;
       final productIds = _selectedProducts.map((p) => p.id).toList();
 
+      final roles = context.loggedInUserRoles;
+      final isDistributorRole = roles.any(
+        (r) =>
+            r.code == RolesType.distributor.toValue() ||
+            r.code == RolesType.communityDistributor.toValue(),
+      );
+      final effectiveFacilityId =
+          isDistributorRole ? (loggedInUserUuid ?? facilityId) : facilityId;
+
       _stockInHandMap = StockCalculationUtils.calculateStockInHandForProducts(
         stockList: stockList,
-        facilityId: facilityId,
+        facilityId: effectiveFacilityId,
         productIds: productIds,
         loggedInUserUuid: loggedInUserUuid,
+        isDistributor: isDistributorRole,
       );
+
+      // Overlay home-page cache (UserAction balances win — they reflect
+      // post-delivery deductions). Only trust the cache when it is for the
+      // same facility we just computed for.
+      final cache = StockBalanceCache.instance;
+      if (cache.facilityId == effectiveFacilityId) {
+        for (final id in productIds) {
+          final cached = cache.cache[id];
+          if (cached != null) {
+            _stockInHandMap[id] = cached;
+          }
+        }
+      }
 
       debugPrint(
           'ProductSelectionCard: Calculated stockInHand: $_stockInHandMap');
