@@ -297,6 +297,7 @@ final dynamic inventoryReportFlows = {
         {
           "type": "template",
           "format": "button",
+          "fieldName": "reportDetailsBackToHomeButton",
           "label": "STOCKREPORTS_REPORT_DETAILS_SECONDARY_ACTION_LABEL",
           "properties": {
             "type": "secondary",
@@ -316,10 +317,12 @@ final dynamic inventoryReportFlows = {
         {
           "type": "template",
           "format": "card",
+          "fieldName": "reportDetailsFilterCard",
           "children": [
             {
               "type": "template",
               "format": "dropdownTemplate",
+              "fieldName": "reportDetailsFacilityDropdown",
               "label": "STOCKREPORTS_REPORT_DETAILS_SELECT_WAREHOUSE_LABEL",
               "required": true,
               "key": "selectedFacility",
@@ -366,6 +369,7 @@ final dynamic inventoryReportFlows = {
             {
               "type": "template",
               "format": "dropdownTemplate",
+              "fieldName": "reportDetailsProductDropdown",
               "label": "STOCKREPORTS_REPORT_DETAILS_SELECT_PRODUCT_LABEL",
               "required": true,
               "key": "selectedProduct",
@@ -416,7 +420,7 @@ final dynamic inventoryReportFlows = {
           "properties": {"type": "info"},
           "fieldName": "infoCardReportDetails",
           "visible":
-              "{{fn:isEmpty(selectedFacility)}} && {{fn:isEmpty(selectedProduct)}}",
+              "{{fn:isEmpty(selectedFacility)}} && {{fn:isEmpty(selectedProduct)}}"
         },
         {
           "type": "template",
@@ -426,7 +430,7 @@ final dynamic inventoryReportFlows = {
           "properties": {"type": "info"},
           "fieldName": "noRecordFoundInfoReportDetails",
           "visible":
-              "{{fn:isEmpty(stock)}} && {{fn:isNotEmpty(selectedFacility)}}",
+              "{{fn:isEmpty(stock)}} && {{fn:isNotEmpty(selectedFacility)}}"
         },
         {
           "type": "template",
@@ -496,6 +500,7 @@ final dynamic inventoryReportFlows = {
         {
           "type": "template",
           "format": "button",
+          "fieldName": "reckonReportDetailsBackToHomeButton",
           "label": "STOCKRECON_REPORT_DETAILS_SECONDARY_ACTION_LABEL",
           "properties": {
             "type": "secondary",
@@ -515,10 +520,12 @@ final dynamic inventoryReportFlows = {
         {
           "type": "template",
           "format": "card",
+          "fieldName": "reckonReportDetailsFilterCard",
           "children": [
             {
               "type": "template",
               "format": "dropdownTemplate",
+              "fieldName": "reckonReportDetailsFacilityDropdown",
               "label": "STOCKRECON_REPORT_DETAILS_SELECT_WAREHOUSE_LABEL",
               "required": true,
               "key": "selectedReconFacility",
@@ -557,6 +564,7 @@ final dynamic inventoryReportFlows = {
             {
               "type": "template",
               "format": "dropdownTemplate",
+              "fieldName": "reckonReportDetailsProductDropdown",
               "label": "STOCKRECONREPORTS_REPORT_DETAILS_SELECT_PRODUCT_LABEL",
               "required": true,
               "key": "selectedReckonProduct",
@@ -595,21 +603,23 @@ final dynamic inventoryReportFlows = {
         {
           "type": "template",
           "format": "infoCard",
+          "fieldName": "infoCardReckonReportDetails",
           "label": "STOCKRECON_REPORT_DETAILS_INFO_CARD_LABEL",
           "description": "STOCKRECON_REPORT_DETAILS_INFO_CARD_DESCRIPTION",
           "properties": {"type": "info"},
           "visible":
-              "{{fn:isEmpty(selectedReconFacility)}} && {{fn:isEmpty(selectedReckonProduct)}}",
+              "{{fn:isEmpty(selectedReconFacility)}} && {{fn:isEmpty(selectedReckonProduct)}}"
         },
         {
           "type": "template",
           "format": "infoCard",
+          "fieldName": "noRecordFoundInfoReckonReportDetails",
           "label": "STOCKRECON_REPORT_DETAILS_NO_RECORD_FOUND_INFO",
           "description":
               "STOCKRECON_REPORT_DETAILS_NO_RECORD_FOUND_DESCRIPTION",
           "properties": {"type": "info"},
           "visible":
-              "{{fn:isEmpty(stockReconciliation)}} && {{fn:isNotEmpty(selectedReconFacility)}}",
+              "{{fn:isEmpty(stockReconciliation)}} && {{fn:isNotEmpty(selectedReconFacility)}}"
         },
         {
           "type": "template",
