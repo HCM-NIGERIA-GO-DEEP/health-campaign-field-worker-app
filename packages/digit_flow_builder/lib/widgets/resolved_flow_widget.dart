@@ -208,7 +208,7 @@ class ResolvedWidgetContext {
 
     final currentEvalContext = getFreshEvalContext();
 
-    // Resolve nav data and conditions for all actions
+    // Resolve conditions for all actions (nav data is now resolved lazily at execution time)
     final resolvedActionsList = actionsJson.map((actionJson) {
       var resolved = Map<String, dynamic>.from(actionJson);
 
@@ -219,13 +219,7 @@ class ResolvedWidgetContext {
       if (actionJson['actions'] != null) {
         final nestedActions =
             List<Map<String, dynamic>>.from(actionJson['actions']);
-        final resolvedNested = nestedActions.map((nested) {
-          return resolveActionNavData(
-              Map<String, dynamic>.from(nested), currentEvalContext);
-        }).toList();
-        resolved['actions'] = resolvedNested;
-      } else {
-        resolved = resolveActionNavData(resolved, currentEvalContext);
+        resolved['actions'] = nestedActions;
       }
 
       return resolved;
@@ -365,6 +359,24 @@ abstract class ResolvedFlowWidget implements FlowWidget {
               stateData: state.stateData,
             ) ??
             labelText;
+      }
+    }
+
+    // Apply labelReplaceAll substitutions (supports {placeholder} and {{expr}})
+    final labelReplaceAll = json['labelReplaceAll'] as List?;
+    if (resolvedLabel != null && labelReplaceAll != null) {
+      for (final replacement in labelReplaceAll) {
+        final searchValue = replacement['searchValue']?.toString() ?? '';
+        final rawReplaceValue = replacement['replaceValue']?.toString() ?? '';
+        final replaceValue = resolveTemplate(
+              rawReplaceValue,
+              state.evalContext,
+              localization: localization,
+              screenKey: stateKey,
+              stateData: state.stateData,
+            ) ??
+            rawReplaceValue;
+        resolvedLabel = resolvedLabel!.replaceAll(searchValue, replaceValue);
       }
     }
 

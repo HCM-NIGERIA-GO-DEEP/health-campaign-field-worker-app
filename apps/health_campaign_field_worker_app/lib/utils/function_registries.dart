@@ -730,6 +730,67 @@ class FunctionRegistries {
           ?.identifierId;
     });
 
+    FunctionRegistry.register('getBeneficiaryId', (args, stateData) {
+      if (args.isEmpty) return null;
+      var individual = args.first;
+      if (individual == null) return null;
+
+      if (individual is List) {
+        individual = individual.firstWhereOrNull((e) =>
+            e is IndividualModel ||
+            (e is Map && e['__type'] == 'IndividualModel'));
+      }
+
+      if (individual == null) return null;
+
+      final List<IdentifierModel>? identifiers;
+      if (individual is IndividualModel) {
+        identifiers = individual.identifiers;
+      } else if (individual is Map) {
+        final List? rawIds = individual['identifiers'];
+        identifiers = rawIds?.map((id) {
+          if (id is IdentifierModel) return id;
+          return IdentifierModelMapper.fromMap(Map<String, dynamic>.from(id));
+        }).toList();
+      } else {
+        identifiers = null;
+      }
+
+      if (identifiers == null) return null;
+
+      return identifiers
+          .firstWhereOrNull(
+              (id) => id.identifierType == 'UNIQUE_BENEFICIARY_ID')
+          ?.identifierId;
+    });
+
+    FunctionRegistry.register('getBeneficiaryName', (args, stateData) {
+      if (args.isEmpty) return null;
+      var individual = args.first;
+      if (individual == null) return null;
+
+      if (individual is List) {
+        individual = individual.firstWhereOrNull((e) =>
+            e is IndividualModel ||
+            (e is Map && e['__type'] == 'IndividualModel'));
+      }
+
+      if (individual == null) return null;
+
+      if (individual is IndividualModel) {
+        return '${individual.name?.givenName ?? ''} ${individual.name?.familyName ?? ''}'
+            .trim();
+      } else if (individual is Map) {
+        final name = individual['name'];
+        if (name != null) {
+          return '${name['givenName'] ?? ''} ${name['familyName'] ?? ''}'
+              .trim();
+        }
+      }
+
+      return null;
+    });
+
     FunctionRegistry.register('isItnDelivered', (args, stateData) {
       if (args.isEmpty) return false;
       final tasks = args.first;

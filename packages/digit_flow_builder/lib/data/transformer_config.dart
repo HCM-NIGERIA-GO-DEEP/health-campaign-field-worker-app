@@ -1198,28 +1198,11 @@ final jsonConfig = {
           "bloodGroup": "health.bloodGroup",
           "gender": "beneficiaryDetails.gender",
           "address": "list:AddressModel",
-          "identifiers": "list:IdentifierModel",
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
           "boundaryCode": "__context:boundary.code",
         },
         "listMappings": {
-          "IdentifierModel": {
-            "mappings": {
-              "id": "id",
-              "identifierType": "__value:DEFAULT",
-              "identifierId": "__generate:uuid",
-              "boundaryCode": "__context:selectedBoundaryCode",
-              "nonRecoverableError": "error.nonRecoverable",
-              "individualClientReferenceId":
-                  "__ref:IndividualModel.clientReferenceId",
-              "clientReferenceId": "__generate:uuid",
-              "tenantId": "__context:tenantId",
-              "rowVersion": "meta.rowVersion",
-              "clientAuditDetails": "__generate:clientAudit",
-              "auditDetails": "__generate:audit",
-            }
-          },
           "AddressModel": {
             "mappings": {
               "id": "address.id",

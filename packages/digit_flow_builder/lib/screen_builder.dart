@@ -383,7 +383,14 @@ class _FormScreenWrapperState extends LocalizedState<_FormScreenWrapper> {
                 // 4. System values like administrativeArea, availableIDs
                 defaultValues: {
                   ...?widget.defaultValues,
-                  ...mergedNavParams,
+                  // Convert int/double nav params to String; FormsRenderPage
+                  // casts defaultValues entries to String? for text fields.
+                  ...mergedNavParams.map(
+                    (k, v) => MapEntry(
+                      k,
+                      (v is int || v is double) ? v.toString() : v,
+                    ),
+                  ),
                   if (isEdit) ...registryFormData,
                   // System values always present
                   'administrativeArea': localizations

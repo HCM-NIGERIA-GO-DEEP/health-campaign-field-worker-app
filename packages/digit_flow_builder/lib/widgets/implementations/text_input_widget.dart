@@ -80,6 +80,15 @@ class TextInputWidget extends ResolvedFlowWidget {
         if (initialValue == '{{$key}}' || initialValue == null) {
           initialValue = resolved.formData[key];
         }
+        // Last resort: resolve the JSON 'value' field as a template expression
+        // (used for read-only fields that display navigation/singleton values)
+        if ((initialValue == null || initialValue == '{{$key}}') &&
+            isReadOnly) {
+          final rawJsonValue = json['value']?.toString() ?? '';
+          if (rawJsonValue.isNotEmpty) {
+            initialValue = resolved.resolveText(rawJsonValue);
+          }
+        }
       }
     }
 

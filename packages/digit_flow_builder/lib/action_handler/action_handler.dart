@@ -257,7 +257,12 @@ class ActionHandler {
     BuildContext context,
     Map<String, dynamic> contextData,
   ) async {
-    return await _registry.execute(action, context, contextData);
+    // Resolve any templates in properties using current contextData
+    // This allows for "late binding" where one action produces data for the next
+    final resolvedProperties = resolveMapTemplates(action.properties, contextData);
+    final resolvedAction = action.copyWith(properties: resolvedProperties);
+
+    return await _registry.execute(resolvedAction, context, contextData);
   }
 
   /// Helper to flatten nested form data for condition evaluation
