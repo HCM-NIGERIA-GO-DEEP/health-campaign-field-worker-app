@@ -348,7 +348,7 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
       for (final facilityId in facilityIds) {
         for (final productVariantId in productVariantIds) {
           balanceKeys.add(generateBalanceKey(facilityId, productVariantId,
-              context.selectedProject.referenceID, userObject?.userName));
+              context.selectedProject.referenceID, userObject?.id));
         }
       }
 
@@ -440,7 +440,7 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
         if (quantity <= 0) continue;
 
         final balanceKey = generateBalanceKey(senderId, productVariantId,
-            context.selectedProject.referenceID, userObject?.userName);
+            context.selectedProject.referenceID, userObject?.id);
         rejectedDeltas[balanceKey] =
             (rejectedDeltas[balanceKey] ?? 0) + quantity;
       }

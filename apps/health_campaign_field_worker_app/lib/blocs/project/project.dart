@@ -1110,7 +1110,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       for (final facilityId in facilityIds) {
         for (final productVariantId in productVariantIds) {
           balanceKeys.add(generateBalanceKey(facilityId, productVariantId,
-              context.selectedProject.referenceID, userObject?.userName));
+              context.selectedProject.referenceID, userObject?.id));
         }
       }
 
@@ -1222,7 +1222,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
           final balance = metrics['stockInHand'] ?? 0.0;
           final balanceKey = generateBalanceKey(facilityId, productVariantId,
-              context.selectedProject.referenceID, userObject?.userName);
+              context.selectedProject.referenceID, userObject?.id);
 
           // Check if UserAction already exists
           final existingActions = await userActionLocalRepository.search(
