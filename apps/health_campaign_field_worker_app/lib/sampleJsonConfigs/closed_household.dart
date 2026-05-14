@@ -159,6 +159,20 @@ final dynamic sampleCloseHouseholdFlows = {
           }
         },
         {
+          "actionType": "UPDATE_IDENTIFIER_STATUS",
+          "properties": {
+            "identifierType": "UNIQUE_BENEFICIARY_ID",
+            "onError": [
+              {
+                "actionType": "SHOW_TOAST",
+                "properties": {
+                  "message": "Failed to update beneficiary id status."
+                }
+              }
+            ]
+          }
+        },
+        {
           "actionType": "CREATE_EVENT",
           "properties": {
             "entity": "HOUSEHOLD, INDIVIDUAL, MEMBER, PROJECTBENEFICIARY",

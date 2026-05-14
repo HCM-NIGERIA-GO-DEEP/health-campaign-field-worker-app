@@ -57,8 +57,20 @@ class CrudExecutor extends ActionExecutor {
     }
 
     debugPrint('CREATE_EVENT: Creating ${entities.length} entities');
-    context.read<CrudBloc>().add(CrudEventCreate(entities: entities));
-    return contextData;
+
+    // Use CrudService directly to await creation. 
+    // Note: createEntities returns Future<void>, so we wait for it to finish.
+    await CrudBlocSingleton().crudService.createEntities(entities);
+
+    // Return the original entities (which now exist in the DB) to the context
+    // We provide both 'entities' and 'contextData.entities' for JSON compatibility
+    return {
+      ...contextData,
+      'entities': entities,
+      'contextData': {
+        'entities': entities,
+      },
+    };
   }
 
   /// Evaluate condition like "navigation.isUpdate!=true"

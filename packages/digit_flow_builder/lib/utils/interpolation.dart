@@ -459,3 +459,35 @@ Map<String, dynamic> preprocessConfigWithState(
 
   return walk(config);
 }
+
+/// Recursively resolves template values in a map using the provided contextData.
+Map<String, dynamic> resolveMapTemplates(
+  Map<dynamic, dynamic> map,
+  Map<String, dynamic> contextData,
+) {
+  final resolved = <String, dynamic>{};
+
+  for (final entry in map.entries) {
+    final key = entry.key.toString();
+    final value = entry.value;
+
+    if (value is String) {
+      resolved[key] = resolveValue(value, contextData) ?? value;
+    } else if (value is Map) {
+      resolved[key] = resolveMapTemplates(value, contextData);
+    } else if (value is List) {
+      resolved[key] = value.map((item) {
+        if (item is String) {
+          return resolveValue(item, contextData) ?? item;
+        } else if (item is Map) {
+          return resolveMapTemplates(item, contextData);
+        }
+        return item;
+      }).toList();
+    } else {
+      resolved[key] = value;
+    }
+  }
+
+  return resolved;
+}

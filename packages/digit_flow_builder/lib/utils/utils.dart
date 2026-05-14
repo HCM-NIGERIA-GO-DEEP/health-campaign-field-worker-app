@@ -260,7 +260,38 @@ String resolveTemplate(
   if (!template.contains('{{')) {
     // No template placeholders, try to translate as localization key
     if (localization != null) {
-      return _translateWithLocalization(template, localization);
+      final translated = _translateWithLocalization(template, localization);
+      
+      // Handle single-bracket interpolation for simple keys
+      if (translated.contains('{') && contextData != null) {
+        debugPrint('RESOLVE_TEMPLATE: contextData keys: ${contextData.keys.toList()}');
+        debugPrint('RESOLVE_TEMPLATE: Handling single brackets in translated string: "$translated"');
+        final bracketRegex = RegExp(r'\{(.+?)\}');
+        return translated.replaceAllMapped(bracketRegex, (match) {
+          final placeholder = match.group(1)!.trim();
+          final keysToTry = [
+            placeholder,
+            'navigation.$placeholder',
+            'formData.$placeholder',
+            if (placeholder == 'id') 'navigation.beneficiaryId',
+            if (placeholder == 'name') 'navigation.beneficiaryName',
+            if (placeholder == 'id') 'beneficiaryId',
+            if (placeholder == 'name') 'beneficiaryName',
+          ];
+
+          debugPrint('RESOLVE_TEMPLATE: Resolving placeholder "{$placeholder}", trying keys: $keysToTry');
+          for (final key in keysToTry) {
+            final resolved = resolveValueRaw('{{$key}}', contextData);
+            if (resolved != null && resolved != '{{$key}}') {
+              debugPrint('RESOLVE_TEMPLATE: Resolved "{$placeholder}" to "$resolved" using key "$key"');
+              return resolved.toString();
+            }
+          }
+          debugPrint('RESOLVE_TEMPLATE: Failed to resolve placeholder "{$placeholder}"');
+          return match.group(0)!;
+        });
+      }
+      return translated;
     }
     return template;
   }
@@ -318,7 +349,36 @@ String resolveTemplate(
     result = result.replaceAll(fullPlaceholder, valueStr);
   }
 
-  return _translateWithLocalization(result, localization);
+  // Final translation and handle single-bracket interpolation (e.g., {id}, {name})
+  String finalResult = _translateWithLocalization(result, localization);
+  
+  if (finalResult.contains('{') && contextData != null) {
+    final bracketRegex = RegExp(r'\{(.+?)\}');
+    finalResult = finalResult.replaceAllMapped(bracketRegex, (match) {
+      final placeholder = match.group(1)!.trim();
+      
+      // Try direct match, then check common prefixes
+      final keysToTry = [
+        placeholder,
+        'navigation.$placeholder',
+        'formData.$placeholder',
+        'itemData.$placeholder',
+        // Common aliases for IDs and Names in this app
+        if (placeholder == 'id') 'navigation.beneficiaryId',
+        if (placeholder == 'name') 'navigation.beneficiaryName',
+      ];
+
+      for (final key in keysToTry) {
+        final resolved = resolveValueRaw('{{$key}}', contextData);
+        if (resolved != null && resolved != '{{$key}}') {
+          return resolved.toString();
+        }
+      }
+      return match.group(0)!; // Keep original if not resolved
+    });
+  }
+
+  return finalResult;
 }
 
 /// Helper to translate using localization (supports FlowBuilderLocalization)
@@ -327,14 +387,7 @@ String _translateWithLocalization(String text, dynamic localization) {
   if (trimmed.isEmpty) return text;
 
   try {
-    final translated = localization.translate(trimmed);
-    // Preserve original whitespace
-    if (text.startsWith(' ') || text.endsWith(' ')) {
-      final leadingSpace = text.startsWith(' ') ? ' ' : '';
-      final trailingSpace = text.endsWith(' ') ? ' ' : '';
-      return '$leadingSpace$translated$trailingSpace';
-    }
-    return translated;
+    return localization.translate(trimmed);
   } catch (_) {
     return text;
   }

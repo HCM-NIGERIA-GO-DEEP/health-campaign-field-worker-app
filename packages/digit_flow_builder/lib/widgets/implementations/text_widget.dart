@@ -37,7 +37,8 @@ class TextWidget extends ResolvedFlowWidget {
     if (replaceAll != null) {
       for (var replacement in replaceAll) {
         final searchValue = replacement['searchValue']?.toString() ?? '';
-        final replaceValue = replacement['replaceValue']?.toString() ?? '';
+        final rawReplaceValue = replacement['replaceValue']?.toString() ?? '';
+        final replaceValue = resolved.resolveText(rawReplaceValue);
         resolvedValue = resolvedValue.replaceAll(searchValue, replaceValue);
       }
     }

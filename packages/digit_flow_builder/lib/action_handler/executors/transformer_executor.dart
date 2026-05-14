@@ -306,6 +306,9 @@ class TransformerExecutor extends ActionExecutor {
     }
 
     contextData['entities'] = entities;
+    contextData['contextData'] = {
+      'entities': entities,
+    };
 
     // Pass existingModels to contextData even for forceCreate,
     // so UPDATE_EVENT with source: "existingModels" can update the originals

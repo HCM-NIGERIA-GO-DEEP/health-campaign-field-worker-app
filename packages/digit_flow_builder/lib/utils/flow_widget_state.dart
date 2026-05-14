@@ -42,6 +42,10 @@ class WidgetStateContext {
   /// Use template: `{{widgetData.fieldName}}`
   final Map<String, dynamic> widgetData;
 
+  /// Navigation parameters passed to this screen.
+  /// Use template: `{{navigation.fieldName}}`
+  final Map<String, dynamic> navigation;
+
   /// Model map for grouped entities by type.
   /// Use template: `{{ModelName.fieldName}}` (e.g., `{{HouseholdModel.name}}`)
   final Map<String, List<Map<String, dynamic>>> modelMap;
@@ -67,6 +71,7 @@ class WidgetStateContext {
   /// - `contextData` - Complete raw state (list)
   /// - `formData` - Form field values
   /// - `widgetData` - Widget-specific state
+  /// - `navigation` - Navigation parameters
   /// - `item` - Legacy alias for itemData
   /// - Plus all keys from modelMap spread at root level
   ///
@@ -83,6 +88,7 @@ class WidgetStateContext {
     this.contextData,
     this.formData = const {},
     this.widgetData = const {},
+    this.navigation = const {},
     this.modelMap = const {},
     this.screenKey,
     this.compositeKey,
@@ -98,6 +104,7 @@ class WidgetStateContext {
       'contextData': contextData,
       'formData': formData,
       'widgetData': widgetData,
+      'navigation': navigation,
       // Spread modelMap so {{ModelName.field}} works directly
       ...modelMap,
       // Legacy support for existing templates using 'item'
@@ -163,6 +170,7 @@ class WidgetStateContext {
       contextData: enrichedContextData,
       formData: registryState?.formData ?? {},
       widgetData: registryState?.widgetData ?? {},
+      navigation: navigationParams ?? {},
       modelMap: crudCtx?.stateData?.modelMap ?? {},
       screenKey: screenKey,
       compositeKey: compositeKey,

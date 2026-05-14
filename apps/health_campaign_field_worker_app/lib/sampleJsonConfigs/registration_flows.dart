@@ -473,6 +473,19 @@ final dynamic sampleFlows = {
                           {
                             "key": "futureDoses",
                             "value": "{{contextData.0.futureDeliveries}}"
+                          },
+                          {
+                            "key": "beneficiaryName",
+                            "value": "{{navigation.selectedIndividualName}}"
+                          },
+                          {
+                            "key": "beneficiaryId",
+                            "value":
+                                "{{navigation.selectedIndividualIdentifierId}}"
+                          },
+                          {
+                            "key": "loggedInUserName",
+                            "value": "{{singleton.loggedInUser.name}}"
                           }
                         ],
                         "name": "DELIVERY",
@@ -2953,6 +2966,16 @@ final dynamic sampleFlows = {
                 {
                   "actionType": "NAVIGATION",
                   "properties": {
+                    "data": [
+                      {
+                        "key": "beneficiaryName",
+                        "value": "{{navigation.beneficiaryName}}"
+                      },
+                      {
+                        "key": "beneficiaryId",
+                        "value": "{{navigation.beneficiaryId}}"
+                      }
+                    ],
                     "name": "household-acknowledgement",
                     "type": "template"
                   }
@@ -3103,6 +3126,13 @@ final dynamic sampleFlows = {
             }
           ],
           "navigateTo": {
+            "data": [
+              {
+                "key": "beneficiaryName",
+                "value": "{{navigation.beneficiaryName}}"
+              },
+              {"key": "beneficiaryId", "value": "{{navigation.beneficiaryId}}"}
+            ],
             "name": "household-acknowledgement",
             "type": "template"
           },
@@ -3139,6 +3169,16 @@ final dynamic sampleFlows = {
             {
               "type": "boolean",
               "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_WRITE_CODE",
+              "labelReplaceAll": [
+                {
+                  "searchValue": "{id}",
+                  "replaceValue": "{{navigation.beneficiaryId}}"
+                },
+                {
+                  "searchValue": "{name}",
+                  "replaceValue": "{{navigation.beneficiaryName}}"
+                }
+              ],
               "order": 1,
               "value": "",
               "format": "checkbox",
@@ -3220,6 +3260,16 @@ final dynamic sampleFlows = {
                 {
                   "actionType": "NAVIGATION",
                   "properties": {
+                    "data": [
+                      {
+                        "key": "beneficiaryId",
+                        "value": "{{navigation.beneficiaryId}}"
+                      },
+                      {
+                        "key": "beneficiaryName",
+                        "value": "{{navigation.beneficiaryName}}"
+                      }
+                    ],
                     "name": "DeliveryChecklist",
                     "type": "template"
                   }
@@ -3353,6 +3403,14 @@ final dynamic sampleFlows = {
                   {
                     "key": "HouseholdClientReferenceId",
                     "value": "{{navigation.HouseholdClientReferenceId}}"
+                  },
+                  {
+                    "key": "beneficiaryName",
+                    "value": "{{fn:getBeneficiaryName(contextData.entities)}}"
+                  },
+                  {
+                    "key": "beneficiaryId",
+                    "value": "{{fn:getBeneficiaryId(contextData.entities)}}"
                   }
                 ],
                 "name": "deliverySuccess",
@@ -3404,7 +3462,7 @@ final dynamic sampleFlows = {
                 {"code": "AQ2", "name": "AQ2"}
               ],
               "label": "APPONE_REGISTRATION_DELIVERYDETAILS_label_resource",
-              "order": 2,
+              "order": 5,
               "value": "",
               "format": "custom",
               "hidden": false,
@@ -3453,7 +3511,7 @@ final dynamic sampleFlows = {
               ],
               "label":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_deliveryComments",
-              "order": 3,
+              "order": 6,
               "value": "",
               "format": "dropdown",
               "hidden": true,
@@ -3477,7 +3535,7 @@ final dynamic sampleFlows = {
             {
               "type": "string",
               "label": "APPONE_REGISTRATION_DELIVERYDETAILS_label_scanner",
-              "order": 5,
+              "order": 8,
               "value": "",
               "format": "scanner",
               "hidden": true,
@@ -3502,7 +3560,7 @@ final dynamic sampleFlows = {
             {
               "type": "string",
               "label": "APPONE_DELIVERYDETAILS_LATLNG_LABEL",
-              "order": 4,
+              "order": 7,
               "value": "",
               "format": "latLng",
               "hidden": true,
@@ -3523,6 +3581,79 @@ final dynamic sampleFlows = {
               "includeInForm": true,
               "isMultiSelect": false,
               "includeInSummary": true,
+            },
+            {
+              "type": "string",
+              "label": "APPONE_REGISTRATION_DELIVERYDETAILS_label_currentCycle",
+              "order": 2,
+              "value": "",
+              "format": "text",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": true,
+              "fieldName": "cycleIndex",
+              "mandatory": false,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": false,
+              "validations": [],
+              "errorMessage": "",
+              "includeInForm": true,
+              "isMultiSelect": false,
+              "includeInSummary": true
+            },
+            {
+              "type": "string",
+              "label": "APPONE_REGISTRATION_DELIVERYDETAILS_label_currentDose",
+              "order": 3,
+              "value": "",
+              "format": "text",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": true,
+              "fieldName": "doseIndex",
+              "mandatory": false,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": false,
+              "validations": [],
+              "errorMessage": "",
+              "includeInForm": true,
+              "isMultiSelect": false,
+              "includeInSummary": true
+            },
+            {
+              "type": "string",
+              "label":
+                  "APPONE_REGISTRATION_DELIVERYDETAILS_label_doseAdministeredBy",
+              "order": 4,
+              "value": "",
+              "format": "text",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": true,
+              "fieldName": "loggedInUserName",
+              "mandatory": false,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": false,
+              "validations": [],
+              "errorMessage": "",
+              "includeInForm": true,
+              "isMultiSelect": false,
+              "includeInSummary": true
             }
           ],
           "actionLabel":
@@ -3662,6 +3793,14 @@ final dynamic sampleFlows = {
               {
                 "key": "HouseholdClientReferenceId",
                 "value": "{{navigation.HouseholdClientReferenceId}}"
+              },
+              {
+                "key": "beneficiaryName",
+                "value": "{{fn:getBeneficiaryName(contextData.entities)}}"
+              },
+              {
+                "key": "beneficiaryId",
+                "value": "{{fn:getBeneficiaryId(contextData.entities)}}"
               }
             ],
             "name": "deliverySuccess",
@@ -3702,6 +3841,16 @@ final dynamic sampleFlows = {
                 {
                   "actionType": "NAVIGATION",
                   "properties": {
+                    "data": [
+                      {
+                        "key": "beneficiaryName",
+                        "value": "{{navigation.selectedIndividualName}}"
+                      },
+                      {
+                        "key": "beneficiaryId",
+                        "value": "{{navigation.selectedIndividualIdentifierId}}"
+                      }
+                    ],
                     "name": "household-acknowledgement",
                     "type": "template"
                   }
@@ -3781,6 +3930,14 @@ final dynamic sampleFlows = {
                   {
                     "key": "HouseholdClientReferenceId",
                     "value": "{{navigation.HouseholdClientReferenceId}}"
+                  },
+                  {
+                    "key": "beneficiaryName",
+                    "value": "{{navigation.selectedIndividualName}}"
+                  },
+                  {
+                    "key": "beneficiaryId",
+                    "value": "{{navigation.selectedIndividualIdentifierId}}"
                   }
                 ],
                 "name": "redoseSuccess",
@@ -3995,6 +4152,14 @@ final dynamic sampleFlows = {
               {
                 "key": "HouseholdClientReferenceId",
                 "value": "{{navigation.HouseholdClientReferenceId}}"
+              },
+              {
+                "key": "beneficiaryName",
+                "value": "{{navigation.selectedIndividualName}}"
+              },
+              {
+                "key": "beneficiaryId",
+                "value": "{{navigation.selectedIndividualIdentifierId}}"
               }
             ],
             "name": "redoseSuccess",
@@ -4036,6 +4201,16 @@ final dynamic sampleFlows = {
                 {
                   "actionType": "NAVIGATION",
                   "properties": {
+                    "data": [
+                      {
+                        "key": "beneficiaryName",
+                        "value": "{{navigation.selectedIndividualName}}"
+                      },
+                      {
+                        "key": "beneficiaryId",
+                        "value": "{{navigation.selectedIndividualIdentifierId}}"
+                      }
+                    ],
                     "name": "household-acknowledgement",
                     "type": "template"
                   }
@@ -4295,6 +4470,16 @@ final dynamic sampleFlows = {
             }
           ],
           "navigateTo": {
+            "data": [
+              {
+                "key": "beneficiaryName",
+                "value": "{{navigation.selectedIndividualName}}"
+              },
+              {
+                "key": "beneficiaryId",
+                "value": "{{navigation.selectedIndividualIdentifierId}}"
+              }
+            ],
             "name": "household-acknowledgement",
             "type": "template"
           },
@@ -4818,6 +5003,15 @@ final dynamic sampleFlows = {
                       {
                         "key": "householdId",
                         "value": "{{formData.household.clientReferenceId}}"
+                      },
+                      {
+                        "key": "beneficiaryName",
+                        "value":
+                            "{{fn:getBeneficiaryName(contextData.entities)}}"
+                      },
+                      {
+                        "key": "beneficiaryId",
+                        "value": "{{fn:getBeneficiaryId(contextData.entities)}}"
                       }
                     ],
                     "name": "ACKNOWLEDGEMENT",
@@ -4906,6 +5100,14 @@ final dynamic sampleFlows = {
               {
                 "key": "householdId",
                 "value": "{{formData.household.clientReferenceId}}"
+              },
+              {
+                "key": "beneficiaryName",
+                "value": "{{fn:getBeneficiaryName(contextData.entities)}}"
+              },
+              {
+                "key": "beneficiaryId",
+                "value": "{{fn:getBeneficiaryId(contextData.entities)}}"
               }
             ],
             "name": "ACKNOWLEDGEMENT",
@@ -5321,6 +5523,14 @@ final dynamic sampleFlows = {
               {
                 "key": "HouseholdClientReferenceId",
                 "value": "{{navigation.HouseholdClientReferenceId}}"
+              },
+              {
+                "key": "beneficiaryName",
+                "value": "{{fn:getBeneficiaryName(contextData.entities)}}"
+              },
+              {
+                "key": "beneficiaryId",
+                "value": "{{fn:getBeneficiaryId(contextData.entities)}}"
               }
             ],
             "name": "ACKNOWLEDGEMENT",
@@ -5456,15 +5666,112 @@ final dynamic sampleFlows = {
           "additionalWidgets": [
             {
               "type": "template",
-              "format": "textTemplate",
-              "value": "{{formData.beneficiaryDetails.identifiers}}",
-              "properties": {
-                "style": "bodyS",
-                "separatedBy": ", ",
-                "replaceAll": [
-                  {"searchValue": ",", "replaceValue": ":"},
-                ]
+              "format": "labelPairList",
+              "fieldName": "acknowledgementDetails",
+              "data": [
+                {
+                  "key": "ACKNOWLEDGEMENT_BENEFICIARY_NAME",
+                  "value": "{{navigation.beneficiaryName}}",
+                  "isActive": true
+                },
+                {
+                  "key": "ACKNOWLEDGEMENT_BENEFICIARY_ID",
+                  "value": "{{navigation.beneficiaryId}}",
+                  "isActive": true
+                }
+              ]
+            }
+          ],
+          "properties": {"type": "success"},
+          "primaryAction": {
+            "type": "template",
+            "label": "VIEW_HOUSEHOLD_DETAILS",
+            "format": "button",
+            "fieldName": "viewHouseholdButton",
+            "mandatory": true,
+            "hidden": false,
+            "properties": {"type": "primary"},
+            "onAction": [
+              {
+                "actionType": "NAVIGATION",
+                "properties": {
+                  "name": "householdOverview",
+                  "type": "TEMPLATE",
+                  "data": [
+                    {
+                      "key": "HouseholdClientReferenceId",
+                      "value": "{{navigation.HouseholdClientReferenceId}}"
+                    }
+                  ]
+                }
               }
+            ]
+          },
+          "secondaryAction": {
+            "type": "template",
+            "label": "BACK_TO_SEARCH",
+            "format": "button",
+            "fieldName": "backToSearch",
+            "mandatory": true,
+            "hidden": false,
+            "properties": {"type": "secondary"},
+            "onAction": [
+              {
+                "actionType": "NAVIGATION",
+                "properties": {"name": "searchBeneficiary", "type": "TEMPLATE"}
+              }
+            ]
+          }
+        },
+      ],
+      "footer": []
+    },
+    {
+      "name": "household-acknowledgement",
+      "order": 5,
+      "screenType": "TEMPLATE",
+      "preventScreenCapture": false,
+      "header": [
+        {
+          "type": "template",
+          "label": "DELIVERY_BACK",
+          "format": "backLink",
+          "onAction": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {"name": "searchBeneficiary", "type": "TEMPLATE"}
+            }
+          ],
+          "fieldName": "back",
+          "mandatory": true
+        }
+      ],
+      "body": [
+        {
+          "type": "template",
+          "format": "panelCard",
+          "fieldName": "successCard",
+          "mandatory": true,
+          "label": "DATA_RECORDED_SUCCESSFULLY",
+          "heading": "DATA_RECORDED_SUCCESSFULLY",
+          "description": "DATA_RECORDED_SUCCESSFULLY_DESC",
+          "additionalWidgets": [
+            {
+              "type": "template",
+              "format": "labelPairList",
+              "fieldName": "acknowledgementDetails",
+              "data": [
+                {
+                  "key": "ACKNOWLEDGEMENT_BENEFICIARY_NAME",
+                  "value": "{{navigation.beneficiaryName}}",
+                  "isActive": true
+                },
+                {
+                  "key": "ACKNOWLEDGEMENT_BENEFICIARY_ID",
+                  "value": "{{navigation.beneficiaryId}}",
+                  "isActive": true
+                }
+              ]
             }
           ],
           "properties": {"type": "success"},
@@ -6049,9 +6356,23 @@ final dynamic sampleFlows = {
                   }
                 },
                 {
+                  "actionType": "UPDATE_IDENTIFIER_STATUS",
+                  "properties": {
+                    "identifierType": "UNIQUE_BENEFICIARY_ID",
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {
+                          "message": "Failed to update beneficiary id status."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
                   "actionType": "UPDATE_EVENT",
                   "properties": {
-                    "entity": "HouseholdModel, TaskModel",
+                    "entity": "HouseholdModel, TaskModel, IndividualModel",
                     "modify": [
                       {"key": "TaskModel.status", "value": "NOT_ADMINISTERED"}
                     ],
@@ -6159,6 +6480,20 @@ final dynamic sampleFlows = {
                   }
                 },
                 {
+                  "actionType": "UPDATE_IDENTIFIER_STATUS",
+                  "properties": {
+                    "identifierType": "UNIQUE_BENEFICIARY_ID",
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {
+                          "message": "Failed to update beneficiary id status."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
                   "actionType": "CREATE_EVENT",
                   "properties": {
                     "entity":
@@ -6179,9 +6514,18 @@ final dynamic sampleFlows = {
                         "key": "HouseholdClientReferenceId",
                         "value":
                             "{{contextData.entities.HouseholdModel.clientReferenceId}}"
+                      },
+                      {
+                        "key": "beneficiaryName",
+                        "value":
+                            "{{fn:getBeneficiaryName(contextData.entities)}}"
+                      },
+                      {
+                        "key": "beneficiaryId",
+                        "value": "{{fn:getBeneficiaryId(contextData.entities)}}"
                       }
                     ],
-                    "name": "householdOverview",
+                    "name": "ACKNOWLEDGEMENT",
                     "type": "TEMPLATE",
                     "onError": [
                       {
@@ -6593,9 +6937,23 @@ final dynamic sampleFlows = {
                   }
                 },
                 {
+                  "actionType": "UPDATE_IDENTIFIER_STATUS",
+                  "properties": {
+                    "identifierType": "UNIQUE_BENEFICIARY_ID",
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {
+                          "message": "Failed to update beneficiary id status."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
                   "actionType": "UPDATE_EVENT",
                   "properties": {
-                    "entity": "HouseholdModel, TaskModel",
+                    "entity": "HouseholdModel, TaskModel, IndividualModel",
                     "modify": [
                       {"key": "TaskModel.status", "value": "NOT_ADMINISTERED"}
                     ],
@@ -6957,9 +7315,23 @@ final dynamic sampleFlows = {
                   }
                 },
                 {
+                  "actionType": "UPDATE_IDENTIFIER_STATUS",
+                  "properties": {
+                    "identifierType": "UNIQUE_BENEFICIARY_ID",
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {
+                          "message": "Failed to update beneficiary id status."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
                   "actionType": "UPDATE_EVENT",
                   "properties": {
-                    "entity": "HouseholdModel, TaskModel",
+                    "entity": "HouseholdModel, TaskModel, IndividualModel",
                     "modify": [
                       {"key": "TaskModel.status", "value": "NOT_ADMINISTERED"}
                     ],
@@ -7410,9 +7782,23 @@ final dynamic sampleFlows = {
                   }
                 },
                 {
+                  "actionType": "UPDATE_IDENTIFIER_STATUS",
+                  "properties": {
+                    "identifierType": "UNIQUE_BENEFICIARY_ID",
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {
+                          "message": "Failed to update beneficiary id status."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
                   "actionType": "UPDATE_EVENT",
                   "properties": {
-                    "entity": "HouseholdModel, TaskModel",
+                    "entity": "HouseholdModel, TaskModel, IndividualModel",
                     "modify": [
                       {"key": "TaskModel.status", "value": "NOT_ADMINISTERED"}
                     ],
@@ -7947,9 +8333,23 @@ final dynamic sampleFlows = {
               }
             },
             {
+              "actionType": "UPDATE_IDENTIFIER_STATUS",
+              "properties": {
+                "identifierType": "UNIQUE_BENEFICIARY_ID",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "Failed to update beneficiary id status."
+                    }
+                  }
+                ]
+              }
+            },
+            {
               "actionType": "UPDATE_EVENT",
               "properties": {
-                "entity": "HouseholdModel, TaskModel",
+                "entity": "HouseholdModel, TaskModel, IndividualModel",
                 "modify": [
                   {"key": "TaskModel.status", "value": "NOT_ADMINISTERED"}
                 ],
@@ -8317,7 +8717,21 @@ final dynamic sampleFlows = {
               "value": "ITN_DELIVERY_INSTRUCTION_MESSAGE",
               "format": "textTemplate",
               "fieldName": "itnInstructionText",
-              "properties": {"style": "bodyS"}
+              "properties": {
+                "style": "bodyS",
+                "replaceAll": [
+                  {
+                    "searchValue": "{itn_count}",
+                    "replaceValue":
+                        "{{fn:calculateItnCount(contextData.0.household.HouseholdModel.memberCount)}}"
+                  },
+                  {
+                    "searchValue": "{household_head}",
+                    "replaceValue":
+                        "{{contextData.0.headIndividual.IndividualModel.name.givenName}}"
+                  }
+                ]
+              }
             }
           ],
           "fieldName": "itnInstructionCard",
@@ -8438,10 +8852,7 @@ final dynamic sampleFlows = {
           "onAction": [
             {
               "actionType": "BACK_NAVIGATION",
-              "properties": {
-                "name": "householdOverview",
-                "type": "TEMPLATE"
-              }
+              "properties": {"name": "householdOverview", "type": "TEMPLATE"}
             }
           ],
           "fieldName": "itnDeliveryBack",
@@ -8731,10 +9142,7 @@ final dynamic sampleFlows = {
               }
             }
           ],
-          "navigateTo": {
-            "name": "itnSuccess",
-            "type": "template"
-          },
+          "navigateTo": {"name": "itnSuccess", "type": "template"},
           "properties": [
             {
               "type": "boolean",
@@ -8934,7 +9342,6 @@ final dynamic sampleFlows = {
             }
           ],
           "actionLabel": "ITN_HEALTH_TALK_SUBMIT_LABEL",
-          "description": "ITN_HEALTH_TALK_SCREEN_DESCRIPTION",
           "showTabView": false,
           "showAlertPopUp": {
             "title": "ITN_HEALTH_TALK_CONFIRM_TITLE",
@@ -8944,7 +9351,6 @@ final dynamic sampleFlows = {
                 "expression": "DEFAULT"
               }
             ],
-            "description": "ITN_HEALTH_TALK_CONFIRM_DESCRIPTION",
             "primaryActionLabel": "ITN_HEALTH_TALK_CONFIRM_SUBMIT",
             "secondaryActionLabel": "ITN_HEALTH_TALK_CONFIRM_CANCEL"
           },
@@ -9048,7 +9454,7 @@ final dynamic sampleFlows = {
           "mandatory": true,
           "properties": {"type": "success"},
           "description": "ITN_SUCCESS_PANEL_CARD_DESC",
-          "children": [
+          "additionalWidgets": [
             {
               "data": [
                 {

@@ -29,4 +29,20 @@ class ActionConfig {
       actions: actions,
     );
   }
+
+  ActionConfig copyWith({
+    String? action,
+    String? actionType,
+    Map<dynamic, dynamic>? properties,
+    Map<String, dynamic>? condition,
+    List<ActionConfig>? actions,
+  }) {
+    return ActionConfig(
+      action: action ?? this.action,
+      actionType: actionType ?? this.actionType,
+      properties: properties ?? this.properties,
+      condition: condition ?? this.condition,
+      actions: actions ?? this.actions,
+    );
+  }
 }
