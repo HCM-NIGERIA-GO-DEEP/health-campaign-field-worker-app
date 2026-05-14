@@ -2466,7 +2466,8 @@ final dynamic sampleInventoryFlows = {
                         },
                         {
                           "key": "wayBillNumber",
-                          "value": "{{item.items[0].wayBillNumber}}"
+                          "value":
+                              "{{item.items[0].additionalFields.fields.wayBillNumber}}"
                         },
                         {
                           "key": "productVariantId",
