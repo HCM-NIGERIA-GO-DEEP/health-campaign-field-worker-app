@@ -614,6 +614,7 @@ final dynamic inventoryReportFlows = {
         {
           "type": "template",
           "format": "table",
+          "fieldName": "tableInfoReckonReportDetails",
           "data": {
             "source": "StockReconciliationModel",
             "columns": [
