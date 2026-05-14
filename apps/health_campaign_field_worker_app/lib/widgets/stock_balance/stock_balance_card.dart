@@ -165,7 +165,7 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
     // Build balance keys for UserAction listener
     final balanceKeys = _productVariants
         .map((pv) => generateBalanceKey(effectiveFacilityId, pv.id,
-            context.selectedProject.referenceID, context.loggedInUser.userName))
+            context.selectedProject.referenceID, context.loggedInUser.id))
         .toList();
 
     // Listen to StockModel changes
@@ -259,11 +259,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
     try {
       // Build balance keys for this facility
       final balanceKeys = _productVariants
-          .map((pv) => generateBalanceKey(
-              facilityId,
-              pv.id,
-              context.selectedProject.referenceID,
-              context.loggedInUser.userName))
+          .map((pv) => generateBalanceKey(facilityId, pv.id,
+              context.selectedProject.referenceID, context.loggedInUser.id))
           .toList();
 
       if (balanceKeys.isEmpty) return balances;

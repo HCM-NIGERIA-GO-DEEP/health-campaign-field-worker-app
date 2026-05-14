@@ -1,17 +1,21 @@
 import 'package:digit_data_model/data_model.dart';
 
 /// Generates a balance key for UserAction STOCK_BALANCE records.
-/// Uses format: bal_{facilityId}{productVariantId}{campaignId}{userName}
+/// Uses format: bal_{facilityId}{productVariantId}{campaignId}{userId}
 String generateBalanceKey(String facilityId, String productVariantId,
-    String? campaignId, String? userName) {
+    String? campaignId, int? userId) {
+  if (campaignId == null || userId == null) {
+    throw ArgumentError(
+        'campaignId and userId are required to generate balance key');
+  }
   String filterFacilityId = facilityId.replaceAll("F", "").replaceAll("-", "");
   String filterProductVariantId =
       productVariantId.replaceAll("PVAR", "").replaceAll("-", "");
   String filterCampaignId =
-      campaignId?.replaceAll("CMP", "").replaceAll("-", "") ?? "";
-  String filterUserName = userName?.replaceAll("-", "") ?? "";
+      campaignId.replaceAll("CMP", "").replaceAll("-", "");
+  String filterUserId = userId.toString();
   String generatedKey =
-      'b_$filterFacilityId$filterProductVariantId$filterCampaignId$filterUserName';
+      'b_$filterFacilityId$filterProductVariantId$filterCampaignId$filterUserId';
   return generatedKey;
 }
 
