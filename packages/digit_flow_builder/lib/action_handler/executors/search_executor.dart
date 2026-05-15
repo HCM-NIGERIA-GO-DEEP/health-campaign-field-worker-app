@@ -218,6 +218,12 @@ class SearchExecutor extends ActionExecutor {
     final skipAccumulatedFilters =
         data['skipAccumulatedFilters'] as bool? ?? false;
 
+    // When true, new filters are merged with existing filters under this
+    // searchName (deduplicated by key) instead of replacing them. Used by
+    // popups that share a searchName but own disjoint keys (e.g. a search
+    // popup and a filter popup both writing under "pgrService").
+    final mergeFilters = data['mergeFilters'] as bool? ?? false;
+
     // Update SearchStateManager with resolved filters (will merge with existing)
     if (!skipAccumulatedFilters &&
         compositeKey != null &&
@@ -227,6 +233,7 @@ class SearchExecutor extends ActionExecutor {
         searchName,
         resolvedFilters,
         triggerSearch: false, // We'll execute search directly below
+        merge: mergeFilters,
       );
 
       // Reset pagination when filters change (new search starts from offset 0)
