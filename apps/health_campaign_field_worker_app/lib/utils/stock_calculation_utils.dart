@@ -1,4 +1,10 @@
+import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_data_model/models/entities/user_action.dart';
+import 'package:flutter/material.dart';
+import 'package:transit_post/data/repositories/local/user_action.dart';
+
+import 'extensions/extensions.dart';
 
 /// Generates a balance key for UserAction STOCK_BALANCE records.
 /// Uses format: bal_{facilityId}{productVariantId}{campaignId}{userId}
@@ -11,8 +17,9 @@ String generateBalanceKey(String facilityId, String productVariantId,
   String filterFacilityId = facilityId.replaceAll("F", "").replaceAll("-", "");
   String filterProductVariantId =
       productVariantId.replaceAll("PVAR", "").replaceAll("-", "");
-  String filterCampaignId =
-      campaignId.replaceAll("CMP", "").replaceAll("-", "");
+  String filterCampaignId = campaignId.length >= 5
+      ? campaignId.substring(campaignId.length - 5)
+      : campaignId;
   String filterUserId = userId.toString();
   String generatedKey =
       'b_$filterFacilityId$filterProductVariantId$filterCampaignId$filterUserId';
@@ -246,6 +253,53 @@ class StockCalculationUtils {
     } else {
       stockIssued(quantity);
     }
+  }
+
+  static Future<Map<String, double>> loadUserActionBalances(
+    BuildContext context,
+    UserActionLocalRepository userActionRepo,
+    String facilityId,
+    List<ProductVariantModel> productVariants,
+  ) async {
+    final balances = <String, double>{};
+
+    try {
+      // Build balance keys for this facility
+      final balanceKeys = productVariants
+          .map((pv) => generateBalanceKey(facilityId, pv.id,
+              context.selectedProject.referenceID, context.loggedInUser.id))
+          .toList();
+
+      if (balanceKeys.isEmpty) return balances;
+
+      // Search directly with clientReferenceIds
+      final actions = await userActionRepo.search(
+        UserActionSearchModel(
+            clientReferenceId: balanceKeys,
+            projectId: context.selectedProject.id),
+      );
+
+      for (final action in actions) {
+        final fields = action.additionalFields?.fields;
+        if (fields == null) continue;
+
+        final productVariantId =
+            fields.firstWhereOrNull((f) => f.key == 'productVariantId')?.value;
+        final balanceStr =
+            fields.firstWhereOrNull((f) => f.key == 'balance')?.value;
+
+        if (productVariantId != null && balanceStr != null) {
+          final balance = double.tryParse(balanceStr);
+          if (balance != null) {
+            balances[productVariantId] = balance;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading UserAction balances: $e');
+    }
+
+    return balances;
   }
 
   static Map<String, double> calculateStockInHandForProducts({
