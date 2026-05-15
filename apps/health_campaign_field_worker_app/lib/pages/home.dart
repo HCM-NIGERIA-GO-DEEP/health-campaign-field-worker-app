@@ -1863,7 +1863,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-complaints-${context.selectedProject.referenceID}';
+                    'hcm-complaints-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
@@ -2351,7 +2351,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-hfreferral-${context.selectedProject.referenceID}';
+                    'hcm-hfreferral-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
