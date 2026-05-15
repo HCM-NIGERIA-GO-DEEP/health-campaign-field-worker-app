@@ -415,7 +415,7 @@ class StockBalanceExecutor extends ActionExecutor {
       isSync: false,
       timestamp: now,
       id: existing?.id,
-      rowVersion: existing?.rowVersion,
+      rowVersion: existing?.rowVersion ?? 1,
       tenantId: existing?.tenantId ?? context.selectedProject.tenantId,
       nonRecoverableError: false,
       additionalFields: UserActionAdditionalFields(
