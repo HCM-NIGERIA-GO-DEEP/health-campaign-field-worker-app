@@ -98,23 +98,7 @@ class ClearStateExecutor extends ActionExecutor {
     }
 
     if (triggerSearch) {
-      final hasRemainingFilters =
-          SearchStateManager().hasFiltersForScreen(compositeKey);
-      if (hasRemainingFilters) {
-        SearchStateManager().updateFilters(
-          compositeKey,
-          searchName,
-          [],
-          triggerSearch: true,
-        );
-      } else {
-        SearchStateManager().updateFilters(
-          compositeKey,
-          searchName,
-          [],
-          triggerSearch: false,
-        );
-      }
+      SearchStateManager().triggerSearchForScreen(compositeKey);
     }
 
     return contextData;

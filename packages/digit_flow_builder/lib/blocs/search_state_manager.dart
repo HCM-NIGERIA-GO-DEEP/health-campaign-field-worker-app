@@ -185,6 +185,19 @@ class SearchStateManager {
     return _notifiers.putIfAbsent(key, () => ValueNotifier<int>(0));
   }
 
+  /// Trigger search callbacks for all searchNames registered under a screen,
+  /// without modifying filter or orderBy state. Used by CLEAR_STATE so we can
+  /// re-run the search with whatever filters remain after specific keys are
+  /// removed, without wiping the rest.
+  void triggerSearchForScreen(String screenKey) {
+    final prefix = _screenKeyPrefix(screenKey);
+    final matchingKeys =
+        _searchCallbacks.keys.where((k) => k.startsWith(prefix)).toList();
+    for (final key in matchingKeys) {
+      _notifyChange(key);
+    }
+  }
+
   /// Notify listeners and trigger search callback
   void _notifyChange(String compositeKey) {
     // Increment notifier to trigger ValueListenableBuilder rebuilds
@@ -207,22 +220,39 @@ class SearchStateManager {
     String searchName,
     List<dynamic> newFilters, {
     bool triggerSearch = true,
+    bool merge = false,
   }) {
     final compositeKey = _compositeKey(screenKey, searchName);
     _state.putIfAbsent(
         compositeKey, () => {'filters': <dynamic>[], 'orderBy': null});
 
+    /// Default (merge=false): Replace all existing filters for this searchName.
+    /// This avoids stale filters lingering when multiple sources share a
+    /// searchName (e.g., QR scanner + text search).
     ///
-    /// Problem: When multiple search sources (e.g., QR scanner and text search)
-    /// share the same searchName, merging filters by key caused stale filters
-    /// from a previous search to persist and AND with the new filters —
-    /// resulting in incorrect empty results even when matching data exists.
-    ///
-    /// Solution: Replace all existing filters for this searchName with the new
-    /// ones instead of merging. Cross-searchName accumulation is unaffected
-    /// as it is handled separately by [getAllFilters].
+    /// merge=true: Merge new filters with existing ones, deduplicated by 'key'
+    /// (newer wins). Use when several independent popups share a searchName
+    /// and each owns a disjoint set of filter keys — they must clear their
+    /// own keys via CLEAR_STATE before SEARCH_EVENT to drop removed inputs.
 
-    _state[compositeKey]!['filters'] = List<dynamic>.from(newFilters);
+    if (merge) {
+      final existing =
+          List<dynamic>.from(_state[compositeKey]!['filters'] as List? ?? []);
+      final byKey = <String, dynamic>{};
+      for (final f in existing) {
+        if (f is Map && f['key'] != null) {
+          byKey[f['key'].toString()] = f;
+        }
+      }
+      for (final f in newFilters) {
+        if (f is Map && f['key'] != null) {
+          byKey[f['key'].toString()] = f;
+        }
+      }
+      _state[compositeKey]!['filters'] = byKey.values.toList();
+    } else {
+      _state[compositeKey]!['filters'] = List<dynamic>.from(newFilters);
+    }
 
     if (triggerSearch) {
       _notifyChange(compositeKey);
