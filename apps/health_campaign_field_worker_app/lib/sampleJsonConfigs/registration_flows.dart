@@ -16,6 +16,20 @@ final dynamic sampleFlows = {
           "mandatory": true,
           "properties": {"type": "success"},
           "description": "DELIVERY_SUCCESSFUL_PANEL_CARD_DESC",
+          "additionalWidgets": [
+            {
+              "type": "template",
+              "format": "labelPairList",
+              "fieldName": "deliverySuccessDetails",
+              "data": [
+                {
+                  "key": "ACKNOWLEDGEMENT_BENEFICIARY_ID",
+                  "value": "{{navigation.beneficiaryId}}",
+                  "isActive": true
+                }
+              ]
+            }
+          ],
           "primaryAction": {
             "type": "template",
             "label": "VIEW_HOUSEHOLD_DETAILS",
@@ -103,6 +117,20 @@ final dynamic sampleFlows = {
           "mandatory": true,
           "properties": {"type": "success"},
           "description": "REDOSE_SUCCESSFUL_PANEL_CARD_DESC",
+          "additionalWidgets": [
+            {
+              "type": "template",
+              "format": "labelPairList",
+              "fieldName": "redoseSuccessDetails",
+              "data": [
+                {
+                  "key": "ACKNOWLEDGEMENT_BENEFICIARY_ID",
+                  "value": "{{navigation.beneficiaryId}}",
+                  "isActive": true
+                }
+              ]
+            }
+          ],
           "primaryAction": {
             "type": "template",
             "label": "VIEW_HOUSEHOLD_DETAILS",
@@ -1377,7 +1405,8 @@ final dynamic sampleFlows = {
                             },
                             {
                               "key": "selectedIndividualName",
-                              "value": "{{item.individual.0.name.givenName}}"
+                              "value":
+                                  "{{fn:getBeneficiaryName(item.individual)}}"
                             },
                             {
                               "key": "selectedIndividualGender",
@@ -1441,7 +1470,8 @@ final dynamic sampleFlows = {
                             },
                             {
                               "key": "selectedIndividualName",
-                              "value": "{{item.individual.0.name.givenName}}"
+                              "value":
+                                  "{{fn:getBeneficiaryName(item.individual)}}"
                             },
                             {
                               "key": "selectedIndividualGender",
@@ -3111,6 +3141,14 @@ final dynamic sampleFlows = {
                   {
                     "key": "HouseholdClientReferenceId",
                     "value": "{{navigation.HouseholdClientReferenceId}}"
+                  },
+                  {
+                    "key": "beneficiaryName",
+                    "value": "{{navigation.beneficiaryName}}"
+                  },
+                  {
+                    "key": "beneficiaryId",
+                    "value": "{{navigation.beneficiaryId}}"
                   }
                 ],
                 "name": "deliverySuccess",
@@ -3407,11 +3445,11 @@ final dynamic sampleFlows = {
                   },
                   {
                     "key": "beneficiaryName",
-                    "value": "{{fn:getBeneficiaryName(contextData.entities)}}"
+                    "value": "{{navigation.beneficiaryName}}"
                   },
                   {
                     "key": "beneficiaryId",
-                    "value": "{{fn:getBeneficiaryId(contextData.entities)}}"
+                    "value": "{{navigation.beneficiaryId}}"
                   }
                 ],
                 "name": "deliverySuccess",
@@ -3797,12 +3835,9 @@ final dynamic sampleFlows = {
               },
               {
                 "key": "beneficiaryName",
-                "value": "{{fn:getBeneficiaryName(contextData.entities)}}"
+                "value": "{{navigation.beneficiaryName}}"
               },
-              {
-                "key": "beneficiaryId",
-                "value": "{{fn:getBeneficiaryId(contextData.entities)}}"
-              }
+              {"key": "beneficiaryId", "value": "{{navigation.beneficiaryId}}"}
             ],
             "name": "deliverySuccess",
             "type": "TEMPLATE",
