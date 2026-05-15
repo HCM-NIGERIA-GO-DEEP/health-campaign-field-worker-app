@@ -1,4 +1,6 @@
+import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_data_model/models/entities/user_action.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/atoms/table_cell.dart';
@@ -6,8 +8,8 @@ import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:transit_post/data/repositories/local/user_action.dart';
 
-import '../../../models/entities/roles_type.dart';
 import '../../../router/app_router.dart';
 import '../../../utils/i18_key_constants.dart' as i18;
 import '../../../utils/stock_calculation_utils.dart';
@@ -45,8 +47,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       final projectId = context.projectId;
 
       // Repositories
-      final householdRepo = context
-          .read<LocalRepository<HouseholdModel, HouseholdSearchModel>>();
+      final householdRepo =
+          context.read<LocalRepository<HouseholdModel, HouseholdSearchModel>>();
       final taskRepo =
           context.read<LocalRepository<TaskModel, TaskSearchModel>>();
       final householdMemberRepo = context.read<
@@ -57,35 +59,12 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           LocalRepository<ProjectResourceModel, ProjectResourceSearchModel>>();
       final productVariantRepo = context.read<
           LocalRepository<ProductVariantModel, ProductVariantSearchModel>>();
-      final projectFacilityRepo = context.read<
-          LocalRepository<ProjectFacilityModel, ProjectFacilitySearchModel>>();
-      final facilityRepo =
-          context.read<LocalRepository<FacilityModel, FacilitySearchModel>>();
 
-      // Determine facility ID (same logic as stock_balance_card)
-      final isDistributor = context.loggedInUserRoles
-          .any((role) => role.code == RolesType.distributor.toValue());
-
-      final projectFacilities = await projectFacilityRepo
-          .search(ProjectFacilitySearchModel(projectId: [projectId]));
-
-      final currentFacilities = projectFacilities.where((pf) {
-        final facilityLevel = pf.additionalFields?.fields
-            .where((f) => f.key == 'facilityLevel')
-            .firstOrNull
-            ?.value;
-        return facilityLevel == null || facilityLevel == 'current';
-      }).toList();
-
-      final facilityIds =
-          currentFacilities.map((pf) => pf.facilityId).toList();
-      final facilities = await facilityRepo
-          .search(FacilitySearchModel(id: facilityIds));
-
-      // Match stock_balance_card: distributors always use userUuid
-      final effectiveFacilityId = isDistributor
-          ? userUuid
-          : (facilities.isNotEmpty ? facilities.first.id : userUuid);
+      // This report is only visible to distributor users.
+      // Distributors always use their own UUID as the facility identifier
+      // (same as stock_balance_card for distributor roles).
+      final effectiveFacilityId = userUuid;
+      const isDistributorRole = true;
 
       // Fetch product variants
       final projectResources = await projectResourceRepo
@@ -128,8 +107,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         final createdBy =
             hh.clientAuditDetails?.createdBy ?? hh.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
-        final epochMs = hh.clientAuditDetails?.createdTime ??
-            hh.auditDetails?.createdTime;
+        final epochMs =
+            hh.clientAuditDetails?.createdTime ?? hh.auditDetails?.createdTime;
         if (epochMs == null) continue;
         final date = _epochToDateString(epochMs);
         hhByDate[date] = (hhByDate[date] ?? 0) + 1;
@@ -139,10 +118,10 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // (filter by logged-in user AND status == 'ADMINISTRATION_SUCCESS' or 'VISITED')
       final tasksByDate = <String, Set<String>>{};
       for (final task in tasks) {
-        if (task.status != 'ADMINISTRATION_SUCCESS' &&
-            task.status != 'VISITED') continue;
-        final createdBy = task.clientAuditDetails?.createdBy ??
-            task.auditDetails?.createdBy;
+        if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
+          continue;
+        final createdBy =
+            task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
         final epochMs = task.clientAuditDetails?.createdTime ??
             task.auditDetails?.createdTime;
@@ -170,13 +149,14 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
 
       // ── Group stock consumed from task resources by date + productVariant ──
       // Only count tasks with status 'ADMINISTRATION_SUCCESS' or 'VISITED'
+      // Only count resources where isDelivered == true (matches StockBalanceExecutor)
       // Key: "date|productVariantId" -> sum of quantity
       final consumedByDateProduct = <String, double>{};
       for (final task in tasks) {
-        if (task.status != 'ADMINISTRATION_SUCCESS' &&
-            task.status != 'VISITED') continue;
-        final createdBy = task.clientAuditDetails?.createdBy ??
-            task.auditDetails?.createdBy;
+        if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
+          continue;
+        final createdBy =
+            task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
         final epochMs = task.clientAuditDetails?.createdTime ??
             task.auditDetails?.createdTime;
@@ -185,6 +165,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         final resources = task.resources;
         if (resources == null) continue;
         for (final res in resources) {
+          // Mirror StockBalanceExecutor: only count resources that were actually delivered
+          if (res.isDelivered != true) continue;
           final pvId = res.productVariantId;
           if (pvId == null || pvId.isEmpty) continue;
           final qty = double.tryParse(res.quantity ?? '0') ?? 0.0;
@@ -193,6 +175,18 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
               (consumedByDateProduct[key] ?? 0.0) + qty;
         }
       }
+
+      // ── Load UserAction STOCK_BALANCE records (same as stock_balance_card) ──
+      // These are the authoritative running balances maintained by StockBalanceExecutor.
+      // They are updated on every stock receipt AND every delivery, so they are
+      // always the single source of truth for the current balance.
+      final userActionRepo = context.read<UserActionLocalRepository>();
+      final userActionBalances = await _loadUserActionBalances(
+        userActionRepo,
+        effectiveFacilityId,
+        productVariants,
+        projectId,
+      );
 
       // ── Collect stock dates (for date rows) ──
       final stockDates = <String>{};
@@ -249,30 +243,42 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         // Per-product stock data
         final stockData = <String, _ProductStockData>{};
         for (final pv in productVariants) {
-          // Cumulative received & returned using same logic as stock_balance_card
+          // Cumulative stock metrics for received/returned display columns
           final metrics = cumulativeStocks.isNotEmpty
               ? StockCalculationUtils.calculateStockMetrics(
                   stockList: cumulativeStocks,
                   facilityId: effectiveFacilityId,
                   productId: pv.id,
                   loggedInUserUuid: userUuid,
-                  isDistributor: isDistributor,
+                  isDistributor: isDistributorRole,
                 )
               : StockCalculationUtils.emptyMetrics;
 
           final totalReceived = metrics['stockReceived'] ?? 0.0;
           final totalReturned = metrics['stockReturned'] ?? 0.0;
 
-          // Daily consumed (for this day only)
+          // Daily consumed (for this day only, isDelivered==true resources only)
           final key = '$date|${pv.id}';
           final dailyConsumed = consumedByDateProduct[key] ?? 0.0;
 
-          // Accumulate consumed for balance calculation
+          // Accumulate delivery consumption across dates (used as fallback)
           cumulativeConsumed[pv.id] =
               (cumulativeConsumed[pv.id] ?? 0.0) + dailyConsumed;
-          final totalConsumed = cumulativeConsumed[pv.id]!;
 
-          final balance = totalReceived - totalConsumed - totalReturned;
+          // ── Balance: use UserAction record as authoritative source ──
+          // stock_balance_card merges stockInHand with UserAction balances and
+          // UserAction always takes precedence. The UserAction record is a running
+          // ledger updated by StockBalanceExecutor on every stock receipt AND
+          // every delivery — so it already includes all deductions.
+          // For the report we use the UserAction balance directly; if unavailable
+          // we fall back to stockInHand minus cumulative consumed.
+          double balance;
+          if (userActionBalances.containsKey(pv.id)) {
+            balance = userActionBalances[pv.id]!;
+          } else {
+            final stockInHand = metrics['stockInHand'] ?? 0.0;
+            balance = stockInHand - (cumulativeConsumed[pv.id] ?? 0.0);
+          }
 
           stockData[pv.id] = _ProductStockData(
             received: totalReceived,
@@ -308,6 +314,46 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         });
       }
     }
+  }
+
+  /// Loads UserAction STOCK_BALANCE records for this facility — identical logic
+  /// to [_StockBalanceCardState._loadUserActionBalances].
+  Future<Map<String, double>> _loadUserActionBalances(
+    UserActionLocalRepository userActionRepo,
+    String facilityId,
+    List<ProductVariantModel> productVariants,
+    String projectId,
+  ) async {
+    final balances = <String, double>{};
+    try {
+      final balanceKeys = productVariants
+          .map((pv) => generateBalanceKey(facilityId, pv.id))
+          .toList();
+      if (balanceKeys.isEmpty) return balances;
+
+      final actions = await userActionRepo.search(
+        UserActionSearchModel(
+          clientReferenceId: balanceKeys,
+          projectId: projectId,
+        ),
+      );
+
+      for (final action in actions) {
+        final fields = action.additionalFields?.fields;
+        if (fields == null) continue;
+        final productVariantId =
+            fields.firstWhereOrNull((f) => f.key == 'productVariantId')?.value;
+        final balanceStr =
+            fields.firstWhereOrNull((f) => f.key == 'balance')?.value;
+        if (productVariantId != null && balanceStr != null) {
+          final balance = double.tryParse(balanceStr);
+          if (balance != null) balances[productVariantId] = balance;
+        }
+      }
+    } catch (e) {
+      debugPrint('SummaryReport: Error loading UserAction balances: $e');
+    }
+    return balances;
   }
 
   String _epochToDateString(int epochMs) {
