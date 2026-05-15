@@ -531,6 +531,7 @@ final dynamic inventoryReportFlows = {
               "key": "selectedReconFacility",
               "source": "{{navigation.facilities}}",
               "displayKey": "facilityId",
+              "displayPrefix": "FAC_",
               "showWhenSingleOption": true,
               "valueKey": "facilityId",
               "visible": "{{fn:hasRole('WAREHOUSE_MANAGER')}}",
