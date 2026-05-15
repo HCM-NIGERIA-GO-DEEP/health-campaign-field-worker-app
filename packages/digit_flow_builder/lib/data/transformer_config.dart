@@ -6,9 +6,9 @@ final jsonConfig = {
       "HouseholdModel": {
         "mappings": {
           "id": "housing.id",
-          // "memberCount":
-          //     "__switch:navigation.smcProject:{true:householdDetails.memberCount,default:itnHouseholdDetails.memberCount}",
-          "memberCount": "householdDetails.memberCount",
+          "memberCount":
+              "__switch:navigation.smcProject:{true:householdDetails.memberCount,default:itnHouseholdDetails.memberCount}",
+          // "memberCount": "householdDetails.memberCount",
           "latitude": "beneficiaryLocation.latLng[0]",
           "longitude": "beneficiaryLocation.latLng[1]",
           "nonRecoverableError": "errors.nonRecoverable",
