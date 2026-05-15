@@ -432,8 +432,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                         currentPageKey: currentPageKey,
                                         currentForm: formGroup,
                                         pages: schemaObject.pages,
-
-                                        /// TODO: fix hardcode not null condition
+                                        navigationParams: widget.navigationParams,
                                       );
                                       if (schema.showAlertPopUp != null) {
                                         showCustomPopup(
@@ -591,8 +590,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                     currentPageKey: currentPageKey,
                                     currentForm: formGroup,
                                     pages: schemaObject.pages,
-
-                                    /// TODO: fix hardcode not null condition
+                                    navigationParams: widget.navigationParams,
                                   );
                                   if (schema.showAlertPopUp != null) {
                                     showCustomPopup(

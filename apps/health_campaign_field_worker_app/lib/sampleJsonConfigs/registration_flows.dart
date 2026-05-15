@@ -1168,7 +1168,8 @@ final dynamic sampleFlows = {
                     "value":
                         "{{item.individual.0.gender }} | {{fn:formatDate(item.individual.0.dateOfBirth, 'age')}}",
                     "format": "textTemplate",
-                    "visible": "{{fn:isSmcPresent()}}==true",
+                    "visible":
+                        "{{fn:isSmcPresent()}}==true && {{fn:isHead(item.member)}}==false",
                     "fieldName": "genderAge",
                     "properties": {"bottomGap": 16}
                   },
@@ -4710,7 +4711,7 @@ final dynamic sampleFlows = {
               {
                 "value": "To Administer",
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec4==NO && ((eligibilityChecklist.ec3==YES && {{navigation.selectedIndividualAgeInMonths}}>=3 && {{navigation.selectedIndividualAgeInMonths}}<=59) || (eligibilityChecklist.ec3==NO && eligibilityChecklist.ec3a==NO))"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && eligibilityChecklist.ec4==NO && ((eligibilityChecklist.ec3==YES && navigation.selectedIndividualAgeInMonths>=3 && navigation.selectedIndividualAgeInMonths<=59) || (eligibilityChecklist.ec3==NO && eligibilityChecklist.ec3a==NO))"
               },
               {
                 "value": "referral flow",
@@ -4720,7 +4721,7 @@ final dynamic sampleFlows = {
               {
                 "value": "Ineligible Flow",
                 "expression":
-                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && !(eligibilityChecklist.ec3==NO && eligibilityChecklist.ec3a==YES) && (eligibilityChecklist.ec4==YES || (eligibilityChecklist.ec3==YES && ({{navigation.selectedIndividualAgeInMonths}}<3 || {{navigation.selectedIndividualAgeInMonths}}>60)))"
+                    "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO && !(eligibilityChecklist.ec3==NO && eligibilityChecklist.ec3a==YES) && (eligibilityChecklist.ec4==YES || (eligibilityChecklist.ec3==YES && (navigation.selectedIndividualAgeInMonths<3 || navigation.selectedIndividualAgeInMonths>60)))"
               },
               {"value": "To Administer", "expression": "DEFAULT"}
             ],
