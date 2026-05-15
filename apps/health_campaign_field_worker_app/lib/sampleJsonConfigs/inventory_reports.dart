@@ -387,8 +387,9 @@ final dynamic inventoryReportFlows = {
                       {
                         "key":
                             "{{fn:getSenderOrReceiver(navigation.reportType)}}",
-                        "value": "{{selectedFacility}}",
-                        "operation": "equals"
+                        "value":
+                            "{{selectedFacility}},{{fn:getUserFacilityId()}}",
+                        "operation": "equalsAny"
                       }
                     ]
                   }
@@ -430,8 +431,9 @@ final dynamic inventoryReportFlows = {
                       {
                         "key":
                             "{{fn:getSenderOrReceiver(navigation.reportType)}}",
-                        "value": "{{selectedFacility}}",
-                        "operation": "equals"
+                        "value":
+                            "{{selectedFacility}},{{fn:getUserFacilityId()}}",
+                        "operation": "equalsAny"
                       }
                     ]
                   }
