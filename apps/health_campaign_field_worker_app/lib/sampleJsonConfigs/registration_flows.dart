@@ -2911,20 +2911,6 @@ final dynamic sampleFlows = {
                     ]
                   }
                 },
-                {
-                  "actionType": "UPDATE_STOCK_BALANCE",
-                  "properties": {
-                    "entity": "TaskModel",
-                    "onError": [
-                      {
-                        "actionType": "SHOW_TOAST",
-                        "properties": {
-                          "message": "Failed to update stock balance."
-                        }
-                      }
-                    ]
-                  }
-                }
               ],
               "condition": {"expression": "doseIndex == 1"}
             },
@@ -3176,20 +3162,6 @@ final dynamic sampleFlows = {
                     ]
                   }
                 },
-                {
-                  "actionType": "UPDATE_STOCK_BALANCE",
-                  "properties": {
-                    "entity": "TaskModel",
-                    "onError": [
-                      {
-                        "actionType": "SHOW_TOAST",
-                        "properties": {
-                          "message": "Failed to update stock balance."
-                        }
-                      }
-                    ]
-                  }
-                }
               ],
               "condition": {"expression": "doseIndex == 1"}
             },
@@ -3480,18 +3452,6 @@ final dynamic sampleFlows = {
                 ]
               }
             },
-            {
-              "actionType": "UPDATE_STOCK_BALANCE",
-              "properties": {
-                "entity": "TaskModel",
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {"message": "Failed to update stock balance."}
-                  }
-                ]
-              }
-            }
           ],
           "condition": {"expression": "doseIndex == 1"}
         },
