@@ -1273,6 +1273,7 @@ final dynamic sampleReferralFlows = {
               "label": "HFREFERRAL_REFERRAL_DETAILS_beneficiaryId_LABEL",
               "order": 3,
               "value": "",
+              "required": true,
               "format": "text",
               "hidden": false,
               "isMdms": false,
@@ -1285,7 +1286,14 @@ final dynamic sampleReferralFlows = {
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
-              "validations": [],
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "HFREFERRAL_REFERRAL_DETAILS_ageInMonths_REQUIRED_ERROR"
+                },
+              ],
               "errorMessage": "",
               "isMultiSelect": false,
               "autoFillCondition": [
@@ -1355,7 +1363,7 @@ final dynamic sampleReferralFlows = {
                 },
                 {
                   "type": "max",
-                  "value": 1800,
+                  "value": 59,
                   "message":
                       "HFREFERRAL_REFERRAL_DETAILS_ageInMonths_VALIDATION"
                 }
