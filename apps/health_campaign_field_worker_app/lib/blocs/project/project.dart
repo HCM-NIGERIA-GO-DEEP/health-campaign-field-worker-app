@@ -384,6 +384,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       final boundaryRelationships = configs.firstOrNull?.boundaryRelationship;
       String parentBoundaryType = "";
       String childBoundaryType = "";
+      String subChildBoundaryType = "";
 
       if (boundaryRelationships != null) {
         final match = boundaryRelationships
@@ -423,10 +424,20 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         }
 
         if (match2 != null) {
-          boundaryTypes.addAll([
-            if (match2.childBoundaryTypes.isNotEmpty)
-              match2.childBoundaryTypes.first,
-          ]);
+          subChildBoundaryType = (match2.childBoundaryTypes.isNotEmpty)
+              ? match2.childBoundaryTypes.first
+              : "";
+
+          final match3 = boundaryRelationships
+              .where((e) => e.boundaryType == subChildBoundaryType)
+              .firstOrNull;
+
+          if (match3 != null) {
+            boundaryTypes.addAll([
+              if (match3.childBoundaryTypes.isNotEmpty)
+                match3.childBoundaryTypes.first,
+            ]);
+          }
         }
       }
 

@@ -187,14 +187,14 @@ List<ProjectFacilityModel> filterProjectFacilitiesByFacilityUsage({
     return projectFacilities;
   }
 
-  final currentLevelProjectFacilities =
-      filterProjectFacilitiesToCurrentLevel(projectFacilities);
+  // final currentLevelProjectFacilities =
+  //     filterProjectFacilitiesToCurrentLevel(projectFacilities);
 
   final currentLevelFacilityIds =
-      currentLevelProjectFacilities.map((pf) => pf.facilityId).toSet();
+      projectFacilities.map((pf) => pf.facilityId).toSet();
 
   if (currentLevelFacilityIds.isEmpty) {
-    return currentLevelProjectFacilities;
+    return projectFacilities;
   }
 
   if (facilitiesFromDb.isEmpty) {
@@ -217,7 +217,7 @@ List<ProjectFacilityModel> filterProjectFacilitiesByFacilityUsage({
       .map((f) => f.id)
       .toSet();
 
-  return currentLevelProjectFacilities
+  return projectFacilities
       .where((pf) => allowedFacilityIds.contains(pf.facilityId))
       .toList();
 }
