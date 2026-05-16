@@ -2459,6 +2459,8 @@ final dynamic sampleFlows = {
                 },
                 "type": "template",
                 "format": "table",
+                "rowHeight": 80,
+                "maxVisibleRows": 5,
                 "fieldName": "memberTable"
               }
             ],

@@ -183,16 +183,51 @@ class TableWidget extends ResolvedFlowWidget {
       );
     }).toList();
 
+    // Optional JSON props:
+    //   "maxVisibleRows": int  — cap the table at this many rows; extras
+    //                            scroll inside the card. When set, uses a
+    //                            taller per-row height so maxLines:2 cells
+    //                            don't silently overflow and steal gestures.
+    //   "rowHeight": double    — override the per-row height (default 52 in
+    //                            legacy mode, 80 in capped mode).
+    final maxVisibleRows = (json['maxVisibleRows'] as num?)?.toInt();
+    const double headerHeight = 64.0;
+
+    if (maxVisibleRows != null && maxVisibleRows > 0) {
+      final double rowHeight = (json['rowHeight'] as num?)?.toDouble() ?? 80.0;
+      final int visibleRowCount =
+          rows.length < maxVisibleRows ? rows.length : maxVisibleRows;
+      final double tableHeight = visibleRowCount * rowHeight + headerHeight;
+
+      return SizedBox(
+        height: tableHeight,
+        child: SingleChildScrollView(
+          child: DigitTable(
+            enableBorder: true,
+            withRowDividers: false,
+            withColumnDividers: false,
+            showSelectedState: false,
+            showPagination: false,
+            columns: columns,
+            rows: rows,
+          ),
+        ),
+      );
+    }
+
+    final double rowHeight = (json['rowHeight'] as num?)?.toDouble() ?? 52.0;
     return SizedBox(
-      height: rows.length * 52.0 + 64,
-      child: DigitTable(
-        enableBorder: true,
-        withRowDividers: false,
-        withColumnDividers: false,
-        showSelectedState: false,
-        showPagination: false,
-        columns: columns,
-        rows: rows,
+      height: rows.length * rowHeight + headerHeight,
+      child: SingleChildScrollView(
+        child: DigitTable(
+          enableBorder: true,
+          withRowDividers: false,
+          withColumnDividers: false,
+          showSelectedState: false,
+          showPagination: false,
+          columns: columns,
+          rows: rows,
+        ),
       ),
     );
   }
