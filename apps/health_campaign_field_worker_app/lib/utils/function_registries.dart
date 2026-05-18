@@ -453,6 +453,88 @@ class FunctionRegistries {
       return false;
     });
 
+    FunctionRegistry.register('hasStockForRedose', (args, stateData) {
+      if (args.isEmpty || args.first == null) return true;
+      final cache = StockBalanceCache.instance;
+      if (cache.facilityId.isEmpty) return true;
+
+      // Normalise task list
+      List<Map<String, dynamic>> tasks = [];
+      if (args.first is List) {
+        for (final item in args.first as List) {
+          if (item is Map<String, dynamic>) {
+            tasks.add(item);
+          } else if (item is Map) {
+            tasks.add(Map<String, dynamic>.from(item));
+          } else {
+            try {
+              tasks.add((item as dynamic).toMap() as Map<String, dynamic>);
+            } catch (_) {
+              try {
+                tasks.add((item as dynamic).toJson() as Map<String, dynamic>);
+              } catch (_) {}
+            }
+          }
+        }
+      }
+
+      // Find the last ADMINISTRATION_SUCCESS or DELIVERED task
+      Map<String, dynamic>? lastDeliveryTask;
+      for (int i = tasks.length - 1; i >= 0; i--) {
+        final status = tasks[i]['status']?.toString().toUpperCase() ?? '';
+        if (status == 'ADMINISTRATION_SUCCESS' || status == 'DELIVERED') {
+          lastDeliveryTask = tasks[i];
+          break;
+        }
+      }
+
+      if (lastDeliveryTask == null) return true;
+
+      // Extract delivered resources from the task
+      final rawResources = lastDeliveryTask['resources'];
+      if (rawResources is! List || rawResources.isEmpty) return true;
+
+      final List<Map<String, dynamic>> insufficientProducts = [];
+      for (final res in rawResources) {
+        Map<String, dynamic> resource;
+        if (res is Map<String, dynamic>) {
+          resource = res;
+        } else if (res is Map) {
+          resource = Map<String, dynamic>.from(res);
+        } else {
+          try {
+            resource = (res as dynamic).toMap() as Map<String, dynamic>;
+          } catch (_) {
+            continue;
+          }
+        }
+
+        final productId = resource['productVariantId']?.toString();
+        if (productId == null || productId.isEmpty) continue;
+
+        final quantity =
+            double.tryParse(resource['quantity']?.toString() ?? '1') ?? 1.0;
+        final balance = cache.cache[productId] ?? 0.0;
+        if (balance < quantity) {
+          insufficientProducts.add({
+            'name': productId,
+            'required': quantity,
+            'available': balance,
+          });
+        }
+      }
+
+      if (insufficientProducts.isEmpty) {
+        cache.setStockCheckResult(null);
+        return true;
+      }
+      cache.setStockCheckResult({
+        'key': 'INSUFFICIENT_STOCK',
+        'products': insufficientProducts,
+      });
+      return false;
+    });
+
     FunctionRegistry.register('getInsufficientStockMessage', (args, stateData) {
       final result = StockBalanceCache.instance.stockCheckResult;
       if (result is Map) {

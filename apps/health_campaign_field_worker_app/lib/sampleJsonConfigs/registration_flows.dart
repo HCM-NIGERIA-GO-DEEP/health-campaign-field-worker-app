@@ -1335,9 +1335,63 @@ final dynamic sampleFlows = {
                   {
                     "type": "template",
                     "label": "REDOSE_ADMINISTRATION",
+                    "format": "actionPopup",
+                    "fieldName": "redoseInsufficientStockPopUp",
+                    "visible": "{{fn:hasStockForRedose(item.task)}} == false",
+                    "properties": {
+                      "icon": "Warning",
+                      "size": "medium",
+                      "type": "primary",
+                      "suffixIcon": null,
+                      "popupConfig": {
+                        "body": [
+                          {
+                            "type": "template",
+                            "value": "{{fn:getInsufficientStockMessage()}}",
+                            "format": "textTemplate",
+                            "fieldName": "redoseInsufficientStockMessageText"
+                          }
+                        ],
+                        "type": "default",
+                        "title": "INSUFFICIENT_STOCK_TITLE",
+                        "titleIcon": "Warning",
+                        "footerActions": [
+                          {
+                            "type": "template",
+                            "label": "GO_BACK",
+                            "format": "button",
+                            "onAction": [
+                              {
+                                "actionType": "CLOSE_POPUP",
+                                "properties": {
+                                  "parentScreenKey": "householdOverview"
+                                }
+                              }
+                            ],
+                            "fieldName": "redoseClosePopUp",
+                            "properties": {
+                              "size": "medium",
+                              "type": "primary",
+                              "mainAxisSize": "max"
+                            }
+                          }
+                        ],
+                        "showCloseButton": true,
+                        "barrierDismissible": true
+                      },
+                      "mainAxisSize": "max",
+                      "mainAxisAlignment": "center",
+                      "bottomGap": 16
+                    },
+                    "schemaCode": null,
+                    "suffixIcon": null
+                  },
+                  {
+                    "type": "template",
+                    "label": "REDOSE_ADMINISTRATION",
                     "format": "button",
                     "visible":
-                        "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task,contextData.0.currentRunningCycle)}} == true && {{fn:checkAllDoseDelivered(item.task)}} == true && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false",
+                        "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task,contextData.0.currentRunningCycle)}} == true && {{fn:checkAllDoseDelivered(item.task)}} == true && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false && {{fn:hasStockForRedose(item.task)}} == true",
                     "disabled":
                         "{{fn:isRedoseWindowExpired(item.task)}}==true || {{fn:isRedoseCompleted(item.task)}}==true",
                     "onAction": [
@@ -3526,78 +3580,102 @@ final dynamic sampleFlows = {
           "version": 1,
           "onAction": [
             {
-              "actionType": "FETCH_TRANSFORMER_CONFIG",
-              "properties": {
-                "data": [
-                  {
-                    "key": "ProjectBeneficiaryClientReferenceId",
-                    "value":
-                        "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                  },
-                  {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
-                  {
-                    "key": "lastDeliveredTaskClientReferenceId",
-                    "value": "{{navigation.lastDeliveredTaskClientReferenceId}}"
-                  }
-                ],
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {"message": "Failed to fetch redose config."}
-                  }
-                ],
-                "configName": "redose"
-              }
+              "actions": [
+                {
+                  "actionType": "SHOW_TOAST",
+                  "properties": {"message": "No stock available for redose."}
+                }
+              ],
+              "condition": "{{fn:hasStockForRedose(item.task)}} == false"
             },
             {
-              "actionType": "CREATE_EVENT",
-              "properties": {
-                "status": "VISITED",
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {"message": "Failed to create redose task."}
+              "actions": [
+                {
+                  "actionType": "FETCH_TRANSFORMER_CONFIG",
+                  "properties": {
+                    "data": [
+                      {
+                        "key": "ProjectBeneficiaryClientReferenceId",
+                        "value":
+                            "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      },
+                      {
+                        "key": "cycleIndex",
+                        "value": "{{navigation.cycleIndex}}"
+                      },
+                      {
+                        "key": "lastDeliveredTaskClientReferenceId",
+                        "value":
+                            "{{navigation.lastDeliveredTaskClientReferenceId}}"
+                      }
+                    ],
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {
+                          "message": "Failed to fetch redose config."
+                        }
+                      }
+                    ],
+                    "configName": "redose"
                   }
-                ]
-              }
-            },
-            {
-              "actionType": "UPDATE_STOCK_BALANCE",
-              "properties": {
-                "entity": "TaskModel",
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {"message": "Failed to update stock balance."}
+                },
+                {
+                  "actionType": "CREATE_EVENT",
+                  "properties": {
+                    "status": "VISITED",
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {
+                          "message": "Failed to create redose task."
+                        }
+                      }
+                    ]
                   }
-                ]
-              }
-            },
-            {
-              "actionType": "NAVIGATION",
-              "properties": {
-                "data": [
-                  {
-                    "key": "ProjectBeneficiaryClientReferenceId",
-                    "value":
-                        "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                  },
-                  {
-                    "key": "HouseholdClientReferenceId",
-                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                },
+                {
+                  "actionType": "UPDATE_STOCK_BALANCE",
+                  "properties": {
+                    "entity": "TaskModel",
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {
+                          "message": "Failed to update stock balance."
+                        }
+                      }
+                    ]
                   }
-                ],
-                "name": "redoseSuccess",
-                "type": "TEMPLATE",
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {"message": "Navigation failed."}
+                },
+                {
+                  "actionType": "NAVIGATION",
+                  "properties": {
+                    "data": [
+                      {
+                        "key": "ProjectBeneficiaryClientReferenceId",
+                        "value":
+                            "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      },
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value": "{{navigation.HouseholdClientReferenceId}}"
+                      }
+                    ],
+                    "name": "redoseSuccess",
+                    "type": "TEMPLATE",
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {"message": "Navigation failed."}
+                      }
+                    ],
+                    "navigationMode": "popUntilAndPush",
+                    "popUntilPageName": "householdOverview"
                   }
-                ],
-                "navigationMode": "popUntilAndPush",
-                "popUntilPageName": "householdOverview"
-              }
+                }
+              ],
+              "condition": "{{fn:hasStockForRedose(item.task)}} == true"
             }
           ],
           "navigateTo": null,
