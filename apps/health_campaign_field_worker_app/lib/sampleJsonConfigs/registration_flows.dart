@@ -8882,21 +8882,21 @@ final dynamic sampleFlows = {
           }
         }
       ],
-      "header": [
-        {
-          "type": "template",
-          "label": "ITN_DELIVERY_BACK",
-          "format": "backLink",
-          "onAction": [
-            {
-              "actionType": "BACK_NAVIGATION",
-              "properties": {"name": "householdOverview", "type": "TEMPLATE"}
-            }
-          ],
-          "fieldName": "itnDeliveryBack",
-          "mandatory": true
-        }
-      ],
+      // "header": [
+      //   {
+      //     "type": "template",
+      //     "label": "ITN_DELIVERY_BACK",
+      //     "format": "backLink",
+      //     "onAction": [
+      //       {
+      //         "actionType": "BACK_NAVIGATION",
+      //         "properties": {"name": "householdOverview", "type": "TEMPLATE"}
+      //       }
+      //     ],
+      //     "fieldName": "itnDeliveryBack",
+      //     "mandatory": true
+      //   }
+      // ],
       "heading": "ITN_DELIVERY_DETAILS_HEADING",
       "category": "ITN",
       "navigateTo": null,
@@ -9557,30 +9557,30 @@ final dynamic sampleFlows = {
       "name": "itnSuccess",
       "order": 16,
       "footer": [],
-      "header": [
-        {
-          "type": "template",
-          "label": "ITN_SUCCESS_BACK",
-          "format": "backLink",
-          "onAction": [
-            {
-              "actionType": "NAVIGATION",
-              "properties": {
-                "data": [
-                  {
-                    "key": "HouseholdClientReferenceId",
-                    "value": "{{navigation.HouseholdClientReferenceId}}"
-                  }
-                ],
-                "name": "searchBeneficiary",
-                "type": "TEMPLATE"
-              }
-            }
-          ],
-          "fieldName": "itnSuccessBack",
-          "mandatory": true
-        }
-      ],
+      // "header": [
+      //   {
+      //     "type": "template",
+      //     "label": "ITN_SUCCESS_BACK",
+      //     "format": "backLink",
+      //     "onAction": [
+      //       {
+      //         "actionType": "NAVIGATION",
+      //         "properties": {
+      //           "data": [
+      //             {
+      //               "key": "HouseholdClientReferenceId",
+      //               "value": "{{navigation.HouseholdClientReferenceId}}"
+      //             }
+      //           ],
+      //           "name": "searchBeneficiary",
+      //           "type": "TEMPLATE"
+      //         }
+      //       }
+      //     ],
+      //     "fieldName": "itnSuccessBack",
+      //     "mandatory": true
+      //   }
+      // ],
       "category": "ITN",
       "navigateTo": null,
       "screenType": "TEMPLATE",
