@@ -7,6 +7,7 @@ import 'package:digit_crud_bloc/digit_crud_bloc.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
+import 'package:digit_flow_builder/utils/interpolation.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -149,32 +150,85 @@ class FunctionRegistries {
     });
 
     FunctionRegistry.register('getStockEntryType', (args, stateData) {
-      if (args.isEmpty) return '';
-      final reportType = args.first?.toString() ?? '';
-      const entryTypes = {
-        'receipt': 'RECEIPT',
-        'dispatch': 'ISSUED',
-        'returned': 'RETURNED',
-        'damage': 'DAMAGED',
-        'loss': 'LOSS',
-        'excess': 'EXCESS',
-        'less': 'LESS',
-      };
-      return entryTypes[reportType] ?? '';
+      // Try to get reportType from navigation params first
+      final context = FunctionRegistry.context;
+      if (context != null) {
+        final compositeKey = getCompositeKey(context);
+        final navigationParams = compositeKey != null
+            ? FlowCrudStateRegistry().getNavigationParams(compositeKey)
+            : null;
+        if (navigationParams != null &&
+            navigationParams['reportType'] != null) {
+          final reportType = navigationParams['reportType'].toString();
+          const entryTypes = {
+            'receipt': 'RECEIPT',
+            'dispatch': 'ISSUED',
+            'returned': 'RETURNED',
+            'damage': 'DAMAGED',
+            'loss': 'LOSS',
+            'excess': 'EXCESS',
+            'less': 'LESS',
+          };
+          return entryTypes[reportType] ?? '';
+        }
+      }
     });
 
     FunctionRegistry.register('getSenderOrReceiver', (args, stateData) {
-      if (args.isEmpty) return 'receiverId';
-      final reportType = args.first?.toString() ?? '';
-      const senderTypes = {
-        'dispatch',
-        'damage',
-        'loss',
-        'returned',
-        'less',
-        'excess'
-      };
-      return senderTypes.contains(reportType) ? 'senderId' : 'receiverId';
+      // Try to get reportType from navigation params first
+      final context = FunctionRegistry.context;
+      if (context != null) {
+        final compositeKey = getCompositeKey(context);
+        final navigationParams = compositeKey != null
+            ? FlowCrudStateRegistry().getNavigationParams(compositeKey)
+            : null;
+        if (navigationParams != null &&
+            navigationParams['reportType'] != null) {
+          final reportType = navigationParams['reportType'].toString();
+          const senderTypes = {
+            'dispatch',
+            'damage',
+            'loss',
+            'returned',
+            'less',
+            'excess'
+          };
+          return senderTypes.contains(reportType) ? 'senderId' : 'receiverId';
+        }
+      }
+    });
+
+    FunctionRegistry.register('sortBy', (args, stateData) {
+      if (args.isEmpty || args[0] is! List) return args.isEmpty ? [] : args[0];
+      final list = List<dynamic>.from(args[0] as List);
+      final field = args.length > 1 ? args[1]?.toString() ?? '' : '';
+      final descending = args.length > 2 ? args[2]?.toString() != 'asc' : true;
+      if (field.isEmpty) return list;
+
+      dynamic getField(dynamic item) {
+        if (item is Map) return item[field];
+        if (item is EntityModel) return item.toMap()[field];
+        return null;
+      }
+
+      list.sort((a, b) {
+        final aVal = getField(a);
+        final bVal = getField(b);
+        int cmp;
+        if (aVal is num && bVal is num) {
+          cmp = aVal.compareTo(bVal);
+        } else if (aVal == null && bVal == null) {
+          cmp = 0;
+        } else if (aVal == null) {
+          cmp = -1;
+        } else if (bVal == null) {
+          cmp = 1;
+        } else {
+          cmp = aVal.toString().compareTo(bVal.toString());
+        }
+        return descending ? -cmp : cmp;
+      });
+      return list;
     });
 
     FunctionRegistry.register('getAuditFilterKey', (args, stateData) {

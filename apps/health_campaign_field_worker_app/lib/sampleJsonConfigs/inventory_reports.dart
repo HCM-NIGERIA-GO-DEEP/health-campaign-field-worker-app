@@ -75,7 +75,7 @@ final dynamic inventoryReportFlows = {
                 "type": "TEMPLATE",
                 "name": "reportDetails",
                 "data": [
-                  {"key": "reportType", "value": "ISSUED"},
+                  {"key": "reportType", "value": "receipt"},
                   {
                     "key": "facilities",
                     "value":
@@ -380,15 +380,12 @@ final dynamic inventoryReportFlows = {
                       },
                       {
                         "key": "additionalFields",
-                        "value":
-                            "{{fn:getStockEntryType(navigation.reportType)}}",
+                        "value": "{{fn:getStockEntryType()}}",
                         "operation": "contains"
                       },
                       {
-                        "key":
-                            "{{fn:getSenderOrReceiver(navigation.reportType)}}",
-                        "value":
-                            "{{selectedFacility}},{{fn:getUserFacilityId()}}",
+                        "key": "{{fn:getSenderOrReceiver()}}",
+                        "value": "{{selectedFacility}}",
                         "operation": "equalsAny"
                       }
                     ]
@@ -424,15 +421,12 @@ final dynamic inventoryReportFlows = {
                       },
                       {
                         "key": "additionalFields",
-                        "value":
-                            "{{fn:getStockEntryType(navigation.reportType)}}",
+                        "value": "{{fn:getStockEntryType()}}",
                         "operation": "contains"
                       },
                       {
-                        "key":
-                            "{{fn:getSenderOrReceiver(navigation.reportType)}}",
-                        "value":
-                            "{{selectedFacility}},{{fn:getUserFacilityId()}}",
+                        "key": "{{fn:getSenderOrReceiver()}}",
+                        "value": "{{selectedFacility}}}",
                         "operation": "equalsAny"
                       }
                     ]
@@ -491,7 +485,8 @@ final dynamic inventoryReportFlows = {
                 "cellValue": "{{item.quantity}}"
               }
             ],
-            "rows": "{{contextData.0.StockModel}}"
+            "rows":
+                "{{fn:sortBy(contextData.0.StockModel, 'dateOfEntry', 'desc')}}"
           }
         }
       ]
@@ -690,7 +685,8 @@ final dynamic inventoryReportFlows = {
                 "cellValue": "{{item.calculatedCount}}"
               }
             ],
-            "rows": "{{contextData.0.StockReconciliationModel}}"
+            "rows":
+                "{{fn:sortBy(contextData.0.StockReconciliationModel, 'dateOfReconciliation', 'desc')}}"
           }
         }
       ]
