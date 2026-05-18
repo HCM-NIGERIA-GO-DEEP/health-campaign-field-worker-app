@@ -1337,7 +1337,10 @@ final dynamic sampleFlows = {
                     "label": "REDOSE_ADMINISTRATION",
                     "format": "actionPopup",
                     "fieldName": "redoseInsufficientStockPopUp",
-                    "visible": "{{fn:hasStockForRedose(item.task)}} == false",
+                    "visible":
+                        "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task,contextData.0.currentRunningCycle)}} == true && {{fn:checkAllDoseDelivered(item.task)}} == true && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false && {{fn:hasStockForRedose(item.task)}} == false",
+                    "disabled":
+                        "{{fn:isRedoseWindowExpired(item.task)}}==true || {{fn:isRedoseCompleted(item.task)}}==true",
                     "properties": {
                       "icon": "Warning",
                       "size": "medium",

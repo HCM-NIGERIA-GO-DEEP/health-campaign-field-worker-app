@@ -222,10 +222,10 @@ class _HomePageState extends LocalizedState<HomePage> {
     CustomComponentRegistry().registerBuilder(
       'evaluationFacility',
       (context, stateAccessor) {
-        // Build your component with access to all this data
         return const EvaluationKeyDropDown(
             schemaName: "REFERRAL_CREATE",
-            formControlName: "evaluationFacility");
+            formControlName: "evaluationFacility",
+            displayPrefix: "FAC_");
       },
     );
 
@@ -2040,10 +2040,10 @@ class _HomePageState extends LocalizedState<HomePage> {
                       const NestedModelMapping(
                         rootModel: 'task',
                         fields: {
-                          'resource': NestedFieldMapping(
-                            table: 'resource',
-                            localKey: 'taskclientReferenceId',
-                            foreignKey: 'clientReferenceId',
+                          'resources': NestedFieldMapping(
+                            table: 'taskResource',
+                            localKey: 'clientReferenceId',
+                            foreignKey: 'taskclientReferenceId',
                             type: NestedMappingType.many,
                           ),
                         },
@@ -2351,7 +2351,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-hfreferral-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}';
+                    'hcm-hfreferral-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 

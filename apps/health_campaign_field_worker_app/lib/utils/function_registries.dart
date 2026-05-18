@@ -482,7 +482,7 @@ class FunctionRegistries {
       Map<String, dynamic>? lastDeliveryTask;
       for (int i = tasks.length - 1; i >= 0; i--) {
         final status = tasks[i]['status']?.toString().toUpperCase() ?? '';
-        if (status == 'ADMINISTRATION_SUCCESS' || status == 'DELIVERED') {
+        if (status == 'ADMINISTRATION_SUCCESS') {
           lastDeliveryTask = tasks[i];
           break;
         }
@@ -490,25 +490,11 @@ class FunctionRegistries {
 
       if (lastDeliveryTask == null) return true;
 
-      // Extract delivered resources from the task
-      final rawResources = lastDeliveryTask['resources'];
-      if (rawResources is! List || rawResources.isEmpty) return true;
+      final List resources = lastDeliveryTask['resources'];
+      if (resources.isEmpty) return true;
 
       final List<Map<String, dynamic>> insufficientProducts = [];
-      for (final res in rawResources) {
-        Map<String, dynamic> resource;
-        if (res is Map<String, dynamic>) {
-          resource = res;
-        } else if (res is Map) {
-          resource = Map<String, dynamic>.from(res);
-        } else {
-          try {
-            resource = (res as dynamic).toMap() as Map<String, dynamic>;
-          } catch (_) {
-            continue;
-          }
-        }
-
+      for (final resource in resources) {
         final productId = resource['productVariantId']?.toString();
         if (productId == null || productId.isEmpty) continue;
 
@@ -552,7 +538,7 @@ class FunctionRegistries {
           return '$key$message';
         }
       }
-      return '';
+      return 'INSUFFICIENT_STOCK';
     });
   }
 
