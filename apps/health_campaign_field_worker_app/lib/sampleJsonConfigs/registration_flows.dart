@@ -54,23 +54,23 @@ final dynamic sampleFlows = {
             "mandatory": true,
             "properties": {"type": "primary"}
           },
-          "secondaryAction": {
-            "type": "template",
-            "label": "GO_BACK",
-            "format": "button",
-            "hidden": false,
-            "onAction": [
-              {
-                "actionType": "NAVIGATION",
-                "properties": {"name": "searchBeneficiary", "type": "TEMPLATE"}
-              }
-            ],
-            "fieldName": "goBack",
-            "mandatory": true,
-            "properties": {"type": "secondary"}
-          },
+          // "secondaryAction": {
+          //   "type": "template",
+          //   "label": "GO_BACK",
+          //   "format": "button",
+          //   "hidden": false,
+          //   "onAction": [
+          //     {
+          //       "actionType": "NAVIGATION",
+          //       "properties": {"name": "searchBeneficiary", "type": "TEMPLATE"}
+          //     }
+          //   ],
+          //   "fieldName": "goBack",
+          //   "mandatory": true,
+          //   "properties": {"type": "secondary"}
+          // },
           "primaryActionLabel": "VIEW_HOUSEHOLD_DETAILS",
-          "secondaryActionLabel": "GO_BACK"
+          // "secondaryActionLabel": "GO_BACK"
         }
       ],
       "name": "deliverySuccess",
@@ -155,23 +155,23 @@ final dynamic sampleFlows = {
             "mandatory": true,
             "properties": {"type": "primary"}
           },
-          "secondaryAction": {
-            "type": "template",
-            "label": "GO_BACK",
-            "format": "button",
-            "hidden": false,
-            "onAction": [
-              {
-                "actionType": "NAVIGATION",
-                "properties": {"name": "searchBeneficiary", "type": "TEMPLATE"}
-              }
-            ],
-            "fieldName": "goBack",
-            "mandatory": true,
-            "properties": {"type": "secondary"}
-          },
+          // "secondaryAction": {
+          //   "type": "template",
+          //   "label": "GO_BACK",
+          //   "format": "button",
+          //   "hidden": false,
+          //   "onAction": [
+          //     {
+          //       "actionType": "NAVIGATION",
+          //       "properties": {"name": "searchBeneficiary", "type": "TEMPLATE"}
+          //     }
+          //   ],
+          //   "fieldName": "goBack",
+          //   "mandatory": true,
+          //   "properties": {"type": "secondary"}
+          // },
           "primaryActionLabel": "VIEW_HOUSEHOLD_DETAILS",
-          "secondaryActionLabel": "GO_BACK"
+          // "secondaryActionLabel": "GO_BACK"
         }
       ],
       "name": "redoseSuccess",
@@ -890,23 +890,23 @@ final dynamic sampleFlows = {
             "mandatory": true,
             "properties": {"type": "primary"}
           },
-          "secondaryAction": {
-            "type": "template",
-            "label": "GO_BACK",
-            "format": "button",
-            "hidden": false,
-            "onAction": [
-              {
-                "actionType": "NAVIGATION",
-                "properties": {"name": "searchBeneficiary", "type": "TEMPLATE"}
-              }
-            ],
-            "fieldName": "goBack",
-            "mandatory": true,
-            "properties": {"type": "secondary"}
-          },
+          // "secondaryAction": {
+          //   "type": "template",
+          //   "label": "GO_BACK",
+          //   "format": "button",
+          //   "hidden": false,
+          //   "onAction": [
+          //     {
+          //       "actionType": "NAVIGATION",
+          //       "properties": {"name": "searchBeneficiary", "type": "TEMPLATE"}
+          //     }
+          //   ],
+          //   "fieldName": "goBack",
+          //   "mandatory": true,
+          //   "properties": {"type": "secondary"}
+          // },
           "primaryActionLabel": "REFERRAL_VIEW_HOUSEHOLD_DETAILS",
-          "secondaryActionLabel": "GO_BACK"
+          // "secondaryActionLabel": "GO_BACK"
         }
       ],
       "name": "referralSuccess",
@@ -5743,21 +5743,21 @@ final dynamic sampleFlows = {
               }
             ]
           },
-          "secondaryAction": {
-            "type": "template",
-            "label": "BACK_TO_SEARCH",
-            "format": "button",
-            "fieldName": "backToSearch",
-            "mandatory": true,
-            "hidden": false,
-            "properties": {"type": "secondary"},
-            "onAction": [
-              {
-                "actionType": "NAVIGATION",
-                "properties": {"name": "searchBeneficiary", "type": "TEMPLATE"}
-              }
-            ]
-          }
+          // "secondaryAction": {
+          //   "type": "template",
+          //   "label": "BACK_TO_SEARCH",
+          //   "format": "button",
+          //   "fieldName": "backToSearch",
+          //   "mandatory": true,
+          //   "hidden": false,
+          //   "properties": {"type": "secondary"},
+          //   "onAction": [
+          //     {
+          //       "actionType": "NAVIGATION",
+          //       "properties": {"name": "searchBeneficiary", "type": "TEMPLATE"}
+          //     }
+          //   ]
+          // }
         },
       ],
       "footer": []
