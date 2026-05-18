@@ -2047,7 +2047,7 @@ final dynamic sampleFlows = {
               "actionType": "CLEAR_STATE",
               "properties": {
                 "widgetKeys": ["searchBar"],
-                "filterKeys": ["givenName", "identifierId"],
+                "filterKeys": ["givenName,familyName", "identifierId"],
                 "triggerSearch": true
               }
             }
@@ -2094,9 +2094,9 @@ final dynamic sampleFlows = {
                   "properties": {
                     "data": [
                       {
-                        "key": "givenName",
+                        "key": "givenName,familyName",
                         "value": "field.value",
-                        "operation": "contains"
+                        "operation": "containsName"
                       },
                       {
                         "key": "localityBoundaryCode",
@@ -2513,6 +2513,8 @@ final dynamic sampleFlows = {
                 },
                 "type": "template",
                 "format": "table",
+                "rowHeight": 80,
+                "maxVisibleRows": 5,
                 "fieldName": "memberTable"
               }
             ],

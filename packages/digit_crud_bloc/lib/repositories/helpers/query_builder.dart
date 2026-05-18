@@ -96,6 +96,26 @@ class QueryBuilder {
           // Generates: (sender_id = ? OR receiver_id = ?)
           final columns = filter.field.split(',').map((f) => camelToSnake(f.trim())).toList();
           return '(${columns.map((c) => '$c = ?').join(' OR ')})';
+        case 'containsName':
+          // Tokenized search across comma-separated columns.
+          // Example: field='givenName,familyName', value='John Smith'
+          // Generates: ((given_name LIKE ? OR family_name LIKE ?) AND
+          //            (given_name LIKE ? OR family_name LIKE ?))
+          final cols = filter.field
+              .split(',')
+              .map((f) => camelToSnake(f.trim()))
+              .toList();
+          final tokens = filter.value
+                  ?.toString()
+                  .trim()
+                  .split(RegExp(r'\s+'))
+                  .where((t) => t.isNotEmpty)
+                  .toList() ??
+              const <String>[];
+          if (tokens.isEmpty || cols.isEmpty) return '1 = 1';
+          final tokenClauses = tokens.map((_) =>
+              '(${cols.map((c) => '$c LIKE ?').join(' OR ')})');
+          return '(${tokenClauses.join(' AND ')})';
         default:
           throw Exception('Unsupported operator: ${filter.operator}');
       }
@@ -131,6 +151,23 @@ class QueryBuilder {
           final columnCount = filter.field.split(',').length;
           for (int i = 0; i < columnCount; i++) {
             args.add(Variable.withString(filter.value.toString()));
+          }
+          break;
+        case 'containsName':
+          // One '%token%' arg per (token, column) pair, matching the
+          // clause structure built in buildWhereClauseRaw.
+          final cols = filter.field.split(',');
+          final tokens = filter.value
+                  ?.toString()
+                  .trim()
+                  .split(RegExp(r'\s+'))
+                  .where((t) => t.isNotEmpty)
+                  .toList() ??
+              const <String>[];
+          for (final token in tokens) {
+            for (var i = 0; i < cols.length; i++) {
+              args.add(Variable.withString('%$token%'));
+            }
           }
           break;
         case 'isNotNull':
@@ -228,6 +265,44 @@ class QueryBuilder {
           }
           whereClauses.add(combined);
         }
+        continue;
+      }
+
+      // Handle containsName: tokenize value on whitespace and match each
+      // token against any of the comma-separated columns. Every token must
+      // appear in at least one column.
+      if (filter.operator == 'containsName') {
+        final columnNames = filter.field
+            .split(',')
+            .map((f) => camelToSnake(f.trim()))
+            .toList();
+        final tokens = filter.value
+                ?.toString()
+                .trim()
+                .split(RegExp(r'\s+'))
+                .where((t) => t.isNotEmpty)
+                .toList() ??
+            const <String>[];
+
+        if (tokens.isEmpty || columnNames.isEmpty) continue;
+
+        final columns = columnNames.map((colName) {
+          return dynamicTable.$columns.firstWhere(
+            (c) => c.$name == colName,
+            orElse: () =>
+                throw Exception('Column $colName not found in $table'),
+          ) as Expression<String>;
+        }).toList();
+
+        Expression<bool>? combined;
+        for (final token in tokens) {
+          Expression<bool> tokenClause = columns.first.like('%$token%');
+          for (var i = 1; i < columns.length; i++) {
+            tokenClause = tokenClause | columns[i].like('%$token%');
+          }
+          combined = combined == null ? tokenClause : combined & tokenClause;
+        }
+        if (combined != null) whereClauses.add(combined);
         continue;
       }
 
