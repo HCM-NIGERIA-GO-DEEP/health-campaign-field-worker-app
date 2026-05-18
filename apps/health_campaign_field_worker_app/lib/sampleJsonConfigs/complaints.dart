@@ -811,7 +811,7 @@ final dynamic sampleComplaintFlows = {
                 },
                 {
                   "type": "maxLength",
-                  "value": 64,
+                  "value": 63,
                   "message": "COMPLAINT_DETAILS_name_LABEL_MAX_VALIDATION"
                 },
                 {
@@ -897,7 +897,7 @@ final dynamic sampleComplaintFlows = {
                 },
                 {
                   "type": "maxLength",
-                  "value": 64,
+                  "value": 63,
                   "message": "SUPERVISOR_DETAILS_name_LABEL_MAX_VALIDATION"
                 },
                 {
