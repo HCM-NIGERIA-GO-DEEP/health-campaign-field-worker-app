@@ -986,10 +986,9 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         locality: localityKey,
       ));
 
-      final lastSyncedTime = null;
-      // existingDownSyncData.isEmpty
-      //     ? null
-      //     : existingDownSyncData.first.lastSyncedTime;
+      final lastSyncedTime = existingDownSyncData.isEmpty
+          ? null
+          : existingDownSyncData.first.lastSyncedTime;
 
       if (existingDownSyncData.isEmpty) {
         await downSyncLocalRepository.create(DownsyncModel(
@@ -1014,7 +1013,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       const batchSize = 50;
       int offset = 0;
       int syncedCount = 0;
-      final currentSyncTime = null; //DateTime.now().millisecondsSinceEpoch;
+      final currentSyncTime = DateTime.now().millisecondsSinceEpoch;
 
       while (syncedCount < totalCount) {
         final stockEntries = await stockRemoteRepository.search(
