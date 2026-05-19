@@ -8738,7 +8738,7 @@ final dynamic sampleFlows = {
           "page": "eolinAssessment",
           "type": "object",
           "label": "EOLIN_ASSESSMENT_HEADING",
-          "description": "EOLIN_SCREEN_NETS_ALERT",
+          // "description": "EOLIN_SCREEN_NETS_ALERT",
           "order": 1,
           "header": [
             {
@@ -8791,6 +8791,23 @@ final dynamic sampleFlows = {
               "validations": [
                 {"type": "max", "value": 5, "message": "MAX_5_ERROR"}
               ],
+              "visibilityCondition": {
+                "expression": [
+                  {"condition": "eolinAssessment.hasEolin==YES"}
+                ]
+              }
+            },
+            {
+              "type": "dynamic",
+              "label": "",
+              "order": 3,
+              "value": "EOLIN_SCREEN_NETS_ALERT",
+              "format": "custom",
+              "hidden": false,
+              "readOnly": true,
+              "fieldName": "eolinInfoMessage",
+              "mandatory": false,
+              "required": false,
               "visibilityCondition": {
                 "expression": [
                   {"condition": "eolinAssessment.hasEolin==YES"}
@@ -8942,7 +8959,7 @@ final dynamic sampleFlows = {
             {
               "type": "template",
               "value": "ITN_DELIVERY_INSTRUCTION_MESSAGE",
-              "format": "textTemplate",
+              "format": "customMessageBanner",
               "fieldName": "itnInstructionText",
               "properties": {
                 "style": "bodyS",

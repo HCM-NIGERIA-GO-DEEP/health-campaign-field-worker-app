@@ -96,13 +96,18 @@
     "locale": "",
     "message": "Assign As CLF Head",
     "module": "hcm-beneficiary"
-  }
-
+  },
 
   {
     "code": "FETCH_BOUNDARY_FAILED",
     "locale": "",
     "message": "No boundary data associated with this project.",
     "module": "hcm-home"
+  },
+  {
+    "code": "EOLIN_SCREEN_NETS_ALERT",
+    "locale": "",
+    "message": "Please ensure all old nets are collected from the beneficiary.",
+    "module": "hcm-beneficiary"
   }
 ]
