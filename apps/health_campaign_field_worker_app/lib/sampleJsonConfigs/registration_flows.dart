@@ -455,6 +455,18 @@ final dynamic sampleFlows = {
                     "value": "{{household.0.clientReferenceId}}"
                   },
                   {
+                    "key": "memberCount",
+                    "value": "{{household.0.memberCount}}"
+                  },
+                  {
+                    "key": "individualClientReferenceId",
+                    "value": "{{navigation.selectedIndividualClientReferenceId}}"
+                  },
+                  {
+                    "key": "beneficiaryId",
+                    "value": "{{navigation.selectedIndividualIdentifierId}}"
+                  },
+                  {
                     "key": "cycleIndex",
                     "value": "{{contextData.0.nextCycleId}}"
                   },
@@ -1240,9 +1252,19 @@ final dynamic sampleFlows = {
                               "value": "{{item.individual.0.clientReferenceId}}"
                             },
                             {
+                              "key": "selectedIndividualIdentifierId",
+                              "value":
+                                  "{{item.individual.0.identifiers.0.identifierId}}"
+                            },
+                            {
                               "key": "HouseholdClientReferenceId",
                               "value":
                                   "{{item.member.0.householdClientReferenceId}}"
+                            },
+                            {
+                              "key": "memberCount",
+                              "value":
+                                  "{{contextData.0.household.HouseholdModel.memberCount}}"
                             },
                             {
                               "key": "ProjectBeneficiaryClientReferenceId",
@@ -1415,6 +1437,11 @@ final dynamic sampleFlows = {
                               "key": "HouseholdClientReferenceId",
                               "value":
                                   "{{item.member.0.householdClientReferenceId}}"
+                            },
+                            {
+                              "key": "memberCount",
+                              "value":
+                                  "{{contextData.0.household.HouseholdModel.memberCount}}"
                             },
                             {
                               "key": "ProjectBeneficiaryClientReferenceId",
@@ -1951,6 +1978,22 @@ final dynamic sampleFlows = {
               {
                 "key": "ProjectBeneficiaryClientReferenceId",
                 "value": "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+              },
+              {
+                "key": "HouseholdClientReferenceId",
+                "value": "{{navigation.HouseholdClientReferenceId}}"
+              },
+              {
+                "key": "memberCount",
+                "value": "{{navigation.memberCount}}"
+              },
+              {
+                "key": "individualClientReferenceId",
+                "value": "{{navigation.selectedIndividualClientReferenceId}}"
+              },
+              {
+                "key": "beneficiaryId",
+                "value": "{{navigation.selectedIndividualIdentifierId}}"
               },
               {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"}
             ],
@@ -2895,6 +2938,22 @@ final dynamic sampleFlows = {
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
                   },
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  },
+                  {
+                    "key": "memberCount",
+                    "value": "{{navigation.memberCount}}"
+                  },
+                  {
+                    "key": "individualClientReferenceId",
+                    "value": "{{navigation.individualClientReferenceId}}"
+                  },
+                  {
+                    "key": "beneficiaryId",
+                    "value": "{{navigation.beneficiaryId}}"
+                  },
                   {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
                   {"key": "doseIndex", "value": "{{navigation.doseIndex}}"},
                   {
@@ -2932,6 +2991,22 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      },
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value": "{{navigation.HouseholdClientReferenceId}}"
+                      },
+                      {
+                        "key": "memberCount",
+                        "value": "{{navigation.memberCount}}"
+                      },
+                      {
+                        "key": "individualClientReferenceId",
+                        "value": "{{navigation.individualClientReferenceId}}"
+                      },
+                      {
+                        "key": "beneficiaryId",
+                        "value": "{{navigation.beneficiaryId}}"
                       },
                       {
                         "key": "cycleIndex",
@@ -3146,6 +3221,22 @@ final dynamic sampleFlows = {
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
                   },
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  },
+                  {
+                    "key": "memberCount",
+                    "value": "{{navigation.memberCount}}"
+                  },
+                  {
+                    "key": "individualClientReferenceId",
+                    "value": "{{navigation.individualClientReferenceId}}"
+                  },
+                  {
+                    "key": "beneficiaryId",
+                    "value": "{{navigation.beneficiaryId}}"
+                  },
                   {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
                   {"key": "doseIndex", "value": "{{navigation.doseIndex}}"},
                   {
@@ -3183,6 +3274,22 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      },
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value": "{{navigation.HouseholdClientReferenceId}}"
+                      },
+                      {
+                        "key": "memberCount",
+                        "value": "{{navigation.memberCount}}"
+                      },
+                      {
+                        "key": "individualClientReferenceId",
+                        "value": "{{navigation.individualClientReferenceId}}"
+                      },
+                      {
+                        "key": "beneficiaryId",
+                        "value": "{{navigation.beneficiaryId}}"
                       },
                       {
                         "key": "cycleIndex",
@@ -3432,6 +3539,22 @@ final dynamic sampleFlows = {
                 "key": "ProjectBeneficiaryClientReferenceId",
                 "value": "{{navigation.ProjectBeneficiaryClientReferenceId}}"
               },
+              {
+                "key": "HouseholdClientReferenceId",
+                "value": "{{navigation.HouseholdClientReferenceId}}"
+              },
+              {
+                "key": "memberCount",
+                "value": "{{navigation.memberCount}}"
+              },
+              {
+                "key": "individualClientReferenceId",
+                "value": "{{navigation.individualClientReferenceId}}"
+              },
+              {
+                "key": "beneficiaryId",
+                "value": "{{navigation.beneficiaryId}}"
+              },
               {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
               {"key": "doseIndex", "value": "{{navigation.doseIndex}}"},
               {
@@ -3481,6 +3604,22 @@ final dynamic sampleFlows = {
                     "key": "ProjectBeneficiaryClientReferenceId",
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                  },
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  },
+                  {
+                    "key": "memberCount",
+                    "value": "{{navigation.memberCount}}"
+                  },
+                  {
+                    "key": "individualClientReferenceId",
+                    "value": "{{navigation.individualClientReferenceId}}"
+                  },
+                  {
+                    "key": "beneficiaryId",
+                    "value": "{{navigation.beneficiaryId}}"
                   },
                   {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
                   {
@@ -3603,6 +3742,24 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      },
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value": "{{navigation.HouseholdClientReferenceId}}"
+                      },
+                      {
+                        "key": "memberCount",
+                        "value": "{{navigation.memberCount}}"
+                      },
+                      {
+                        "key": "individualClientReferenceId",
+                        "value":
+                            "{{navigation.selectedIndividualClientReferenceId}}"
+                      },
+                      {
+                        "key": "beneficiaryId",
+                        "value":
+                            "{{navigation.selectedIndividualIdentifierId}}"
                       },
                       {
                         "key": "cycleIndex",
@@ -3831,6 +3988,22 @@ final dynamic sampleFlows = {
                 "key": "ProjectBeneficiaryClientReferenceId",
                 "value": "{{navigation.ProjectBeneficiaryClientReferenceId}}"
               },
+              {
+                "key": "HouseholdClientReferenceId",
+                "value": "{{navigation.HouseholdClientReferenceId}}"
+              },
+              {
+                "key": "memberCount",
+                "value": "{{navigation.memberCount}}"
+              },
+              {
+                "key": "individualClientReferenceId",
+                "value": "{{navigation.selectedIndividualClientReferenceId}}"
+              },
+              {
+                "key": "beneficiaryId",
+                "value": "{{navigation.selectedIndividualIdentifierId}}"
+              },
               {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
               {
                 "key": "lastDeliveredTaskClientReferenceId",
@@ -4042,12 +4215,25 @@ final dynamic sampleFlows = {
                             "{{navigation.selectedIndividualClientReferenceId}}"
                       },
                       {
+                        "key": "individualClientReferenceId",
+                        "value":
+                            "{{navigation.selectedIndividualClientReferenceId}}"
+                      },
+                      {
                         "key": "selectedIndividualIdentifierId",
+                        "value": "{{navigation.selectedIndividualIdentifierId}}"
+                      },
+                      {
+                        "key": "beneficiaryId",
                         "value": "{{navigation.selectedIndividualIdentifierId}}"
                       },
                       {
                         "key": "HouseholdClientReferenceId",
                         "value": "{{ navigation.HouseholdClientReferenceId }}"
+                      },
+                      {
+                        "key": "memberCount",
+                        "value": "{{navigation.memberCount}}"
                       },
                       {
                         "key": "ProjectBeneficiaryClientReferenceId",
@@ -4539,12 +4725,25 @@ final dynamic sampleFlows = {
                         "{{navigation.selectedIndividualClientReferenceId}}"
                   },
                   {
+                    "key": "individualClientReferenceId",
+                    "value":
+                        "{{navigation.selectedIndividualClientReferenceId}}"
+                  },
+                  {
                     "key": "selectedIndividualIdentifierId",
+                    "value": "{{navigation.selectedIndividualIdentifierId}}"
+                  },
+                  {
+                    "key": "beneficiaryId",
                     "value": "{{navigation.selectedIndividualIdentifierId}}"
                   },
                   {
                     "key": "HouseholdClientReferenceId",
                     "value": "{{ navigation.HouseholdClientReferenceId }}"
+                  },
+                  {
+                    "key": "memberCount",
+                    "value": "{{navigation.memberCount}}"
                   },
                   {
                     "key": "ProjectBeneficiaryClientReferenceId",

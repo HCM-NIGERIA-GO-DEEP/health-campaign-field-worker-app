@@ -444,7 +444,12 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__listItem:id",
             "cycleIndex": "__context:cycleIndex",
-            "deliveryStrategy": "__listItem:deliveryStrategy"
+            "deliveryStrategy": "__listItem:deliveryStrategy",
+            "householdId": "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -527,7 +532,12 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
-            "deliveryStrategy": "__context:deliveryStrategy"
+            "deliveryStrategy": "__context:deliveryStrategy",
+            "householdId": "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -609,7 +619,12 @@ final jsonConfig = {
           },
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
-            "cycleIndex": "__context:cycleIndex"
+            "cycleIndex": "__context:cycleIndex",
+            "householdId": "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -671,7 +686,12 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
-            "comment": "unableToDeliver.comment"
+            "comment": "unableToDeliver.comment",
+            "householdId": "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -736,7 +756,12 @@ final jsonConfig = {
             "cycleIndex": "__context:cycleIndex",
             "reasonForRedose": "RedoseDetails.reasonForRedose",
             "redoseComments": "RedoseDetails.redoseComments",
-            "taskType": "__value:REDOSE"
+            "taskType": "__value:REDOSE",
+            "householdId": "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
