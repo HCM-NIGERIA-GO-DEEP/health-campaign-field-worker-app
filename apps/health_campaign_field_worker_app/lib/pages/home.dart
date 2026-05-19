@@ -76,6 +76,8 @@ import '../widgets/inventory/custom_product_selection_card.dart';
 import '../widgets/localized.dart';
 import '../widgets/progress_bar/beneficiary_progress.dart';
 import '../widgets/progress_bar/hf_referral_progress.dart';
+import '../widgets/registration/custom_message_widget.dart';
+import '../widgets/registration/eolin_info_message_widget.dart';
 import '../widgets/resource_card/custom_resource_card.dart';
 import '../widgets/showcase/config/showcase_constants.dart';
 import '../widgets/showcase/showcase_button.dart';
@@ -144,6 +146,14 @@ class _HomePageState extends LocalizedState<HomePage> {
     FlowWidgetFactory.register(GroupListViewWidget());
     FlowWidgetFactory.register(CustomRowWidget());
     FlowWidgetFactory.register(SignatureCompareWidget());
+    FlowWidgetFactory.register(CustomMessageWidget()); 
+
+    CustomComponentRegistry().registerBuilder(
+      'eolinInfoMessage',
+      (context, stateAccessor) {
+        return const EolinInfoMessageWidget();
+      },
+    );
 
     // Register resource card for DELIVERY and REDOSE
     CustomComponentRegistry().registerBuilder(
