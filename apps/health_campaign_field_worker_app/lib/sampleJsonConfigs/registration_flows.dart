@@ -1331,8 +1331,8 @@ final dynamic sampleFlows = {
                     "type": "template",
                     "label": "HOUSEHOLD_OVERVIEW_UNABLE_TO_DELIVER_LABEL",
                     "format": "button",
-                    "visible":
-                        "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task,contextData.0.currentRunningCycle)}} == true  && {{fn:checkAllDoseDelivered(item.task)}} == false && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false && {{fn:isHead(item.member)}} == false",
+                    "visible": false,
+                    // "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task,contextData.0.currentRunningCycle)}} == true  && {{fn:checkAllDoseDelivered(item.task)}} == false && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false && {{fn:isHead(item.member)}} == false",
                     "onAction": [
                       {
                         "actionType": "NAVIGATION",
@@ -1530,10 +1530,19 @@ final dynamic sampleFlows = {
                               "key": "HouseholdClientReferenceId",
                               "value":
                                   "{{item.member.0.householdClientReferenceId}}"
+                            },
+                            {
+                              "key": "itnCount",
+                              "value":
+                                  "{{fn:calculateItnCount(contextData.0.household.HouseholdModel.memberCount)}}"
+                            },
+                            {
+                              "key": "eToken",
+                              "value": "{{fn:getEToken(item.individual.0)}}"
                             }
                           ],
-                          "name": "itnDeliveryDetails",
-                          "type": "TEMPLATE"
+                          "name": "EOLIN_ASSESSMENT",
+                          "type": "FORM"
                         }
                       }
                     ],
@@ -1562,10 +1571,19 @@ final dynamic sampleFlows = {
                               "key": "HouseholdClientReferenceId",
                               "value":
                                   "{{item.member.0.householdClientReferenceId}}"
+                            },
+                            {
+                              "key": "itnCount",
+                              "value":
+                                  "{{fn:calculateItnCount(contextData.0.household.HouseholdModel.memberCount)}}"
+                            },
+                            {
+                              "key": "eToken",
+                              "value": "{{fn:getEToken(item.individual.0)}}"
                             }
                           ],
-                          "name": "itnDeliveryDetails",
-                          "type": "TEMPLATE"
+                          "name": "EOLIN_ASSESSMENT",
+                          "type": "FORM"
                         }
                       }
                     ],
@@ -1623,8 +1641,8 @@ final dynamic sampleFlows = {
               "fieldName": "addMember",
               "properties": {
                 "icon": "AddIcon",
-                "size": "medium",
-                "type": "tertiary",
+                "size": "large",
+                "type": "primary",
                 "mainAxisSize": "max",
                 "mainAxisAlignment": "center"
               },
@@ -8682,6 +8700,177 @@ final dynamic sampleFlows = {
       ],
     },
     {
+      "name": "EOLIN_ASSESSMENT",
+      "version": 1,
+      "order": 14,
+      "screenType": "FORM",
+      "onAction": [
+        {
+          "actionType": "NAVIGATION",
+          "properties": {
+            "data": [
+              {
+                "key": "HouseholdClientReferenceId",
+                "value": "{{navigation.HouseholdClientReferenceId}}"
+              },
+              {
+                "key": "returnedBednetCount",
+                "value": "{{formData.eolinAssessment.returnedBednetCount}}"
+              },
+              {
+                "key": "hasEolin",
+                "value": "{{formData.eolinAssessment.hasEolin}}"
+              },
+              {"key": "itnCount", "value": "{{navigation.itnCount}}"},
+              {"key": "eToken", "value": "{{navigation.eToken}}"}
+            ],
+            "name": "ITN_HEALTH_TALK",
+            "type": "FORM",
+            "navigationMode": "popUntilAndPush",
+            "popUntilPageName": "householdOverview"
+          }
+        }
+      ],
+      "pages": [
+        {
+          "body": null,
+          "flow": "EOLIN_ASSESSMENT",
+          "page": "eolinAssessment",
+          "type": "object",
+          "label": "EOLIN_ASSESSMENT_HEADING",
+          "description": "EOLIN_SCREEN_NETS_ALERT",
+          "order": 1,
+          "header": [
+            {
+              "label": "BACK",
+              "format": "backLink",
+              "onAction": [
+                {
+                  "actionType": "BACK_NAVIGATION",
+                  "properties": {
+                    "name": "householdOverview",
+                    "type": "TEMPLATE"
+                  }
+                }
+              ]
+            }
+          ],
+          "module": "REGISTRATION",
+          "heading": "EOLIN_ASSESSMENT_HEADING",
+          "summary": false,
+          "version": 1,
+          "actionLabel": "NEXT",
+          "properties": [
+            {
+              "type": "string",
+              "label": "EOLIN_HAS_OLD_NETS_LABEL",
+              "order": 1,
+              "value": "",
+              "format": "radio",
+              "hidden": false,
+              "readOnly": false,
+              "fieldName": "hasEolin",
+              "mandatory": true,
+              "required": true,
+              "enums": [
+                {"code": "YES", "name": "YES"},
+                {"code": "NO", "name": "NO"}
+              ]
+            },
+            {
+              "type": "integer",
+              "label": "EOLIN_RETURNED_NETS_COUNT_LABEL",
+              "order": 2,
+              "value": "",
+              "format": "numeric",
+              "hidden": false,
+              "readOnly": false,
+              "fieldName": "returnedBednetCount",
+              "mandatory": true,
+              "required": true,
+              "validations": [
+                {"type": "max", "value": 5, "message": "MAX_5_ERROR"}
+              ],
+              "visibilityCondition": {
+                "expression": [
+                  {"condition": "eolinAssessment.hasEolin==YES"}
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "initActions": [
+        {
+          "actionType": "SEARCH_EVENT",
+          "properties": {
+            "data": [
+              {
+                "key": "clientReferenceId",
+                "value": "{{navigation.HouseholdClientReferenceId}}",
+                "operation": "equals"
+              }
+            ],
+            "name": "household",
+            "type": "SEARCH_EVENT"
+          }
+        }
+      ],
+      "wrapperConfig": {
+        "filters": [],
+        "computed": {
+          "itnProjectType": {
+            "order": 1,
+            "condition": {
+              "if": {
+                "left": "{{singleton.projectType.code}}",
+                "right": "MR-DN",
+                "operator": "equals"
+              },
+              "then":
+                  "{{singleton.selectedProject.additionalDetails.additionalProjectType}}",
+              "else": "{{singleton.projectType}}"
+            }
+          }
+        },
+        "relations": [
+          {
+            "name": "household",
+            "match": {
+              "field": "clientReferenceId",
+              "equalsFrom": "clientReferenceId"
+            },
+            "entity": "HouseholdModel"
+          },
+          {
+            "name": "headOfHousehold",
+            "match": {
+              "field": "householdClientReferenceId",
+              "equalsFrom": "clientReferenceId"
+            },
+            "entity": "HouseholdMemberModel",
+            "filters": [
+              {"field": "isHeadOfHousehold", "equals": true}
+            ]
+          },
+          {
+            "name": "headIndividual",
+            "match": {
+              "field": "clientReferenceId",
+              "equalsFrom": "headOfHousehold.individualClientReferenceId"
+            },
+            "entity": "IndividualModel"
+          }
+        ],
+        "rootEntity": "HouseholdModel",
+        "wrapperName": "HouseholdWrapper",
+        "searchConfig": {
+          "select": ["household", "individual", "householdMember"],
+          "primary": "household"
+        }
+      }
+    },
+    {
       "body": [
         {
           "type": "template",
@@ -8778,6 +8967,7 @@ final dynamic sampleFlows = {
         }
       ],
       "name": "itnDeliveryDetails",
+      "version": 1,
       "order": 14,
       "footer": [
         {
@@ -8834,52 +9024,171 @@ final dynamic sampleFlows = {
         {
           "type": "template",
           "label": "ITN_DELIVERY_NEXT_BUTTON_LABEL",
-          "format": "button",
+          "format": "actionPopup",
+          "fieldName": "itnDeliveryConfirmPopUp",
           "visible":
               "{{fn:hasStockForItnDelivery(contextData.0.memberCount, contextData.0.eligibleProductVariants)}}==true",
-          "onAction": [
-            {
-              "actionType": "NAVIGATION",
-              "properties": {
-                "data": [
-                  {
-                    "key": "HouseholdClientReferenceId",
-                    "value": "{{navigation.HouseholdClientReferenceId}}"
-                  },
-                  {
-                    "key": "itnCount",
-                    "value":
-                        "{{fn:calculateItnCount(contextData.0.household.HouseholdModel.memberCount)}}"
-                  },
-                  {
-                    "key": "eToken",
-                    "value":
-                        "{{fn:getEToken(contextData.0.headIndividual.IndividualModel)}}"
-                  },
-                  {
-                    "key": "HouseholdProjectBeneficiaryClientReferenceId",
-                    "value":
-                        "{{contextData.0.projectBeneficiary.ProjectBeneficiaryModel.clientReferenceId}}"
-                  },
-                  {
-                    "key": "productVariantId",
-                    "value":
-                        "{{contextData.0.eligibleProductVariants.0.ProductVariants.0.productVariantId}}"
-                  }
-                ],
-                "name": "ITN_HEALTH_TALK",
-                "type": "FORM"
-              }
-            }
-          ],
-          "fieldName": "itnNextButton",
-          "mandatory": true,
+          "onAction": [],
           "properties": {
             "size": "large",
             "type": "primary",
             "mainAxisSize": "max",
-            "mainAxisAlignment": "center"
-          }
+            "mainAxisAlignment": "center",
+            "popupConfig": {
+              "type": "default",
+              "title": "DELIVER_INTERVENTION_DIALOG_TITLE",
+              "body": [
+                {
+                  "type": "template",
+                  "value": "DELIVER_INTERVENTION_DIALOG_CONTENT",
+                  "format": "textTemplate"
+                }
+              ],
+              "showCloseButton": true,
+              "barrierDismissible": true,
+              "footerActions": [
+                {
+                  "type": "template",
+                  "label": "ACTION_SUBMIT",
+                  "format": "button",
+                  "onAction": [
+                    {
+                      "actionType": "FETCH_TRANSFORMER_CONFIG",
+                      "properties": {
+                        "data": [
+                          {
+                            "key":
+                                "HouseholdProjectBeneficiaryClientReferenceId",
+                            "value":
+                                "{{contextData.0.projectBeneficiary.ProjectBeneficiaryModel.clientReferenceId}}"
+                          },
+                          {
+                            "key": "itnCount",
+                            "value":
+                                "{{fn:calculateItnCount(contextData.0.household.HouseholdModel.memberCount)}}"
+                          },
+                          {
+                            "key": "eToken",
+                            "value":
+                                "{{fn:getEToken(contextData.0.headIndividual.IndividualModel)}}"
+                          },
+                          {
+                            "key": "productVariantId",
+                            "value":
+                                "{{contextData.0.eligibleProductVariants.0.ProductVariants.0.productVariantId}}"
+                          },
+                          {
+                            "key": "returnedBednetCount",
+                            "value": "{{navigation.returnedBednetCount}}"
+                          },
+                          {
+                            "key": "hasEolin",
+                            "value": "{{navigation.hasEolin}}"
+                          }
+                        ],
+                        "onError": [
+                          {
+                            "actionType": "SHOW_TOAST",
+                            "properties": {
+                              "message": "Failed to fetch ITN config."
+                            }
+                          }
+                        ],
+                        "configName": "itnDeliveryConfig"
+                      }
+                    },
+                    {
+                      "actionType": "CREATE_EVENT",
+                      "properties": {
+                        "entity": "TASK",
+                        "onError": [
+                          {
+                            "actionType": "SHOW_TOAST",
+                            "properties": {
+                              "message": "Failed to record ITN distribution."
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "actionType": "UPDATE_STOCK_BALANCE",
+                      "properties": {
+                        "entity": "TaskModel",
+                        "onError": [
+                          {
+                            "actionType": "SHOW_TOAST",
+                            "properties": {
+                              "message": "Failed to update ITN stock balance."
+                            }
+                          }
+                        ]
+                      }
+                    },
+                    {
+                      "actionType": "CLOSE_POPUP",
+                      "properties": {"parentScreenKey": "itnDeliveryDetails"}
+                    },
+                    {
+                      "actionType": "NAVIGATION",
+                      "properties": {
+                        "data": [
+                          {
+                            "key": "HouseholdClientReferenceId",
+                            "value": "{{navigation.HouseholdClientReferenceId}}"
+                          },
+                          {
+                            "key": "itnCount",
+                            "value": "{{navigation.itnCount}}"
+                          },
+                          {"key": "eToken", "value": "{{navigation.eToken}}"},
+                          {
+                            "key": "returnedBednetCount",
+                            "value": "{{navigation.returnedBednetCount}}"
+                          }
+                        ],
+                        "name": "itnSuccess",
+                        "type": "TEMPLATE",
+                        "onError": [
+                          {
+                            "actionType": "SHOW_TOAST",
+                            "properties": {"message": "Navigation failed."}
+                          }
+                        ],
+                        "navigationMode": "replace"
+                      }
+                    }
+                  ],
+                  "fieldName": "itnDeliveryConfirmSubmit",
+                  "properties": {
+                    "size": "large",
+                    "type": "primary",
+                    "mainAxisSize": "max"
+                  }
+                },
+                {
+                  "type": "template",
+                  "label": "ACTION_CANCEL",
+                  "format": "button",
+                  "onAction": [
+                    {
+                      "actionType": "CLOSE_POPUP",
+                      "properties": {"parentScreenKey": "itnDeliveryDetails"}
+                    }
+                  ],
+                  "fieldName": "itnDeliveryConfirmCancel",
+                  "properties": {
+                    "size": "large",
+                    "type": "secondary",
+                    "mainAxisSize": "max"
+                  }
+                }
+              ]
+            }
+          },
+          "mandatory": true,
+          "schemaCode": null,
+          "suffixIcon": null
         }
       ],
       "header": [
@@ -9104,59 +9413,6 @@ final dynamic sampleFlows = {
           "version": 1,
           "onAction": [
             {
-              "actionType": "FETCH_TRANSFORMER_CONFIG",
-              "properties": {
-                "data": [
-                  {
-                    "key": "HouseholdProjectBeneficiaryClientReferenceId",
-                    "value":
-                        "{{navigation.HouseholdProjectBeneficiaryClientReferenceId}}"
-                  },
-                  {"key": "itnCount", "value": "{{navigation.itnCount}}"},
-                  {"key": "eToken", "value": "{{navigation.eToken}}"},
-                  {
-                    "key": "productVariantId",
-                    "value": "{{navigation.productVariantId}}"
-                  }
-                ],
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {"message": "Failed to fetch ITN config."}
-                  }
-                ],
-                "configName": "itnDeliveryConfig"
-              }
-            },
-            {
-              "actionType": "CREATE_EVENT",
-              "properties": {
-                "entity": "TASK",
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {
-                      "message": "Failed to record ITN distribution."
-                    }
-                  }
-                ]
-              }
-            },
-            {
-              "actionType": "UPDATE_STOCK_BALANCE",
-              "properties": {
-                "entity": "TaskModel",
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {
-                      "message": "Failed to update ITN stock balance."
-                    }
-                  }
-                ]
-              }
-            },
-            {
               "actionType": "NAVIGATION",
               "properties": {
                 "data": [
@@ -9164,23 +9420,28 @@ final dynamic sampleFlows = {
                     "key": "HouseholdClientReferenceId",
                     "value": "{{navigation.HouseholdClientReferenceId}}"
                   },
-                  {"key": "itnCount", "value": "{{navigation.itnCount}}"},
-                  {"key": "eToken", "value": "{{navigation.eToken}}"}
-                ],
-                "name": "itnSuccess",
-                "type": "TEMPLATE",
-                "onError": [
                   {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {"message": "Navigation failed."}
+                    "key": "returnedBednetCount",
+                    "value": "{{navigation.returnedBednetCount}}"
+                  },
+                  {"key": "hasEolin", "value": "{{navigation.hasEolin}}"},
+                  {
+                    "key": "itnCount",
+                    "value":
+                        "{{fn:calculateItnCount(contextData.0.household.HouseholdModel.memberCount)}}"
+                  },
+                  {
+                    "key": "eToken",
+                    "value":
+                        "{{fn:getEToken(contextData.0.headIndividual.IndividualModel)}}"
                   }
                 ],
-                "navigationMode": "popUntilAndPush",
-                "popUntilPageName": "householdOverview"
+                "name": "itnDeliveryDetails",
+                "type": "TEMPLATE"
               }
             }
           ],
-          "navigateTo": {"name": "itnSuccess", "type": "template"},
+          "navigateTo": {"name": "itnDeliveryDetails", "type": "template"},
           "properties": [
             {
               "type": "boolean",
@@ -9381,17 +9642,6 @@ final dynamic sampleFlows = {
           ],
           "actionLabel": "ITN_HEALTH_TALK_SUBMIT_LABEL",
           "showTabView": false,
-          "showAlertPopUp": {
-            "title": "ITN_HEALTH_TALK_CONFIRM_TITLE",
-            "conditions": [
-              {
-                "value": "ITN_HEALTH_TALK_CONFIRM_MESSAGE",
-                "expression": "DEFAULT"
-              }
-            ],
-            "primaryActionLabel": "ITN_HEALTH_TALK_CONFIRM_SUBMIT",
-            "secondaryActionLabel": "ITN_HEALTH_TALK_CONFIRM_CANCEL"
-          },
           "submitCondition": null,
           "preventScreenCapture": false,
           "conditionalNavigateTo": null
@@ -9403,55 +9653,6 @@ final dynamic sampleFlows = {
       "disabled": false,
       "onAction": [
         {
-          "actionType": "FETCH_TRANSFORMER_CONFIG",
-          "properties": {
-            "data": [
-              {
-                "key": "HouseholdProjectBeneficiaryClientReferenceId",
-                "value":
-                    "{{navigation.HouseholdProjectBeneficiaryClientReferenceId}}"
-              },
-              {"key": "itnCount", "value": "{{navigation.itnCount}}"},
-              {"key": "eToken", "value": "{{navigation.eToken}}"},
-              {
-                "key": "productVariantId",
-                "value": "{{navigation.productVariantId}}"
-              }
-            ],
-            "onError": [
-              {
-                "actionType": "SHOW_TOAST",
-                "properties": {"message": "Failed to fetch ITN config."}
-              }
-            ],
-            "configName": "itnDeliveryConfig"
-          }
-        },
-        {
-          "actionType": "CREATE_EVENT",
-          "properties": {
-            "entity": "TASK",
-            "onError": [
-              {
-                "actionType": "SHOW_TOAST",
-                "properties": {"message": "Failed to record ITN distribution."}
-              }
-            ]
-          }
-        },
-        {
-          "actionType": "UPDATE_STOCK_BALANCE",
-          "properties": {
-            "entity": "TaskModel",
-            "onError": [
-              {
-                "actionType": "SHOW_TOAST",
-                "properties": {"message": "Failed to update ITN stock balance."}
-              }
-            ]
-          }
-        },
-        {
           "actionType": "NAVIGATION",
           "properties": {
             "data": [
@@ -9459,19 +9660,16 @@ final dynamic sampleFlows = {
                 "key": "HouseholdClientReferenceId",
                 "value": "{{navigation.HouseholdClientReferenceId}}"
               },
+              {
+                "key": "returnedBednetCount",
+                "value": "{{navigation.returnedBednetCount}}"
+              },
+              {"key": "hasEolin", "value": "{{navigation.hasEolin}}"},
               {"key": "itnCount", "value": "{{navigation.itnCount}}"},
               {"key": "eToken", "value": "{{navigation.eToken}}"}
             ],
-            "name": "itnSuccess",
-            "type": "TEMPLATE",
-            "onError": [
-              {
-                "actionType": "SHOW_TOAST",
-                "properties": {"message": "Navigation failed."}
-              }
-            ],
-            "navigationMode": "popUntilAndPush",
-            "popUntilPageName": "householdOverview"
+            "name": "itnDeliveryDetails",
+            "type": "TEMPLATE"
           }
         }
       ],
@@ -9584,6 +9782,168 @@ final dynamic sampleFlows = {
       "category": "ITN",
       "navigateTo": null,
       "screenType": "TEMPLATE",
+      "description": "ITN_SUCCESS_DESC",
+      "initActions": [
+        {"actionType": "LOAD_E_TOKEN_POOL"},
+        {
+          "actionType": "SEARCH_EVENT",
+          "properties": {
+            "data": [
+              {
+                "key": "clientReferenceId",
+                "value": "{{navigation.HouseholdClientReferenceId}}",
+                "operation": "equals"
+              }
+            ],
+            "name": "household",
+            "type": "SEARCH_EVENT"
+          }
+        }
+      ],
+      "wrapperConfig": {
+        "filters": [],
+        "relations": [
+          {
+            "name": "household",
+            "match": {
+              "field": "clientReferenceId",
+              "equalsFrom": "clientReferenceId"
+            },
+            "entity": "HouseholdModel"
+          },
+          {
+            "name": "headOfHousehold",
+            "match": {
+              "field": "householdClientReferenceId",
+              "equalsFrom": "clientReferenceId"
+            },
+            "entity": "HouseholdMemberModel",
+            "filters": [
+              {"field": "isHeadOfHousehold", "equals": true}
+            ]
+          },
+          {
+            "name": "headIndividual",
+            "match": {
+              "field": "clientReferenceId",
+              "equalsFrom": "headOfHousehold.individualClientReferenceId"
+            },
+            "entity": "IndividualModel"
+          },
+          {
+            "name": "members",
+            "match": {
+              "field": "householdClientReferenceId",
+              "equalsFrom": "clientReferenceId"
+            },
+            "entity": "HouseholdMemberModel"
+          },
+          {
+            "name": "individuals",
+            "match": {
+              "field": "clientReferenceId",
+              "inFrom": "members.individualClientReferenceId"
+            },
+            "entity": "IndividualModel"
+          },
+          {
+            "name": "projectBeneficiaries",
+            "match": {
+              "field": "beneficiaryClientReferenceId",
+              "equalsFrom": "household.0.clientReferenceId"
+            },
+            "entity": "ProjectBeneficiaryModel"
+          },
+          {
+            "name": "tasks",
+            "match": {
+              "field": "projectBeneficiaryClientReferenceId",
+              "inFrom": "projectBeneficiaries.clientReferenceId"
+            },
+            "entity": "TaskModel"
+          }
+        ],
+        "computed": {
+          "itnProjectType": {
+            "order": 1,
+            "condition": {
+              "if": {
+                "left": "{{singleton.projectType.code}}",
+                "right": "MR-DN",
+                "operator": "equals"
+              },
+              "then":
+                  "{{singleton.selectedProject.additionalDetails.additionalProjectType}}",
+              "else": "{{singleton.projectType}}"
+            }
+          },
+          "currentRunningCycle": {
+            "from": "{{itnProjectType.cycles}}",
+            "order": 2,
+            "where": [
+              {"left": "{{startDate}}", "right": "{{now}}", "operator": "lt"},
+              {"left": "{{endDate}}", "right": "{{now}}", "operator": "gt"}
+            ],
+            "select": "{{id}}",
+            "default": 1,
+            "takeFirst": true
+          },
+          "memberCount": {
+            "from": "{{household.0.memberCount}}",
+            "order": 3,
+            "default": 0
+          }
+        },
+        "rootEntity": "HouseholdModel",
+        "wrapperName": "HouseholdWrapper",
+        "computedList": {
+          "targetCycle": {
+            "from": "{{itnProjectType.cycles}}",
+            "order": 1,
+            "where": {
+              "left": "{{id}}",
+              "right": "{{currentRunningCycle}}",
+              "operator": "equals"
+            },
+            "fallback": null,
+            "takeLast": true
+          },
+          "currentDelivery": {
+            "from": "{{targetCycle.0.deliveries}}",
+            "order": 2,
+            "where": {
+              "left": "{{deliveryStrategy}}",
+              "right": "DIRECT",
+              "operator": "equals"
+            },
+            "fallback": null,
+            "takeLast": true
+          },
+          "eligibleProductVariants": {
+            "from": "{{currentDelivery.0.doseCriteria}}",
+            "order": 3,
+            "fallback": [],
+            "takeLast": false,
+            "evaluateCondition": {
+              "context": ["{{headIndividual.0}}", "{{household.0}}"],
+              "condition": "{{item.condition}}",
+              "transformations": {
+                "age": {"type": "ageInMonths", "source": "dateOfBirth"}
+              }
+            }
+          }
+        },
+        "searchConfig": {
+          "select": [
+            "household",
+            "individual",
+            "householdMember",
+            "projectBeneficiary",
+            "task"
+          ],
+          "primary": "household"
+        }
+      },
       "submitCondition": null,
       "preventScreenCapture": false
     },

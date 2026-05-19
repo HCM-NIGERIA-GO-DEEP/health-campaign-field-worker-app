@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/stock.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/user_action.dart';
 import 'package:digit_flow_builder/action_handler/action_config.dart';
@@ -205,6 +206,52 @@ class StockBalanceExecutor extends ActionExecutor {
     return '';
   }
 
+  /// When no [STOCK_BALANCE] UserAction exists yet, derive the baseline from
+  /// persisted stock rows (same as the home stock balance card / recon).
+  Future<double> _currentBalanceFromLocalStock({
+    required BuildContext context,
+    required String facilityId,
+    required String productVariantId,
+    required bool isDistributor,
+  }) async {
+    final stockRepo =
+        context.read<LocalRepository<StockModel, StockSearchModel>>()
+            as StockLocalRepository;
+
+    final stocks = await stockRepo.search(
+      StockSearchModel(receiverId: facilityId),
+    );
+    stocks.addAll(
+      await stockRepo.search(StockSearchModel(senderId: facilityId)),
+    );
+
+    return StockCalculationUtils.getStockBalance(
+      stockList: stocks,
+      facilityId: facilityId,
+      productId: productVariantId,
+      isDistributor: isDistributor,
+    );
+  }
+
+  static String _getTaskAdditionalFieldValue(TaskModel task, String key) {
+    final fields = task.additionalFields?.fields;
+    if (fields == null) return '';
+    for (final field in fields) {
+      if (field.key == key) {
+        return field.value?.toString().trim().toUpperCase() ?? '';
+      }
+    }
+    return '';
+  }
+
+  /// Only [deliveryStrategy] == `DIRECT` reduces stock. `INDIRECT` future-dose
+  /// tasks are persisted but skipped. Empty strategy (e.g. ITN) still deducts.
+  bool _shouldDeductStockForTask(TaskModel task) {
+    final strategy = _getTaskAdditionalFieldValue(task, 'deliveryStrategy');
+    if (strategy.isEmpty) return true;
+    return strategy == 'DIRECT';
+  }
+
   Future<void> _handleTaskEntity(
     BuildContext context,
     List<dynamic> entities,
@@ -226,6 +273,8 @@ class StockBalanceExecutor extends ActionExecutor {
     final deliveredQuantities = <String, double>{};
 
     for (final task in taskEntities) {
+      if (!_shouldDeductStockForTask(task)) continue;
+
       final resources = task.resources;
       if (resources == null || resources.isEmpty) continue;
 
@@ -305,13 +354,19 @@ class StockBalanceExecutor extends ActionExecutor {
     final existing =
         existingBalances.isNotEmpty ? existingBalances.first : null;
 
-    // Get the current balance from UserAction (reflects all previous transactions including deliveries/returns)
     double currentBalance = 0.0;
     if (existing != null) {
       final existingBalanceField = existing.additionalFields?.fields
           ?.firstWhereOrNull((f) => f.key == 'balance');
       currentBalance =
           double.tryParse(existingBalanceField?.value ?? '0') ?? 0.0;
+    } else {
+      currentBalance = await _currentBalanceFromLocalStock(
+        context: context,
+        facilityId: facilityId,
+        productVariantId: productVariantId,
+        isDistributor: isDistributor,
+      );
     }
 
     // deliveredQuantity can be positive (delivery) or negative (return)
@@ -388,17 +443,27 @@ class StockBalanceExecutor extends ActionExecutor {
     final existing =
         existingBalances.isNotEmpty ? existingBalances.first : null;
 
-    // Always use the UserAction balance as the authoritative source
     double currentBalance = 0.0;
     if (existing != null) {
       final existingBalanceField = existing.additionalFields?.fields
           ?.firstWhereOrNull((f) => f.key == 'balance');
       currentBalance =
           double.tryParse(existingBalanceField?.value ?? '0') ?? 0.0;
+    } else {
+      // Prevent starting from 0 when stock rows already reflect on-hand.
+      currentBalance = await _currentBalanceFromLocalStock(
+        context: context,
+        facilityId: facilityId,
+        productVariantId: productVariantId,
+        isDistributor: isDistributor,
+      );
     }
 
-    // Apply the transaction delta to the current balance
-    final newBalance = currentBalance + quantityDelta;
+    // CRUD persists the stock row before this action runs. When seeding from
+    // StockModel, currentBalance already includes this transaction — do not
+    // add quantityDelta again.
+    final newBalance =
+        existing != null ? currentBalance + quantityDelta : currentBalance;
 
     final now = DateTime.now().millisecondsSinceEpoch;
 
@@ -441,7 +506,7 @@ class StockBalanceExecutor extends ActionExecutor {
     }
 
     debugPrint(
-      'UPDATE_STOCK_BALANCE: Updated balance for $facilityId/$productVariantId = $newBalance (previous: $currentBalance, delta: $quantityDelta, existing record: ${existing != null})',
+      'UPDATE_STOCK_BALANCE: Updated balance for $facilityId/$productVariantId = $newBalance (previous: $currentBalance, delta: $quantityDelta, existing record: ${existing != null}, deltaApplied: ${existing != null})',
     );
   }
 }
