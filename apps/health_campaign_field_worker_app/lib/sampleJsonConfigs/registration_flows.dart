@@ -32,7 +32,9 @@ final dynamic sampleFlows = {
           ],
           "primaryAction": {
             "type": "template",
-            "label": "VIEW_HOUSEHOLD_DETAILS",
+            "label":
+                "navigation.isChildSmcRemaining ? navigation.buttonLabel : VIEW_HOUSEHOLD_DETAILS",
+            "useCustomLabel": true,
             "format": "button",
             "hidden": false,
             "onAction": [
@@ -514,6 +516,14 @@ final dynamic sampleFlows = {
                           {
                             "key": "loggedInUserName",
                             "value": "{{singleton.loggedInUser.name}}"
+                          },
+                          {
+                            "key": "childrenCount",
+                            "value": "{{navigation.childrenCount}}"
+                          },
+                          {
+                            "key": "nonHeadWithAnyTaskLength",
+                            "value": "{{navigation.nonHeadWithAnyTaskLength}}"
                           }
                         ],
                         "name": "DELIVERY",
@@ -859,7 +869,9 @@ final dynamic sampleFlows = {
           "description": "ID-{{navigation.selectedIndividualIdentifierId}}",
           "primaryAction": {
             "type": "template",
-            "label": "REFERRAL_VIEW_HOUSEHOLD_DETAILS",
+            "label":
+                "navigation.isChildSmcRemaining ? navigation.buttonLabel : REFERRAL_VIEW_HOUSEHOLD_DETAILS",
+            "useCustomLabel": true,
             "format": "button",
             "hidden": false,
             "onAction": [
@@ -1310,6 +1322,15 @@ final dynamic sampleFlows = {
                             {
                               "key": "cycleIndex",
                               "value": "{{contextData.0.currentRunningCycle}}"
+                            },
+                            {
+                              "key": "childrenCount",
+                              "value": "{{fn:getChildrenCount(contextData.0)}}"
+                            },
+                            {
+                              "key": "nonHeadWithAnyTaskLength",
+                              "value":
+                                  "{{fn:getNonHeadWithAnyTaskCount(contextData.0.members.0.projectBeneficiary.0.clientReferenceId, contextData.0.members.0.projectBeneficiary.0.beneficiaryClientReferenceId, contextData.0)}}"
                             }
                           ],
                           "name": "CHECKLIST",
@@ -3167,7 +3188,13 @@ final dynamic sampleFlows = {
                   {
                     "key": "beneficiaryId",
                     "value": "{{navigation.beneficiaryId}}"
-                  }
+                  },
+                  {
+                    "key": "isChildSmcRemaining",
+                    "value":
+                        "{{fn:isChildSmcRemaining(navigation.childrenCount, navigation.nonHeadWithAnyTaskLength)}}"
+                  },
+                  {"key": "buttonLabel", "value": "TREAT_NEXT_CHILD"}
                 ],
                 "name": "deliverySuccess",
                 "type": "TEMPLATE",
@@ -3325,7 +3352,15 @@ final dynamic sampleFlows = {
                       {
                         "key": "beneficiaryName",
                         "value": "{{navigation.beneficiaryName}}"
-                      }
+                      },
+                      {
+                        "key": "childrenCount",
+                        "value": "{{navigation.childrenCount}}"
+                      },
+                      {
+                        "key": "nonHeadWithAnyTaskLength",
+                        "value": "{{navigation.nonHeadWithAnyTaskLength}}"
+                      },
                     ],
                     "name": "DeliveryChecklist",
                     "type": "template"
@@ -3468,7 +3503,13 @@ final dynamic sampleFlows = {
                   {
                     "key": "beneficiaryId",
                     "value": "{{navigation.beneficiaryId}}"
-                  }
+                  },
+                  {
+                    "key": "isChildSmcRemaining",
+                    "value":
+                        "{{fn:isChildSmcRemaining(navigation.childrenCount, navigation.nonHeadWithAnyTaskLength)}}"
+                  },
+                  {"key": "buttonLabel", "value": "TREAT_NEXT_CHILD"}
                 ],
                 "name": "deliverySuccess",
                 "type": "TEMPLATE",
@@ -3855,7 +3896,13 @@ final dynamic sampleFlows = {
                 "key": "beneficiaryName",
                 "value": "{{navigation.beneficiaryName}}"
               },
-              {"key": "beneficiaryId", "value": "{{navigation.beneficiaryId}}"}
+              {"key": "beneficiaryId", "value": "{{navigation.beneficiaryId}}"},
+              {
+                "key": "isChildSmcRemaining",
+                "value":
+                    "{{fn:isChildSmcRemaining(navigation.childrenCount, navigation.nonHeadWithAnyTaskLength)}}"
+              },
+              {"key": "buttonLabel", "value": "TREAT_NEXT_CHILD"}
             ],
             "name": "deliverySuccess",
             "type": "TEMPLATE",
@@ -4329,6 +4376,14 @@ final dynamic sampleFlows = {
                         "key": "cycleIndex",
                         "value": "{{navigation.cycleIndex}}"
                       },
+                      {
+                        "key": "childrenCount",
+                        "value": "{{navigation.childrenCount}}"
+                      },
+                      {
+                        "key": "nonHeadWithAnyTaskLength",
+                        "value": "{{navigation.nonHeadWithAnyTaskLength}}"
+                      }
                     ],
                     "name": "REFER_BENEFICIARY",
                     "type": "FORM",
@@ -4462,6 +4517,14 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      },
+                      {
+                        "key": "childrenCount",
+                        "value": "{{navigation.childrenCount}}"
+                      },
+                      {
+                        "key": "nonHeadWithAnyTaskLength",
+                        "value": "{{navigation.nonHeadWithAnyTaskLength}}"
                       }
                     ],
                     "name": "beneficiaryDetails",
@@ -4505,6 +4568,14 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      },
+                      {
+                        "key": "childrenCount",
+                        "value": "{{navigation.childrenCount}}"
+                      },
+                      {
+                        "key": "nonHeadWithAnyTaskLength",
+                        "value": "{{navigation.nonHeadWithAnyTaskLength}}"
                       }
                     ],
                     "name": "beneficiaryDetails",
@@ -4834,6 +4905,14 @@ final dynamic sampleFlows = {
                     "value": "{{navigation.selectedIndividualAgeInMonths}}"
                   },
                   {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
+                  {
+                    "key": "childrenCount",
+                    "value": "{{navigation.childrenCount}}"
+                  },
+                  {
+                    "key": "nonHeadWithAnyTaskLength",
+                    "value": "{{navigation.nonHeadWithAnyTaskLength}}"
+                  }
                 ],
                 "name": "REFER_BENEFICIARY",
                 "type": "FORM",
@@ -4965,6 +5044,14 @@ final dynamic sampleFlows = {
                     "key": "ProjectBeneficiaryClientReferenceId",
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                  },
+                  {
+                    "key": "childrenCount",
+                    "value": "{{navigation.childrenCount}}"
+                  },
+                  {
+                    "key": "nonHeadWithAnyTaskLength",
+                    "value": "{{navigation.nonHeadWithAnyTaskLength}}"
                   }
                 ],
                 "name": "beneficiaryDetails",
@@ -5008,6 +5095,14 @@ final dynamic sampleFlows = {
                     "key": "ProjectBeneficiaryClientReferenceId",
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                  },
+                  {
+                    "key": "childrenCount",
+                    "value": "{{navigation.childrenCount}}"
+                  },
+                  {
+                    "key": "nonHeadWithAnyTaskLength",
+                    "value": "{{navigation.nonHeadWithAnyTaskLength}}"
                   }
                 ],
                 "name": "beneficiaryDetails",
@@ -5831,7 +5926,9 @@ final dynamic sampleFlows = {
           "properties": {"type": "success"},
           "primaryAction": {
             "type": "template",
-            "label": "VIEW_HOUSEHOLD_DETAILS",
+            "label":
+                "navigation.isChildSmcRemaining ? navigation.buttonLabel : VIEW_HOUSEHOLD_DETAILS",
+            "useCustomLabel": true,
             "format": "button",
             "fieldName": "viewHouseholdButton",
             "mandatory": true,
@@ -6330,7 +6427,13 @@ final dynamic sampleFlows = {
                 "key": "selectedIndividualAgeInMonths",
                 "value": "{{navigation.selectedIndividualAgeInMonths}}"
               },
-              {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"}
+              {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
+              {
+                "key": "isChildSmcRemaining",
+                "value":
+                    "{{fn:isChildSmcRemaining(navigation.childrenCount, navigation.nonHeadWithAnyTaskLength)}}"
+              },
+              {"key": "buttonLabel", "value": "TREAT_NEXT_CHILD"},
             ],
             "name": "referralSuccess",
             "type": "TEMPLATE",
