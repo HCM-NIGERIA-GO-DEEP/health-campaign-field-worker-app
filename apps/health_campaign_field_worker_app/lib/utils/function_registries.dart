@@ -952,6 +952,235 @@ class FunctionRegistries {
       return nonHeadWithAnyTask.length >= childrenCount;
     });
 
+    FunctionRegistry.register('getNonHeadWithAnyTaskCount', (args, stateData) {
+      // args[0]: head's projectBeneficiaryClientReferenceId (to exclude head's tasks)
+      // args[1]: head's beneficiaryClientReferenceId (for hfReferral matching)
+      // args[2]: contextData (optional, used when stateData is not available)
+      // args[3]: item (optional, the current item being processed)
+
+      final headPbRef = args.first;
+      final headHfRef = args[1];
+      final contextData = args[2];
+
+      // Use stateData if available, otherwise extract from contextData/item
+      Map<String, dynamic> modelMap;
+
+      if (stateData.modelMap.isNotEmpty) {
+        modelMap = stateData.modelMap;
+      } else if (contextData != null) {
+        // Extract modelMap from contextData structure
+        // contextData has structure with household, members, etc.
+        modelMap = {};
+
+        // Add household
+        if (contextData is Map && contextData['household'] != null) {
+          final household = contextData['household'];
+          if (household is List && household.isNotEmpty) {
+            modelMap['HouseholdModel'] = household;
+          }
+        }
+
+        // Add members
+        if (contextData is Map && contextData['members'] != null) {
+          final members = contextData['members'];
+          if (members is List) {
+            modelMap['HouseholdMemberModel'] = members;
+          }
+        }
+
+        // Add tasks from members
+        if (contextData is Map && contextData['members'] != null) {
+          final members = contextData['members'];
+          if (members is List) {
+            final tasks = <Map<String, dynamic>>[];
+            for (final member in members) {
+              if (member is! Map) continue;
+              final memberMap = member as Map<String, dynamic>;
+              if (memberMap['task'] != null) {
+                final task = memberMap['task'];
+                if (task is List && task.isNotEmpty) {
+                  for (final t in task) {
+                    Map<String, dynamic>? taskMap;
+                    if (t is Map<String, dynamic>) {
+                      taskMap = t;
+                    } else {
+                      try {
+                        taskMap =
+                            (t as dynamic).toMap() as Map<String, dynamic>;
+                      } catch (_) {
+                        continue;
+                      }
+                    }
+                    tasks.add(taskMap);
+                  }
+                }
+              }
+            }
+            if (tasks.isNotEmpty) {
+              modelMap['TaskModel'] = tasks;
+            }
+          }
+        }
+
+        // Add hfReferrals from members
+        if (contextData is Map && contextData['members'] != null) {
+          final members = contextData['members'];
+          if (members is List) {
+            final referrals = <Map<String, dynamic>>[];
+            for (final member in members) {
+              if (member is! Map) continue;
+              final memberMap = member as Map<String, dynamic>;
+              if (memberMap['hFReferral'] != null) {
+                final referral = memberMap['hFReferral'];
+                if (referral is List && referral.isNotEmpty) {
+                  for (final r in referral) {
+                    Map<String, dynamic>? referralMap;
+                    if (r is Map<String, dynamic>) {
+                      referralMap = r;
+                    } else {
+                      try {
+                        referralMap =
+                            (r as dynamic).toMap() as Map<String, dynamic>;
+                      } catch (_) {
+                        continue;
+                      }
+                    }
+                    referrals.add(referralMap);
+                  }
+                }
+              }
+            }
+            if (referrals.isNotEmpty) {
+              modelMap['HFReferralModel'] = referrals;
+            }
+          }
+        }
+      } else {
+        modelMap = {};
+      }
+
+      // Flatten all modelMap entries and filter by the task-identifying field
+      final allTasks = modelMap.values
+          .expand((list) => list)
+          .whereType<Map<String, dynamic>>()
+          .where(
+              (map) => map.containsKey('projectBeneficiaryClientReferenceId'))
+          .toList();
+
+      // Count distinct non-head members with ANY task (SMC, Unable to Deliver, etc.)
+      final Set<String> nonHeadWithAnyTask = {};
+      for (final task in allTasks) {
+        final pbRef = task['projectBeneficiaryClientReferenceId']?.toString();
+        if (pbRef == null || pbRef.isEmpty) continue;
+        if (headPbRef != null && pbRef == headPbRef) continue;
+        nonHeadWithAnyTask.add(pbRef);
+      }
+
+      // Also check for hfReferral (for beneficiaryReferred cases where referral is created instead of task)
+      final hfReferrals = modelMap.values
+          .expand((list) => list)
+          .whereType<Map<String, dynamic>>()
+          .where((map) => map.containsKey('referralCode'))
+          .toList();
+
+      for (final referral in hfReferrals) {
+        final pbRef = referral['referralCode']?.toString();
+        if (pbRef == null || pbRef.isEmpty) continue;
+        if (headHfRef != null && pbRef == headHfRef) continue;
+        nonHeadWithAnyTask.add(pbRef);
+      }
+
+      return nonHeadWithAnyTask.length;
+    });
+
+    FunctionRegistry.register('getChildrenCount', (args, stateData) {
+      // args[0]: contextData (optional, used when stateData is not available)
+      final contextData = args.isNotEmpty ? args.first : null;
+
+      int childrenCount = 0;
+
+      // Use stateData if available, otherwise extract from contextData
+      if (stateData.modelMap.isNotEmpty) {
+        outer:
+        for (final list in stateData.modelMap.values) {
+          for (final map in list) {
+            if (!map.containsKey('memberCount')) {
+              continue; // HouseholdModel has memberCount
+            }
+            final additionalFields = map['additionalFields'];
+            final fields = additionalFields is Map
+                ? additionalFields['fields'] as List?
+                : additionalFields is List
+                    ? additionalFields
+                    : null;
+            if (fields == null) continue;
+            for (final field in fields) {
+              if (field is Map && field['key'] == 'childrenCount') {
+                childrenCount =
+                    int.tryParse(field['value']?.toString() ?? '') ?? 0;
+                break outer;
+              }
+            }
+          }
+        }
+      } else if (contextData != null) {
+        // Extract childrenCount from contextData structure
+        dynamic household;
+        if (contextData is Map) {
+          household = contextData['household'];
+          if (household is List && household.isNotEmpty) {
+            household = household.first;
+          }
+        }
+
+        if (household != null) {
+          Map<String, dynamic>? householdMap;
+          if (household is Map) {
+            householdMap = Map<String, dynamic>.from(household);
+          } else {
+            try {
+              householdMap =
+                  (household as dynamic).toMap() as Map<String, dynamic>?;
+            } catch (_) {
+              householdMap = null;
+            }
+          }
+
+          if (householdMap != null) {
+            final additionalFields = householdMap['additionalFields'];
+            final fields = additionalFields is Map
+                ? additionalFields['fields'] as List?
+                : additionalFields is List
+                    ? additionalFields
+                    : null;
+
+            if (fields != null) {
+              for (final field in fields) {
+                if (field is Map && field['key'] == 'childrenCount') {
+                  childrenCount =
+                      int.tryParse(field['value']?.toString() ?? '') ?? 0;
+                  break;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      return childrenCount;
+    });
+
+    FunctionRegistry.register('isChildSmcRemaining', (args, stateData) {
+      // args[0]: childrenCount
+      // args[1]: nonHeadWithAnyTaskLength
+      final childrenCount = int.tryParse(args[0]?.toString() ?? '') ?? 0;
+      final nonHeadWithAnyTaskLength =
+          int.tryParse(args[1]?.toString() ?? '') ?? 0;
+
+      // Check if nonHeadWithAnyTaskLength + 1 >= childrenCount
+      return (nonHeadWithAnyTaskLength + 1) < childrenCount;
+    });
+
     FunctionRegistry.register('hasStockForItnDelivery', (args, stateData) {
       if (args.length < 2) return true;
       final memberCount = int.tryParse(args[0]?.toString() ?? '') ?? 0;
