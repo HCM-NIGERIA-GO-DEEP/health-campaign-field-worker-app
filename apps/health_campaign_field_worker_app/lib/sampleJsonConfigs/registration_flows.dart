@@ -5006,10 +5006,9 @@ final dynamic sampleFlows = {
               "tooltip":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_dobPicker_tooltip_addmember",
               "ageRange": {
-                "maxAge": "{{ isHead ? 1800 : 59}}",
-                "minAge": "{{isHead ? 216 : 3}}",
-                "errorMessage":
-                    "{{isHead ? AGE_VALIDATION : AGE_VALIDATION_ADDMEMBER}}"
+                "maxAge": 59,
+                "minAge": 3,
+                "errorMessage": "AGE_VALIDATION_ADDMEMBER"
               },
               "helpText":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_dobPicker_helpText_addmember",
@@ -5031,15 +5030,23 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "minAge",
-                  "value": "{{isHead ? 216 : 3}}",
-                  "message":
-                      "{{isHead ? AGE_VALIDATION : AGE_VALIDATION_ADDMEMBER}}"
+                  "value": 3,
+                  "message": "AGE_VALIDATION_ADDMEMBER"
                 },
                 {
                   "type": "maxAge",
-                  "value": "{{isHead ? 1800 : 59}}",
-                  "message":
-                      "{{isHead ? AGE_VALIDATION : AGE_VALIDATION_ADDMEMBER}}"
+                  "value": 59,
+                  "message": "AGE_VALIDATION_ADDMEMBER"
+                },
+                {
+                  "type": "minAgeHead",
+                  "value": 216,
+                  "message": "AGE_VALIDATION"
+                },
+                {
+                  "type": "maxAgeHead",
+                  "value": 1800,
+                  "message": "AGE_VALIDATION"
                 }
               ],
               "errorMessage": "",
