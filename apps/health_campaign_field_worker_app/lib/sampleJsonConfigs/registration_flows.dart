@@ -5503,7 +5503,12 @@ final dynamic sampleFlows = {
                 {"code": "MALE", "name": "MALE"},
                 {"code": "FEMALE", "name": "FEMALE"}
               ],
-              "required.message": "GENDER_MANDATORY_MESSAGE_ADDMEMBER"
+              "required.message": "GENDER_MANDATORY_MESSAGE_ADDMEMBER",
+              "visibilityCondition": {
+                "expression": [
+                  {"condition": "navigation.isHead==false"}
+                ]
+              }
             },
             {
               "type": "string",
