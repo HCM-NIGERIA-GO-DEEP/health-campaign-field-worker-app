@@ -161,7 +161,7 @@ class FunctionRegistries {
             navigationParams['reportType'] != null) {
           final reportType = navigationParams['reportType'].toString();
           const entryTypes = {
-            'receipt': 'RECEIPT',
+            'receipt': 'ISSUED',
             'dispatch': 'ISSUED',
             'returned': 'RETURNED',
             'damage': 'DAMAGED',

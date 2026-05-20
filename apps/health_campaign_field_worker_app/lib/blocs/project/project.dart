@@ -421,6 +421,16 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
           boundaryTypes.addAll([
             if (match1.parentBoundaryType.isNotEmpty) match1.parentBoundaryType,
           ]);
+
+          final match3 = boundaryRelationships
+              .where((e) => e.boundaryType == match1.parentBoundaryType)
+              .firstOrNull;
+          if (match3 != null) {
+            boundaryTypes.addAll([
+              if (match3.parentBoundaryType.isNotEmpty)
+                match3.parentBoundaryType,
+            ]);
+          }
         }
 
         if (match2 != null) {
@@ -428,14 +438,14 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
               ? match2.childBoundaryTypes.first
               : "";
 
-          final match3 = boundaryRelationships
+          final match4 = boundaryRelationships
               .where((e) => e.boundaryType == subChildBoundaryType)
               .firstOrNull;
 
-          if (match3 != null) {
+          if (match4 != null) {
             boundaryTypes.addAll([
-              if (match3.childBoundaryTypes.isNotEmpty)
-                match3.childBoundaryTypes.first,
+              if (match4.childBoundaryTypes.isNotEmpty)
+                match4.childBoundaryTypes.first,
             ]);
           }
         }

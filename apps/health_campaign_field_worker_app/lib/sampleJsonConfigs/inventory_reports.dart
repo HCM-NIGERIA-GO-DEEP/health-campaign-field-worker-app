@@ -387,6 +387,13 @@ final dynamic inventoryReportFlows = {
                         "key": "{{fn:getSenderOrReceiver()}}",
                         "value": "{{selectedFacility}}",
                         "operation": "equalsAny"
+                      },
+                      {
+                        "applyIf":
+                            "{{navigation.reportType}} == 'receipt'",
+                        "key": "additionalFields",
+                        "value": "ACCEPTED",
+                        "operation": "contains"
                       }
                     ]
                   }
@@ -428,6 +435,13 @@ final dynamic inventoryReportFlows = {
                         "key": "{{fn:getSenderOrReceiver()}}",
                         "value": "{{selectedFacility}}}",
                         "operation": "equalsAny"
+                      },
+                      {
+                        "applyIf":
+                            "{{navigation.reportType}} == 'receipt'",
+                        "key": "additionalFields",
+                        "value": "ACCEPTED",
+                        "operation": "contains"
                       }
                     ]
                   }
