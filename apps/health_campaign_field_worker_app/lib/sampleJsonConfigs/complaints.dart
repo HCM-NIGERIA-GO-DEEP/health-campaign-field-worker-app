@@ -855,7 +855,7 @@ final dynamic sampleComplaintFlows = {
                 },
                 {
                   "type": "pattern",
-                  "value": r"^\\d+$",
+                  "value": r"^\d+$",
                   "message": "MB_ONLY_NUMBERS"
                 },
                 {
@@ -940,7 +940,7 @@ final dynamic sampleComplaintFlows = {
                 },
                 {
                   "type": "pattern",
-                  "value": r"^\\d+$",
+                  "value": r"^\d+$",
                   "message": "MB_ONLY_NUMBERS"
                 }
               ],
