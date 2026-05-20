@@ -52,8 +52,7 @@ final jsonConfig = {
           "additionalFields": {
             "childrenCount": "householdDetails.childrenCount",
             "pregnantWomenCount": "householdDetails.pregnantWomenCount",
-            "memberCount":
-                "__switch:navigation.smcProject:{true:householdDetails.memberCount,default:itnHouseholdDetails.memberCount}",
+            "memberCount": "householdDetails.memberCount",
             "caregiverConsent": "caregiverConsent.consentToParticipate"
           }
         }
