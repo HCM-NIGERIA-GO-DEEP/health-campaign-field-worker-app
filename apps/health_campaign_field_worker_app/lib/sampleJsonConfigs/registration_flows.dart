@@ -2049,7 +2049,7 @@ final dynamic sampleFlows = {
             {
               "actionType": "CLEAR_STATE",
               "properties": {
-                "widgetKeys": ["searchBar"],
+                "widgetKeys": ["searchBar", "idSearchBar"],
                 "filterKeys": ["givenName,familyName", "identifierId"],
                 "triggerSearch": true
               }
@@ -2064,69 +2064,69 @@ final dynamic sampleFlows = {
           "type": "template",
           "label": "NAME_OF_INDIVIDUAL",
           "format": "searchBar",
+          "visible": "{{idSearch}} != true",
           "onAction": [
             {
-              "actions": [
-                {
-                  "actionType": "SEARCH_EVENT",
-                  "properties": {
-                    "data": [
-                      {
-                        "key": "identifierId",
-                        "value": "field.value",
-                        "operation": "contains"
-                      },
-                      {
-                        "key": "localityBoundaryCode",
-                        "root": "address",
-                        "value": "{{singleton.boundary.code}}",
-                        "operation": "equals"
-                      }
-                    ],
-                    "name": "identifier",
-                    "type": "field.value==true ? SEARCH_EVENT : CLEAR_EVENT"
+              "actionType": "SEARCH_EVENT",
+              "properties": {
+                "data": [
+                  {
+                    "key": "givenName,familyName",
+                    "value": "field.value",
+                    "operation": "containsName"
+                  },
+                  {
+                    "key": "localityBoundaryCode",
+                    "root": "address",
+                    "value": "{{singleton.boundary.code}}",
+                    "operation": "equals"
                   }
-                }
-              ],
-              "condition": {"expression": "{{idSearch}}==true"}
-            },
-            {
-              "actions": [
-                {
-                  "actionType": "SEARCH_EVENT",
-                  "properties": {
-                    "data": [
-                      {
-                        "key": "givenName,familyName",
-                        "value": "field.value",
-                        "operation": "containsName"
-                      },
-                      {
-                        "key": "localityBoundaryCode",
-                        "root": "address",
-                        "value": "{{singleton.boundary.code}}",
-                        "operation": "equals"
-                      }
-                    ],
-                    "name": "name",
-                    "type": "field.value==true ? SEARCH_EVENT : CLEAR_EVENT"
-                  }
-                }
-              ],
-              "condition": {"expression": "DEFAULT"}
+                ],
+                "name": "name",
+                "type": "field.value==true ? SEARCH_EVENT : CLEAR_EVENT"
+              }
             }
           ],
           "fieldName": "searchBar",
           "mandatory": true,
           "validations": [
-            {"type": "minSearchChars", "value": 2},
-            {
-              "type": "minSearchChars",
-              "value": 12,
-              "condition": {"expression": "{{idSearch}}==true"}
-            }
+            {"type": "minSearchChars", "value": 2}
           ],
           "minSearchChars": 2
+        },
+        {
+          "type": "template",
+          "label": "ID_OF_INDIVIDUAL",
+          "format": "searchBar",
+          "visible": "{{idSearch}} == true",
+          "onAction": [
+            {
+              "actionType": "SEARCH_EVENT",
+              "properties": {
+                "data": [
+                  {
+                    "key": "identifierId",
+                    "value": "field.value",
+                    "operation": "contains"
+                  },
+                  {
+                    "key": "localityBoundaryCode",
+                    "root": "address",
+                    "value": "{{singleton.boundary.code}}",
+                    "operation": "equals"
+                  }
+                ],
+                "name": "identifier",
+                "type": "field.value==true ? SEARCH_EVENT : CLEAR_EVENT"
+              }
+            }
+          ],
+          "fieldName": "idSearchBar",
+          "mandatory": true,
+          "validations": [
+            {"type": "minSearchChars", "value": 12}
+          ],
+          "minSearchChars": 12
         },
         {
           "icon": "FilterAlt",
