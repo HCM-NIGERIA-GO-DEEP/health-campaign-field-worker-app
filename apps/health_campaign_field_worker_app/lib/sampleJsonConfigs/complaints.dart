@@ -446,12 +446,6 @@ final dynamic sampleComplaintFlows = {
         }
       ],
       "name": "complaintInbox",
-      "onSystemBack": [
-        {
-          "actionType": "BACK_NAVIGATION",
-          "properties": {"name": "HOME", "type": "HOME"}
-        }
-      ],
       "footer": [
         {
           "type": "template",
@@ -636,7 +630,7 @@ final dynamic sampleComplaintFlows = {
               "order": 1,
               "value": "",
               "format": "text",
-              "hidden": false,
+              "hidden": true,
               "tooltip": "",
               "helpText": "",
               "infoText": "",
@@ -655,7 +649,7 @@ final dynamic sampleComplaintFlows = {
               "order": 2,
               "value": "",
               "format": "text",
-              "hidden": false,
+              "hidden": true,
               "tooltip": "",
               "helpText": "",
               "infoText": "",
@@ -674,7 +668,7 @@ final dynamic sampleComplaintFlows = {
               "order": 3,
               "value": "",
               "format": "text",
-              "hidden": false,
+              "hidden": true,
               "tooltip": "",
               "helpText": "",
               "infoText": "",
@@ -693,7 +687,7 @@ final dynamic sampleComplaintFlows = {
               "order": 4,
               "value": "",
               "format": "text",
-              "hidden": false,
+              "hidden": true,
               "tooltip": "",
               "helpText": "",
               "infoText": "",
@@ -838,6 +832,7 @@ final dynamic sampleComplaintFlows = {
               "format": "mobileNumber",
               "hidden": false,
               "tooltip": "",
+              "pattern": "^\\d+",
               "helpText": "",
               "infoText": "",
               "readOnly": false,
@@ -859,12 +854,18 @@ final dynamic sampleComplaintFlows = {
                   "message": "MOBILE_LENGTH_10_DIGIT"
                 },
                 {
+                  "type": "pattern",
+                  "value": r"^\\d+$",
+                  "message": "MB_ONLY_NUMBERS"
+                },
+                {
                   "type": "maxLength",
                   "value": 10,
                   "message": "MOBILE_LENGTH_10_DIGIT"
                 }
               ],
               "errorMessage": "",
+              "pattern.message": "MB_ONLY_NUMBERS",
               "isMultiSelect": false,
               "autoFillCondition": [
                 {
@@ -916,6 +917,7 @@ final dynamic sampleComplaintFlows = {
               "value": "",
               "format": "mobileNumber",
               "hidden": false,
+              "pattern": "^\\d+",
               "tooltip": "",
               "helpText": "",
               "infoText": "",
@@ -935,9 +937,15 @@ final dynamic sampleComplaintFlows = {
                   "type": "maxLength",
                   "value": 10,
                   "message": "MOBILE_LENGTH_10_DIGITS"
+                },
+                {
+                  "type": "pattern",
+                  "value": r"^\\d+$",
+                  "message": "MB_ONLY_NUMBERS"
                 }
               ],
               "errorMessage": "",
+              "pattern.message": "MB_ONLY_NUMBERS",
               "isMultiSelect": false
             },
             {
@@ -1066,12 +1074,6 @@ final dynamic sampleComplaintFlows = {
         }
       ],
       "name": "complaintAcknowledgement",
-      "onSystemBack": [
-        {
-          "actionType": "BACK_NAVIGATION",
-          "properties": {"name": "complaintInbox", "type": "TEMPLATE"}
-        }
-      ],
       "header": [
         {
           "label": "Back",
@@ -1147,9 +1149,6 @@ final dynamic sampleComplaintFlows = {
         }
       ],
       "name": "complaintView",
-      "onSystemBack": [
-        {"actionType": "BACK_NAVIGATION", "properties": {}}
-      ],
       "footer": [
         {
           "type": "template",
