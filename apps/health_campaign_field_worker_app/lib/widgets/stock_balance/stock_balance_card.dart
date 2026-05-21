@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/stock.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/user_action.dart';
 import 'package:digit_ui_components/digit_components.dart';
@@ -153,6 +154,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
   }
 
   void _setupStockListener(String facilityId) {
+    final taskRepo = context.read<LocalRepository<TaskModel, TaskSearchModel>>()
+        as TaskLocalRepository;
     final stockRepo =
         context.read<LocalRepository<StockModel, StockSearchModel>>()
             as StockLocalRepository;
@@ -173,7 +176,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       query: StockSearchModel(receiverId: facilityId),
       listener: (receivedStocks) async {
         if (!mounted) return;
-        await _refreshBalances(stockRepo, userActionRepo, effectiveFacilityId);
+        await _refreshBalances(
+            taskRepo, stockRepo, userActionRepo, effectiveFacilityId);
       },
     );
 
@@ -184,26 +188,33 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
         listener: (actions) async {
           if (!mounted) return;
           await _refreshBalances(
-              stockRepo, userActionRepo, effectiveFacilityId);
+              taskRepo, stockRepo, userActionRepo, effectiveFacilityId);
         },
       );
     }
   }
 
   Future<void> _loadInitialBalances(String effectiveFacilityId) async {
+    final taskRepo = context.read<LocalRepository<TaskModel, TaskSearchModel>>()
+        as TaskLocalRepository;
     final stockRepo =
         context.read<LocalRepository<StockModel, StockSearchModel>>()
             as StockLocalRepository;
     final userActionRepo = context.read<UserActionLocalRepository>();
-    await _refreshBalances(stockRepo, userActionRepo, effectiveFacilityId);
+    await _refreshBalances(
+        taskRepo, stockRepo, userActionRepo, effectiveFacilityId);
   }
 
   Future<void> _refreshBalances(
+    TaskLocalRepository taskRepo,
     StockLocalRepository stockRepo,
     UserActionLocalRepository userActionRepo,
     String effectiveFacilityId,
   ) async {
     if (!mounted) return;
+
+    final tasks =
+        await StockCalculationUtils.loadDeliveryTasks(context, taskRepo);
 
     // Fetch all stocks for this facility
     final receivedStocks = await stockRepo.search(
@@ -230,6 +241,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       productIds: productIds,
       loggedInUserUuid: context.loggedInUserUuid,
       isDistributor: _isDistributor,
+      tasks: tasks,
+      currentCycleIndex: context.currentCycleIndex,
     );
 
     // Fetch UserAction records with saved stock balances (from delivery)
@@ -239,7 +252,7 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
     // Merge: UserAction balances take precedence (they include delivery deductions)
     final mergedBalances = <String, double>{
       ...balances,
-      ...userActionBalances,
+      // ...userActionBalances,
     };
 
     StockBalanceCache.instance.setCache(effectiveFacilityId, mergedBalances);

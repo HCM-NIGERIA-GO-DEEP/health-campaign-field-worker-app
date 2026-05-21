@@ -1,4 +1,5 @@
 import 'package:collection/collection.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/user_action.dart';
 import 'package:flutter/material.dart';
@@ -289,6 +290,29 @@ class StockCalculationUtils {
     } else {
       stockIssued(quantity);
     }
+  }
+
+  static Future<List<TaskModel>> loadDeliveryTasks(
+    BuildContext context,
+    TaskLocalRepository taskRepo,
+  ) async {
+    final projectId = context.projectId;
+    final createdBy = context.loggedInUserUuid;
+    final administerSuccessTasks = await taskRepo.search(
+      TaskSearchModel(
+        projectId: projectId,
+        status: "ADMINISTRATION_SUCCESS",
+        createdBy: createdBy,
+      ),
+    );
+    final visitedTasks = await taskRepo.search(
+      TaskSearchModel(
+        projectId: projectId,
+        status: "VISITED",
+        createdBy: createdBy,
+      ),
+    );
+    return [...administerSuccessTasks, ...visitedTasks];
   }
 
   static Future<Map<String, double>> loadUserActionBalances(
