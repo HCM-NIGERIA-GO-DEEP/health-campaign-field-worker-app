@@ -572,6 +572,50 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
         );
 
       case PropertySchemaFormat.numeric:
+        if (widget.formControlName == 'childrenCount') {
+          return ReactiveFormConsumer(
+            builder: (context, formGroup, child) {
+              int? dynamicMax;
+              if (formGroup.contains('memberCount')) {
+                final memberCountValue =
+                    formGroup.control('memberCount').value;
+                final memberCount =
+                    int.tryParse(memberCountValue?.toString() ?? '') ?? 0;
+                dynamicMax = memberCount > 0 ? memberCount - 1 : 0;
+              }
+
+              final childrenCountValue =
+                  formGroup.control('childrenCount').value;
+              final childrenCount =
+                  int.tryParse(childrenCountValue?.toString() ?? '') ?? 0;
+              if (childrenCount > (dynamicMax ?? 0)) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (formGroup.contains('childrenCount')) {
+                    formGroup.control('childrenCount').value = dynamicMax ?? 0;
+                  }
+                });
+              }
+
+              return JsonSchemaIntegerBuilder(
+                form: formGroup,
+                value: parseIntValue(widget.schema.value) ?? 0,
+                formControlName: widget.formControlName,
+                label: translateIfPresent(widget.schema.label, localizations),
+                tooltipText:
+                    translateIfPresent(widget.schema.tooltip, localizations),
+                minValue: minFromValidations(widget.schema.validations ?? []),
+                maxValue: dynamicMax ??
+                    maxFromValidations(widget.schema.validations ?? []),
+                readOnly: _isReadOnly,
+                validations: widget.schema.validations,
+                isRequired: hasRequiredValidation(widget.schema.validations),
+                helpText:
+                    translateIfPresent(widget.schema.helpText, localizations),
+              );
+            },
+          );
+        }
+
         return JsonSchemaIntegerBuilder(
           form: form,
           value: parseIntValue(widget.schema.value) ?? 0,
