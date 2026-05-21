@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:digit_crud_bloc/digit_crud_bloc.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
@@ -14,6 +15,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
 
+import '../../utils/extensions/extensions.dart';
 import '../../utils/stock_calculation_utils.dart';
 import '../localized.dart';
 
@@ -182,7 +184,14 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       final loggedInUserUuid = FlowBuilderSingleton().loggedInUserUuid;
       final productIds = _selectedProducts.map((p) => p.id).toList();
 
+      final taskRepo =
+          context.read<LocalRepository<TaskModel, TaskSearchModel>>()
+              as TaskLocalRepository;
       final userActionRepo = context.read<UserActionLocalRepository>();
+
+      // Get relevant tasks for the facility and products
+      final tasks =
+          await StockCalculationUtils.loadDeliveryTasks(context, taskRepo);
 
       // Fetch UserAction records with saved stock balances (from delivery)
       final userActionBalance =
@@ -195,10 +204,15 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         facilityId: facilityId,
         productIds: productIds,
         loggedInUserUuid: loggedInUserUuid,
+        tasks: tasks,
+        currentCycleIndex: context.currentCycleIndex,
       );
 
       // Merge: UserAction balances take precedence (they include delivery deductions)
-      _stockInHandMap = {...stockTransactionBalance, ...userActionBalance};
+      _stockInHandMap = {
+        ...stockTransactionBalance,
+        // ...userActionBalance,
+      };
 
       debugPrint(
           'ProductSelectionCard: Calculated stockInHand: $_stockInHandMap');
