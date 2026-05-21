@@ -288,6 +288,26 @@ class ComputedListEvaluator {
       final flatContext =
           buildContextForCondition(ctx, conf, requiredKeys, resolvedCondition);
 
+      // Convert string numeric values to actual numbers for formula parser
+      final convertedContext = <String, dynamic>{};
+      for (final entry in flatContext.entries) {
+        final value = entry.value;
+        if (value is String) {
+          // Try to convert to double or int
+          final doubleValue = double.tryParse(value);
+          if (doubleValue != null) {
+            // Use int if it's a whole number, otherwise use double
+            convertedContext[entry.key] = doubleValue == doubleValue.truncate()
+                ? doubleValue.toInt()
+                : doubleValue;
+          } else {
+            convertedContext[entry.key] = value;
+          }
+        } else {
+          convertedContext[entry.key] = value;
+        }
+      }
+
       if (resolvedCondition == null || resolvedCondition.isEmpty) continue;
 
       try {
@@ -295,7 +315,7 @@ class ComputedListEvaluator {
         final sanitizedCondition = resolvedCondition
             .replaceAll(' and ', ' && ')
             .replaceAll('and', '&&');
-        final parser = FormulaParser(sanitizedCondition, flatContext);
+        final parser = FormulaParser(sanitizedCondition, convertedContext);
         final result = parser.parse;
 
         if (result['isSuccess'] && result['value'] == true) {

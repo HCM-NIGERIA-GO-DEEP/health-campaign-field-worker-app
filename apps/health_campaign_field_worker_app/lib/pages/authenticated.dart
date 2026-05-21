@@ -155,12 +155,23 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                       if (showDrawer)
                         BlocBuilder<BoundaryBloc, BoundaryState>(
                           builder: (context, state) {
-                            final selectedBoundary = context.boundaryOrNull;
+                            bool isDistributor = context.loggedInUserRoles
+                                .where(
+                                  (role) =>
+                                      role.code ==
+                                      RolesType.distributor.toValue(),
+                                )
+                                .toList()
+                                .isNotEmpty;
+
+                            final selectedBoundary = isDistributor
+                                ? state.boundaryList.lastOrNull?.code
+                                : state.boundaryList.firstOrNull?.code;
 
                             return selectedBoundary != null
                                 ? DigitButton(
                                     label: AppLocalizations.of(context)
-                                        .translate(selectedBoundary.code ?? ''),
+                                        .translate(selectedBoundary ?? ''),
                                     suffixIcon: Icons.arrow_drop_down,
                                     type: DigitButtonType.tertiary,
                                     size: DigitButtonSize.large,

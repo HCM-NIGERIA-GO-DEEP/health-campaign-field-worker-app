@@ -1187,13 +1187,60 @@ class FunctionRegistries {
       final eligibleProducts = args[1];
       if (eligibleProducts == null) return true;
       final required = min(4, (memberCount / 2).ceil()).toDouble();
+
+      // Validate that required quantity is greater than 0
+      if (required <= 0) {
+        final cache = StockBalanceCache.instance;
+        cache.setStockCheckResult({
+          'key': 'INVALID_QUANTITY',
+          'message':
+              'ITN count must be greater than 0. Household member count: $memberCount',
+        });
+        return false;
+      }
+
       List<dynamic> productList = [];
       if (eligibleProducts is List) {
         productList = eligibleProducts;
       } else if (eligibleProducts is Map) {
         productList = [eligibleProducts];
       }
-      if (productList.isEmpty) return true;
+
+      // Validate that eligibleProductVariants is not empty and contains valid productVariantId
+      if (productList.isEmpty) {
+        final cache = StockBalanceCache.instance;
+        cache.setStockCheckResult({
+          'key': 'NO_ELIGIBLE_PRODUCTS',
+          'message': 'No eligible product variants found for ITN delivery',
+        });
+        return false;
+      }
+
+      bool hasValidProductVariant = false;
+      for (final product in productList) {
+        if (product is! Map) continue;
+        final productVariantsList = product['ProductVariants'];
+        if (productVariantsList is! List) continue;
+        for (final variant in productVariantsList) {
+          if (variant is! Map) continue;
+          final productId = variant['productVariantId']?.toString();
+          if (productId != null && productId.isNotEmpty) {
+            hasValidProductVariant = true;
+            break;
+          }
+        }
+        if (hasValidProductVariant) break;
+      }
+
+      if (!hasValidProductVariant) {
+        final cache = StockBalanceCache.instance;
+        cache.setStockCheckResult({
+          'key': 'NO_PRODUCT_VARIANT',
+          'message': 'No valid product variant found in eligible products',
+        });
+        return false;
+      }
+
       final cache = StockBalanceCache.instance;
       if (cache.facilityId.isEmpty) return true;
       final List<Map<String, dynamic>> insufficientProducts = [];

@@ -19,19 +19,31 @@ class PgrServiceRemoteRepository
   FutureOr<Response> create(PgrServiceModel entity) async {
     return executeFuture(
       future: () async {
+        final complaintMap = PgrComplaintModel(
+          service: entity,
+          workflow: const PgrWorkflowModel(
+            action: "CREATE",
+            comments: "",
+            assignees: [],
+          ),
+        ).toMap();
+
+        // Ensure geolocation is always included in address (backend requires it)
+        if (complaintMap['service'] != null &&
+            complaintMap['service']['address'] != null) {
+          final address =
+              complaintMap['service']['address'] as Map<String, dynamic>;
+          if (!address.containsKey('geolocation')) {
+            address['geolocation'] = {};
+          }
+        }
+
         final response = await dio.post(
           createPath,
           options: Options(headers: {
             "content-type": 'application/json',
           }),
-          data: PgrComplaintModel(
-            service: entity,
-            workflow: const PgrWorkflowModel(
-              action: "CREATE",
-              comments: "",
-              assignees: [],
-            ),
-          ).toMap(),
+          data: complaintMap,
         );
 
         return response;

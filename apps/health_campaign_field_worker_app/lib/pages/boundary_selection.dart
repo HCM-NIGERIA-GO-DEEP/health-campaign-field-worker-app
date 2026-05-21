@@ -765,7 +765,6 @@ class _BoundarySelectionPageState
                                                   '${envConfig.variables.hierarchyType}_$label'),
                                               // isRequired: true,
                                               isRequired: isDistributor ||
-                                                  isHealthFacilityWorker ||
                                                   labelIndex == 0,
                                               child: isLastLevel
                                                   ? MultiSelectDropDown(
@@ -1082,7 +1081,7 @@ class _BoundarySelectionPageState
 
     for (int index = 0; index < entries.length; index++) {
       final formControl = entries[index].value;
-      final isRequired = isDistributor || isHealthFacilityWorker || index == 0;
+      final isRequired = isDistributor || index == 0;
 
       if (isRequired && formControl.value == null) {
         formControl.setErrors({'': true});
