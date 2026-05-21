@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:digit_ui_components/widgets/atoms/digit_search_bar.dart';
 import 'package:flutter/material.dart';
 
@@ -26,15 +28,14 @@ class SearchBarWidget extends ResolvedFlowWidget {
 
     final validations = json['validations'] as List<dynamic>? ?? [];
     int minSearchChars = 1;
-    final currentEvalContext = resolved.getFreshEvalContext();
+    int debounceMs = 400;
 
     for (final validation in validations) {
       if (validation is Map<String, dynamic> &&
           validation['type'] == 'minSearchChars') {
         final condition = validation['condition'] as Map<String, dynamic>?;
         final expression = condition?['expression'] as String?;
-        final conditionMet =
-            expression == null ||
+        final conditionMet = expression == null ||
             expression == 'DEFAULT' ||
             ConditionalEvaluator.evaluateExpression(
               expression,
@@ -50,15 +51,24 @@ class SearchBarWidget extends ResolvedFlowWidget {
         } else if (value is String) {
           minSearchChars = int.tryParse(value) ?? 1;
         }
+      } else if (validation is Map<String, dynamic> &&
+          validation['type'] == 'debounceMs') {
+        final value = validation['value'];
+        if (value is int) {
+          debounceMs = value;
+        } else if (value is String) {
+          debounceMs = int.tryParse(value) ?? 400;
+        }
       }
     }
 
-    final initialValue =
-        compositeKey != null
-            ? (FlowCrudStateRegistry().get(compositeKey)?.widgetData?[fieldName]
-                    ?.toString() ??
-                '')
-            : '';
+    final initialValue = compositeKey != null
+        ? (FlowCrudStateRegistry()
+                .get(compositeKey)
+                ?.widgetData?[fieldName]
+                ?.toString() ??
+            '')
+        : '';
 
     return _ReactiveSearchBar(
       key: ValueKey('${compositeKey}_$fieldName'),
@@ -67,6 +77,7 @@ class SearchBarWidget extends ResolvedFlowWidget {
       fieldName: fieldName,
       compositeKey: compositeKey,
       minSearchChars: minSearchChars,
+      debounceMs: debounceMs,
       initialValue: initialValue,
       onAction: onAction,
       resolved: resolved,
@@ -80,6 +91,7 @@ class _ReactiveSearchBar extends StatefulWidget {
   final String fieldName;
   final String? compositeKey;
   final int minSearchChars;
+  final int debounceMs;
   final String initialValue;
   final void Function(ActionConfig) onAction;
   final ResolvedWidgetContext resolved;
@@ -91,6 +103,7 @@ class _ReactiveSearchBar extends StatefulWidget {
     required this.fieldName,
     required this.compositeKey,
     required this.minSearchChars,
+    required this.debounceMs,
     required this.initialValue,
     required this.onAction,
     required this.resolved,
@@ -104,6 +117,7 @@ class _ReactiveSearchBarState extends State<_ReactiveSearchBar> {
   late final TextEditingController _controller;
   String _lastHandledValue = '';
   bool _syncingExternalValue = false;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -115,6 +129,7 @@ class _ReactiveSearchBarState extends State<_ReactiveSearchBar> {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _controller.removeListener(_handleControllerChange);
     _controller.dispose();
     super.dispose();
@@ -133,6 +148,19 @@ class _ReactiveSearchBarState extends State<_ReactiveSearchBar> {
     _lastHandledValue = value;
     _updateWidgetData(value);
 
+    _debounceTimer?.cancel();
+    if (widget.debounceMs <= 0) {
+      _dispatchSearch(value);
+      return;
+    }
+    _debounceTimer = Timer(
+      Duration(milliseconds: widget.debounceMs),
+      () => _dispatchSearch(value),
+    );
+  }
+
+  void _dispatchSearch(String value) {
+    if (!mounted) return;
     if (value.length >= widget.minSearchChars) {
       _executeSearchActions(value);
     } else {
@@ -176,10 +204,9 @@ class _ReactiveSearchBarState extends State<_ReactiveSearchBar> {
       widget.fieldName: value,
     };
 
-    final updatedState =
-        (currentState ?? const FlowCrudState()).copyWith(
-          widgetData: updatedWidgetData,
-        );
+    final updatedState = (currentState ?? const FlowCrudState()).copyWith(
+      widgetData: updatedWidgetData,
+    );
 
     FlowCrudStateRegistry().update(compositeKey, updatedState);
   }
@@ -189,7 +216,8 @@ class _ReactiveSearchBarState extends State<_ReactiveSearchBar> {
       return;
     }
 
-    final actionsList = List<Map<String, dynamic>>.from(widget.json['onAction']);
+    final actionsList =
+        List<Map<String, dynamic>>.from(widget.json['onAction']);
     final currentEvalContext = widget.resolved.getFreshEvalContext();
 
     for (final raw in actionsList) {
@@ -230,7 +258,8 @@ class _ReactiveSearchBarState extends State<_ReactiveSearchBar> {
       return;
     }
 
-    final actionsList = List<Map<String, dynamic>>.from(widget.json['onAction']);
+    final actionsList =
+        List<Map<String, dynamic>>.from(widget.json['onAction']);
     final currentEvalContext = widget.resolved.getFreshEvalContext();
 
     for (final raw in actionsList) {

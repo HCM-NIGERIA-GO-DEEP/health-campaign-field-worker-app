@@ -2101,6 +2101,7 @@ final dynamic sampleFlows = {
           ],
           "fieldName": "searchBar",
           "mandatory": true,
+          "debounceMs": 300,
           "validations": [
             {"type": "minSearchChars", "value": 2}
           ],
