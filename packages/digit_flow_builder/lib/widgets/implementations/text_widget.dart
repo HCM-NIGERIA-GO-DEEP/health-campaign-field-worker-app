@@ -27,12 +27,13 @@ class TextWidget extends ResolvedFlowWidget {
     final replaceAll = properties['replaceAll'] as List?;
     final textStyle = _parseTextStyle(context, styleKey);
 
-    var resolvedValue = (separatedBy != null && value is String)
-        ? value
+    var preResolvedValue = resolved.resolveText(value);
+    var resolvedValue = (separatedBy != null)
+        ? preResolvedValue
             .split(separatedBy)
             .map((part) => resolved.resolveText(part))
             .join(separatedBy)
-        : resolved.resolveText(value);
+        : preResolvedValue;
 
     if (replaceAll != null) {
       for (var replacement in replaceAll) {
