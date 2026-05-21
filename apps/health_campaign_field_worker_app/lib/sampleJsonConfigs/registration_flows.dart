@@ -215,7 +215,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "NAME_OF_INDIVIDUAL",
                   "value":
-                      "{{contextData.0.individuals.IndividualModel.name.givenName}} {{contextData.0.individuals.IndividualModel.name.familyName}}"
+                      "{{contextData.0.individuals.IndividualModel.name.givenName}}"
                 },
                 {
                   "key": "ID_TYPE",
@@ -916,7 +916,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "HOUSEHOLD_HEAD_NAME",
                   "value":
-                      "{{contextData.0.headIndividual.IndividualModel.name.givenName}} {{contextData.0.headIndividual.IndividualModel.name.familyName}}",
+                      "{{contextData.0.headIndividual.IndividualModel.name.givenName}}",
                   "isActive": true
                 },
                 {
@@ -1102,8 +1102,7 @@ final dynamic sampleFlows = {
                   },
                   {
                     "type": "template",
-                    "value":
-                        "{{ item.individual.0.name.givenName }} {{ item.individual.0.name.familyName }}",
+                    "value": "{{ item.individual.0.name.givenName }}",
                     "format": "textTemplate",
                     "fieldName": "individualName",
                     "properties": {"bottomGap": 16}
@@ -2074,7 +2073,7 @@ final dynamic sampleFlows = {
               "actionType": "CLEAR_STATE",
               "properties": {
                 "widgetKeys": ["searchBar", "idSearchBar"],
-                "filterKeys": ["givenName,familyName", "identifierId"],
+                "filterKeys": ["givenName", "identifierId"],
                 "triggerSearch": true
               }
             }
@@ -2391,8 +2390,7 @@ final dynamic sampleFlows = {
                 "children": [
                   {
                     "type": "template",
-                    "value":
-                        "{{ item.headIndividual.0.name.givenName }} {{ item.headIndividual.0.name.familyName }}",
+                    "value": "{{ item.headIndividual.0.name.givenName }}",
                     "format": "textTemplate",
                     "fieldName": "headOfHousehold"
                   },
@@ -2521,8 +2519,7 @@ final dynamic sampleFlows = {
                       "header": "BENEFICIARY",
                       "hidden": false,
                       "isActive": true,
-                      "cellValue":
-                          "{{item.name.givenName}} {{item.name.familyName}}"
+                      "cellValue": "{{item.name.givenName}}"
                     },
                     {
                       "header": "AGE_OF_BENEFICIARY",
@@ -4186,7 +4183,6 @@ final dynamic sampleFlows = {
                       {"key": "ec2", "value": "{{eligibilityChecklist.ec2}}"},
                       {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
                       {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
-                      {"key": "ec5", "value": "{{eligibilityChecklist.ec5}}"},
                       {"key": "sourceFlow", "value": "CHECKLIST"},
                     ],
                     "name": "REFER_BENEFICIARY",
@@ -4456,7 +4452,7 @@ final dynamic sampleFlows = {
           ],
           "condition": {
             "expression":
-                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO &&eligibilityChecklist.ec3==NO && eligibilityChecklist.ec4==NO && eligibilityChecklist.ec5==NO"
+                "eligibilityChecklist.ec1==NO && eligibilityChecklist.ec2==NO &&eligibilityChecklist.ec3==NO && eligibilityChecklist.ec4==NO"
           }
         },
         {
@@ -4513,7 +4509,6 @@ final dynamic sampleFlows = {
                   {"key": "ec2", "value": "{{eligibilityChecklist.ec2}}"},
                   {"key": "ec3", "value": "{{eligibilityChecklist.ec3}}"},
                   {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
-                  {"key": "ec5", "value": "{{eligibilityChecklist.ec5}}"},
                   {"key": "sourceFlow", "value": "CHECKLIST"},
                   {
                     "key": "selectedIndividualClientReferenceId",
@@ -4532,7 +4527,11 @@ final dynamic sampleFlows = {
                     "key": "ProjectBeneficiaryClientReferenceId",
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                  }
+                  },
+                  {
+                    "key": "selectedIndividualName",
+                    "value": "{{navigation.selectedIndividualName}}"
+                  },
                 ],
                 "onError": [
                   {
@@ -4633,8 +4632,8 @@ final dynamic sampleFlows = {
               }
             }
           ],
-          "condition": {"expression": "eligibilityChecklist.ec5==YES"}
-        }
+          "condition": {"expression": "DEFAULT"}
+        },
       ],
       "screenType": "FORM",
       "initActions": [],
@@ -4871,7 +4870,7 @@ final dynamic sampleFlows = {
               "order": 2,
               "value": "",
               "format": "text",
-              "hidden": false,
+              "hidden": true,
               "isMdms": false,
               "tooltip": "",
               "helpText": "",
@@ -6278,7 +6277,7 @@ final dynamic sampleFlows = {
               "order": 2,
               "value": "",
               "format": "text",
-              "hidden": false,
+              "hidden": true,
               "isMdms": false,
               "tooltip": "",
               "helpText": "",
