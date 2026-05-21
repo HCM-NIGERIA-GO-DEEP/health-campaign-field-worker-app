@@ -12,7 +12,7 @@ class UserActionOpLogManager extends OpLogManager<UserActionModel> {
     int rowVersion,
   ) =>
       entity.copyWith(
-        id: entity.id,
+        id: serverGeneratedId,
         rowVersion: rowVersion,
       );
 
