@@ -2061,7 +2061,7 @@ final dynamic sampleFlows = {
             {
               "actionType": "CLEAR_STATE",
               "properties": {
-                "widgetKeys": ["searchBar"],
+                "widgetKeys": ["searchBar", "idSearchBar"],
                 "filterKeys": ["givenName,familyName", "identifierId"],
                 "triggerSearch": true
               }
@@ -2076,69 +2076,69 @@ final dynamic sampleFlows = {
           "type": "template",
           "label": "NAME_OF_INDIVIDUAL",
           "format": "searchBar",
+          "visible": "{{idSearch}} != true",
           "onAction": [
             {
-              "actions": [
-                {
-                  "actionType": "SEARCH_EVENT",
-                  "properties": {
-                    "data": [
-                      {
-                        "key": "identifierId",
-                        "value": "field.value",
-                        "operation": "contains"
-                      },
-                      {
-                        "key": "localityBoundaryCode",
-                        "root": "address",
-                        "value": "{{singleton.boundary.code}}",
-                        "operation": "equals"
-                      }
-                    ],
-                    "name": "identifier",
-                    "type": "field.value==true ? SEARCH_EVENT : CLEAR_EVENT"
+              "actionType": "SEARCH_EVENT",
+              "properties": {
+                "data": [
+                  {
+                    "key": "givenName,familyName",
+                    "value": "field.value",
+                    "operation": "containsName"
+                  },
+                  {
+                    "key": "localityBoundaryCode",
+                    "root": "address",
+                    "value": "{{singleton.boundary.code}}",
+                    "operation": "equals"
                   }
-                }
-              ],
-              "condition": {"expression": "{{idSearch}}==true"}
-            },
-            {
-              "actions": [
-                {
-                  "actionType": "SEARCH_EVENT",
-                  "properties": {
-                    "data": [
-                      {
-                        "key": "givenName,familyName",
-                        "value": "field.value",
-                        "operation": "containsName"
-                      },
-                      {
-                        "key": "localityBoundaryCode",
-                        "root": "address",
-                        "value": "{{singleton.boundary.code}}",
-                        "operation": "equals"
-                      }
-                    ],
-                    "name": "name",
-                    "type": "field.value==true ? SEARCH_EVENT : CLEAR_EVENT"
-                  }
-                }
-              ],
-              "condition": {"expression": "DEFAULT"}
+                ],
+                "name": "name",
+                "type": "field.value==true ? SEARCH_EVENT : CLEAR_EVENT"
+              }
             }
           ],
           "fieldName": "searchBar",
           "mandatory": true,
           "validations": [
-            {"type": "minSearchChars", "value": 2},
-            {
-              "type": "minSearchChars",
-              "value": 12,
-              "condition": {"expression": "{{idSearch}}==true"}
-            }
+            {"type": "minSearchChars", "value": 2}
           ],
           "minSearchChars": 2
+        },
+        {
+          "type": "template",
+          "label": "ID_OF_INDIVIDUAL",
+          "format": "searchBar",
+          "visible": "{{idSearch}} == true",
+          "onAction": [
+            {
+              "actionType": "SEARCH_EVENT",
+              "properties": {
+                "data": [
+                  {
+                    "key": "identifierId",
+                    "value": "field.value",
+                    "operation": "contains"
+                  },
+                  {
+                    "key": "localityBoundaryCode",
+                    "root": "address",
+                    "value": "{{singleton.boundary.code}}",
+                    "operation": "equals"
+                  }
+                ],
+                "name": "identifier",
+                "type": "field.value==true ? SEARCH_EVENT : CLEAR_EVENT"
+              }
+            }
+          ],
+          "fieldName": "idSearchBar",
+          "mandatory": true,
+          "validations": [
+            {"type": "minSearchChars", "value": 12}
+          ],
+          "minSearchChars": 12
         },
         {
           "icon": "FilterAlt",
@@ -5018,10 +5018,9 @@ final dynamic sampleFlows = {
               "tooltip":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_dobPicker_tooltip_addmember",
               "ageRange": {
-                "maxAge": "{{ isHead ? 1800 : 59}}",
-                "minAge": "{{isHead ? 216 : 3}}",
-                "errorMessage":
-                    "{{isHead ? AGE_VALIDATION : AGE_VALIDATION_ADDMEMBER}}"
+                "maxAge": 59,
+                "minAge": 3,
+                "errorMessage": "AGE_VALIDATION_ADDMEMBER"
               },
               "helpText":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_dobPicker_helpText_addmember",
@@ -5043,15 +5042,23 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "minAge",
-                  "value": "{{isHead ? 216 : 3}}",
-                  "message":
-                      "{{isHead ? AGE_VALIDATION : AGE_VALIDATION_ADDMEMBER}}"
+                  "value": 3,
+                  "message": "AGE_VALIDATION_ADDMEMBER"
                 },
                 {
                   "type": "maxAge",
-                  "value": "{{isHead ? 1800 : 59}}",
-                  "message":
-                      "{{isHead ? AGE_VALIDATION : AGE_VALIDATION_ADDMEMBER}}"
+                  "value": 59,
+                  "message": "AGE_VALIDATION_ADDMEMBER"
+                },
+                {
+                  "type": "minAgeHead",
+                  "value": 216,
+                  "message": "AGE_VALIDATION"
+                },
+                {
+                  "type": "maxAgeHead",
+                  "value": 1800,
+                  "message": "AGE_VALIDATION"
                 }
               ],
               "errorMessage": "",
