@@ -5137,12 +5137,12 @@ final dynamic sampleFlows = {
           "page": "beneficiaryDetails",
           "type": "object",
           "label":
-              "APPONE_REGISTRATION_BENEFICIARYDETAILS_SCREEN_HEADING_addmember",
+              "{{navigation.isEdit==true ? APPONE_REGISTRATION_BENEFICIARYDETAILS_SCREEN_HEADING_editmember : APPONE_REGISTRATION_BENEFICIARYDETAILS_SCREEN_HEADING_addmember}}",
           "order": 4,
           "footer": [
             {
               "label":
-                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_ACTION_BUTTON_LABEL_addmember",
+                  "{{navigation.isEdit==true ? APPONE_REGISTRATION_BENEFICIARYDETAILS_ACTION_BUTTON_LABEL_editmember : APPONE_REGISTRATION_BENEFICIARYDETAILS_ACTION_BUTTON_LABEL_addmember}}",
               "format": "button",
               "onAction": [
                 {
@@ -5178,7 +5178,7 @@ final dynamic sampleFlows = {
           ],
           "module": "REGISTRATION",
           "heading":
-              "APPONE_REGISTRATION_BENEFICIARYDETAILS_SCREEN_HEADING_addmember",
+              "{{navigation.isEdit==true ? APPONE_REGISTRATION_BENEFICIARYDETAILS_SCREEN_HEADING_editmember : APPONE_REGISTRATION_BENEFICIARYDETAILS_SCREEN_HEADING_addmember}}",
           "summary": false,
           "version": 1,
           "onAction": [
@@ -5596,7 +5596,7 @@ final dynamic sampleFlows = {
             }
           ],
           "actionLabel":
-              "APPONE_REGISTRATION_BENEFICIARYDETAILS_ACTION_BUTTON_LABEL_addmember",
+              "{{navigation.isEdit==true ? APPONE_REGISTRATION_BENEFICIARYDETAILS_ACTION_BUTTON_LABEL_editmember : APPONE_REGISTRATION_BENEFICIARYDETAILS_ACTION_BUTTON_LABEL_addmember}}",
           "description":
               "APPONE_REGISTRATION_BENEFICIARYDETAILS_SCREEN_DESCRIPTION_addmember",
           "showTabView": false,

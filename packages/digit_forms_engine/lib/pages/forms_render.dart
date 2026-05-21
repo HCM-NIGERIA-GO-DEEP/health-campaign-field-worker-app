@@ -57,6 +57,29 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
   bool _hasInitializedProtection = false;
   bool _isSubmitting = false;
 
+  // helper method
+  String _resolveLocalizationKey(String key) {
+    final ternaryMatch = RegExp(r'\{\{(.+?)\s*\?\s*(\S+)\s*:\s*(\S+)\}\}')
+        .firstMatch(key);
+    
+    if (ternaryMatch != null) {
+      final condition = ternaryMatch.group(1)!.trim();
+      final trueKey = ternaryMatch.group(2)!.trim();
+      final falseKey = ternaryMatch.group(3)!.trim();
+
+      final params = widget.navigationParams ?? {};
+      bool result = false;
+
+      if (condition == 'navigation.isEdit==true' || condition == 'navigation.isEdit == true') {
+        result = params['isEdit']?.toString() == 'true' || widget.isEdit == true;
+      }
+
+      return localizations.translate(result ? trueKey : falseKey);
+    }
+
+    return localizations.translate(key);
+  }
+
   /// GlobalKey to access MultiEntityTabViewState for programmatic tab navigation
   final GlobalKey<MultiEntityTabViewState> _multiEntityTabKey =
       GlobalKey<MultiEntityTabViewState>();
@@ -165,10 +188,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                         ReactiveFormConsumer(
                           builder: (context, formGroup, child) => DigitButton(
                             label: (index) < schemaObject.pages.length - 1
-                                ? localizations
-                                    .translate(schema.actionLabel ?? 'Next')
-                                : localizations
-                                    .translate(schema.actionLabel ?? 'Submit'),
+                                ? _resolveLocalizationKey(schema.actionLabel ?? 'Next')
+                                : _resolveLocalizationKey(schema.actionLabel ?? 'Submit'),
                             onPressed: () async {
                               // Prevent multiple simultaneous submissions
                               if (_isSubmitting) return;
@@ -732,7 +753,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                               ),
                               if (schema.label != null) ...[
                                 Text(
-                                  localizations.translate(schema.label!),
+                                  _resolveLocalizationKey(schema.label!),
                                   style: Theme.of(context)
                                       .digitTextTheme(context)
                                       .headingXl
