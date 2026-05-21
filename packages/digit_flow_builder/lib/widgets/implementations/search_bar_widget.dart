@@ -26,10 +26,24 @@ class SearchBarWidget extends ResolvedFlowWidget {
 
     final validations = json['validations'] as List<dynamic>? ?? [];
     int minSearchChars = 1;
+    final currentEvalContext = resolved.getFreshEvalContext();
 
     for (final validation in validations) {
       if (validation is Map<String, dynamic> &&
           validation['type'] == 'minSearchChars') {
+        final condition = validation['condition'] as Map<String, dynamic>?;
+        final expression = condition?['expression'] as String?;
+        final conditionMet =
+            expression == null ||
+            expression == 'DEFAULT' ||
+            ConditionalEvaluator.evaluateExpression(
+              expression,
+              currentEvalContext,
+            );
+        if (!conditionMet) {
+          continue;
+        }
+
         final value = validation['value'];
         if (value is int) {
           minSearchChars = value;

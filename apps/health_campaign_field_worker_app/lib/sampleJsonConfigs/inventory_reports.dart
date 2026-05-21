@@ -67,6 +67,8 @@ final dynamic inventoryReportFlows = {
           "format": "menu_card",
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_RECIEVE_HEADING",
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_RECIEVE_DESCRIPTION",
+          "fieldName": "stockRecieved",
+          "properties": {"icon": "Assessment"},
           "icon": "Assessment",
           "onAction": [
             {
@@ -92,6 +94,8 @@ final dynamic inventoryReportFlows = {
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_ISSUED_HEADING",
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_ISSUED_DESCRIPTION",
           "icon": "Assessment",
+          "fieldName": "stockIssued",
+          "properties": {"icon": "Assessment"},
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -116,6 +120,8 @@ final dynamic inventoryReportFlows = {
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_RETURNED_HEADING",
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_RETURNED_DESCRIPTION",
           "icon": "Assessment",
+          "fieldName": "stockReturned",
+          "properties": {"icon": "Assessment"},
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -135,104 +141,102 @@ final dynamic inventoryReportFlows = {
           ]
         },
         {
-          "type": "template",
-          "format": "menu_card",
-          "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_HEADING",
-          "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_DESCRIPTION",
-          "visible": "{{fn:hasRole('WAREHOUSE_MANAGER')}} == false",
           "icon": "Assessment",
+          "type": "template",
+          "label": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_HEADING",
+          "format": "menu_card",
+          "hidden": true,
+          "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_HEADING",
           "onAction": [
             {
               "actionType": "NAVIGATION",
               "properties": {
-                "type": "TEMPLATE",
-                "name": "reportDetails",
                 "data": [
                   {"key": "reportType", "value": "damage"},
-                  {
-                    "key": "facilities",
-                    "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
-                  },
+                  {"key": "facilities", "value": "{{FacilityModel}}"},
                   {"key": "productVariants", "value": "{{ProductVariantModel}}"}
-                ]
+                ],
+                "name": "reportDetails",
+                "type": "TEMPLATE"
               }
             }
-          ]
+          ],
+          "fieldName": "stockDamaged",
+          "properties": {"icon": "Assessment"},
+          "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_DESCRIPTION"
         },
         {
-          "type": "template",
-          "format": "menu_card",
-          "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_HEADING",
-          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
-          "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_DESCRIPTION",
           "icon": "Assessment",
+          "type": "template",
+          "label": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_HEADING",
+          "format": "menu_card",
+          "hidden": true,
+          "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_HEADING",
           "onAction": [
             {
               "actionType": "NAVIGATION",
               "properties": {
-                "type": "TEMPLATE",
-                "name": "reportDetails",
                 "data": [
                   {"key": "reportType", "value": "loss"},
-                  {
-                    "key": "facilities",
-                    "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
-                  },
+                  {"key": "facilities", "value": "{{FacilityModel}}"},
                   {"key": "productVariants", "value": "{{ProductVariantModel}}"}
-                ]
+                ],
+                "name": "reportDetails",
+                "type": "TEMPLATE"
               }
             }
-          ]
+          ],
+          "fieldName": "stockLoss",
+          "properties": {"icon": "Assessment"},
+          "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_DESCRIPTION"
         },
         {
+          "icon": "Assessment",
           "type": "template",
           "format": "menu_card",
+          "hidden": true,
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_EXCESS_HEADING",
-          "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_EXCESS_DESCRIPTION",
-          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
-          "icon": "Assessment",
           "onAction": [
             {
               "actionType": "NAVIGATION",
               "properties": {
-                "type": "TEMPLATE",
-                "name": "reportDetails",
                 "data": [
                   {"key": "reportType", "value": "excess"},
-                  {
-                    "key": "facilities",
-                    "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
-                  },
+                  {"key": "facilities", "value": "{{FacilityModel}}"},
                   {"key": "productVariants", "value": "{{ProductVariantModel}}"}
-                ]
+                ],
+                "name": "reportDetails",
+                "type": "TEMPLATE"
               }
             }
-          ]
+          ],
+          "fieldName": "stockExcess",
+          "properties": {"icon": "Assessment"},
+          "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_EXCESS_DESCRIPTION"
         },
         {
+          "icon": "Assessment",
           "type": "template",
           "format": "menu_card",
+          "hidden": true,
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_LESS_HEADING",
-          "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_LESS_DESCRIPTION",
-          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
-          "icon": "Assessment",
           "onAction": [
             {
               "actionType": "NAVIGATION",
               "properties": {
-                "type": "TEMPLATE",
-                "name": "reportDetails",
                 "data": [
                   {"key": "reportType", "value": "less"},
-                  {
-                    "key": "facilities",
-                    "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
-                  },
+                  {"key": "facilities", "value": "{{FacilityModel}}"},
                   {"key": "productVariants", "value": "{{ProductVariantModel}}"}
-                ]
+                ],
+                "name": "reportDetails",
+                "type": "TEMPLATE"
               }
             }
-          ]
+          ],
+          "fieldName": "stockLess",
+          "properties": {"icon": "Assessment"},
+          "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_LESS_DESCRIPTION"
         },
         {
           "type": "template",
@@ -240,6 +244,8 @@ final dynamic inventoryReportFlows = {
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_RECON_HEADING",
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_RECON_DESCRIPTION",
           "icon": "Assessment",
+          "fieldName": "stockReconciliation",
+          "properties": {"icon": "Assessment"},
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -291,6 +297,7 @@ final dynamic inventoryReportFlows = {
         {
           "type": "template",
           "format": "button",
+          "fieldName": "reportDetailsBackToHomeButton",
           "label": "STOCKREPORTS_REPORT_DETAILS_SECONDARY_ACTION_LABEL",
           "properties": {
             "type": "secondary",
@@ -310,14 +317,17 @@ final dynamic inventoryReportFlows = {
         {
           "type": "template",
           "format": "card",
+          "fieldName": "reportDetailsFilterCard",
           "children": [
             {
               "type": "template",
               "format": "dropdownTemplate",
+              "fieldName": "reportDetailsFacilityDropdown",
               "label": "STOCKREPORTS_REPORT_DETAILS_SELECT_WAREHOUSE_LABEL",
               "required": true,
               "key": "selectedFacility",
               "source": "{{navigation.facilities}}",
+              "displayPrefix": "FAC_",
               "displayKey": "facilityId",
               "showWhenSingleOption": true,
               "valueKey": "facilityId",
@@ -359,6 +369,7 @@ final dynamic inventoryReportFlows = {
             {
               "type": "template",
               "format": "dropdownTemplate",
+              "fieldName": "reportDetailsProductDropdown",
               "label": "STOCKREPORTS_REPORT_DETAILS_SELECT_PRODUCT_LABEL",
               "required": true,
               "key": "selectedProduct",
@@ -407,8 +418,9 @@ final dynamic inventoryReportFlows = {
           "label": "STOCK_REPORT_DETAILS_INFO_CARD_LABEL",
           "description": "STOCK_REPORT_DETAILS_INFO_CARD_DESCRIPTION",
           "properties": {"type": "info"},
+          "fieldName": "infoCardReportDetails",
           "visible":
-              "{{fn:isEmpty(selectedFacility)}} && {{fn:isEmpty(selectedProduct)}}",
+              "{{fn:isEmpty(selectedFacility)}} && {{fn:isEmpty(selectedProduct)}}"
         },
         {
           "type": "template",
@@ -416,12 +428,14 @@ final dynamic inventoryReportFlows = {
           "label": "STOCK_REPORT_DETAILS_NO_RECORD_FOUND_INFO",
           "description": "STOCK_REPORT_DETAILS_NO_RECORD_FOUND_DESCRIPTION",
           "properties": {"type": "info"},
+          "fieldName": "noRecordFoundInfoReportDetails",
           "visible":
-              "{{fn:isEmpty(stock)}} && {{fn:isNotEmpty(selectedFacility)}}",
+              "{{fn:isEmpty(stock)}} && {{fn:isNotEmpty(selectedFacility)}}"
         },
         {
           "type": "template",
           "format": "table",
+          "fieldName": "tableInfoReportDetails",
           "data": {
             "source": "StockModel",
             "columns": [
@@ -486,6 +500,7 @@ final dynamic inventoryReportFlows = {
         {
           "type": "template",
           "format": "button",
+          "fieldName": "reckonReportDetailsBackToHomeButton",
           "label": "STOCKRECON_REPORT_DETAILS_SECONDARY_ACTION_LABEL",
           "properties": {
             "type": "secondary",
@@ -505,15 +520,18 @@ final dynamic inventoryReportFlows = {
         {
           "type": "template",
           "format": "card",
+          "fieldName": "reckonReportDetailsFilterCard",
           "children": [
             {
               "type": "template",
               "format": "dropdownTemplate",
+              "fieldName": "reckonReportDetailsFacilityDropdown",
               "label": "STOCKRECON_REPORT_DETAILS_SELECT_WAREHOUSE_LABEL",
               "required": true,
               "key": "selectedReconFacility",
               "source": "{{navigation.facilities}}",
               "displayKey": "facilityId",
+              "displayPrefix": "FAC_",
               "showWhenSingleOption": true,
               "valueKey": "facilityId",
               "visible": "{{fn:hasRole('WAREHOUSE_MANAGER')}}",
@@ -547,6 +565,7 @@ final dynamic inventoryReportFlows = {
             {
               "type": "template",
               "format": "dropdownTemplate",
+              "fieldName": "reckonReportDetailsProductDropdown",
               "label": "STOCKRECONREPORTS_REPORT_DETAILS_SELECT_PRODUCT_LABEL",
               "required": true,
               "key": "selectedReckonProduct",
@@ -585,25 +604,28 @@ final dynamic inventoryReportFlows = {
         {
           "type": "template",
           "format": "infoCard",
+          "fieldName": "infoCardReckonReportDetails",
           "label": "STOCKRECON_REPORT_DETAILS_INFO_CARD_LABEL",
           "description": "STOCKRECON_REPORT_DETAILS_INFO_CARD_DESCRIPTION",
           "properties": {"type": "info"},
           "visible":
-              "{{fn:isEmpty(selectedReconFacility)}} && {{fn:isEmpty(selectedReckonProduct)}}",
+              "{{fn:isEmpty(selectedReconFacility)}} && {{fn:isEmpty(selectedReckonProduct)}}"
         },
         {
           "type": "template",
           "format": "infoCard",
+          "fieldName": "noRecordFoundInfoReckonReportDetails",
           "label": "STOCKRECON_REPORT_DETAILS_NO_RECORD_FOUND_INFO",
           "description":
               "STOCKRECON_REPORT_DETAILS_NO_RECORD_FOUND_DESCRIPTION",
           "properties": {"type": "info"},
           "visible":
-              "{{fn:isEmpty(stockReconciliation)}} && {{fn:isNotEmpty(selectedReconFacility)}}",
+              "{{fn:isEmpty(stockReconciliation)}} && {{fn:isNotEmpty(selectedReconFacility)}}"
         },
         {
           "type": "template",
           "format": "table",
+          "fieldName": "tableInfoReckonReportDetails",
           "data": {
             "source": "StockReconciliationModel",
             "columns": [

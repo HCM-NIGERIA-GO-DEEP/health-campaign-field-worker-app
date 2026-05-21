@@ -205,11 +205,21 @@ dynamic resolveNavigationDataValue({
   dynamic stateWrapperFirst,
   required Map<String, dynamic> contextData,
 }) {
-  dynamic resolvedValue =
-      resolveValue(rawValue, stateFormData ?? stateWrapperFirst);
+  // If the template references `contextData.*` (e.g. action entities), try the
+  // action contextData first — stateFormData does not carry `entities`, and an
+  // fn: wrapper would otherwise short-circuit on the function's null-default
+  // return value before the fallback runs.
+  final preferActionContext =
+      rawValue is String && rawValue.contains('contextData.');
+
+  dynamic resolvedValue = preferActionContext
+      ? resolveValue(rawValue, contextData)
+      : resolveValue(rawValue, stateFormData ?? stateWrapperFirst);
 
   if (resolvedValue == null || resolvedValue == rawValue) {
-    resolvedValue = resolveValue(rawValue, contextData);
+    resolvedValue = preferActionContext
+        ? resolveValue(rawValue, stateFormData ?? stateWrapperFirst)
+        : resolveValue(rawValue, contextData);
   }
 
   // Fallback for unresolved template values like {{ec1}} when form data is
@@ -585,7 +595,18 @@ dynamic _resolvePath(dynamic root, String path) {
             final fieldsMap = <String, dynamic>{};
             for (var field in current) {
               if (field is Map && field['key'] != null) {
-                fieldsMap[field['key'].toString()] = field['value'];
+                final fieldKey = field['key'].toString();
+                final fieldValue = field['value'];
+
+                fieldsMap[fieldKey] = fieldValue;
+
+                // Also expose the base key for multi-entity fields that are
+                // stored as <base>_item_<index>.
+                final baseKey = fieldKey.replaceAll(
+                  RegExp(r'_item_\d+$'),
+                  '',
+                );
+                fieldsMap.putIfAbsent(baseKey, () => fieldValue);
               }
             }
             current = fieldsMap;
@@ -626,12 +647,32 @@ dynamic _resolvePath(dynamic root, String path) {
               current.first is Map &&
               (current.first as Map).containsKey('key') &&
               (current.first as Map).containsKey('value')) {
-            // Search for the field with matching key
+            // Search for the field with matching key.
+            // In multi-entity forms keys may be suffixed as: <base>_item_<index>.
+            var found = false;
             for (var field in current) {
               if (field is Map && field['key'] == part) {
                 current = field['value'];
+                found = true;
                 break;
               }
+            }
+
+            if (!found) {
+              final suffixPattern =
+                  RegExp('^${RegExp.escape(part)}_item_\\d+\$');
+              for (var field in current) {
+                final key = field is Map ? field['key']?.toString() : null;
+                if (key != null && suffixPattern.hasMatch(key)) {
+                  current = (field as Map)['value'];
+                  found = true;
+                  break;
+                }
+              }
+            }
+
+            if (!found) {
+              return null;
             }
             continue;
           }

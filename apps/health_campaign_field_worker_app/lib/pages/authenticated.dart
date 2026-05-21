@@ -249,6 +249,7 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                       ),
                       BlocProvider(
                         create: (ctx) => StockDownSyncBloc(
+                          context: context,
                           localSecureStore: LocalSecureStore.instance,
                           bandwidthCheckRepository: BandwidthCheckRepository(
                             DioClient().dio,
@@ -594,21 +595,25 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
             padding: const EdgeInsets.only(top: kToolbarHeight),
             child: SideBar(
               profile: state.maybeMap(
-                authenticated: (value) => ProfileWidget(
-                  leading: GestureDetector(
-                    onTap: () {
-                      Navigator.of(context, rootNavigator: true).pop();
-                      context.router.push(UserQRDetailsRoute());
-                    },
-                    child: QrImageView(
-                      data: context.loggedInUserUuid,
-                      version: QrVersions.auto,
-                      size: 150.0,
+                authenticated: (value) {
+                  String qrData =
+                      "${value.userModel.userName}||${context.loggedInUserUuid}";
+                  return ProfileWidget(
+                    leading: GestureDetector(
+                      onTap: () {
+                        Navigator.of(context, rootNavigator: true).pop();
+                        context.router.push(UserQRDetailsRoute());
+                      },
+                      child: QrImageView(
+                        data: qrData,
+                        version: QrVersions.auto,
+                        size: 150.0,
+                      ),
                     ),
-                  ),
-                  title: value.userModel.name.toString(),
-                  description: value.userModel.mobileNumber.toString(),
-                ),
+                    title: value.userModel.name.toString(),
+                    description: value.userModel.mobileNumber.toString(),
+                  );
+                },
                 orElse: () => null,
               ),
               sidebarItems: [
@@ -667,7 +672,8 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                                     .serviceRegistrys
                                     .where()
                                     .findAll();
-                                final apiEndPoint = Constants.getNotificationEndPoint(
+                                final apiEndPoint =
+                                    Constants.getNotificationEndPoint(
                                   serviceRegistry: serviceRegistry,
                                   service: 'NOTIFICATION',
                                   action: ApiOperation.unRegister.toValue(),

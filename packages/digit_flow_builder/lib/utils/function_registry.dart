@@ -1409,7 +1409,8 @@ void initializeFunctionRegistry() {
     if (ec1 == 'YES') symptoms.add('SICK');
     if (ec2 == 'YES') {
       symptoms.add('FEVER');
-    } else {
+    }
+    if (symptoms.isEmpty) {
       symptoms.add('DRUG_SE_PC');
     }
 
@@ -1526,7 +1527,13 @@ void initializeFunctionRegistry() {
   FunctionRegistry.register('computeReferralButtonLabel', (args, stateData) {
     if (args.isEmpty) return 'HF_REFERRAL_CONTINUE';
 
-    final symptom = args[0]?.toString().toUpperCase() ?? '';
+    // Symptom may be a comma-separated list (e.g. "SICK,FEVER"); take the
+    // last segment as the primary symptom.
+    final symptom = (args[0]?.toString() ?? '')
+        .split(',')
+        .last
+        .trim()
+        .toUpperCase();
     final fields = args.length > 1 ? args[1] : null;
 
     // Map symptom to its corresponding checklist key
@@ -1579,7 +1586,13 @@ void initializeFunctionRegistry() {
   FunctionRegistry.register('computeReferralStatus', (args, stateData) {
     if (args.isEmpty) return 'CORE_COMMON_NOT_VISITED';
 
-    final symptom = args[0]?.toString().toUpperCase() ?? '';
+    // Symptom may be a comma-separated list (e.g. "SICK,FEVER"); take the
+    // last segment as the primary symptom.
+    final symptom = (args[0]?.toString() ?? '')
+        .split(',')
+        .last
+        .trim()
+        .toUpperCase();
     final fields = args.length > 1 ? args[1] : null;
 
     // Map symptom to its corresponding checklist key

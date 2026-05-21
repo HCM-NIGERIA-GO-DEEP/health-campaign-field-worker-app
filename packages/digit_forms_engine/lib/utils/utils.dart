@@ -31,23 +31,57 @@ int? _resolveTemplateValue(String template, FormGroup form) {
     final op = operatorMatch.group(2)!;
     final offset = int.parse(operatorMatch.group(3)!);
 
+    if (!form.contains(key)) return null;
     final dynamic raw = form.control(key).value;
+    if (raw == null) return null;
     final int? base = raw is int ? raw : int.tryParse(raw.toString());
     if (base == null) return null;
     return op == '+' ? base + offset : base - offset;
   }
 
+  if (!form.contains(inner)) return null;
   final dynamic raw = form.control(inner).value;
   if (raw is int) return raw;
   if (raw is String) return int.tryParse(raw);
   return null;
 }
 
-int? minFromValidations(List<ValidationRule>? validations, FormGroup form) {
+int? minFromValidations(List<ValidationRule>? validations) {
   if (validations == null) return null;
 
   final rule = validations.firstWhere(
     (v) => v.type == 'min',
+    orElse: () => const ValidationRule(type: ''),
+  );
+
+  if (rule.value == null) return null;
+
+  return rule.value is int
+      ? rule.value as int
+      : int.tryParse(rule.value.toString());
+}
+
+int? maxFromValidations(List<ValidationRule>? validations) {
+  if (validations == null) return null;
+
+  final rule = validations.firstWhere(
+    (v) => v.type == 'max',
+    orElse: () => const ValidationRule(type: ''),
+  );
+
+  if (rule.value == null) return null;
+
+  return rule.value is int
+      ? rule.value as int
+      : int.tryParse(rule.value.toString());
+}
+
+int? relativeMinFromValidations(
+    List<ValidationRule>? validations, FormGroup form) {
+  if (validations == null) return null;
+
+  final rule = validations.firstWhere(
+    (v) => v.type == 'relativeMin',
     orElse: () => const ValidationRule(type: ''),
   );
 
@@ -62,11 +96,12 @@ int? minFromValidations(List<ValidationRule>? validations, FormGroup form) {
       : int.tryParse(rule.value.toString());
 }
 
-int? maxFromValidations(List<ValidationRule>? validations, FormGroup form) {
+int? relativeMaxFromValidations(
+    List<ValidationRule>? validations, FormGroup form) {
   if (validations == null) return null;
 
   final rule = validations.firstWhere(
-    (v) => v.type == 'max',
+    (v) => v.type == 'relativeMax',
     orElse: () => const ValidationRule(type: ''),
   );
 

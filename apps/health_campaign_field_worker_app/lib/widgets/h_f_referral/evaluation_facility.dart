@@ -15,11 +15,13 @@ import '../localized.dart';
 class EvaluationKeyDropDown extends LocalizedStatefulWidget {
   final String schemaName;
   final String formControlName;
+  final String displayPrefix;
   const EvaluationKeyDropDown({
     super.key,
     super.appLocalizations,
     required this.schemaName,
     required this.formControlName,
+    this.displayPrefix = '',
   });
 
   @override
@@ -145,7 +147,8 @@ class _EvaluationKeyDropDownState
   List<DropdownItem> _mapItems(List<ProjectFacilityModel> keys) {
     return keys
         .map((key) => DropdownItem(
-              name: key.facilityId,
+              name: localizations
+                  .translate(widget.displayPrefix + key.facilityId),
               code: key.id,
             ))
         .toList();

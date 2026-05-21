@@ -296,7 +296,8 @@ class StockBalanceExecutor extends ActionExecutor {
     required bool isDistributor,
   }) async {
     final loggedInUserUuid = _getLoggedInUserUuid(context);
-    final balanceKey = generateBalanceKey(facilityId, productVariantId);
+    final balanceKey = generateBalanceKey(facilityId, productVariantId,
+        context.selectedProject.referenceID, context.loggedInUser.id);
 
     final existingBalances = await userActionRepo.search(
       UserActionSearchModel(clientReferenceId: [balanceKey]),
@@ -379,7 +380,8 @@ class StockBalanceExecutor extends ActionExecutor {
     bool isDistributor = false,
   }) async {
     final loggedInUserUuid = _getLoggedInUserUuid(context);
-    final balanceKey = generateBalanceKey(facilityId, productVariantId);
+    final balanceKey = generateBalanceKey(facilityId, productVariantId,
+        context.selectedProject.referenceID, context.loggedInUser.id);
 
     final existingBalances = await userActionRepo.search(
       UserActionSearchModel(clientReferenceId: [balanceKey]),
@@ -413,7 +415,7 @@ class StockBalanceExecutor extends ActionExecutor {
       isSync: false,
       timestamp: now,
       id: existing?.id,
-      rowVersion: existing?.rowVersion,
+      rowVersion: existing?.rowVersion ?? 1,
       tenantId: existing?.tenantId ?? context.selectedProject.tenantId,
       nonRecoverableError: false,
       additionalFields: UserActionAdditionalFields(

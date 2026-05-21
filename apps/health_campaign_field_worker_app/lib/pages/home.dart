@@ -7,6 +7,8 @@ import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:digit_crud_bloc/digit_crud_bloc.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendance_log.dart';
+import 'package:digit_data_model/models/entities/attendance_register.dart';
+import 'package:digit_data_model/models/entities/attendee.dart';
 import 'package:digit_data_model/models/entities/enum_values.dart';
 import 'package:digit_dss/data/local_store/no_sql/schema/dashboard_config_schema.dart';
 import 'package:digit_dss/models/entities/dashboard_response_model.dart';
@@ -220,10 +222,10 @@ class _HomePageState extends LocalizedState<HomePage> {
     CustomComponentRegistry().registerBuilder(
       'evaluationFacility',
       (context, stateAccessor) {
-        // Build your component with access to all this data
         return const EvaluationKeyDropDown(
             schemaName: "REFERRAL_CREATE",
-            formControlName: "evaluationFacility");
+            formControlName: "evaluationFacility",
+            displayPrefix: "FAC_");
       },
     );
 
@@ -528,15 +530,16 @@ class _HomePageState extends LocalizedState<HomePage> {
     FunctionRegistry.register('todayAttendeesList', (args, stateData) {
       final widgetData = args.isNotEmpty && args[0] != null ? args[0] : null;
       List items = args.length > 1 && args[1] != null ? args[1] : [];
-      final attendanceLogs = args.length > 2 && args[2] != null ? args[2] : [];
       final attendanceRegisterModel =
-          args.length > 3 && args[3] != null ? args[3] : null;
+          args.length > 2 && args[2] != null ? args[2] : null;
 
       final selectedDate = widgetData?['selectedDate'] as int?;
       final isMorning = widgetData?['sessionToggle'] as bool? ?? true;
 
       Map<String, dynamic>? attendanceTime = AttendanceUtils.attendanceTime(
           selectedDate, isMorning, attendanceRegisterModel);
+
+      final attendanceLogs = attendanceRegisterModel?.attendanceLog ?? [];
 
       var entryTime = attendanceTime?['entryTime'];
       var exitTime = attendanceTime?['exitTime'];
@@ -607,7 +610,8 @@ class _HomePageState extends LocalizedState<HomePage> {
       if (args.isEmpty || args.first == null) return true;
 
       final widgetData = args.first;
-      final attendanceRegisterModel = args.length > 1 ? args[1] : null;
+      final AttendanceRegisterModel? attendanceRegisterModel =
+          args.length > 1 ? args[1] as AttendanceRegisterModel? : null;
 
       final selectedDate = widgetData?['selectedDate'] as int?;
       final isMorning = widgetData?['sessionToggle'] as bool? ?? true;
@@ -620,8 +624,11 @@ class _HomePageState extends LocalizedState<HomePage> {
 
       final attendanceCollection = widgetData?['attendanceCollection'] as Map?;
 
-      final attendees = attendanceRegisterModel?.attendees ?? [];
-      final attendanceLogs = attendanceRegisterModel?.attendanceLog ?? [];
+      final List<AttendeeModel> attendees =
+          attendanceRegisterModel?.attendees ?? const <AttendeeModel>[];
+      final List<AttendanceLogModel> attendanceLogs =
+          attendanceRegisterModel?.attendanceLog ??
+              const <AttendanceLogModel>[];
 
       // Filter logs for the selected entry and exit times that are not yet uploaded
       final filterAttendanceLogs = attendanceLogs.where((log) {
@@ -631,11 +638,31 @@ class _HomePageState extends LocalizedState<HomePage> {
             logUploadToServer != true;
       }).toList();
 
-      if (filterAttendanceLogs.isNotEmpty) {
-        return attendees.length != (filterAttendanceLogs.length / 2);
+      bool hasLogForSession = false;
+
+      for (var attendee in attendees) {
+        final individualId = attendee.individualId?.toString();
+        if (individualId == null) continue;
+
+        // Check if there's an attendance log for this attendee for the session
+        final hasLog = filterAttendanceLogs.any((log) {
+          return log.individualId == individualId;
+        });
+
+        if (hasLog) {
+          hasLogForSession = true;
+        } else {
+          // If no log, check if attendee is marked in the collection
+          final collectionStatus = attendanceCollection?[individualId];
+          if (collectionStatus == 'present' || collectionStatus == 'absent') {
+            hasLogForSession = true;
+          } else {
+            hasLogForSession = false;
+          }
+        }
       }
 
-      return attendees.length != attendanceCollection?.length;
+      return hasLogForSession;
     });
 
     FunctionRegistry.register('updateAttendeeStatus', (args, stateData) {
@@ -951,7 +978,9 @@ class _HomePageState extends LocalizedState<HomePage> {
 
     FunctionRegistry.register('getExistingSignature', (args, stateData) {
       final individualId = args.isNotEmpty ? args[0]?.toString() : null;
-      final attendanceLogs = args.length > 1 ? args[1] as List<dynamic>? : null;
+      final attendanceRegisterModel = args.length > 1 ? args[1] : null;
+
+      final attendanceLogs = attendanceRegisterModel?.attendanceLog ?? [];
 
       if (attendanceLogs == null || attendanceLogs.isEmpty) return null;
       List logs = attendanceLogs.where((log) {
@@ -1834,7 +1863,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-complaints-${context.selectedProject.referenceID}';
+                    'hcm-complaints-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
@@ -2011,10 +2040,10 @@ class _HomePageState extends LocalizedState<HomePage> {
                       const NestedModelMapping(
                         rootModel: 'task',
                         fields: {
-                          'resource': NestedFieldMapping(
-                            table: 'resource',
-                            localKey: 'taskclientReferenceId',
-                            foreignKey: 'clientReferenceId',
+                          'resources': NestedFieldMapping(
+                            table: 'taskResource',
+                            localKey: 'clientReferenceId',
+                            foreignKey: 'taskclientReferenceId',
                             type: NestedMappingType.many,
                           ),
                         },
@@ -2025,7 +2054,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                   dynamicEntityModelListener: EntityModelMapMapper(),
                 );
                 try {
-                  if (false) {
+                  if (schemaJsonRaw != null) {
                     final allSchemas =
                         json.decode(schemaJsonRaw!) as Map<String, dynamic>;
                     final data = allSchemas['REGISTRATION'];
@@ -2179,7 +2208,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-stockreconciliation-${context.selectedProject.referenceID}';
+                'hcm-stockreconciliation-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
@@ -2322,7 +2351,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-hfreferral-${context.selectedProject.referenceID}';
+                    'hcm-hfreferral-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
@@ -2348,7 +2377,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-stockreports-${context.selectedProject.referenceID}';
+                'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 

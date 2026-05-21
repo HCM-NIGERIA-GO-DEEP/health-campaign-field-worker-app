@@ -131,93 +131,6 @@ final dynamic sampleInventoryFlows = {
             }
           ]
         },
-        // {
-        //   "format": "menu_card",
-        //   "type": "template",
-        //   "fieldName": "manageStockRecordStockDamagedCard",
-        //   "heading":
-        //       "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_DAMAGED_HEADING",
-        //   "visible": "{{fn:hasRole('WAREHOUSE_MANAGER')}} == false",
-        //   "description":
-        //       "APP_CONFIG_INVENTORY_manageStock_RECORD_THE_LIST_OF_RESOURCES_DAMAGED_DURING_CAMPAIGN_OPERATIONS_DESCRIPTION",
-        //   "icon": "Store",
-        //   "onAction": [
-        //     {
-        //       "actionType": "NAVIGATION",
-        //       "properties": {
-        //         "type": "FORM",
-        //         "name": "RECORDSTOCK",
-        //         "data": [
-        //           {"key": "stockEntryType", "value": "DAMAGED"},
-        //           {"key": "transactionType", "value": "DISPATCHED"},
-        //           {"key": "primaryRole", "value": "SENDER"},
-        //           {"key": "secondaryRole", "value": "RECEIVER"},
-        //           {
-        //             "key": "mrnNumber",
-        //             "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
-        //           }
-        //         ]
-        //       }
-        //     }
-        //   ]
-        // },
-        // {
-        //   "format": "menu_card",
-        //   "type": "template",
-        //   "fieldName": "manageStockRecordStockLossCard",
-        //   "heading":
-        //       "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_LOSS_HEADING",
-        //   "description":
-        //       "APP_CONFIG_INVENTORY_manageStock_RECORD_THE_LIST_OF_RESOURCES_LOST_DURING_CAMPAIGN_OPERATIONS_DESCRIPTION",
-        //   "icon": "Store",
-        //   "onAction": [
-        //     {
-        //       "actionType": "NAVIGATION",
-        //       "properties": {
-        //         "type": "FORM",
-        //         "name": "RECORDSTOCK",
-        //         "data": [
-        //           {"key": "stockEntryType", "value": "LOSS"},
-        //           {"key": "transactionType", "value": "DISPATCHED"},
-        //           {"key": "primaryRole", "value": "SENDER"},
-        //           {"key": "secondaryRole", "value": "RECEIVER"},
-        //           {
-        //             "key": "mrnNumber",
-        //             "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
-        //           }
-        //         ]
-        //       }
-        //     }
-        //   ]
-        // },
-        // {
-        //   "format": "menu_card",
-        //   "type": "template",
-        //   "fieldName": "manageStockRecordLessExcessCard",
-        //   "heading": "INVENTORY_RECORD_LESS_EXCESS_HEADING",
-        //   "description": "INVENTORY_RECORD_LESS_EXCESS_DESCRIPTION",
-        //   "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
-        //   "icon": "Store",
-        //   "onAction": [
-        //     {
-        //       "actionType": "NAVIGATION",
-        //       "properties": {
-        //         "type": "FORM",
-        //         "name": "RECORDLESSEXCESS",
-        //         "data": [
-        //           {"key": "stockEntryType", "value": "LESS_EXCESS"},
-        //           {"key": "transactionType", "value": "RECEIVED"},
-        //           {"key": "primaryRole", "value": "SENDER"},
-        //           {"key": "secondaryRole", "value": "RECEIVER"},
-        //           {
-        //             "key": "mrnNumber",
-        //             "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
-        //           }
-        //         ]
-        //       }
-        //     }
-        //   ]
-        // }
       ]
     },
     {
@@ -701,6 +614,12 @@ final dynamic sampleInventoryFlows = {
                   "value": true,
                   "message":
                       "APPONE_MANAGESTOCK_WAREHOUSE_label_facilityToWhich_mandatory_message"
+                },
+                {
+                  "type": "isGS1Code",
+                  "value": false,
+                  "message":
+                      "APPONE_MANAGESTOCK_WAREHOUSE_label_isGS1Code_message"
                 }
               ],
               "errorMessage": "",
@@ -1390,6 +1309,11 @@ final dynamic sampleInventoryFlows = {
                 "value":
                     "{{fn:getSecondaryType(formData.warehouseDetails.facilityToWhich)}}"
               },
+              {
+                "key": "teamCode",
+                "value":
+                    "{{fn:getTeamCode(formData.warehouseDetails.teamCode)}}"
+              },
               {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"}
             ],
             "onError": [
@@ -1405,7 +1329,7 @@ final dynamic sampleInventoryFlows = {
         {
           "actionType": "CREATE_EVENT",
           "properties": {
-            "entity": "STOCK",
+            "entity": "StockModel",
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
@@ -1568,8 +1492,7 @@ final dynamic sampleInventoryFlows = {
               "format": "custom",
               "hidden": false,
               "tooltip": "",
-              "helpText":
-                  "Select the facility to which the stock is being sent",
+              "helpText": "INVENTORY_SELECT_FACILITY_TO_WHICH_HELPTEXT",
               "infoText": "",
               "readOnly": false,
               "fieldName": "facilityToWhich",
@@ -1644,6 +1567,12 @@ final dynamic sampleInventoryFlows = {
                   "value": true,
                   "message":
                       "APPONE_MANAGESTOCK_WAREHOUSE_label_facilityToWhich_mandatory_message"
+                },
+                {
+                  "type": "isGS1Code",
+                  "value": false,
+                  "message":
+                      "APPONE_MANAGESTOCK_WAREHOUSE_label_isGS1Code_message"
                 }
               ],
               "errorMessage": "",
@@ -1726,8 +1655,7 @@ final dynamic sampleInventoryFlows = {
               "format": "custom",
               "hidden": false,
               "tooltip": "",
-              "helpText":
-                  "Select the facility from which the stock is being received",
+              "helpText": "INVENTORY_SELECT_FACILITY_FROM_WHICH_HELPTEXT",
               "infoText": "",
               "readOnly": false,
               "fieldName": "facilityFromWhich",
@@ -2311,7 +2239,7 @@ final dynamic sampleInventoryFlows = {
                   },
                   {
                     "key": "INVENTORY_WAYBILL_NUMBER_LABEL",
-                    "value": "{{item.waybillNumber}}"
+                    "value": "{{item.additionalFields.fields.wayBillNumber}}"
                   },
                   {
                     "key": "INVENTORY_BATCH_NUMBER_LABEL",
@@ -2539,7 +2467,8 @@ final dynamic sampleInventoryFlows = {
                         },
                         {
                           "key": "wayBillNumber",
-                          "value": "{{item.items[0].wayBillNumber}}"
+                          "value":
+                              "{{item.items[0].additionalFields.fields.wayBillNumber}}"
                         },
                         {
                           "key": "productVariantId",

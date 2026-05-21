@@ -136,7 +136,7 @@ class BeneficiaryDownSyncBloc
           offset: existingDownSyncData.firstOrNull?.offset ?? 0,
           limit: 0,
           isDeleted: true,
-          lastSyncedTime: lastSyncedTime,
+          // lastSyncedTime: lastSyncedTime,
           tenantId: envConfig.variables.tenantId,
           projectId: event.projectModel.id,
         ),
@@ -191,7 +191,7 @@ class BeneficiaryDownSyncBloc
             await downSyncLocalRepository.create(DownsyncModel(
               offset: offset,
               limit: event.batchSize,
-              lastSyncedTime: lastSyncedTime,
+              // lastSyncedTime: lastSyncedTime,
               totalCount: totalCount,
               locality: event.boundaryCode,
               boundaryName: event.boundaryName,
@@ -209,7 +209,7 @@ class BeneficiaryDownSyncBloc
                 totalCount: totalCount,
                 tenantId: envConfig.variables.tenantId,
                 projectId: event.projectModel.id,
-                lastSyncedTime: lastSyncedTime,
+                // lastSyncedTime: lastSyncedTime,
                 isDeleted: true,
               ),
             );
@@ -239,7 +239,7 @@ class BeneficiaryDownSyncBloc
               await downSyncLocalRepository.update(DownsyncModel(
                 offset: offset + event.batchSize,
                 limit: event.batchSize,
-                lastSyncedTime: lastSyncedTime,
+                // lastSyncedTime: lastSyncedTime,
                 totalCount: totalCount,
                 locality: event.boundaryCode,
                 boundaryName: event.boundaryName,
@@ -259,12 +259,12 @@ class BeneficiaryDownSyncBloc
                 totalCount: totalCount,
                 locality: event.boundaryCode,
                 boundaryName: event.boundaryName,
-                lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
+                // lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
               ),
             );
             final result = DownsyncModel(
               offset: totalCount,
-              lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
+              // lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
               totalCount: totalCount,
               locality: event.boundaryCode,
               boundaryName: event.boundaryName,
@@ -316,7 +316,7 @@ class BeneficiaryDownSyncBloc
             offset: existingDownSyncData.firstOrNull?.offset ?? 0,
             limit: 0,
             isDeleted: true,
-            lastSyncedTime: lastSyncedTime,
+            // lastSyncedTime: lastSyncedTime,
             tenantId: envConfig.variables.tenantId,
             projectId: event.projectModel.id,
           ),
@@ -389,7 +389,7 @@ class BeneficiaryDownSyncBloc
             await downSyncLocalRepository.create(DownsyncModel(
               offset: offset,
               limit: event.batchSize,
-              lastSyncedTime: loopLastSyncedTime,
+              // lastSyncedTime: loopLastSyncedTime,
               totalCount: totalCount,
               locality: boundaryCode,
               boundaryName: boundaryName,
@@ -413,14 +413,14 @@ class BeneficiaryDownSyncBloc
                 totalCount: totalCount,
                 tenantId: envConfig.variables.tenantId,
                 projectId: event.projectModel.id,
-                lastSyncedTime: loopLastSyncedTime,
+                // lastSyncedTime: loopLastSyncedTime,
                 isDeleted: true,
               ),
             );
 
             if (downSyncResults.isNotEmpty) {
-              await writeToFile(
-                  event.projectModel.id, boundaryCode, boundaryName, downSyncResults);
+              await writeToFile(event.projectModel.id, boundaryCode,
+                  boundaryName, downSyncResults);
               await SyncServiceSingleton()
                   .entityMapper
                   ?.writeToEntityDB(downSyncResults, [
@@ -440,7 +440,7 @@ class BeneficiaryDownSyncBloc
               await downSyncLocalRepository.update(DownsyncModel(
                 offset: offset + event.batchSize,
                 limit: event.batchSize,
-                lastSyncedTime: loopLastSyncedTime,
+                // lastSyncedTime: loopLastSyncedTime,
                 totalCount: totalCount,
                 locality: boundaryCode,
                 boundaryName: boundaryName,
@@ -458,13 +458,13 @@ class BeneficiaryDownSyncBloc
                 totalCount: totalCount,
                 locality: boundaryCode,
                 boundaryName: boundaryName,
-                lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
+                // lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
               ),
             );
 
             completedResults.add(DownsyncModel(
               offset: totalCount,
-              lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
+              // lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
               totalCount: totalCount,
               locality: boundaryCode,
               boundaryName: boundaryName,

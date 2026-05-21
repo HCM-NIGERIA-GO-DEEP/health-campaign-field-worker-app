@@ -242,7 +242,8 @@ final jsonConfig = {
             "childrenCount": "householdDetails.childrenCount",
             "pregnantWomenCount": "householdDetails.pregnantWomenCount",
             "memberCount": "householdDetails.memberCount",
-            "caregiverConsent": "caregiverConsent.consentToParticipate"
+            "caregiverConsent": "caregiverConsent.consentToParticipate",
+            "negativeConsentReason": "caregiverConsent.negativeConsentReason"
           }
         }
       }
@@ -788,7 +789,7 @@ final jsonConfig = {
           "senderType":
               "__switch:__context:senderPartyType:{STAFF:__value:STAFF,default:__value:WAREHOUSE}",
           "receiverId":
-              "__switch:__context:receiverPartyType:{STAFF:warehouseDetails.teamCode,default:warehouseDetails.facilityToWhich}",
+              "__switch:__context:receiverPartyType:{STAFF:__context:teamCode,default:warehouseDetails.facilityToWhich}",
           "receiverType":
               "__switch:__context:receiverPartyType:{STAFF:__value:STAFF,default:__value:WAREHOUSE}",
           "nonRecoverableError": "errors.nonRecoverable",

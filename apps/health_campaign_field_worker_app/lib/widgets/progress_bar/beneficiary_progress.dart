@@ -28,8 +28,7 @@ class BeneficiaryProgressBar extends StatefulWidget {
 class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
   int current = 0;
 
-
-    @override
+  @override
   void didChangeDependencies() {
     final taskRepository =
         context.read<LocalRepository<TaskModel, TaskSearchModel>>()
@@ -93,10 +92,8 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
             final additionalFields = task?.additionalFields?.fields;
             if (additionalFields == null || additionalFields.isEmpty) {
               return false;
-            }
-            else return true;
-
-            
+            } else
+              return true;
           }).toList();
           final groupedEntries = results.groupListsBy(
             (element) => element.projectBeneficiaryClientReferenceId,
@@ -123,7 +120,8 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
       (element) => element.beneficiaryType == beneficiaryType.toValue(),
     );
 
-    final target = targetModel?.targetNo ?? 0.0;
+    final target = 70;
+    //  targetModel?.targetNo ?? 0.0;
 
     return DigitCard(margin: const EdgeInsets.all(spacer2), children: [
       ProgressIndicatorContainer(

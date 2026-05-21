@@ -90,10 +90,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
   /// Flows in which the in-app back navigation header and the
   /// Android system back button must be disabled.
-  static const Set<String> _backDisabledSchemas = {
-    'CHECKLIST',
-    'REFER_BENEFICIARY'
-  };
+  static const Set<String> _backDisabledSchemas = {};
 
   bool get _isBackDisabled =>
       _backDisabledSchemas.contains(widget.currentSchemaKey);
@@ -262,6 +259,17 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                 if (hasErrors) {
                                   _isSubmitting = false;
                                   setState(() {});
+                                  // Show error toast
+                                  final errorMessage = localizations.translate(
+                                      'CORE_COMMON_VALIDATION_ERROR');
+                                  Toast.showToast(
+                                    context,
+                                    message: errorMessage ==
+                                            'CORE_COMMON_VALIDATION_ERROR'
+                                        ? 'CORE_COMMON_VALIDATION_ERROR'
+                                        : errorMessage,
+                                    type: ToastType.error,
+                                  );
                                   return;
                                 }
 
@@ -380,6 +388,28 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
                                 // Evaluate conditionalNavigateTo (if present)
                                 if (conditionalNavigateList != null) {
+                                  // REFERRAL_CREATE flow only: treat a comma-separated
+                                  // referralSymptom (e.g. "SICK,FEVER") as its
+                                  // last segment so single-symptom rules match.
+                                  Map<String, dynamic>?
+                                      normalizedNavigationParams =
+                                      widget.navigationParams;
+                                  if (widget.currentSchemaKey ==
+                                          'REFERRAL_CREATE' &&
+                                      widget.navigationParams != null) {
+                                    final rawSymptom = widget
+                                        .navigationParams!['referralSymptom'];
+                                    if (rawSymptom is String &&
+                                        rawSymptom.contains(',')) {
+                                      normalizedNavigationParams =
+                                          Map<String, dynamic>.from(
+                                              widget.navigationParams!);
+                                      normalizedNavigationParams[
+                                              'referralSymptom'] =
+                                          rawSymptom.split(',').last.trim();
+                                    }
+                                  }
+
                                   for (final conditionItem
                                       in conditionalNavigateList) {
                                     final condition = conditionItem.condition;
@@ -399,7 +429,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                       pages: formState
                                           .cachedSchemas[currentSchemaKey]!
                                           .pages,
-                                      navigationParams: widget.navigationParams,
+                                      navigationParams:
+                                          normalizedNavigationParams,
                                     );
 
                                     // Evaluate condition - use direct isEdit check for isEdit conditions
@@ -1273,7 +1304,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
         // These are pre-created entity-specific fields handled separately
         if (RegExp(r'_item_\d+$').hasMatch(fieldName)) {
           // Only create control if it matches THIS entity's suffix
-          if (fieldName.endsWith(entitySuffix) &&
+          if ((!isHidden(fieldSchema) || fieldSchema.includeInForm == true) &&
+              fieldName.endsWith(entitySuffix) &&
               !controls.containsKey(fieldName)) {
             controls[fieldName] = buildFormControl(
               fieldName,
@@ -1295,7 +1327,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
             !fieldName.startsWith('_') &&
             fieldName != 'id';
 
-        if (shouldRename) {
+        if ((!isHidden(fieldSchema) || fieldSchema.includeInForm == true) &&
+            shouldRename) {
           final suffixedFieldName = '$fieldName$entitySuffix';
           // Check if a pre-created field exists for this entity
           if (originalProperties.containsKey(suffixedFieldName)) {
@@ -1312,7 +1345,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
           );
         } else {
           // Only add once (not per entity)
-          if (!controls.containsKey(fieldName)) {
+          if ((!isHidden(fieldSchema) || fieldSchema.includeInForm == true) &&
+              !controls.containsKey(fieldName)) {
             controls[fieldName] = buildFormControl(
               fieldName,
               fieldSchema,

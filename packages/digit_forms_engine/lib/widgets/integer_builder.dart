@@ -3,6 +3,8 @@ part of 'json_schema_builder.dart';
 class JsonSchemaIntegerBuilder extends JsonSchemaBuilder<int> {
   final int? maxValue;
   final int? minValue;
+  final int? relativeMinValue;
+  final int? relativeMaxValue;
 
   const JsonSchemaIntegerBuilder({
     required super.formControlName,
@@ -11,6 +13,8 @@ class JsonSchemaIntegerBuilder extends JsonSchemaBuilder<int> {
     super.value,
     this.maxValue,
     this.minValue,
+    this.relativeMinValue,
+    this.relativeMaxValue,
     super.label,
     super.helpText,
     super.innerLabel,
@@ -39,8 +43,8 @@ class JsonSchemaIntegerBuilder extends JsonSchemaBuilder<int> {
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           readOnly: readOnly,
           errorMessage: field.errorText,
-          minValue: minValue ?? 0,
-          maxValue: maxValue ?? 1000,
+          minValue: relativeMinValue ?? minValue ?? 0,
+          maxValue: relativeMaxValue ?? maxValue ?? 1000,
           maxLength: 5,
           step: 1,
           initialValue: (form.control(formControlName).value ?? 0).toString(),
