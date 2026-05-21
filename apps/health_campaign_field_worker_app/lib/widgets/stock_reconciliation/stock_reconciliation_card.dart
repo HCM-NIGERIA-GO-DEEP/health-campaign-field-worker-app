@@ -200,7 +200,8 @@ class _StockReconciliationCardState
   List<ProductVariantModel> _filterProductVariantsByIssuedUsage(
     List<ProductVariantModel> variants,
   ) {
-    final usage = _selectedFacility?.usage ?? _issuedSourceUsageResolution().usage;
+    final usage =
+        _selectedFacility?.usage ?? _issuedSourceUsageResolution().usage;
     return ProductVariantUsageFilter.filterByUsages(
       variants: variants,
       usages: [usage],
@@ -239,7 +240,6 @@ class _StockReconciliationCardState
 
   @override
   Widget build(BuildContext context) {
-
     final isDistributor = context.loggedInUserRoles
         .any((role) => role.code == RolesType.distributor.toValue());
     final theme = Theme.of(context);
@@ -447,14 +447,14 @@ class _StockReconciliationCardState
                         labelFlex: 5,
                       ),
                       const DigitDivider(),
-                      LabelValueItem(
-                        label: localizations.translate(
-                            i18.stockReconciliationMetrics.stockLost),
-                        value: _stockMetrics['stockLost']!.toStringAsFixed(0),
-                        labelFlex: 5,
-                      ),
-                      const DigitDivider(),
                       if (isDistributor) ...[
+                        LabelValueItem(
+                          label: localizations.translate(
+                              i18.stockReconciliationMetrics.stockLost),
+                          value: _stockMetrics['stockLost']!.toStringAsFixed(0),
+                          labelFlex: 5,
+                        ),
+                        const DigitDivider(),
                         LabelValueItem(
                           label: localizations.translate(
                               i18.stockReconciliationMetrics.stockDamaged),
@@ -632,18 +632,15 @@ class _StockReconciliationCardState
       if (stateWrapper.isNotEmpty) {
         final firstItem = stateWrapper.first;
         if (firstItem is Map) {
-          final wrapperList =
-              stateWrapper as List<Map<String, List<dynamic>>>;
-          projectFacilities = wrapperList
-              .firstWhere(
-                (m) => m.containsKey('ProjectFacilityModel'),
-                orElse: () => {'ProjectFacilityModel': []},
-              )['ProjectFacilityModel'];
-          allFacilities = wrapperList
-              .firstWhere(
-                (m) => m.containsKey('FacilityModel'),
-                orElse: () => {'FacilityModel': []},
-              )['FacilityModel'];
+          final wrapperList = stateWrapper as List<Map<String, List<dynamic>>>;
+          projectFacilities = wrapperList.firstWhere(
+            (m) => m.containsKey('ProjectFacilityModel'),
+            orElse: () => {'ProjectFacilityModel': []},
+          )['ProjectFacilityModel'];
+          allFacilities = wrapperList.firstWhere(
+            (m) => m.containsKey('FacilityModel'),
+            orElse: () => {'FacilityModel': []},
+          )['FacilityModel'];
         }
       }
 
