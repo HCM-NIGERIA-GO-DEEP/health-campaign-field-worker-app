@@ -535,7 +535,7 @@ class FunctionRegistries {
             final available = p['available'] ?? 0;
             message += '\n$name: $required REQUIRED, $available AVAILABLE';
           }
-          return '$key$message';
+          return '$key::$message';
         }
       }
       return 'INSUFFICIENT_STOCK';

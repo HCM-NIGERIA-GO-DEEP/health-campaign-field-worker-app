@@ -399,7 +399,13 @@ final dynamic sampleFlows = {
                   "type": "template",
                   "value": "{{fn:getInsufficientStockMessage()}}",
                   "format": "textTemplate",
-                  "fieldName": "insufficientStockMessageText"
+                  "fieldName": "insufficientStockMessageText",
+                  "properties": {
+                    "separatedBy": "::",
+                    "replaceAll": [
+                      {"searchValue": "::", "replaceValue": "\n"}
+                    ]
+                  }
                 }
               ],
               "type": "default",
@@ -1352,7 +1358,13 @@ final dynamic sampleFlows = {
                             "type": "template",
                             "value": "{{fn:getInsufficientStockMessage()}}",
                             "format": "textTemplate",
-                            "fieldName": "redoseInsufficientStockMessageText"
+                            "fieldName": "redoseInsufficientStockMessageText",
+                            "properties": {
+                              "separatedBy": "::",
+                              "replaceAll": [
+                                {"searchValue": "::", "replaceValue": "\n"}
+                              ]
+                            }
                           }
                         ],
                         "type": "default",
