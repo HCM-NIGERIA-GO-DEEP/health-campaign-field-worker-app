@@ -1219,6 +1219,11 @@ final dynamic sampleFlows = {
                                   "{{item.member.0.householdClientReferenceId}}"
                             },
                             {
+                              "key": "memberCount",
+                              "value":
+                                  "{{contextData.0.household.HouseholdModel.memberCount}}"
+                            },
+                            {
                               "key": "ProjectBeneficiaryClientReferenceId",
                               "value":
                                   "{{item.projectBeneficiary.0.clientReferenceId}}"
