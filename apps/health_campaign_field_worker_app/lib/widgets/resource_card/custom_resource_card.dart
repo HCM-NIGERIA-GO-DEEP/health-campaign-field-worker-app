@@ -147,6 +147,7 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
 
     final pages =
         context.read<FormsBloc>().state.cachedSchemas[widget.pageSchema]?.pages;
+        // context.read<FormsBloc>().state.cachedSchemas["DELIVERY"]?.pages;
 
     bool isReadOnlyFromSchema = widget.readOnly;
     String? labelFromSchema = widget.label;
@@ -198,6 +199,8 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
         }
       }
     }
+
+    print("pages $pages");
 
     walk(pages!, []);
 

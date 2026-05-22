@@ -51,7 +51,7 @@ class _BoundarySelectionPageState
   Map<String, TextEditingController> dropdownControllers = {};
   late StreamSubscription syncSubscription;
   var leastLevelBoundaries;
-  final String setLocale = "en_MZ";
+  final String setLocale = "en_BEDNET";
   bool doFilter = false;
 
   @override

@@ -60,9 +60,9 @@ final jsonConfig = {
           "id": "personalDetails.id",
           "individualId": "personalDetails.individualId",
           "userId": "personalDetails.userId",
-          "userUuid": "personalDetails.uuid",
+          "userUuinamed": "personalDetails.uuid",
           "dateOfBirth": "beneficiaryDetails.dobPicker",
-          "mobileNumber": "beneficiaryDetails.phone",
+          "mobileNumber": "householdDetails.phone",
           "altContactNumber": "contactInfo.altContact",
           "email": "contactInfo.email",
           "fatherName": "family.fatherName",
@@ -77,7 +77,8 @@ final jsonConfig = {
           "name": {
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
-            "givenName": "beneficiaryDetails.nameOfIndividual",
+            // "givenName": "beneficiaryDetails.nameOfIndividual",
+            "givenName": "householdDetails.nameOfIndividual",
             "familyName": "beneficiaryDetails.familyname",
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit",
@@ -99,8 +100,8 @@ final jsonConfig = {
           "IdentifierModel": {
             "mappings": {
               "id": "id",
-              "identifierType": "beneficiaryDetails.identifiers[0]",
-              "identifierId": "beneficiaryDetails.identifiers[1]",
+              "identifierType": "householdDetails.identifiers[0]",
+              "identifierId": "householdDetails.identifiers[1]",
               "boundaryCode": "__context:selectedBoundaryCode",
               "nonRecoverableError": "error.nonRecoverable",
               "individualClientReferenceId":
@@ -177,7 +178,7 @@ final jsonConfig = {
           "individualId": "members.individualId",
           "individualClientReferenceId":
               "__ref:IndividualModel.clientReferenceId",
-          "isHeadOfHousehold": "beneficiaryDetails.isHeadOfFamily",
+          "isHeadOfHousehold": "householdDetails.isHeadOfFamily",
           "nonRecoverableError": "errors.nonRecoverable",
           "clientReferenceId": "__generate:uuid",
 
@@ -242,8 +243,7 @@ final jsonConfig = {
             "childrenCount": "householdDetails.childrenCount",
             "pregnantWomenCount": "householdDetails.pregnantWomenCount",
             "memberCount": "householdDetails.memberCount",
-            "caregiverConsent": "caregiverConsent.consentToParticipate",
-            "negativeConsentReason": "caregiverConsent.negativeConsentReason"
+            "caregiverConsent": "caregiverConsent.consentToParticipate"
           }
         }
       }
@@ -275,7 +275,8 @@ final jsonConfig = {
           "name": {
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
-            "givenName": "beneficiaryDetails.nameOfIndividual",
+            // "givenName": "beneficiaryDetails.nameOfIndividual",
+            "givenName": "householdDetails.nameOfIndividual",
             "familyName": "beneficiaryDetails.familyname",
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit",
@@ -297,8 +298,8 @@ final jsonConfig = {
           "IdentifierModel": {
             "mappings": {
               "id": "id",
-              "identifierType": "beneficiaryDetails.identifiers[0]",
-              "identifierId": "beneficiaryDetails.identifiers[1]",
+              "identifierType": "householdDetails.identifiers[0]",
+              "identifierId": "householdDetails.identifiers[1]",
               "boundaryCode": "__context:selectedBoundaryCode",
               "nonRecoverableError": "error.nonRecoverable",
               "individualClientReferenceId":
@@ -1096,7 +1097,6 @@ final jsonConfig = {
           "photo": "personalDetails.photo",
           "nonRecoverableError": "errors.nonRecoverable",
           "clientReferenceId": "__generate:uuid",
-
           /// Note: Generate uuid
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",

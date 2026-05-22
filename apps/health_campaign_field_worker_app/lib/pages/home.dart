@@ -152,8 +152,7 @@ class _HomePageState extends LocalizedState<HomePage> {
     CustomComponentRegistry().registerBuilder(
       'resourceCard',
       (context, stateAccessor) {
-        final beneficiaryDetails =
-            stateAccessor.getPageData('beneficiaryDetails');
+        final beneficiaryDetails = stateAccessor.getPageData('householdOverview');
 
         if (beneficiaryDetails != null &&
             stateAccessor.currentPageName == 'DELIVERY') {
@@ -2109,6 +2108,34 @@ class _HomePageState extends LocalizedState<HomePage> {
       //   ),
       // ),
 
+      // i18.home.closedHouseHoldLabel: homeShowcaseData.closedHouseHold.buildWith(
+      //   child: HomeItemCard(
+      //     icon: Icons.home,
+      //     enableCustomIcon: true,
+      //     customIconSize: 40,
+      //     customIcon: Constants.closedHouseholdSvg,
+      //     label: i18.home.closedHouseHoldLabel,
+      //     onPressed: () async {
+      //       context.router.push(CurrentBoundaryRoute(
+      //         onBoundarySelected: (ctx) async {
+      //           final moduleName =
+      //               'hcm-closehousehold-${context.selectedProject.referenceID}';
+      //           triggerLocalization(module: moduleName);
+      //           isTriggerLocalisation = false;
+
+      //           await FlowNavigationUtils.navigateToFlowModule(
+      //             context: ctx,
+      //             config: FlowModuleConfig(
+      //               schemaKey: 'CLOSEHOUSEHOLD',
+      //               sampleFlows: sampleCloseHouseholdFlows,
+      //             ),
+      //           );
+      //         },
+      //       ));
+      //     },
+      //   ),
+      // ),
+
       i18.home.closedHouseHoldLabel: homeShowcaseData.closedHouseHold.buildWith(
         child: HomeItemCard(
           icon: Icons.home,
@@ -2124,18 +2151,157 @@ class _HomePageState extends LocalizedState<HomePage> {
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
-                await FlowNavigationUtils.navigateToFlowModule(
-                  context: ctx,
-                  config: FlowModuleConfig(
-                    schemaKey: 'CLOSEHOUSEHOLD',
-                    sampleFlows: sampleCloseHouseholdFlows,
+                final prefs = await SharedPreferences.getInstance();
+                final schemaJsonRaw = prefs.getString('app_config_schemas');
+
+                FlowBuilderSingleton().setPersistenceConfiguration(
+                    persistenceConfiguration:
+                        PersistenceConfiguration.offlineFirst);
+                WidgetRegistry.initialize();
+                CrudBlocSingleton().setData(
+                  crudService: DigitCrudService(
+                    context: ctx,
+                    relationshipMap: [
+                      const RelationshipMapping(
+                          from: 'name',
+                          to: 'individual',
+                          localKey: 'individualClientReferenceId',
+                          foreignKey: 'clientReferenceId'),
+                      const RelationshipMapping(
+                          from: 'identifier',
+                          to: 'individual',
+                          localKey: 'individualClientReferenceId',
+                          foreignKey: 'clientReferenceId'),
+                      const RelationshipMapping(
+                          from: 'householdMember',
+                          to: 'individual',
+                          localKey: 'individualClientReferenceId',
+                          foreignKey: 'clientReferenceId'),
+                      const RelationshipMapping(
+                          from: 'address',
+                          to: 'household',
+                          localKey: 'relatedClientReferenceId',
+                          foreignKey: 'clientReferenceId'),
+                      const RelationshipMapping(
+                          from: 'householdMember',
+                          to: 'household',
+                          localKey: 'householdClientReferenceId',
+                          foreignKey: 'clientReferenceId'),
+                      const RelationshipMapping(
+                          from: 'projectBeneficiary',
+                          to: 'task',
+                          localKey: 'clientReferenceId',
+                          foreignKey: 'projectBeneficiaryClientReferenceId'),
+                      const RelationshipMapping(
+                          from: 'identifier',
+                          to: 'hFReferral',
+                          localKey: 'identifierId',
+                          foreignKey: 'beneficiaryId'),
+                      // Conditional mapping
+                      if (FlowBuilderSingleton().beneficiaryType ==
+                          BeneficiaryType.household)
+                        const RelationshipMapping(
+                          from: 'projectBeneficiary',
+                          to: 'household',
+                          localKey: 'beneficiaryClientReferenceId',
+                          foreignKey: 'clientReferenceId',
+                        )
+                      else
+                        const RelationshipMapping(
+                          from: 'projectBeneficiary',
+                          to: 'individual',
+                          localKey: 'beneficiaryClientReferenceId',
+                          foreignKey: 'clientReferenceId',
+                        ),
+                    ],
+                    nestedModelMappings: [
+                      const NestedModelMapping(
+                        rootModel: 'individual',
+                        fields: {
+                          'name': NestedFieldMapping(
+                            table: 'name',
+                            localKey: 'clientReferenceId',
+                            foreignKey: 'individualClientReferenceId',
+                            type: NestedMappingType.one,
+                          ),
+                          'address': NestedFieldMapping(
+                            table: 'address',
+                            localKey: 'clientReferenceId',
+                            foreignKey: 'relatedClientReferenceId',
+                            type: NestedMappingType.many,
+                          ),
+                          'identifiers': NestedFieldMapping(
+                            table: 'identifier',
+                            localKey: 'clientReferenceId',
+                            foreignKey: 'individualClientReferenceId',
+                            type: NestedMappingType.many,
+                          ),
+                        },
+                      ),
+                      const NestedModelMapping(
+                        rootModel: 'household',
+                        fields: {
+                          'address': NestedFieldMapping(
+                            table: 'address',
+                            localKey: 'clientReferenceId',
+                            foreignKey: 'relatedClientReferenceId',
+                            type: NestedMappingType.one,
+                          ),
+                        },
+                      ),
+                      const NestedModelMapping(
+                        rootModel: 'task',
+                        fields: {
+                          'resource': NestedFieldMapping(
+                            table: 'resource',
+                            localKey: 'taskclientReferenceId',
+                            foreignKey: 'clientReferenceId',
+                            type: NestedMappingType.many,
+                          ),
+                        },
+                      ),
+                    ],
+                    searchEntityRepository: ctx.read<SearchEntityRepository>(),
                   ),
+                  dynamicEntityModelListener: EntityModelMapMapper(),
                 );
+                try {
+                  if (false) {
+                    final allSchemas =
+                        json.decode(schemaJsonRaw!) as Map<String, dynamic>;
+                    final data = allSchemas['CLOSEHOUSEHOLD'];
+
+                    final closeHouseholdData = data?['data'];
+                    final flowsData = (closeHouseholdData['flows']
+                                as List<dynamic>?)
+                            ?.map((e) => Map<String, dynamic>.from(e as Map))
+                            .toList() ??
+                        [];
+                    FlowRegistry.setConfig(flowsData);
+                    NavigationRegistry.setupNavigation(ctx);
+
+                    ctx.router.push(
+                      FlowBuilderHomeRoute(
+                          pageName: closeHouseholdData["initialPage"]),
+                    );
+                  } else {
+                    FlowRegistry.setConfig(sampleCloseHouseholdFlows["flows"]
+                        as List<Map<String, dynamic>>);
+                    NavigationRegistry.setupNavigation(ctx);
+                    ctx.router.push(
+                      FlowBuilderHomeRoute(
+                          pageName: sampleCloseHouseholdFlows["initialPage"]),
+                    );
+                  }
+                } catch (e) {
+                  debugPrint('error $e');
+                }
               },
             ));
           },
         ),
       ),
+
       i18.home.manageStockLabel:
           homeShowcaseData.warehouseManagerManageStock.buildWith(
         child: HomeItemCard(
@@ -2737,7 +2903,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             final appConfig = appConfiguration;
             final localizationModulesList = appConfiguration.backendInterface;
             final selectedLocale =
-                "en_MZ" ?? AppSharedPreferences().getSelectedLocale;
+                "en_BEDNET" ?? AppSharedPreferences().getSelectedLocale;
             LocalizationParams()
                 .setCode(LeastLevelBoundarySingleton().boundary);
             if (loadOnline == true) {

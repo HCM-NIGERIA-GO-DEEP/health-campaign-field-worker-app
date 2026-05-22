@@ -1868,6 +1868,17 @@ void initializeFunctionRegistry() {
     return (currentCount ?? 0) >= minCount;
   });
 
+   FunctionRegistry.register('houseHoldFooterVisibility', (args, stateData) {
+    final navData = args.isNotEmpty ? args.first : null;
+    return navData != null && navData['showButton'] == true;
+  });
+
+  FunctionRegistry.register('getNumberOfITNForDelivery', (args, stateData) {
+    final memberCount = args.isNotEmpty ? args.first : null;
+    if (memberCount == null) return 0;
+    return memberCount * 2;
+  });
+
   FunctionRegistry.register('getLatestBeneficiaryId', (args, stateData) {
     final context = FunctionRegistry.context;
     if (context == null) return null;

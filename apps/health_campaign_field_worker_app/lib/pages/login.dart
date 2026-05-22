@@ -221,18 +221,20 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                               orElse: () => false,
                             );
 
-                            if (singleUserLogin) {
-                              _checkOtherDeviceLogin(
-                                  context, _pendingUserId as String);
-                            } else {
-                              context.read<AuthBloc>().add(
+                            context.read<AuthBloc>().add(
                                     AuthLoginEvent(
                                       userId: _pendingUserId as String,
                                       password: _pendingPassword as String,
                                       tenantId: envConfig.variables.tenantId,
                                     ),
                                   );
-                            }
+
+                            // if (singleUserLogin) {
+                            //   _checkOtherDeviceLogin(
+                            //       context, _pendingUserId as String);
+                            // } else {
+                              
+                            // }
                           },
                           size: DigitButtonSize.large,
                           mainAxisSize: MainAxisSize.max,

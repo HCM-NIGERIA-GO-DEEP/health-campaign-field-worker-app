@@ -207,7 +207,7 @@ class MainApplicationState extends State<MainApplication>
                       final selectedLocale =
                           AppSharedPreferences().getSelectedLocale ??
                               firstLanguage;
-                      AppSharedPreferences().setSelectedLocale("en_MZ");
+                      AppSharedPreferences().setSelectedLocale("en_BEDNET");
                       LocalizationParams().setLocale(Locale(selectedLocale));
                       final languages = appConfig.languages;
 

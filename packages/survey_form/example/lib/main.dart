@@ -55,7 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final languages = [
     {"label": "PORTUGUÊS", "value": "pt_MZ"},
     {"label": "FRENCH", "value": "fr_MZ"},
-    {"label": "ENGLISH", "value": "en_MZ"}
+    {"label": "ENGLISH", "value": "en_BEDNET"}
   ];
 
   @override
