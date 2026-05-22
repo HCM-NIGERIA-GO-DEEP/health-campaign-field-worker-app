@@ -2378,6 +2378,10 @@ final dynamic sampleFlows = {
                     },
                     {
                       "actionType": "CLEAR_STATE",
+                      "properties": {"name": "address", "triggerSearch": false}
+                    },
+                    {
+                      "actionType": "CLEAR_STATE",
                       "properties": {
                         "name": "task",
                         "filterKeys": [
