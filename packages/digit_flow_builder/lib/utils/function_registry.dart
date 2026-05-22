@@ -1910,4 +1910,55 @@ void initializeFunctionRegistry() {
 
     return wrapperData['latestBeneficiaryId'] as String?;
   });
+
+  /// Coerce any resolved value to a String suitable for storing in navigation
+  /// params or task additionalFields (whose DB column is String).
+  ///
+  /// Handles common shapes produced by deep template paths:
+  /// - String/num/bool → toString()
+  /// - Map with 'givenName' (NameModel.toMap()) → givenName
+  /// - EntityModel (e.g. NameModel) → toMap()['givenName'] if present, else toMap()['name']
+  /// - Lists → first non-null element resolved recursively
+  ///
+  /// Returns '' for null/missing values.
+  FunctionRegistry.register('str', (args, stateData) {
+    dynamic coerce(dynamic v) {
+      if (v == null) return '';
+      if (v is String) return v;
+      if (v is num || v is bool) return v.toString();
+      if (v is List) {
+        for (final item in v) {
+          final r = coerce(item);
+          if (r is String && r.isNotEmpty) return r;
+        }
+        return '';
+      }
+      if (v is Map) {
+        if (v['givenName'] != null) return v['givenName'].toString();
+        if (v['name'] is Map && (v['name'] as Map)['givenName'] != null) {
+          return (v['name'] as Map)['givenName'].toString();
+        }
+        return '';
+      }
+      if (v is EntityModel) {
+        try {
+          final m = v.toMap();
+          if (m['givenName'] != null) return m['givenName'].toString();
+          final nameField = m['name'];
+          if (nameField is Map && nameField['givenName'] != null) {
+            return nameField['givenName'].toString();
+          }
+          if (nameField is EntityModel) {
+            final nm = nameField.toMap();
+            if (nm['givenName'] != null) return nm['givenName'].toString();
+          }
+        } catch (_) {}
+        return '';
+      }
+      return v.toString();
+    }
+
+    if (args.isEmpty) return '';
+    return coerce(args.first);
+  });
 }
