@@ -175,16 +175,12 @@ extension ContextUtilityExtensions on BuildContext {
       return null;
     }
 
-    final currentTime = DateTime.now().millisecondsSinceEpoch;
-
-    for (int i = 0; i < projectType.cycles!.length; i++) {
-      final cycle = projectType.cycles![i];
-      if (cycle.startDate < currentTime && cycle.endDate > currentTime) {
-        return i;
-      }
-    }
-
-    return null;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    return projectType.cycles
+        ?.firstWhereOrNull(
+          (e) => e.startDate < now && e.endDate > now,
+        )
+        ?.id;
   }
 
   String? get currentRegisteredToken {
