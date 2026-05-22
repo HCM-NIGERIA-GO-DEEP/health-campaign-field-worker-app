@@ -168,20 +168,7 @@ extension ContextUtilityExtensions on BuildContext {
     return individualUUID;
   }
 
-  int? get currentCycleIndex {
-    final projectType = selectedProjectType;
-
-    if (projectType == null || projectType.cycles == null) {
-      return null;
-    }
-
-    final now = DateTime.now().millisecondsSinceEpoch;
-    return projectType.cycles
-        ?.firstWhereOrNull(
-          (e) => e.startDate < now && e.endDate > now,
-        )
-        ?.id;
-  }
+  int? get currentCycleIndex => selectedCycle?.id;
 
   String? get currentRegisteredToken {
     final authBloc = _get<PushNotificationBloc>();
