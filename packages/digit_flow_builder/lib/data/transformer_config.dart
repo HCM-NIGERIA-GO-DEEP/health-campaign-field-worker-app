@@ -444,7 +444,18 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__listItem:id",
             "cycleIndex": "__context:cycleIndex",
-            "deliveryStrategy": "__listItem:deliveryStrategy"
+            "deliveryStrategy": "__listItem:deliveryStrategy",
+            "householdClientReferenceId":
+                "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId",
+            "childName": "__context:childName",
+            "ageInMonths": "__context:ageInMonths",
+            "gender": "__context:gender",
+            "headName": "__context:headName",
+            "headMobileNumber": "__context:headMobileNumber"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -527,7 +538,18 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
-            "deliveryStrategy": "__context:deliveryStrategy"
+            "deliveryStrategy": "__context:deliveryStrategy",
+            "householdClientReferenceId":
+                "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId",
+            "childName": "__context:childName",
+            "ageInMonths": "__context:ageInMonths",
+            "gender": "__context:gender",
+            "headName": "__context:headName",
+            "headMobileNumber": "__context:headMobileNumber"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -609,7 +631,18 @@ final jsonConfig = {
           },
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
-            "cycleIndex": "__context:cycleIndex"
+            "cycleIndex": "__context:cycleIndex",
+            "householdClientReferenceId":
+                "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId",
+            "childName": "__context:childName",
+            "ageInMonths": "__context:ageInMonths",
+            "gender": "__context:gender",
+            "headName": "__context:headName",
+            "headMobileNumber": "__context:headMobileNumber"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -671,7 +704,18 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
-            "comment": "unableToDeliver.comment"
+            "comment": "unableToDeliver.comment",
+            "householdClientReferenceId":
+                "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId",
+            "childName": "__context:childName",
+            "ageInMonths": "__context:ageInMonths",
+            "gender": "__context:gender",
+            "headName": "__context:headName",
+            "headMobileNumber": "__context:headMobileNumber"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -736,7 +780,18 @@ final jsonConfig = {
             "cycleIndex": "__context:cycleIndex",
             "reasonForRedose": "RedoseDetails.reasonForRedose",
             "redoseComments": "RedoseDetails.redoseComments",
-            "taskType": "__value:REDOSE"
+            "taskType": "__value:REDOSE",
+            "householdClientReferenceId":
+                "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId",
+            "childName": "__context:childName",
+            "ageInMonths": "__context:ageInMonths",
+            "gender": "__context:gender",
+            "headName": "__context:headName",
+            "headMobileNumber": "__context:headMobileNumber"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"

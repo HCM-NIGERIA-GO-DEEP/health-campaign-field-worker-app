@@ -461,6 +461,27 @@ final dynamic sampleFlows = {
                     "value": "{{household.0.clientReferenceId}}"
                   },
                   {
+                    "key": "memberCount",
+                    "value": "{{household.0.memberCount}}"
+                  },
+                  {
+                    "key": "individualClientReferenceId",
+                    "value":
+                        "{{navigation.selectedIndividualClientReferenceId}}"
+                  },
+                  {
+                    "key": "beneficiaryId",
+                    "value": "{{navigation.selectedIndividualIdentifierId}}"
+                  },
+                  {"key": "childName", "value": "{{navigation.childName}}"},
+                  {"key": "ageInMonths", "value": "{{navigation.ageInMonths}}"},
+                  {"key": "gender", "value": "{{navigation.gender}}"},
+                  {"key": "headName", "value": "{{navigation.headName}}"},
+                  {
+                    "key": "headMobileNumber",
+                    "value": "{{navigation.headMobileNumber}}"
+                  },
+                  {
                     "key": "cycleIndex",
                     "value": "{{contextData.0.nextCycleId}}"
                   },
@@ -1193,22 +1214,50 @@ final dynamic sampleFlows = {
                                   "{{item.member.0.householdClientReferenceId}}"
                             },
                             {
+                              "key": "memberCount",
+                              "value":
+                                  "{{contextData.0.household.HouseholdModel.memberCount}}"
+                            },
+                            {
                               "key": "ProjectBeneficiaryClientReferenceId",
                               "value":
                                   "{{item.projectBeneficiary.0.clientReferenceId}}"
                             },
                             {
                               "key": "selectedIndividualName",
-                              "value": "{{item.individual.0.name.givenName}}"
+                              "value": "{{fn:str(item.individual.0.name)}}"
                             },
                             {
                               "key": "selectedIndividualGender",
-                              "value": "{{item.individual.0.gender}}"
+                              "value": "{{fn:str(item.individual.0.gender)}}"
                             },
                             {
                               "key": "selectedIndividualAgeInMonths",
                               "value":
                                   "{{fn:formatDate(item.individual.0.dateOfBirth, 'ageInMonths')}}"
+                            },
+                            {
+                              "key": "childName",
+                              "value": "{{fn:str(item.individual.0.name)}}"
+                            },
+                            {
+                              "key": "ageInMonths",
+                              "value":
+                                  "{{fn:formatDate(item.individual.0.dateOfBirth, 'ageInMonths')}}"
+                            },
+                            {
+                              "key": "gender",
+                              "value": "{{fn:str(item.individual.0.gender)}}"
+                            },
+                            {
+                              "key": "headName",
+                              "value":
+                                  "{{fn:str(contextData.0.headIndividual.IndividualModel.name)}}"
+                            },
+                            {
+                              "key": "headMobileNumber",
+                              "value":
+                                  "{{fn:str(contextData.0.headIndividual.IndividualModel.mobileNumber)}}"
                             },
                             {
                               "key": "cycleIndex",
@@ -1246,9 +1295,42 @@ final dynamic sampleFlows = {
                               "value": "{{item.individual.0.clientReferenceId}}"
                             },
                             {
+                              "key": "selectedIndividualIdentifierId",
+                              "value":
+                                  "{{item.individual.0.identifiers.0.identifierId}}"
+                            },
+                            {
                               "key": "HouseholdClientReferenceId",
                               "value":
                                   "{{item.member.0.householdClientReferenceId}}"
+                            },
+                            {
+                              "key": "memberCount",
+                              "value":
+                                  "{{contextData.0.household.HouseholdModel.memberCount}}"
+                            },
+                            {
+                              "key": "childName",
+                              "value": "{{fn:str(item.individual.0.name)}}"
+                            },
+                            {
+                              "key": "ageInMonths",
+                              "value":
+                                  "{{fn:formatDate(item.individual.0.dateOfBirth, 'ageInMonths')}}"
+                            },
+                            {
+                              "key": "gender",
+                              "value": "{{fn:str(item.individual.0.gender)}}"
+                            },
+                            {
+                              "key": "headName",
+                              "value":
+                                  "{{fn:str(contextData.0.headIndividual.IndividualModel.name)}}"
+                            },
+                            {
+                              "key": "headMobileNumber",
+                              "value":
+                                  "{{fn:str(contextData.0.headIndividual.IndividualModel.mobileNumber)}}"
                             },
                             {
                               "key": "ProjectBeneficiaryClientReferenceId",
@@ -1308,16 +1390,39 @@ final dynamic sampleFlows = {
                             },
                             {
                               "key": "selectedIndividualName",
-                              "value": "{{item.individual.0.name.givenName}}"
+                              "value": "{{fn:str(item.individual.0.name)}}"
                             },
                             {
                               "key": "selectedIndividualGender",
-                              "value": "{{item.individual.0.gender}}"
+                              "value": "{{fn:str(item.individual.0.gender)}}"
                             },
                             {
                               "key": "selectedIndividualAgeInMonths",
                               "value":
                                   "{{fn:formatDate(item.individual.0.dateOfBirth, 'ageInMonths')}}"
+                            },
+                            {
+                              "key": "childName",
+                              "value": "{{fn:str(item.individual.0.name)}}"
+                            },
+                            {
+                              "key": "ageInMonths",
+                              "value":
+                                  "{{fn:formatDate(item.individual.0.dateOfBirth, 'ageInMonths')}}"
+                            },
+                            {
+                              "key": "gender",
+                              "value": "{{fn:str(item.individual.0.gender)}}"
+                            },
+                            {
+                              "key": "headName",
+                              "value":
+                                  "{{fn:str(contextData.0.headIndividual.IndividualModel.name)}}"
+                            },
+                            {
+                              "key": "headMobileNumber",
+                              "value":
+                                  "{{fn:str(contextData.0.headIndividual.IndividualModel.mobileNumber)}}"
                             },
                             {
                               "key": "cycleIndex",
@@ -1429,22 +1534,50 @@ final dynamic sampleFlows = {
                                   "{{item.member.0.householdClientReferenceId}}"
                             },
                             {
+                              "key": "memberCount",
+                              "value":
+                                  "{{contextData.0.household.HouseholdModel.memberCount}}"
+                            },
+                            {
                               "key": "ProjectBeneficiaryClientReferenceId",
                               "value":
                                   "{{item.projectBeneficiary.0.clientReferenceId}}"
                             },
                             {
                               "key": "selectedIndividualName",
-                              "value": "{{item.individual.0.name.givenName}}"
+                              "value": "{{fn:str(item.individual.0.name)}}"
                             },
                             {
                               "key": "selectedIndividualGender",
-                              "value": "{{item.individual.0.gender}}"
+                              "value": "{{fn:str(item.individual.0.gender)}}"
                             },
                             {
                               "key": "selectedIndividualAgeInMonths",
                               "value":
                                   "{{fn:formatDate(item.individual.0.dateOfBirth, 'ageInMonths')}}"
+                            },
+                            {
+                              "key": "childName",
+                              "value": "{{fn:str(item.individual.0.name)}}"
+                            },
+                            {
+                              "key": "ageInMonths",
+                              "value":
+                                  "{{fn:formatDate(item.individual.0.dateOfBirth, 'ageInMonths')}}"
+                            },
+                            {
+                              "key": "gender",
+                              "value": "{{fn:str(item.individual.0.gender)}}"
+                            },
+                            {
+                              "key": "headName",
+                              "value":
+                                  "{{fn:str(contextData.0.headIndividual.IndividualModel.name)}}"
+                            },
+                            {
+                              "key": "headMobileNumber",
+                              "value":
+                                  "{{fn:str(contextData.0.headIndividual.IndividualModel.mobileNumber)}}"
                             },
                             {
                               "key": "cycleIndex",
@@ -1963,6 +2096,27 @@ final dynamic sampleFlows = {
               {
                 "key": "ProjectBeneficiaryClientReferenceId",
                 "value": "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+              },
+              {
+                "key": "HouseholdClientReferenceId",
+                "value": "{{navigation.HouseholdClientReferenceId}}"
+              },
+              {"key": "memberCount", "value": "{{navigation.memberCount}}"},
+              {
+                "key": "individualClientReferenceId",
+                "value": "{{navigation.selectedIndividualClientReferenceId}}"
+              },
+              {
+                "key": "beneficiaryId",
+                "value": "{{navigation.selectedIndividualIdentifierId}}"
+              },
+              {"key": "childName", "value": "{{navigation.childName}}"},
+              {"key": "ageInMonths", "value": "{{navigation.ageInMonths}}"},
+              {"key": "gender", "value": "{{navigation.gender}}"},
+              {"key": "headName", "value": "{{navigation.headName}}"},
+              {
+                "key": "headMobileNumber",
+                "value": "{{navigation.headMobileNumber}}"
               },
               {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"}
             ],
@@ -2907,6 +3061,27 @@ final dynamic sampleFlows = {
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
                   },
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  },
+                  {"key": "memberCount", "value": "{{navigation.memberCount}}"},
+                  {
+                    "key": "individualClientReferenceId",
+                    "value": "{{navigation.individualClientReferenceId}}"
+                  },
+                  {
+                    "key": "beneficiaryId",
+                    "value": "{{navigation.beneficiaryId}}"
+                  },
+                  {"key": "childName", "value": "{{navigation.childName}}"},
+                  {"key": "ageInMonths", "value": "{{navigation.ageInMonths}}"},
+                  {"key": "gender", "value": "{{navigation.gender}}"},
+                  {"key": "headName", "value": "{{navigation.headName}}"},
+                  {
+                    "key": "headMobileNumber",
+                    "value": "{{navigation.headMobileNumber}}"
+                  },
                   {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
                   {"key": "doseIndex", "value": "{{navigation.doseIndex}}"},
                   {
@@ -2944,6 +3119,33 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      },
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value": "{{navigation.HouseholdClientReferenceId}}"
+                      },
+                      {
+                        "key": "memberCount",
+                        "value": "{{navigation.memberCount}}"
+                      },
+                      {
+                        "key": "individualClientReferenceId",
+                        "value": "{{navigation.individualClientReferenceId}}"
+                      },
+                      {
+                        "key": "beneficiaryId",
+                        "value": "{{navigation.beneficiaryId}}"
+                      },
+                      {"key": "childName", "value": "{{navigation.childName}}"},
+                      {
+                        "key": "ageInMonths",
+                        "value": "{{navigation.ageInMonths}}"
+                      },
+                      {"key": "gender", "value": "{{navigation.gender}}"},
+                      {"key": "headName", "value": "{{navigation.headName}}"},
+                      {
+                        "key": "headMobileNumber",
+                        "value": "{{navigation.headMobileNumber}}"
                       },
                       {
                         "key": "cycleIndex",
@@ -3158,6 +3360,27 @@ final dynamic sampleFlows = {
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
                   },
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  },
+                  {"key": "memberCount", "value": "{{navigation.memberCount}}"},
+                  {
+                    "key": "individualClientReferenceId",
+                    "value": "{{navigation.individualClientReferenceId}}"
+                  },
+                  {
+                    "key": "beneficiaryId",
+                    "value": "{{navigation.beneficiaryId}}"
+                  },
+                  {"key": "childName", "value": "{{navigation.childName}}"},
+                  {"key": "ageInMonths", "value": "{{navigation.ageInMonths}}"},
+                  {"key": "gender", "value": "{{navigation.gender}}"},
+                  {"key": "headName", "value": "{{navigation.headName}}"},
+                  {
+                    "key": "headMobileNumber",
+                    "value": "{{navigation.headMobileNumber}}"
+                  },
                   {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
                   {"key": "doseIndex", "value": "{{navigation.doseIndex}}"},
                   {
@@ -3195,6 +3418,33 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      },
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value": "{{navigation.HouseholdClientReferenceId}}"
+                      },
+                      {
+                        "key": "memberCount",
+                        "value": "{{navigation.memberCount}}"
+                      },
+                      {
+                        "key": "individualClientReferenceId",
+                        "value": "{{navigation.individualClientReferenceId}}"
+                      },
+                      {
+                        "key": "beneficiaryId",
+                        "value": "{{navigation.beneficiaryId}}"
+                      },
+                      {"key": "childName", "value": "{{navigation.childName}}"},
+                      {
+                        "key": "ageInMonths",
+                        "value": "{{navigation.ageInMonths}}"
+                      },
+                      {"key": "gender", "value": "{{navigation.gender}}"},
+                      {"key": "headName", "value": "{{navigation.headName}}"},
+                      {
+                        "key": "headMobileNumber",
+                        "value": "{{navigation.headMobileNumber}}"
                       },
                       {
                         "key": "cycleIndex",
@@ -3444,6 +3694,24 @@ final dynamic sampleFlows = {
                 "key": "ProjectBeneficiaryClientReferenceId",
                 "value": "{{navigation.ProjectBeneficiaryClientReferenceId}}"
               },
+              {
+                "key": "HouseholdClientReferenceId",
+                "value": "{{navigation.HouseholdClientReferenceId}}"
+              },
+              {"key": "memberCount", "value": "{{navigation.memberCount}}"},
+              {
+                "key": "individualClientReferenceId",
+                "value": "{{navigation.individualClientReferenceId}}"
+              },
+              {"key": "beneficiaryId", "value": "{{navigation.beneficiaryId}}"},
+              {"key": "childName", "value": "{{navigation.childName}}"},
+              {"key": "ageInMonths", "value": "{{navigation.ageInMonths}}"},
+              {"key": "gender", "value": "{{navigation.gender}}"},
+              {"key": "headName", "value": "{{navigation.headName}}"},
+              {
+                "key": "headMobileNumber",
+                "value": "{{navigation.headMobileNumber}}"
+              },
               {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
               {"key": "doseIndex", "value": "{{navigation.doseIndex}}"},
               {
@@ -3493,6 +3761,27 @@ final dynamic sampleFlows = {
                     "key": "ProjectBeneficiaryClientReferenceId",
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                  },
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  },
+                  {"key": "memberCount", "value": "{{navigation.memberCount}}"},
+                  {
+                    "key": "individualClientReferenceId",
+                    "value": "{{navigation.individualClientReferenceId}}"
+                  },
+                  {
+                    "key": "beneficiaryId",
+                    "value": "{{navigation.beneficiaryId}}"
+                  },
+                  {"key": "childName", "value": "{{navigation.childName}}"},
+                  {"key": "ageInMonths", "value": "{{navigation.ageInMonths}}"},
+                  {"key": "gender", "value": "{{navigation.gender}}"},
+                  {"key": "headName", "value": "{{navigation.headName}}"},
+                  {
+                    "key": "headMobileNumber",
+                    "value": "{{navigation.headMobileNumber}}"
                   },
                   {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
                   {
@@ -3615,6 +3904,34 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      },
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value": "{{navigation.HouseholdClientReferenceId}}"
+                      },
+                      {
+                        "key": "memberCount",
+                        "value": "{{navigation.memberCount}}"
+                      },
+                      {
+                        "key": "individualClientReferenceId",
+                        "value":
+                            "{{navigation.selectedIndividualClientReferenceId}}"
+                      },
+                      {
+                        "key": "beneficiaryId",
+                        "value": "{{navigation.selectedIndividualIdentifierId}}"
+                      },
+                      {"key": "childName", "value": "{{navigation.childName}}"},
+                      {
+                        "key": "ageInMonths",
+                        "value": "{{navigation.ageInMonths}}"
+                      },
+                      {"key": "gender", "value": "{{navigation.gender}}"},
+                      {"key": "headName", "value": "{{navigation.headName}}"},
+                      {
+                        "key": "headMobileNumber",
+                        "value": "{{navigation.headMobileNumber}}"
                       },
                       {
                         "key": "cycleIndex",
@@ -3843,6 +4160,27 @@ final dynamic sampleFlows = {
                 "key": "ProjectBeneficiaryClientReferenceId",
                 "value": "{{navigation.ProjectBeneficiaryClientReferenceId}}"
               },
+              {
+                "key": "HouseholdClientReferenceId",
+                "value": "{{navigation.HouseholdClientReferenceId}}"
+              },
+              {"key": "memberCount", "value": "{{navigation.memberCount}}"},
+              {
+                "key": "individualClientReferenceId",
+                "value": "{{navigation.selectedIndividualClientReferenceId}}"
+              },
+              {
+                "key": "beneficiaryId",
+                "value": "{{navigation.selectedIndividualIdentifierId}}"
+              },
+              {"key": "childName", "value": "{{navigation.childName}}"},
+              {"key": "ageInMonths", "value": "{{navigation.ageInMonths}}"},
+              {"key": "gender", "value": "{{navigation.gender}}"},
+              {"key": "headName", "value": "{{navigation.headName}}"},
+              {
+                "key": "headMobileNumber",
+                "value": "{{navigation.headMobileNumber}}"
+              },
               {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
               {
                 "key": "lastDeliveredTaskClientReferenceId",
@@ -3977,6 +4315,17 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      },
+                      {"key": "childName", "value": "{{navigation.childName}}"},
+                      {
+                        "key": "ageInMonths",
+                        "value": "{{navigation.ageInMonths}}"
+                      },
+                      {"key": "gender", "value": "{{navigation.gender}}"},
+                      {"key": "headName", "value": "{{navigation.headName}}"},
+                      {
+                        "key": "headMobileNumber",
+                        "value": "{{navigation.headMobileNumber}}"
                       }
                     ],
                     "name": "beneficiaryDetails",
@@ -4021,6 +4370,17 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      },
+                      {"key": "childName", "value": "{{navigation.childName}}"},
+                      {
+                        "key": "ageInMonths",
+                        "value": "{{navigation.ageInMonths}}"
+                      },
+                      {"key": "gender", "value": "{{navigation.gender}}"},
+                      {"key": "headName", "value": "{{navigation.headName}}"},
+                      {
+                        "key": "headMobileNumber",
+                        "value": "{{navigation.headMobileNumber}}"
                       }
                     ],
                     "name": "beneficiaryDetails",
@@ -4054,12 +4414,36 @@ final dynamic sampleFlows = {
                             "{{navigation.selectedIndividualClientReferenceId}}"
                       },
                       {
+                        "key": "individualClientReferenceId",
+                        "value":
+                            "{{navigation.selectedIndividualClientReferenceId}}"
+                      },
+                      {
                         "key": "selectedIndividualIdentifierId",
+                        "value": "{{navigation.selectedIndividualIdentifierId}}"
+                      },
+                      {
+                        "key": "beneficiaryId",
                         "value": "{{navigation.selectedIndividualIdentifierId}}"
                       },
                       {
                         "key": "HouseholdClientReferenceId",
                         "value": "{{ navigation.HouseholdClientReferenceId }}"
+                      },
+                      {
+                        "key": "memberCount",
+                        "value": "{{navigation.memberCount}}"
+                      },
+                      {"key": "childName", "value": "{{navigation.childName}}"},
+                      {
+                        "key": "ageInMonths",
+                        "value": "{{navigation.ageInMonths}}"
+                      },
+                      {"key": "gender", "value": "{{navigation.gender}}"},
+                      {"key": "headName", "value": "{{navigation.headName}}"},
+                      {
+                        "key": "headMobileNumber",
+                        "value": "{{navigation.headMobileNumber}}"
                       },
                       {
                         "key": "ProjectBeneficiaryClientReferenceId",
@@ -4165,6 +4549,17 @@ final dynamic sampleFlows = {
                       {
                         "key": "selectedIndividualAgeInMonths",
                         "value": "{{navigation.selectedIndividualAgeInMonths}}"
+                      },
+                      {"key": "childName", "value": "{{navigation.childName}}"},
+                      {
+                        "key": "ageInMonths",
+                        "value": "{{navigation.ageInMonths}}"
+                      },
+                      {"key": "gender", "value": "{{navigation.gender}}"},
+                      {"key": "headName", "value": "{{navigation.headName}}"},
+                      {
+                        "key": "headMobileNumber",
+                        "value": "{{navigation.headMobileNumber}}"
                       },
                       {
                         "key": "cycleIndex",
@@ -4474,7 +4869,16 @@ final dynamic sampleFlows = {
                     "key": "ProjectBeneficiaryClientReferenceId",
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                  }
+                  },
+                  {"key": "memberCount", "value": "{{navigation.memberCount}}"},
+                  {"key": "childName", "value": "{{navigation.childName}}"},
+                  {"key": "ageInMonths", "value": "{{navigation.ageInMonths}}"},
+                  {"key": "gender", "value": "{{navigation.gender}}"},
+                  {"key": "headName", "value": "{{navigation.headName}}"},
+                  {
+                    "key": "headMobileNumber",
+                    "value": "{{navigation.headMobileNumber}}"
+                  },
                 ],
                 "name": "beneficiaryDetails",
                 "type": "TEMPLATE",
@@ -4518,7 +4922,16 @@ final dynamic sampleFlows = {
                     "key": "ProjectBeneficiaryClientReferenceId",
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                  }
+                  },
+                  {"key": "memberCount", "value": "{{navigation.memberCount}}"},
+                  {"key": "childName", "value": "{{navigation.childName}}"},
+                  {"key": "ageInMonths", "value": "{{navigation.ageInMonths}}"},
+                  {"key": "gender", "value": "{{navigation.gender}}"},
+                  {"key": "headName", "value": "{{navigation.headName}}"},
+                  {
+                    "key": "headMobileNumber",
+                    "value": "{{navigation.headMobileNumber}}"
+                  },
                 ],
                 "name": "beneficiaryDetails",
                 "type": "TEMPLATE",
@@ -4551,12 +4964,30 @@ final dynamic sampleFlows = {
                         "{{navigation.selectedIndividualClientReferenceId}}"
                   },
                   {
+                    "key": "individualClientReferenceId",
+                    "value":
+                        "{{navigation.selectedIndividualClientReferenceId}}"
+                  },
+                  {
                     "key": "selectedIndividualIdentifierId",
+                    "value": "{{navigation.selectedIndividualIdentifierId}}"
+                  },
+                  {
+                    "key": "beneficiaryId",
                     "value": "{{navigation.selectedIndividualIdentifierId}}"
                   },
                   {
                     "key": "HouseholdClientReferenceId",
                     "value": "{{ navigation.HouseholdClientReferenceId }}"
+                  },
+                  {"key": "memberCount", "value": "{{navigation.memberCount}}"},
+                  {"key": "childName", "value": "{{navigation.childName}}"},
+                  {"key": "ageInMonths", "value": "{{navigation.ageInMonths}}"},
+                  {"key": "gender", "value": "{{navigation.gender}}"},
+                  {"key": "headName", "value": "{{navigation.headName}}"},
+                  {
+                    "key": "headMobileNumber",
+                    "value": "{{navigation.headMobileNumber}}"
                   },
                   {
                     "key": "ProjectBeneficiaryClientReferenceId",
@@ -4607,7 +5038,16 @@ final dynamic sampleFlows = {
                     "key": "ProjectBeneficiaryClientReferenceId",
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                  }
+                  },
+                  {"key": "memberCount", "value": "{{navigation.memberCount}}"},
+                  {"key": "childName", "value": "{{navigation.childName}}"},
+                  {"key": "ageInMonths", "value": "{{navigation.ageInMonths}}"},
+                  {"key": "gender", "value": "{{navigation.gender}}"},
+                  {"key": "headName", "value": "{{navigation.headName}}"},
+                  {
+                    "key": "headMobileNumber",
+                    "value": "{{navigation.headMobileNumber}}"
+                  },
                 ],
                 "name": "householdOverview",
                 "type": "TEMPLATE",
@@ -4667,7 +5107,16 @@ final dynamic sampleFlows = {
                     "key": "selectedIndividualAgeInMonths",
                     "value": "{{navigation.selectedIndividualAgeInMonths}}"
                   },
-                  {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"}
+                  {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
+                  {"key": "memberCount", "value": "{{navigation.memberCount}}"},
+                  {"key": "childName", "value": "{{navigation.childName}}"},
+                  {"key": "ageInMonths", "value": "{{navigation.ageInMonths}}"},
+                  {"key": "gender", "value": "{{navigation.gender}}"},
+                  {"key": "headName", "value": "{{navigation.headName}}"},
+                  {
+                    "key": "headMobileNumber",
+                    "value": "{{navigation.headMobileNumber}}"
+                  },
                 ],
                 "name": "REFER_BENEFICIARY",
                 "type": "FORM",
