@@ -5308,6 +5308,11 @@ final dynamic sampleFlows = {
                   "value": "200",
                   "message":
                       "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_max_message_addmember"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^[a-zA-Z\\s'-]+",
+                  "message": "REGISTRATION_NAME_ONLY_LETTERS_ALLOWED"
                 }
               ],
               "errorMessage": "",
@@ -5352,6 +5357,11 @@ final dynamic sampleFlows = {
                   "value": "2",
                   "message":
                       "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_familyname_min_message_addmember"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^[a-zA-Z\\s'-]+",
+                  "message": "REGISTRATION_NAME_ONLY_LETTERS_ALLOWED"
                 }
               ],
               "errorMessage": "",
@@ -6759,6 +6769,11 @@ final dynamic sampleFlows = {
                   "value": "200",
                   "message":
                       "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_max_message"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^[a-zA-Z\\s'-]+",
+                  "message": "REGISTRATION_NAME_ONLY_LETTERS_ALLOWED"
                 }
               ],
               "errorMessage": "",
@@ -6803,6 +6818,11 @@ final dynamic sampleFlows = {
                   "value": "2",
                   "message":
                       "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_familyname_min_message"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^[a-zA-Z\\s'-]+",
+                  "message": "REGISTRATION_NAME_ONLY_LETTERS_ALLOWED"
                 }
               ],
               "errorMessage": "",

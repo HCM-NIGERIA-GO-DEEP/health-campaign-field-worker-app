@@ -28,7 +28,9 @@ final dynamic sampleComplaintFlows = {
                       "type": "template",
                       "label": "COMPLAINT_INBOX_SEARCH_MOBILE_NUMBER_LABEL",
                       "format": "textInput",
-                      "fieldName": "mobileNumber"
+                      "fieldName": "mobileNumber",
+                      "inputType": "phone",
+                      "maxLength": 11 
                     }
                   ],
                   "type": "default",
@@ -814,6 +816,11 @@ final dynamic sampleComplaintFlows = {
                   "type": "maxLength",
                   "value": 64,
                   "message": "COMPLAINT_DETAILS_name_LABEL_MAX_VALIDATION"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^[a-zA-Z\\s'-]+",
+                  "message": "COMPLAINTS_NAME_ONLY_LETTERS_ALLOWED"
                 }
               ],
               "errorMessage": "",
@@ -900,6 +907,11 @@ final dynamic sampleComplaintFlows = {
                   "type": "maxLength",
                   "value": 64,
                   "message": "SUPERVISOR_DETAILS_name_LABEL_MAX_VALIDATION"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^[a-zA-Z\\s'-]+",
+                  "message": "COMPLAINTS_NAME_ONLY_LETTERS_ALLOWED"
                 }
               ],
               "errorMessage": "",
