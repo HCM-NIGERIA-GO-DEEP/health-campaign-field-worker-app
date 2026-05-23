@@ -175,7 +175,9 @@ class StockCalculationUtils {
       }
     } else if (transactionType == 'DISPATCHED') {
       if (stockEntryType == 'RETURNED') {
-        stockReturned(quantity);
+        if (status != 'REJECTED') {
+          stockReturned(quantity);
+        }
         stockWastage(wastage);
         stockPartialUsed(partialUsed);
       } else if (status == 'ACCEPTED') {
@@ -228,7 +230,9 @@ class StockCalculationUtils {
         stockEntryType == 'DAMAGED') {
       stockDamaged(quantity);
     } else if (stockEntryType == 'RETURNED') {
-      stockReturned(quantity);
+      if (status != 'REJECTED') {
+        stockReturned(quantity);
+      }
     } else {
       stockIssued(quantity);
     }

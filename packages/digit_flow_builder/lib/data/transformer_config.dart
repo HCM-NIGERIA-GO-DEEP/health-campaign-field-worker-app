@@ -865,20 +865,16 @@ final jsonConfig = {
           "referenceId": "__context:projectId",
           "referenceIdType": "__value:PROJECT",
           "quantity":
-              "__switch:__context:stockEntryType:{RECEIPT:stockProductDetails.quantityReceived,RETURNED:stockProductDetails.quantityReturned,ISSUED:stockProductDetails.quantitySent,DAMAGED:stockProductDetails.quantityDamaged,LOSS:stockProductDetails.quantityLost}",
+              "__switch:__context:stockEntryType:{RECEIPT:stockProductDetails.quantityReceived,RETURNED:stockProductDetails.quantityReturned,ISSUED:stockProductDetails.quantitySent,DAMAGED:stockProductDetails.quantityDamaged,LOSS:stockProductDetails.quantityLost,EXCESS:stockProductDetails.quantityExcess}",
           "waybillNumber": "stockProductDetails.wayBillNumber",
           "transactionType": "__context:transactionType",
           "transactionReason":
-              "__switch:__context:stockEntryType:{RECEIPT:__value:RECEIVED,RETURNED:__value:RETURNED,ISSUED:__value:null,DAMAGED:stockDetails.transactionReason,LOSS:stockDetails.transactionReason}",
+              "__switch:__context:stockEntryType:{RECEIPT:__value:RECEIVED,RETURNED:__value:RETURNED,ISSUED:__value:null,DAMAGED:stockDetails.transactionReason,LOSS:stockDetails.transactionReason,EXCESS:__value:RECEIVED}",
           "transactingPartyId": "stockDetails.transactingPartyId",
-          "senderId":
-              "__switch:__context:senderPartyType:{STAFF:__context:loggedInUserUuid,default:stockDetails.facilityFromWhich}",
-          "senderType":
-              "__switch:__context:senderPartyType:{STAFF:__value:STAFF,default:__value:WAREHOUSE}",
-          "receiverId":
-              "__switch:__context:receiverPartyType:{STAFF:warehouseDetails.teamCode,default:warehouseDetails.facilityToWhich}",
-          "receiverType":
-              "__switch:__context:receiverPartyType:{STAFF:__value:STAFF,default:__value:WAREHOUSE}",
+          "senderId": "__context:senderId",
+          "senderType": "__context:senderType",
+          "receiverId": "__context:receiverId",
+          "receiverType": "__context:receiverType",
           "nonRecoverableError": "errors.nonRecoverable",
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
@@ -895,7 +891,7 @@ final jsonConfig = {
             "primaryRole": "__context:primaryRole",
             "secondaryRole": "__context:secondaryRole",
             "status":
-                "__switch:__context:stockEntryType:{ISSUED:__value:IN_TRANSIT,RETURNED:__value:IN_TRANSIT,LOSS:__value:LOST,DAMAGED:__value:DAMAGED}",
+                "__switch:__context:stockEntryType:{ISSUED:__value:IN_TRANSIT,RETURNED:__value:IN_TRANSIT,LOSS:__value:LOST,DAMAGED:__value:DAMAGED,EXCESS:__value:EXCESS}",
             "scanResource": "stockProductDetails.scanResource",
             "quantityWastage": "stockProductDetails.quantityWastage",
             "quantityPartialUsed": "stockProductDetails.quantityPartialUsed"

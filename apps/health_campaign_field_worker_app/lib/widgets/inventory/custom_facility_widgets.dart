@@ -357,7 +357,8 @@ class _FacilityCardContentState extends State<_FacilityCardContent> {
     final isReturnFlow = stockEntryType == 'RETURNED' ||
         stockEntryType == 'LOSS' ||
         stockEntryType == 'DAMAGED';
-    final isLessExcessFlow = stockEntryType == 'LESS_EXCESS';
+    final isLessExcessFlow =
+        stockEntryType == 'LESS_EXCESS' || stockEntryType == 'EXCESS';
 
     final deliveryTeamCodeFromSchema =
         getDeliveryTeamCodeFromFacilityHierarchy(fieldSchema, transactionType);

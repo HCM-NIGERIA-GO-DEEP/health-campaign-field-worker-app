@@ -175,6 +175,7 @@ final dynamic sampleInventoryFlows = {
               "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_LOSS_HEADING",
           "description":
               "APP_CONFIG_INVENTORY_manageStock_RECORD_THE_LIST_OF_RESOURCES_LOST_DURING_CAMPAIGN_OPERATIONS_DESCRIPTION",
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
           "icon": 'Store',
           "onAction": [
             {
@@ -198,8 +199,8 @@ final dynamic sampleInventoryFlows = {
         },
         {
           "format": "menu_card",
-          "heading": "INVENTORY_RECORD_LESS_EXCESS_HEADING",
-          "description": "INVENTORY_RECORD_LESS_EXCESS_DESCRIPTION",
+          "heading": "INVENTORY_RECORD_EXCESS_HEADING",
+          "description": "INVENTORY_RECORD_EXCESS_DESCRIPTION",
           "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
           "icon": "Store",
           "onAction": [
@@ -207,12 +208,12 @@ final dynamic sampleInventoryFlows = {
               "actionType": "NAVIGATION",
               "properties": {
                 "type": "FORM",
-                "name": "RECORDLESSEXCESS",
+                "name": "RECORDSTOCK",
                 "data": [
-                  {"key": "stockEntryType", "value": "LESS_EXCESS"},
+                  {"key": "stockEntryType", "value": "EXCESS"},
                   {"key": "transactionType", "value": "RECEIVED"},
-                  {"key": "primaryRole", "value": "SENDER"},
-                  {"key": "secondaryRole", "value": "RECEIVER"},
+                  {"key": "primaryRole", "value": "RECEIVER"},
+                  {"key": "secondaryRole", "value": "SENDER"},
                   {
                     "key": "mrnNumber",
                     "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
@@ -222,6 +223,32 @@ final dynamic sampleInventoryFlows = {
             }
           ]
         },
+        // {
+        //   "format": "menu_card",
+        //   "heading": "INVENTORY_RECORD_LESS_EXCESS_HEADING",
+        //   "description": "INVENTORY_RECORD_LESS_EXCESS_DESCRIPTION",
+        //   "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
+        //   "icon": "Store",
+        //   "onAction": [
+        //     {
+        //       "actionType": "NAVIGATION",
+        //       "properties": {
+        //         "type": "FORM",
+        //         "name": "RECORDLESSEXCESS",
+        //         "data": [
+        //           {"key": "stockEntryType", "value": "LESS_EXCESS"},
+        //           {"key": "transactionType", "value": "RECEIVED"},
+        //           {"key": "primaryRole", "value": "SENDER"},
+        //           {"key": "secondaryRole", "value": "RECEIVER"},
+        //           {
+        //             "key": "mrnNumber",
+        //             "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
+        //           }
+        //         ]
+        //       }
+        //     }
+        //   ]
+        // },
       ]
     },
     {
@@ -1195,6 +1222,55 @@ final dynamic sampleInventoryFlows = {
               "isMultiSelect": false,
               "enums": null
             },
+            {
+              "type": "integer",
+              "label": "APPONE_INVENTORY_QUANTITY_EXCESS_LABEL",
+              "order": 4,
+              "value": "",
+              "format": "text",
+              "hidden": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "quantityExcess",
+              "deleteFlag": false,
+              "innerLabel": "",
+              "systemDate": false,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "QUANTITY_EXCESS_REQUIRED_ERROR_MESSAGE"
+                },
+                {
+                  "type": "min",
+                  "value": 1,
+                  "message": "QUANTITY_EXCESS_MIN_REQUIRED_ERROR_MESSAGE"
+                },
+                {
+                  "type": "regex",
+                  "value": r"^[0-9]+$",
+                  "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
+                },
+                {
+                  "type": "pattern",
+                  "value": r"^[0-9]+$",
+                  "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
+                }
+              ],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "enums": null,
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition": "navigation.stockEntryType == 'EXCESS'",
+                    "type": "custom"
+                  }
+                ]
+              }
+            },
             // {
             //   "type": "integer",
             //   "label": "APPONE_INVENTORY_QUANTITY_WASTAGE_LABEL",
@@ -1444,6 +1520,26 @@ final dynamic sampleInventoryFlows = {
               },
               {"key": "primaryRole", "value": "{{navigation.primaryRole}}"},
               {"key": "secondaryRole", "value": "{{navigation.secondaryRole}}"},
+              {
+                "key": "senderId",
+                "value":
+                    "{{fn:getSenderId(navigation.stockEntryType, formData.stockDetails.facilityFromWhich, formData.warehouseDetails.facilityToWhich)}}"
+              },
+              {
+                "key": "senderType",
+                "value":
+                    "{{fn:getSenderType(navigation.stockEntryType, formData.stockDetails.facilityFromWhich)}}"
+              },
+              {
+                "key": "receiverId",
+                "value":
+                    "{{fn:getReceiverId(navigation.stockEntryType, formData.warehouseDetails.facilityToWhich, formData.warehouseDetails.teamCode)}}"
+              },
+              {
+                "key": "receiverType",
+                "value":
+                    "{{fn:getReceiverType(navigation.stockEntryType, formData.warehouseDetails.facilityToWhich)}}"
+              },
               {
                 "key": "senderPartyType",
                 "value":

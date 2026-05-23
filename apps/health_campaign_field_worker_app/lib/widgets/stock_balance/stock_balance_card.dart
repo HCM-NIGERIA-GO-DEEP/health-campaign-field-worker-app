@@ -326,6 +326,38 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
     final userActionBalances =
         await _loadUserActionBalances(userActionRepo, effectiveFacilityId);
 
+    // TEST: For distributors, add REJECTED RETURNED stocks to display balance
+    if (_isDistributor) {
+      for (final stock in allStocks) {
+        if (stock.senderId != effectiveFacilityId) continue;
+        
+        // Extract field values in single pass
+        final fields = stock.additionalFields?.fields;
+        if (fields == null) continue;
+        
+        String? stockEntryType;
+        String? status;
+        for (final field in fields) {
+          if (field.key == 'stockEntryType') {
+            stockEntryType = (field.value as String?)?.toUpperCase();
+          } else if (field.key == 'status') {
+            status = (field.value as String?)?.toUpperCase();
+          }
+        }
+        
+        final transactionType = stock.transactionType?.toUpperCase() ?? '';
+        if (stockEntryType == 'RETURNED' &&
+            transactionType == 'DISPATCHED' &&
+            status == 'REJECTED') {
+          final productVariantId = stock.productVariantId;
+          if (productVariantId != null) {
+            final quantity = double.tryParse(stock.quantity ?? '0') ?? 0;
+            userActionBalances[productVariantId] = (userActionBalances[productVariantId] ?? 0) + quantity;
+          }
+        }
+      }
+    }
+
     // Merge: UserAction balances take precedence (they include delivery deductions)
     final mergedBalances = _isDistributor
         ? <String, double>{...balances, ...userActionBalances}
