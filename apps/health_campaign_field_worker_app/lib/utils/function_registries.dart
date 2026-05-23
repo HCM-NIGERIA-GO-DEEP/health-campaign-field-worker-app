@@ -243,6 +243,54 @@ class FunctionRegistries {
       return facilityFromWhich == 'DELIVERY_TEAM' ? 'STAFF' : 'WAREHOUSE';
     });
 
+    FunctionRegistry.register('getSenderId', (args, stateData) {
+      final stockEntryType = args[0]?.toString() ?? '';
+      final facilityFromWhich = args[1]?.toString() ?? '';
+      final facilityToWhich = args[2]?.toString() ?? '';
+
+      if (stockEntryType == 'EXCESS') {
+        return facilityToWhich;
+      } else {
+        return facilityFromWhich == 'DELIVERY_TEAM'
+            ? context.loggedInUserUuid
+            : facilityFromWhich;
+      }
+    });
+
+    FunctionRegistry.register('getReceiverId', (args, stateData) {
+      final stockEntryType = args[0]?.toString() ?? '';
+      final facilityToWhich = args[1]?.toString() ?? '';
+      final teamCode = args[2]?.toString() ?? '';
+
+      if (stockEntryType == 'EXCESS') {
+        return context.loggedInUserUuid ?? '';
+      } else {
+        return facilityToWhich == 'DELIVERY_TEAM' ? teamCode : facilityToWhich;
+      }
+    });
+
+    FunctionRegistry.register('getSenderType', (args, stateData) {
+      final stockEntryType = args[0]?.toString() ?? '';
+      final facilityFromWhich = args[1]?.toString() ?? '';
+
+      if (stockEntryType == 'EXCESS') {
+        return facilityFromWhich == 'DELIVERY_TEAM' ? 'WAREHOUSE' : 'STAFF';
+      } else {
+        return facilityFromWhich == 'DELIVERY_TEAM' ? 'STAFF' : 'WAREHOUSE';
+      }
+    });
+
+    FunctionRegistry.register('getReceiverType', (args, stateData) {
+      final stockEntryType = args[0]?.toString() ?? '';
+      final facilityFromWhich = args[1]?.toString() ?? '';
+
+      if (stockEntryType == 'EXCESS') {
+        return facilityFromWhich == 'DELIVERY_TEAM' ? 'WAREHOUSE' : 'STAFF';
+      } else {
+        return facilityFromWhich == 'DELIVERY_TEAM' ? 'STAFF' : 'WAREHOUSE';
+      }
+    });
+
     FunctionRegistry.register('getTransactionStatusType', (args, stateData) {
       if (args.isEmpty) return 'default';
       final transactionType = args.first?.toString().toUpperCase() ?? '';
