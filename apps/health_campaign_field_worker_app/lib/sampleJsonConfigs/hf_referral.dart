@@ -27,9 +27,9 @@ final dynamic sampleReferralFlows = {
                       "{{fn:computeReferralStatus(HFReferralModel.0.symptom, HFReferralModel.0.additionalFields.fields)}}"
                 },
                 {
-                  "key": "REFERRAL_INBOX_DATE_OF_EVALUATION",
+                  "key": "HF_REFERRAL_INBOX_DATE_OF_EVALUATION",
                   "value":
-                      "{{fn:formatDate(fn:getAdditionalFieldValue(HFReferralModel.0.additionalFields.fields, 'dateOfEvaluation'), 'date', dd MMM yyyy)}}"
+                      "{{fn:formatDate(HFReferralModel.0.additionalFields.fields.dateOfEvaluation, 'date', 'dd MMM yyyy')}}"
                 }
               ],
               "type": "template",
@@ -326,7 +326,7 @@ final dynamic sampleReferralFlows = {
                 "children": [
                   {
                     "value":
-                        "HF_REFERRAL_INBOX_DATE_OF_EVALUATION {{ fn:formatDate(fn:getAdditionalFieldValue(itemData.additionalFields.fields, 'dateOfEvaluation'), 'date', dd MMM yyyy) }}",
+                        "HF_REFERRAL_INBOX_DATE_OF_EVALUATION {{fn:formatDate(itemData.additionalFields.fields.dateOfEvaluation, 'date', 'dd MMM yyyy')}}",
                     "format": "textTemplate",
                     "fieldName": "textTemplatetext"
                   }

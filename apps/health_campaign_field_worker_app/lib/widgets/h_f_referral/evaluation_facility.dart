@@ -1,5 +1,8 @@
+import 'package:collection/collection.dart';
 import 'package:digit_data_model/blocs/facility/facility.dart';
+import 'package:digit_data_model/blocs/project_facility/project_facility.dart';
 import 'package:digit_data_model/models/entities/facility.dart';
+import 'package:digit_data_model/models/entities/project_facility.dart';
 import 'package:digit_forms_engine/blocs/forms/forms.dart';
 import 'package:digit_forms_engine/helper/validation_message_helper.dart';
 import 'package:digit_forms_engine/models/property_schema/property_schema.dart';
@@ -32,28 +35,79 @@ class _EvaluationKeyDropDownState
   void initState() {
     super.initState();
 
+    final projectId = context.selectedProject.id;
     context.read<FacilityBloc>().add(
-        FacilityEvent.loadForProjectId(projectId: context.selectedProject.id));
+          FacilityEvent.loadForProjectId(
+            projectId: projectId,
+            loadAllProjects: false,
+          ),
+        );
+    context.read<ProjectFacilityBloc>().add(
+          ProjectFacilityEvent.load(
+            query: ProjectFacilitySearchModel(projectId: [projectId]),
+          ),
+        );
+  }
+
+  /// Maps health facilities to their project-facility rows for this project.
+  /// Dropdown [code] is [ProjectFacilityModel.id]; label uses [ProjectFacilityModel.facilityId].
+  List<ProjectFacilityModel> _healthProjectFacilities({
+    required List<FacilityModel> facilities,
+    required List<ProjectFacilityModel> projectFacilities,
+  }) {
+    final healthFacilityIds = facilities
+        .where((f) => f.usage == Constants.healthFacility)
+        .map((f) => f.id)
+        .toSet();
+
+    return projectFacilities.where((pf) {
+      if (!healthFacilityIds.contains(pf.facilityId)) return false;
+
+      final facilityLevel = pf.additionalFields?.fields
+          .where((f) => f.key == 'facilityLevel')
+          .firstOrNull
+          ?.value;
+      return facilityLevel == null || facilityLevel == 'current';
+    }).toList();
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<FacilityBloc, FacilityState>(
-      listener: (context, state) {},
-      builder: (context, state) {
-        return state.maybeWhen(
-          orElse: () => _buildDropdown(context, []),
-          fetched: (facilities, projectFacilities) => _buildDropdown(
+    return BlocBuilder<FacilityBloc, FacilityState>(
+      builder: (context, facilityState) {
+        return BlocBuilder<ProjectFacilityBloc, ProjectFacilityState>(
+          builder: (context, projectFacilityState) {
+            final facilities = facilityState.maybeWhen(
+              fetched: (facilities, _) => facilities,
+              orElse: () => const <FacilityModel>[],
+            );
+            final projectFacilities = projectFacilityState.maybeWhen(
+              fetched: (list) => list,
+              orElse: () => const <ProjectFacilityModel>[],
+            );
+
+            final isReady = facilityState is FacilityFetchedState &&
+                projectFacilityState is ProjectFacilityFetchedState;
+
+            return _buildDropdown(
               context,
-              facilities.where((f) {
-                return f.usage == Constants.healthFacility;
-              }).toList()),
+              isReady
+                  ? _healthProjectFacilities(
+                      facilities: facilities,
+                      projectFacilities: projectFacilities,
+                    )
+                  : const [],
+            );
+          },
         );
       },
     );
   }
 
-  Widget _buildDropdown(BuildContext context, List<FacilityModel> facilities) {
+  Widget _buildDropdown(
+    BuildContext context,
+    List<ProjectFacilityModel> projectFacilities,
+  ) {
     bool isReadOnlyFromSchema = false;
     String? labelFromSchema;
     bool isRequiredFromSchema = false;
@@ -111,12 +165,12 @@ class _EvaluationKeyDropDownState
           label: localizations.translate(labelFromSchema ?? ""),
           child: Dropdown(
             readOnly: isReadOnlyFromSchema,
-            selectedOption: _mapItems(facilities).firstWhere(
+            selectedOption: _mapItems(projectFacilities).firstWhere(
               (item) => item.code == form.control(widget.formControlName).value,
               orElse: () => const DropdownItem(name: '', code: ''),
             ),
             errorMessage: field.errorText,
-            items: _mapItems(facilities),
+            items: _mapItems(projectFacilities),
             onSelect: (val) {
               form.control(widget.formControlName).markAsTouched();
               form.control(widget.formControlName).value = val.code;
@@ -136,12 +190,14 @@ class _EvaluationKeyDropDownState
     );
   }
 
-  List<DropdownItem> _mapItems(List<FacilityModel> keys) {
-    return keys
-        .map((key) => DropdownItem(
-              name: localizations.translate('FAC_${key.id}'),
-              code: key.id,
-            ))
+  List<DropdownItem> _mapItems(List<ProjectFacilityModel> projectFacilities) {
+    return projectFacilities
+        .map(
+          (pf) => DropdownItem(
+            name: localizations.translate('FAC_${pf.facilityId}'),
+            code: pf.id,
+          ),
+        )
         .toList();
   }
 }
