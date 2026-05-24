@@ -46,14 +46,6 @@ import '../data/local_store/no_sql/schema/service_registry.dart';
 import '../data/local_store/secure_store/secure_store.dart';
 import '../models/entities/roles_type.dart';
 import '../router/app_router.dart';
-import '../sampleJsonConfigs/attendance_flows.dart';
-import '../sampleJsonConfigs/closed_household.dart';
-import '../sampleJsonConfigs/complaints.dart';
-import '../sampleJsonConfigs/hf_referral.dart';
-import '../sampleJsonConfigs/inventory_reports.dart';
-import '../sampleJsonConfigs/manage_stock.dart';
-import '../sampleJsonConfigs/registration_flows.dart';
-import '../sampleJsonConfigs/stock_reconciliation.dart';
 import '../utils/attendance_utils.dart';
 import '../utils/date_util_attendance.dart';
 import '../utils/debound.dart';
@@ -1869,7 +1861,6 @@ class _HomePageState extends LocalizedState<HomePage> {
                   context: ctx,
                   config: FlowModuleConfig(
                     schemaKey: 'COMPLAINTS',
-                    sampleFlows: sampleComplaintFlows,
                     relationshipMappings: const [
                       RelationshipMapping(
                           from: 'pgrComplainant',
@@ -1944,7 +1935,6 @@ class _HomePageState extends LocalizedState<HomePage> {
                   context: ctx,
                   config: FlowModuleConfig(
                     schemaKey: 'REGISTRATION',
-                    sampleFlows: sampleFlows,
                     relationshipMappings: [
                       const RelationshipMapping(
                           from: 'name',
@@ -2089,7 +2079,6 @@ class _HomePageState extends LocalizedState<HomePage> {
                   context: ctx,
                   config: FlowModuleConfig(
                     schemaKey: 'CLOSEHOUSEHOLD',
-                    sampleFlows: sampleCloseHouseholdFlows,
                   ),
                 );
               },
@@ -2116,7 +2105,6 @@ class _HomePageState extends LocalizedState<HomePage> {
               context: context,
               config: FlowModuleConfig(
                 schemaKey: 'INVENTORY',
-                sampleFlows: sampleInventoryFlows,
                 relationshipMappings: const [
                   RelationshipMapping(
                       from: 'facility',
@@ -2177,7 +2165,6 @@ class _HomePageState extends LocalizedState<HomePage> {
               context: context,
               config: FlowModuleConfig(
                 schemaKey: 'STOCKRECONCILIATION',
-                sampleFlows: stockReconciliationFlows,
                 relationshipMappings: const [
                   RelationshipMapping(
                       from: 'facility',
@@ -2320,7 +2307,6 @@ class _HomePageState extends LocalizedState<HomePage> {
                   context: ctx,
                   config: FlowModuleConfig(
                     schemaKey: 'HFREFERRAL',
-                    sampleFlows: sampleReferralFlows,
                   ),
                 );
               },
@@ -2346,7 +2332,6 @@ class _HomePageState extends LocalizedState<HomePage> {
               context: context,
               config: FlowModuleConfig(
                 schemaKey: 'STOCKREPORTS',
-                sampleFlows: inventoryReportFlows,
                 relationshipMappings: const [
                   RelationshipMapping(
                       from: 'facility',
@@ -2420,7 +2405,6 @@ class _HomePageState extends LocalizedState<HomePage> {
                 context: ctx,
                 config: FlowModuleConfig(
                   schemaKey: 'ATTENDANCE',
-                  sampleFlows: attendanceFlows,
                   relationshipMappings: const [
                     RelationshipMapping(
                       from: 'attendanceRegister',

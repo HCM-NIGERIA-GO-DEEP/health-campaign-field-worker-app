@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:isolate';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:digit_crud_bloc/digit_crud_bloc.dart';
@@ -7,6 +8,7 @@ import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/router/flow_builder_routes.gm.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Configuration for a module's flow navigation
@@ -25,7 +27,7 @@ class FlowModuleConfig {
 
   const FlowModuleConfig({
     required this.schemaKey,
-    required this.sampleFlows,
+    this.sampleFlows,
     this.relationshipMappings = const [],
     this.nestedModelMappings = const [],
   });
@@ -33,6 +35,22 @@ class FlowModuleConfig {
 
 /// Utility class for handling flow-based module navigation
 class FlowNavigationUtils {
+  static Future<List<Map<String, dynamic>>> _parseFlows(dynamic rawFlows) {
+    return Isolate.run(() => _parseFlowsInIsolate(rawFlows));
+  }
+
+  static Future<void> _navigate(
+      BuildContext context, Map<String, dynamic> configData) async {
+    List<Map<String, dynamic>> flowsData =
+        await _parseFlows(configData['flows'] as List<dynamic>?);
+    FlowRegistry.setConfig(flowsData);
+    NavigationRegistry.setupNavigation(context);
+
+    context.router.push(
+      FlowBuilderHomeRoute(pageName: configData["initialPage"]),
+    );
+  }
+
   /// Navigates to a flow-based module with the given configuration
   ///
   /// This handles:
@@ -68,32 +86,49 @@ class FlowNavigationUtils {
         final moduleSchema = allSchemas[config.schemaKey];
 
         if (moduleSchema != null) {
-          final moduleData = moduleSchema['data'];
-          final flowsData = (moduleData['flows'] as List<dynamic>?)
-                  ?.map((e) => Map<String, dynamic>.from(e as Map))
-                  .toList() ??
-              [];
-
-          FlowRegistry.setConfig(flowsData);
-          NavigationRegistry.setupNavigation(context);
-
-          context.router.push(
-            FlowBuilderHomeRoute(pageName: moduleData["initialPage"]),
-          );
+          Map<String, dynamic> configData = moduleSchema['data'];
+          await _navigate(context, configData);
           return;
         }
       }
 
-      FlowRegistry.setConfig(
-        config.sampleFlows["flows"] as List<Map<String, dynamic>>,
-      );
-      NavigationRegistry.setupNavigation(context);
+      if (config.sampleFlows != null) {
+        await _navigate(context, config.sampleFlows);
+        return;
+      }
 
-      context.router.push(
-        FlowBuilderHomeRoute(pageName: config.sampleFlows["initialPage"]),
-      );
+      Map<String, dynamic> localConfig =
+          await FlowModuleUtils.loadLocalFlows(config.schemaKey);
+      await _navigate(context, localConfig);
     } catch (e) {
       debugPrint('FlowNavigationUtils error: $e');
+    }
+  }
+}
+
+List<Map<String, dynamic>> _parseFlowsInIsolate(dynamic rawFlows) {
+  final flows = rawFlows as List<dynamic>? ?? const [];
+  return flows.map((e) => Map<String, dynamic>.from(e as Map)).toList();
+}
+
+class FlowModuleUtils {
+  /// Loads a JSON config file from assets/configs/json and stores it
+  /// directly from bundled assets.
+  ///
+  /// [configJsonName] can be passed with or without `.json` extension.
+  /// Returns the loaded schema JSON map.
+  static Future<Map<String, dynamic>> loadLocalFlows(
+      String configJsonName) async {
+    const configDirectory = 'assets/configs/json';
+    final assetPath = '$configDirectory/$configJsonName.json';
+
+    try {
+      final fileContent = await rootBundle.loadString(assetPath);
+      final schemaJson = json.decode(fileContent) as Map<String, dynamic>;
+      return schemaJson;
+    } catch (e) {
+      debugPrint('FlowModuleUtils: failed to load $assetPath: $e');
+      rethrow;
     }
   }
 }
