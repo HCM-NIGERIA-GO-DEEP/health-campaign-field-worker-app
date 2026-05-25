@@ -5811,7 +5811,16 @@ final dynamic sampleFlows = {
           "onAction": [
             {
               "actionType": "NAVIGATION",
-              "properties": {"name": "searchBeneficiary", "type": "TEMPLATE"}
+              "properties": {
+                "name": "householdOverview",
+                "type": "TEMPLATE",
+                "data": [
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  }
+                ]
+              }
             }
           ],
           "fieldName": "back",

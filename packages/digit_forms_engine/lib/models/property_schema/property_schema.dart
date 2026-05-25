@@ -76,6 +76,8 @@ class PropertySchema with _$PropertySchema {
     VisibilityCondition? submitCondition,
     // Secondary action button label (e.g., "Decline" button alongside "Accept")
     String? secondaryActionLabel,
+    // Secondary action button text color
+    String? secondaryTextColor,
     // Comparison config for scanner fields - enables duplicate detection against historical data
     @JsonKey(fromJson: _comparisonConfigOrNull)
     ComparisonConfig? comparisonConfig,

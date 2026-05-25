@@ -8,6 +8,8 @@ class MenuCard extends StatefulWidget {
   final String heading;
   final String? description;
   final VoidCallback? onTap;
+  final Color? textColor;
+  final Color? iconColor;
 
   const MenuCard({
     Key? key,
@@ -15,6 +17,8 @@ class MenuCard extends StatefulWidget {
     required this.heading,
     this.description,
     this.onTap,
+    this.textColor,
+    this.iconColor,
   }) : super(key: key);
 
   @override
@@ -41,11 +45,12 @@ class _MenuCardState extends State<MenuCard> {
       child: Container(
         decoration: widget.onTap != null && isHovered
             ? BoxDecoration(
-          borderRadius: BorderRadius.circular(spacer1),
-          border: Border.all(
-            width: 1,
-            color: theme.colorTheme.primary.primary1,
-          ),)
+                borderRadius: BorderRadius.circular(spacer1),
+                border: Border.all(
+                  width: 1,
+                  color: theme.colorTheme.primary.primary1,
+                ),
+              )
             : null,
         child: DigitCard(
           spacing: 12,
@@ -54,19 +59,24 @@ class _MenuCardState extends State<MenuCard> {
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                if(widget.icon!=null)
+                if (widget.icon != null)
                   Icon(
                     widget.icon,
-                    size: isMobile ? 24 : isTab ? 32 : 32,
-                    color: theme.colorTheme.primary.primary1,
+                    size: isMobile
+                        ? 24
+                        : isTab
+                            ? 32
+                            : 32,
+                    color:
+                        widget.iconColor ?? theme.colorTheme.primary.primary1,
                   ),
-                if(widget.icon!=null)
-                const SizedBox(width: spacer2),
+                if (widget.icon != null) const SizedBox(width: spacer2),
                 Expanded(
                   child: Text(
                     widget.heading,
                     style: textTheme.headingM.copyWith(
-                      color: theme.colorTheme.primary.primary2,
+                      color:
+                          widget.textColor ?? theme.colorTheme.primary.primary2,
                     ),
                   ),
                 ),

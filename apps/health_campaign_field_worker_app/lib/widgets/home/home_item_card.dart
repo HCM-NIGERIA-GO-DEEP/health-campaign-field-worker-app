@@ -16,6 +16,7 @@ class HomeItemCard extends StatelessWidget {
   final bool enableCustomIcon;
   final double? iconSize;
   final EdgeInsets? iconPadding;
+  final Color? iconColor;
 
   const HomeItemCard({
     required this.icon,
@@ -26,6 +27,7 @@ class HomeItemCard extends StatelessWidget {
     this.onPressed,
     this.iconSize,
     this.iconPadding,
+    this.iconColor,
     super.key,
   });
 
@@ -33,7 +35,7 @@ class HomeItemCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.digitTextTheme(context);
-    final iconColor = theme.colorTheme.primary.primary1;
+    final iconColor = this.iconColor ?? theme.colorTheme.primary.primary1;
 
     return DigitCard(
         onPressed: onPressed,
@@ -62,9 +64,7 @@ class HomeItemCard extends StatelessWidget {
               alignment: Alignment.center,
               child: Icon(
                 icon,
-                color: onPressed == null
-                    ? theme.disabledColor
-                    : iconColor,
+                color: onPressed == null ? theme.disabledColor : iconColor,
                 size: iconSize ?? 40,
               ),
             ),

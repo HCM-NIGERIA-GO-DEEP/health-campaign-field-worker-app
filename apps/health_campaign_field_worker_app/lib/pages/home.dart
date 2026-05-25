@@ -146,7 +146,7 @@ class _HomePageState extends LocalizedState<HomePage> {
     FlowWidgetFactory.register(GroupListViewWidget());
     FlowWidgetFactory.register(CustomRowWidget());
     FlowWidgetFactory.register(SignatureCompareWidget());
-    FlowWidgetFactory.register(CustomMessageWidget()); 
+    FlowWidgetFactory.register(CustomMessageWidget());
 
     CustomComponentRegistry().registerBuilder(
       'eolinInfoMessage',
@@ -1923,8 +1923,9 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.beneficiaryLabel:
           homeShowcaseData.distributorBeneficiaries.buildWith(
         child: HomeItemCard(
-          icon: Icons.all_inbox,
+          icon: Icons.house,
           label: i18.home.beneficiaryLabel,
+          iconColor: Colors.blue,
           onPressed: () async {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {

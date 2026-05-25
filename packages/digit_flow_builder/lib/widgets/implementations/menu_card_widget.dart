@@ -21,8 +21,7 @@ class MenuCardWidget extends ResolvedFlowWidget {
     return MenuCard(
       onTap: () {
         if (json['onAction'] != null) {
-          final actionsList =
-              List<Map<String, dynamic>>.from(json['onAction']);
+          final actionsList = List<Map<String, dynamic>>.from(json['onAction']);
           final currentEvalContext = resolved.getFreshEvalContext();
 
           for (var actionJson in actionsList) {
@@ -69,6 +68,10 @@ class MenuCardWidget extends ResolvedFlowWidget {
       heading: _localizeText(context, json['heading']) ?? "",
       description: _localizeText(context, json['description']),
       icon: DigitIconMapping.getIcon(json['icon']),
+      textColor:
+          json['textColor'] != null ? _parseColor(json['textColor']) : null,
+      iconColor:
+          json['iconColor'] != null ? _parseColor(json['iconColor']) : null,
     );
   }
 
@@ -76,5 +79,35 @@ class MenuCardWidget extends ResolvedFlowWidget {
     if (text == null) return null;
     final localization = LocalizationContext.maybeOf(context);
     return localization?.translate(text) ?? text;
+  }
+
+  Color? _parseColor(dynamic colorValue) {
+    if (colorValue == null) return null;
+    final colorString = colorValue.toString().toLowerCase();
+    switch (colorString) {
+      case 'red':
+        return Colors.red;
+      case 'redorange':
+        return const Color.fromARGB(255, 200, 76, 14);
+      case 'blue':
+        return Colors.blue;
+      case 'green':
+        return Colors.green;
+      case 'yellow':
+        return Colors.yellow;
+      case 'orange':
+        return Colors.orange;
+      case 'purple':
+        return Colors.purple;
+      case 'black':
+        return Colors.black;
+      case 'white':
+        return Colors.white;
+      case 'grey':
+      case 'gray':
+        return Colors.grey;
+      default:
+        return null;
+    }
   }
 }

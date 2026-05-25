@@ -130,6 +130,8 @@ final dynamic sampleInventoryFlows = {
           "description":
               "APP_CONFIG_INVENTORY_manageStock_CREATE_RECORDS_FOR_STOCK_SENT_OUT_FROM_THE_WAREHOUSE_DESCRIPTION",
           "icon": 'FileDownload',
+          "textColor": "redorange",
+          "iconColor": "redorange",
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -146,6 +148,7 @@ final dynamic sampleInventoryFlows = {
           "heading":
               "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_DAMAGED_HEADING",
           "visible": "{{fn:hasRole('WAREHOUSE_MANAGER')}} == false",
+          "hidden": true,
           "description":
               "APP_CONFIG_INVENTORY_manageStock_RECORD_THE_LIST_OF_RESOURCES_DAMAGED_DURING_CAMPAIGN_OPERATIONS_DESCRIPTION",
           "icon": 'Store',
@@ -176,6 +179,7 @@ final dynamic sampleInventoryFlows = {
           "description":
               "APP_CONFIG_INVENTORY_manageStock_RECORD_THE_LIST_OF_RESOURCES_LOST_DURING_CAMPAIGN_OPERATIONS_DESCRIPTION",
           "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
+          "hidden": true,
           "icon": 'Store',
           "onAction": [
             {
@@ -202,6 +206,7 @@ final dynamic sampleInventoryFlows = {
           "heading": "INVENTORY_RECORD_EXCESS_HEADING",
           "description": "INVENTORY_RECORD_EXCESS_DESCRIPTION",
           "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
+          "hidden": true,
           "icon": "Store",
           "onAction": [
             {
@@ -223,32 +228,33 @@ final dynamic sampleInventoryFlows = {
             }
           ]
         },
-        // {
-        //   "format": "menu_card",
-        //   "heading": "INVENTORY_RECORD_LESS_EXCESS_HEADING",
-        //   "description": "INVENTORY_RECORD_LESS_EXCESS_DESCRIPTION",
-        //   "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
-        //   "icon": "Store",
-        //   "onAction": [
-        //     {
-        //       "actionType": "NAVIGATION",
-        //       "properties": {
-        //         "type": "FORM",
-        //         "name": "RECORDLESSEXCESS",
-        //         "data": [
-        //           {"key": "stockEntryType", "value": "LESS_EXCESS"},
-        //           {"key": "transactionType", "value": "RECEIVED"},
-        //           {"key": "primaryRole", "value": "SENDER"},
-        //           {"key": "secondaryRole", "value": "RECEIVER"},
-        //           {
-        //             "key": "mrnNumber",
-        //             "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
-        //           }
-        //         ]
-        //       }
-        //     }
-        //   ]
-        // },
+        {
+          "format": "menu_card",
+          "heading": "INVENTORY_RECORD_LESS_EXCESS_HEADING",
+          "description": "INVENTORY_RECORD_LESS_EXCESS_DESCRIPTION",
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
+          "hidden": true,
+          "icon": "Store",
+          "onAction": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "type": "FORM",
+                "name": "RECORDLESSEXCESS",
+                "data": [
+                  {"key": "stockEntryType", "value": "LESS_EXCESS"},
+                  {"key": "transactionType", "value": "RECEIVED"},
+                  {"key": "primaryRole", "value": "SENDER"},
+                  {"key": "secondaryRole", "value": "RECEIVER"},
+                  {
+                    "key": "mrnNumber",
+                    "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
+                  }
+                ]
+              }
+            }
+          ]
+        },
       ]
     },
     {
@@ -2882,6 +2888,7 @@ final dynamic sampleInventoryFlows = {
           "description": "",
           "actionLabel": "INVENTORY_ACCEPT_STOCK_LABEL",
           "secondaryActionLabel": "INVENTORY_DECLINE_STOCK_LABEL",
+          "secondaryTextColor": "redorange",
           "showAlertPopUp": {
             "title": "INVENTORY_ACCEPT_CONFIRMATION_TITLE",
             "description": "INVENTORY_ACCEPT_CONFIRMATION_DESCRIPTION",
@@ -2937,7 +2944,7 @@ final dynamic sampleInventoryFlows = {
               "order": 4,
               "value": "",
               "format": "text",
-              "hidden": false,
+              "hidden": true,
               "tooltip": "",
               "helpText": "Enter waybill number",
               "infoText": "",
@@ -2958,7 +2965,7 @@ final dynamic sampleInventoryFlows = {
               "order": 5,
               "value": "",
               "format": "text",
-              "hidden": false,
+              "hidden": true,
               "tooltip": "",
               "helpText": "Enter batch number",
               "infoText": "",
