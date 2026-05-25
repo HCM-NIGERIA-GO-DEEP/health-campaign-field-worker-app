@@ -5314,6 +5314,77 @@ final dynamic sampleFlows = {
               "actionId": 1,
               "actions": [
                 {
+                  "actionType": "FETCH_TRANSFORMER_CONFIG",
+                  "properties": {
+                    "data": [
+                      {
+                        "key": "selectedIndividualClientReferenceId",
+                        "value":
+                            "{{navigation.selectedIndividualClientReferenceId}}"
+                      },
+                      {
+                        "key": "individualClientReferenceId",
+                        "value":
+                            "{{navigation.selectedIndividualClientReferenceId}}"
+                      },
+                      {
+                        "key": "selectedIndividualIdentifierId",
+                        "value": "{{navigation.selectedIndividualIdentifierId}}"
+                      },
+                      {
+                        "key": "beneficiaryId",
+                        "value": "{{navigation.selectedIndividualIdentifierId}}"
+                      },
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value": "{{ navigation.HouseholdClientReferenceId }}"
+                      },
+                      {
+                        "key": "memberCount",
+                        "value": "{{navigation.memberCount}}"
+                      },
+                      {"key": "childName", "value": "{{navigation.childName}}"},
+                      {
+                        "key": "ageInMonths",
+                        "value": "{{navigation.ageInMonths}}"
+                      },
+                      {"key": "gender", "value": "{{navigation.gender}}"},
+                      {"key": "headName", "value": "{{navigation.headName}}"},
+                      {
+                        "key": "headMobileNumber",
+                        "value": "{{navigation.headMobileNumber}}"
+                      },
+                      {
+                        "key": "ProjectBeneficiaryClientReferenceId",
+                        "value":
+                            "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      }
+                    ],
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {
+                          "message": "Failed to fetch ineligible config."
+                        }
+                      }
+                    ],
+                    "configName": "riAdministrationConfig"
+                  }
+                },
+                {
+                  "actionType": "CREATE_EVENT",
+                  "properties": {
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {
+                          "message": "Failed to create task records."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
                   "actionType": "NAVIGATION",
                   "properties": {
                     "data": [
@@ -5416,8 +5487,7 @@ final dynamic sampleFlows = {
                       },
                       {
                         "key": "partiallyImmunized",
-                        "value":
-                            "{{riEligibilityChecklist.partiallyImmunized}}"
+                        "value": "{{riEligibilityChecklist.partiallyImmunized}}"
                       },
                       {
                         "key": "zeroDose",
@@ -5505,8 +5575,7 @@ final dynamic sampleFlows = {
               "hidden": false,
               "isMdms": false,
               "tooltip": "",
-              "helpText":
-                  "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_2_HELP_TEXT",
+              "helpText": "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_2_HELP_TEXT",
               "infoText": "",
               "readOnly": false,
               "required": true,
@@ -5553,8 +5622,7 @@ final dynamic sampleFlows = {
               "hidden": false,
               "isMdms": false,
               "tooltip": "",
-              "helpText":
-                  "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_3_HELP_TEXT",
+              "helpText": "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_3_HELP_TEXT",
               "infoText": "",
               "readOnly": false,
               "required": true,
@@ -5706,8 +5774,7 @@ final dynamic sampleFlows = {
               },
               {"value": "Refer", "expression": "DEFAULT"}
             ],
-            "description":
-                "APPONE_RI_ELIGIBILITYCHECKLIST_ALERT_DESCRIPTION",
+            "description": "APPONE_RI_ELIGIBILITYCHECKLIST_ALERT_DESCRIPTION",
             "primaryActionLabel": "ACTION_SUBMIT",
             "secondaryActionLabel": "ACTION_CANCEL"
           },

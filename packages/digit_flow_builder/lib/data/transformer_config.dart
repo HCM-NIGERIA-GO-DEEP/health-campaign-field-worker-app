@@ -650,6 +650,84 @@ final jsonConfig = {
       }
     }
   },
+  "riAdministrationConfig": {
+    "fallbackModel": "TaskModel",
+    "models": {
+      "TaskModel": {
+        "mappings": {
+          "id": "taskDetails.id",
+          "projectId": "__context:projectId",
+          "projectBeneficiaryId": "taskDetails.projectBeneficiaryId",
+          "projectBeneficiaryClientReferenceId":
+              "__context:ProjectBeneficiaryClientReferenceId",
+          "createdBy": "__context:userId",
+          "status": "__value:ADMINISTERED",
+          "nonRecoverableError": "errors.nonRecoverable",
+          "clientReferenceId": "__generate:uuid",
+          "tenantId": "__context:tenantId",
+          "rowVersion": "meta.rowVersion",
+          "plannedStartDate": "taskDetails.plannedStartDate",
+          "plannedEndDate": "taskDetails.plannedEndDate",
+          "actualStartDate": "taskDetails.actualStartDate",
+          "actualEndDate": "taskDetails.actualEndDate",
+          "createdDate": "__generate:timestamp",
+          "address": {
+            "id": "address.id",
+            "relatedClientReferenceId": "__ref:TaskModel.clientReferenceId",
+            "doorNo": "address.doorNo",
+            "latitude": "address.latLng[0]",
+            "longitude": "address.latLng[1]",
+            "locationAccuracy": "address.latLng[1]",
+            "addressLine1": "address.addressLine1",
+            "addressLine2": "address.addressLine2",
+            "landmark": "address.landmark",
+            "city": "address.city",
+            "type": "__value:PERMANENT",
+            "pincode": "address.pincode",
+            "buildingName": "address.buildingName",
+            "street": "address.street",
+            "boundaryType": "address.boundaryType",
+            "boundary": "address.boundary",
+            "locality": {
+              "code": "__context:selectedBoundaryCode",
+              "name": "__context:boundary.name",
+              "nonRecoverableError": "address.nonRecoverable",
+              "tenantId": "__context:tenantId",
+              "rowVersion": "meta.rowVersion"
+            },
+            "nonRecoverableError": "address.nonRecoverable",
+            "tenantId": "__context:tenantId",
+            "rowVersion": "meta.rowVersion",
+            "clientAuditDetails": "__generate:clientAudit",
+            "auditDetails": "__generate:audit"
+          },
+          "additionalFields": {
+            "doseIndex": "__context:doseIndex",
+            "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:riDone",
+            "householdClientReferenceId":
+                "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId",
+            "childName": "__context:childName",
+            "ageInMonths": "__context:ageInMonths",
+            "gender": "__context:gender",
+            "headName": "__context:headName",
+            "headMobileNumber": "__context:headMobileNumber",
+            "chcSeen": "riEligibilityChecklist.chcSeen",
+            "fullyImmunized": "riEligibilityChecklist.fullyImmunized",
+            "partiallyImmunized": "riEligibilityChecklist.partiallyImmunized",
+            "zeroDose": "riEligibilityChecklist.zeroDose",
+            "unimmunized": "riEligibilityChecklist.unimmunized"
+          },
+          "clientAuditDetails": "__generate:clientAudit",
+          "auditDetails": "__generate:audit"
+        }
+      }
+    }
+  },
   "unableToDeliverConfig": {
     "fallbackModel": "TaskModel",
     "models": {
@@ -1398,7 +1476,9 @@ final jsonConfig = {
             "ec4Value": "__context:ec4",
             "ec5Value": "__context:ec5",
             // Referral reasons mapped from checklist: SICK for ec1=YES, FEVER for ec2=YES
-            "referralReasons": "__context:referralReasons"
+            "referralReasons": "__context:referralReasons",
+            "flow":
+                "__switch:__context:sourceFlow:{RI_CHECKLIST:__value:riDone}"
           }
         }
       }
