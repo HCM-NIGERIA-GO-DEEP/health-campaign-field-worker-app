@@ -628,6 +628,11 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
         : false;
 
     return BlocBuilder<AuthBloc, AuthState>(builder: (context, state) {
+      // Guard: prevent rendering during logout to avoid accessing throwing properties
+      if (state is! AuthAuthenticatedState) {
+        return Container();
+      }
+
       return BlocListener<LocalizationBloc, LocalizationState>(
         listener: (context, state) {
           if (state.loading == false) {

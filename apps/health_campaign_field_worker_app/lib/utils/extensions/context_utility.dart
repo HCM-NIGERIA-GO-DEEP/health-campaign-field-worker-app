@@ -24,6 +24,16 @@ extension ContextUtilityExtensions on BuildContext {
     return selectedProject;
   }
 
+  /// Safely get the selected project without throwing an exception
+  /// Returns null if project is not selected (useful during logout)
+  ProjectModel? get selectedProjectOrNull {
+    try {
+      return selectedProject;
+    } catch (_) {
+      return null;
+    }
+  }
+
   String get projectId => selectedProject.id;
 
   String? get projectTypeCode {
@@ -140,6 +150,16 @@ extension ContextUtilityExtensions on BuildContext {
     }
   }
 
+  /// Safely get logged-in user roles without throwing an exception
+  /// Returns empty list if user is not authenticated (useful during logout)
+  List<UserRoleModel> get loggedInUserRolesOrNull {
+    try {
+      return loggedInUserRoles;
+    } catch (_) {
+      return [];
+    }
+  }
+
   List<UserRoleModel> get loggedInUserRoles {
     final authBloc = _get<AuthBloc>();
     final userRequestObject = authBloc.state.whenOrNull(
@@ -218,6 +238,16 @@ extension ContextUtilityExtensions on BuildContext {
     }
 
     return userRequestObject;
+  }
+
+  /// Safely get the logged-in user without throwing an exception
+  /// Returns null if user is not authenticated (useful during logout)
+  UserRequestModel? get loggedInUserOrNull {
+    try {
+      return loggedInUser;
+    } catch (_) {
+      return null;
+    }
   }
 
   bool get showProgressBar {
