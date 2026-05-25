@@ -91,6 +91,8 @@ mixin _$PropertySchema {
   VisibilityCondition? get submitCondition =>
       throw _privateConstructorUsedError; // Secondary action button label (e.g., "Decline" button alongside "Accept")
   String? get secondaryActionLabel =>
+      throw _privateConstructorUsedError; // Secondary action button text color
+  String? get secondaryTextColor =>
       throw _privateConstructorUsedError; // Comparison config for scanner fields - enables duplicate detection against historical data
   @JsonKey(fromJson: _comparisonConfigOrNull)
   ComparisonConfig? get comparisonConfig => throw _privateConstructorUsedError;
@@ -160,6 +162,7 @@ abstract class $PropertySchemaCopyWith<$Res> {
       @JsonKey(fromJson: _visibilityConditionOrNull)
       VisibilityCondition? submitCondition,
       String? secondaryActionLabel,
+      String? secondaryTextColor,
       @JsonKey(fromJson: _comparisonConfigOrNull)
       ComparisonConfig? comparisonConfig});
 
@@ -230,6 +233,7 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
     Object? preventScreenCapture = freezed,
     Object? submitCondition = freezed,
     Object? secondaryActionLabel = freezed,
+    Object? secondaryTextColor = freezed,
     Object? comparisonConfig = freezed,
   }) {
     return _then(_value.copyWith(
@@ -409,6 +413,10 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
           ? _value.secondaryActionLabel
           : secondaryActionLabel // ignore: cast_nullable_to_non_nullable
               as String?,
+      secondaryTextColor: freezed == secondaryTextColor
+          ? _value.secondaryTextColor
+          : secondaryTextColor // ignore: cast_nullable_to_non_nullable
+              as String?,
       comparisonConfig: freezed == comparisonConfig
           ? _value.comparisonConfig
           : comparisonConfig // ignore: cast_nullable_to_non_nullable
@@ -576,6 +584,7 @@ abstract class _$$PropertySchemaImplCopyWith<$Res>
       @JsonKey(fromJson: _visibilityConditionOrNull)
       VisibilityCondition? submitCondition,
       String? secondaryActionLabel,
+      String? secondaryTextColor,
       @JsonKey(fromJson: _comparisonConfigOrNull)
       ComparisonConfig? comparisonConfig});
 
@@ -652,6 +661,7 @@ class __$$PropertySchemaImplCopyWithImpl<$Res>
     Object? preventScreenCapture = freezed,
     Object? submitCondition = freezed,
     Object? secondaryActionLabel = freezed,
+    Object? secondaryTextColor = freezed,
     Object? comparisonConfig = freezed,
   }) {
     return _then(_$PropertySchemaImpl(
@@ -831,6 +841,10 @@ class __$$PropertySchemaImplCopyWithImpl<$Res>
           ? _value.secondaryActionLabel
           : secondaryActionLabel // ignore: cast_nullable_to_non_nullable
               as String?,
+      secondaryTextColor: freezed == secondaryTextColor
+          ? _value.secondaryTextColor
+          : secondaryTextColor // ignore: cast_nullable_to_non_nullable
+              as String?,
       comparisonConfig: freezed == comparisonConfig
           ? _value.comparisonConfig
           : comparisonConfig // ignore: cast_nullable_to_non_nullable
@@ -893,6 +907,7 @@ class _$PropertySchemaImpl implements _PropertySchema {
       this.preventScreenCapture,
       @JsonKey(fromJson: _visibilityConditionOrNull) this.submitCondition,
       this.secondaryActionLabel,
+      this.secondaryTextColor,
       @JsonKey(fromJson: _comparisonConfigOrNull) this.comparisonConfig})
       : _properties = properties,
         _enums = enums,
@@ -1067,6 +1082,9 @@ class _$PropertySchemaImpl implements _PropertySchema {
 // Secondary action button label (e.g., "Decline" button alongside "Accept")
   @override
   final String? secondaryActionLabel;
+// Secondary action button text color
+  @override
+  final String? secondaryTextColor;
 // Comparison config for scanner fields - enables duplicate detection against historical data
   @override
   @JsonKey(fromJson: _comparisonConfigOrNull)
@@ -1074,7 +1092,7 @@ class _$PropertySchemaImpl implements _PropertySchema {
 
   @override
   String toString() {
-    return 'PropertySchema(type: $type, readOnly: $readOnly, displayOnly: $displayOnly, hidden: $hidden, properties: $properties, enums: $enums, schemaCode: $schemaCode, systemDate: $systemDate, charCount: $charCount, format: $format, startDate: $startDate, endDate: $endDate, minValue: $minValue, maxValue: $maxValue, minLength: $minLength, maxLength: $maxLength, min: $min, max: $max, helpText: $helpText, tooltip: $tooltip, prefixText: $prefixText, suffixText: $suffixText, innerLabel: $innerLabel, label: $label, isMultiSelect: $isMultiSelect, value: $value, displayBehavior: $displayBehavior, conditions: $conditions, order: $order, actionLabel: $actionLabel, description: $description, validations: $validations, includeInForm: $includeInForm, includeInSummary: $includeInSummary, navigateTo: $navigateTo, visibilityCondition: $visibilityCondition, conditionalNavigateTo: $conditionalNavigateTo, autoFillCondition: $autoFillCondition, showAlertPopUp: $showAlertPopUp, showSecondaryAlertPopUp: $showSecondaryAlertPopUp, multiEntityConfig: $multiEntityConfig, preventScreenCapture: $preventScreenCapture, submitCondition: $submitCondition, secondaryActionLabel: $secondaryActionLabel, comparisonConfig: $comparisonConfig)';
+    return 'PropertySchema(type: $type, readOnly: $readOnly, displayOnly: $displayOnly, hidden: $hidden, properties: $properties, enums: $enums, schemaCode: $schemaCode, systemDate: $systemDate, charCount: $charCount, format: $format, startDate: $startDate, endDate: $endDate, minValue: $minValue, maxValue: $maxValue, minLength: $minLength, maxLength: $maxLength, min: $min, max: $max, helpText: $helpText, tooltip: $tooltip, prefixText: $prefixText, suffixText: $suffixText, innerLabel: $innerLabel, label: $label, isMultiSelect: $isMultiSelect, value: $value, displayBehavior: $displayBehavior, conditions: $conditions, order: $order, actionLabel: $actionLabel, description: $description, validations: $validations, includeInForm: $includeInForm, includeInSummary: $includeInSummary, navigateTo: $navigateTo, visibilityCondition: $visibilityCondition, conditionalNavigateTo: $conditionalNavigateTo, autoFillCondition: $autoFillCondition, showAlertPopUp: $showAlertPopUp, showSecondaryAlertPopUp: $showSecondaryAlertPopUp, multiEntityConfig: $multiEntityConfig, preventScreenCapture: $preventScreenCapture, submitCondition: $submitCondition, secondaryActionLabel: $secondaryActionLabel, secondaryTextColor: $secondaryTextColor, comparisonConfig: $comparisonConfig)';
   }
 
   @override
@@ -1160,6 +1178,8 @@ class _$PropertySchemaImpl implements _PropertySchema {
                 other.submitCondition == submitCondition) &&
             (identical(other.secondaryActionLabel, secondaryActionLabel) ||
                 other.secondaryActionLabel == secondaryActionLabel) &&
+            (identical(other.secondaryTextColor, secondaryTextColor) ||
+                other.secondaryTextColor == secondaryTextColor) &&
             (identical(other.comparisonConfig, comparisonConfig) ||
                 other.comparisonConfig == comparisonConfig));
   }
@@ -1212,6 +1232,7 @@ class _$PropertySchemaImpl implements _PropertySchema {
         preventScreenCapture,
         submitCondition,
         secondaryActionLabel,
+        secondaryTextColor,
         comparisonConfig
       ]);
 
@@ -1285,6 +1306,7 @@ abstract class _PropertySchema implements PropertySchema {
       @JsonKey(fromJson: _visibilityConditionOrNull)
       final VisibilityCondition? submitCondition,
       final String? secondaryActionLabel,
+      final String? secondaryTextColor,
       @JsonKey(fromJson: _comparisonConfigOrNull)
       final ComparisonConfig? comparisonConfig}) = _$PropertySchemaImpl;
 
@@ -1397,6 +1419,8 @@ abstract class _PropertySchema implements PropertySchema {
   VisibilityCondition? get submitCondition;
   @override // Secondary action button label (e.g., "Decline" button alongside "Accept")
   String? get secondaryActionLabel;
+  @override // Secondary action button text color
+  String? get secondaryTextColor;
   @override // Comparison config for scanner fields - enables duplicate detection against historical data
   @JsonKey(fromJson: _comparisonConfigOrNull)
   ComparisonConfig? get comparisonConfig;

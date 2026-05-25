@@ -712,6 +712,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                             child: DigitButton(
                               label: localizations
                                   .translate(schema.secondaryActionLabel!),
+                              textColor: _parseColor(schema.secondaryTextColor),
                               onPressed: () {
                                 if (schema.showSecondaryAlertPopUp != null) {
                                   _showSecondaryAlertPopUp(
@@ -1078,6 +1079,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                       child: DigitButton(
                         label: localizations
                             .translate(schema.secondaryActionLabel!),
+                        textColor: _parseColor(schema.secondaryTextColor),
                         onPressed: () {
                           if (schema.showSecondaryAlertPopUp != null) {
                             _showSecondaryAlertPopUp(
@@ -1631,5 +1633,35 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
         ),
       ],
     );
+  }
+
+  Color? _parseColor(String? colorString) {
+    if (colorString == null) return null;
+    final color = colorString.toLowerCase();
+    switch (color) {
+      case 'red':
+        return Colors.red;
+      case 'redorange':
+        return const Color.fromARGB(255, 200, 76, 14);
+      case 'blue':
+        return Colors.blue;
+      case 'green':
+        return Colors.green;
+      case 'yellow':
+        return Colors.yellow;
+      case 'orange':
+        return Colors.orange;
+      case 'purple':
+        return Colors.purple;
+      case 'black':
+        return Colors.black;
+      case 'white':
+        return Colors.white;
+      case 'grey':
+      case 'gray':
+        return Colors.grey;
+      default:
+        return null;
+    }
   }
 }

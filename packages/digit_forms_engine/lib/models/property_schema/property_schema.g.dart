@@ -68,6 +68,7 @@ _$PropertySchemaImpl _$$PropertySchemaImplFromJson(Map<String, dynamic> json) =>
       preventScreenCapture: json['preventScreenCapture'] as bool?,
       submitCondition: _visibilityConditionOrNull(json['submitCondition']),
       secondaryActionLabel: json['secondaryActionLabel'] as String?,
+      secondaryTextColor: json['secondaryTextColor'] as String?,
       comparisonConfig: _comparisonConfigOrNull(json['comparisonConfig']),
     );
 
@@ -131,6 +132,7 @@ Map<String, dynamic> _$$PropertySchemaImplToJson(
   writeNotNull('preventScreenCapture', instance.preventScreenCapture);
   writeNotNull('submitCondition', instance.submitCondition?.toJson());
   writeNotNull('secondaryActionLabel', instance.secondaryActionLabel);
+  writeNotNull('secondaryTextColor', instance.secondaryTextColor);
   writeNotNull('comparisonConfig', instance.comparisonConfig?.toJson());
   return val;
 }
