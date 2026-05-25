@@ -730,6 +730,12 @@ final dynamic sampleInventoryFlows = {
                   "value": true,
                   "message":
                       "APPONE_MANAGESTOCK_WAREHOUSE_label_facilityToWhich_mandatory_message"
+                },
+                {
+                  "type": "pattern",
+                  "value":
+                      "^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}\$",
+                  "message": "INVALID_USER_ID_FORMAT"
                 }
               ],
               "errorMessage": "",
