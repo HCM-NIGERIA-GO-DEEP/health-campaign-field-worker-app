@@ -5,7 +5,7 @@ final jsonConfig = {
     "models": {
       "HouseholdModel": {
         "mappings": {
-          "id": "housing.id",
+          "id": "householdDetails.id",
           "memberCount": "householdDetails.memberCount",
           "latitude": "beneficiaryLocation.latLng[0]",
           "longitude": "beneficiaryLocation.latLng[1]",
@@ -57,10 +57,10 @@ final jsonConfig = {
       },
       "IndividualModel": {
         "mappings": {
-          "id": "personalDetails.id",
-          "individualId": "personalDetails.individualId",
-          "userId": "personalDetails.userId",
-          "userUuinamed": "personalDetails.uuid",
+          "id": "householdDetails.id",
+          "individualId": "householdDetails.individualId",
+          "userId": "householdDetails.userId",
+          "userUuinamed": "householdDetails.uuid",
           "dateOfBirth": "beneficiaryDetails.dobPicker",
           "mobileNumber": "householdDetails.phone",
           "altContactNumber": "contactInfo.altContact",

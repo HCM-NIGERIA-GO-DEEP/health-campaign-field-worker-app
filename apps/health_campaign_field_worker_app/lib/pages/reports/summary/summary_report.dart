@@ -45,6 +45,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           .read<LocalRepository<HouseholdModel, HouseholdSearchModel>>();
       final taskRepo =
           context.read<LocalRepository<TaskModel, TaskSearchModel>>();
+
       final householdMemberRepo = context.read<
           LocalRepository<HouseholdMemberModel, HouseholdMemberSearchModel>>();
       final stockRepo =
@@ -99,8 +100,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // Fetch all data
       final households = await householdRepo.search(HouseholdSearchModel());
       final tasks = await taskRepo.search(TaskSearchModel());
-      final householdMembers =
-          await householdMemberRepo.search(HouseholdMemberSearchModel());
+      final householdMembers = await householdMemberRepo.search(HouseholdMemberSearchModel());
 
       // Fetch stock records (received + sent for facility)
       final receivedStocks = await stockRepo
@@ -121,8 +121,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // ── Group households by date (filter by logged-in user) ──
       final hhByDate = <String, int>{};
       for (final hh in households) {
-        final createdBy =
-            hh.clientAuditDetails?.createdBy ?? hh.auditDetails?.createdBy;
+        final createdBy = hh.clientAuditDetails?.createdBy ?? hh.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
         final epochMs = hh.clientAuditDetails?.createdTime ??
             hh.auditDetails?.createdTime;
@@ -130,6 +129,63 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         final date = _epochToDateString(epochMs);
         hhByDate[date] = (hhByDate[date] ?? 0) + 1;
       }
+
+      final totalMembersByDate = <String, int>{};
+      for (final hh in households) {
+        final totalMembers = hh.memberCount ?? 0;
+        final epochMs = hh.clientAuditDetails?.createdTime ??
+            hh.auditDetails?.createdTime;
+        if (epochMs == null) continue;
+        final date = _epochToDateString(epochMs);
+        totalMembersByDate[date] = (totalMembersByDate[date] ?? 0) + totalMembers;
+      }
+
+
+      final totalITNByDate = <String, int>{};
+      for (final task in tasks) {
+        // Filter valid task status
+        if (task.status != 'ADMINISTRATION_SUCCESS' &&
+            task.status != 'VISITED') {
+          continue;
+        }
+
+        // Filter by logged-in user
+        final createdBy =
+            task.clientAuditDetails?.createdBy ??
+            task.auditDetails?.createdBy;
+
+        if (createdBy != userUuid) continue;
+
+        // Get created time
+        final epochMs =
+            task.clientAuditDetails?.createdTime ??
+            task.auditDetails?.createdTime;
+
+        if (epochMs == null) continue;
+
+        // Convert to date
+        final date = _epochToDateString(epochMs);
+
+        // Get task resources
+        final resources = task.resources;
+
+        if (resources == null) continue;
+
+        // Sum quantity
+        for (final res in resources) {
+          final pvId = res.productVariantId;
+
+          if (pvId == null || pvId.isEmpty) continue;
+
+          final qty =
+              (double.tryParse(res.quantity ?? '0') ?? 0).toInt();
+
+          totalITNByDate[date] =
+              (totalITNByDate[date] ?? 0) + qty;
+        }
+      }
+
+    
 
       // ── Group tasks by date for children treated ──
       // (filter by logged-in user AND status == 'ADMINISTRATION_SUCCESS' or 'VISITED')
@@ -185,8 +241,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           if (pvId == null || pvId.isEmpty) continue;
           final qty = double.tryParse(res.quantity ?? '0') ?? 0.0;
           final key = '$date|$pvId';
-          consumedByDateProduct[key] =
-              (consumedByDateProduct[key] ?? 0.0) + qty;
+          consumedByDateProduct[key] = (consumedByDateProduct[key] ?? 0.0) + qty;
         }
       }
 
@@ -207,6 +262,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
 
       final allDates = <String>{
         ...hhByDate.keys,
+        ...totalMembersByDate.keys,
+        ...totalITNByDate.keys,
         ...tasksByDate.keys,
         ...stockDates,
         ...consumedDates,
@@ -222,6 +279,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       final rows = <_SummaryReportRow>[];
       for (final date in sortedDates) {
         final hhCount = hhByDate[date] ?? 0;
+        final memberCount = totalMembersByDate[date] ?? 0;
+        final distributedQty = totalITNByDate[date] ?? 0;
         final childrenCount = tasksByDate[date]?.length ?? 0;
         final nonHeadCount = nonHeadMembersByDate[date] ?? 0;
         final percentage =
@@ -281,6 +340,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         rows.add(_SummaryReportRow(
           date: date,
           householdsRegistered: hhCount,
+          number_of_member_in_household: memberCount,
+          number_of_itn_distributed: distributedQty.toInt(),
           childrenTreated: childrenCount,
           childrenTreatedPercent: percentage,
           stockData: stockData,
@@ -332,42 +393,43 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         cellValue: 'hhRegistered',
       ),
       DigitTableColumn(
-        header: localizations.translate(i18.summaryReport.childrenTreated),
-        cellValue: 'childrenTreated',
+        header: localizations.translate(i18.summaryReport.numberOfPeopleInHouseholds),
+        cellValue: 'numberOfPeopleInHouseholds',
       ),
       DigitTableColumn(
-        header:
-            localizations.translate(i18.summaryReport.childrenTreatedPercent),
-        cellValue: 'childrenTreatedPercent',
+        header: localizations.translate(i18.summaryReport.numberOfITNDistributed),
+        cellValue: 'numberOfITNDistributed',
       ),
+      
+      
     ];
 
     // Add stock columns per product variant
-    for (final pv in _productVariants) {
-      final name = localizations.translate(pv.sku ?? pv.id);
-      columns.addAll([
-        DigitTableColumn(
-          header:
-              '${localizations.translate(i18.summaryReport.stockReceived)} ($name)',
-          cellValue: 'received_${pv.id}',
-        ),
-        DigitTableColumn(
-          header:
-              '${localizations.translate(i18.summaryReport.stockConsumed)} ($name)',
-          cellValue: 'consumed_${pv.id}',
-        ),
-        DigitTableColumn(
-          header:
-              '${localizations.translate(i18.summaryReport.stockReturned)} ($name)',
-          cellValue: 'returned_${pv.id}',
-        ),
-        DigitTableColumn(
-          header:
-              '${localizations.translate(i18.summaryReport.stockBalance)} ($name)',
-          cellValue: 'balance_${pv.id}',
-        ),
-      ]);
-    }
+    // for (final pv in _productVariants) {
+    //   final name = localizations.translate(pv.sku ?? pv.id);
+    //   columns.addAll([
+    //     DigitTableColumn(
+    //       header:
+    //           '${localizations.translate(i18.summaryReport.stockReceived)} ($name)',
+    //       cellValue: 'received_${pv.id}',
+    //     ),
+    //     DigitTableColumn(
+    //       header:
+    //           '${localizations.translate(i18.summaryReport.stockConsumed)} ($name)',
+    //       cellValue: 'consumed_${pv.id}',
+    //     ),
+    //     DigitTableColumn(
+    //       header:
+    //           '${localizations.translate(i18.summaryReport.stockReturned)} ($name)',
+    //       cellValue: 'returned_${pv.id}',
+    //     ),
+    //     DigitTableColumn(
+    //       header:
+    //           '${localizations.translate(i18.summaryReport.stockBalance)} ($name)',
+    //       cellValue: 'balance_${pv.id}',
+    //     ),
+    //   ]);
+    // }
 
     // Build rows
     final rows = _reportRows.map((row) {
@@ -381,12 +443,12 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           cellKey: 'hhRegistered',
         ),
         DigitTableData(
-          row.childrenTreated.toString(),
-          cellKey: 'childrenTreated',
+          row.number_of_member_in_household.toString(),
+          cellKey: 'number_of_member_in_household',
         ),
         DigitTableData(
-          '${row.childrenTreatedPercent.toStringAsFixed(1)}%',
-          cellKey: 'childrenTreatedPercent',
+          row.number_of_itn_distributed.toString(),
+          cellKey: 'number_of_itn_distributed',
         ),
       ];
 
@@ -452,24 +514,24 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: spacer2),
-            child: Text(
-              localizations.translate(i18.summaryReport.description),
-              style: textTheme.bodyL,
-            ),
-          ),
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(horizontal: spacer2),
+          //   child: Text(
+          //     localizations.translate(i18.summaryReport.description),
+          //     style: textTheme.bodyL,
+          //   ),
+          // ),
           const SizedBox(height: spacer2),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: spacer2),
-            child: InfoCard(
-              title: localizations.translate(i18.summaryReport.infoCardTitle),
-              description: localizations
-                  .translate(i18.summaryReport.infoCardDescription),
-              type: InfoType.info,
-            ),
-          ),
-          const SizedBox(height: spacer2),
+          // Padding(
+          //   padding: const EdgeInsets.symmetric(horizontal: spacer2),
+          //   child: InfoCard(
+          //     title: localizations.translate(i18.summaryReport.infoCardTitle),
+          //     description: localizations
+          //         .translate(i18.summaryReport.infoCardDescription),
+          //     type: InfoType.info,
+          //   ),
+          // ),
+          // const SizedBox(height: spacer2),
           if (_isLoading)
             const Center(child: CircularProgressIndicator())
           else if (_reportRows.isEmpty)
@@ -505,6 +567,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
 class _SummaryReportRow {
   final String date;
   final int householdsRegistered;
+  final int number_of_member_in_household;
+  final int number_of_itn_distributed;
   final int childrenTreated;
   final double childrenTreatedPercent;
   final Map<String, _ProductStockData> stockData;
@@ -512,6 +576,8 @@ class _SummaryReportRow {
   _SummaryReportRow({
     required this.date,
     required this.householdsRegistered,
+    required this.number_of_member_in_household,
+    required this.number_of_itn_distributed,
     required this.childrenTreated,
     required this.childrenTreatedPercent,
     this.stockData = const {},

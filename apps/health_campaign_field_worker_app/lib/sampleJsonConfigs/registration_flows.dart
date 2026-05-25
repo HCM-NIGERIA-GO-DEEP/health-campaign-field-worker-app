@@ -119,7 +119,7 @@ final dynamic sampleFlows = {
       "navigateTo": null,
       "screenType": "TEMPLATE",
       "submitCondition": null,
-      "preventScreenCapture": false
+      "preventScreenCapture": false,
     },
     {
       "body": [
@@ -901,6 +901,7 @@ final dynamic sampleFlows = {
         {
           "type": "template",
           "format": "card",
+          "visible": false,
           "children": [
             {
               "data": [
@@ -970,8 +971,8 @@ final dynamic sampleFlows = {
                 },
                 {
                   "key": "NUMBER_OF_ITN_FOR_DELIVERY",
-                  "value":
-                      "{{fn:getNumberOfITNForDelivery(contextData.0.household.HouseholdModel.memberCount)}}",
+                  // "value": "{{fn:getNumberOfITNForDelivery(contextData.0.household.HouseholdModel.memberCount)}}",
+                  "value": "{{contextData.0.targetCycle.0.deliveries.0.doseCriteria.0.ProductVariants.0.quantity}}",
                   "isActive": true
                 }
               ],
@@ -995,7 +996,7 @@ final dynamic sampleFlows = {
                       "{{contextData.0.headIndividual.IndividualModel.mobileNumber}}",
                   "isActive": true
                 },
-                {"key": "E_TOKEN", "value": "", "isActive": true},
+                {"key": "E_TOKEN", "value": "{{contextData.0.household.HouseholdModel.id}}", "isActive": true},
               ],
               "type": "template",
               "format": "labelPairList",
@@ -1011,7 +1012,7 @@ final dynamic sampleFlows = {
       "footer": [
         {
           "type": "template",
-          "label": "REGISTER_BENEFICIARY",
+          "label": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_ACTION_BUTTON_LABEL_1",
           "format": "button",
           "visible": true,
           "onAction": [
@@ -1057,6 +1058,10 @@ final dynamic sampleFlows = {
                   {
                     "key": "futureDoses",
                     "value": "{{contextData.0.futureDeliveries}}"
+                  },
+                  {
+                    "key": "qty",
+                    "value": "{{contextData.0.targetCycle.0.deliveries.0.doseCriteria.0.ProductVariants.0.quantity}}"
                   }
                 ],
                 "name": "DELIVERY",
@@ -1387,8 +1392,7 @@ final dynamic sampleFlows = {
                 },
                 {
                   "key": "NUMBER_OF_ITN_FOR_DELIVERY",
-                  "value":
-                      "{{fn:getNumberOfITNForDelivery(contextData.0.household.HouseholdModel.memberCount)}}",
+                   "value": "{{contextData.0.targetCycle.0.deliveries.0.doseCriteria.0.ProductVariants.0.quantity}}",
                   "isActive": true
                 }
               ],
@@ -1578,7 +1582,85 @@ final dynamic sampleFlows = {
             "select": "{{id}}",
             "default": -1,
             "takeFirst": true
-          }
+          },
+          "nextDoseId": {
+            "order": 4,
+            "fallback": 1,
+            "condition": {
+              "if": {
+                "left": "{{cycle}}",
+                "right": "{{currentRunningCycle}}",
+                "operator": "equals"
+              },
+              "else": 1,
+              "then": {
+                "if": {
+                  "left": {"value": "{{dose}}", "operation": "increment"},
+                  "right": "{{deliveryLength}}",
+                  "operator": "lte"
+                },
+                "else": 1,
+                "then": {"value": "{{dose}}", "operation": "increment"}
+              }
+            }
+          },
+          "nextCycleId": {
+            "order": 5,
+            "fallback": "{{currentRunningCycle}}",
+            "condition": {
+              "if": {
+                "left": "{{cycle}}",
+                "right": "{{currentRunningCycle}}",
+                "operator": "equals"
+              },
+              "else": "{{currentRunningCycle}}",
+              "then": {
+                "if": {
+                  "left": {"value": "{{dose}}", "operation": "increment"},
+                  "right": "{{deliveryLength}}",
+                  "operator": "lte"
+                },
+                "else": {"value": "{{cycle}}", "operation": "increment"},
+                "then": "{{cycle}}"
+              }
+            }
+          },
+          "effectiveDose": {
+            "order": 6,
+            "fallback": 0,
+            "condition": {
+              "if": {
+                "left": "{{nextCycleId}}",
+                "right": "{{cycle}}",
+                "operator": "equals"
+              },
+              "else": 0,
+              "then": "{{dose}}"
+            }
+          },
+          "deliveryLength": {
+            "from":
+                "{{singleton.selectedProject.additionalDetails.projectType.cycles}}",
+            "order": 3,
+            "where": {
+              "left": "{{id}}",
+              "right": "{{currentRunningCycle}}",
+              "operator": "equals"
+            },
+            "select": "{{deliveries.length}}",
+            "default": 0,
+            "takeFirst": true
+          },
+          "hasCycleArrived": {
+            "order": 2,
+            "fallback": false,
+            "condition": {
+              "left": "{{cycle}}",
+              "right": "{{currentRunningCycle}}",
+              "operator": "equals"
+            }
+          },
+          
         },
         "rootEntity": "HouseholdModel",
         "wrapperName": "HouseholdWrapper",
@@ -1592,7 +1674,74 @@ final dynamic sampleFlows = {
             "hFReferral"
           ],
           "primary": "household"
-        }
+        },
+        "computedList": {
+          "pastCycles": {
+            "from":
+                "{{singleton.selectedProject.additionalDetails.projectType.cycles}}",
+            "order": 6,
+            "where": {
+              "left": "{{item.id}}",
+              "right": "{{currentRunningCycle}}",
+              "operator": "lt"
+            }
+          },
+          "futureTasks": {
+            "from": "{{tasks}}",
+            "order": 2,
+            "where": {
+              "left": "{{item.additionalFields.deliveryStrategy}}",
+              "right": "INDIRECT",
+              "operator": "equals"
+            }
+          },
+          "targetCycle": {
+            "from":
+                "{{singleton.selectedProject.additionalDetails.projectType.cycles}}",
+            "order": 1,
+            "where": {
+              "left": "{{id}}",
+              "right": "{{currentRunningCycle}}",
+              "operator": "equals"
+            },
+            "fallback": null,
+            "takeLast": true
+          },
+          "currentDelivery": {
+            "from": "{{targetCycle.0.deliveries}}",
+            "order": 4,
+            "where": {
+              "left": "{{id}}",
+              "right": "{{nextDoseId}}",
+              "operator": "equals"
+            },
+            "fallback": null,
+            "takeLast": true
+          },
+          "futureDeliveries": {
+            "from": "{{targetCycle.0.deliveries}}",
+            "skip": {"from": "{{effectiveDose}}"},
+            "order": 3,
+            "where": {
+              "left": "{{item.deliveryStrategy}}",
+              "right": "INDIRECT",
+              "operator": "equals"
+            }
+          },
+          "eligibleProductVariants": {
+            "from": "{{currentDelivery.0.doseCriteria}}",
+            "order": 5,
+            "fallback": [],
+            "takeLast": false,
+            "evaluateCondition": {
+              "context": ["{{individuals.0}}", "{{household.0}}"],
+              "condition": "{{item.condition}}",
+              "transformations": {
+                "age": {"type": "ageInMonths", "source": "dateOfBirth"}
+              }
+            }
+          }
+        },
       },
       "submitCondition": null,
       "preventScreenCapture": false
@@ -1819,7 +1968,7 @@ final dynamic sampleFlows = {
       "body": [
         {
           "type": "template",
-          "label": "NAME_OF_INDIVIDUAL",
+          "label": "SEARCH_LABEL_BY_BENEFICIARY_NAME_OR_ID",
           "format": "searchBar",
           "disabled": false,
           "onAction": [
@@ -2349,8 +2498,9 @@ final dynamic sampleFlows = {
           "icon": "FilterAlt",
           "type": "template",
           // "disabled": "{{searchBar}} == null || {{searchBar}} == ''",
-          "visible":
-              "{{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==false",
+          // "visible":
+          //     "{{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==false",
+          "visible": false,
           "label": "REGISTER_NEW_BENEFICIARY",
           "format": "actionPopup",
           "fieldName": "beneficiaryIdMinCheck",
@@ -2361,7 +2511,7 @@ final dynamic sampleFlows = {
               "body": [],
               "type": "alert",
               "title":
-                  "REGISTRATION_SEARCH_BENEFICIARY_MIN_BENEFICIARY_ID_LEFT_TITLE",
+                  "REGISTRATION_SEARCH_BENEFICIARY_MIN_BENEFICIARY_ID_LEFT_TITLE_",
               "description":
                   "REGISTRATION_SEARCH_BENEFICIARY_MIN_BENEFICIARY_ID_LEFT_DESCRIPTION",
               "footerActions": [
@@ -2435,9 +2585,9 @@ final dynamic sampleFlows = {
           "type": "template",
           "label": "REGISTER_NEW_BENEFICIARY",
           "format": "button",
-          "disabled": "{{searchBar}} == null || {{searchBar}} == ''",
-          "visible":
-              "{{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==true",
+          // "disabled": "{{searchBar}} == null || {{searchBar}} == ''",
+          // "visible":
+          //     "{{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==true",
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -2974,7 +3124,7 @@ final dynamic sampleFlows = {
             }
           ],
           "actionLabel":
-              "APPONE_REGISTRATION_DELIVERYDETAILS_ACTION_BUTTON_LABEL_1",
+              "APPONE_REGISTRATION_DELIVERYDETAILS_ACTION_BUTTON_LABEL_2",
           "description":
               "APPONE_REGISTRATION_DELIVERYDETAILS_SCREEN_DESCRIPTION",
           "showTabView": false,
@@ -5965,7 +6115,7 @@ final dynamic sampleFlows = {
                 {
                   "actionType": "UPDATE_EVENT",
                   "properties": {
-                    "entity": "HouseholdModel, TaskModel",
+                    "entity": "HouseholdModel, TaskModel, IndividualModel",
                     "modify": [
                       {"key": "TaskModel.status", "value": "NOT_ADMINISTERED"}
                     ],
@@ -6024,7 +6174,7 @@ final dynamic sampleFlows = {
                 {
                   "actionType": "UPDATE_EVENT",
                   "properties": {
-                    "entity": "HouseholdModel",
+                    "entity": "HouseholdModel, IndividualModel",
                     "onError": [
                       {
                         "actionType": "SHOW_TOAST",
@@ -6651,7 +6801,7 @@ final dynamic sampleFlows = {
             {
               "type": "string",
               "label":
-                  "APPONE_REGISTRATION_BENEFICIARYLOCATION_label_administrativeArea",
+                  "APPONE_REGISTRATION_BENEFICIARYLOCATION_label_settlement",
               "order": 1,
               "value": "",
               "format": "locality",
@@ -6684,7 +6834,7 @@ final dynamic sampleFlows = {
             },
             {
               "type": "string",
-              "label": "APPONE_REGISTRATION_BENEFICIARYLOCATION_label_latlong",
+              "label": "APPONE_REGISTRATION_BENEFICIARYLOCATION_label_gps_coordinate_accuracy",
               "order": 2,
               "value": "",
               "format": "latLng",
@@ -6895,9 +7045,9 @@ final dynamic sampleFlows = {
             }
           ],
           "actionLabel":
-              "APPONE_REGISTRATION_BENEFICIARY_LOCATION_ACTION_BUTTON_LABEL_1",
+              "APPONE_REGISTRATION_BENEFICIARY_LOCATION_ACTION_BUTTON_LABEL_BEDNET_NEXT",
           "description":
-              "APPONE_REGISTRATION_BENEFICIARY_LOCATION_SCREEN_DESCRIPTION",
+              "",
           "showTabView": false,
           "submitCondition": null,
           "preventScreenCapture": false
@@ -6926,7 +7076,7 @@ final dynamic sampleFlows = {
             {
               "actionType": "CREATE_EVENT",
               "properties": {
-                "entity": "ProjectBeneficiaryModel",
+                "entity": "ProjectBeneficiaryModel, IndividualModel",
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",
@@ -6996,7 +7146,7 @@ final dynamic sampleFlows = {
             {
               "actionType": "UPDATE_EVENT",
               "properties": {
-                "entity": "HouseholdModel, TaskModel",
+                "entity": "HouseholdModel, TaskModel, IndividualModel",
                 "modify": [
                   {"key": "TaskModel.status", "value": "NOT_ADMINISTERED"}
                 ],
@@ -7055,7 +7205,7 @@ final dynamic sampleFlows = {
             {
               "actionType": "UPDATE_EVENT",
               "properties": {
-                "entity": "HouseholdModel",
+                "entity": "HouseholdModel, IndividualModel",
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",
@@ -7243,7 +7393,74 @@ final dynamic sampleFlows = {
             "task"
           ],
           "primary": "household"
-        }
+        },
+        "computedList": {
+          "pastCycles": {
+            "from":
+                "{{singleton.selectedProject.additionalDetails.projectType.cycles}}",
+            "order": 6,
+            "where": {
+              "left": "{{item.id}}",
+              "right": "{{currentRunningCycle}}",
+              "operator": "lt"
+            }
+          },
+          "futureTasks": {
+            "from": "{{tasks}}",
+            "order": 2,
+            "where": {
+              "left": "{{item.additionalFields.deliveryStrategy}}",
+              "right": "INDIRECT",
+              "operator": "equals"
+            }
+          },
+          "targetCycle": {
+            "from":
+                "{{singleton.selectedProject.additionalDetails.projectType.cycles}}",
+            "order": 1,
+            "where": {
+              "left": "{{id}}",
+              "right": "{{currentRunningCycle}}",
+              "operator": "equals"
+            },
+            "fallback": null,
+            "takeLast": true
+          },
+          "currentDelivery": {
+            "from": "{{targetCycle.0.deliveries}}",
+            "order": 4,
+            "where": {
+              "left": "{{id}}",
+              "right": "{{nextDoseId}}",
+              "operator": "equals"
+            },
+            "fallback": null,
+            "takeLast": true
+          },
+          "futureDeliveries": {
+            "from": "{{targetCycle.0.deliveries}}",
+            "skip": {"from": "{{effectiveDose}}"},
+            "order": 3,
+            "where": {
+              "left": "{{item.deliveryStrategy}}",
+              "right": "INDIRECT",
+              "operator": "equals"
+            }
+          },
+          "eligibleProductVariants": {
+            "from": "{{currentDelivery.0.doseCriteria}}",
+            "order": 5,
+            "fallback": [],
+            "takeLast": false,
+            "evaluateCondition": {
+              "context": ["{{individuals.0}}", "{{household.0}}"],
+              "condition": "{{item.condition}}",
+              "transformations": {
+                "age": {"type": "ageInMonths", "source": "dateOfBirth"}
+              }
+            }
+          }
+        },
       },
       "scrollListener": {}
     },

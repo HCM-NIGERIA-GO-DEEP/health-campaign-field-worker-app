@@ -1526,7 +1526,11 @@ class SummaryReport {
 
   String get dateColumn => 'SUMMARY_REPORT_DATE';
 
-  String get householdsRegistered => 'SUMMARY_REPORT_HOUSEHOLDS_REGISTERED';
+  String get householdsRegistered => 'SUMMARY_REPORT_HOUSEHOLDS_REGISTERED_BEDNET';
+
+  String get numberOfPeopleInHouseholds => 'NUMBER_OF_PEOPLE_IN_HOUSEHOLDS';
+
+  String get numberOfITNDistributed => 'NUMBER_OF_ITNS_DISTRIBUTED';
 
   String get childrenTreated => 'SUMMARY_REPORT_CHILDREN_TREATED';
 
