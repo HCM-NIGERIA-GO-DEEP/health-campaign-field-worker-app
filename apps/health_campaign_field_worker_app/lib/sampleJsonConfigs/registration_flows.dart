@@ -1040,6 +1040,130 @@ final dynamic sampleFlows = {
             },
             {
               "type": "template",
+              "label": "ADD_MEMBER",
+              "format": "button",
+              "visible":
+                  "{{fn:isSmcPresent()}}==true && {{fn:canAddMember(contextData.0.household.HouseholdModel.additionalFields, contextData.0.members)}} && {{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==true",
+              "onAction": [
+                {
+                  "actionType": "NAVIGATION",
+                  "properties": {
+                    "data": [
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value":
+                            "{{contextData.0.household.HouseholdModel.clientReferenceId}}"
+                      },
+                      {
+                        "key": "UNIQUE_BENEFICIARY_ID",
+                        "value": "{{latestBeneficiaryId}}"
+                      },
+                      {"key": "isHead", "value": "false"}
+                    ],
+                    "name": "ADD_MEMBER",
+                    "type": "FORM"
+                  }
+                }
+              ],
+              "fieldName": "addMember",
+              "properties": {
+                "icon": "AddIcon",
+                "size": "large",
+                "type": "primary",
+                "mainAxisSize": "max",
+                "mainAxisAlignment": "center"
+              },
+              "schemaCode": null,
+            },
+            {
+              "icon": "AddIcon",
+              "type": "template",
+              "visible":
+                  "{{fn:isSmcPresent()}}==true && {{fn:canAddMember(contextData.0.household.HouseholdModel.additionalFields, contextData.0.members)}} && {{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==false",
+              "label": "ADD_MEMBER",
+              "format": "actionPopup",
+              "fieldName": "beneficiaryIdMinCheck",
+              "properties": {
+                "prefixIcon": "AddIcon",
+                "size": "medium",
+                "type": "tertiary",
+                "popupConfig": {
+                  "body": [],
+                  "type": "alert",
+                  "title":
+                      "REGISTRATION_SEARCH_BENEFICIARY_MIN_BENEFICIARY_ID_LEFT_TITLE",
+                  "description":
+                      "REGISTRATION_SEARCH_BENEFICIARY_MIN_BENEFICIARY_ID_LEFT_DESCRIPTION",
+                  "footerActions": [
+                    {
+                      "type": "template",
+                      "label":
+                          "REGISTRATION_SEARCH_BENEFICIARY_SKIP_CONTINUE_LABEL",
+                      "format": "button",
+                      "onAction": [
+                        {
+                          "actionType": "CLOSE_POPUP",
+                          "properties": {"parentScreenKey": "searchBeneficiary"}
+                        },
+                        {
+                          "actionType": "NAVIGATION",
+                          "properties": {
+                            "data": [
+                              {
+                                "key": "HouseholdClientReferenceId",
+                                "value":
+                                    "{{contextData.0.household.HouseholdModel.clientReferenceId}}"
+                              },
+                              {
+                                "key": "UNIQUE_BENEFICIARY_ID",
+                                "value": "{{latestBeneficiaryId}}"
+                              },
+                              {"key": "isHead", "value": "false"}
+                            ],
+                            "name": "ADD_MEMBER",
+                            "type": "FORM"
+                          }
+                        }
+                      ],
+                      "fieldName": "clearFilter",
+                      "properties": {
+                        "size": "large",
+                        "type": "secondary",
+                        "mainAxisSize": "max"
+                      }
+                    },
+                    {
+                      "type": "template",
+                      "label": "REGISTRATION_SEARCH_BENEFICIARY_DOWNLOAD_ID",
+                      "format": "button",
+                      "onAction": [
+                        {
+                          "actionType": "CLOSE_POPUP",
+                          "properties": {"parentScreenKey": "searchBeneficiary"}
+                        },
+                        {
+                          "actionType": "NAVIGATE_TO_BENEFICIARY_ID_DOWN_SYNC",
+                          "properties": {}
+                        }
+                      ],
+                      "fieldName": "saveFilter",
+                      "properties": {
+                        "size": "large",
+                        "type": "primary",
+                        "mainAxisSize": "max"
+                      }
+                    }
+                  ],
+                  "showCloseButton": true,
+                  "barrierDismissible": true
+                },
+                "mainAxisSize": "min",
+                "mainAxisAlignment": "center"
+              },
+              "schemaCode": null,
+            },
+            {
+              "type": "template",
               "child": {
                 "type": "template",
                 "format": "card",
@@ -1631,130 +1755,6 @@ final dynamic sampleFlows = {
               "fieldName": "listViewMembers",
               "dataSource": "members",
               "properties": {"spacing": "spacer4"}
-            },
-            {
-              "type": "template",
-              "label": "ADD_MEMBER",
-              "format": "button",
-              "visible":
-                  "{{fn:isSmcPresent()}}==true && {{fn:canAddMember(contextData.0.household.HouseholdModel.additionalFields, contextData.0.members)}} && {{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==true",
-              "onAction": [
-                {
-                  "actionType": "NAVIGATION",
-                  "properties": {
-                    "data": [
-                      {
-                        "key": "HouseholdClientReferenceId",
-                        "value":
-                            "{{contextData.0.household.HouseholdModel.clientReferenceId}}"
-                      },
-                      {
-                        "key": "UNIQUE_BENEFICIARY_ID",
-                        "value": "{{latestBeneficiaryId}}"
-                      },
-                      {"key": "isHead", "value": "false"}
-                    ],
-                    "name": "ADD_MEMBER",
-                    "type": "FORM"
-                  }
-                }
-              ],
-              "fieldName": "addMember",
-              "properties": {
-                "icon": "AddIcon",
-                "size": "large",
-                "type": "primary",
-                "mainAxisSize": "max",
-                "mainAxisAlignment": "center"
-              },
-              "schemaCode": null,
-            },
-            {
-              "icon": "AddIcon",
-              "type": "template",
-              "visible":
-                  "{{fn:isSmcPresent()}}==true && {{fn:canAddMember(contextData.0.household.HouseholdModel.additionalFields, contextData.0.members)}} && {{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==false",
-              "label": "ADD_MEMBER",
-              "format": "actionPopup",
-              "fieldName": "beneficiaryIdMinCheck",
-              "properties": {
-                "prefixIcon": "AddIcon",
-                "size": "medium",
-                "type": "tertiary",
-                "popupConfig": {
-                  "body": [],
-                  "type": "alert",
-                  "title":
-                      "REGISTRATION_SEARCH_BENEFICIARY_MIN_BENEFICIARY_ID_LEFT_TITLE",
-                  "description":
-                      "REGISTRATION_SEARCH_BENEFICIARY_MIN_BENEFICIARY_ID_LEFT_DESCRIPTION",
-                  "footerActions": [
-                    {
-                      "type": "template",
-                      "label":
-                          "REGISTRATION_SEARCH_BENEFICIARY_SKIP_CONTINUE_LABEL",
-                      "format": "button",
-                      "onAction": [
-                        {
-                          "actionType": "CLOSE_POPUP",
-                          "properties": {"parentScreenKey": "searchBeneficiary"}
-                        },
-                        {
-                          "actionType": "NAVIGATION",
-                          "properties": {
-                            "data": [
-                              {
-                                "key": "HouseholdClientReferenceId",
-                                "value":
-                                    "{{contextData.0.household.HouseholdModel.clientReferenceId}}"
-                              },
-                              {
-                                "key": "UNIQUE_BENEFICIARY_ID",
-                                "value": "{{latestBeneficiaryId}}"
-                              },
-                              {"key": "isHead", "value": "false"}
-                            ],
-                            "name": "ADD_MEMBER",
-                            "type": "FORM"
-                          }
-                        }
-                      ],
-                      "fieldName": "clearFilter",
-                      "properties": {
-                        "size": "large",
-                        "type": "secondary",
-                        "mainAxisSize": "max"
-                      }
-                    },
-                    {
-                      "type": "template",
-                      "label": "REGISTRATION_SEARCH_BENEFICIARY_DOWNLOAD_ID",
-                      "format": "button",
-                      "onAction": [
-                        {
-                          "actionType": "CLOSE_POPUP",
-                          "properties": {"parentScreenKey": "searchBeneficiary"}
-                        },
-                        {
-                          "actionType": "NAVIGATE_TO_BENEFICIARY_ID_DOWN_SYNC",
-                          "properties": {}
-                        }
-                      ],
-                      "fieldName": "saveFilter",
-                      "properties": {
-                        "size": "large",
-                        "type": "primary",
-                        "mainAxisSize": "max"
-                      }
-                    }
-                  ],
-                  "showCloseButton": true,
-                  "barrierDismissible": true
-                },
-                "mainAxisSize": "min",
-                "mainAxisAlignment": "center"
-              },
-              "schemaCode": null,
             },
           ],
           "properties": {"type": "primary", "cardType": "primary"},
@@ -2721,46 +2721,46 @@ final dynamic sampleFlows = {
               "description":
                   "REGISTRATION_SEARCH_BENEFICIARY_MIN_BENEFICIARY_ID_LEFT_DESCRIPTION",
               "footerActions": [
-                {
-                  "type": "template",
-                  "label":
-                      "REGISTRATION_SEARCH_BENEFICIARY_SKIP_CONTINUE_LABEL",
-                  "format": "button",
-                  "onAction": [
-                    {
-                      "actionType": "CLOSE_POPUP",
-                      "properties": {"parentScreenKey": "searchBeneficiary"}
-                    },
-                    {
-                      "actionType": "NAVIGATION",
-                      "properties": {
-                        "data": [
-                          {"key": "nameOfIndividual", "value": "{{searchBar}}"},
-                          {
-                            "key": "UNIQUE_BENEFICIARY_ID",
-                            "value": "{{latestBeneficiaryId}}"
-                          },
-                          {
-                            "key": "uniqueBeneficiaryIdModel",
-                            "value": "{{latestBeneficiaryIdModel}}"
-                          },
-                          {
-                            "key": "smcProject",
-                            "value": "{{fn:isSmcPresent()}}"
-                          }
-                        ],
-                        "name": "HOUSEHOLD",
-                        "type": "FORM"
-                      }
-                    }
-                  ],
-                  "fieldName": "clearFilter",
-                  "properties": {
-                    "size": "large",
-                    "type": "secondary",
-                    "mainAxisSize": "max"
-                  }
-                },
+                // {
+                //   "type": "template",
+                //   "label":
+                //       "REGISTRATION_SEARCH_BENEFICIARY_SKIP_CONTINUE_LABEL",
+                //   "format": "button",
+                //   "onAction": [
+                //     {
+                //       "actionType": "CLOSE_POPUP",
+                //       "properties": {"parentScreenKey": "searchBeneficiary"}
+                //     },
+                //     {
+                //       "actionType": "NAVIGATION",
+                //       "properties": {
+                //         "data": [
+                //           {"key": "nameOfIndividual", "value": "{{searchBar}}"},
+                //           {
+                //             "key": "UNIQUE_BENEFICIARY_ID",
+                //             "value": "{{latestBeneficiaryId}}"
+                //           },
+                //           {
+                //             "key": "uniqueBeneficiaryIdModel",
+                //             "value": "{{latestBeneficiaryIdModel}}"
+                //           },
+                //           {
+                //             "key": "smcProject",
+                //             "value": "{{fn:isSmcPresent()}}"
+                //           }
+                //         ],
+                //         "name": "HOUSEHOLD",
+                //         "type": "FORM"
+                //       }
+                //     }
+                //   ],
+                //   "fieldName": "clearFilter",
+                //   "properties": {
+                //     "size": "large",
+                //     "type": "secondary",
+                //     "mainAxisSize": "max"
+                //   }
+                // },
                 {
                   "type": "template",
                   "label": "REGISTRATION_SEARCH_BENEFICIARY_DOWNLOAD_ID",
@@ -8900,6 +8900,14 @@ final dynamic sampleFlows = {
               "fieldName": "hasEolin",
               "mandatory": true,
               "required": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount_mandatory_message"
+                }
+              ],
               "enums": [
                 {"code": "YES", "name": "YES"},
                 {"code": "NO", "name": "NO"}
@@ -8917,6 +8925,12 @@ final dynamic sampleFlows = {
               "mandatory": true,
               "required": true,
               "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount_mandatory_message"
+                },
                 {"type": "max", "value": 5, "message": "MAX_5_ERROR"}
               ],
               "visibilityCondition": {

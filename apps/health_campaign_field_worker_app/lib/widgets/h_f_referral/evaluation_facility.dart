@@ -67,7 +67,9 @@ class _EvaluationKeyDropDownState
           .where((f) => f.key == 'facilityLevel')
           .firstOrNull
           ?.value;
-      return facilityLevel == null || facilityLevel == 'current';
+      return facilityLevel == null ||
+          facilityLevel == 'current' ||
+          facilityLevel == 'parent';
     }).toList();
   }
 
