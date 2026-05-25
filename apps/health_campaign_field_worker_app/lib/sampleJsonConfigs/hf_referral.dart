@@ -2452,8 +2452,37 @@ final dynamic sampleReferralFlows = {
             },
             {
               "type": "string",
-              "label": "HFREFERRAL_FACILITY_DETAILS_hfCoordinator_LABEL",
+              "label": "HFREFERRAL_FACILITY_DETAILS_currentUser_LABEL",
               "order": 4,
+              "value": "",
+              "format": "text",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": true,
+              "required": false,
+              "fieldName": "currentUser",
+              "mandatory": false,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": "",
+              "systemDate": false,
+              "validations": [],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "autoFillCondition": [
+                {
+                  "value": "{{loggedInUserName}}",
+                  "expression": "true"
+                }
+              ]
+            },
+            {
+              "type": "string",
+              "label": "HFREFERRAL_FACILITY_DETAILS_hfCoordinator_LABEL",
+              "order": 5,
               "value": "",
               "format": "text",
               "hidden": false,
