@@ -72,6 +72,34 @@ class StockCalculationUtils {
     return total;
   }
 
+  static Future<List<TaskModel>> loadDeliveryTasks(
+    BuildContext context,
+    TaskLocalRepository taskRepo,
+  ) async {
+    final projectId = context.projectId;
+    final createdBy = context.loggedInUserUuid;
+    final selectedCycle = context.selectedCycle;
+    final administerSuccessTasks = await taskRepo.search(
+      TaskSearchModel(
+        projectId: projectId,
+        status: "ADMINISTRATION_SUCCESS",
+        createdBy: createdBy,
+        actualStartDate: selectedCycle?.startDate,
+        actualEndDate: selectedCycle?.endDate,
+      ),
+    );
+    final visitedTasks = await taskRepo.search(
+      TaskSearchModel(
+        projectId: projectId,
+        status: "VISITED",
+        createdBy: createdBy,
+        actualStartDate: selectedCycle?.startDate,
+        actualEndDate: selectedCycle?.endDate,
+      ),
+    );
+    return [...administerSuccessTasks, ...visitedTasks];
+  }
+
   static Map<String, double> calculateStockMetrics({
     required List<StockModel> stockList,
     required String facilityId,
@@ -290,29 +318,6 @@ class StockCalculationUtils {
     } else {
       stockIssued(quantity);
     }
-  }
-
-  static Future<List<TaskModel>> loadDeliveryTasks(
-    BuildContext context,
-    TaskLocalRepository taskRepo,
-  ) async {
-    final projectId = context.projectId;
-    final createdBy = context.loggedInUserUuid;
-    final administerSuccessTasks = await taskRepo.search(
-      TaskSearchModel(
-        projectId: projectId,
-        status: "ADMINISTRATION_SUCCESS",
-        createdBy: createdBy,
-      ),
-    );
-    final visitedTasks = await taskRepo.search(
-      TaskSearchModel(
-        projectId: projectId,
-        status: "VISITED",
-        createdBy: createdBy,
-      ),
-    );
-    return [...administerSuccessTasks, ...visitedTasks];
   }
 
   static Future<Map<String, double>> loadUserActionBalances(
