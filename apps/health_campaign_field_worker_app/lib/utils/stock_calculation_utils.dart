@@ -84,6 +84,8 @@ class StockCalculationUtils {
         projectId: projectId,
         status: "ADMINISTRATION_SUCCESS",
         createdBy: createdBy,
+        plannedStartDate: selectedCycle?.startDate,
+        plannedEndDate: selectedCycle?.endDate,
       ),
     );
     final visitedTasks = await taskRepo.search(
@@ -91,6 +93,8 @@ class StockCalculationUtils {
         projectId: projectId,
         status: "VISITED",
         createdBy: createdBy,
+        plannedStartDate: selectedCycle?.startDate,
+        plannedEndDate: selectedCycle?.endDate,
       ),
     );
     return [...administerSuccessTasks, ...visitedTasks];
