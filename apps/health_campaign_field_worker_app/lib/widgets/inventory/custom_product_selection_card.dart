@@ -190,8 +190,8 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       final userActionRepo = context.read<UserActionLocalRepository>();
 
       // Get relevant tasks for the facility and products
-      // final tasks =
-      //     await StockCalculationUtils.loadDeliveryTasks(context, taskRepo);
+      final tasks =
+          await StockCalculationUtils.loadDeliveryTasks(context, taskRepo);
 
       // Fetch UserAction records with saved stock balances (from delivery)
       final userActionBalance =
@@ -204,8 +204,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         facilityId: facilityId,
         productIds: productIds,
         loggedInUserUuid: loggedInUserUuid,
-        // tasks: tasks,
-        // currentCycleIndex: context.currentCycleIndex,
+        tasks: tasks,
       );
 
       // Merge: UserAction balances take precedence (they include delivery deductions)
