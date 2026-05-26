@@ -213,8 +213,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
   ) async {
     if (!mounted) return;
 
-    final tasks =
-        await StockCalculationUtils.loadDeliveryTasks(context, taskRepo);
+    // final tasks =
+    //     await StockCalculationUtils.loadDeliveryTasks(context, taskRepo);
 
     // Fetch all stocks for this facility
     final receivedStocks = await stockRepo.search(
@@ -241,8 +241,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       productIds: productIds,
       loggedInUserUuid: context.loggedInUserUuid,
       isDistributor: _isDistributor,
-      tasks: tasks,
-      currentCycleIndex: context.currentCycleIndex,
+      // tasks: tasks,
+      // currentCycleIndex: context.currentCycleIndex,
     );
 
     // Fetch UserAction records with saved stock balances (from delivery)
@@ -252,7 +252,7 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
     // Merge: UserAction balances take precedence (they include delivery deductions)
     final mergedBalances = <String, double>{
       ...balances,
-      // ...userActionBalances,
+      ...userActionBalances,
     };
 
     StockBalanceCache.instance.setCache(effectiveFacilityId, mergedBalances);
