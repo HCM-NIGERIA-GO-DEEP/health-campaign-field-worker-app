@@ -155,6 +155,10 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
       CREATE INDEX IF NOT EXISTS task_search_project_created_status_modifiedtime
       ON task (project_id, client_created_by, status, client_modified_time);
     ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS task_search_project_created_status_plannedstart
+      ON task (project_id, client_created_by, status, planned_start_date);
+    ''');
   }
 
   @override
@@ -348,6 +352,16 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
             } catch (e) {
               if (kDebugMode) {
                 print("Failed to create task search indexes");
+              }
+            }
+          }
+
+          if (from < 11) {
+            try {
+              await _createTaskSearchIndexes();
+            } catch (e) {
+              if (kDebugMode) {
+                print("Failed to create planned start task search index");
               }
             }
           }
