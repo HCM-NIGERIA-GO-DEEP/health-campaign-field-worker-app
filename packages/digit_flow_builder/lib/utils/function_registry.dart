@@ -2043,50 +2043,6 @@ void initializeFunctionRegistry() {
     return true;
   });
 
-  /// Mirrors `checkAllDoseDelivered` for the RI flow. Returns true when, for the
-  /// current cycle, an RI administration task already exists (status
-  /// `ADMINISTERED`). Returns false when an RI dose is still pending.
-  FunctionRegistry.register('checkAllRIDoseDelivered', (args, stateData) {
-    if (args.isEmpty || args.first is! List) return false;
-
-    final riTasks = _filterByFlow(args.first as List, keepRi: true);
-
-    final projectType = FlowBuilderSingleton().projectType;
-    final now = DateTime.now().millisecondsSinceEpoch;
-    final selectedCycle = projectType?.cycles?.firstWhereOrNull(
-      (e) => e.startDate < now && e.endDate > now,
-    );
-
-    if (selectedCycle == null || selectedCycle.id == 0) return true;
-    if (riTasks.isEmpty) return false;
-
-    for (final task in riTasks) {
-      final additionalFields = task['additionalFields'];
-      final fields = additionalFields is Map
-          ? additionalFields['fields'] as List?
-          : null;
-      int? taskCycleIndex;
-      if (fields != null) {
-        for (final field in fields) {
-          if (field is Map && field['key'] == 'cycleIndex') {
-            taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
-            break;
-          }
-        }
-      }
-      if (taskCycleIndex != selectedCycle.id) continue;
-
-      final status = task['status']?.toString().toUpperCase();
-      if (status == 'ADMINISTERED' ||
-          status == TaskStatus.delivered ||
-          status == TaskStatus.administrationSuccess) {
-        return true;
-      }
-    }
-
-    return false;
-  });
-
   /// Mirrors `hasReferralForCurrentCycle` for the RI flow.
   /// Only considers referrals with `additionalFields.flow == 'riDone'`.
   FunctionRegistry.register('hasRIReferralForCurrentCycle', (args, stateData) {
@@ -2128,6 +2084,51 @@ void initializeFunctionRegistry() {
     final value = args.first;
     if (value is! String) return false;
     return value.trim().toUpperCase() == 'ADMINISTERED';
+  });
+
+  /// Returns true when at least one RI task (`additionalFields.flow == 'riDone'`)
+  /// for the current cycle has been administered. Scans the full task list
+  /// instead of looking at `item.task.last`, so that subsequent SMC delivery
+  /// tasks do not displace the RI-administered signal.
+  FunctionRegistry.register('hasRIAdministered', (args, stateData) {
+    if (args.isEmpty || args.first is! List) return false;
+
+    final riTasks = _filterByFlow(args.first as List, keepRi: true);
+    if (riTasks.isEmpty) return false;
+
+    final projectType = FlowBuilderSingleton().projectType;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final selectedCycle = projectType?.cycles?.firstWhereOrNull(
+      (e) => e.startDate < now && e.endDate > now,
+    );
+
+    for (final task in riTasks) {
+      final status = task['status']?.toString().trim().toUpperCase();
+      final isAdministered = status == 'ADMINISTERED' ||
+          status == TaskStatus.delivered ||
+          status == TaskStatus.administrationSuccess;
+      if (!isAdministered) continue;
+
+      if (selectedCycle == null || selectedCycle.id == 0) return true;
+
+      final additionalFields = task['additionalFields'];
+      final fields = additionalFields is Map
+          ? additionalFields['fields'] as List?
+          : null;
+      int? taskCycleIndex;
+      if (fields != null) {
+        for (final field in fields) {
+          if (field is Map && field['key'] == 'cycleIndex') {
+            taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
+            break;
+          }
+        }
+      }
+      if (taskCycleIndex == null || taskCycleIndex == selectedCycle.id) {
+        return true;
+      }
+    }
+    return false;
   });
 
   /// Mirrors `getInEligibleStatus` for the RI flow. Returns the status of the
