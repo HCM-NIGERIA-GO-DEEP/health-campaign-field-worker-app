@@ -14,11 +14,10 @@ import 'package:drift/drift.dart';
 @TableIndex(name: 'task_projectbeneficiaryclientref', columns: {
   #projectBeneficiaryClientReferenceId,
 })
-@TableIndex(name: 'task_search_project_created_status_actualstart', columns: {
+@TableIndex(name: 'task_search_project_created_status', columns: {
   #projectId,
   #clientCreatedBy,
   #status,
-  #actualStartDate,
 })
 @TableIndex(name: 'task_search_project_created_status_modifiedtime', columns: {
   #projectId,

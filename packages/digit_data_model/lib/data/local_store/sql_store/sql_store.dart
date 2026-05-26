@@ -148,8 +148,8 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
 
   Future<void> _createTaskSearchIndexes() async {
     await customStatement('''
-      CREATE INDEX IF NOT EXISTS task_search_project_created_status_actualstart
-      ON task (project_id, client_created_by, status, actual_start_date);
+      CREATE INDEX IF NOT EXISTS task_search_project_created_status
+      ON task (project_id, client_created_by, status);
     ''');
     await customStatement('''
       CREATE INDEX IF NOT EXISTS task_search_project_created_status_modifiedtime

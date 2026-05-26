@@ -129,11 +129,6 @@ class TaskLocalRepository extends LocalRepository<TaskModel, TaskSearchModel> {
                   query.plannedStartDate!,
                   query.plannedEndDate!,
                 ),
-              if (query.actualEndDate != null && query.actualStartDate != null)
-                sql.task.actualStartDate.isBetweenValues(
-                  query.actualStartDate!,
-                  query.actualEndDate!,
-                ),
             ]))
             ..orderBy([
               OrderingTerm(
