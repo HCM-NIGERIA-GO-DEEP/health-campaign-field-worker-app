@@ -196,6 +196,55 @@ bool _hasLogWithType(attendanceLog, DateTime date, String type) {
   });
 }
 
+const String _riFlowValue = 'riDone';
+
+/// Returns true when the given entity (task or referral) has
+/// `additionalFields.flow == 'riDone'`, marking it as belonging to the RI flow.
+/// SMC entities are written without this key.
+bool _isRiEntity(Map entity) {
+  final additionalFields = entity['additionalFields'];
+  if (additionalFields is! Map) return false;
+  final fields = additionalFields['fields'];
+  if (fields is! List) return false;
+  for (final field in fields) {
+    if (field is Map && field['key'] == 'flow') {
+      return field['value']?.toString() == _riFlowValue;
+    }
+  }
+  return false;
+}
+
+/// Converts a raw entity (Map, EntityModel, etc.) into a `Map<String, dynamic>`
+/// so it can be inspected by the eligibility/delivery checks. Returns `null`
+/// when the conversion is not possible.
+Map<String, dynamic>? _asMap(dynamic item) {
+  if (item is Map<String, dynamic>) return item;
+  if (item is Map) return Map<String, dynamic>.from(item);
+  try {
+    return (item as dynamic).toMap() as Map<String, dynamic>;
+  } catch (_) {
+    try {
+      return (item as dynamic).toJson() as Map<String, dynamic>;
+    } catch (_) {
+      return null;
+    }
+  }
+}
+
+/// Returns entities (tasks or referrals) filtered by flow.
+/// When `keepRi` is true, only entities with `flow == 'riDone'` are kept;
+/// when false, only entities without that flow are kept (i.e., SMC entities).
+List<Map<String, dynamic>> _filterByFlow(List source, {required bool keepRi}) {
+  final result = <Map<String, dynamic>>[];
+  for (final item in source) {
+    final map = _asMap(item);
+    if (map == null) continue;
+    final isRi = _isRiEntity(map);
+    if (keepRi == isRi) result.add(map);
+  }
+  return result;
+}
+
 /// Initializes the [FunctionRegistry] with application-specific functions.
 ///
 /// This function should be called at application startup to populate the
@@ -342,7 +391,9 @@ void initializeFunctionRegistry() {
     if (projectType == null) return false;
 
 // --- Tasks & SideEffects come from stateData ---
-    final tasks = args.length > 1 ? args[1] : [];
+    final rawTasks = args.length > 1 ? args[1] : [];
+    final tasks =
+        rawTasks is List ? _filterByFlow(rawTasks, keepRi: false) : <Map<String, dynamic>>[];
     final sideEffects = (stateData.modelMap['sideEffects'] as List?) ?? [];
 
 // --- Current active cycle ---
@@ -479,31 +530,16 @@ void initializeFunctionRegistry() {
     }
     if (currentCycle == null) return TaskStatus.ineligible;
 
-    final tasks = args.first;
+    final rawTasks = args.first;
 
     // Must be a non-empty list of tasks
-    if (tasks is! List || tasks.isEmpty) return TaskStatus.ineligible;
+    if (rawTasks is! List || rawTasks.isEmpty) return TaskStatus.ineligible;
 
-    // Get the last task and convert to Map if needed
-    final item = tasks.last;
-    Map<String, dynamic>? lastTask;
-    if (item is Map<String, dynamic>) {
-      lastTask = item;
-    } else if (item is Map) {
-      lastTask = Map<String, dynamic>.from(item);
-    } else {
-      try {
-        lastTask = (item as dynamic).toMap() as Map<String, dynamic>;
-      } catch (_) {
-        try {
-          lastTask = (item as dynamic).toJson() as Map<String, dynamic>;
-        } catch (_) {
-          return '';
-        }
-      }
-    }
+    // Only consider SMC tasks (exclude RI tasks marked with flow == 'riDone')
+    final tasks = _filterByFlow(rawTasks, keepRi: false);
+    if (tasks.isEmpty) return TaskStatus.ineligible;
 
-    if (lastTask == null) return TaskStatus.ineligible.toString();
+    final lastTask = tasks.last;
 
     // Get and normalize the status
     final status = lastTask['status']?.toString().trim().toUpperCase() ?? '';
@@ -558,31 +594,11 @@ void initializeFunctionRegistry() {
   ///    - Handles side effects if present
   /// 3. If no tasks exist -> returns false (doses pending)
   FunctionRegistry.register("checkAllDoseDelivered", (args, stateData) {
-    // Get tasks from args (passed as first argument from the wrapper config)
+    // Get tasks from args (passed as first argument from the wrapper config).
+    // Only consider SMC tasks (exclude RI tasks marked with flow == 'riDone').
     List<Map<String, dynamic>>? tasks;
-    if (args.isNotEmpty && args.first != null) {
-      if (args.first is List) {
-        final rawList = args.first as List;
-        // Convert each item to Map<String, dynamic> - handles both Map and Model objects
-        tasks = rawList.map((item) {
-          if (item is Map<String, dynamic>) {
-            return item;
-          } else if (item is Map) {
-            return Map<String, dynamic>.from(item);
-          } else {
-            // Try to convert model objects (e.g., TaskModel) to Map
-            try {
-              return (item as dynamic).toMap() as Map<String, dynamic>;
-            } catch (_) {
-              try {
-                return (item as dynamic).toJson() as Map<String, dynamic>;
-              } catch (_) {
-                return <String, dynamic>{};
-              }
-            }
-          }
-        }).toList();
-      }
+    if (args.isNotEmpty && args.first is List) {
+      tasks = _filterByFlow(args.first as List, keepRi: false);
     }
 
     // Get current active cycle from FlowBuilderSingleton
@@ -1362,22 +1378,14 @@ void initializeFunctionRegistry() {
 
     if (selectedCycle == null) return false;
 
-    for (final item in referrals) {
-      Map<String, dynamic>? refMap;
-      if (item is Map<String, dynamic>) {
-        refMap = item;
-      } else if (item is Map) {
-        refMap = Map<String, dynamic>.from(item);
-      } else {
-        try {
-          refMap = (item as dynamic).toMap() as Map<String, dynamic>;
-        } catch (_) {
-          continue;
-        }
-      }
+    // Only consider SMC referrals (exclude RI referrals marked with flow == 'riDone').
+    final smcReferrals = _filterByFlow(referrals, keepRi: false);
 
+    for (final refMap in smcReferrals) {
       final additionalFields = refMap['additionalFields'];
-      final fields = additionalFields?['fields'] as List?;
+      final fields = additionalFields is Map
+          ? additionalFields['fields'] as List?
+          : null;
       if (fields != null) {
         for (final field in fields) {
           if (field is Map && field['key'] == 'referralCycle') {
@@ -1960,5 +1968,190 @@ void initializeFunctionRegistry() {
 
     if (args.isEmpty) return '';
     return coerce(args.first);
+  });
+
+  // ---------------------------------------------------------------------------
+  // RI flow counterparts of the SMC eligibility/delivery functions.
+  //
+  // RI tasks and referrals carry `additionalFields.flow == 'riDone'`, written by
+  // the riAdministrationConfig and referralBeneficaryCreate transformers. The
+  // functions below mirror their SMC siblings but only consider those RI
+  // entities so the RI delivery button on householdOverview reacts to RI state.
+  // ---------------------------------------------------------------------------
+
+  /// Mirrors `checkEligibilityForAgeAndSideEffect` for the RI flow.
+  /// Considers only tasks with `additionalFields.flow == 'riDone'`.
+  FunctionRegistry.register('checkRIEligibility', (args, stateData) {
+    if (args.isEmpty) return false;
+
+    final dobString = args.first?.toString() ?? '';
+    if (dobString.isEmpty) return false;
+
+    final dob = DigitDateUtils.getFormattedDateToDateTime(dobString);
+    if (dob == null) return false;
+
+    final age = DigitDateUtils.calculateAge(dob);
+    final totalAgeMonths = age.years * 12 + age.months;
+
+    final projectType = FlowBuilderSingleton().projectType;
+    if (projectType == null) return false;
+
+    final validMinAge = projectType.validMinAge ?? 3;
+    final validMaxAge = projectType.validMaxAge ?? 59;
+    if (totalAgeMonths < validMinAge || totalAgeMonths > validMaxAge) {
+      return false;
+    }
+
+    final rawTasks = args.length > 1 ? args[1] : [];
+    if (rawTasks is! List) return true;
+
+    final riTasks = _filterByFlow(rawTasks, keepRi: true);
+    if (riTasks.isEmpty) return true;
+
+    final currentRunningCycle =
+        args.length > 2 ? int.tryParse(args[2]?.toString() ?? '') : null;
+
+    for (final task in riTasks) {
+      final status = task['status']?.toString();
+      if (status == TaskStatus.beneficiaryDied) return false;
+      if (status == TaskStatus.ineligible) return false;
+
+      if (currentRunningCycle != null) {
+        final additionalFields = task['additionalFields'];
+        final fields = additionalFields is Map
+            ? additionalFields['fields'] as List?
+            : null;
+        int? taskCycleIndex;
+        if (fields != null) {
+          for (final field in fields) {
+            if (field is Map && field['key'] == 'cycleIndex') {
+              taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
+              break;
+            }
+          }
+        }
+        if (taskCycleIndex != currentRunningCycle) continue;
+      }
+
+      if (status == TaskStatus.beneficiaryMigrated ||
+          status == TaskStatus.beneficiaryAbsent ||
+          status == TaskStatus.beneficiaryRefused) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  /// Mirrors `checkAllDoseDelivered` for the RI flow. Returns true when, for the
+  /// current cycle, an RI administration task already exists (status
+  /// `ADMINISTERED`). Returns false when an RI dose is still pending.
+  FunctionRegistry.register('checkAllRIDoseDelivered', (args, stateData) {
+    if (args.isEmpty || args.first is! List) return false;
+
+    final riTasks = _filterByFlow(args.first as List, keepRi: true);
+
+    final projectType = FlowBuilderSingleton().projectType;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final selectedCycle = projectType?.cycles?.firstWhereOrNull(
+      (e) => e.startDate < now && e.endDate > now,
+    );
+
+    if (selectedCycle == null || selectedCycle.id == 0) return true;
+    if (riTasks.isEmpty) return false;
+
+    for (final task in riTasks) {
+      final additionalFields = task['additionalFields'];
+      final fields = additionalFields is Map
+          ? additionalFields['fields'] as List?
+          : null;
+      int? taskCycleIndex;
+      if (fields != null) {
+        for (final field in fields) {
+          if (field is Map && field['key'] == 'cycleIndex') {
+            taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
+            break;
+          }
+        }
+      }
+      if (taskCycleIndex != selectedCycle.id) continue;
+
+      final status = task['status']?.toString().toUpperCase();
+      if (status == 'ADMINISTERED' ||
+          status == TaskStatus.delivered ||
+          status == TaskStatus.administrationSuccess) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+
+  /// Mirrors `hasReferralForCurrentCycle` for the RI flow.
+  /// Only considers referrals with `additionalFields.flow == 'riDone'`.
+  FunctionRegistry.register('hasRIReferralForCurrentCycle', (args, stateData) {
+    if (args.isEmpty || args.first is! List) return false;
+
+    final riReferrals = _filterByFlow(args.first as List, keepRi: true);
+    if (riReferrals.isEmpty) return false;
+
+    final projectType = FlowBuilderSingleton().projectType;
+    final selectedCycle = projectType?.cycles?.firstWhereOrNull(
+      (e) =>
+          e.startDate < DateTime.now().millisecondsSinceEpoch &&
+          e.endDate > DateTime.now().millisecondsSinceEpoch,
+    );
+    if (selectedCycle == null) return false;
+
+    for (final refMap in riReferrals) {
+      final additionalFields = refMap['additionalFields'];
+      final fields = additionalFields is Map
+          ? additionalFields['fields'] as List?
+          : null;
+      if (fields == null) continue;
+      for (final field in fields) {
+        if (field is Map && field['key'] == 'referralCycle') {
+          final referralCycle =
+              int.tryParse(field['value']?.toString() ?? '');
+          if (referralCycle == selectedCycle.id) return true;
+        }
+      }
+    }
+
+    return false;
+  });
+
+  /// Mirrors `isDelivered` for the RI flow. RI administration tasks are written
+  /// with status `ADMINISTERED` by riAdministrationConfig.
+  FunctionRegistry.register('isRIDelivered', (args, stateData) {
+    if (args.isEmpty) return false;
+    final value = args.first;
+    if (value is! String) return false;
+    return value.trim().toUpperCase() == 'ADMINISTERED';
+  });
+
+  /// Mirrors `getInEligibleStatus` for the RI flow. Returns the status of the
+  /// latest RI task when it is an ineligible/non-delivered status, otherwise
+  /// returns INELIGIBLE.
+  FunctionRegistry.register('getRIInEligibleStatus', (args, stateData) {
+    if (args.isEmpty || args.first is! List) return TaskStatus.ineligible;
+
+    final riTasks = _filterByFlow(args.first as List, keepRi: true);
+    if (riTasks.isEmpty) return TaskStatus.ineligible;
+
+    final status =
+        riTasks.last['status']?.toString().trim().toUpperCase() ?? '';
+    if (status.isEmpty) return TaskStatus.ineligible;
+
+    if (status == TaskStatus.ineligible ||
+        status == TaskStatus.beneficiaryDied ||
+        status == TaskStatus.beneficiaryMigrated ||
+        status == TaskStatus.beneficiaryAbsent ||
+        status == TaskStatus.beneficiaryRefused ||
+        status == TaskStatus.notDelivered) {
+      return status;
+    }
+
+    return TaskStatus.ineligible;
   });
 }
