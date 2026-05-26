@@ -144,7 +144,7 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
 
   /// The `schemaVersion` getter returns the schema version of the database.
   @override
-  int get schemaVersion => 10; // Increment schema version
+  int get schemaVersion => 9; // Increment schema version
 
   Future<void> _createTaskSearchIndexes() async {
     await customStatement('''
