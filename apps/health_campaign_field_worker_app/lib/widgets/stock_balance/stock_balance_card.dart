@@ -251,7 +251,7 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
     // Merge: UserAction balances take precedence (they include delivery deductions)
     final mergedBalances = <String, double>{
       ...balances,
-      ...userActionBalances,
+      // ...userActionBalances,
     };
 
     StockBalanceCache.instance.setCache(effectiveFacilityId, mergedBalances);
