@@ -224,7 +224,9 @@ class _HomePageState extends LocalizedState<HomePage> {
       (context, stateAccessor) {
         // Build your component with access to all this data
         return const EvaluationKeyDropDown(
-            schemaName: "REFER_BENEFICIARY", formControlName: "healthFacility");
+            schemaName: "REFER_BENEFICIARY",
+            formControlName: "healthFacility",
+            displayPrefix: "FAC_");
       },
     );
 
@@ -1924,7 +1926,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-registration-${context.selectedProject.referenceID},hcm-beneficiary';
+                    'hcm-registration-${context.selectedProject.referenceID},hcm-beneficiary,hcm-inventory-${context.selectedProject.referenceID}';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
                 FlowBuilderSingleton().setPersistenceConfiguration(
