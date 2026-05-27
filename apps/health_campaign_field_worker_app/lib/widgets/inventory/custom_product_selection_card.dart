@@ -210,7 +210,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       // Merge: UserAction balances take precedence (they include delivery deductions)
       _stockInHandMap = {
         ...stockTransactionBalance,
-        ...userActionBalance,
+        // ...userActionBalance,
       };
 
       debugPrint(
