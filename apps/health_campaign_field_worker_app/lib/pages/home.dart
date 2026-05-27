@@ -970,9 +970,9 @@ class _HomePageState extends LocalizedState<HomePage> {
 
     FunctionRegistry.register('getExistingSignature', (args, stateData) {
       final individualId = args.isNotEmpty ? args[0]?.toString() : null;
-      final attendanceRegisterModel = args.length > 1 ? args[1] : null;
+      final attendanceLogs = args.length > 1 ? args[1] : null;
 
-      final attendanceLogs = attendanceRegisterModel?.attendanceLog ?? [];
+      // final attendanceLogs = attendanceRegisterModel?.attendanceLog ?? [];
 
       if (attendanceLogs == null || attendanceLogs.isEmpty) return null;
       List logs = attendanceLogs.where((log) {
