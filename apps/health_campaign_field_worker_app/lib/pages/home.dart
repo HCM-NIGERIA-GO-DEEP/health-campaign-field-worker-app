@@ -650,6 +650,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             hasLogForSession = true;
           } else {
             hasLogForSession = false;
+            return hasLogForSession;
           }
         }
       }
