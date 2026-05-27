@@ -1,4 +1,3 @@
-import 'package:attendance_management/attendance_management.dart';
 import 'package:digit_data_model/models/entities/attendance_log.dart';
 import 'package:digit_data_model/models/entities/attendance_register.dart';
 import 'package:digit_data_model/models/entities/individual.dart';
@@ -14,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../blocs/attendance/attendance_bloc.dart';
 import '../blocs/auth/auth.dart';
 import '../models/data_model.dart';
 import '../router/app_router.dart';
@@ -196,7 +196,9 @@ class _UserQRDetailsPageState extends LocalizedState<UserQRDetailsPage> {
       return attendanceState.maybeWhen(
           orElse: () => const SizedBox.shrink(),
           registerLoaded: (registers, offset, limit) {
-            return registers.isNotEmpty
+            return (registers.isNotEmpty &&
+                    registers.first.individualList != null &&
+                    registers.first.individualList!.isNotEmpty)
                 ? Column(
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
@@ -216,8 +218,8 @@ class _UserQRDetailsPageState extends LocalizedState<UserQRDetailsPage> {
                             child: QrImageView(
                               data: DataMapEncryptor().encryptWithRandomKey(
                                   ScannedIndividualDataModel(
-                                          name: registers.first.individualList!
-                                              .first.name!.givenName!,
+                                          name: registers.first.individualList
+                                              ?.first?.name?.givenName,
                                           individualId: registers
                                               .first
                                               .individualList!

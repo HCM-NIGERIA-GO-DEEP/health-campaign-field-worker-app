@@ -51,12 +51,13 @@ class _BoundarySelectionPageState
   Map<String, TextEditingController> dropdownControllers = {};
   late StreamSubscription syncSubscription;
   var leastLevelBoundaries;
-  final String setLocale = "en_MZ";
+  late String setLocale;
   bool doFilter = false;
 
   @override
   void initState() {
     context.syncRefresh();
+    setLocale = AppSharedPreferences().getSelectedLocale ?? "en_MZ";
     LocalizationParams().setModule('common', false);
     LocalizationParams().setCode([
       i18.common.coreCommonContinue,
