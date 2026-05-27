@@ -1407,20 +1407,37 @@ void initializeFunctionRegistry() {
 
     if (navigationData == null) return null;
 
-    String? ec1 = navigationData['ec1'];
-    String? ec2 = navigationData['ec2'];
-
-    if (ec1 == null && ec2 == null) return null;
-
+    final String? sourceFlow = navigationData['sourceFlow'];
     final List<String> symptoms = [];
 
-    if (ec1 == 'YES') symptoms.add('SICK');
-    if (ec2 == 'YES') {
-      symptoms.add('FEVER');
+    if (sourceFlow == 'CHECKLIST') {
+      String? ec1 = navigationData['ec1'];
+      String? ec2 = navigationData['ec2'];
+
+      if (ec1 == null && ec2 == null) return null;
+
+      if (ec1 == 'YES') symptoms.add('SICK');
+      if (ec2 == 'YES') symptoms.add('FEVER');
+      if (symptoms.isEmpty) symptoms.add('DRUG_SE_PC');
+    } else if (sourceFlow == 'RI_CHECKLIST') {
+      String? zeroDose = navigationData['zeroDose'];
+      String? partiallyImmunized = navigationData['partiallyImmunized'];
+      String? unimmunized = navigationData['unimmunized'];
+
+      if (zeroDose == null &&
+          partiallyImmunized == null &&
+          unimmunized == null) {
+        return null;
+      }
+
+      if (zeroDose == 'YES') symptoms.add('ZERO_DOSE');
+      if (partiallyImmunized == 'YES') symptoms.add('PARTIALLY_IMMUNIZED');
+      if (unimmunized == 'YES') symptoms.add('UNIMMUNIZED');
+    } else {
+      return null;
     }
-    if (symptoms.isEmpty) {
-      symptoms.add('DRUG_SE_PC');
-    }
+
+    if (symptoms.isEmpty) return null;
 
     return symptoms.join(',');
   });
