@@ -87,6 +87,17 @@ class _CurrentBoundaryPageState extends LocalizedState<CurrentBoundaryPage> {
                       return InkWell(
                         onTap: () {
                           context.setBoundary(boundary);
+                          // Get the last label from selectedBoundaryMap for last-level boundaries
+                          final label =
+                              state.selectedBoundaryMap.keys.lastOrNull;
+                          if (label != null) {
+                            context.read<BoundaryBloc>().add(
+                                  BoundarySelectEvent(
+                                    label: label,
+                                    selectedBoundary: boundary,
+                                  ),
+                                );
+                          }
                           if (widget.onBoundarySelected != null) {
                             widget.onBoundarySelected!(context);
                           } else {

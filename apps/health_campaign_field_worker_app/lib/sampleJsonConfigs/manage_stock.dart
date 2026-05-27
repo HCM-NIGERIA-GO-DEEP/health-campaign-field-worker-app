@@ -84,7 +84,7 @@ final dynamic sampleInventoryFlows = {
         ],
         "searchConfig": {
           "primary": "projectFacility",
-          "select": ["projectFacility", "productVariant", "stock"]
+          "select": ["projectFacility", "productVariant", "stock", "facility"]
         }
       },
       "body": [
@@ -915,13 +915,13 @@ final dynamic sampleInventoryFlows = {
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
-              // "validations": [
-              //   {
-              //     "type": "required",
-              //     "value": true,
-              //     "message": "Vehicle number is required"
-              //   }
-              // ],
+              "validations": [
+                {
+                  "type": "pattern",
+                  "value": r"^(?!\s).*$",
+                  "message": "Leading space not allowed"
+                }
+              ],
               "errorMessage": "",
               "isMultiSelect": false,
               "enums": null
@@ -979,6 +979,11 @@ final dynamic sampleInventoryFlows = {
                   "type": "required",
                   "value": false,
                   "message": "INVENTORY_WAYBILL_NUMBER_REQUIRED_ERROR_MESSAGE"
+                },
+                {
+                  "type": "pattern",
+                  "value": r"^(?!\s).*$",
+                  "message": "Leading space not allowed"
                 }
               ],
               "errorMessage": "",
@@ -1005,6 +1010,11 @@ final dynamic sampleInventoryFlows = {
                   "type": "required",
                   "value": false,
                   "message": "INVENTORY_BATCH_NUMBER_REQUIRED_ERROR_MESSAGE"
+                },
+                {
+                  "type": "pattern",
+                  "value": r"^(?!\s).*$",
+                  "message": "Leading space not allowed"
                 }
               ],
               "errorMessage": "",
@@ -2453,7 +2463,7 @@ final dynamic sampleInventoryFlows = {
                   },
                   {
                     "key": "INVENTORY_WAYBILL_NUMBER_LABEL",
-                    "value": "{{item.waybillNumber}}"
+                    "value": "{{item.additionalFields.fields.wayBillNumber}}"
                   },
                   {
                     "key": "INVENTORY_BATCH_NUMBER_LABEL",
@@ -2713,7 +2723,6 @@ final dynamic sampleInventoryFlows = {
           "actionType": "FETCH_TRANSFORMER_CONFIG",
           "properties": {
             "configName": "stockReceipt",
-            "forceCreate": true,
             "data": [
               {"key": "stockEntryType", "value": "RECEIPT"},
               {"key": "transactionType", "value": "RECEIVED"},
@@ -2746,7 +2755,7 @@ final dynamic sampleInventoryFlows = {
         {
           "actionType": "UPDATE_EVENT",
           "properties": {
-            "source": "existingModels",
+            "source": "entities",
             "entity": "StockModel",
             "modify": [
               {
@@ -2794,7 +2803,6 @@ final dynamic sampleInventoryFlows = {
           "actionType": "FETCH_TRANSFORMER_CONFIG",
           "properties": {
             "configName": "stockReject",
-            "forceCreate": true,
             "data": [
               // {"key": "stockEntryType", "value": "RETURNED"},
               {"key": "transactionType", "value": "DISPATCHED"},
@@ -2828,7 +2836,7 @@ final dynamic sampleInventoryFlows = {
         {
           "actionType": "UPDATE_EVENT",
           "properties": {
-            "source": "existingModels",
+            "source": "entities",
             "entity": "StockModel",
             "modify": [
               {
@@ -3060,7 +3068,12 @@ final dynamic sampleInventoryFlows = {
               "systemDate": false,
               "visibilityCondition": {},
               "validations": [
-                {"type": "required", "value": false, "message": ""}
+                {"type": "required", "value": false, "message": ""},
+                {
+                  "type": "pattern",
+                  "value": r"^(?!\s).*$",
+                  "message": "Leading space not allowed"
+                }
               ],
               "errorMessage": "",
               "isMultiSelect": false,
