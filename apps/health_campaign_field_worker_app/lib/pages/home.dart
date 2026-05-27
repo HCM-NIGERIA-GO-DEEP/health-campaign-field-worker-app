@@ -2397,11 +2397,9 @@ class _HomePageState extends LocalizedState<HomePage> {
 
             context.router
                 .push(CurrentBoundaryRoute(onBoundarySelected: (ctx) async {
-              if (isTriggerLocalisation) {
-                const module = "hcm-attendance";
-                triggerLocalization(module: module);
-                isTriggerLocalisation = false;
-              }
+              final moduleName =
+                  "hcm-attendance,hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}";
+              triggerLocalization(module: moduleName);
 
               await FlowNavigationUtils.navigateToFlowModule(
                 context: ctx,
@@ -2659,8 +2657,7 @@ class _HomePageState extends LocalizedState<HomePage> {
           ) {
             final appConfig = appConfiguration;
             final localizationModulesList = appConfiguration.backendInterface;
-            final selectedLocale =
-                "en_MZ" ?? AppSharedPreferences().getSelectedLocale;
+            final selectedLocale = AppSharedPreferences().getSelectedLocale;
             LocalizationParams()
                 .setCode(LeastLevelBoundarySingleton().boundary);
             if (loadOnline == true) {
