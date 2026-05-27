@@ -45,24 +45,10 @@ class StockCalculationUtils {
 
   static double _getDeliveryTaskValue(
     List<TaskModel> tasks,
-    int currentCycleIndex,
     String productVariantId,
   ) {
     double total = 0;
     for (final task in tasks) {
-      if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED') {
-        continue;
-      }
-
-      final taskCycleIndex = int.tryParse(
-        task.additionalFields?.fields
-                .firstWhereOrNull((f) => f.key == 'cycleIndex')
-                ?.value
-                ?.toString() ??
-            '',
-      );
-      if (taskCycleIndex != currentCycleIndex) continue;
-
       for (final TaskResourceModel resource in task.resources ?? []) {
         if (resource.productVariantId != productVariantId) continue;
         double quantity = double.tryParse(resource.quantity ?? '0') ?? 0;
@@ -84,8 +70,8 @@ class StockCalculationUtils {
         projectId: projectId,
         status: "ADMINISTRATION_SUCCESS",
         createdBy: createdBy,
-        actualStartDate: selectedCycle?.startDate,
-        actualEndDate: selectedCycle?.endDate,
+        plannedStartDate: selectedCycle?.startDate,
+        plannedEndDate: selectedCycle?.endDate,
       ),
     );
     final visitedTasks = await taskRepo.search(
@@ -93,8 +79,8 @@ class StockCalculationUtils {
         projectId: projectId,
         status: "VISITED",
         createdBy: createdBy,
-        actualStartDate: selectedCycle?.startDate,
-        actualEndDate: selectedCycle?.endDate,
+        plannedStartDate: selectedCycle?.startDate,
+        plannedEndDate: selectedCycle?.endDate,
       ),
     );
     return [...administerSuccessTasks, ...visitedTasks];
@@ -105,7 +91,6 @@ class StockCalculationUtils {
     required String facilityId,
     required String productId,
     List<TaskModel> tasks = const [],
-    int? currentCycleIndex,
     String? loggedInUserUuid,
     bool isDistributor = false,
     bool calculatePartial = false,
@@ -199,8 +184,8 @@ class StockCalculationUtils {
     }
 
     // Add delivery task quantities to issued stock if in current cycle
-    if (tasks.isNotEmpty && currentCycleIndex != null) {
-      stockIssued += _getDeliveryTaskValue(tasks, currentCycleIndex, productId);
+    if (tasks.isNotEmpty) {
+      stockIssued += _getDeliveryTaskValue(tasks, productId);
     }
 
     // Use distributor calculation if user has distributor role OR if any return was made as sender
@@ -372,7 +357,6 @@ class StockCalculationUtils {
     required String facilityId,
     required List<String> productIds,
     List<TaskModel> tasks = const [],
-    int? currentCycleIndex,
     String? loggedInUserUuid,
     bool isDistributor = false,
   }) {
@@ -385,7 +369,6 @@ class StockCalculationUtils {
         loggedInUserUuid: loggedInUserUuid,
         isDistributor: isDistributor,
         tasks: tasks,
-        currentCycleIndex: currentCycleIndex,
       );
       result[productId] = metrics['stockInHand'] ?? 0.0;
     }

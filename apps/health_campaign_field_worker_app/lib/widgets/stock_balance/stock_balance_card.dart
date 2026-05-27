@@ -242,7 +242,6 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       loggedInUserUuid: context.loggedInUserUuid,
       isDistributor: _isDistributor,
       tasks: tasks,
-      currentCycleIndex: context.currentCycleIndex,
     );
 
     // Fetch UserAction records with saved stock balances (from delivery)

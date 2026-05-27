@@ -205,7 +205,6 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         productIds: productIds,
         loggedInUserUuid: loggedInUserUuid,
         tasks: tasks,
-        currentCycleIndex: context.currentCycleIndex,
       );
 
       // Merge: UserAction balances take precedence (they include delivery deductions)

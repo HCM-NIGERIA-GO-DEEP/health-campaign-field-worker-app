@@ -31,7 +31,7 @@ class TextWidget extends ResolvedFlowWidget {
     var resolvedValue = (separatedBy != null)
         ? preResolvedValue
             .split(separatedBy)
-            .map((part) => resolved.resolveText(part))
+            .map((part) => resolved.resolveText(part.trim()))
             .join(separatedBy)
         : preResolvedValue;
 
