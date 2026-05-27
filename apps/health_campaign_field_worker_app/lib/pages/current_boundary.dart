@@ -51,8 +51,7 @@ class _CurrentBoundaryPageState extends LocalizedState<CurrentBoundaryPage> {
           ) {
             final appConfig = appConfiguration;
             final localizationModulesList = appConfiguration.backendInterface;
-            final selectedLocale =
-                "en_MZ" ?? AppSharedPreferences().getSelectedLocale;
+            final selectedLocale = AppSharedPreferences().getSelectedLocale;
             LocalizationParams()
                 .setCode(LeastLevelBoundarySingleton().boundary);
 
