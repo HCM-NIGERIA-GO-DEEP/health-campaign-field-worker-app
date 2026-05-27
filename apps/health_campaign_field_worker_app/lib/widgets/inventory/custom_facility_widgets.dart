@@ -94,7 +94,16 @@ class _FacilityCardContent extends StatelessWidget {
     required this.localizations,
   });
 
-  bool _allowsDeliveryTeamFromValidation({required String transactionType}) {
+  String _normalizeHierarchyValue(String? value) {
+    if (value == null) return '';
+
+    return value.trim().toUpperCase().replaceAll(RegExp(r'[\s_-]+'), '');
+  }
+
+  bool _allowsDeliveryTeamFromValidation({
+    required String transactionType,
+    String? currentUserBoundaryType,
+  }) {
     final validations = fieldSchema.validations;
     if (validations == null || validations.isEmpty) return false;
 
@@ -102,6 +111,8 @@ class _FacilityCardContent extends StatelessWidget {
         (transactionType == 'DISPATCHED' || transactionType == 'ISSUED')
             ? 'forIssue'
             : 'forReceipt';
+    final normalizedBoundaryType =
+        _normalizeHierarchyValue(currentUserBoundaryType);
 
     for (final validation in validations) {
       if (validation.type != 'facilityHierarchy') continue;
@@ -115,6 +126,13 @@ class _FacilityCardContent extends StatelessWidget {
       for (final mappingEntry in rawHierarchy.entries) {
         final levelConfig = mappingEntry.value;
         if (levelConfig is! Map) continue;
+
+        final hierarchyLevel = _normalizeHierarchyValue(
+          mappingEntry.key?.toString(),
+        );
+        final shouldCheckEntry = normalizedBoundaryType.isEmpty ||
+            hierarchyLevel == normalizedBoundaryType;
+        if (!shouldCheckEntry) continue;
 
         final options = levelConfig[mode];
         if (options is! List) continue;
@@ -176,6 +194,8 @@ class _FacilityCardContent extends StatelessWidget {
         stockEntryType == 'LOSS' ||
         stockEntryType == 'DAMAGED';
     final isLessExcessFlow = stockEntryType == 'LESS_EXCESS';
+    final currentUserBoundaryType =
+        context.selectedProject.address?.boundaryType?.toString();
 
     const deliveryTeamCode = 'DELIVERY_TEAM';
 
@@ -183,8 +203,10 @@ class _FacilityCardContent extends StatelessWidget {
             .any((role) => role.code == RolesType.distributor.toValue()) ||
         context.loggedInUserRoles.any(
             (role) => role.code == RolesType.communityDistributor.toValue());
-    final hasDeliveryTeamInValidation =
-        _allowsDeliveryTeamFromValidation(transactionType: transactionType);
+    final hasDeliveryTeamInValidation = _allowsDeliveryTeamFromValidation(
+      transactionType: transactionType,
+      currentUserBoundaryType: currentUserBoundaryType,
+    );
 
     final isWareHouseMgr = context.loggedInUserRoles
         .any((role) => role.code == RolesType.warehouseManager.toValue());
@@ -275,7 +297,7 @@ class _FacilityCardContent extends StatelessWidget {
                 (isReturnFlow || isLessExcessFlow)));
     if (showDeliveryTeam) {
       facilities.add(DropdownItem(
-        code: deliveryTeamCode!,
+        code: deliveryTeamCode,
         name: localizations.translate('DELIVERY_TEAM'),
       ));
     }
