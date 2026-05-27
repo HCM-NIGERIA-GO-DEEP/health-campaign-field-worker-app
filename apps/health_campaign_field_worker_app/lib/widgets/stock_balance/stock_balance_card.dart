@@ -6,6 +6,7 @@ import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/user_action.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
 import 'package:digit_flow_builder/utils/interpolation.dart';
+import 'package:digit_flow_builder/utils/utils.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
@@ -230,6 +231,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
           : autoSelectedFacility?.id;
 
       if (effectiveFacilityId != null) {
+        // Set facilityId in FlowBuilderSingleton
+        FlowBuilderSingleton().setFacilityId(effectiveFacilityId);
         // Load UserAction balances first (from deliveries) so UI shows them immediately
         _loadInitialBalances(effectiveFacilityId);
         _setupStockListener(effectiveFacilityId);
@@ -330,11 +333,11 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
     if (_isDistributor) {
       for (final stock in allStocks) {
         if (stock.senderId != effectiveFacilityId) continue;
-        
+
         // Extract field values in single pass
         final fields = stock.additionalFields?.fields;
         if (fields == null) continue;
-        
+
         String? stockEntryType;
         String? status;
         for (final field in fields) {
@@ -344,7 +347,7 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
             status = (field.value as String?)?.toUpperCase();
           }
         }
-        
+
         final transactionType = stock.transactionType?.toUpperCase() ?? '';
         if (stockEntryType == 'RETURNED' &&
             transactionType == 'DISPATCHED' &&
@@ -352,7 +355,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
           final productVariantId = stock.productVariantId;
           if (productVariantId != null) {
             final quantity = double.tryParse(stock.quantity ?? '0') ?? 0;
-            userActionBalances[productVariantId] = (userActionBalances[productVariantId] ?? 0) + quantity;
+            userActionBalances[productVariantId] =
+                (userActionBalances[productVariantId] ?? 0) + quantity;
           }
         }
       }

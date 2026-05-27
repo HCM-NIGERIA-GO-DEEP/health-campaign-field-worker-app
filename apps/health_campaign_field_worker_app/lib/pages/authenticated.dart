@@ -165,7 +165,10 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                                 .isNotEmpty;
 
                             final selectedBoundary = isDistributor
-                                ? state.boundaryList.lastOrNull?.code
+                                ? (state.selectedBoundaryMap.values.lastOrNull
+                                        ?.code ??
+                                    state.allSelectedLastLevelBoundaries
+                                        .firstOrNull?.code)
                                 : state.boundaryList.firstOrNull?.code;
 
                             return selectedBoundary != null

@@ -35,6 +35,7 @@ class FlowBuilderSingleton {
   List<Map<String, dynamic>>?
       _userRoles; // User roles from app level (e.g., [{"code": "WAREHOUSE_MANAGER", "name": "Warehouse Manager"}])
   int? _beneficiaryIdMinCount;
+  String? _facilityId;
 
   void setBoundary({required BoundaryModel boundary}) {
     _boundaryModel = boundary;
@@ -79,6 +80,10 @@ class FlowBuilderSingleton {
     _templateConfigs = templateConfigs;
   }
 
+  void setFacilityId(String facilityId) {
+    _facilityId = facilityId;
+  }
+
   String? get tenantId => _tenantId;
 
   String? get loggedInUserUuid => _loggedInUserUuid;
@@ -94,6 +99,8 @@ class FlowBuilderSingleton {
   ProjectModel? get selectedProject => _selectedProject;
 
   BoundaryModel? get boundary => _boundaryModel;
+
+  String? get facilityId => _facilityId;
 
   PersistenceConfiguration? get persistenceConfiguration =>
       _persistenceConfiguration;
@@ -262,11 +269,13 @@ String resolveTemplate(
     // No template placeholders, try to translate as localization key
     if (localization != null) {
       final translated = _translateWithLocalization(template, localization);
-      
+
       // Handle single-bracket interpolation for simple keys
       if (translated.contains('{') && contextData != null) {
-        debugPrint('RESOLVE_TEMPLATE: contextData keys: ${contextData.keys.toList()}');
-        debugPrint('RESOLVE_TEMPLATE: Handling single brackets in translated string: "$translated"');
+        debugPrint(
+            'RESOLVE_TEMPLATE: contextData keys: ${contextData.keys.toList()}');
+        debugPrint(
+            'RESOLVE_TEMPLATE: Handling single brackets in translated string: "$translated"');
         final bracketRegex = RegExp(r'\{(.+?)\}');
         return translated.replaceAllMapped(bracketRegex, (match) {
           final placeholder = match.group(1)!.trim();
@@ -280,15 +289,18 @@ String resolveTemplate(
             if (placeholder == 'name') 'beneficiaryName',
           ];
 
-          debugPrint('RESOLVE_TEMPLATE: Resolving placeholder "{$placeholder}", trying keys: $keysToTry');
+          debugPrint(
+              'RESOLVE_TEMPLATE: Resolving placeholder "{$placeholder}", trying keys: $keysToTry');
           for (final key in keysToTry) {
             final resolved = resolveValueRaw('{{$key}}', contextData);
             if (resolved != null && resolved != '{{$key}}') {
-              debugPrint('RESOLVE_TEMPLATE: Resolved "{$placeholder}" to "$resolved" using key "$key"');
+              debugPrint(
+                  'RESOLVE_TEMPLATE: Resolved "{$placeholder}" to "$resolved" using key "$key"');
               return resolved.toString();
             }
           }
-          debugPrint('RESOLVE_TEMPLATE: Failed to resolve placeholder "{$placeholder}"');
+          debugPrint(
+              'RESOLVE_TEMPLATE: Failed to resolve placeholder "{$placeholder}"');
           return match.group(0)!;
         });
       }
@@ -352,12 +364,12 @@ String resolveTemplate(
 
   // Final translation and handle single-bracket interpolation (e.g., {id}, {name})
   String finalResult = _translateWithLocalization(result, localization);
-  
+
   if (finalResult.contains('{') && contextData != null) {
     final bracketRegex = RegExp(r'\{(.+?)\}');
     finalResult = finalResult.replaceAllMapped(bracketRegex, (match) {
       final placeholder = match.group(1)!.trim();
-      
+
       // Try direct match, then check common prefixes
       final keysToTry = [
         placeholder,

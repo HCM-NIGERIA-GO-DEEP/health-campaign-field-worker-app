@@ -885,6 +885,7 @@ final jsonConfig = {
             "comments": "stockProductDetails.comment",
             "transportType": "stockDetails.transportType",
             "vehicle_number": "stockDetails.vehicleNumber",
+            "wayBillNumber": "stockProductDetails.wayBillNumber",
             "deliveryTeam": "stockDetails.deliveryTeam",
             "mrnNumber": "__context:mrnNumber",
             "stockEntryType": "__context:stockEntryType",
@@ -933,7 +934,8 @@ final jsonConfig = {
             "mrnNumber": "__context:mrnNumber",
             "stockEntryType": "__context:stockEntryType",
             "primaryRole": "__context:primaryRole",
-            "secondaryRole": "__context:secondaryRole"
+            "secondaryRole": "__context:secondaryRole",
+            "wayBillNumber": "stockReceiptDetails.wayBillNumber"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
@@ -971,7 +973,8 @@ final jsonConfig = {
             "mrnNumber": "__context:mrnNumber",
             "stockEntryType": "__context:stockEntryType",
             "primaryRole": "__context:primaryRole",
-            "secondaryRole": "__context:secondaryRole"
+            "secondaryRole": "__context:secondaryRole",
+            "wayBillNumber": "stockReceiptDetails.wayBillNumber"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
