@@ -24,7 +24,7 @@ final dynamic sampleFlows = {
               "data": [
                 {
                   "key": "ACKNOWLEDGEMENT_BENEFICIARY_ID",
-                  "value": "{{navigation.beneficiaryId}}",
+                  "value": "{{fn:formatBeneficiaryId(navigation.beneficiaryId)}}",
                   "isActive": true
                 }
               ]
@@ -127,7 +127,7 @@ final dynamic sampleFlows = {
               "data": [
                 {
                   "key": "ACKNOWLEDGEMENT_BENEFICIARY_ID",
-                  "value": "{{navigation.beneficiaryId}}",
+                  "value": "{{fn:formatBeneficiaryId(navigation.beneficiaryId)}}",
                   "isActive": true
                 }
               ]
@@ -230,7 +230,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "ID_NUMBER",
                   "value":
-                      "{{contextData.0.individuals.IndividualModel.identifiers.0.identifierId}}"
+                      "{{fn:formatBeneficiaryId(contextData.0.individuals.IndividualModel.identifiers.0.identifierId)}}"
                 },
                 {
                   "key": "AGE",
@@ -866,7 +866,8 @@ final dynamic sampleFlows = {
           "fieldName": "successCard",
           "mandatory": true,
           "properties": {"type": "success"},
-          "description": "ID-{{navigation.selectedIndividualIdentifierId}}",
+          "description":
+              "ID-{{fn:formatBeneficiaryId(navigation.selectedIndividualIdentifierId)}}",
           "primaryAction": {
             "type": "template",
             "label":
@@ -1181,7 +1182,7 @@ final dynamic sampleFlows = {
                             "visible":
                                 "{{fn:hasBeneficiaryId(item.individual.0.identifiers.0)}}==true",
                             "label":
-                                "{{ item.individual.0.identifiers.0.identifierId }}",
+                                "{{ fn:formatBeneficiaryId(item.individual.0.identifiers.0.identifierId) }}",
                             "format": "tag",
                             "fieldName": "isHead",
                           },
@@ -3256,7 +3257,8 @@ final dynamic sampleFlows = {
               "labelReplaceAll": [
                 {
                   "searchValue": "{id}",
-                  "replaceValue": "{{navigation.beneficiaryId}}"
+                  "replaceValue":
+                      "{{fn:formatBeneficiaryId(navigation.beneficiaryId)}}"
                 },
                 {
                   "searchValue": "{name}",
@@ -5849,7 +5851,7 @@ final dynamic sampleFlows = {
                 },
                 {
                   "key": "ACKNOWLEDGEMENT_BENEFICIARY_ID",
-                  "value": "{{navigation.beneficiaryId}}",
+                  "value": "{{fn:formatBeneficiaryId(navigation.beneficiaryId)}}",
                   "isActive": true
                 }
               ]
@@ -5941,7 +5943,7 @@ final dynamic sampleFlows = {
                 },
                 {
                   "key": "ACKNOWLEDGEMENT_BENEFICIARY_ID",
-                  "value": "{{navigation.beneficiaryId}}",
+                  "value": "{{fn:formatBeneficiaryId(navigation.beneficiaryId)}}",
                   "isActive": true
                 }
               ]

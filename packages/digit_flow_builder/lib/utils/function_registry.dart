@@ -312,6 +312,25 @@ void initializeFunctionRegistry() {
     }
   });
 
+  /// Formats a 9-digit beneficiary ID for display as xxx-xxx-xxx.
+  /// Returns the input unchanged when it is not exactly 9 digits.
+  FunctionRegistry.register('formatBeneficiaryId', (args, stateData) {
+    if (args.isEmpty || args.first == null) return '';
+
+    final raw = args.first.toString().trim();
+    if (raw.isEmpty) return raw;
+
+    final digitsOnly = raw.replaceAll(RegExp(r'[\s-]'), '');
+
+    if (RegExp(r'^\d{9}$').hasMatch(digitsOnly)) {
+      return '${digitsOnly.substring(0, 3)}-'
+          '${digitsOnly.substring(3, 6)}-'
+          '${digitsOnly.substring(6, 9)}';
+    }
+
+    return raw;
+  });
+
   /// Registers a function to check eligibility for a task based on age and
   /// recorded side effects.
   ///
