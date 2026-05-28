@@ -616,7 +616,9 @@ final jsonConfig = {
           "additionalFields": {
             "eToken": "__context:eToken",
             "itnCount": "__context:itnCount",
-            "taskType": "__value:ITN_DELIVERY"
+            "taskType": "__value:ITN_DELIVERY",
+            "returnedBednetCount": "__context:returnedBednetCount",
+            "hasEolin": "__context:hasEolin"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
