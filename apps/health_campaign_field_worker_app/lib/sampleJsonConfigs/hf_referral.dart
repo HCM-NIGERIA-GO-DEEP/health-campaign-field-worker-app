@@ -1255,6 +1255,11 @@ final dynamic sampleReferralFlows = {
                   "value": true,
                   "message":
                       "HFREFERRAL_REFERRAL_DETAILS_nameOfChild_REQUIRED_ERROR"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^[a-zA-Z\\s]+",
+                  "message": "REGISTRATION_NAME_ONLY_LETTERS_ALLOWED"
                 }
               ],
               "errorMessage": "",
@@ -1293,6 +1298,11 @@ final dynamic sampleReferralFlows = {
                   "message":
                       "HFREFERRAL_REFERRAL_DETAILS_ageInMonths_REQUIRED_ERROR"
                 },
+                {
+                  "type": "pattern",
+                  "value": "^[a-zA-Z0-9-]+",
+                  "message": "INVALID_USER_ID_FORMAT"
+                }
               ],
               "errorMessage": "",
               "isMultiSelect": false,
@@ -1336,6 +1346,7 @@ final dynamic sampleReferralFlows = {
               "order": 5,
               "value": "",
               "format": "text",
+              "pattern": "^\\d+",
               "hidden": false,
               "isMdms": false,
               "tooltip": "",
@@ -1354,6 +1365,11 @@ final dynamic sampleReferralFlows = {
                   "value": true,
                   "message":
                       "HFREFERRAL_REFERRAL_DETAILS_ageInMonths_REQUIRED_ERROR"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^\\d+",
+                  "message": "MB_ONLY_NUMBERS"
                 },
                 {
                   "type": "min",
@@ -2473,10 +2489,7 @@ final dynamic sampleReferralFlows = {
               "errorMessage": "",
               "isMultiSelect": false,
               "autoFillCondition": [
-                {
-                  "value": "{{loggedInUserName}}",
-                  "expression": "true"
-                }
+                {"value": "{{loggedInUserName}}", "expression": "true"}
               ]
             },
             {

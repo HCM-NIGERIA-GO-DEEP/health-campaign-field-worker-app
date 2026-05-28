@@ -700,7 +700,7 @@ class FunctionRegistries {
             final name = p['name'] ?? 'Unknown';
             final required = p['required'] ?? 0;
             final available = p['available'] ?? 0;
-            message += '\n$name: $required REQUIRED, $available AVAILABLE';
+            message += '\n$name: $required Required, $available Available';
           }
           return '$key$message';
         }
