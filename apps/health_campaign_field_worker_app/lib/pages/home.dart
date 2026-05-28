@@ -2214,9 +2214,27 @@ class _HomePageState extends LocalizedState<HomePage> {
           icon: Icons.menu_book,
           label: i18.home.stockReconciliationLabel,
           onPressed: () async {
-            FlowBuilderSingleton().setBoundary(
-                boundary: BoundaryModel(
-                    code: LeastLevelBoundarySingleton().boundary?.first));
+            final boundaryState = context.read<BoundaryBloc>().state;
+            final authState = context.read<AuthBloc>().state;
+            final roles = authState.maybeMap(
+              authenticated: (s) => s.userModel.roles,
+              orElse: () => [],
+            );
+
+            bool isDistributor = roles
+                .where((role) => role.code == RolesType.distributor.toValue())
+                .isNotEmpty;
+
+            final selectedBoundaryCode = isDistributor
+                ? (boundaryState.selectedBoundaryMap.values.lastOrNull?.code ??
+                boundaryState
+                    .allSelectedLastLevelBoundaries.firstOrNull?.code)
+                : boundaryState.boundaryList.firstOrNull?.code;
+
+            if (selectedBoundaryCode != null) {
+              FlowBuilderSingleton().setBoundary(
+                  boundary: BoundaryModel(code: selectedBoundaryCode));
+            }
 
             final moduleName =
                 'hcm-stockreconciliation-${context.selectedProject.referenceID}';
@@ -2383,9 +2401,27 @@ class _HomePageState extends LocalizedState<HomePage> {
           icon: Icons.announcement,
           label: i18.home.viewReportsLabel,
           onPressed: () async {
-            FlowBuilderSingleton().setBoundary(
-                boundary: BoundaryModel(
-                    code: LeastLevelBoundarySingleton().boundary?.first));
+            final boundaryState = context.read<BoundaryBloc>().state;
+            final authState = context.read<AuthBloc>().state;
+            final roles = authState.maybeMap(
+              authenticated: (s) => s.userModel.roles,
+              orElse: () => [],
+            );
+
+            bool isDistributor = roles
+                .where((role) => role.code == RolesType.distributor.toValue())
+                .isNotEmpty;
+
+            final selectedBoundaryCode = isDistributor
+                ? (boundaryState.selectedBoundaryMap.values.lastOrNull?.code ??
+                boundaryState
+                    .allSelectedLastLevelBoundaries.firstOrNull?.code)
+                : boundaryState.boundaryList.firstOrNull?.code;
+
+            if (selectedBoundaryCode != null) {
+              FlowBuilderSingleton().setBoundary(
+                  boundary: BoundaryModel(code: selectedBoundaryCode));
+            }
 
             final moduleName =
                 'hcm-stockreports-${context.selectedProject.referenceID}';

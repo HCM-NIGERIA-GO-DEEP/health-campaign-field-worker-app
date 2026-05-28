@@ -390,8 +390,7 @@ final dynamic inventoryReportFlows = {
                         "operation": "equalsAny"
                       },
                       {
-                        "applyIf":
-                            "{{navigation.reportType}} == 'receipt'",
+                        "applyIf": "{{navigation.reportType}} == 'receipt'",
                         "key": "additionalFields",
                         "value": "ACCEPTED",
                         "operation": "contains"
@@ -438,8 +437,7 @@ final dynamic inventoryReportFlows = {
                         "operation": "equalsAny"
                       },
                       {
-                        "applyIf":
-                            "{{navigation.reportType}} == 'receipt'",
+                        "applyIf": "{{navigation.reportType}} == 'receipt'",
                         "key": "additionalFields",
                         "value": "ACCEPTED",
                         "operation": "contains"
@@ -493,7 +491,8 @@ final dynamic inventoryReportFlows = {
               },
               {
                 "header": "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_3_LABEL",
-                "cellValue": "{{item.waybillNumber}}"
+                "cellValue":
+                    "{{fn:getAdditionalFieldValue(item.additionalFields.fields, 'wayBillNumber')}}"
               },
               {
                 "header": "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_4_LABEL",
