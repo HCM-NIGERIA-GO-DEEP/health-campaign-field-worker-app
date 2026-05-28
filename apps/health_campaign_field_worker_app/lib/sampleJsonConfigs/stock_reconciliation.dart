@@ -121,6 +121,11 @@ final dynamic stockReconciliationFlows = {
                   "value": 0,
                   "message":
                       "STOCKRECONCILIATION_STOCKRECONCILIATION_manualCount_MIN_ERROR"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^-?\\d+",
+                  "message": "Only numbers are allowed"
                 }
               ],
               "errorMessage": "",

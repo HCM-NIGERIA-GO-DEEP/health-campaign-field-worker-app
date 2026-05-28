@@ -1330,7 +1330,13 @@ final dynamic sampleReferralFlows = {
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
-              "validations": [],
+              "validations": [
+                {
+                  "type": "pattern",
+                  "value": "^[a-zA-Z0-9-]+",
+                  "message": "INVALID_USER_ID_FORMAT"
+                }
+              ],
               "errorMessage": "",
               "isMultiSelect": false,
               "autoFillCondition": [
@@ -2510,7 +2516,13 @@ final dynamic sampleReferralFlows = {
               "innerLabel": "",
               "schemaCode": "",
               "systemDate": false,
-              "validations": [],
+              "validations": [
+                {
+                  "type": "pattern",
+                  "value": "^[a-zA-Z0-9-]+",
+                  "message": "INVALID_USER_ID_FORMAT"
+                }
+              ],
               "errorMessage": "",
               "isMultiSelect": false
             }

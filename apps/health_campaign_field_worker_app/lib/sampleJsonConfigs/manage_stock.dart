@@ -918,8 +918,8 @@ final dynamic sampleInventoryFlows = {
               "validations": [
                 {
                   "type": "pattern",
-                  "value": r"^(?!\s).*$",
-                  "message": "Leading space not allowed"
+                  "value": "^[a-zA-Z0-9-]+",
+                  "message": "INVALID_VEHICLE_NUMBER_FORMAT"
                 }
               ],
               "errorMessage": "",
@@ -965,7 +965,7 @@ final dynamic sampleInventoryFlows = {
               "order": 1,
               "value": "",
               "format": "text",
-              "hidden": false,
+              "hidden": true,
               "tooltip": "",
               "helpText": "",
               "infoText": "",
@@ -996,7 +996,7 @@ final dynamic sampleInventoryFlows = {
               "order": 2,
               "value": "",
               "format": "text",
-              "hidden": false,
+              "hidden": true,
               "tooltip": "",
               "helpText": "",
               "infoText": "",
@@ -2148,8 +2148,21 @@ final dynamic sampleInventoryFlows = {
         {
           "format": "panelCard",
           "label": "INVENTORY_STOCK_SUCCESS_LABEL",
-          "description":
-              "INVENTORY_STOCK_SUCCESS_MRN_DESCRIPTION {{navigation.mrnNumber}}",
+          "description": "INVENTORY_STOCK_SUCCESS_MRN_DESCRIPTION",
+          "additionalWidgets": [
+            {
+              "type": "template",
+              "format": "labelPairList",
+              "fieldName": "stockSuccessDetails",
+              "data": [
+                {
+                  "key": "MRN",
+                  "value": "{{navigation.mrnNumber}}",
+                  "isActive": true
+                }
+              ]
+            }
+          ],
           "properties": {"type": "success"},
           "primaryAction": {
             "label": "INVENTORY_VIEW_TRANSACTION_LABEL",
@@ -2461,14 +2474,14 @@ final dynamic sampleInventoryFlows = {
                     "key": "INVENTORY_MRN_NUMBER_LABEL",
                     "value": "{{item.additionalFields.fields.mrnNumber}}"
                   },
-                  {
-                    "key": "INVENTORY_WAYBILL_NUMBER_LABEL",
-                    "value": "{{item.additionalFields.fields.wayBillNumber}}"
-                  },
-                  {
-                    "key": "INVENTORY_BATCH_NUMBER_LABEL",
-                    "value": "{{item.additionalFields.fields.batchNumber}}"
-                  },
+                  // {
+                  //   "key": "INVENTORY_WAYBILL_NUMBER_LABEL",
+                  //   "value": "{{item.additionalFields.fields.wayBillNumber}}"
+                  // },
+                  // {
+                  //   "key": "INVENTORY_BATCH_NUMBER_LABEL",
+                  //   "value": "{{item.additionalFields.fields.batchNumber}}"
+                  // },
                   // {
                   //   "key": "INVENTORY_EXPIRY_LABEL",
                   //   "value":

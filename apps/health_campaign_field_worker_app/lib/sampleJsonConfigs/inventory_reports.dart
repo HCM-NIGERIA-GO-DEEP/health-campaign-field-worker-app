@@ -489,11 +489,11 @@ final dynamic inventoryReportFlows = {
                 "cellValue":
                     "{{fn:getAdditionalFieldValue(item.additionalFields.fields, 'mrnNumber')}}"
               },
-              {
-                "header": "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_3_LABEL",
-                "cellValue":
-                    "{{fn:getAdditionalFieldValue(item.additionalFields.fields, 'wayBillNumber')}}"
-              },
+              // {
+              //   "header": "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_3_LABEL",
+              //   "cellValue":
+              //       "{{fn:getAdditionalFieldValue(item.additionalFields.fields, 'wayBillNumber')}}"
+              // },
               {
                 "header": "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_4_LABEL",
                 "cellValue": "{{item.quantity}}"
