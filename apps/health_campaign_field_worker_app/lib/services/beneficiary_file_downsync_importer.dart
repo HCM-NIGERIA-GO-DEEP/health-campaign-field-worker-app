@@ -3,10 +3,9 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:digit_data_model/data_model.dart';
-import 'package:digit_data_model/models/entities/address_type.dart';
 import 'package:digit_data_model/models/entities/hf_referral.dart';
-import 'package:digit_data_model/models/entities/household_type.dart';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:survey_form/models/entities/service.dart';
 
 class BeneficiaryDownloadLink {
@@ -52,10 +51,19 @@ class BeneficiaryFileDownsyncResult {
 typedef BeneficiaryFileProgress = FutureOr<void> Function(
   int importedCount,
   Map<String, int> importedByType,
+  BeneficiaryDownloadLink currentLink,
+  int currentLinkImported,
+  String lastEntityType,
 );
 
 class BeneficiaryFileDownsyncImporter {
-  static const int _batchSize = 100;
+  static const int _defaultBatchSize = 500;
+  static const int _maxDownloadRetries = 3;
+  static const Duration _downloadRetryDelay = Duration(seconds: 2);
+  static const Duration _receiveTimeout = Duration(minutes: 30);
+  static const Duration _connectTimeout = Duration(seconds: 30);
+
+  final int batchSize;
 
   final Dio dio;
   final LocalRepository<IndividualModel, IndividualSearchModel>
@@ -87,21 +95,44 @@ class BeneficiaryFileDownsyncImporter {
     required this.referralLocalRepository,
     required this.hfReferralLocalRepository,
     required this.serviceLocalRepository,
-  });
+    int? batchSize,
+  }) : batchSize = (batchSize ?? 0) > 0 ? batchSize! : _defaultBatchSize;
 
   Future<BeneficiaryFileDownsyncResult> importLinks(
     List<BeneficiaryDownloadLink> links, {
     BeneficiaryFileProgress? onProgress,
+    int startFromOffset = 0,
   }) async {
     final counters = <String, int>{};
     var totalImported = 0;
+    var skipRemaining = startFromOffset;
+    var lastEntityType = '';
 
     for (final link in links) {
       if (link.url.isEmpty) continue;
 
+      // Fast-skip entire links that the persisted offset has already covered.
+      if (skipRemaining >= link.recordCount && link.recordCount > 0) {
+        skipRemaining -= link.recordCount;
+        totalImported += link.recordCount;
+        continue;
+      }
+
+      var linkImported = 0;
+      await onProgress?.call(totalImported, Map.of(counters), link, linkImported,
+          lastEntityType);
+
       await for (final rawLine in _readNdjsonLines(link)) {
         final line = rawLine.trim();
         if (line.isEmpty) continue;
+
+        if (skipRemaining > 0) {
+          // Already imported on a prior attempt; skip without parsing/inserting.
+          skipRemaining -= 1;
+          totalImported += 1;
+          linkImported += 1;
+          continue;
+        }
 
         final decoded = jsonDecode(line);
         if (decoded is! Map<String, dynamic>) continue;
@@ -109,16 +140,20 @@ class BeneficiaryFileDownsyncImporter {
         await _addDecodedLine(decoded);
 
         totalImported += 1;
+        linkImported += 1;
         final type = decoded['_t']?.toString() ?? link.fileType;
+        if (type.isNotEmpty) lastEntityType = type;
         counters[type] = (counters[type] ?? 0) + 1;
 
-        if (totalImported % _batchSize == 0) {
+        if (totalImported % batchSize == 0) {
           await _flush();
-          await onProgress?.call(totalImported, Map.of(counters));
+          await onProgress?.call(totalImported, Map.of(counters), link,
+              linkImported, lastEntityType);
         }
       }
       await _flush();
-      await onProgress?.call(totalImported, Map.of(counters));
+      await onProgress?.call(totalImported, Map.of(counters), link, linkImported,
+          lastEntityType);
     }
 
     return BeneficiaryFileDownsyncResult(
@@ -138,9 +173,37 @@ class BeneficiaryFileDownsyncImporter {
   final List<ServiceModel> _services = [];
 
   Stream<String> _readNdjsonLines(BeneficiaryDownloadLink link) async* {
+    var attempt = 0;
+    var totalYielded = 0;
+
+    while (true) {
+      attempt += 1;
+      var readInThisAttempt = 0;
+      try {
+        await for (final line in _streamLinkOnce(link)) {
+          readInThisAttempt += 1;
+          if (readInThisAttempt <= totalYielded) continue;
+          yield line;
+          totalYielded += 1;
+        }
+        return;
+      } on DioException catch (e) {
+        if (attempt >= _maxDownloadRetries || !_isRetryableDioError(e)) {
+          rethrow;
+        }
+        await Future.delayed(_downloadRetryDelay);
+      }
+    }
+  }
+
+  Stream<String> _streamLinkOnce(BeneficiaryDownloadLink link) async* {
     final response = await dio.get<ResponseBody>(
       link.url,
-      options: Options(responseType: ResponseType.stream),
+      options: Options(
+        responseType: ResponseType.stream,
+        receiveTimeout: _receiveTimeout,
+        sendTimeout: _connectTimeout,
+      ),
     );
 
     final body = response.data;
@@ -166,6 +229,20 @@ class BeneficiaryFileDownsyncImporter {
     }
   }
 
+  bool _isRetryableDioError(DioException e) {
+    switch (e.type) {
+      case DioExceptionType.connectionError:
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.sendTimeout:
+        return true;
+      case DioExceptionType.unknown:
+        return e.error is SocketException || e.error is HttpException;
+      default:
+        return false;
+    }
+  }
+
   Stream<List<int>> _pullBytes(
     StreamIterator<List<int>> iterator,
     List<int> first,
@@ -175,36 +252,37 @@ class BeneficiaryFileDownsyncImporter {
       yield iterator.current;
     }
   }
-
   Future<void> _addDecodedLine(Map<String, dynamic> raw) async {
     final entityType = raw['_t']?.toString();
-    final normalized = _normalizeEntityMap(raw);
 
     switch (entityType) {
       case 'HOUSEHOLD':
-        _households.add(_mapHousehold(normalized));
+        _households.add(HouseholdModelMapper.fromMap(raw));
       case 'HOUSEHOLD_MEMBER':
-        _householdMembers.add(_mapHouseholdMember(normalized));
+        _householdMembers.add(HouseholdMemberModelMapper.fromMap(raw));
       case 'INDIVIDUAL':
-        _individuals.add(_mapIndividual(normalized));
+        _individuals.add(IndividualModelMapper.fromMap(raw));
       case 'PROJECT_BENEFICIARY':
-        _projectBeneficiaries
-            .add(ProjectBeneficiaryModelMapper.fromMap(normalized));
+        _projectBeneficiaries.add(ProjectBeneficiaryModelMapper.fromMap(raw));
       case 'TASK':
-        _tasks.add(TaskModelMapper.fromMap(normalized));
+      case 'PROJECT_TASK':
+        _tasks.add(TaskModelMapper.fromMap(raw));
       case 'SIDE_EFFECT':
-        _sideEffects.add(SideEffectModelMapper.fromMap(normalized));
+        _sideEffects.add(SideEffectModelMapper.fromMap(raw));
       case 'REFERRAL':
-        _referrals.add(ReferralModelMapper.fromMap(normalized));
+        _referrals.add(ReferralModelMapper.fromMap(raw));
       case 'HF_REFERRAL':
-        _hfReferrals.add(HFReferralModelMapper.fromMap(normalized));
+        _hfReferrals.add(HFReferralModelMapper.fromMap(raw));
       case 'SERVICE':
-        _services.add(ServiceModelMapper.fromMap(normalized));
+        _services.add(ServiceModelMapper.fromMap(raw));
       default:
-        throw FormatException('Unsupported downsync entity type: $entityType');
+        if (kDebugMode) {
+          print('Downsync: skipping unknown entity type "$entityType"');
+        }
+        return;
     }
 
-    if (_bufferedCount >= _batchSize) {
+    if (_bufferedCount >= batchSize) {
       await _flush();
     }
   }
@@ -261,330 +339,4 @@ class BeneficiaryFileDownsyncImporter {
     }
   }
 
-  HouseholdModel _mapHousehold(Map<String, dynamic> map) {
-    return HouseholdModel(
-      id: map['id']?.toString(),
-      tenantId: map['tenantId']?.toString(),
-      clientReferenceId: map['clientReferenceId'].toString(),
-      memberCount: _asInt(map['memberCount']),
-      latitude: _asDouble(map['latitude']),
-      longitude: _asDouble(map['longitude']),
-      rowVersion: _asInt(map['rowVersion']),
-      isDeleted: map['isDeleted'] == true,
-      auditDetails: _auditDetails(map),
-      clientAuditDetails: _clientAuditDetails(map),
-      additionalFields: _householdAdditionalFields(map['additionalFields']),
-      householdType: _householdType(map['householdType']),
-      address: _address(map),
-    );
-  }
-
-  HouseholdMemberModel _mapHouseholdMember(Map<String, dynamic> map) {
-    return HouseholdMemberModel(
-      id: map['id']?.toString(),
-      tenantId: map['tenantId']?.toString(),
-      clientReferenceId: map['clientReferenceId'].toString(),
-      householdId: map['householdId']?.toString(),
-      householdClientReferenceId: map['householdClientReferenceId']?.toString(),
-      individualId: map['individualId']?.toString(),
-      individualClientReferenceId:
-          map['individualClientReferenceId']?.toString(),
-      isHeadOfHousehold: map['isHeadOfHousehold'] == true,
-      rowVersion: _asInt(map['rowVersion']),
-      isDeleted: map['isDeleted'] == true,
-      auditDetails: _auditDetails(map),
-      clientAuditDetails: _clientAuditDetails(map),
-      additionalFields:
-          _householdMemberAdditionalFields(map['additionalFields']),
-    );
-  }
-
-  IndividualModel _mapIndividual(Map<String, dynamic> map) {
-    final clientReferenceId = map['clientReferenceId'].toString();
-    return IndividualModel(
-      id: map['id']?.toString(),
-      individualId: map['individualId']?.toString(),
-      userId: map['userId']?.toString(),
-      userUuid: map['userUuid']?.toString(),
-      tenantId: map['tenantId']?.toString(),
-      clientReferenceId: clientReferenceId,
-      dateOfBirth: map['dateOfBirth']?.toString(),
-      mobileNumber: map['mobileNumber']?.toString(),
-      altContactNumber: map['altContactNumber']?.toString(),
-      email: map['email']?.toString(),
-      fatherName: map['fatherName']?.toString(),
-      husbandName: map['husbandName']?.toString(),
-      photo: map['photo']?.toString(),
-      rowVersion: _asInt(map['rowVersion']),
-      isDeleted: map['isDeleted'] == true,
-      auditDetails: _auditDetails(map),
-      clientAuditDetails: _clientAuditDetails(map),
-      name: _name(map, clientReferenceId),
-      gender: _gender(map['gender']),
-      address: _hasAddress(map)
-          ? [_address(map, clientReferenceId: clientReferenceId)!]
-          : null,
-      identifiers: _identifiers(map, clientReferenceId),
-      additionalFields: _individualAdditionalFields(map['additionalFields']),
-    );
-  }
-
-  AddressModel? _address(
-    Map<String, dynamic> map, {
-    String? clientReferenceId,
-  }) {
-    if (!_hasAddress(map)) return null;
-
-    return AddressModel(
-      id: map['addressId']?.toString(),
-      tenantId:
-          map['addressTenantId']?.toString() ?? map['tenantId']?.toString(),
-      relatedClientReferenceId:
-          map['addressClientReferenceId']?.toString() ?? clientReferenceId,
-      doorNo: map['doorNo']?.toString(),
-      latitude: _asDouble(map['latitude']),
-      longitude: _asDouble(map['longitude']),
-      locationAccuracy: _asDouble(map['locationAccuracy']),
-      type: _addressType(map['addressType'] ?? map['type']),
-      addressLine1: map['addressLine1']?.toString(),
-      addressLine2: map['addressLine2']?.toString(),
-      landmark: map['landmark']?.toString(),
-      city: map['city']?.toString(),
-      pincode: map['pincode']?.toString(),
-      buildingName: map['buildingName']?.toString(),
-      street: map['street']?.toString(),
-      locality: map['localityCode'] == null
-          ? null
-          : LocalityModel(
-              code: map['localityCode'].toString(),
-              name: map['localityName']?.toString(),
-            ),
-      auditDetails: _auditDetails(map),
-      clientAuditDetails: _clientAuditDetails(map),
-    );
-  }
-
-  bool _hasAddress(Map<String, dynamic> map) {
-    return map['addressId'] != null ||
-        map['latitude'] != null ||
-        map['longitude'] != null ||
-        map['localityCode'] != null;
-  }
-
-  NameModel? _name(Map<String, dynamic> map, String clientReferenceId) {
-    if (map['name'] is Map<String, dynamic>) {
-      final name = map['name'] as Map<String, dynamic>;
-      return NameModelMapper.fromMap({
-        ...name,
-        'individualClientReferenceId': clientReferenceId,
-      });
-    }
-
-    if (map['givenName'] == null &&
-        map['familyName'] == null &&
-        map['otherNames'] == null) {
-      return null;
-    }
-
-    return NameModel(
-      id: map['nameId']?.toString(),
-      individualClientReferenceId: clientReferenceId,
-      givenName: map['givenName']?.toString(),
-      familyName: map['familyName']?.toString(),
-      otherNames: map['otherNames']?.toString(),
-      tenantId: map['tenantId']?.toString(),
-      rowVersion: _asInt(map['rowVersion']),
-      auditDetails: _auditDetails(map),
-      clientAuditDetails: _clientAuditDetails(map),
-    );
-  }
-
-  List<IdentifierModel>? _identifiers(
-    Map<String, dynamic> map,
-    String clientReferenceId,
-  ) {
-    final identifiers = map['identifiers'];
-    if (identifiers is! List) return null;
-
-    return identifiers
-        .whereType<Map<String, dynamic>>()
-        .map(_normalizeEntityMap)
-        .map((identifier) => IdentifierModelMapper.fromMap({
-              ...identifier,
-              'individualClientReferenceId': clientReferenceId,
-            }))
-        .toList();
-  }
-
-  Map<String, dynamic> _normalizeEntityMap(Map<String, dynamic> raw) {
-    final normalized = <String, dynamic>{};
-
-    raw.forEach((key, value) {
-      final normalizedKey = _keyAliases[key.toLowerCase()] ?? key;
-      normalized[normalizedKey] = _normalizeValue(value);
-    });
-
-    normalized['auditDetails'] ??= _auditDetailsMap(normalized);
-    normalized['clientAuditDetails'] ??= _clientAuditDetailsMap(normalized);
-
-    return normalized;
-  }
-
-  dynamic _normalizeValue(dynamic value) {
-    if (value is Map<String, dynamic>) return _normalizeEntityMap(value);
-    if (value is List) return value.map(_normalizeValue).toList();
-    return value;
-  }
-
-  AuditDetails? _auditDetails(Map<String, dynamic> map) {
-    final audit = _auditDetailsMap(map);
-    if (audit == null) return null;
-    return AuditDetailsMapper.fromMap(audit);
-  }
-
-  ClientAuditDetails? _clientAuditDetails(Map<String, dynamic> map) {
-    final audit = _clientAuditDetailsMap(map);
-    if (audit == null) return null;
-    return ClientAuditDetailsMapper.fromMap(audit);
-  }
-
-  Map<String, dynamic>? _auditDetailsMap(Map<String, dynamic> map) {
-    if (map['createdBy'] == null || map['createdTime'] == null) return null;
-    return {
-      'createdBy': map['createdBy'],
-      'createdTime': map['createdTime'],
-      'lastModifiedBy': map['lastModifiedBy'] ?? map['createdBy'],
-      'lastModifiedTime': map['lastModifiedTime'] ?? map['createdTime'],
-    };
-  }
-
-  Map<String, dynamic>? _clientAuditDetailsMap(Map<String, dynamic> map) {
-    if (map['clientCreatedBy'] == null || map['clientCreatedTime'] == null) {
-      return null;
-    }
-    return {
-      'createdBy': map['clientCreatedBy'],
-      'createdTime': map['clientCreatedTime'],
-      'lastModifiedBy': map['clientLastModifiedBy'] ?? map['clientCreatedBy'],
-      'lastModifiedTime':
-          map['clientLastModifiedTime'] ?? map['clientCreatedTime'],
-    };
-  }
-
-  HouseholdAdditionalFields? _householdAdditionalFields(dynamic value) {
-    if (value is! Map<String, dynamic>) return null;
-    return HouseholdAdditionalFieldsMapper.fromMap(value);
-  }
-
-  HouseholdMemberAdditionalFields? _householdMemberAdditionalFields(
-    dynamic value,
-  ) {
-    if (value is! Map<String, dynamic>) return null;
-    return HouseholdMemberAdditionalFieldsMapper.fromMap(value);
-  }
-
-  IndividualAdditionalFields? _individualAdditionalFields(dynamic value) {
-    if (value is! Map<String, dynamic>) return null;
-    return IndividualAdditionalFieldsMapper.fromMap(value);
-  }
-
-  HouseholdType? _householdType(dynamic value) {
-    switch (value?.toString().toUpperCase()) {
-      case 'FAMILY':
-        return HouseholdType.family;
-      case 'COMMUNITY':
-        return HouseholdType.community;
-      case 'OTHER':
-        return HouseholdType.other;
-      default:
-        return null;
-    }
-  }
-
-  AddressType? _addressType(dynamic value) {
-    switch (value?.toString().toUpperCase()) {
-      case 'PERMANENT':
-        return AddressType.permanent;
-      case 'CORRESPONDENCE':
-        return AddressType.correspondence;
-      case 'OTHER':
-        return AddressType.other;
-      case 'STRING':
-        return AddressType.string;
-      default:
-        return null;
-    }
-  }
-
-  Gender? _gender(dynamic value) {
-    switch (value?.toString().toUpperCase()) {
-      case 'MALE':
-        return Gender.male;
-      case 'FEMALE':
-        return Gender.female;
-      case 'OTHER':
-        return Gender.other;
-      default:
-        return null;
-    }
-  }
-
-  static int? _asInt(dynamic value) {
-    if (value is int) return value;
-    if (value is num) return value.toInt();
-    if (value is String) return int.tryParse(value);
-    return null;
-  }
-
-  double? _asDouble(dynamic value) {
-    if (value is double) return value;
-    if (value is num) return value.toDouble();
-    if (value is String) return double.tryParse(value);
-    return null;
-  }
-
-  static const Map<String, String> _keyAliases = {
-    'tenantid': 'tenantId',
-    'clientreferenceid': 'clientReferenceId',
-    'numberofmembers': 'memberCount',
-    'addressid': 'addressId',
-    'additionaldetails': 'additionalFields',
-    'createdby': 'createdBy',
-    'lastmodifiedby': 'lastModifiedBy',
-    'createdtime': 'createdTime',
-    'lastmodifiedtime': 'lastModifiedTime',
-    'rowversion': 'rowVersion',
-    'isdeleted': 'isDeleted',
-    'clientcreatedtime': 'clientCreatedTime',
-    'clientlastmodifiedtime': 'clientLastModifiedTime',
-    'clientcreatedby': 'clientCreatedBy',
-    'clientlastmodifiedby': 'clientLastModifiedBy',
-    'householdtype': 'householdType',
-    'aid': 'addressId',
-    'atenantid': 'addressTenantId',
-    'aclientreferenceid': 'addressClientReferenceId',
-    'doorno': 'doorNo',
-    'locationaccuracy': 'locationAccuracy',
-    'addressline1': 'addressLine1',
-    'addressline2': 'addressLine2',
-    'buildingname': 'buildingName',
-    'localitycode': 'localityCode',
-    'localityname': 'localityName',
-    'householdid': 'householdId',
-    'householdclientreferenceid': 'householdClientReferenceId',
-    'individualid': 'individualId',
-    'individualclientreferenceid': 'individualClientReferenceId',
-    'isheadofhousehold': 'isHeadOfHousehold',
-    'userid': 'userId',
-    'useruuid': 'userUuid',
-    'dateofbirth': 'dateOfBirth',
-    'mobilenumber': 'mobileNumber',
-    'altcontactnumber': 'altContactNumber',
-    'fathername': 'fatherName',
-    'husbandname': 'husbandName',
-    'givenname': 'givenName',
-    'familyname': 'familyName',
-    'othernames': 'otherNames',
-    'nameid': 'nameId',
-  };
 }

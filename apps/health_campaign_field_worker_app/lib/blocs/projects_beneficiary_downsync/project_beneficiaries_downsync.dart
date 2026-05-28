@@ -31,6 +31,8 @@ class BeneficiaryDownSyncBloc
   static const int _fileDownsyncStorageKbPerRecord = 5;
   static const int _storageSafetyMultiplier = 2;
 
+  String currentEntityType = '';
+
   final LocalRepository<IndividualModel, IndividualSearchModel>
       individualLocalRepository;
   final RemoteRepository<DownsyncModel, DownsyncSearchModel>
@@ -143,7 +145,8 @@ class BeneficiaryDownSyncBloc
           isDeleted: true,
           // lastSyncedTime: lastSyncedTime,
           tenantId: envConfig.variables.tenantId,
-          projectId: event.projectModel.id,
+          projectId: event.projectModel.projectHierarchy?.split('.').first ??
+              event.projectModel.id,
         ),
       );
       if (initialResults.isNotEmpty) {
@@ -187,7 +190,8 @@ class BeneficiaryDownSyncBloc
             limit: 0,
             totalCount: event.initialServerCount,
             tenantId: envConfig.variables.tenantId,
-            projectId: event.projectModel.id,
+            projectId: event.projectModel.projectHierarchy?.split('.').first ??
+                event.projectModel.id,
             isDeleted: true,
           ),
         );
@@ -206,12 +210,23 @@ class BeneficiaryDownSyncBloc
 
           await _importDownloadLinks(
             links: downloadLinks,
-            projectId: event.projectModel.id,
+            projectId: event.projectModel.projectHierarchy?.split('.').first ??
+                event.projectModel.id,
             boundaryCode: event.boundaryCode,
             boundaryName: event.boundaryName,
             totalCount: totalCount,
-            emitProgress: (imported, total) {
-              emit(BeneficiaryDownSyncState.inProgress(imported, total));
+            batchSize: event.batchSize,
+            emitProgress:
+                (link, linkImported, totalImported, _, lastEntityType) {
+              if (lastEntityType.isNotEmpty) {
+                currentEntityType = lastEntityType;
+              } else if (link.fileType.isNotEmpty) {
+                currentEntityType = link.fileType;
+              }
+              emit(BeneficiaryDownSyncState.inProgress(
+                linkImported,
+                link.recordCount,
+              ));
             },
           );
 
@@ -272,7 +287,9 @@ class BeneficiaryDownSyncBloc
               limit: event.batchSize,
               totalCount: totalCount,
               tenantId: envConfig.variables.tenantId,
-              projectId: event.projectModel.id,
+              projectId:
+                  event.projectModel.projectHierarchy?.split('.').first ??
+                      event.projectModel.id,
               lastSyncedTime: lastSyncedTime,
               isDeleted: true,
             ),
@@ -381,7 +398,8 @@ class BeneficiaryDownSyncBloc
             isDeleted: true,
             // lastSyncedTime: lastSyncedTime,
             tenantId: envConfig.variables.tenantId,
-            projectId: event.projectModel.id,
+            projectId: event.projectModel.projectHierarchy?.split('.').first ??
+                event.projectModel.id,
           ),
         );
 
@@ -446,7 +464,9 @@ class BeneficiaryDownSyncBloc
               limit: 0,
               totalCount: boundaryTotalCount,
               tenantId: envConfig.variables.tenantId,
-              projectId: event.projectModel.id,
+              projectId:
+                  event.projectModel.projectHierarchy?.split('.').first ??
+                      event.projectModel.id,
               isDeleted: true,
             ),
           );
@@ -465,17 +485,26 @@ class BeneficiaryDownSyncBloc
 
             await _importDownloadLinks(
               links: downloadLinks,
-              projectId: event.projectModel.id,
+              projectId:
+                  event.projectModel.projectHierarchy?.split('.').first ??
+                      event.projectModel.id,
               boundaryCode: boundaryCode,
               boundaryName: boundaryName,
               totalCount: totalCount,
-              emitProgress: (imported, total) {
+              batchSize: event.batchSize,
+              emitProgress:
+                  (link, linkImported, totalImported, _, lastEntityType) {
+                if (lastEntityType.isNotEmpty) {
+                  currentEntityType = lastEntityType;
+                } else if (link.fileType.isNotEmpty) {
+                  currentEntityType = link.fileType;
+                }
                 emit(BeneficiaryDownSyncState.multiBoundaryInProgress(
                   i,
                   boundaries.length,
                   boundaryName,
-                  imported,
-                  total,
+                  linkImported,
+                  link.recordCount,
                 ));
               },
             );
@@ -540,8 +569,10 @@ class BeneficiaryDownSyncBloc
                 limit: event.batchSize,
                 totalCount: totalCount,
                 tenantId: envConfig.variables.tenantId,
-                projectId: event.projectModel.id,
-                // lastSyncedTime: loopLastSyncedTime,
+                projectId:
+                    event.projectModel.projectHierarchy?.split('.').first ??
+                        event.projectModel.id,
+                lastSyncedTime: loopLastSyncedTime,
                 isDeleted: true,
               ),
             );
@@ -644,12 +675,23 @@ class BeneficiaryDownSyncBloc
     required String boundaryCode,
     required String boundaryName,
     required int totalCount,
-    required void Function(int imported, int totalCount) emitProgress,
+    required int batchSize,
+    required void Function(
+      BeneficiaryDownloadLink link,
+      int linkImported,
+      int totalImported,
+      int overallTotal,
+      String lastEntityType,
+    ) emitProgress,
   }) async {
     final existingDownSyncData =
         await downSyncLocalRepository.search(DownsyncSearchModel(
       locality: boundaryCode,
     ));
+
+    final startFromOffset = existingDownSyncData.isEmpty
+        ? 0
+        : (existingDownSyncData.first.offset ?? 0);
 
     if (existingDownSyncData.isEmpty) {
       await downSyncLocalRepository.create(DownsyncModel(
@@ -674,12 +716,15 @@ class BeneficiaryDownSyncBloc
       referralLocalRepository: referralLocalRepository,
       hfReferralLocalRepository: hfReferralLocalRepository,
       serviceLocalRepository: serviceLocalRepository,
+      batchSize: batchSize,
     );
 
     await importer.importLinks(
       links,
-      onProgress: (importedCount, _) async {
-        emitProgress(importedCount, totalCount);
+      startFromOffset: startFromOffset,
+      onProgress: (importedCount, _, link, linkImported, lastEntityType) async {
+        emitProgress(
+            link, linkImported, importedCount, totalCount, lastEntityType);
         await downSyncLocalRepository.update(DownsyncModel(
           offset: importedCount,
           limit: 0,
