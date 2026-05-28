@@ -374,57 +374,57 @@ final dynamic sampleReferralFlows = {
             "mainAxisAlignment": "center"
           }
         },
-        {
-          "type": "template",
-          "label": "SCAN_BENEFICIARY",
-          "format": "qrScanner",
-          "onAction": [
-            {
-              "actionType": "OPEN_SCANNER",
-              "properties": {
-                "isGS1": false,
-                "scanType": "qr",
-                "fieldName": "beneficiaryId",
-                "onSuccess": [
-                  {
-                    "actionType": "SEARCH_EVENT",
-                    "properties": {
-                      "data": [
-                        {
-                          "key": "beneficiaryId",
-                          "value": "{{beneficiaryId}}",
-                          "operation": "equals"
-                        }
-                      ],
-                      "name": "hFReferral",
-                      "type": "SEARCH_EVENT",
-                      "awaitResults": true
-                    }
-                  }
-                ],
-                "scanLimit": 1,
-                "singleValue": true
-              }
-            }
-          ],
-          "fieldName": "qrScanner",
-          "showLabel": false,
-          "properties": {
-            "icon": "QrCodeScanner",
-            "size": "large",
-            "type": "secondary",
-            "mainAxisSize": "max",
-            "mainAxisAlignment": "center"
-          },
-          "validations": [
-            {
-              "type": "scanLimit",
-              "value": 1,
-              "message": "SCANLIMIT_ERROR_MESSAGE"
-            },
-            {"type": "isGS1", "value": false}
-          ]
-        }
+        // {
+        //   "type": "template",
+        //   "label": "SCAN_BENEFICIARY",
+        //   "format": "qrScanner",
+        //   "onAction": [
+        //     {
+        //       "actionType": "OPEN_SCANNER",
+        //       "properties": {
+        //         "isGS1": false,
+        //         "scanType": "qr",
+        //         "fieldName": "beneficiaryId",
+        //         "onSuccess": [
+        //           {
+        //             "actionType": "SEARCH_EVENT",
+        //             "properties": {
+        //               "data": [
+        //                 {
+        //                   "key": "beneficiaryId",
+        //                   "value": "{{beneficiaryId}}",
+        //                   "operation": "equals"
+        //                 }
+        //               ],
+        //               "name": "hFReferral",
+        //               "type": "SEARCH_EVENT",
+        //               "awaitResults": true
+        //             }
+        //           }
+        //         ],
+        //         "scanLimit": 1,
+        //         "singleValue": true
+        //       }
+        //     }
+        //   ],
+        //   "fieldName": "qrScanner",
+        //   "showLabel": false,
+        //   "properties": {
+        //     "icon": "QrCodeScanner",
+        //     "size": "large",
+        //     "type": "secondary",
+        //     "mainAxisSize": "max",
+        //     "mainAxisAlignment": "center"
+        //   },
+        //   "validations": [
+        //     {
+        //       "type": "scanLimit",
+        //       "value": 1,
+        //       "message": "SCANLIMIT_ERROR_MESSAGE"
+        //     },
+        //     {"type": "isGS1", "value": false}
+        //   ]
+        // }
       ],
       "header": [
         {
