@@ -50,6 +50,25 @@ class FunctionRegistries {
   }
 
   void _registerInventoryFunctions() {
+    FunctionRegistry.register('bottlesToMl', (args, stateData) {
+      if (args.isEmpty) return 0;
+      final raw = args.first;
+      final bottles = (raw is num)
+          ? raw
+          : num.tryParse(raw?.toString() ?? '') ?? 0;
+      return bottles * 30;
+    });
+
+    FunctionRegistry.register('mlToBottles', (args, stateData) {
+      if (args.isEmpty) return 0;
+      final raw = args.first;
+      final ml =
+          (raw is num) ? raw : num.tryParse(raw?.toString() ?? '') ?? 0;
+      final bottles = ml / 30;
+      final rounded = bottles.roundToDouble();
+      return bottles == rounded ? rounded.toInt() : bottles;
+    });
+
     FunctionRegistry.register('getQuantityLabel', (args, stateData) {
       if (args.isEmpty) return 'APPONE_INVENTORY_QUANTITY_RECEIVED_LABEL';
       final sku = args.first?.toString() ?? '';
