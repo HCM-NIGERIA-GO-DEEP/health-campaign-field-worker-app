@@ -11,6 +11,7 @@ import 'package:digit_flow_builder/utils/interpolation.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../blocs/localization/app_localization.dart';
 import '../models/entities/roles_type.dart';
 import 'extensions/extensions.dart';
 import 'facility_usage_filter.dart';
@@ -734,7 +735,8 @@ class FunctionRegistries {
             final available = p['available'] ?? 0;
             message += '\n$name: $required Required, $available Available';
           }
-          return '$key$message';
+          final localizedKey = AppLocalizations.of(context).translate(key!);
+          return '$localizedKey$message';
         }
       }
       return '';
