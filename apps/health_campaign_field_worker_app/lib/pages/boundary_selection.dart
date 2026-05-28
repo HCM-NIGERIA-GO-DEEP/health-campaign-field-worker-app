@@ -293,16 +293,28 @@ class _BoundarySelectionPageState
                                       );
                                     },
                                     inProgress: (syncCount, totalCount) {
+                                      final entityType = context
+                                          .read<BeneficiaryDownSyncBloc>()
+                                          .currentEntityType;
+                                      final entityLabel =
+                                          _downsyncEntityDisplayName(
+                                              entityType);
+                                      final boundaryLabel =
+                                          localizations.translate(
+                                        state.selectedLastLevelBoundaries
+                                                .firstOrNull?.code ??
+                                            '',
+                                      );
                                       final progressData = DownloadProgressData(
                                         progress: min(
-                                          (syncCount) / (totalCount),
+                                          (syncCount) / (totalCount == 0
+                                              ? 1
+                                              : totalCount),
                                           1,
                                         ),
-                                        boundaryName: localizations.translate(
-                                          state.selectedLastLevelBoundaries
-                                                  .firstOrNull?.code ??
-                                              '',
-                                        ),
+                                        boundaryName: entityLabel.isEmpty
+                                            ? boundaryLabel
+                                            : entityLabel,
                                         syncedCount: syncCount,
                                         totalCount: totalCount,
                                         currentIndex: 0,
@@ -476,6 +488,14 @@ class _BoundarySelectionPageState
                                       syncCount,
                                       totalCount,
                                     ) {
+                                      final entityType = context
+                                          .read<BeneficiaryDownSyncBloc>()
+                                          .currentEntityType;
+                                      final entityLabel =
+                                          _downsyncEntityDisplayName(
+                                              entityType);
+                                      final boundaryLabel =
+                                          localizations.translate(boundaryName);
                                       final progressData = DownloadProgressData(
                                         progress: min(
                                           (syncCount) /
@@ -484,9 +504,9 @@ class _BoundarySelectionPageState
                                                   : totalCount),
                                           1,
                                         ),
-                                        boundaryName: localizations.translate(
-                                          boundaryName,
-                                        ),
+                                        boundaryName: entityLabel.isEmpty
+                                            ? boundaryLabel
+                                            : '$boundaryLabel • $entityLabel',
                                         syncedCount: syncCount,
                                         totalCount: totalCount,
                                         currentIndex: currentIndex,
@@ -1108,5 +1128,30 @@ class _BoundarySelectionPageState
             });
           });
     });
+  }
+}
+
+String _downsyncEntityDisplayName(String code) {
+  switch (code) {
+    case 'HOUSEHOLD':
+      return 'Households';
+    case 'HOUSEHOLD_MEMBER':
+      return 'Household Members';
+    case 'INDIVIDUAL':
+      return 'Individuals';
+    case 'PROJECT_BENEFICIARY':
+      return 'Project Beneficiaries';
+    case 'TASK':
+      return 'Tasks';
+    case 'SIDE_EFFECT':
+      return 'Side Effects';
+    case 'REFERRAL':
+      return 'Referrals';
+    case 'HF_REFERRAL':
+      return 'HF Referrals';
+    case 'SERVICE':
+      return 'Services';
+    default:
+      return '';
   }
 }
