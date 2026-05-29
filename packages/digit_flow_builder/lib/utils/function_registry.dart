@@ -2044,7 +2044,9 @@ void initializeFunctionRegistry() {
     final projectType = FlowBuilderSingleton().projectType;
     if (projectType == null) return false;
 
-    final validMinAge = projectType.validMinAge ?? 3;
+    // RI is eligible from birth (minimum age 0), unlike SMC which uses
+    // projectType.validMinAge. The upper bound still mirrors the campaign config.
+    const validMinAge = 0;
     final validMaxAge = projectType.validMaxAge ?? 59;
     if (totalAgeMonths < validMinAge || totalAgeMonths > validMaxAge) {
       return false;
