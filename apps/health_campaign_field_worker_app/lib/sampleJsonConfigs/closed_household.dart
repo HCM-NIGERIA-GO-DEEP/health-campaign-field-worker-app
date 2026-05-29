@@ -7,7 +7,6 @@ final dynamic sampleCloseHouseholdFlows = {
   "disabled": false,
   "isSelected": true,
   "flows": [
-
     {
       "screenType": "FORM",
       "name": "CLOSEHOUSEHOLD",
@@ -151,9 +150,9 @@ final dynamic sampleCloseHouseholdFlows = {
               "isMultiSelect": false
             }
           ],
-          "value": null,
+          "value": "",
           "required": null,
-          "hidden": null,
+          "hidden": false,
           "helpText": null,
           "innerLabel": null,
           "validations": null,
@@ -166,7 +165,51 @@ final dynamic sampleCloseHouseholdFlows = {
           "isMultiSelect": null,
           "includeInForm": null,
           "includeInSummary": null,
-          "autoEnable": null
+          "autoEnable": null,
+          "onAction": [
+            {
+              "actionType": "FETCH_TRANSFORMER_CONFIG",
+              "properties": {
+                "configName": "closeHouseholdRegistration",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to fetch config."}
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "CREATE_EVENT",
+              "properties": {
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to create stock."}
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "type": "TEMPLATE",
+                "name": "closedHouseholdSummary",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Navigation failed."}
+                  }
+                ],
+                "data": [
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{entities.HouseholdModel.clientReferenceId}}"
+                  }
+                ]
+              }
+            }
+          ]
         },
       ],
       "overView": "CLOSEHOUSEHOLD_SUMMARY_HEADING",
@@ -176,7 +219,6 @@ final dynamic sampleCloseHouseholdFlows = {
           "actionType": "FETCH_TRANSFORMER_CONFIG",
           "properties": {
             "configName": "closeHouseholdRegistration",
-            "data": [],
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
@@ -188,8 +230,6 @@ final dynamic sampleCloseHouseholdFlows = {
         {
           "actionType": "CREATE_EVENT",
           "properties": {
-            "entity":
-                "HouseholdModel, IndividualModel, ProjectBeneficiaryModel, HouseholdMemberModel, TaskModel",
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
@@ -212,9 +252,13 @@ final dynamic sampleCloseHouseholdFlows = {
             "data": [
               {
                 "key": "HouseholdClientReferenceId",
+                "value": "{{entities.HouseholdModel.clientReferenceId}}"
+              },
+              {
+                "key": "test0012",
                 "value":
-                    "{{entities.HouseholdModel.clientReferenceId}}"
-              }
+                    "{{entities.ProjectBeneficiaryModel.clientReferenceId}}"
+              },
             ]
           }
         }
@@ -222,53 +266,151 @@ final dynamic sampleCloseHouseholdFlows = {
     },
     {
       "screenType": "TEMPLATE",
-      "order": 4,
-      "name": "closedHouseholdSummary",
-      "heading": "CLOSEHOUSEHOLD_SUMMARY_HEADING",
-      "description": "CLOSEHOUSEHOLD_SUMMARY_DESCRIPTION",
-      "header": [
+      "order": 3,
+      "name": "closeHouseholdSuccess",
+      "heading": "",
+      "description": "",
+      "header": [],
+      "footer": [],
+      "initActions": [],
+      "body": [
         {
-          "label": "CLOSEHOUSEHOLD_SUMMARY_BACK",
-          "format": "backLink",
-          "onAction": [
-            {
-              "actionType": "NAVIGATION",
-              "properties": {"type": "BACK"}
-            }
-          ]
+          "type": "template",
+          "format": "panelCard",
+          "label": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDSUCCESS_HEADING",
+          "description": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDSUCCESS_DESCRIPTION",
+          "properties": {"type": "success"},
+          "primaryAction": {
+            "label":
+                "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDSUCCESS_PRIMARY_ACTION_LABEL",
+            "onAction": [
+              
+              {
+                "actionType": "NAVIGATION",
+                "properties": {"type": "HOME"}
+              }
+            ]
+          },
+          "secondaryAction": {
+            "label":
+                "CLOSEHOUSEHOLD_CLOSEHOUSEHOLD_SUCCESS_SECONDARY_ACTION_LABEL",
+            "onAction": [
+              {
+                "actionType": "NAVIGATION",
+                "properties": {
+                  "type": "TEMPLATE",
+                  "name": "previewScreen",
+                  "data": [
+                    {
+                      "key": "HouseholdClientReferenceId",
+                      "value": "{{navigation.HouseholdClientReferenceId}}"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
         }
+      ]
+    },
+    {
+      "body": [
+        {
+          "type": "template",
+          "format": "card",
+          "children": [
+            {
+              "data": [
+                {
+                  "key": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_DATE_LABEL",
+                  // "value": "{{fn:getAdditionalFieldValue(contextData.0.HouseholdModel.additionalFields.fields, 'date')}}",
+                  "value": "{{fn:formatDate(contextData.0.HouseholdModel.additionalFields.fields.date, 'date', dd MMM yyyy)}}",
+                  "isActive": true,
+                },
+                {
+                  "key":
+                      "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_SETTLEMENT_LABEL",
+                  "value": "{{contextData.0.HouseholdModel.address.locality.code}}",
+                  "isActive": true
+                },
+                {
+                  "key":
+                      "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_NAME_LABEL",
+                  "value":
+                      "{{contextData.0.headIndividual.IndividualModel.name.givenName}}",
+                  "isActive": true
+                },
+                {
+                  "key":
+                      "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_GPS_ACCURACY_LABEL",
+                  "value": "{{contextData.0.HouseholdModel.address.locationAccuracy}}",
+                  "isActive": true,
+                },
+              ],
+              "type": "template",
+              "format": "labelPairList",
+              "fieldName": "closeHouseholdDetails"
+            }
+          ],
+          "properties": {"type": "primary", "cardType": "primary"},
+          "schemaCode": null
+        },
       ],
+      "name": "closedHouseholdSummary",
+      "order": 2,
       "footer": [
         {
           "type": "template",
-          "label": "CLOSEHOUSEHOLD_SUMMARY_NEXT_ACTION_LABEL",
+          "label": "REGISTER_BENEFICIARY",
           "format": "button",
           "onAction": [
             {
               "actionType": "NAVIGATION",
               "properties": {
-                "type": "TEMPLATE",
-                "name": "closeHouseholdSuccess",
                 "data": [
                   {
+                    "key": "ProjectBeneficiaryClientReferenceId",
+                    "value": "{{navigation.test0012}}"
+                  },
+                  {
                     "key": "HouseholdClientReferenceId",
-                    "value":
-                        "{{contextData.0.household.HouseholdModel.clientReferenceId}}"
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
                   }
-                ]
+                ],
+                "name": "closeHouseholdSuccess",
+                "type": "TEMPLATE"
               }
             }
           ],
-          "fieldName": "nextButton",
+          "fieldName": "registerBeneficiary",
+          "mandatory": true,
           "properties": {
             "size": "large",
             "type": "primary",
             "mainAxisSize": "max",
             "mainAxisAlignment": "center"
           }
+        },
+      ],
+      "header": [
+        {
+          "label": "HOUSEHOLD_BACK",
+          "format": "backLink",
+          "onAction": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {"name": "CLOSEHOUSEHOLD", "type": "FORM"}
+            }
+          ]
         }
       ],
+      "heading": "",
+      "category": "REGISTRATION",
+      "navigateTo": null,
+      "screenType": "TEMPLATE",
+      "description": "",
       "initActions": [
+        {"actionType": "LOAD_UNIQUE_ID_POOL"},
         {
           "actionType": "SEARCH_EVENT",
           "properties": {
@@ -284,48 +426,8 @@ final dynamic sampleCloseHouseholdFlows = {
           }
         }
       ],
-      "body": [
-        {
-          "type": "template",
-          "format": "card",
-          "children": [
-            {
-              "data": [
-                {
-                  "key": "HOUSEHOLD_HEAD_NAME",
-                  "value":
-                      "{{contextData.0.headIndividual.IndividualModel.name.givenName}}",
-                  "isActive": true
-                },
-                {
-                  "key": "ADMINISTRATIVE_AREA",
-                  "value":
-                      "{{contextData.0.household.HouseholdModel.address.locality.code}}",
-                  "isActive": true
-                },
-                {
-                  "key": "MEMBER_COUNT",
-                  "value":
-                      "{{contextData.0.household.HouseholdModel.memberCount}}",
-                  "isActive": true
-                }
-              ],
-              "type": "template",
-              "format": "labelPairList",
-              "fieldName": "closedHouseholdSummaryDetails"
-            }
-          ],
-          "properties": {"type": "primary", "cardType": "primary"},
-          "schemaCode": null
-        }
-      ],
       "wrapperConfig": {
-        "rootEntity": "HouseholdModel",
-        "wrapperName": "HouseholdWrapper",
-        "searchConfig": {
-          "select": ["household", "individual", "householdMember"],
-          "primary": "household"
-        },
+        "filters": [],
         "relations": [
           {
             "name": "household",
@@ -353,57 +455,88 @@ final dynamic sampleCloseHouseholdFlows = {
               "equalsFrom": "headOfHousehold.individualClientReferenceId"
             },
             "entity": "IndividualModel"
-          }
-        ]
-      }
-    },
-    {
-      "screenType": "TEMPLATE",
-      "order": 3,
-      "name": "closeHouseholdSuccess",
-      "heading": "",
-      "description": "",
-      "header": [],
-      "footer": [],
-      "initActions": [],
-      "body": [
-        {
-          "type": "template",
-          "format": "panelCard",
-          "label": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDSUCCESS_HEADING",
-          "description": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDSUCCESS_DESCRIPTION",
-          "properties": {"type": "success"},
-          "primaryAction": {
-            "label":
-                "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDSUCCESS_PRIMARY_ACTION_LABEL",
-            "onAction": [
-              {
-                "actionType": "NAVIGATION",
-                "properties": {"type": "HOME"}
-              }
-            ]
           },
-          "secondaryAction": {
-            "label":
-                "CLOSEHOUSEHOLD_CLOSEHOUSEHOLD_SUCCESS_SECONDARY_ACTION_LABEL",
-            "onAction": [
+          {
+            "name": "members",
+            "match": {
+              "field": "householdClientReferenceId",
+              "equalsFrom": "clientReferenceId"
+            },
+            "entity": "HouseholdMemberModel",
+            "relations": [
               {
-                "actionType": "NAVIGATION",
-                "properties": {
-                  "type": "TEMPLATE",
-                  "name": "closedHouseholdSummary",
-                  "data": [
-                    {
-                      "key": "HouseholdClientReferenceId",
-                      "value": "{{navigation.HouseholdClientReferenceId}}"
-                    }
-                  ]
-                }
+                "name": "member",
+                "match": {
+                  "field": "clientReferenceId",
+                  "equalsFrom": "clientReferenceId"
+                },
+                "entity": "HouseholdMemberModel"
+              },
+              {
+                "name": "individual",
+                "match": {
+                  "field": "clientReferenceId",
+                  "equalsFrom": "individualClientReferenceId"
+                },
+                "entity": "IndividualModel"
+              },
+              {
+                "name": "projectBeneficiary",
+                "match": {
+                  "field": "beneficiaryClientReferenceId",
+                  "equalsFrom": "individual.clientReferenceId"
+                },
+                "entity": "ProjectBeneficiaryModel"
+              },
+              {
+                "name": "task",
+                "match": {
+                  "field": "projectBeneficiaryClientReferenceId",
+                  "equalsFrom": "projectBeneficiary.clientReferenceId"
+                },
+                "entity": "TaskModel"
+              },
+              {
+                "name": "hFReferral",
+                "match": {
+                  "field": "beneficiaryId",
+                  "equalsFrom": "individual.identifiers.0.identifierId"
+                },
+                "entity": "HFReferralModel"
               }
             ]
           }
+        ],
+        "computed": {
+          "currentRunningCycle": {
+            "from":
+                "{{singleton.selectedProject.additionalDetails.projectType.cycles}}",
+            "order": 1,
+            "where": [
+              {"left": "{{startDate}}", "right": "{{now}}", "operator": "lt"},
+              {"left": "{{endDate}}", "right": "{{now}}", "operator": "gt"}
+            ],
+            "select": "{{id}}",
+            "default": -1,
+            "takeFirst": true
+          }
+        },
+        "rootEntity": "HouseholdModel",
+        "wrapperName": "HouseholdWrapper",
+        "searchConfig": {
+          "select": [
+            "household",
+            "individual",
+            "householdMember",
+            "projectBeneficiary",
+            "task",
+            "hFReferral"
+          ],
+          "primary": "household"
         }
-      ]
+      },
+      "submitCondition": null,
+      "preventScreenCapture": false
     },
     {
       "body": [
@@ -415,62 +548,44 @@ final dynamic sampleCloseHouseholdFlows = {
               "data": [
                 {
                   "key": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_DATE_LABEL",
-                  "value":
-                      "",
+                  "value": "{{fn:formatDate(contextData.0.HouseholdModel.additionalFields.fields.date, 'date', dd MMM yyyy)}}",
                   "isActive": true
                 },
                 {
-                  "key": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_SETTLEMENT_LABEL",
-                  "value":
-                      "",
+                  "key":
+                      "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_SETTLEMENT_LABEL",
+                  "value": "{{contextData.0.HouseholdModel.address.locality.code}}",
                   "isActive": true
                 },
                 {
-                  "key": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_NAME_LABEL",
+                  "key":
+                      "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_NAME_LABEL",
                   "value":
                       "{{contextData.0.headIndividual.IndividualModel.name.givenName}}",
                   "isActive": true
                 },
                 {
-                  "key": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_GPS_ACCURACY_LABEL",
-                  "value":
-                      "",
+                  "key":
+                      "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_GPS_ACCURACY_LABEL",
+                  "value": "{{contextData.0.HouseholdModel.address.locationAccuracy}}",
                   "isActive": true
                 },
-                // {
-                //   "key": "HOUSEHOLD_HEAD_NAME",
-                //   "value":
-                //       "{{contextData.0.headIndividual.IndividualModel.name.givenName}}",
-                //   "isActive": true
-                // },
-                // {
-                //   "key": "CLOSEHOUSEHOLD_SUMMARY_SETTLEMENT",
-                //   "value":
-                //       "{{contextData.0.household.HouseholdModel.memberCount}}",
-                //   "isActive": true
-                // },
-                // {
-                //   "key": "NUMBER_OF_ITN_FOR_DELIVERY",
-                //   "value": "",
-                //   "isActive": true
-                // }
               ],
               "type": "template",
               "format": "labelPairList",
-              "fieldName": "householdDetails"
+              "fieldName": "closeHouseholdDetails"
             }
           ],
           "properties": {"type": "primary", "cardType": "primary"},
           "schemaCode": null
         },
-       
       ],
-      "name": "closedHouseholdSummary",
-      "order": 2,
+      "name": "previewScreen",
+      "order": 4,
       "footer": [
         {
           "type": "template",
-          "label": "REGISTER_BENEFICIARY",
+          "label": "REGISTER_BENEFICIARY_PREVIEW_SCREEN",
           "format": "button",
           "onAction": [
             {
@@ -478,16 +593,12 @@ final dynamic sampleCloseHouseholdFlows = {
               "properties": {
                 "data": [
                   {
-                    "key": "ProjectBeneficiaryClientReferenceId",
-                    "value": "{{navigation.test0012}}"
-                  },
-                  {
                     "key": "HouseholdClientReferenceId",
                     "value": "{{navigation.HouseholdClientReferenceId}}"
                   }
                 ],
-                "name": "DELIVERY",
-                "type": "FORM"
+                "name": "CLOSEHOUSEHOLD",
+                "type": "TEMPLATE"
               }
             }
           ],

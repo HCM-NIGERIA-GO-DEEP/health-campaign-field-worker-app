@@ -391,6 +391,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       DigitTableColumn(
         header: localizations.translate(i18.summaryReport.householdsRegistered),
         cellValue: 'hhRegistered',
+        width: 250,
+        
       ),
       DigitTableColumn(
         header: localizations.translate(i18.summaryReport.numberOfPeopleInHouseholds),
@@ -534,7 +536,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           // const SizedBox(height: spacer2),
           if (_isLoading)
             const Center(child: CircularProgressIndicator())
-          else if (_reportRows.isEmpty)
+          else if (_reportRows.isNotEmpty)
             Padding(
               padding: const EdgeInsets.all(spacer4),
               child: Center(
@@ -554,7 +556,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
                 columns: columns,
                 rows: rows,
                 // tableHeight: (rows.length * 50.0).clamp(100, 400),
-                tableHeight: 1000,
+                // tableHeight: 1000,
+                tableHeight: MediaQuery.of(context).size.height * 0.6,
               ),
             ),
           const SizedBox(height: spacer2),
