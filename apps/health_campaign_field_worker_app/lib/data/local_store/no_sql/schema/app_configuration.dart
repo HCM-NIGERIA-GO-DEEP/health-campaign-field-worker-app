@@ -107,6 +107,9 @@ class AppConfiguration {
 
   @Name('BOUNDARY_RELATIONSHIP')
   List<BoundaryRelationshipConfig>? boundaryRelationship;
+
+  @Name('FACE_AUTH_CONFIG')
+  FaceAuthMdmsConfig? faceAuthMdmsConfig;
 }
 
 @embedded
@@ -204,6 +207,9 @@ class BackgroundServiceConfig {
 
   @Name("API_CONCURRENCY")
   late int? apiConcurrency;
+
+  @Name("RANDOM_INTERVAL_OFFSET")
+  late int? randomIntervalOffset;
 }
 
 @embedded
@@ -346,4 +352,22 @@ class BoundaryRelationshipConfig {
   late int order;
   late String parentBoundaryType;
   late List<String> childBoundaryTypes;
+}
+
+@embedded
+class FaceAuthMdmsConfig {
+  @Name("FACE_MATCH_THRESHOLD")
+  late double? faceMatchThreshold;
+  @Name("MAX_FACE_ATTEMPTS")
+  late int? maxFaceAttempts;
+  @Name("START_HOUR")
+  late int? startHour;
+  @Name("END_HOUR")
+  late int? endHour;
+  @Name("PROMPT_COUNT")
+  late int? promptCount;
+  @Name("MIN_GAP_MINUTES")
+  late int? minGapMinutes;
+  @Name("COUNTDOWN_DURATION_MINUTES")
+  late int? countdownDurationMinutes;
 }

@@ -118,6 +118,7 @@ class HCMWrapperModel with _$HCMWrapperModel {
     @JsonKey(name: 'TRANSIT_POST_TYPE') List<TransitPostType>? transitPostType,
     @JsonKey(name: 'BOUNDARY_RELATIONSHIP')
     List<BoundaryRelationship>? boundaryRelationship,
+    @JsonKey(name: 'FACE_AUTH_CONFIG') List<FaceAuthMdmsConfig>? faceAuthConfig,
   }) = _HCMWrapperModel;
 
   factory HCMWrapperModel.fromJson(
@@ -295,6 +296,7 @@ class BackgroundServiceConfig with _$BackgroundServiceConfig {
     @JsonKey(name: 'BATTERY_PERCENT_CUT_OFF') required int batteryPercentCutOff,
     @JsonKey(name: 'SERVICE_INTERVAL') required int serviceInterval,
     @JsonKey(name: 'API_CONCURRENCY') required int apiConcurrency,
+    @JsonKey(name: 'RANDOM_INTERVAL_OFFSET') int? randomIntervalOffset,
   }) = _BackgroundServiceConfig;
 
   factory BackgroundServiceConfig.fromJson(Map<String, dynamic> json) =>
@@ -466,6 +468,28 @@ class FirebaseConfig with _$FirebaseConfig {
 
   factory FirebaseConfig.fromJson(Map<String, dynamic> json) =>
       _$FirebaseConfigFromJson(json);
+}
+
+@freezed
+class FaceAuthMdmsConfig with _$FaceAuthMdmsConfig {
+  factory FaceAuthMdmsConfig({
+    @JsonKey(name: 'FACE_MATCH_THRESHOLD') double? faceMatchThreshold,
+    @JsonKey(name: 'MAX_FACE_ATTEMPTS') int? maxFaceAttempts,
+    @JsonKey(name: 'START_HOUR') int? startHour,
+    @JsonKey(name: 'END_HOUR') int? endHour,
+    @JsonKey(name: 'PROMPT_COUNT') int? promptCount,
+    @JsonKey(name: 'MIN_GAP_MINUTES') int? minGapMinutes,
+    @JsonKey(name: 'COUNTDOWN_DURATION_MINUTES') int? countdownDurationMinutes,
+  }) = _FaceAuthMdmsConfig;
+
+  factory FaceAuthMdmsConfig.fromJson(Map<String, dynamic> json) =>
+      // MDMS v2 schema records wrap the payload under a 'data' key.
+      // Fall back to the top-level map for v1-style flat responses.
+      _$FaceAuthMdmsConfigFromJson(
+        json['data'] is Map<String, dynamic>
+            ? json['data'] as Map<String, dynamic>
+            : json,
+      );
 }
 
 @freezed

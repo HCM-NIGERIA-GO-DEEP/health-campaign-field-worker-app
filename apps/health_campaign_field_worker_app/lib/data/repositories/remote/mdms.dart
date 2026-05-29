@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:digit_data_model/models/project_type/project_type_model.dart';
+import 'package:flutter/foundation.dart' show debugPrint;
 import 'package:digit_ui_components/utils/app_logger.dart';
 import 'package:dio/dio.dart';
 import 'package:isar/isar.dart';
@@ -75,6 +77,22 @@ class MdmsRepository {
   ) async {
     try {
       final response = await _client.post(apiEndPoint, data: body);
+
+      // Log raw FACE_AUTH_CONFIG slice from the response so we can see
+      // whether the server returned the master at all and what it looks like.
+      try {
+        final raw = response.data is Map<String, dynamic>
+            ? response.data as Map<String, dynamic>
+            : json.decode(response.toString()) as Map<String, dynamic>;
+        final mdmsRes = raw['MdmsRes'] as Map<String, dynamic>?;
+        final hcm = mdmsRes?['HCM'] as Map<String, dynamic>?;
+        final faceAuth = hcm?['FACE_AUTH_CONFIG'];
+        debugPrint(
+          'MdmsRepository.searchAppConfig: raw FACE_AUTH_CONFIG=$faceAuth',
+        );
+      } catch (e) {
+        debugPrint('MdmsRepository.searchAppConfig: raw read failed: $e');
+      }
 
       final appCon = app_configuration.AppConfigPrimaryWrapperModel.fromJson(
         json.decode(response.toString())['MdmsRes'],
@@ -170,11 +188,40 @@ class MdmsRepository {
       ..batteryPercentCutOff =
           element?.backgroundServiceConfig?.first.batteryPercentCutOff
       ..serviceInterval =
-          element?.backgroundServiceConfig?.first.serviceInterval;
+          element?.backgroundServiceConfig?.first.serviceInterval
+      ..randomIntervalOffset =
+          element?.backgroundServiceConfig?.first.randomIntervalOffset;
 
     final firebaseConfig = FirebaseConfig()
       ..enableAnalytics = element?.firebaseConfig?.first.enableAnalytics
       ..enableCrashlytics = element?.firebaseConfig?.first.enableCrashlytics;
+
+    debugPrint(
+      'MdmsRepository: parsed faceAuthConfig from MDMS — '
+      'isNull=${element?.faceAuthConfig == null}, '
+      'count=${element?.faceAuthConfig?.length ?? 0}, '
+      'first=${element?.faceAuthConfig?.firstOrNull}',
+    );
+    final faceAuthMdmsConfig = FaceAuthMdmsConfig()
+      ..faceMatchThreshold =
+          element?.faceAuthConfig?.first.faceMatchThreshold
+      ..maxFaceAttempts = element?.faceAuthConfig?.first.maxFaceAttempts
+      ..startHour = element?.faceAuthConfig?.first.startHour
+      ..endHour = element?.faceAuthConfig?.first.endHour
+      ..promptCount = element?.faceAuthConfig?.first.promptCount
+      ..minGapMinutes = element?.faceAuthConfig?.first.minGapMinutes
+      ..countdownDurationMinutes =
+          element?.faceAuthConfig?.first.countdownDurationMinutes;
+    debugPrint(
+      'MdmsRepository: built FaceAuthMdmsConfig (Isar) — '
+      'startHour=${faceAuthMdmsConfig.startHour} '
+      'endHour=${faceAuthMdmsConfig.endHour} '
+      'promptCount=${faceAuthMdmsConfig.promptCount} '
+      'minGapMinutes=${faceAuthMdmsConfig.minGapMinutes} '
+      'countdownMin=${faceAuthMdmsConfig.countdownDurationMinutes} '
+      'maxAttempts=${faceAuthMdmsConfig.maxFaceAttempts} '
+      'threshold=${faceAuthMdmsConfig.faceMatchThreshold}',
+    );
 
     appConfiguration
       ..networkDetection = appConfig?.networkDetection
@@ -190,7 +237,8 @@ class MdmsRepository {
         ..minThreshold = 0
         ..maxThreshold = 0)
       ..backgroundServiceConfig = backgroundServiceConfig
-      ..firebaseConfig = firebaseConfig;
+      ..firebaseConfig = firebaseConfig
+      ..faceAuthMdmsConfig = faceAuthMdmsConfig;
 
     final List<Languages>? languageList =
         commonMasters?.stateInfo.first.languages.map((element) {

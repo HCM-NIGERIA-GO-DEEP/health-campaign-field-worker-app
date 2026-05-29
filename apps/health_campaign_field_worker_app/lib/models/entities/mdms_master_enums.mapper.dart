@@ -89,6 +89,8 @@ class MasterEnumsMapper extends EnumMapper<MasterEnums> {
         return MasterEnums.singleUserLogin;
       case "BOUNDARY_RELATIONSHIP":
         return MasterEnums.boundaryRelationShip;
+      case "FACE_AUTH_CONFIG":
+        return MasterEnums.faceAuthConfig;
       default:
         throw MapperException.unknownEnumValue(value);
     }
@@ -161,6 +163,8 @@ class MasterEnumsMapper extends EnumMapper<MasterEnums> {
         return "SINGLE_USER_LOGIN";
       case MasterEnums.boundaryRelationShip:
         return "BOUNDARY_RELATIONSHIP";
+      case MasterEnums.faceAuthConfig:
+        return "FACE_AUTH_CONFIG";
     }
   }
 }

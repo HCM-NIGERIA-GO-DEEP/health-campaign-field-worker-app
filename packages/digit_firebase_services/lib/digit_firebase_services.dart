@@ -6,12 +6,14 @@ import 'package:flutter/foundation.dart';
 
 export './crash_button.dart';
 
+/// Initialize Firebase Core only (required for FCM, Crashlytics, etc.)
 Future initializeFirebaseCore({
   required FirebaseOptions options,
 }) async {
   await Firebase.initializeApp(options: options);
 }
 
+/// Initialize Crashlytics error handlers
 Future initializeCrashlytics({
   ValueChanged<String>? onErrorMessage,
 }) async {
@@ -28,4 +30,13 @@ Future initializeCrashlytics({
     FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
     return true;
   };
+}
+
+/// Backward-compatible wrapper: initializes both Firebase Core and Crashlytics
+Future initialize({
+  required FirebaseOptions options,
+  ValueChanged<String>? onErrorMessage,
+}) async {
+  await initializeFirebaseCore(options: options);
+  await initializeCrashlytics(onErrorMessage: onErrorMessage);
 }

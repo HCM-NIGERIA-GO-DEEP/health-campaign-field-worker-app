@@ -1,7 +1,25 @@
 import 'dart:io';
 
+import 'package:attendance_management/data/repositories/local/attendance_register.dart'
+    as am_local;
+import 'package:attendance_management/data/repositories/local/attendance_logs.dart'
+    as am_local_logs;
+import 'package:attendance_management/data/repositories/oplog/oplog.dart'
+    as am_oplog;
+import 'package:attendance_management/data/repositories/remote/attendance_register.dart'
+    as am_remote;
+import 'package:attendance_management/data/repositories/remote/attendance_logs.dart'
+    as am_remote_logs;
+import 'package:attendance_management/models/entities/attendance_log.dart'
+    as am_log;
+import 'package:attendance_management/models/entities/attendance_register.dart'
+    as am_model;
 import 'package:digit_data_model/data/repositories/local/attendance_logs.dart';
 import 'package:digit_data_model/data/repositories/local/attendance_register.dart';
+import 'package:digit_data_model/data/repositories/package_repository/remote/attendance_logs.dart';
+import 'package:digit_data_model/data/repositories/package_repository/remote/attendance_register.dart';
+import 'package:digit_data_model/models/entities/attendance_log.dart';
+import 'package:digit_data_model/models/entities/attendance_register.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/hf_referral.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/household.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/household_member.dart';
@@ -15,8 +33,6 @@ import 'package:digit_data_model/data/repositories/package_repository/local/stoc
 import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/unique_id_pool.dart';
 import 'package:digit_data_model/data/repositories/package_repository/oplog/oplog.dart';
-import 'package:digit_data_model/data/repositories/package_repository/remote/attendance_logs.dart';
-import 'package:digit_data_model/data/repositories/package_repository/remote/attendance_register.dart';
 import 'package:digit_data_model/data/repositories/package_repository/remote/hf_referral.dart';
 import 'package:digit_data_model/data/repositories/package_repository/remote/household.dart';
 import 'package:digit_data_model/data/repositories/package_repository/remote/household_member.dart';
@@ -29,8 +45,6 @@ import 'package:digit_data_model/data/repositories/package_repository/remote/sto
 import 'package:digit_data_model/data/repositories/package_repository/remote/task.dart';
 import 'package:digit_data_model/data/repositories/package_repository/remote/unique_id_pool.dart';
 import 'package:digit_data_model/data_model.dart';
-import 'package:digit_data_model/models/entities/attendance_log.dart';
-import 'package:digit_data_model/models/entities/attendance_register.dart';
 import 'package:digit_data_model/models/entities/hf_referral.dart';
 import 'package:digit_data_model/models/entities/user_action.dart';
 import 'package:digit_location_tracker/data/oplog/oplog.dart';
@@ -44,8 +58,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:isar/isar.dart';
 import 'package:provider/provider.dart';
 import 'package:survey_form/survey_form.dart';
+import 'package:digit_data_model/models/entities/face_auth_event.dart';
+import 'package:transit_post/data/repositories/local/face_auth_event.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
+import 'package:transit_post/data/repositories/oplog/face_auth_event_oplog.dart';
 import 'package:transit_post/data/repositories/oplog/oplog.dart';
+import 'package:transit_post/data/repositories/remote/face_auth_event.dart';
 import 'package:transit_post/data/repositories/remote/user_action.dart';
 
 import '../blocs/app_initialization/app_initialization.dart';
@@ -278,10 +296,31 @@ class NetworkManagerProviderWrapper extends StatelessWidget {
         create: (_) =>
             AttendanceLocalRepository(sql, AttendanceOpLogManager(isar)),
       ),
+      // attendance_management package uses its OWN AttendanceRegisterModel
+      // (a separate Dart class from digit_data_model's). ManageAttendancePage
+      // looks up the provider by THIS type, so we need a parallel
+      // registration here for the attendance_management-flavored model.
+      RepositoryProvider<
+          LocalRepository<am_model.AttendanceRegisterModel,
+              am_model.AttendanceRegisterSearchModel>>(
+        create: (_) => am_local.AttendanceLocalRepository(
+          sql,
+          am_oplog.AttendanceOpLogManager(isar),
+        ),
+      ),
       RepositoryProvider<
           LocalRepository<AttendanceLogModel, AttendanceLogSearchModel>>(
         create: (_) =>
             AttendanceLogsLocalRepository(sql, AttendanceLogOpLogManager(isar)),
+      ),
+      // Parallel registration for attendance_management's AttendanceLog types.
+      RepositoryProvider<
+          LocalRepository<am_log.AttendanceLogModel,
+              am_log.AttendanceLogSearchModel>>(
+        create: (_) => am_local_logs.AttendanceLogsLocalRepository(
+          sql,
+          am_oplog.AttendanceLogOpLogManager(isar),
+        ),
       ),
       RepositoryProvider<LocalRepository<StockModel, StockSearchModel>>(
         create: (_) => StockLocalRepository(
@@ -309,6 +348,13 @@ class NetworkManagerProviderWrapper extends StatelessWidget {
         create: (_) => UserActionLocalRepository(
           sql,
           UserActionOpLogManager(isar),
+        ),
+      ),
+      RepositoryProvider<
+          LocalRepository<FaceAuthEventModel, FaceAuthEventSearchModel>>(
+        create: (_) => FaceAuthEventLocalRepository(
+          sql,
+          FaceAuthEventOpLogManager(isar),
         ),
       ),
       RepositoryProvider<
@@ -519,11 +565,32 @@ class NetworkManagerProviderWrapper extends StatelessWidget {
                   AttendanceRegisterSearchModel>>(
             create: (_) => AttendanceRemoteRepository(dio, actionMap: actions),
           ),
+        // Parallel registration for the attendance_management package's
+        // AttendanceRegisterModel (different Dart class with same name).
+        if (value == DataModelType.attendanceRegister)
+          RepositoryProvider<
+              RemoteRepository<am_model.AttendanceRegisterModel,
+                  am_model.AttendanceRegisterSearchModel>>(
+            create: (_) => am_remote.AttendanceRemoteRepository(
+              dio,
+              actionMap: actions,
+            ),
+          ),
         if (value == DataModelType.attendance)
           RepositoryProvider<
               RemoteRepository<AttendanceLogModel, AttendanceLogSearchModel>>(
             create: (_) =>
                 AttendanceLogRemoteRepository(dio, actionMap: actions),
+          ),
+        // Parallel registration for attendance_management's AttendanceLog.
+        if (value == DataModelType.attendance)
+          RepositoryProvider<
+              RemoteRepository<am_log.AttendanceLogModel,
+                  am_log.AttendanceLogSearchModel>>(
+            create: (_) => am_remote_logs.AttendanceLogRemoteRepository(
+              dio,
+              actionMap: actions,
+            ),
           ),
         if (value == DataModelType.stock)
           RepositoryProvider<RemoteRepository<StockModel, StockSearchModel>>(
@@ -551,6 +618,14 @@ class NetworkManagerProviderWrapper extends StatelessWidget {
           RepositoryProvider<
               RemoteRepository<PgrServiceModel, PgrServiceSearchModel>>(
             create: (_) => PgrServiceRemoteRepository(
+              dio,
+              actionMap: actions,
+            ),
+          ),
+        if (value == DataModelType.faceAuthEvent)
+          RepositoryProvider<
+              RemoteRepository<FaceAuthEventModel, FaceAuthEventSearchModel>>(
+            create: (_) => FaceAuthEventRemoteRepository(
               dio,
               actionMap: actions,
             ),

@@ -1,6 +1,7 @@
 // Importing necessary packages and files.
 import 'dart:io';
 
+import 'package:digit_data_model/data/local_store/sql_store/tables/face_auth_event.dart';
 import 'package:digit_data_model/data/local_store/sql_store/tables/localization.dart';
 import 'package:digit_data_model/data/local_store/sql_store/tables/user_action.dart';
 import 'package:drift/drift.dart';
@@ -125,7 +126,8 @@ enum DatabaseMigrationResult {
   Referral,
   Localization,
   UserAction,
-  UniqueIdPool
+  UniqueIdPool,
+  FaceAuthEvent,
 ])
 class LocalSqlDataStore extends _$LocalSqlDataStore {
   /// The encryption key for the database.
@@ -144,7 +146,7 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
 
   /// The `schemaVersion` getter returns the schema version of the database.
   @override
-  int get schemaVersion => 9; // Increment schema version
+  int get schemaVersion => 10; // Added FaceAuthEvent table and faceImage column
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -323,6 +325,22 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
             } catch (e) {
               if (kDebugMode) {
                 print("Failed to add columns for stock, campaignNumber");
+              }
+            }
+          }
+          if (from < 10) {
+            try {
+              await migrator.createTable(faceAuthEvent);
+            } catch (e) {
+              if (kDebugMode) {
+                print("Failed to create FaceAuthEvent table: $e");
+              }
+            }
+            try {
+              await migrator.addColumn(faceAuthEvent, faceAuthEvent.faceImage);
+            } catch (e) {
+              if (kDebugMode) {
+                print("Failed to add faceImage column to FaceAuthEvent: $e");
               }
             }
           }

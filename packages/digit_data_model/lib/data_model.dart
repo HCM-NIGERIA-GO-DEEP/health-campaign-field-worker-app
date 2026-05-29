@@ -278,5 +278,6 @@ enum DataModelType {
   attendance,
   userLocation,
   userAction,
-  uniqueId
+  uniqueId,
+  faceAuthEvent
 }

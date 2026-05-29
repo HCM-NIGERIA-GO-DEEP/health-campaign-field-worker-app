@@ -168,6 +168,47 @@ extension ContextUtilityExtensions on BuildContext {
     return individualUUID;
   }
 
+  String? get loggedInIndividualIdOrNull {
+    try {
+      final authBloc = _get<AuthBloc>();
+      return authBloc.state.whenOrNull(
+        authenticated:
+            (accessToken, refreshToken, userModel, actionsWrapper, individualId) {
+          return individualId;
+        },
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool get isDistributorRole {
+    try {
+      return loggedInUserRoles
+          .any((r) => r.code == RolesType.distributor.toValue());
+    } catch (_) {
+      return false;
+    }
+  }
+
+  bool get isTeamSupervisorRole {
+    try {
+      return loggedInUserRoles
+          .any((r) => r.code == RolesType.teamSupervisor.toValue());
+    } catch (_) {
+      return false;
+    }
+  }
+
+  bool get isDistrictSupervisorRole {
+    try {
+      return loggedInUserRoles
+          .any((r) => r.code == RolesType.districtSupervisor.toValue());
+    } catch (_) {
+      return false;
+    }
+  }
+
   int? get currentCycleIndex => selectedCycle?.id;
 
   String? get currentRegisteredToken {

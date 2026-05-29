@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:attendance_management/router/attendance_router.gm.dart'
+    show ManageAttendanceRoute;
 import 'package:attendance_management/utils/utils.dart';
 import 'package:collection/collection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -74,6 +76,7 @@ import '../widgets/showcase/config/showcase_constants.dart';
 import '../widgets/showcase/showcase_button.dart';
 import '../widgets/stock_balance/stock_balance_card.dart';
 import '../widgets/stock_reconciliation/stock_reconciliation_card.dart';
+import '../widgets/face_auth/face_auth_session_card.dart';
 import '../widgets/task_functions.dart';
 
 @RoutePage()
@@ -92,13 +95,51 @@ class _HomePageState extends LocalizedState<HomePage> {
   final storage = const FlutterSecureStorage();
   late StreamSubscription<List<ConnectivityResult>> subscription;
   bool isTriggerLocalisation = true;
+  bool _faceGateActive = false;
   final _syncDebouncer = Debouncer(seconds: 5);
   final StreamController<double> stockDownloadProgress =
       StreamController<double>.broadcast();
 
+  /// Check if the logged-in user needs face enrollment (first time only).
+  void _checkFaceEnrollment() async {
+    try {
+      if (!context.isDistributorRole) return;
+
+      final individualId = await LocalSecureStore.instance.userIndividualId;
+      if (individualId == null || !mounted) return;
+
+      final isEnrollmentComplete =
+          await LocalSecureStore.instance.isFaceEnrollmentComplete;
+      if (isEnrollmentComplete || !mounted) return;
+
+      _faceGateActive = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.router.push(
+            FaceGateRoute(
+              onVerified: () {
+                _faceGateActive = false;
+                if (mounted) {
+                  context.router.popUntilRouteWithName(HomeRoute.name);
+                }
+              },
+            ),
+          ).then((_) {
+            _faceGateActive = false;
+          });
+        }
+      });
+    } catch (e) {
+      debugPrint('HomePage: _checkFaceEnrollment error: $e');
+    }
+  }
+
   @override
   initState() {
     super.initState();
+
+    // Check if user needs face enrollment (first time after login)
+    _checkFaceEnrollment();
 
     // If background service was killed with the app, release orphaned lock
     // and restart the service.
@@ -1620,6 +1661,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     showcaseFor: showcaseKeys.toSet().toList(),
                   ),
                 ),
+                if (context.isDistributorRole) const FaceAuthSessionCard(),
                 // Show stock balance card for users with stock management access
                 if (state.actionsWrapper.actions
                     .map((e) => e.displayName)
@@ -2389,10 +2431,10 @@ class _HomePageState extends LocalizedState<HomePage> {
           icon: Icons.fingerprint_outlined,
           label: i18.home.manageAttendanceLabel,
           onPressed: () async {
-            FlowBuilderSingleton().setPersistenceConfiguration(
-                persistenceConfiguration:
-                    PersistenceConfiguration.offlineFirst);
-
+            // Use the attendance_management package directly (its own routes)
+            // instead of the JSON-driven flow_builder. The ATTENDANCE.json
+            // flow couldn't resolve "manageAttendance" via FlowRegistry and
+            // showed "Page not found".
             context.router
                 .push(CurrentBoundaryRoute(onBoundarySelected: (ctx) async {
               if (isTriggerLocalisation) {
@@ -2400,69 +2442,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                 triggerLocalization(module: module);
                 isTriggerLocalisation = false;
               }
-
-              await FlowNavigationUtils.navigateToFlowModule(
-                context: ctx,
-                config: FlowModuleConfig(
-                  schemaKey: 'ATTENDANCE',
-                  relationshipMappings: const [
-                    RelationshipMapping(
-                      from: 'attendanceRegister',
-                      to: 'attendee',
-                      localKey: 'id',
-                      foreignKey: 'registerId',
-                    ),
-                    RelationshipMapping(
-                      from: 'attendanceRegister',
-                      to: 'attendance',
-                      localKey: 'id',
-                      foreignKey: 'registerId',
-                    ),
-                    RelationshipMapping(
-                      from: 'individual',
-                      to: 'name',
-                      localKey: 'clientReferenceId',
-                      foreignKey: 'individualClientReferenceId',
-                    ),
-                    RelationshipMapping(
-                      from: 'attendee',
-                      to: 'individual',
-                      localKey: 'individualId',
-                      foreignKey: 'id',
-                    ),
-                  ],
-                  nestedModelMappings: const [
-                    NestedModelMapping(
-                      rootModel: 'attendanceRegister',
-                      fields: {
-                        'attendees': NestedFieldMapping(
-                          table: 'attendee',
-                          localKey: 'id',
-                          foreignKey: 'registerId',
-                          type: NestedMappingType.many,
-                        ),
-                        'attendanceLog': NestedFieldMapping(
-                          table: 'attendance',
-                          localKey: 'id',
-                          foreignKey: 'registerId',
-                          type: NestedMappingType.many,
-                        ),
-                      },
-                    ),
-                    NestedModelMapping(
-                      rootModel: 'individual',
-                      fields: {
-                        'name': NestedFieldMapping(
-                          table: 'name',
-                          localKey: 'clientReferenceId',
-                          foreignKey: 'individualClientReferenceId',
-                          type: NestedMappingType.one,
-                        ),
-                      },
-                    ),
-                  ],
-                ),
-              );
+              ctx.router.push(ManageAttendanceRoute());
             }));
           },
         ),

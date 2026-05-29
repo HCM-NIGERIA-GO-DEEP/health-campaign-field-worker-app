@@ -1,3 +1,5 @@
+import 'package:attendance_management/router/attendance_router.dart';
+import 'package:attendance_management/router/attendance_router.gm.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendee.dart';
@@ -24,8 +26,12 @@ import '../pages/current_boundary.dart';
 import '../pages/home.dart';
 import '../pages/language_selection.dart';
 import '../pages/login.dart';
+import '../pages/face_auth_history.dart';
+import '../pages/face_gate.dart';
+import '../pages/non_mobile_user/non_mobile_face_enroll.dart';
 import '../pages/non_mobile_user/non_mobile_user_list.dart';
 import '../pages/peer_to_peer/data_receiver.dart';
+import '../pages/pin_fallback.dart';
 import '../pages/peer_to_peer/data_share_home.dart';
 import '../pages/peer_to_peer/data_transfer.dart';
 import '../pages/peer_to_peer/devices_list.dart';
@@ -47,6 +53,7 @@ part 'app_router.gr.dart';
 
 @AutoRouterConfig(
   modules: [
+    AttendanceRoute,
     DigitScannerPackageRoute,
     DashboardRoute,
     SurveyFormRoute,
@@ -78,6 +85,9 @@ class AppRouter extends _$AppRouter {
           page: PermissionsRoute.page,
           path: 'permissions-page',
         ),
+        AutoRoute(page: FaceGateRoute.page, path: 'face-gate'),
+        AutoRoute(page: FaceAuthHistoryRoute.page, path: 'face-auth-history'),
+        AutoRoute(page: PinFallbackRoute.page, path: 'pin-fallback'),
         AutoRoute(page: HomeRoute.page, path: 'home'),
         AutoRoute(page: ProfileRoute.page, path: 'profile'),
         AutoRoute(page: UserQRDetailsRoute.page, path: 'user-qr-code'),
@@ -95,6 +105,10 @@ class AppRouter extends _$AppRouter {
         AutoRoute(
           page: NonMobileUserListRoute.page,
           path: 'non-mobile-users',
+        ),
+        AutoRoute(
+          page: NonMobileFaceEnrollRoute.page,
+          path: 'non-mobile-face-enroll',
         ),
         // DSS Dashboard Routes
         AutoRoute(
@@ -145,6 +159,9 @@ class AppRouter extends _$AppRouter {
           page: CurrentBoundaryRoute.page,
           path: 'current-boundary',
         ),
+
+        // Attendance Route
+        ...AttendanceRoute().routes,
 
         // Forms Route
         ...FormsRoute().routes,

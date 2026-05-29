@@ -179,19 +179,44 @@ abstract class OpLogManager<T extends EntityModel> {
 
   Future<void> put(OpLogEntry<dynamic> entry) async {
     try {
-      isar.writeTxnSync(() {
-        isar.opLogs.putSync(entry
-            .copyWith(
-              clientReferenceId: getClientReferenceId(entry.entity),
-              serverGeneratedId: getServerGeneratedId(entry.entity),
-              rowVersion: getRowVersion(entry.entity),
-              nonRecoverableError: getNonRecoverableError(entry.entity),
-            )
-            .oplog);
-      });
-    } catch (e) {
       if (kDebugMode) {
-        print('error in isar $e');
+        print('OpLogManager.put: ENTER entityType=${entry.type} '
+            'entityRuntimeType=${entry.entity.runtimeType} '
+            'createdBy=${entry.createdBy}');
+      }
+      final updated = entry.copyWith(
+        clientReferenceId: getClientReferenceId(entry.entity),
+        serverGeneratedId: getServerGeneratedId(entry.entity),
+        rowVersion: getRowVersion(entry.entity),
+        nonRecoverableError: getNonRecoverableError(entry.entity),
+      );
+      if (kDebugMode) {
+        print('OpLogManager.put: post-copyWith type=${updated.type} '
+            'clientRef=${updated.clientReferenceId}');
+      }
+      final oplogToWrite = updated.oplog;
+      if (kDebugMode) {
+        print('OpLogManager.put: post-.oplog type=${oplogToWrite.entityType} '
+            'createdBy=${oplogToWrite.createdBy} '
+            'entityStringLen=${oplogToWrite.entityString.length}');
+      }
+      isar.writeTxnSync(() {
+        final writtenId = isar.opLogs.putSync(oplogToWrite);
+        if (kDebugMode) {
+          print('OpLogManager.put: putSync wrote id=$writtenId');
+        }
+      });
+      if (kDebugMode) {
+        final verify = isar.opLogs
+            .filter()
+            .entityTypeEqualTo(entry.type)
+            .findAllSync();
+        print(
+            'OpLogManager.put: post-commit verify ${entry.type}=${verify.length}');
+      }
+    } catch (e, st) {
+      if (kDebugMode) {
+        print('OpLogManager.put: error in isar $e\n$st');
       }
       rethrow;
     }

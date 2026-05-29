@@ -1,5 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- Overrides the AppTheme from disable_battery_optimization plugin to avoid AAPT2 attr resolution failure
+         caused by its dependency on material-dialogs:0.9.6.0 (old support library). -->
+    <style name="AppTheme" parent="Theme.MaterialComponents.Light.NoActionBar"/>
+
     <!-- Theme applied to the Android Window while the process is starting when the OS's Dark Mode setting is off -->
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <!-- Show a splash screen on the activity. Automatically removed when

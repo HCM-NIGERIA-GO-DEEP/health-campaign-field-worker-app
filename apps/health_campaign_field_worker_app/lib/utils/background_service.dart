@@ -15,6 +15,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:isar/isar.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:recase/recase.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sync_service/data/sync_service.dart';
 import 'package:sync_service/models/bandwidth/bandwidth_model.dart';
 import 'package:sync_service/utils/utils.dart' as sync_utils;
@@ -142,6 +143,20 @@ void onStart(ServiceInstance service) async {
 
   // LocationTrackerService().processLocationData(
   //     interval: 120, createdBy: userRequestModel.uuid, isar: _isar);
+
+  // Re-verification watchdog — checks every 60 s whether a scheduled
+  // face re-verification trigger has fired and the OS notification needs
+  // to be shown. This runs inside the foreground service so it survives
+  // Samsung's aggressive battery management that can kill exact alarms.
+  final _notifPlugin = FlutterLocalNotificationsPlugin();
+  const _initSettings = InitializationSettings(
+    android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+    iOS: DarwinInitializationSettings(),
+  );
+  await _notifPlugin.initialize(_initSettings);
+  makePeriodicTimer(const Duration(seconds: 60), (_) async {
+    await _checkReVerificationTriggers(_notifPlugin);
+  }, fireNow: true);
 
   final appConfiguration = await _isar.appConfigurations.where().findAll();
   final interval =
@@ -400,4 +415,112 @@ int getBatchSizeToBandwidth(
   }
 
   return batchSize;
+}
+
+// ── Re-verification watchdog ──────────────────────────────────────────────────
+
+const _reVerifyScheduleKey = 'face_reverification_schedule';
+const _reVerifyCompletedKey = 'face_reverification_completed';
+// Separate key so "notified" (shown from bg service) doesn't count as
+// "completed" (verified/missed). The main app cancels notified entries
+// when the user verifies.
+const _reVerifyNotifiedKey = 'face_reverification_bg_notified';
+// Countdown minutes persisted by the foreground ReVerificationScheduler so
+// the watchdog can match the "You have N minutes" copy without re-reading MDMS.
+const _reVerifyCountdownMinutesKey = 'face_reverification_countdown_minutes';
+const _reVerifyChannelId = 'face_reverification_channel';
+const _reVerifyChannelName = 'Scan your face to Proceed';
+const _reVerifyNotifIdBase = 9000;
+// Only notify for triggers that fired within the last 8 minutes.
+// Avoids re-showing old notifications on scheduler restart.
+const _reVerifyNotifWindowMinutes = 8;
+
+/// Checks SharedPreferences for any re-verification triggers that have fired
+/// but whose notification hasn't been shown yet, then shows them.
+/// Called every 60 s from the background service foreground isolate.
+Future<void> _checkReVerificationTriggers(
+    FlutterLocalNotificationsPlugin plugin) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Supervisor users are exempt from face re-verification notifications.
+    // The flag is written to SharedPreferences by AuthenticatedPageWrapper
+    // on login, so it is readable here without access to Flutter BLoC.
+    if (prefs.getBool('face_reverify_skip') == true) {
+      return;
+    }
+
+    final scheduleStrings =
+        prefs.getStringList(_reVerifyScheduleKey) ?? [];
+    final completedSet = (prefs.getStringList(_reVerifyCompletedKey) ?? [])
+        .map(int.tryParse)
+        .whereType<int>()
+        .toSet();
+    final notifiedSet = (prefs.getStringList(_reVerifyNotifiedKey) ?? [])
+        .map(int.tryParse)
+        .whereType<int>()
+        .toSet();
+
+    final now = DateTime.now();
+    bool notifiedSetDirty = false;
+
+    // Countdown duration the foreground scheduler computed from MDMS. Fall
+    // back to a reasonable default if the key is absent (older install or
+    // the scheduler hasn't generated a schedule yet).
+    final countdownMinutes =
+        prefs.getInt(_reVerifyCountdownMinutesKey) ?? 5;
+    final notificationBody =
+        'Tap to verify your identity now. You have $countdownMinutes minutes.';
+
+    for (int i = 0; i < scheduleStrings.length; i++) {
+      if (completedSet.contains(i) || notifiedSet.contains(i)) continue;
+      final dt = DateTime.tryParse(scheduleStrings[i]);
+      if (dt == null) continue;
+
+      final elapsed = now.difference(dt);
+      // Trigger has fired and is within the notification window
+      if (elapsed.inSeconds >= 0 &&
+          elapsed.inMinutes < _reVerifyNotifWindowMinutes) {
+        await plugin.show(
+          _reVerifyNotifIdBase,
+          'Face Verification Required',
+          notificationBody,
+          const NotificationDetails(
+            android: AndroidNotificationDetails(
+              _reVerifyChannelId,
+              _reVerifyChannelName,
+              importance: Importance.high,
+              priority: Priority.high,
+              icon: '@mipmap/ic_launcher',
+              fullScreenIntent: true,
+              category: AndroidNotificationCategory.alarm,
+              visibility: NotificationVisibility.public,
+              playSound: true,
+              enableVibration: true,
+            ),
+            iOS: DarwinNotificationDetails(
+              presentAlert: true,
+              presentBadge: true,
+              presentSound: true,
+              interruptionLevel: InterruptionLevel.timeSensitive,
+            ),
+          ),
+          payload: 'reverify:$i',
+        );
+        notifiedSet.add(i);
+        notifiedSetDirty = true;
+        debugPrint(
+            '_checkReVerificationTriggers: showed notification for trigger #$i');
+      }
+    }
+
+    if (notifiedSetDirty) {
+      await prefs.setStringList(
+        _reVerifyNotifiedKey,
+        notifiedSet.map((i) => i.toString()).toList(),
+      );
+    }
+  } catch (e) {
+    debugPrint('_checkReVerificationTriggers: $e');
+  }
 }

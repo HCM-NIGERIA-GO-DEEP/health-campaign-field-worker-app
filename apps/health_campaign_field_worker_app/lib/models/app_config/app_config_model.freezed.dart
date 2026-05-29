@@ -1007,6 +1007,9 @@ mixin _$HCMWrapperModel {
   @JsonKey(name: 'BOUNDARY_RELATIONSHIP')
   List<BoundaryRelationship>? get boundaryRelationship =>
       throw _privateConstructorUsedError;
+  @JsonKey(name: 'FACE_AUTH_CONFIG')
+  List<FaceAuthMdmsConfig>? get faceAuthConfig =>
+      throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -1064,7 +1067,9 @@ abstract class $HCMWrapperModelCopyWith<$Res> {
       @JsonKey(name: 'TRANSIT_POST_TYPE')
       List<TransitPostType>? transitPostType,
       @JsonKey(name: 'BOUNDARY_RELATIONSHIP')
-      List<BoundaryRelationship>? boundaryRelationship});
+      List<BoundaryRelationship>? boundaryRelationship,
+      @JsonKey(name: 'FACE_AUTH_CONFIG')
+      List<FaceAuthMdmsConfig>? faceAuthConfig});
 }
 
 /// @nodoc
@@ -1106,6 +1111,7 @@ class _$HCMWrapperModelCopyWithImpl<$Res, $Val extends HCMWrapperModel>
     Object? firebaseConfig = freezed,
     Object? transitPostType = freezed,
     Object? boundaryRelationship = freezed,
+    Object? faceAuthConfig = freezed,
   }) {
     return _then(_value.copyWith(
       appConfig: null == appConfig
@@ -1213,6 +1219,10 @@ class _$HCMWrapperModelCopyWithImpl<$Res, $Val extends HCMWrapperModel>
           ? _value.boundaryRelationship
           : boundaryRelationship // ignore: cast_nullable_to_non_nullable
               as List<BoundaryRelationship>?,
+      faceAuthConfig: freezed == faceAuthConfig
+          ? _value.faceAuthConfig
+          : faceAuthConfig // ignore: cast_nullable_to_non_nullable
+              as List<FaceAuthMdmsConfig>?,
     ) as $Val);
   }
 }
@@ -1269,7 +1279,9 @@ abstract class _$$HCMWrapperModelImplCopyWith<$Res>
       @JsonKey(name: 'TRANSIT_POST_TYPE')
       List<TransitPostType>? transitPostType,
       @JsonKey(name: 'BOUNDARY_RELATIONSHIP')
-      List<BoundaryRelationship>? boundaryRelationship});
+      List<BoundaryRelationship>? boundaryRelationship,
+      @JsonKey(name: 'FACE_AUTH_CONFIG')
+      List<FaceAuthMdmsConfig>? faceAuthConfig});
 }
 
 /// @nodoc
@@ -1309,6 +1321,7 @@ class __$$HCMWrapperModelImplCopyWithImpl<$Res>
     Object? firebaseConfig = freezed,
     Object? transitPostType = freezed,
     Object? boundaryRelationship = freezed,
+    Object? faceAuthConfig = freezed,
   }) {
     return _then(_$HCMWrapperModelImpl(
       appConfig: null == appConfig
@@ -1416,6 +1429,10 @@ class __$$HCMWrapperModelImplCopyWithImpl<$Res>
           ? _value._boundaryRelationship
           : boundaryRelationship // ignore: cast_nullable_to_non_nullable
               as List<BoundaryRelationship>?,
+      faceAuthConfig: freezed == faceAuthConfig
+          ? _value._faceAuthConfig
+          : faceAuthConfig // ignore: cast_nullable_to_non_nullable
+              as List<FaceAuthMdmsConfig>?,
     ));
   }
 }
@@ -1475,7 +1492,9 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
       @JsonKey(name: 'TRANSIT_POST_TYPE')
       final List<TransitPostType>? transitPostType,
       @JsonKey(name: 'BOUNDARY_RELATIONSHIP')
-      final List<BoundaryRelationship>? boundaryRelationship})
+      final List<BoundaryRelationship>? boundaryRelationship,
+      @JsonKey(name: 'FACE_AUTH_CONFIG')
+      final List<FaceAuthMdmsConfig>? faceAuthConfig})
       : _appConfig = appConfig,
         _bandWidthBatchSize = bandWidthBatchSize,
         _beneficiaryIdConfig = beneficiaryIdConfig,
@@ -1502,7 +1521,8 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
         _refusalReasons = refusalReasons,
         _firebaseConfig = firebaseConfig,
         _transitPostType = transitPostType,
-        _boundaryRelationship = boundaryRelationship;
+        _boundaryRelationship = boundaryRelationship,
+        _faceAuthConfig = faceAuthConfig;
 
   factory _$HCMWrapperModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$HCMWrapperModelImplFromJson(json);
@@ -1783,9 +1803,20 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
     return EqualUnmodifiableListView(value);
   }
 
+  final List<FaceAuthMdmsConfig>? _faceAuthConfig;
+  @override
+  @JsonKey(name: 'FACE_AUTH_CONFIG')
+  List<FaceAuthMdmsConfig>? get faceAuthConfig {
+    final value = _faceAuthConfig;
+    if (value == null) return null;
+    if (_faceAuthConfig is EqualUnmodifiableListView) return _faceAuthConfig;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
   @override
   String toString() {
-    return 'HCMWrapperModel(appConfig: $appConfig, bandWidthBatchSize: $bandWidthBatchSize, beneficiaryIdConfig: $beneficiaryIdConfig, downSyncBandWidthBatchSize: $downSyncBandWidthBatchSize, householdDeletionReasonOptions: $householdDeletionReasonOptions, householdMemberDeletionReasonOptions: $householdMemberDeletionReasonOptions, backgroundServiceConfig: $backgroundServiceConfig, checklistTypes: $checklistTypes, deviceChangeReasons: $deviceChangeReasons, singleUserLogin: $singleUserLogin, idTypeOptions: $idTypeOptions, relationShipTypeOptions: $relationShipTypeOptions, deliveryCommentOptions: $deliveryCommentOptions, backendInterface: $backendInterface, callSupportOptions: $callSupportOptions, transportTypes: $transportTypes, symptomsTypeList: $symptomsTypeList, searchHouseHoldFilters: $searchHouseHoldFilters, searchCLFFilters: $searchCLFFilters, referralReasonList: $referralReasonList, manualAttendanceReasonList: $manualAttendanceReasonList, houseStructureTypes: $houseStructureTypes, refusalReasons: $refusalReasons, firebaseConfig: $firebaseConfig, transitPostType: $transitPostType, boundaryRelationship: $boundaryRelationship)';
+    return 'HCMWrapperModel(appConfig: $appConfig, bandWidthBatchSize: $bandWidthBatchSize, beneficiaryIdConfig: $beneficiaryIdConfig, downSyncBandWidthBatchSize: $downSyncBandWidthBatchSize, householdDeletionReasonOptions: $householdDeletionReasonOptions, householdMemberDeletionReasonOptions: $householdMemberDeletionReasonOptions, backgroundServiceConfig: $backgroundServiceConfig, checklistTypes: $checklistTypes, deviceChangeReasons: $deviceChangeReasons, singleUserLogin: $singleUserLogin, idTypeOptions: $idTypeOptions, relationShipTypeOptions: $relationShipTypeOptions, deliveryCommentOptions: $deliveryCommentOptions, backendInterface: $backendInterface, callSupportOptions: $callSupportOptions, transportTypes: $transportTypes, symptomsTypeList: $symptomsTypeList, searchHouseHoldFilters: $searchHouseHoldFilters, searchCLFFilters: $searchCLFFilters, referralReasonList: $referralReasonList, manualAttendanceReasonList: $manualAttendanceReasonList, houseStructureTypes: $houseStructureTypes, refusalReasons: $refusalReasons, firebaseConfig: $firebaseConfig, transitPostType: $transitPostType, boundaryRelationship: $boundaryRelationship, faceAuthConfig: $faceAuthConfig)';
   }
 
   @override
@@ -1848,7 +1879,9 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
             const DeepCollectionEquality()
                 .equals(other._transitPostType, _transitPostType) &&
             const DeepCollectionEquality()
-                .equals(other._boundaryRelationship, _boundaryRelationship));
+                .equals(other._boundaryRelationship, _boundaryRelationship) &&
+            const DeepCollectionEquality()
+                .equals(other._faceAuthConfig, _faceAuthConfig));
   }
 
   @JsonKey(ignore: true)
@@ -1881,7 +1914,8 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
         const DeepCollectionEquality().hash(_refusalReasons),
         const DeepCollectionEquality().hash(_firebaseConfig),
         const DeepCollectionEquality().hash(_transitPostType),
-        const DeepCollectionEquality().hash(_boundaryRelationship)
+        const DeepCollectionEquality().hash(_boundaryRelationship),
+        const DeepCollectionEquality().hash(_faceAuthConfig)
       ]);
 
   @JsonKey(ignore: true)
@@ -1952,8 +1986,9 @@ abstract class _HCMWrapperModel implements HCMWrapperModel {
       @JsonKey(name: 'TRANSIT_POST_TYPE')
       final List<TransitPostType>? transitPostType,
       @JsonKey(name: 'BOUNDARY_RELATIONSHIP')
-      final List<BoundaryRelationship>?
-          boundaryRelationship}) = _$HCMWrapperModelImpl;
+      final List<BoundaryRelationship>? boundaryRelationship,
+      @JsonKey(name: 'FACE_AUTH_CONFIG')
+      final List<FaceAuthMdmsConfig>? faceAuthConfig}) = _$HCMWrapperModelImpl;
 
   factory _HCMWrapperModel.fromJson(Map<String, dynamic> json) =
       _$HCMWrapperModelImpl.fromJson;
@@ -2036,6 +2071,9 @@ abstract class _HCMWrapperModel implements HCMWrapperModel {
   @override
   @JsonKey(name: 'BOUNDARY_RELATIONSHIP')
   List<BoundaryRelationship>? get boundaryRelationship;
+  @override
+  @JsonKey(name: 'FACE_AUTH_CONFIG')
+  List<FaceAuthMdmsConfig>? get faceAuthConfig;
   @override
   @JsonKey(ignore: true)
   _$$HCMWrapperModelImplCopyWith<_$HCMWrapperModelImpl> get copyWith =>
@@ -4492,6 +4530,8 @@ mixin _$BackgroundServiceConfig {
   int get serviceInterval => throw _privateConstructorUsedError;
   @JsonKey(name: 'API_CONCURRENCY')
   int get apiConcurrency => throw _privateConstructorUsedError;
+  @JsonKey(name: 'RANDOM_INTERVAL_OFFSET')
+  int? get randomIntervalOffset => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -4508,7 +4548,8 @@ abstract class $BackgroundServiceConfigCopyWith<$Res> {
   $Res call(
       {@JsonKey(name: 'BATTERY_PERCENT_CUT_OFF') int batteryPercentCutOff,
       @JsonKey(name: 'SERVICE_INTERVAL') int serviceInterval,
-      @JsonKey(name: 'API_CONCURRENCY') int apiConcurrency});
+      @JsonKey(name: 'API_CONCURRENCY') int apiConcurrency,
+      @JsonKey(name: 'RANDOM_INTERVAL_OFFSET') int? randomIntervalOffset});
 }
 
 /// @nodoc
@@ -4528,6 +4569,7 @@ class _$BackgroundServiceConfigCopyWithImpl<$Res,
     Object? batteryPercentCutOff = null,
     Object? serviceInterval = null,
     Object? apiConcurrency = null,
+    Object? randomIntervalOffset = freezed,
   }) {
     return _then(_value.copyWith(
       batteryPercentCutOff: null == batteryPercentCutOff
@@ -4542,6 +4584,10 @@ class _$BackgroundServiceConfigCopyWithImpl<$Res,
           ? _value.apiConcurrency
           : apiConcurrency // ignore: cast_nullable_to_non_nullable
               as int,
+      randomIntervalOffset: freezed == randomIntervalOffset
+          ? _value.randomIntervalOffset
+          : randomIntervalOffset // ignore: cast_nullable_to_non_nullable
+              as int?,
     ) as $Val);
   }
 }
@@ -4558,7 +4604,8 @@ abstract class _$$BackgroundServiceConfigImplCopyWith<$Res>
   $Res call(
       {@JsonKey(name: 'BATTERY_PERCENT_CUT_OFF') int batteryPercentCutOff,
       @JsonKey(name: 'SERVICE_INTERVAL') int serviceInterval,
-      @JsonKey(name: 'API_CONCURRENCY') int apiConcurrency});
+      @JsonKey(name: 'API_CONCURRENCY') int apiConcurrency,
+      @JsonKey(name: 'RANDOM_INTERVAL_OFFSET') int? randomIntervalOffset});
 }
 
 /// @nodoc
@@ -4577,6 +4624,7 @@ class __$$BackgroundServiceConfigImplCopyWithImpl<$Res>
     Object? batteryPercentCutOff = null,
     Object? serviceInterval = null,
     Object? apiConcurrency = null,
+    Object? randomIntervalOffset = freezed,
   }) {
     return _then(_$BackgroundServiceConfigImpl(
       batteryPercentCutOff: null == batteryPercentCutOff
@@ -4591,6 +4639,10 @@ class __$$BackgroundServiceConfigImplCopyWithImpl<$Res>
           ? _value.apiConcurrency
           : apiConcurrency // ignore: cast_nullable_to_non_nullable
               as int,
+      randomIntervalOffset: freezed == randomIntervalOffset
+          ? _value.randomIntervalOffset
+          : randomIntervalOffset // ignore: cast_nullable_to_non_nullable
+              as int?,
     ));
   }
 }
@@ -4602,7 +4654,8 @@ class _$BackgroundServiceConfigImpl implements _BackgroundServiceConfig {
       {@JsonKey(name: 'BATTERY_PERCENT_CUT_OFF')
       required this.batteryPercentCutOff,
       @JsonKey(name: 'SERVICE_INTERVAL') required this.serviceInterval,
-      @JsonKey(name: 'API_CONCURRENCY') required this.apiConcurrency});
+      @JsonKey(name: 'API_CONCURRENCY') required this.apiConcurrency,
+      @JsonKey(name: 'RANDOM_INTERVAL_OFFSET') this.randomIntervalOffset});
 
   factory _$BackgroundServiceConfigImpl.fromJson(Map<String, dynamic> json) =>
       _$$BackgroundServiceConfigImplFromJson(json);
@@ -4616,10 +4669,13 @@ class _$BackgroundServiceConfigImpl implements _BackgroundServiceConfig {
   @override
   @JsonKey(name: 'API_CONCURRENCY')
   final int apiConcurrency;
+  @override
+  @JsonKey(name: 'RANDOM_INTERVAL_OFFSET')
+  final int? randomIntervalOffset;
 
   @override
   String toString() {
-    return 'BackgroundServiceConfig(batteryPercentCutOff: $batteryPercentCutOff, serviceInterval: $serviceInterval, apiConcurrency: $apiConcurrency)';
+    return 'BackgroundServiceConfig(batteryPercentCutOff: $batteryPercentCutOff, serviceInterval: $serviceInterval, apiConcurrency: $apiConcurrency, randomIntervalOffset: $randomIntervalOffset)';
   }
 
   @override
@@ -4632,13 +4688,15 @@ class _$BackgroundServiceConfigImpl implements _BackgroundServiceConfig {
             (identical(other.serviceInterval, serviceInterval) ||
                 other.serviceInterval == serviceInterval) &&
             (identical(other.apiConcurrency, apiConcurrency) ||
-                other.apiConcurrency == apiConcurrency));
+                other.apiConcurrency == apiConcurrency) &&
+            (identical(other.randomIntervalOffset, randomIntervalOffset) ||
+                other.randomIntervalOffset == randomIntervalOffset));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, batteryPercentCutOff, serviceInterval, apiConcurrency);
+  int get hashCode => Object.hash(runtimeType, batteryPercentCutOff,
+      serviceInterval, apiConcurrency, randomIntervalOffset);
 
   @JsonKey(ignore: true)
   @override
@@ -4660,8 +4718,9 @@ abstract class _BackgroundServiceConfig implements BackgroundServiceConfig {
       {@JsonKey(name: 'BATTERY_PERCENT_CUT_OFF')
       required final int batteryPercentCutOff,
       @JsonKey(name: 'SERVICE_INTERVAL') required final int serviceInterval,
-      @JsonKey(name: 'API_CONCURRENCY')
-      required final int apiConcurrency}) = _$BackgroundServiceConfigImpl;
+      @JsonKey(name: 'API_CONCURRENCY') required final int apiConcurrency,
+      @JsonKey(name: 'RANDOM_INTERVAL_OFFSET')
+      final int? randomIntervalOffset}) = _$BackgroundServiceConfigImpl;
 
   factory _BackgroundServiceConfig.fromJson(Map<String, dynamic> json) =
       _$BackgroundServiceConfigImpl.fromJson;
@@ -4675,6 +4734,9 @@ abstract class _BackgroundServiceConfig implements BackgroundServiceConfig {
   @override
   @JsonKey(name: 'API_CONCURRENCY')
   int get apiConcurrency;
+  @override
+  @JsonKey(name: 'RANDOM_INTERVAL_OFFSET')
+  int? get randomIntervalOffset;
   @override
   @JsonKey(ignore: true)
   _$$BackgroundServiceConfigImplCopyWith<_$BackgroundServiceConfigImpl>
@@ -7078,6 +7140,307 @@ abstract class _FirebaseConfig implements FirebaseConfig {
   @override
   @JsonKey(ignore: true)
   _$$FirebaseConfigImplCopyWith<_$FirebaseConfigImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+FaceAuthMdmsConfig _$FaceAuthMdmsConfigFromJson(Map<String, dynamic> json) {
+  return _FaceAuthMdmsConfig.fromJson(json);
+}
+
+/// @nodoc
+mixin _$FaceAuthMdmsConfig {
+  @JsonKey(name: 'FACE_MATCH_THRESHOLD')
+  double? get faceMatchThreshold => throw _privateConstructorUsedError;
+  @JsonKey(name: 'MAX_FACE_ATTEMPTS')
+  int? get maxFaceAttempts => throw _privateConstructorUsedError;
+  @JsonKey(name: 'START_HOUR')
+  int? get startHour => throw _privateConstructorUsedError;
+  @JsonKey(name: 'END_HOUR')
+  int? get endHour => throw _privateConstructorUsedError;
+  @JsonKey(name: 'PROMPT_COUNT')
+  int? get promptCount => throw _privateConstructorUsedError;
+  @JsonKey(name: 'MIN_GAP_MINUTES')
+  int? get minGapMinutes => throw _privateConstructorUsedError;
+  @JsonKey(name: 'COUNTDOWN_DURATION_MINUTES')
+  int? get countdownDurationMinutes => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $FaceAuthMdmsConfigCopyWith<FaceAuthMdmsConfig> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $FaceAuthMdmsConfigCopyWith<$Res> {
+  factory $FaceAuthMdmsConfigCopyWith(
+          FaceAuthMdmsConfig value, $Res Function(FaceAuthMdmsConfig) then) =
+      _$FaceAuthMdmsConfigCopyWithImpl<$Res, FaceAuthMdmsConfig>;
+  @useResult
+  $Res call(
+      {@JsonKey(name: 'FACE_MATCH_THRESHOLD') double? faceMatchThreshold,
+      @JsonKey(name: 'MAX_FACE_ATTEMPTS') int? maxFaceAttempts,
+      @JsonKey(name: 'START_HOUR') int? startHour,
+      @JsonKey(name: 'END_HOUR') int? endHour,
+      @JsonKey(name: 'PROMPT_COUNT') int? promptCount,
+      @JsonKey(name: 'MIN_GAP_MINUTES') int? minGapMinutes,
+      @JsonKey(name: 'COUNTDOWN_DURATION_MINUTES')
+      int? countdownDurationMinutes});
+}
+
+/// @nodoc
+class _$FaceAuthMdmsConfigCopyWithImpl<$Res, $Val extends FaceAuthMdmsConfig>
+    implements $FaceAuthMdmsConfigCopyWith<$Res> {
+  _$FaceAuthMdmsConfigCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? faceMatchThreshold = freezed,
+    Object? maxFaceAttempts = freezed,
+    Object? startHour = freezed,
+    Object? endHour = freezed,
+    Object? promptCount = freezed,
+    Object? minGapMinutes = freezed,
+    Object? countdownDurationMinutes = freezed,
+  }) {
+    return _then(_value.copyWith(
+      faceMatchThreshold: freezed == faceMatchThreshold
+          ? _value.faceMatchThreshold
+          : faceMatchThreshold // ignore: cast_nullable_to_non_nullable
+              as double?,
+      maxFaceAttempts: freezed == maxFaceAttempts
+          ? _value.maxFaceAttempts
+          : maxFaceAttempts // ignore: cast_nullable_to_non_nullable
+              as int?,
+      startHour: freezed == startHour
+          ? _value.startHour
+          : startHour // ignore: cast_nullable_to_non_nullable
+              as int?,
+      endHour: freezed == endHour
+          ? _value.endHour
+          : endHour // ignore: cast_nullable_to_non_nullable
+              as int?,
+      promptCount: freezed == promptCount
+          ? _value.promptCount
+          : promptCount // ignore: cast_nullable_to_non_nullable
+              as int?,
+      minGapMinutes: freezed == minGapMinutes
+          ? _value.minGapMinutes
+          : minGapMinutes // ignore: cast_nullable_to_non_nullable
+              as int?,
+      countdownDurationMinutes: freezed == countdownDurationMinutes
+          ? _value.countdownDurationMinutes
+          : countdownDurationMinutes // ignore: cast_nullable_to_non_nullable
+              as int?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$FaceAuthMdmsConfigImplCopyWith<$Res>
+    implements $FaceAuthMdmsConfigCopyWith<$Res> {
+  factory _$$FaceAuthMdmsConfigImplCopyWith(_$FaceAuthMdmsConfigImpl value,
+          $Res Function(_$FaceAuthMdmsConfigImpl) then) =
+      __$$FaceAuthMdmsConfigImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {@JsonKey(name: 'FACE_MATCH_THRESHOLD') double? faceMatchThreshold,
+      @JsonKey(name: 'MAX_FACE_ATTEMPTS') int? maxFaceAttempts,
+      @JsonKey(name: 'START_HOUR') int? startHour,
+      @JsonKey(name: 'END_HOUR') int? endHour,
+      @JsonKey(name: 'PROMPT_COUNT') int? promptCount,
+      @JsonKey(name: 'MIN_GAP_MINUTES') int? minGapMinutes,
+      @JsonKey(name: 'COUNTDOWN_DURATION_MINUTES')
+      int? countdownDurationMinutes});
+}
+
+/// @nodoc
+class __$$FaceAuthMdmsConfigImplCopyWithImpl<$Res>
+    extends _$FaceAuthMdmsConfigCopyWithImpl<$Res, _$FaceAuthMdmsConfigImpl>
+    implements _$$FaceAuthMdmsConfigImplCopyWith<$Res> {
+  __$$FaceAuthMdmsConfigImplCopyWithImpl(_$FaceAuthMdmsConfigImpl _value,
+      $Res Function(_$FaceAuthMdmsConfigImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? faceMatchThreshold = freezed,
+    Object? maxFaceAttempts = freezed,
+    Object? startHour = freezed,
+    Object? endHour = freezed,
+    Object? promptCount = freezed,
+    Object? minGapMinutes = freezed,
+    Object? countdownDurationMinutes = freezed,
+  }) {
+    return _then(_$FaceAuthMdmsConfigImpl(
+      faceMatchThreshold: freezed == faceMatchThreshold
+          ? _value.faceMatchThreshold
+          : faceMatchThreshold // ignore: cast_nullable_to_non_nullable
+              as double?,
+      maxFaceAttempts: freezed == maxFaceAttempts
+          ? _value.maxFaceAttempts
+          : maxFaceAttempts // ignore: cast_nullable_to_non_nullable
+              as int?,
+      startHour: freezed == startHour
+          ? _value.startHour
+          : startHour // ignore: cast_nullable_to_non_nullable
+              as int?,
+      endHour: freezed == endHour
+          ? _value.endHour
+          : endHour // ignore: cast_nullable_to_non_nullable
+              as int?,
+      promptCount: freezed == promptCount
+          ? _value.promptCount
+          : promptCount // ignore: cast_nullable_to_non_nullable
+              as int?,
+      minGapMinutes: freezed == minGapMinutes
+          ? _value.minGapMinutes
+          : minGapMinutes // ignore: cast_nullable_to_non_nullable
+              as int?,
+      countdownDurationMinutes: freezed == countdownDurationMinutes
+          ? _value.countdownDurationMinutes
+          : countdownDurationMinutes // ignore: cast_nullable_to_non_nullable
+              as int?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$FaceAuthMdmsConfigImpl implements _FaceAuthMdmsConfig {
+  _$FaceAuthMdmsConfigImpl(
+      {@JsonKey(name: 'FACE_MATCH_THRESHOLD') this.faceMatchThreshold,
+      @JsonKey(name: 'MAX_FACE_ATTEMPTS') this.maxFaceAttempts,
+      @JsonKey(name: 'START_HOUR') this.startHour,
+      @JsonKey(name: 'END_HOUR') this.endHour,
+      @JsonKey(name: 'PROMPT_COUNT') this.promptCount,
+      @JsonKey(name: 'MIN_GAP_MINUTES') this.minGapMinutes,
+      @JsonKey(name: 'COUNTDOWN_DURATION_MINUTES')
+      this.countdownDurationMinutes});
+
+  factory _$FaceAuthMdmsConfigImpl.fromJson(Map<String, dynamic> json) =>
+      _$$FaceAuthMdmsConfigImplFromJson(json);
+
+  @override
+  @JsonKey(name: 'FACE_MATCH_THRESHOLD')
+  final double? faceMatchThreshold;
+  @override
+  @JsonKey(name: 'MAX_FACE_ATTEMPTS')
+  final int? maxFaceAttempts;
+  @override
+  @JsonKey(name: 'START_HOUR')
+  final int? startHour;
+  @override
+  @JsonKey(name: 'END_HOUR')
+  final int? endHour;
+  @override
+  @JsonKey(name: 'PROMPT_COUNT')
+  final int? promptCount;
+  @override
+  @JsonKey(name: 'MIN_GAP_MINUTES')
+  final int? minGapMinutes;
+  @override
+  @JsonKey(name: 'COUNTDOWN_DURATION_MINUTES')
+  final int? countdownDurationMinutes;
+
+  @override
+  String toString() {
+    return 'FaceAuthMdmsConfig(faceMatchThreshold: $faceMatchThreshold, maxFaceAttempts: $maxFaceAttempts, startHour: $startHour, endHour: $endHour, promptCount: $promptCount, minGapMinutes: $minGapMinutes, countdownDurationMinutes: $countdownDurationMinutes)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$FaceAuthMdmsConfigImpl &&
+            (identical(other.faceMatchThreshold, faceMatchThreshold) ||
+                other.faceMatchThreshold == faceMatchThreshold) &&
+            (identical(other.maxFaceAttempts, maxFaceAttempts) ||
+                other.maxFaceAttempts == maxFaceAttempts) &&
+            (identical(other.startHour, startHour) ||
+                other.startHour == startHour) &&
+            (identical(other.endHour, endHour) || other.endHour == endHour) &&
+            (identical(other.promptCount, promptCount) ||
+                other.promptCount == promptCount) &&
+            (identical(other.minGapMinutes, minGapMinutes) ||
+                other.minGapMinutes == minGapMinutes) &&
+            (identical(
+                    other.countdownDurationMinutes, countdownDurationMinutes) ||
+                other.countdownDurationMinutes == countdownDurationMinutes));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      faceMatchThreshold,
+      maxFaceAttempts,
+      startHour,
+      endHour,
+      promptCount,
+      minGapMinutes,
+      countdownDurationMinutes);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$FaceAuthMdmsConfigImplCopyWith<_$FaceAuthMdmsConfigImpl> get copyWith =>
+      __$$FaceAuthMdmsConfigImplCopyWithImpl<_$FaceAuthMdmsConfigImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$FaceAuthMdmsConfigImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _FaceAuthMdmsConfig implements FaceAuthMdmsConfig {
+  factory _FaceAuthMdmsConfig(
+      {@JsonKey(name: 'FACE_MATCH_THRESHOLD') final double? faceMatchThreshold,
+      @JsonKey(name: 'MAX_FACE_ATTEMPTS') final int? maxFaceAttempts,
+      @JsonKey(name: 'START_HOUR') final int? startHour,
+      @JsonKey(name: 'END_HOUR') final int? endHour,
+      @JsonKey(name: 'PROMPT_COUNT') final int? promptCount,
+      @JsonKey(name: 'MIN_GAP_MINUTES') final int? minGapMinutes,
+      @JsonKey(name: 'COUNTDOWN_DURATION_MINUTES')
+      final int? countdownDurationMinutes}) = _$FaceAuthMdmsConfigImpl;
+
+  factory _FaceAuthMdmsConfig.fromJson(Map<String, dynamic> json) =
+      _$FaceAuthMdmsConfigImpl.fromJson;
+
+  @override
+  @JsonKey(name: 'FACE_MATCH_THRESHOLD')
+  double? get faceMatchThreshold;
+  @override
+  @JsonKey(name: 'MAX_FACE_ATTEMPTS')
+  int? get maxFaceAttempts;
+  @override
+  @JsonKey(name: 'START_HOUR')
+  int? get startHour;
+  @override
+  @JsonKey(name: 'END_HOUR')
+  int? get endHour;
+  @override
+  @JsonKey(name: 'PROMPT_COUNT')
+  int? get promptCount;
+  @override
+  @JsonKey(name: 'MIN_GAP_MINUTES')
+  int? get minGapMinutes;
+  @override
+  @JsonKey(name: 'COUNTDOWN_DURATION_MINUTES')
+  int? get countdownDurationMinutes;
+  @override
+  @JsonKey(ignore: true)
+  _$$FaceAuthMdmsConfigImplCopyWith<_$FaceAuthMdmsConfigImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

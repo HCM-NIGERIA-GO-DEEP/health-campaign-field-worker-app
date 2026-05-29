@@ -114,6 +114,7 @@ class AppInitializationBloc
                     MasterEnums.boundaryRelationShip.toValue(),
                     MasterEnums.deviceChangeReasons.toValue(),
                     MasterEnums.singleUserLogin.toValue(),
+                    MasterEnums.faceAuthConfig.toValue(),
                   ]),
                 ),
                 MdmsModuleDetailModel(
