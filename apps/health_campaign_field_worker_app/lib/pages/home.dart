@@ -992,10 +992,12 @@ class _HomePageState extends LocalizedState<HomePage> {
 
       final widgetData = args.first as Map;
       final attendanceRegisterModel = args.length > 1 ? args[1] : null;
-      final uploadToServer = args.length > 2 ? args[2] as int? : 0;
+      var attendanceLogs = args.length > 2 ? args[2] as List? : null;
+      final uploadToServer = args.length > 3 ? args[3] as int? : 0;
 
       final registerId = attendanceRegisterModel?.id ?? '';
-      List attendanceLogs = attendanceRegisterModel?.attendanceLog ?? [];
+      attendanceLogs =
+          attendanceLogs ?? attendanceRegisterModel?.attendanceLog ?? [];
 
       final attendanceCollection = widgetData['attendanceCollection'] as Map?;
       final signatureCollection = widgetData['signatureCollection'] as Map?;
@@ -1023,7 +1025,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       final userUuid = FlowBuilderSingleton().loggedInUser?.uuid ?? '';
       final now = DateTime.now().millisecondsSinceEpoch;
 
-      List todayAttendanceLogs = attendanceLogs.where((log) {
+      List todayAttendanceLogs = attendanceLogs!.where((log) {
         final logTime = log.time;
         return logTime == entryTime || logTime == exitTime;
       }).toList();
@@ -2404,9 +2406,9 @@ class _HomePageState extends LocalizedState<HomePage> {
 
               await FlowNavigationUtils.navigateToFlowModule(
                 context: ctx,
-                config: FlowModuleConfig(
+                config: const FlowModuleConfig(
                   schemaKey: 'ATTENDANCE',
-                  relationshipMappings: const [
+                  relationshipMappings: [
                     RelationshipMapping(
                       from: 'attendanceRegister',
                       to: 'attendee',
@@ -2432,7 +2434,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                       foreignKey: 'id',
                     ),
                   ],
-                  nestedModelMappings: const [
+                  nestedModelMappings: [
                     NestedModelMapping(
                       rootModel: 'attendanceRegister',
                       fields: {

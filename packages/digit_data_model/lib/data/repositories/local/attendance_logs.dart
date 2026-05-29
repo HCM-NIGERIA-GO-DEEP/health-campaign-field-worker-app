@@ -90,7 +90,11 @@ class AttendanceLogsLocalRepository
         );
       });
 
-      await super.create(entity, createOpLog: createOpLog);
+      await super.create(
+        entity,
+        createOpLog: createOpLog,
+        dataOperation: dataOperation,
+      );
     });
   }
 
@@ -102,16 +106,47 @@ class AttendanceLogsLocalRepository
   }) async {
     return retryLocalCallOperation(() async {
       final logCompanion = entity.companion;
+      late final Expression<bool> whereCondition;
+
+      if (entity.id != null) {
+        whereCondition = sql.attendance.id.equals(entity.id!);
+      } else if (entity.clientReferenceId != null) {
+        whereCondition =
+            sql.attendance.clientReferenceId.equals(entity.clientReferenceId!);
+      } else {
+        final whereConditions = <Expression<bool>>[
+          if (entity.registerId != null)
+            sql.attendance.registerId.equals(entity.registerId!),
+          if (entity.individualId != null)
+            sql.attendance.individualId.equals(entity.individualId!),
+          if (entity.tenantId != null)
+            sql.attendance.tenantId.equals(entity.tenantId!),
+          if (entity.type != null) sql.attendance.type.equals(entity.type!),
+          if (entity.time != null) sql.attendance.time.equals(entity.time!),
+        ];
+
+        if (whereConditions.isEmpty) {
+          throw ArgumentError(
+            'Cannot update attendance log.',
+          );
+        }
+
+        whereCondition = buildAnd(whereConditions);
+      }
 
       await sql.batch((batch) async {
-        batch.insert(
+        batch.update(
           sql.attendance,
           logCompanion,
-          mode: InsertMode.insertOrReplace,
+          where: (table) => whereCondition,
         );
       });
 
-      await super.update(entity, createOpLog: createOpLog);
+      await super.update(
+        entity,
+        createOpLog: createOpLog,
+        dataOperation: dataOperation,
+      );
     });
   }
 
