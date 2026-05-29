@@ -1724,14 +1724,18 @@ void initializeFunctionRegistry() {
 
     if (tasks == null || tasks.isEmpty) return true;
 
-    // Find the last delivery task (status ADMINISTRATION_SUCCESS or DELIVERED)
+    // Redose is an SMC-only concept; exclude RI tasks from the window check.
+    final smcTasks = _filterByFlow(tasks, keepRi: false);
+    if (smcTasks.isEmpty) return true;
+
+    // Find the last SMC delivery task (status ADMINISTRATION_SUCCESS or DELIVERED)
     // Iterate in reverse to find the most recent delivery task
     Map<String, dynamic>? lastDeliveryTask;
-    for (int i = tasks.length - 1; i >= 0; i--) {
-      final status = tasks[i]['status']?.toString().toUpperCase() ?? '';
+    for (int i = smcTasks.length - 1; i >= 0; i--) {
+      final status = smcTasks[i]['status']?.toString().toUpperCase() ?? '';
       if (status == TaskStatus.administrationSuccess ||
           status == TaskStatus.delivered) {
-        lastDeliveryTask = tasks[i];
+        lastDeliveryTask = smcTasks[i];
         break;
       }
     }
@@ -1766,6 +1770,29 @@ void initializeFunctionRegistry() {
     return (now - deliveryCompletionTime) > redoseWindowMs;
   });
 
+  /// Returns the clientReferenceId of the most recent successful SMC delivery
+  /// task (status `ADMINISTRATION_SUCCESS` or `DELIVERED`). RI tasks are
+  /// excluded so that a subsequent RI administration cannot displace the
+  /// SMC task that a redose is meant to be performed against. Returns an
+  /// empty string when no such task exists.
+  FunctionRegistry.register("getLastSMCDeliveryClientReferenceId",
+      (args, stateData) {
+    if (args.isEmpty || args.first is! List) return '';
+
+    final smcTasks = _filterByFlow(args.first as List, keepRi: false);
+    if (smcTasks.isEmpty) return '';
+
+    for (int i = smcTasks.length - 1; i >= 0; i--) {
+      final status = smcTasks[i]['status']?.toString().toUpperCase() ?? '';
+      if (status == TaskStatus.administrationSuccess ||
+          status == TaskStatus.delivered) {
+        return smcTasks[i]['clientReferenceId']?.toString() ?? '';
+      }
+    }
+
+    return '';
+  });
+
   /// Registers a function to check if a redose has already been completed.
   ///
   /// - **Function Name**: `'isRedoseCompleted'`
@@ -1795,6 +1822,10 @@ void initializeFunctionRegistry() {
 
     if (tasks == null || tasks.isEmpty) return false;
 
+    // Redose is an SMC-only concept; exclude RI tasks before scanning statuses.
+    final smcTasks = _filterByFlow(tasks, keepRi: false);
+    if (smcTasks.isEmpty) return false;
+
     // Get current running cycle
     final projectType = FlowBuilderSingleton().projectType;
     final now = DateTime.now().millisecondsSinceEpoch;
@@ -1804,8 +1835,8 @@ void initializeFunctionRegistry() {
 
     if (selectedCycle == null) return false;
 
-    // Check if any task has status VISITED for the current cycle
-    for (final task in tasks) {
+    // Check if any SMC task has status VISITED for the current cycle
+    for (final task in smcTasks) {
       final status = task['status']?.toString().toUpperCase() ?? '';
       if (status == TaskStatus.visited) {
         // Verify it belongs to the current cycle
@@ -2124,6 +2155,51 @@ void initializeFunctionRegistry() {
       final isAdministered = status == 'ADMINISTERED' ||
           status == TaskStatus.delivered ||
           status == TaskStatus.administrationSuccess;
+      if (!isAdministered) continue;
+
+      if (selectedCycle == null || selectedCycle.id == 0) return true;
+
+      final additionalFields = task['additionalFields'];
+      final fields = additionalFields is Map
+          ? additionalFields['fields'] as List?
+          : null;
+      int? taskCycleIndex;
+      if (fields != null) {
+        for (final field in fields) {
+          if (field is Map && field['key'] == 'cycleIndex') {
+            taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
+            break;
+          }
+        }
+      }
+      if (taskCycleIndex == null || taskCycleIndex == selectedCycle.id) {
+        return true;
+      }
+    }
+    return false;
+  });
+
+  /// Returns true when at least one SMC task (no `flow` field or
+  /// `additionalFields.flow == 'smcDone'`) for the current cycle has been
+  /// administered/delivered. Scans the full task list instead of looking at
+  /// `item.task.last`, so that subsequent RI administration tasks do not
+  /// displace the SMC-administered signal.
+  FunctionRegistry.register('hasSMCAdministered', (args, stateData) {
+    if (args.isEmpty || args.first is! List) return false;
+
+    final smcTasks = _filterByFlow(args.first as List, keepRi: false);
+    if (smcTasks.isEmpty) return false;
+
+    final projectType = FlowBuilderSingleton().projectType;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final selectedCycle = projectType?.cycles?.firstWhereOrNull(
+      (e) => e.startDate < now && e.endDate > now,
+    );
+
+    for (final task in smcTasks) {
+      final status = task['status']?.toString().trim().toUpperCase();
+      final isAdministered = status == TaskStatus.administrationSuccess ||
+          status == TaskStatus.delivered;
       if (!isAdministered) continue;
 
       if (selectedCycle == null || selectedCycle.id == 0) return true;

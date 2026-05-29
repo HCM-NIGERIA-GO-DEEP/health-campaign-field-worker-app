@@ -444,6 +444,7 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__listItem:id",
             "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:smcDone",
             "deliveryStrategy": "__listItem:deliveryStrategy",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
@@ -538,6 +539,7 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:smcDone",
             "deliveryStrategy": "__context:deliveryStrategy",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
@@ -632,6 +634,7 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:smcDone",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
             "memberCount": "__context:memberCount",
@@ -782,6 +785,7 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:smcDone",
             "comment": "unableToDeliver.comment",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
@@ -856,6 +860,7 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:smcDone",
             "reasonForRedose": "RedoseDetails.reasonForRedose",
             "redoseComments": "RedoseDetails.redoseComments",
             "taskType": "__value:REDOSE",
@@ -1483,7 +1488,7 @@ final jsonConfig = {
             // Referral reasons mapped from checklist: SICK for ec1=YES, FEVER for ec2=YES
             "referralReasons": "__context:referralReasons",
             "flow":
-                "__switch:__context:sourceFlow:{RI_CHECKLIST:__value:riDone}"
+                "__switch:__context:sourceFlow:{RI_CHECKLIST:__value:riDone,CHECKLIST:__value:smcDone}"
           }
         }
       }
