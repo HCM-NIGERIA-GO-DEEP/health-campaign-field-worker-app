@@ -985,6 +985,10 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       final userObject = await localSecureStore.userRequestModel;
       if (userObject == null) return;
 
+      final prefs = await SharedPreferences.getInstance();
+      final stockSyncUserKey = 'stock_sync_user_$localityKey';
+      final lastSyncedUserUuid = prefs.getString(stockSyncUserKey);
+
       final userRoles = userObject.roles.map((e) => e.code);
 
       final projectFacilities = await projectFacilityLocalRepository.search(
@@ -1031,8 +1035,16 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         locality: localityKey,
       ));
 
-      final lastSyncedTime = existingDownSyncData.isEmpty ? null : 0;
-      // : existingDownSyncData.first.lastSyncedTime;
+      final int? lastSyncedTime;
+      if (lastSyncedUserUuid != null && lastSyncedUserUuid != userObject.uuid) {
+        // Different user logged in — force full re-sync from epoch
+        lastSyncedTime = 0;
+      } else {
+        // Fresh install (no prior sync) or same user — use stored sync time
+        lastSyncedTime = existingDownSyncData.isEmpty
+            ? null
+            : existingDownSyncData.first.lastSyncedTime;
+      }
 
       if (existingDownSyncData.isEmpty) {
         await downSyncLocalRepository.create(DownsyncModel(
@@ -1061,6 +1073,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
           userRoles: userRoles,
           stockEntries: localStocks,
         );
+        await prefs.setString(stockSyncUserKey, userObject.uuid);
         return;
       }
 
@@ -1096,6 +1109,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         offset += stockEntries.length;
         syncedCount += stockEntries.length;
       }
+
+      await prefs.setString(stockSyncUserKey, userObject.uuid);
 
       await _downsyncFacilitiesForDistributorReceivedStocks(
         projectId: project.id,
