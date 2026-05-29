@@ -2736,6 +2736,7 @@ final dynamic sampleInventoryFlows = {
           "actionType": "FETCH_TRANSFORMER_CONFIG",
           "properties": {
             "configName": "stockReceipt",
+            "forceCreate": true,
             "data": [
               {"key": "stockEntryType", "value": "RECEIPT"},
               {"key": "transactionType", "value": "RECEIVED"},
@@ -2768,7 +2769,7 @@ final dynamic sampleInventoryFlows = {
         {
           "actionType": "UPDATE_EVENT",
           "properties": {
-            "source": "entities",
+            "source": "existingModels",
             "entity": "StockModel",
             "modify": [
               {
@@ -2816,6 +2817,7 @@ final dynamic sampleInventoryFlows = {
           "actionType": "FETCH_TRANSFORMER_CONFIG",
           "properties": {
             "configName": "stockReject",
+            "forceCreate": true,
             "data": [
               // {"key": "stockEntryType", "value": "RETURNED"},
               {"key": "transactionType", "value": "DISPATCHED"},
@@ -2849,7 +2851,7 @@ final dynamic sampleInventoryFlows = {
         {
           "actionType": "UPDATE_EVENT",
           "properties": {
-            "source": "entities",
+            "source": "existingModels",
             "entity": "StockModel",
             "modify": [
               {
