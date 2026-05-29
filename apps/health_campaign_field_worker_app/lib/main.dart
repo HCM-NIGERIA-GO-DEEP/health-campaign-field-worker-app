@@ -55,19 +55,19 @@ void main() async {
   await envConfig.initialize();
 
   // Security checks - enforce exit only in production environment
-  if (!kDebugMode) {
-    try {
-      final issues = await JailbreakRootDetection.instance.checkForIssues;
-      if (issues.isNotEmpty) {
-        debugPrint('Security warning: ${issues.join(', ')}');
-        if (envConfig.variables.envType == EnvType.prod) {
-          exit(0);
-        }
-      }
-    } catch (e) {
-      debugPrint('Security check failed: $e');
-    }
-  }
+  // if (!kDebugMode) {
+  //   try {
+  //     final issues = await JailbreakRootDetection.instance.checkForIssues;
+  //     if (issues.isNotEmpty) {
+  //       debugPrint('Security warning: ${issues.join(', ')}');
+  //       if (envConfig.variables.envType == EnvType.prod) {
+  //         exit(0);
+  //       }
+  //     }
+  //   } catch (e) {
+  //     debugPrint('Security check failed: $e');
+  //   }
+  // }
   WidgetsBinding.instance.addObserver(AppLifecycleObserver());
   _dio = DioClient().dio;
 
@@ -111,8 +111,6 @@ void main() async {
     client: _dio,
     sql: _sql,
   ));
-
-
 }
 
 class AppLifecycleObserver extends WidgetsBindingObserver {
