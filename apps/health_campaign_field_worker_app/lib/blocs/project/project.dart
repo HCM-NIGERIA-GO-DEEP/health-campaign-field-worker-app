@@ -1031,9 +1031,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         locality: localityKey,
       ));
 
-      final lastSyncedTime = existingDownSyncData.isEmpty
-          ? null
-          : existingDownSyncData.first.lastSyncedTime;
+      final lastSyncedTime = existingDownSyncData.isEmpty ? null : 0;
+      // : existingDownSyncData.first.lastSyncedTime;
 
       if (existingDownSyncData.isEmpty) {
         await downSyncLocalRepository.create(DownsyncModel(
