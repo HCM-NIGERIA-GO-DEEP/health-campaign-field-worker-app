@@ -13,7 +13,7 @@ class QueryBuilder {
   static TableInfo<Table, Object?> _tableInfo(
       LocalSqlDataStore sql, String tableName) {
     return sql.allTables.firstWhere(
-      (t) => t.actualTableName == camelToSnake(tableName),
+          (t) => t.actualTableName == camelToSnake(tableName),
       orElse: () => throw Exception('Table $tableName not found'),
     );
   }
@@ -23,7 +23,7 @@ class QueryBuilder {
       TableInfo<Table, Object?> table, String columnCamel) {
     final snake = camelToSnake(columnCamel);
     return table.$columns.firstWhere(
-      (c) => c.$name == snake,
+          (c) => c.$name == snake,
       orElse: () => throw Exception(
           'Column $columnCamel not found in ${table.actualTableName}'),
     );
@@ -77,6 +77,11 @@ class QueryBuilder {
 
     // Filters apply to the first (originally-rooted) related table.
     for (final filter in filtersOnFirstTable) {
+      if (filter.operator == 'within') {
+        final expr = _buildWithinBoundingBoxExpression(firstTable, filter);
+        if (expr != null) subquery.where(expr);
+        continue;
+      }
       final col = _columnOf(firstTable, filter.field);
       final expr = _filterToExpression(col, filter);
       if (expr != null) subquery.where(expr);
@@ -103,7 +108,7 @@ class QueryBuilder {
   static Expression<bool>? buildCombinedSubqueryExpression({
     required LocalSqlDataStore sql,
     required List<({List<RelationshipMapping> path, List<SearchFilter> filters})>
-        pathFilterPairs,
+    pathFilterPairs,
     required GeneratedColumn<Object> primaryKeyColumn,
   }) {
     if (pathFilterPairs.isEmpty) return null;
@@ -157,6 +162,11 @@ class QueryBuilder {
     for (final pair in pathFilterPairs) {
       final filterTable = _tableInfo(sql, pair.path.first.from);
       for (final filter in pair.filters) {
+        if (filter.operator == 'within') {
+          final expr = _buildWithinBoundingBoxExpression(filterTable, filter);
+          if (expr != null) subquery.where(expr);
+          continue;
+        }
         final col = _columnOf(filterTable, filter.field);
         final expr = _filterToExpression(col, filter);
         if (expr != null) subquery.where(expr);
@@ -164,6 +174,46 @@ class QueryBuilder {
     }
 
     return (primaryKeyColumn as Expression<String>).isInQuery(subquery);
+  }
+
+  /// Builds a lat/lon bounding-box `Expression<bool>` for a 'within' filter
+  /// applied inside a cross-table subquery. The subquery can only do the
+  /// coarse bounding-box prefilter — exact Haversine refinement requires
+  /// reading lat/lon into Dart, which the primary-table queryRawTable path
+  /// handles when 'within' is rooted on the primary table itself.
+  static Expression<bool>? _buildWithinBoundingBoxExpression(
+      TableInfo<Table, Object?> table, SearchFilter filter) {
+    if (filter.coordinates == null || filter.value == null) return null;
+
+    final latField = table.$columns.firstWhere(
+          (c) => c.$name == 'latitude',
+      orElse: () => throw Exception(
+          'Latitude column not found in ${table.actualTableName}'),
+    );
+    final lonField = table.$columns.firstWhere(
+          (c) => c.$name == 'longitude',
+      orElse: () => throw Exception(
+          'Longitude column not found in ${table.actualTableName}'),
+    );
+
+    final centerLat = filter.coordinates!.latitude;
+    final centerLon = filter.coordinates!.longitude;
+    final radiusInKm = (filter.value as num).toDouble();
+
+    const earthRadius = 6371.0;
+    const degToRad = math.pi / 180.0;
+
+    final deltaLat = radiusInKm / earthRadius;
+    final deltaLon =
+        radiusInKm / (earthRadius * math.cos(centerLat * degToRad));
+
+    final minLat = centerLat - deltaLat;
+    final maxLat = centerLat + deltaLat;
+    final minLon = centerLon - deltaLon;
+    final maxLon = centerLon + deltaLon;
+
+    return (latField as Expression<double>).isBetweenValues(minLat, maxLat) &
+    (lonField as Expression<double>).isBetweenValues(minLon, maxLon);
   }
 
   /// Converts a SearchFilter to a Drift `Expression<bool>` for the given
@@ -182,7 +232,7 @@ class QueryBuilder {
         return (col as Expression<String>).like('${filter.value}%');
       case 'notContains':
         return col.isNull() |
-            (col as Expression<String>).like('%${filter.value}%').not();
+        (col as Expression<String>).like('%${filter.value}%').not();
       case 'isNotNull':
         return col.isNotNull();
       case 'isNull':
@@ -237,7 +287,7 @@ class QueryBuilder {
   static String camelToSnake(String input) {
     return input.replaceAllMapped(
       RegExp(r'[A-Z]'),
-      (match) => '_${match.group(0)!.toLowerCase()}',
+          (match) => '_${match.group(0)!.toLowerCase()}',
     );
   }
 
@@ -297,11 +347,31 @@ class QueryBuilder {
         case 'notEquals':
           return '$column != ?';
         case 'equalsAny':
-          // Supports OR condition: field contains comma-separated column names
-          // Example: field='senderId,receiverId', value='F-123'
-          // Generates: (sender_id = ? OR receiver_id = ?)
+        // Supports OR condition: field contains comma-separated column names
+        // Example: field='senderId,receiverId', value='F-123'
+        // Generates: (sender_id = ? OR receiver_id = ?)
           final columns = filter.field.split(',').map((f) => camelToSnake(f.trim())).toList();
           return '(${columns.map((c) => '$c = ?').join(' OR ')})';
+        case 'containsName':
+        // Tokenized search across comma-separated columns.
+        // Example: field='givenName,familyName', value='John Smith'
+        // Generates: ((given_name LIKE ? OR family_name LIKE ?) AND
+        //            (given_name LIKE ? OR family_name LIKE ?))
+          final cols = filter.field
+              .split(',')
+              .map((f) => camelToSnake(f.trim()))
+              .toList();
+          final tokens = filter.value
+              ?.toString()
+              .trim()
+              .split(RegExp(r'\s+'))
+              .where((t) => t.isNotEmpty)
+              .toList() ??
+              const <String>[];
+          if (tokens.isEmpty || cols.isEmpty) return '1 = 1';
+          final tokenClauses = tokens.map((_) =>
+          '(${cols.map((c) => '$c LIKE ?').join(' OR ')})');
+          return '(${tokenClauses.join(' AND ')})';
         default:
           throw Exception('Unsupported operator: ${filter.operator}');
       }
@@ -333,10 +403,27 @@ class QueryBuilder {
           }
           break;
         case 'equalsAny':
-          // Add the same value for each column in the OR condition
+        // Add the same value for each column in the OR condition
           final columnCount = filter.field.split(',').length;
           for (int i = 0; i < columnCount; i++) {
             args.add(Variable.withString(filter.value.toString()));
+          }
+          break;
+        case 'containsName':
+        // One '%token%' arg per (token, column) pair, matching the
+        // clause structure built in buildWhereClauseRaw.
+          final cols = filter.field.split(',');
+          final tokens = filter.value
+              ?.toString()
+              .trim()
+              .split(RegExp(r'\s+'))
+              .where((t) => t.isNotEmpty)
+              .toList() ??
+              const <String>[];
+          for (final token in tokens) {
+            for (var i = 0; i < cols.length; i++) {
+              args.add(Variable.withString('%$token%'));
+            }
           }
           break;
         case 'isNotNull':
@@ -378,7 +465,7 @@ class QueryBuilder {
         onCountFetched == null &&
         orderBy == null) {
       final int oversizeIndex = filters.indexWhere((f) =>
-          (f.operator == 'in' || f.operator == 'notIn') &&
+      (f.operator == 'in' || f.operator == 'notIn') &&
           _normalizeToList(f.value).length > _maxInListSize);
       if (oversizeIndex >= 0) {
         final big = filters[oversizeIndex];
@@ -412,7 +499,7 @@ class QueryBuilder {
     }
 
     final dynamicTable = sql.allTables.firstWhere(
-      (t) => t.actualTableName == camelToSnake(table),
+          (t) => t.actualTableName == camelToSnake(table),
       orElse: () => throw Exception('Table $table not found'),
     );
 
@@ -433,11 +520,11 @@ class QueryBuilder {
 
         // TODO: Avoid hardcoded column names 'latitude' and 'longitude' in future
         final latField = dynamicTable.$columns.firstWhere(
-          (c) => c.$name == 'latitude',
+              (c) => c.$name == 'latitude',
           orElse: () => throw Exception('Latitude column not found in $table'),
         );
         final lonField = dynamicTable.$columns.firstWhere(
-          (c) => c.$name == 'longitude',
+              (c) => c.$name == 'longitude',
           orElse: () => throw Exception('Longitude column not found in $table'),
         );
 
@@ -461,7 +548,7 @@ class QueryBuilder {
         final lonExpr = lonField as Expression<double>;
 
         final boundingBox = latExpr.isBetweenValues(minLat, maxLat) &
-            lonExpr.isBetweenValues(minLon, maxLon);
+        lonExpr.isBetweenValues(minLon, maxLon);
 
         whereClauses.add(boundingBox);
         continue;
@@ -474,7 +561,7 @@ class QueryBuilder {
 
         for (final colName in columnNames) {
           final col = dynamicTable.$columns.firstWhere(
-            (c) => c.$name == colName,
+                (c) => c.$name == colName,
             orElse: () => throw Exception('Column $colName not found in $table'),
           );
           orClauses.add(col.equals(filter.value));
@@ -491,9 +578,47 @@ class QueryBuilder {
         continue;
       }
 
+      // Handle containsName: tokenize value on whitespace and match each
+      // token against any of the comma-separated columns. Every token must
+      // appear in at least one column.
+      if (filter.operator == 'containsName') {
+        final columnNames = filter.field
+            .split(',')
+            .map((f) => camelToSnake(f.trim()))
+            .toList();
+        final tokens = filter.value
+            ?.toString()
+            .trim()
+            .split(RegExp(r'\s+'))
+            .where((t) => t.isNotEmpty)
+            .toList() ??
+            const <String>[];
+
+        if (tokens.isEmpty || columnNames.isEmpty) continue;
+
+        final columns = columnNames.map((colName) {
+          return dynamicTable.$columns.firstWhere(
+                (c) => c.$name == colName,
+            orElse: () =>
+            throw Exception('Column $colName not found in $table'),
+          ) as Expression<String>;
+        }).toList();
+
+        Expression<bool>? combined;
+        for (final token in tokens) {
+          Expression<bool> tokenClause = columns.first.like('%$token%');
+          for (var i = 1; i < columns.length; i++) {
+            tokenClause = tokenClause | columns[i].like('%$token%');
+          }
+          combined = combined == null ? tokenClause : combined & tokenClause;
+        }
+        if (combined != null) whereClauses.add(combined);
+        continue;
+      }
+
       final columnName = camelToSnake(filter.field);
       final col = dynamicTable.$columns.firstWhere(
-        (c) => c.$name == columnName,
+            (c) => c.$name == columnName,
         orElse: () => throw Exception('Column $columnName not found in $table'),
       );
 
@@ -556,9 +681,9 @@ class QueryBuilder {
         countFuture = () async {
           final rawResults = await sql
               .customSelect(
-                'SELECT latitude, longitude FROM ${camelToSnake(table)} WHERE $whereClause',
-                variables: whereArgs,
-              )
+            'SELECT latitude, longitude FROM ${camelToSnake(table)} WHERE $whereClause',
+            variables: whereArgs,
+          )
               .get();
 
           const earthRadius = 6371.0;
@@ -626,7 +751,7 @@ class QueryBuilder {
     final List<GeneratedColumn<Object>> projectedColumns;
     if (selectColumns != null && selectColumns.isNotEmpty) {
       final wantedSnake =
-          selectColumns.map((c) => camelToSnake(c)).toSet();
+      selectColumns.map((c) => camelToSnake(c)).toSet();
       projectedColumns = dynamicTable.$columns
           .where((c) => wantedSnake.contains(c.$name))
           .toList();
@@ -644,9 +769,9 @@ class QueryBuilder {
       final SearchOrderBy searchOrder = orderBy;
       final orderColumn = camelToSnake(searchOrder.field);
       final col = dynamicTable.$columns.firstWhere(
-        (c) => c.$name == orderColumn,
+            (c) => c.$name == orderColumn,
         orElse: () =>
-            throw Exception('Order column $orderColumn not found in $table'),
+        throw Exception('Order column $orderColumn not found in $table'),
       );
 
       final orderingMode = searchOrder.order.toUpperCase() == 'ASC'
