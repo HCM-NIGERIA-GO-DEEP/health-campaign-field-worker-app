@@ -197,23 +197,14 @@ class BeneficiariesReportState extends LocalizedState<BeneficiariesReportPage> {
                         isPop: true,
                       ),
                       inProgress: (syncCount, totalCount) {
-                        final entityType = context
-                            .read<BeneficiaryDownSyncBloc>()
-                            .currentEntityType;
-                        final entityLabel =
-                            _downsyncEntityDisplayName(entityType);
-                        final boundaryLabel = localizations.translate(
-                          selectedBoundary?.code ?? '',
-                        );
                         final progressData = DownloadProgressData(
                           progress: min(
-                            (syncCount) /
-                                (totalCount == 0 ? 1 : totalCount),
+                            (syncCount) / (totalCount),
                             1,
                           ),
-                          boundaryName: entityLabel.isEmpty
-                              ? boundaryLabel
-                              : entityLabel,
+                          boundaryName: localizations.translate(
+                            selectedBoundary?.code ?? '',
+                          ),
                           syncedCount: syncCount,
                           totalCount: totalCount,
                           currentIndex: 0,
@@ -464,30 +455,5 @@ class BeneficiariesReportState extends LocalizedState<BeneficiariesReportPage> {
             });
           });
     });
-  }
-}
-
-String _downsyncEntityDisplayName(String code) {
-  switch (code) {
-    case 'HOUSEHOLD':
-      return 'Households';
-    case 'HOUSEHOLD_MEMBER':
-      return 'Household Members';
-    case 'INDIVIDUAL':
-      return 'Individuals';
-    case 'PROJECT_BENEFICIARY':
-      return 'Project Beneficiaries';
-    case 'TASK':
-      return 'Tasks';
-    case 'SIDE_EFFECT':
-      return 'Side Effects';
-    case 'REFERRAL':
-      return 'Referrals';
-    case 'HF_REFERRAL':
-      return 'HF Referrals';
-    case 'SERVICE':
-      return 'Services';
-    default:
-      return '';
   }
 }
