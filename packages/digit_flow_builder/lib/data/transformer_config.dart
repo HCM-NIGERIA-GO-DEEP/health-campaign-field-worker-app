@@ -184,7 +184,14 @@ final jsonConfig = {
           /// Note: Generate uuid
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
-          "additionalFields": "additionalInfo.fields",
+          "additionalFields": {
+            "name": "__minLen:2:beneficiaryDetails.nameOfIndividual",
+            "gender": "__minLen:2:beneficiaryDetails.gender",
+            "dateOfBirth": "__minLen:2:beneficiaryDetails.dobPicker",
+            "individualClientReferenceId":
+                "__minLen:2:__ref:IndividualModel.clientReferenceId",
+            "beneficiaryId": "__minLen:2:beneficiaryDetails.beneficiaryId"
+          },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
         }
@@ -381,7 +388,14 @@ final jsonConfig = {
           /// Note: Generate uuid
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
-          "additionalFields": "additionalInfo.fields",
+          "additionalFields": {
+            "name": "__minLen:2:beneficiaryDetails.nameOfIndividual",
+            "gender": "__minLen:2:beneficiaryDetails.gender",
+            "dateOfBirth": "__minLen:2:beneficiaryDetails.dobPicker",
+            "individualClientReferenceId":
+                "__minLen:2:__ref:IndividualModel.clientReferenceId",
+            "beneficiaryId": "__minLen:2:beneficiaryDetails.beneficiaryId"
+          },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
         }
