@@ -2029,9 +2029,9 @@ final dynamic sampleFlows = {
                   "properties": {
                     "data": [
                       {
-                        "key": "givenName",
+                        "key": "givenName,familyName",
                         "value": "field.value",
-                        "operation": "contains"
+                        "operation": "containsAll"
                       },
                       {
                         "key": "localityBoundaryCode",
