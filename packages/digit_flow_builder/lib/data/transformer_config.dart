@@ -462,11 +462,15 @@ final jsonConfig = {
         },
         "listMappings": {
           "TaskResourceModel": {
-            "listSource": "__listItem:doseCriteria[0].ProductVariants",
+            // Mirror the direct delivery's resourceCard so future indirect doses
+            // carry the same productVariantId as what was just administered
+            // (e.g., SPAQ1 vs SPAQ2 by age) instead of a hardcoded doseCriteria[0].
+            "listSource": "DeliveryDetails.resourceCard",
             "mappings": {
               "clientReferenceId": "__generate:uuid",
               "taskId": "taskId",
-              "productVariantId": "productVariantId",
+              "productVariantId":
+                  "DeliveryDetails.resourceCard.resourceDelivered.productId",
               "quantity": "__value:1",
               "isDelivered": "__value:true",
               "deliveryComment": "DeliveryDetails.deliveryComment",
