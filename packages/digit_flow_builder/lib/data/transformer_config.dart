@@ -185,12 +185,12 @@ final jsonConfig = {
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
           "additionalFields": {
-            "name": "__minLen:2:beneficiaryDetails.nameOfIndividual",
-            "gender": "__minLen:2:beneficiaryDetails.gender",
-            "dateOfBirth": "__minLen:2:beneficiaryDetails.dobPicker",
+            "name": "beneficiaryDetails.nameOfIndividual",
+            "gender": "beneficiaryDetails.gender",
+            "dateOfBirth": "beneficiaryDetails.dobPicker",
             "individualClientReferenceId":
-                "__minLen:2:__ref:IndividualModel.clientReferenceId",
-            "beneficiaryId": "__minLen:2:beneficiaryDetails.beneficiaryId"
+                "__ref:IndividualModel.clientReferenceId",
+            "beneficiaryId": "beneficiaryDetails.beneficiaryId"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
@@ -389,12 +389,12 @@ final jsonConfig = {
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
           "additionalFields": {
-            "name": "__minLen:2:beneficiaryDetails.nameOfIndividual",
-            "gender": "__minLen:2:beneficiaryDetails.gender",
-            "dateOfBirth": "__minLen:2:beneficiaryDetails.dobPicker",
+            "name": "beneficiaryDetails.nameOfIndividual",
+            "gender": "beneficiaryDetails.gender",
+            "dateOfBirth": "beneficiaryDetails.dobPicker",
             "individualClientReferenceId":
-                "__minLen:2:__ref:IndividualModel.clientReferenceId",
-            "beneficiaryId": "__minLen:2:beneficiaryDetails.beneficiaryId"
+                "__ref:IndividualModel.clientReferenceId",
+            "beneficiaryId": "beneficiaryDetails.beneficiaryId"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
