@@ -618,7 +618,8 @@ final jsonConfig = {
             "itnCount": "__context:itnCount",
             "taskType": "__value:ITN_DELIVERY",
             "returnedBednetCount": "__context:returnedBednetCount",
-            "hasEolin": "__context:hasEolin"
+            "hasEolin": "__context:hasEolin",
+            "projectType": "__context:projectType"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -698,7 +699,8 @@ final jsonConfig = {
           },
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
-            "cycleIndex": "__context:cycleIndex"
+            "cycleIndex": "__context:cycleIndex",
+            "projectType": "__context:projectType"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -760,7 +762,8 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
-            "comment": "unableToDeliver.comment"
+            "comment": "unableToDeliver.comment",
+            "projectType": "__context:projectType"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -825,7 +828,8 @@ final jsonConfig = {
             "cycleIndex": "__context:cycleIndex",
             "reasonForRedose": "RedoseDetails.reasonForRedose",
             "redoseComments": "RedoseDetails.redoseComments",
-            "taskType": "__value:REDOSE"
+            "taskType": "__value:REDOSE",
+            "projectType": "__context:projectType"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"

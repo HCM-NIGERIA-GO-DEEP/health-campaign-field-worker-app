@@ -835,6 +835,12 @@ class FunctionRegistries {
       // return true;
     });
 
+    FunctionRegistry.register('getProjectType', (args, stateData) {
+      final project = FlowBuilderSingleton().selectedProject;
+      return project?.additionalDetails?.projectType?.type ??
+          project?.additionalDetails?.additionalProjectType?.type;
+    });
+
     FunctionRegistry.register('calculateItnCount', (args, stateData) {
       final memberCount = int.tryParse(args.first?.toString() ?? '') ?? 0;
       if (memberCount <= 0) return 0;
