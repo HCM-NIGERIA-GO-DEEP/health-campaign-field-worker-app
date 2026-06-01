@@ -259,6 +259,7 @@ class FormEntityMapper {
             updateMapping: sourcePath,
             formValues: formValues,
             modelName: modelType,
+            context: context,
           );
 
           if (updatedAdditional != null) {
@@ -376,10 +377,21 @@ class FormEntityMapper {
     required Map<String, dynamic> updateMapping,
     required Map<String, dynamic> formValues,
     required String modelName,
+    required Map<String, dynamic> context,
   }) {
     final updatedFields = <String, dynamic>{};
 
     updateMapping.forEach((customKey, path) {
+      // __concatName: combines multiple form fields into a single value, so it
+      // is not a plain form path. Resolve it through getValueFromMapping instead.
+      if (path is String && path.startsWith('__concatName:')) {
+        final value = getValueFromMapping(path, formValues, modelName, context);
+        if (value != null && value.toString().trim().isNotEmpty) {
+          updatedFields[customKey] = value;
+        }
+        return;
+      }
+
       if (containsPathInFormData(path, formValues)) {
         final value = getStrictValueFromFormDataOnly(path, formValues);
         updatedFields[customKey] = value;
@@ -1061,6 +1073,31 @@ class FormEntityMapper {
       } else {
         return valueStr.padLeft(minLength, padChar);
       }
+    }
+
+    if (instruction.startsWith('__concatName:')) {
+      // Format: __concatName:part1,part2,...
+      // Resolves each comma-separated sub-instruction (each may itself be a
+      // plain path or another instruction like __context:) and joins the
+      // non-empty results with a single space. Returns null if nothing resolves.
+      // Example: __concatName:beneficiaryDetails.nameOfIndividual,beneficiaryDetails.familyname
+      final concatContent = instruction.replaceFirst('__concatName:', '');
+      final resolvedParts = <String>[];
+
+      for (final part in concatContent.split(',')) {
+        final subInstruction = part.trim();
+        if (subInstruction.isEmpty) continue;
+
+        final value = getValueFromMapping(
+            subInstruction, data, currentModel, context,
+            listItemIndex: listItemIndex, listSourcePath: listSourcePath);
+
+        if (value != null && value.toString().trim().isNotEmpty) {
+          resolvedParts.add(value.toString().trim());
+        }
+      }
+
+      return resolvedParts.isEmpty ? null : resolvedParts.join(' ');
     }
 
     if (instruction.startsWith('__context:')) {

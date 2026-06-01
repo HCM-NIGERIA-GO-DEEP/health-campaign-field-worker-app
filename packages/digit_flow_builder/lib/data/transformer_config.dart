@@ -185,7 +185,8 @@ final jsonConfig = {
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
           "additionalFields": {
-            "name": "beneficiaryDetails.nameOfIndividual",
+            "name":
+                "__concatName:beneficiaryDetails.nameOfIndividual,beneficiaryDetails.familyname",
             "gender": "beneficiaryDetails.gender",
             "dateOfBirth": "beneficiaryDetails.dobPicker",
             "individualClientReferenceId":
@@ -389,7 +390,8 @@ final jsonConfig = {
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
           "additionalFields": {
-            "name": "beneficiaryDetails.nameOfIndividual",
+            "name":
+                "__concatName:beneficiaryDetails.nameOfIndividual,beneficiaryDetails.familyname",
             "gender": "beneficiaryDetails.gender",
             "dateOfBirth": "beneficiaryDetails.dobPicker",
             "individualClientReferenceId":
