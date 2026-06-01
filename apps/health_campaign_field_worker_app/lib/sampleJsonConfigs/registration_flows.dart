@@ -24,7 +24,8 @@ final dynamic sampleFlows = {
               "data": [
                 {
                   "key": "ACKNOWLEDGEMENT_BENEFICIARY_ID",
-                  "value": "{{fn:formatBeneficiaryId(navigation.beneficiaryId)}}",
+                  "value":
+                      "{{fn:formatBeneficiaryId(navigation.beneficiaryId)}}",
                   "isActive": true
                 }
               ]
@@ -127,7 +128,8 @@ final dynamic sampleFlows = {
               "data": [
                 {
                   "key": "ACKNOWLEDGEMENT_BENEFICIARY_ID",
-                  "value": "{{fn:formatBeneficiaryId(navigation.beneficiaryId)}}",
+                  "value":
+                      "{{fn:formatBeneficiaryId(navigation.beneficiaryId)}}",
                   "isActive": true
                 }
               ]
@@ -2073,7 +2075,8 @@ final dynamic sampleFlows = {
                 "key": "ProjectBeneficiaryClientReferenceId",
                 "value": "{{navigation.ProjectBeneficiaryClientReferenceId}}"
               },
-              {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"}
+              {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
+              {"key": "projectType", "value": "{{fn:getProjectType()}}"}
             ],
             "onError": [
               {
@@ -3985,6 +3988,10 @@ final dynamic sampleFlows = {
                   {
                     "key": "lastDeliveredTaskClientReferenceId",
                     "value": "{{navigation.lastDeliveredTaskClientReferenceId}}"
+                  },
+                  {
+                    "key": "projectType",
+                    "value": "{{fn:getProjectType()}}"
                   }
                 ],
                 "onError": [
@@ -4208,7 +4215,8 @@ final dynamic sampleFlows = {
               {
                 "key": "lastDeliveredTaskClientReferenceId",
                 "value": "{{navigation.lastDeliveredTaskClientReferenceId}}"
-              }
+              },
+              {"key": "projectType", "value": "{{fn:getProjectType()}}"}
             ],
             "onError": [
               {
@@ -4428,6 +4436,10 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      },
+                      {
+                        "key": "projectType",
+                        "value": "{{fn:getProjectType()}}"
                       }
                     ],
                     "onError": [
@@ -4957,6 +4969,10 @@ final dynamic sampleFlows = {
                     "key": "ProjectBeneficiaryClientReferenceId",
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                  },
+                  {
+                    "key": "projectType",
+                    "value": "{{fn:getProjectType()}}"
                   }
                 ],
                 "onError": [
@@ -5851,7 +5867,8 @@ final dynamic sampleFlows = {
                 },
                 {
                   "key": "ACKNOWLEDGEMENT_BENEFICIARY_ID",
-                  "value": "{{fn:formatBeneficiaryId(navigation.beneficiaryId)}}",
+                  "value":
+                      "{{fn:formatBeneficiaryId(navigation.beneficiaryId)}}",
                   "isActive": true
                 }
               ]
@@ -5943,7 +5960,8 @@ final dynamic sampleFlows = {
                 },
                 {
                   "key": "ACKNOWLEDGEMENT_BENEFICIARY_ID",
-                  "value": "{{fn:formatBeneficiaryId(navigation.beneficiaryId)}}",
+                  "value":
+                      "{{fn:formatBeneficiaryId(navigation.beneficiaryId)}}",
                   "isActive": true
                 }
               ]
@@ -9254,6 +9272,10 @@ final dynamic sampleFlows = {
                           {
                             "key": "hasEolin",
                             "value": "{{navigation.hasEolin}}"
+                          },
+                          {
+                            "key": "projectType",
+                            "value": "{{fn:getProjectType()}}"
                           }
                         ],
                         "onError": [
