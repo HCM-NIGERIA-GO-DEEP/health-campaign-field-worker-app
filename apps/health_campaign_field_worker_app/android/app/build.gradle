@@ -13,6 +13,12 @@ if (localPropertiesFile.exists()) {
     }
 }
 
+def keystoreProperties = new Properties()
+def keystorePropertiesFile = rootProject.file('key.properties')
+if (keystorePropertiesFile.exists()) {
+    keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
+}
+
 def flutterVersionCode = localProperties.getProperty('flutter.versionCode')
 if (flutterVersionCode == null) {
     flutterVersionCode = '1'
@@ -52,6 +58,18 @@ android {
         versionName flutterVersionName
     }
 
+    signingConfigs {
+        if (keystoreProperties['storeFile'] != null
+                && file(keystoreProperties['storeFile']).exists()) {
+            release {
+                storeFile file(keystoreProperties['storeFile'])
+                storePassword keystoreProperties['storePassword']
+                keyAlias keystoreProperties['keyAlias']
+                keyPassword keystoreProperties['keyPassword']
+            }
+        }
+    }
+
     buildTypes {
         debug {
             debuggable true
@@ -67,6 +85,8 @@ android {
             signingConfig signingConfigs.debug
         }
     }
+
+
 
     if (!project.hasProperty('USE_GOOGLE_SERVICES')) {
         tasks.whenTaskAdded { task ->
