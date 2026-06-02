@@ -187,10 +187,16 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       final taskRepo =
           context.read<LocalRepository<TaskModel, TaskSearchModel>>()
               as TaskLocalRepository;
+      final userActionRepo = context.read<UserActionLocalRepository>();
 
       // Get relevant tasks for the facility and products
       final tasks =
           await StockCalculationUtils.loadDeliveryTasks(context, taskRepo);
+
+      // Fetch UserAction records with saved stock balances (from delivery)
+      final userActionBalance =
+          await StockCalculationUtils.loadUserActionBalances(
+              context, userActionRepo, facilityId, _selectedProducts);
 
       final stockTransactionBalance =
           StockCalculationUtils.calculateStockInHandForProducts(
@@ -201,7 +207,11 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         tasks: tasks,
       );
 
-      _stockInHandMap = stockTransactionBalance;
+      // Merge: UserAction balances take precedence (they include delivery deductions)
+      _stockInHandMap = {
+        ...stockTransactionBalance,
+        // ...userActionBalance,
+      };
 
       debugPrint(
           'ProductSelectionCard: Calculated stockInHand: $_stockInHandMap');

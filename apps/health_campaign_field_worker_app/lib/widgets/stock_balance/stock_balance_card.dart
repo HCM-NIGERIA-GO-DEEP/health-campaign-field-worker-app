@@ -244,10 +244,20 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       tasks: tasks,
     );
 
-    StockBalanceCache.instance.setCache(effectiveFacilityId, balances);
+    // Fetch UserAction records with saved stock balances (from delivery)
+    final userActionBalances =
+        await _loadUserActionBalances(userActionRepo, effectiveFacilityId);
+
+    // Merge: UserAction balances take precedence (they include delivery deductions)
+    final mergedBalances = <String, double>{
+      ...balances,
+      // ...userActionBalances,
+    };
+
+    StockBalanceCache.instance.setCache(effectiveFacilityId, mergedBalances);
     if (mounted) {
       setState(() {
-        _stockBalances = balances;
+        _stockBalances = mergedBalances;
       });
     }
   }
