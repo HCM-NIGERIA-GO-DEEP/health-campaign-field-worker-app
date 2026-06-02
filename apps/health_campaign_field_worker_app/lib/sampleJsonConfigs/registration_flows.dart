@@ -466,11 +466,11 @@ final dynamic sampleFlows = {
                 "data": [
                   {
                     "key": "ProjectBeneficiaryClientReferenceId",
-                    "value": "{{projectBeneficiaries.0.clientReferenceId}}"
+                    "value": "{{contextData.0.projectBeneficiaries.0.clientReferenceId}}"
                   },
                   {
                     "key": "HouseholdClientReferenceId",
-                    "value": "{{household.0.clientReferenceId}}"
+                    "value": "{{contextData.0.household.0.clientReferenceId}}"
                   },
                   {
                     "key": "memberCount",
@@ -2541,7 +2541,6 @@ final dynamic sampleFlows = {
           "child": {
             "type": "template",
             "format": "card",
-            "visible": "{{fn:length(item.projectBeneficiaries)}} > 0",
             "children": [
               {
                 "type": "template",
@@ -2562,24 +2561,20 @@ final dynamic sampleFlows = {
                       {
                         "actions": [
                           {
-                            "actionType": "REVERSE_TRANSFORM",
+                            "actionType": "FETCH_TRANSFORMER_CONFIG",
                             "properties": {
+                              "configName": "bulkProjectBeneficiaryFromMembers",
                               "data": [
                                 {
-                                  "key": "entities",
-                                  "value": "{{item.HouseholdModel}}"
-                                },
-                                {
-                                  "key": "entities",
-                                  "value": "{{item.headIndividual}}"
+                                  "key": "individuals",
+                                  "value": "{{item.individuals}}"
                                 }
-                              ],
-                              "configName": "beneficiaryRegistration",
-                              "entityTypes": [
-                                "HouseholdModel",
-                                "IndividualModel"
                               ]
                             }
+                          },
+                          {
+                            "actionType": "CREATE_EVENT",
+                            "properties": {"entity": "ProjectBeneficiaryModel"}
                           },
                           {
                             "actionType": "NAVIGATION",
@@ -2589,12 +2584,10 @@ final dynamic sampleFlows = {
                                   "key": "HouseholdClientReferenceId",
                                   "value":
                                       "{{ item.HouseholdModel.clientReferenceId }}"
-                                },
-                                {"key": "isEdit", "value": "true"},
-                                {"key": "isNotBeneficiary", "value": "true"}
+                                }
                               ],
-                              "name": "HOUSEHOLD",
-                              "type": "FORM"
+                              "name": "householdOverview",
+                              "type": "TEMPLATE"
                             }
                           }
                         ],
@@ -2920,7 +2913,16 @@ final dynamic sampleFlows = {
       "screenType": "TEMPLATE",
       "description": "REGISTRATION_SEARCH_BENEFICIARY_DESC",
       "wrapperConfig": {
-        "filters": [],
+        "filters": [
+          {
+            "entity": "HouseholdMemberModel",
+            "condition": {"field": "isDeleted", "equals": false},
+            "join": {
+              "sourceField": "householdClientReferenceId",
+              "targetField": "clientReferenceId"
+            }
+          }
+        ],
         "relations": [
           {
             "name": "members",

@@ -199,6 +199,31 @@ final jsonConfig = {
       },
     }
   },
+  // Bulk-creates one ProjectBeneficiaryModel per individual passed in
+  // __context:individuals. Used by the search-page OPEN button when the row
+  // has zero projectBeneficiaries: the household + individuals already exist
+  // in the local store (downsynced), so we only need to mint the PB join rows
+  // to enroll every member in the current project — no form, no second
+  // registration. Implicit list-item context resolves the bare
+  // "clientReferenceId" mapping against individuals[index].clientReferenceId
+  // (see transformer_service.dart:882–916).
+  "bulkProjectBeneficiaryFromMembers": {
+    "models": {
+      "ProjectBeneficiaryModel": {
+        "listSource": "__context:individuals",
+        "mappings": {
+          "projectId": "__context:projectId",
+          "tenantId": "__context:tenantId",
+          "beneficiaryClientReferenceId": "clientReferenceId",
+          "clientReferenceId": "__generate:uuid",
+          "dateOfRegistration": "__value:DATETIME.NOW",
+          "rowVersion": "meta.rowVersion",
+          "auditDetails": "__generate:audit",
+          "clientAuditDetails": "__generate:clientAudit",
+        }
+      }
+    }
+  },
   "householdConsentRegistration": {
     "fallbackModel": "HouseholdModel",
     "models": {
