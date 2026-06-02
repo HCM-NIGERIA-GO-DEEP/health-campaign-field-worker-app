@@ -701,7 +701,7 @@ class QueryBuilder {
           break;
         case 'contains':
           whereClauses
-              .add((col as Expression<String>).like('${filter.value}%'));
+              .add((col as Expression<String>).like('%${filter.value}%'));
           break;
         case 'notContains':
           whereClauses.add(col.isNull() |
