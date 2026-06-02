@@ -32,6 +32,20 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
 
     // Handle conditional display logic
     if (_shouldHideField(form, widget.schema, widget.formControlName)) {
+      // A hidden latLng field must still mount so it can capture the device
+      // location into the form control (consumed by transformers, e.g. to save
+      // lat/long on a Task during delivery). Render it silently/offstage.
+      if (widget.schema.format == PropertySchemaFormat.latLng &&
+          form.contains(widget.formControlName)) {
+        return Offstage(
+          offstage: true,
+          child: JsonSchemaLatLngBuilder(
+            formControlName: widget.formControlName,
+            form: form,
+            silent: true,
+          ),
+        );
+      }
       return const SizedBox.shrink();
     }
 
@@ -682,34 +696,56 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
       return !_shouldHideField(form, subSchema, entry.key);
     }).toList();
 
+    // Hidden latLng fields are not shown, but must still mount so they can
+    // silently capture the device location into the form control (consumed by
+    // transformers, e.g. to save lat/long on a Task during the delivery flow).
+    final silentLatLngEntries = entries.where((entry) {
+      final subSchema = entry.value;
+      return subSchema.format == PropertySchemaFormat.latLng &&
+          form.contains(entry.key) &&
+          _shouldHideField(form, subSchema, entry.key);
+    }).toList();
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: visibleEntries.asMap().entries.map((entry) {
-        final index = entry.key;
-        final mapEntry = entry.value;
+      children: [
+        ...visibleEntries.asMap().entries.map((entry) {
+          final index = entry.key;
+          final mapEntry = entry.value;
 
-        final subSchema = mapEntry.value;
-        final subName = mapEntry.key;
+          final subSchema = mapEntry.value;
+          final subName = mapEntry.key;
 
-        final field = JsonFormBuilder(
-          pageName: widget.pageName,
-          currentSchemaKey: widget.currentSchemaKey,
-          formControlName: subName,
-          schema: subSchema,
-          components: widget.components,
-          navigationParams: widget.navigationParams,
-        );
+          final field = JsonFormBuilder(
+            pageName: widget.pageName,
+            currentSchemaKey: widget.currentSchemaKey,
+            formControlName: subName,
+            schema: subSchema,
+            components: widget.components,
+            navigationParams: widget.navigationParams,
+          );
 
-        final isLast = index == visibleEntries.length - 1;
+          final isLast = index == visibleEntries.length - 1;
 
-        return isLast
-            ? field
-            : Padding(
-                padding: const EdgeInsets.only(bottom: 16.0),
-                child: field,
-              );
-      }).toList(),
+          return isLast
+              ? field
+              : Padding(
+                  padding: const EdgeInsets.only(bottom: 16.0),
+                  child: field,
+                );
+        }),
+        ...silentLatLngEntries.map(
+          (entry) => Offstage(
+            offstage: true,
+            child: JsonSchemaLatLngBuilder(
+              formControlName: entry.key,
+              form: form,
+              silent: true,
+            ),
+          ),
+        ),
+      ],
     );
   }
 

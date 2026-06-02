@@ -15,6 +15,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
 
+import '../../models/entities/roles_type.dart';
 import '../../utils/extensions/extensions.dart';
 import '../../utils/stock_calculation_utils.dart';
 import '../localized.dart';
@@ -187,16 +188,13 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       final taskRepo =
           context.read<LocalRepository<TaskModel, TaskSearchModel>>()
               as TaskLocalRepository;
-      final userActionRepo = context.read<UserActionLocalRepository>();
 
       // Get relevant tasks for the facility and products
       final tasks =
           await StockCalculationUtils.loadDeliveryTasks(context, taskRepo);
 
-      // Fetch UserAction records with saved stock balances (from delivery)
-      final userActionBalance =
-          await StockCalculationUtils.loadUserActionBalances(
-              context, userActionRepo, facilityId, _selectedProducts);
+      var _isDistributor = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.distributor.toValue());
 
       final stockTransactionBalance =
           StockCalculationUtils.calculateStockInHandForProducts(
@@ -204,14 +202,12 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         facilityId: facilityId,
         productIds: productIds,
         loggedInUserUuid: loggedInUserUuid,
+        isDistributor: _isDistributor,
         tasks: tasks,
       );
 
       // Merge: UserAction balances take precedence (they include delivery deductions)
-      _stockInHandMap = {
-        ...stockTransactionBalance,
-        // ...userActionBalance,
-      };
+      _stockInHandMap = stockTransactionBalance;
 
       debugPrint(
           'ProductSelectionCard: Calculated stockInHand: $_stockInHandMap');
