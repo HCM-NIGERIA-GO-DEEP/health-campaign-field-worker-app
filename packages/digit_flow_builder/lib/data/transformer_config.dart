@@ -404,6 +404,38 @@ final jsonConfig = {
       },
     }
   },
+
+  /// Creates one ProjectBeneficiary per household member.
+  ///
+  /// Used by the "register beneficiary for an existing household" edit flow
+  /// (searchBeneficiary -> HOUSEHOLD form, isNotBeneficiary==true) where a
+  /// household already has members but no project beneficiaries. The list of
+  /// member individuals is passed in via the action's data param as
+  /// `memberIndividuals`, and one ProjectBeneficiary is emitted per individual
+  /// (head + all members), each linked to that individual's clientReferenceId.
+  ///
+  /// NOTE: This config must be invoked with `forceCreate: true` so the
+  /// transformer routes through the create path (which honors `listSource`)
+  /// instead of `updateEntitiesFromForm` (which only creates a single entity).
+  "householdMemberBeneficiaries": {
+    "models": {
+      "ProjectBeneficiaryModel": {
+        "listSource": "__context:memberIndividuals",
+        "skipFirst": 0,
+        "mappings": {
+          "projectId": "__context:projectId",
+          "tenantId": "__context:tenantId",
+          "beneficiaryClientReferenceId": "__listItem:clientReferenceId",
+          "nonRecoverableError": "errors.nonRecoverable",
+          "clientReferenceId": "__generate:uuid",
+          "rowVersion": "meta.rowVersion",
+          "dateOfRegistration": "__value:DATETIME.NOW",
+          "clientAuditDetails": "__generate:clientAudit",
+          "auditDetails": "__generate:audit",
+        }
+      },
+    }
+  },
   "indirectBulkDelivery": {
     "models": {
       "TaskModel": {
