@@ -149,6 +149,32 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
     );
   }
 
+  void _clearWidgetValues(Iterable<String> widgetKeys) {
+    final compositeKey = CrudItemContext.of(context)?.compositeKey;
+    if (compositeKey == null) {
+      return;
+    }
+
+    final currentState = FlowCrudStateRegistry().get(compositeKey);
+    final updatedWidgetData = <String, dynamic>{
+      ...?currentState?.widgetData,
+    };
+
+    for (final key in widgetKeys) {
+      if (key.isEmpty) {
+        continue;
+      }
+      updatedWidgetData[key] = '';
+    }
+
+    FlowCrudStateRegistry().update(
+      compositeKey,
+      (currentState ?? const FlowCrudState()).copyWith(
+        widgetData: updatedWidgetData,
+      ),
+    );
+  }
+
   void _triggerActions(bool value) {
     final json = widget.json;
     final onActionList = json['onAction'] ?? [];
@@ -161,6 +187,13 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
     );
     final radius = radiusValidation?['value'];
 
+    const linkedSearchWidgetKeys = [
+      'searchBar',
+      'idSearchBar',
+    ];
+
+    _clearWidgetValues(linkedSearchWidgetKeys);
+
     if (value) {
       widget.onAction(ActionConfig.fromJson({
         'actionType': 'CLEAR_STATE',
@@ -170,10 +203,6 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
           'filterKeys': [
             'givenName,familyName',
             'identifierId',
-          ],
-          'widgetKeys': [
-            'searchBar',
-            'idSearchBar',
           ],
           'triggerSearch': false,
         },
@@ -215,9 +244,6 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
             'type': 'CLEAR_STATE',
             'name': searchName,
             'filterKeys': filterKeys.toSet().toList(),
-            'widgetKeys': [
-              if (json['fieldName'] != null) json['fieldName'],
-            ],
             'triggerSearch': false,
           },
         }));
