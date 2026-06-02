@@ -2036,6 +2036,12 @@ class _HomePageState extends LocalizedState<HomePage> {
                             foreignKey: 'taskclientReferenceId',
                             type: NestedMappingType.many,
                           ),
+                          'address': NestedFieldMapping(
+                            table: 'address',
+                            localKey: 'clientReferenceId',
+                            foreignKey: 'relatedClientReferenceId',
+                            type: NestedMappingType.one,
+                          ),
                         },
                       ),
                     ],
