@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../action_handler/action_config.dart';
+import '../../blocs/flow_crud_bloc.dart';
+import '../../widget_registry.dart';
 import '../localization_context.dart';
 import '../resolved_flow_widget.dart';
 
@@ -124,6 +126,29 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
     return isTrue ? trueResult : falseResult;
   }
 
+  void _clearSearchResultsState() {
+    final compositeKey = CrudItemContext.of(context)?.compositeKey;
+    if (compositeKey == null) {
+      return;
+    }
+
+    final currentState = FlowCrudStateRegistry().get(compositeKey);
+    if (currentState == null) {
+      return;
+    }
+
+    FlowCrudStateRegistry().update(
+      compositeKey,
+      FlowCrudState(
+        base: null,
+        stateWrapper: const [],
+        formData: currentState.formData,
+        widgetData: currentState.widgetData,
+        isLoading: false,
+      ),
+    );
+  }
+
   void _triggerActions(bool value) {
     final json = widget.json;
     final onActionList = json['onAction'] ?? [];
@@ -136,11 +161,32 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
     );
     final radius = radiusValidation?['value'];
 
+    if (value) {
+      widget.onAction(ActionConfig.fromJson({
+        'actionType': 'CLEAR_STATE',
+        'properties': {
+          'type': 'CLEAR_STATE',
+          'name': 'address',
+          'filterKeys': [
+            'givenName,familyName',
+            'identifierId',
+          ],
+          'widgetKeys': [
+            'searchBar',
+            'idSearchBar',
+          ],
+          'triggerSearch': false,
+        },
+      }));
+    }
+
     final bool isProximityDisabled = !value;
 
     for (var raw in onActionList) {
       // When proximity is disabled, remove only this filter (not the entire state)
       if (isProximityDisabled) {
+        _clearSearchResultsState();
+
         final searchName = raw['properties']?['name'] as String? ?? 'default';
         final filterKeys = <String>[];
 
@@ -169,9 +215,14 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
             'type': 'CLEAR_STATE',
             'name': searchName,
             'filterKeys': filterKeys.toSet().toList(),
-            'triggerSearch': true,
+            'widgetKeys': [
+              if (json['fieldName'] != null) json['fieldName'],
+            ],
+            'triggerSearch': false,
           },
         }));
+
+        continue;
       }
 
       final updated = Map<String, dynamic>.from(raw);
