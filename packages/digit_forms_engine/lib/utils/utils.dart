@@ -529,6 +529,9 @@ final functionRegistry = {
     final partial = args.length > 1 ? toNum(args[1]) : 0;
     final productVariantId = args.length > 2 ? args[2]?.toString() : null;
 
+    if (returned <= 0) {
+      return 0; // Invalid input, return 0 wastage
+    }
     final balance = (productVariantId != null && productVariantId.isNotEmpty)
         ? FormsFunctionConfig.instance.stockBalanceResolver?.call(
               productVariantId,
@@ -536,7 +539,8 @@ final functionRegistry = {
             0
         : 0;
 
-    final wastage = balance - (returned * 30 + partial);
+    final partialInMl = partial > 0 ? balance % 30 : 0;
+    final wastage = balance - ((returned * 30) + partialInMl);
     final result = wastage < 0 ? 0 : wastage;
     return result == result.roundToDouble() ? result.toInt() : result;
   },
