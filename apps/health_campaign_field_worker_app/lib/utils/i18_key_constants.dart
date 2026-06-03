@@ -30,6 +30,7 @@ const selectSurveyFormShowcase = SelectSurveyFormShowcase();
 const stockDetailsReturnedShowcase = StockDetailsReturnedShowcase();
 const stockReconciliationShowcase = StockReconciliationShowcase();
 const stockReconciliationMetrics = StockReconciliationMetrics();
+const selectTeam = SelectTeam();
 
 
 class Attendance {
@@ -891,6 +892,8 @@ class Home {
   String get coreCommonSkipContinue => 'CORE_COMMON_SKIP_CONTINUE';
 
   String get summaryReportLabel => 'HOME_SUMMARY_REPORT_LABEL';
+
+  String get teamSelectionLabel => 'HOME_TEAM_SELECTION_LABEL';
 }
 
 class BeneficiaryID {
@@ -1008,6 +1011,22 @@ class AcknowledgementSuccess {
   String get downloadmoredata => 'DOWNLOAD_MORE_DATA';
 
   String get dataDownloadedSuccessLabel => 'DATA_DOWNLOADED_SUCCESS_LABEL';
+
+  String get goToSelectTeam => 'GO_TO_SELECT_TEAM';
+}
+
+class SelectTeam {
+  const SelectTeam();
+
+  String get selectTeamMembersTitle => 'SELECT_TEAM_MEMBERS';
+
+  String get teamMember1Label => 'TEAM_MEMBER_1';
+
+  String get teamMember2Label => 'TEAM_MEMBER_2';
+
+  String get submit => 'CORE_COMMON_SUBMIT';
+
+  String get loadingTeamMembers => 'LOADING_TEAM_MEMBERS';
 }
 
 class ProjectSelection {

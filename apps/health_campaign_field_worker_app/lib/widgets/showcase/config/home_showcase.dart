@@ -131,4 +131,8 @@ class _HomePageShowcaseData {
   final summaryReport = ShowcaseItemBuilder(
     messageLocalizationKey: i18.home.summaryReportLabel,
   );
+
+  final teamSelection = ShowcaseItemBuilder(
+    messageLocalizationKey: i18.home.teamSelectionLabel,
+  );
 }

@@ -2227,8 +2227,8 @@ class _HomePageState extends LocalizedState<HomePage> {
 
             final selectedBoundaryCode = isDistributor
                 ? (boundaryState.selectedBoundaryMap.values.lastOrNull?.code ??
-                boundaryState
-                    .allSelectedLastLevelBoundaries.firstOrNull?.code)
+                    boundaryState
+                        .allSelectedLastLevelBoundaries.firstOrNull?.code)
                 : boundaryState.boundaryList.firstOrNull?.code;
 
             if (selectedBoundaryCode != null) {
@@ -2414,8 +2414,8 @@ class _HomePageState extends LocalizedState<HomePage> {
 
             final selectedBoundaryCode = isDistributor
                 ? (boundaryState.selectedBoundaryMap.values.lastOrNull?.code ??
-                boundaryState
-                    .allSelectedLastLevelBoundaries.firstOrNull?.code)
+                    boundaryState
+                        .allSelectedLastLevelBoundaries.firstOrNull?.code)
                 : boundaryState.boundaryList.firstOrNull?.code;
 
             if (selectedBoundaryCode != null) {
@@ -2677,6 +2677,16 @@ class _HomePageState extends LocalizedState<HomePage> {
           },
         ),
       ),
+
+      i18.home.teamSelectionLabel: homeShowcaseData.teamSelection.buildWith(
+        child: HomeItemCard(
+          icon: Icons.group,
+          label: i18.home.teamSelectionLabel,
+          onPressed: () {
+            context.router.push(SelectTeamMembersRoute());
+          },
+        ),
+      ),
     };
 
     final Map<String, GlobalKey> homeItemsShowcaseMap = {
@@ -2709,6 +2719,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.db: homeShowcaseData.db.showcaseKey,
       i18.home.stockSyncDataLabel: homeShowcaseData.stockSyncData.showcaseKey,
       i18.home.summaryReportLabel: homeShowcaseData.summaryReport.showcaseKey,
+      i18.home.teamSelectionLabel: homeShowcaseData.teamSelection.showcaseKey,
     };
 
     final homeItemsLabel = <String>[
@@ -2732,6 +2743,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.dataShare,
       i18.home.stockSyncDataLabel,
       i18.home.summaryReportLabel,
+      i18.home.teamSelectionLabel,
       i18.home.db,
     ];
 

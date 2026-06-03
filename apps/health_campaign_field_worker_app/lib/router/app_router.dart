@@ -40,6 +40,7 @@ import '../pages/reports/summary/summary_report.dart';
 import '../pages/beneficiary_id_downsync/beneficiary_id_downsync.dart';
 import '../pages/unauthenticated.dart';
 import '../pages/device_switch_selection.dart';
+import '../pages/select_team_members.dart';
 
 export 'package:auto_route/auto_route.dart';
 
@@ -144,6 +145,10 @@ class AppRouter extends _$AppRouter {
         AutoRoute(
           page: CurrentBoundaryRoute.page,
           path: 'current-boundary',
+        ),
+        AutoRoute(
+          page: SelectTeamMembersRoute.page,
+          path: 'select-team-members',
         ),
 
         // Forms Route
