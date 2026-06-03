@@ -245,6 +245,7 @@ void showDownloadDialog(
   bool isPop = true,
   StreamController<DownloadProgressData>? downloadProgressController,
   DownloadProgressData? initialProgressData,
+  VoidCallback? onProceedWithoutDownloading,
 }) {
   if (isPop) {
     Navigator.of(context, rootNavigator: true).pop();
@@ -281,7 +282,11 @@ void showDownloadDialog(
           label: model.secondaryButtonLabel ?? '',
           action: (ctx) {
             Navigator.of(context, rootNavigator: true).pop();
-            context.router.replaceAll([HomeRoute()]);
+            if (onProceedWithoutDownloading != null) {
+              onProceedWithoutDownloading();
+            } else {
+              context.router.replaceAll([HomeRoute()]);
+            }
           },
         ),
       );
@@ -336,7 +341,11 @@ void showDownloadDialog(
                     await LocalSecureStore.instance.setManualSyncTrigger(false);
                     if (context.mounted) {
                       Navigator.of(context, rootNavigator: true).pop();
-                      context.router.replaceAll([HomeRoute()]);
+                      if (onProceedWithoutDownloading != null) {
+                        onProceedWithoutDownloading();
+                      } else {
+                        context.router.replaceAll([HomeRoute()]);
+                      }
                     }
                   },
                   type: DigitButtonType.secondary,

@@ -15,6 +15,7 @@ class AcknowledgementPage extends LocalizedStatefulWidget {
   String? label;
   String? description;
   Map<String, dynamic>? descriptionTableData;
+  bool showSelectTeam;
 
   AcknowledgementPage({
     super.key,
@@ -23,6 +24,7 @@ class AcknowledgementPage extends LocalizedStatefulWidget {
     this.label,
     this.description,
     this.descriptionTableData,
+    this.showSelectTeam = false,
   });
 
   @override
@@ -71,16 +73,23 @@ class _AcknowledgementPageState extends LocalizedState<AcknowledgementPage> {
       ),
       bottomNavigationBar: Offstage(
         offstage: !widget.isDataRecordSuccess,
-        // Show the bottom navigation bar if `isDataRecordSuccess` is true
         child:
             DigitCard(margin: const EdgeInsets.only(top: spacer2), children: [
           DigitButton(
             mainAxisSize: MainAxisSize.max,
-            label: localizations.translate(i18.acknowledgementSuccess.goToHome),
+            label: widget.showSelectTeam
+                ? localizations.translate(
+                    i18.acknowledgementSuccess.goToSelectTeam)
+                : localizations
+                    .translate(i18.acknowledgementSuccess.goToHome),
             type: DigitButtonType.primary,
             size: DigitButtonSize.large,
             onPressed: () {
-              context.router.popAndPushAll([HomeRoute()]);
+              if (widget.showSelectTeam) {
+                context.router.popAndPush(SelectTeamMembersRoute());
+              } else {
+                context.router.popAndPushAll([HomeRoute()]);
+              }
             },
           ),
           DigitButton(
