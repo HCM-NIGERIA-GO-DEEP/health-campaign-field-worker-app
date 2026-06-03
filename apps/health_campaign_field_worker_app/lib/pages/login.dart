@@ -137,8 +137,9 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                   margin: const EdgeInsets.all(spacer2),
                   children: [
                     Text(
-                      localizations.translate(
+                      localizations.translateWithDefault(
                         i18.login.labelText,
+                        fallback: 'Login',
                       ),
                       style: textTheme.headingXl.copyWith(
                         color: theme.colorTheme.primary.primary2,
@@ -154,8 +155,9 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                         },
                       },
                       builder: (field) => LabeledField(
-                        label: localizations.translate(
+                        label: localizations.translateWithDefault(
                           i18.login.userIdPlaceholder,
+                          fallback: 'User ID',
                         ),
                         capitalizedFirstLetter: false,
                         isRequired: true,
@@ -179,8 +181,9 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                         },
                       },
                       builder: (field) => LabeledField(
-                        label: localizations.translate(
+                        label: localizations.translateWithDefault(
                           i18.login.passwordPlaceholder,
+                          fallback: 'Password',
                         ),
                         isRequired: true,
                         child: DigitPasswordFormInput(
@@ -196,7 +199,10 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                     BlocBuilder<AppInitializationBloc, AppInitializationState>(
                       builder: (context, state) {
                         return DigitButton(
-                          label: localizations.translate(i18.login.actionLabel),
+                          label: localizations.translateWithDefault(
+                            i18.login.actionLabel,
+                            fallback: 'Login',
+                          ),
                           type: DigitButtonType.primary,
                           onPressed: () {
                             form.markAllAsTouched();
@@ -221,18 +227,18 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                               orElse: () => false,
                             );
 
-                            if (singleUserLogin) {
-                              _checkOtherDeviceLogin(
-                                  context, _pendingUserId as String);
-                            } else {
-                              context.read<AuthBloc>().add(
-                                    AuthLoginEvent(
-                                      userId: _pendingUserId as String,
-                                      password: _pendingPassword as String,
-                                      tenantId: envConfig.variables.tenantId,
-                                    ),
-                                  );
-                            }
+                            // if (singleUserLogin) {
+                            //   _checkOtherDeviceLogin(
+                            //       context, _pendingUserId as String);
+                            // } else {
+                            context.read<AuthBloc>().add(
+                                  AuthLoginEvent(
+                                    userId: _pendingUserId as String,
+                                    password: _pendingPassword as String,
+                                    tenantId: envConfig.variables.tenantId,
+                                  ),
+                                );
+                            // }
                           },
                           size: DigitButtonSize.large,
                           mainAxisSize: MainAxisSize.max,
@@ -240,8 +246,9 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                       },
                     ),
                     DigitButton(
-                      label: localizations.translate(
+                      label: localizations.translateWithDefault(
                         i18.forgotPassword.actionLabel,
+                        fallback: 'Forgot Password',
                       ),
                       capitalizeLetters: false,
                       mainAxisSize: MainAxisSize.max,

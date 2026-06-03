@@ -2779,6 +2779,10 @@ final dynamic sampleInventoryFlows = {
               {
                 "key": "StockModel.additionalFields.fields.mrnNumber",
                 "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
+              },
+              {
+                "key": "StockModel.additionalFields.fields.comments",
+                "value": "{{formData.stockReceiptDetails.comment}}"
               }
             ]
           }
@@ -2857,6 +2861,10 @@ final dynamic sampleInventoryFlows = {
               {
                 "key": "StockModel.additionalFields.fields.status",
                 "value": "REJECTED"
+              },
+              {
+                "key": "StockModel.additionalFields.fields.comments",
+                "value": "{{formData.rejectComment}}"
               }
             ]
           }
