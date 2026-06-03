@@ -2,6 +2,7 @@ import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/ComponentTheme/digit_tab_bar_theme.dart';
 import 'package:digit_ui_components/widgets/atoms/digit_tab.dart';
 import 'package:flutter/material.dart';
+import 'package:reactive_forms/reactive_forms.dart';
 
 import '../models/property_schema/property_schema.dart';
 import 'widgets.dart';
@@ -139,31 +140,36 @@ class MultiEntityTabViewState extends State<MultiEntityTabView> {
 
     debugPrint('MultiEntityTabView: Non-hidden fields for entity $entityIndex: ${nonHiddenFields.map((e) => e.key).toList()}');
 
+    // Wrap in ReactiveFormConsumer so fields rebuild on any form value change.
+    // This mirrors the non-multi-entity page path and lets cross-field features
+    // (autoFillCondition, visibility, relative validations) re-evaluate live.
     return SingleChildScrollView(
       padding: const EdgeInsets.all(spacer2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: nonHiddenFields.map((entry) {
-              final fieldName = entry.key;
-              final fieldSchema = entry.value;
+      child: ReactiveFormConsumer(
+        builder: (context, formGroup, child) => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: nonHiddenFields.map((entry) {
+            final fieldName = entry.key;
+            final fieldSchema = entry.value;
 
-              return Padding(
-                padding: const EdgeInsets.only(bottom: spacer2),
-                child: JsonFormBuilder(
-                  formControlName: fieldName,
-                  schema: fieldSchema,
-                  pageName: widget.pageName,
-                  currentSchemaKey: widget.currentSchemaKey,
-                  components: widget.customComponents,
-                  navigationParams: {
-                    ...?widget.navigationParams,
-                    'currentEntityIndex': entityIndex,
-                    'currentEntity': entity,
-                    'currentEntityName': _getEntityName(entity),
-                  },
-                ),
-              );
-            }).toList(),
+            return Padding(
+              padding: const EdgeInsets.only(bottom: spacer2),
+              child: JsonFormBuilder(
+                formControlName: fieldName,
+                schema: fieldSchema,
+                pageName: widget.pageName,
+                currentSchemaKey: widget.currentSchemaKey,
+                components: widget.customComponents,
+                navigationParams: {
+                  ...?widget.navigationParams,
+                  'currentEntityIndex': entityIndex,
+                  'currentEntity': entity,
+                  'currentEntityName': _getEntityName(entity),
+                },
+              ),
+            );
+          }).toList(),
+        ),
       ),
     );
   }

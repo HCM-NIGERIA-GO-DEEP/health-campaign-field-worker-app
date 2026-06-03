@@ -6,6 +6,7 @@ import 'package:digit_crud_bloc/digit_crud_bloc.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
+import 'package:digit_forms_engine/forms_engine.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -24,6 +25,15 @@ class FunctionRegistries {
     _registerFacilityFunctions();
     _registerStockFunctions();
     _registerViewTransactionFunctions();
+    _registerFormsEngineHooks();
+  }
+
+  /// Wires app-side data into the forms engine's built-in functions.
+  /// Lets `calculateWastage` read the current product's stock balance from
+  /// the in-memory [StockBalanceCache].
+  void _registerFormsEngineHooks() {
+    FormsFunctionConfig.instance.stockBalanceResolver =
+        (productVariantId) => StockBalanceCache.instance.cache[productVariantId] ?? 0;
   }
 
   void _registerGenerateFunctions() {
