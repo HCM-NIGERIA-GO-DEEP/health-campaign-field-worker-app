@@ -394,10 +394,13 @@ class FormEntityMapper {
 
       if (containsPathInFormData(path, formValues)) {
         final value = getStrictValueFromFormDataOnly(path, formValues);
-        updatedFields[customKey] = value;
+        // Only add non-null values to additionalFields
+        if (value != null) {
+          updatedFields[customKey] = value;
 
-        // Track the path as used so it's not treated as unmapped
-        usedPaths.add(path.split('.').last.split('[').first);
+          // Track the path as used so it's not treated as unmapped
+          usedPaths.add(path.split('.').last.split('[').first);
+        }
       }
     });
 
@@ -412,12 +415,15 @@ class FormEntityMapper {
       }
     }
 
-    // merge updates into existing
+    // merge updates into existing (filter out null values)
     updatedFields.forEach((key, value) {
-      existingFields[key] = value;
+      if (value != null) {
+        existingFields[key] = value;
+      }
     });
 
     final mergedFields = existingFields.entries
+        .where((e) => e.value != null)
         .map((e) => {'key': e.key, 'value': e.value})
         .toList();
 

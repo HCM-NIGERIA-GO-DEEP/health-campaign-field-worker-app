@@ -319,9 +319,11 @@ class UpdateExecutor extends ActionExecutor {
                   updatedFields.add(field);
                 }
               }
-              // Add new/updated fields
+              // Add new/updated fields (filter out null values)
               for (final entry in additionalFieldUpdates.entries) {
-                updatedFields.add({'key': entry.key, 'value': entry.value});
+                if (entry.value != null) {
+                  updatedFields.add({'key': entry.key, 'value': entry.value});
+                }
               }
 
               entityMap['additionalFields'] = {
@@ -329,11 +331,12 @@ class UpdateExecutor extends ActionExecutor {
                 'fields': updatedFields,
               };
             } else {
-              // No existing additionalFields, create new
+              // No existing additionalFields, create new (filter out null values)
               entityMap['additionalFields'] = {
                 'schema': entityType.replaceAll('Model', ''),
                 'version': 1,
                 'fields': additionalFieldUpdates.entries
+                    .where((e) => e.value != null)
                     .map((e) => {'key': e.key, 'value': e.value})
                     .toList(),
               };
