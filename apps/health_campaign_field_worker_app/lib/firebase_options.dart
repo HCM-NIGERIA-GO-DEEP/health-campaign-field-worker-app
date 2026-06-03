@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBzE5f156_ia7HumLb1fDg8A-88uhmQ68Y',
-    appId: '1:397617237644:android:ef1103344485f51af6b5a9',  // com.digit.hcm
+    appId: '1:397617237644:android:d0f82d42462b471df6b5a9', // org.egov.jigawa
     messagingSenderId: '397617237644',
     projectId: 'digit-health-75ed0',
     storageBucket: 'digit-health-75ed0.appspot.com',
@@ -63,7 +63,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '397617237644',
     projectId: 'digit-health-75ed0',
     storageBucket: 'digit-health-75ed0.appspot.com',
-    iosClientId: '397617237644-ddc7e9g08v752477td0vpl72it6sfpam.apps.googleusercontent.com',
+    iosClientId:
+        '397617237644-ddc7e9g08v752477td0vpl72it6sfpam.apps.googleusercontent.com',
     iosBundleId: 'org.egov.salama',
   );
 }
