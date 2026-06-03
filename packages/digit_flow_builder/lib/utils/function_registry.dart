@@ -5,6 +5,7 @@ import 'package:digit_data_model/models/entities/project_type.dart';
 import 'package:digit_flow_builder/blocs/flow_crud_bloc.dart';
 import 'package:digit_flow_builder/utils/utils.dart';
 import 'package:digit_flow_builder/widget_registry.dart';
+import 'package:digit_formula_parser/digit_formula_parser.dart';
 import 'package:digit_ui_components/utils/date_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -182,58 +183,124 @@ bool _recordedSideEffectInternal(
   return false;
 }
 
-bool _evaluateAgeComparator(String expression, int totalAgeMonths) {
-  final ageOnLeft = RegExp(r'^age(<=|>=|<|>|==|=)(-?\d+)$');
-  final ageOnRight = RegExp(r'^(-?\d+)(<=|>=|<|>|==|=)age$');
-
-  final leftMatch = ageOnLeft.firstMatch(expression);
-  if (leftMatch != null) {
-    final operator = leftMatch.group(1)!;
-    final value = int.tryParse(leftMatch.group(2)!);
-    if (value == null) return false;
-
-    switch (operator) {
-      case '<=':
-        return totalAgeMonths <= value;
-      case '>=':
-        return totalAgeMonths >= value;
-      case '<':
-        return totalAgeMonths < value;
-      case '>':
-        return totalAgeMonths > value;
-      case '=':
-      case '==':
-        return totalAgeMonths == value;
-    }
-  }
-
-  final rightMatch = ageOnRight.firstMatch(expression);
-  if (rightMatch != null) {
-    final value = int.tryParse(rightMatch.group(1)!);
-    final operator = rightMatch.group(2)!;
-    if (value == null) return false;
-
-    switch (operator) {
-      case '<=':
-        return value <= totalAgeMonths;
-      case '>=':
-        return value >= totalAgeMonths;
-      case '<':
-        return value < totalAgeMonths;
-      case '>':
-        return value > totalAgeMonths;
-      case '=':
-      case '==':
-        return value == totalAgeMonths;
-    }
-  }
-
-  return false;
+/// Evaluates a single normalized clause (e.g. `age<=4`, `2<=age`,
+/// `4<=weight`, `weight<=12`, `49<=height`) against the supplied [variables]
+/// using [FormulaParser] — the same evaluator the rest of the flow builder
+/// uses. The member's value is substituted in for the variable name and the
+/// resulting numeric comparison is parsed. Decimal thresholds are supported.
+bool _evaluateClause(String clause, Map<String, num> variables) {
+  final result = FormulaParser(clause, variables).parse;
+  return result['isSuccess'] == true && result['value'] == true;
 }
 
-bool _isAgeEligibleFromDoseCriteria(
+/// Reads a numeric value for [key] (`weight` / `height`) from an individual's
+/// additional fields. The individual may be a `Map`, an [EntityModel] or any
+/// object exposing `additionalFields`. Returns `null` when the value is not
+/// recorded or not numeric.
+num? _readAdditionalFieldNumber(dynamic individual, String key) {
+  if (individual == null) return null;
+
+  dynamic additional;
+  if (individual is Map) {
+    additional = individual['additionalFields'];
+  } else if (individual is EntityModel) {
+    additional = individual.toMap()['additionalFields'];
+  } else {
+    try {
+      additional = (individual as dynamic).additionalFields;
+    } catch (_) {
+      return null;
+    }
+  }
+  if (additional == null) return null;
+
+  // Normalize to a list of field entries.
+  List? fields;
+  if (additional is AdditionalFields) {
+    fields = additional.fields;
+  } else if (additional is Map) {
+    fields = additional['fields'] as List?;
+  } else {
+    try {
+      fields = (additional as dynamic).fields as List?;
+    } catch (_) {
+      return null;
+    }
+  }
+  if (fields == null) return null;
+
+  for (final field in fields) {
+    String? fieldKey;
+    dynamic fieldValue;
+    if (field is AdditionalField) {
+      fieldKey = field.key;
+      fieldValue = field.value;
+    } else if (field is Map) {
+      fieldKey = field['key']?.toString();
+      fieldValue = field['value'];
+    } else {
+      try {
+        fieldKey = (field as dynamic).key?.toString();
+        fieldValue = (field as dynamic).value;
+      } catch (_) {
+        continue;
+      }
+    }
+
+    if (fieldKey?.toLowerCase() == key) {
+      return num.tryParse(fieldValue?.toString() ?? '');
+    }
+  }
+  return null;
+}
+
+/// Resolves a [DateTime] date of birth from an individual (Map / EntityModel /
+/// dynamic). Supports both epoch-millisecond and formatted-string values.
+DateTime? _resolveDateOfBirth(dynamic individual) {
+  if (individual == null) return null;
+
+  dynamic dob;
+  if (individual is Map) {
+    dob = individual['dateOfBirth'];
+  } else if (individual is EntityModel) {
+    dob = individual.toMap()['dateOfBirth'];
+  } else {
+    try {
+      dob = (individual as dynamic).dateOfBirth;
+    } catch (_) {
+      return null;
+    }
+  }
+  if (dob == null) return null;
+
+  if (dob is DateTime) return dob;
+  if (dob is int) return DateTime.fromMillisecondsSinceEpoch(dob);
+  if (dob is String) {
+    final timestamp = int.tryParse(dob);
+    if (timestamp != null) {
+      return DateTime.fromMillisecondsSinceEpoch(timestamp);
+    }
+    return DigitDateUtils.getFormattedDateToDateTime(dob);
+  }
+  return null;
+}
+
+/// Checks whether a member is eligible based on the cycle's dose criteria.
+///
+/// Each condition string (e.g. `2<=age && age<=4 && 4<=weight && weight<=8`) is
+/// split into clauses, and a member matches a condition when **all** of its
+/// clauses are satisfied:
+///   * `age` clauses are always enforced (age is always known).
+///   * `weight` / `height` clauses are enforced only when the member has that
+///     value recorded; if the measurement is missing, the clause is ignored so
+///     eligibility falls back to the age check.
+///
+/// The member is eligible if they match at least one condition. Cycles without
+/// any condition keep eligibility open.
+bool _isEligibleFromDoseCriteria(
   ProjectCycle? currentCycle,
   int totalAgeMonths,
+  dynamic individual,
 ) {
   if (currentCycle == null) return false;
 
@@ -243,8 +310,16 @@ bool _isAgeEligibleFromDoseCriteria(
       .where((condition) => condition.isNotEmpty)
       .toList();
 
-  // If cycle has no condition-based age filters, keep eligibility open.
+  // If cycle has no condition-based filters, keep eligibility open.
   if (conditions.isEmpty) return true;
+
+  // Measurements available for this member. Age is always present; weight and
+  // height are added only when recorded on the individual.
+  final variables = <String, num>{'age': totalAgeMonths};
+  final weight = _readAdditionalFieldNumber(individual, 'weight');
+  if (weight != null) variables['weight'] = weight;
+  final height = _readAdditionalFieldNumber(individual, 'height');
+  if (height != null) variables['height'] = height;
 
   for (final condition in conditions) {
     final normalized = condition.replaceAll(' ', '').replaceAll('&&', 'and');
@@ -253,8 +328,18 @@ bool _isAgeEligibleFromDoseCriteria(
     final clauses = normalized.split('and').where((e) => e.isNotEmpty).toList();
     if (clauses.isEmpty) continue;
 
-    final matchesAllClauses = clauses
-        .every((clause) => _evaluateAgeComparator(clause, totalAgeMonths));
+    final matchesAllClauses = clauses.every((clause) {
+      // Find which measurement this clause references.
+      final variable =
+          variables.keys.firstWhereOrNull((k) => clause.contains(k));
+
+      // A weight/height clause for a member without that reading (or any other
+      // unrecognised clause) is ignored so eligibility falls back to age.
+      if (variable == null) return true;
+
+      return _evaluateClause(clause, variables);
+    });
+
     if (matchesAllClauses) {
       return true;
     }
@@ -397,22 +482,22 @@ void initializeFunctionRegistry() {
   /// recorded side effects.
   ///
   /// - **Function Name**: `'checkEligibilityForAgeAndSideEffect'`
-  /// - **Arguments**: A list where the first element is the date of birth string.
+  /// - **Arguments**: A list where the first element is the individual (Map /
+  ///   EntityModel). Date of birth, weight and height are read from it.
   /// - **Returns**: `true` if the beneficiary is eligible, otherwise `false`.
   ///
   /// The function checks:
-  /// 1. If the beneficiary's age matches any dose criteria condition in the current cycle.
+  /// 1. If the beneficiary matches any dose criteria condition (age, plus
+  ///    weight/height when recorded) in the current cycle.
   /// 2. If a side effect was recorded for the last completed task within the current cycle.
   /// 3. If the `checkStatus` function allows for a new task to be created.
   FunctionRegistry.register('checkEligibilityForAgeAndSideEffect',
       (args, stateData) {
     if (args.isEmpty) return false;
 
-// --- Resolve DOB ---
-    final dobString = args.first?.toString() ?? '';
-    if (dobString.isEmpty) return false;
-
-    final dob = DigitDateUtils.getFormattedDateToDateTime(dobString);
+// --- Resolve individual (Map / EntityModel) and its DOB ---
+    final individual = args.first;
+    final dob = _resolveDateOfBirth(individual);
     if (dob == null) return false;
 
     final age = DigitDateUtils.calculateAge(dob);
@@ -434,9 +519,9 @@ void initializeFunctionRegistry() {
     );
     if (currentCycle == null) return false;
 
-// --- Check age eligibility ---
+// --- Check eligibility (age, plus weight/height when recorded) ---
     final isWithinAge =
-        _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
+        _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
 
     if (!isWithinAge) return false;
 
@@ -510,7 +595,7 @@ void initializeFunctionRegistry() {
               lastTaskTime <= currentCycle.endDate);
 
       final isWithinAge =
-          _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
+          _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
 
       if (!isWithinAge) return false;
 
@@ -519,7 +604,8 @@ void initializeFunctionRegistry() {
 
       return recordedSideEffect && !statusOk ? false : true;
     } else {
-      return _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
+      return _isEligibleFromDoseCriteria(
+          currentCycle, totalAgeMonths, individual);
     }
   });
 
