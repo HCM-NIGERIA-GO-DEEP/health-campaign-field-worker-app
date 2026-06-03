@@ -368,6 +368,19 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
     final selectedProject = await localSecureStore.selectedProject;
     final allProjectTypes = await localSecureStore.getAllProjectTypes;
+
+    // Cold-restart restore: rehydrate the runtime hierarchy from the persisted
+    // selected project before any boundary / MDMS work runs.
+    if (selectedProject != null) {
+      final restoredHierarchy =
+          selectedProject.additionalDetails?.hierarchyType;
+      DigitDataModelSingleton().setHierarchyType(
+        (restoredHierarchy != null && restoredHierarchy.isNotEmpty)
+            ? restoredHierarchy
+            : envConfig.variables.hierarchyType,
+      );
+    }
+
     emit(
       ProjectState(
         loading: false,
@@ -637,6 +650,16 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     ProjectEmitter emit,
   ) async {
     emit(state.copyWith(loading: true, syncError: null));
+
+    // Populate the runtime hierarchy from the selected project's
+    // additionalDetails before any hierarchy-keyed work runs. Env fallback only
+    // when the project payload lacks the field.
+    final projectHierarchy = event.model.additionalDetails?.hierarchyType;
+    DigitDataModelSingleton().setHierarchyType(
+      (projectHierarchy != null && projectHierarchy.isNotEmpty)
+          ? projectHierarchy
+          : envConfig.variables.hierarchyType,
+    );
 
     List<BoundaryModel> boundaries;
     try {
