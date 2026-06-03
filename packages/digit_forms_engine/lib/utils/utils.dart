@@ -544,4 +544,26 @@ final functionRegistry = {
     final result = wastage < 0 ? 0 : wastage;
     return result == result.roundToDouble() ? result.toInt() : result;
   },
+
+  'calculatePartial': (List<dynamic> args) {
+    num toNum(dynamic v) =>
+        v is num ? v : num.tryParse(v?.toString() ?? '') ?? 0;
+
+    final returned = args.isNotEmpty ? toNum(args[0]) : 0;
+    final partial = args.length > 1 ? toNum(args[1]) : 0;
+    final productVariantId = args.length > 2 ? args[2]?.toString() : null;
+
+    if (returned <= 0) {
+      return 0; // Invalid input, return 0 wastage
+    }
+    final balance = (productVariantId != null && productVariantId.isNotEmpty)
+        ? FormsFunctionConfig.instance.stockBalanceResolver?.call(
+              productVariantId,
+            ) ??
+            0
+        : 0;
+
+    final partialInMl = partial > 0 ? balance % 30 : 0;
+    return partialInMl;
+  },
 };

@@ -920,7 +920,7 @@ final jsonConfig = {
             "quantityWastage":
                 "__switch:__context:stockEntryType:{RETURNED:__context:quantityWastage,default:stockProductDetails.quantityWastage}",
             "emptyBottle": "stockProductDetails.emptyBottle",
-            "quantityPartialUsed": "stockProductDetails.quantityPartialUsed",
+            "quantityPartialUsed": "__context:quantityPartialML",
             "quantityUnused": "stockProductDetails.quantityUnused",
           },
           "clientAuditDetails": "__generate:clientAudit",
