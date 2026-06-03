@@ -917,8 +917,11 @@ final jsonConfig = {
             "status":
                 "__switch:__context:stockEntryType:{ISSUED:__value:IN_TRANSIT,RETURNED:__value:IN_TRANSIT,LOSS:__value:LOST,DAMAGED:__value:DAMAGED}",
             "scanResource": "stockProductDetails.scanResource",
-            "quantityWastage": "stockProductDetails.quantityWastage",
-            "quantityPartialUsed": "stockProductDetails.quantityPartialUsed"
+            "quantityWastage":
+                "__switch:__context:stockEntryType:{RETURNED:__context:quantityWastage,default:stockProductDetails.quantityWastage}",
+            "emptyBottle": "stockProductDetails.emptyBottle",
+            "quantityPartialUsed": "stockProductDetails.quantityPartialUsed",
+            "quantityUnused": "stockProductDetails.quantityUnused",
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
