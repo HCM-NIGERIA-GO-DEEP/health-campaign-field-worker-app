@@ -149,7 +149,7 @@ class _BoundarySelectionPageState
 
                           final labelCodeList = state.selectedBoundaryMap.keys
                               .map((key) =>
-                                  '${stripCountrySuffix(runtimeHierarchyType())}_$key')
+                                  '${runtimeHierarchyType()}_$key')
                               .toList();
 
                           final combinedCodes = [
@@ -769,7 +769,7 @@ class _BoundarySelectionPageState
                                             builder: (field) => LabeledField(
                                               capitalizedFirstLetter: false,
                                               label: localizations.translate(
-                                                  '${stripCountrySuffix(runtimeHierarchyType())}_$label'),
+                                                  '${runtimeHierarchyType()}_$label'),
                                               isRequired: true,
                                               child: isLastLevel
                                                   ? MultiSelectDropDown(
@@ -1088,7 +1088,7 @@ class _BoundarySelectionPageState
       final finalCodes = state.boundaryList.map((e) => e.code!).toList();
 
       final labelCodeList = state.selectedBoundaryMap.keys
-          .map((key) => '${stripCountrySuffix(runtimeHierarchyType())}_$key')
+          .map((key) => '${runtimeHierarchyType()}_$key')
           .toList();
 
       final combinedCodes = [
