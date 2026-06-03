@@ -348,6 +348,71 @@ bool _isEligibleFromDoseCriteria(
   return false;
 }
 
+/// Returns the [doseCriteria] entries that the member matches, as raw maps
+/// (each including its `ProductVariants`) suitable for populating the resource
+/// card.
+///
+/// Uses the same age / weight / height clause semantics as
+/// [_isEligibleFromDoseCriteria]:
+///   * `age` clauses are always enforced (age is always known).
+///   * `weight` / `height` clauses are enforced only when that measurement is
+///     provided; when it is missing the clause is ignored so eligibility falls
+///     back to the age check.
+///   * A criteria with no condition is always included.
+///
+/// This is shared with the REDOSE / DELIVERY resource card so the products
+/// shown there stay consistent with the eligibility checks elsewhere.
+List<Map<String, dynamic>> filterEligibleDoseCriteria(
+  List<DeliveryDoseCriteria>? doseCriteria, {
+  required int ageInMonths,
+  num? weight,
+  num? height,
+}) {
+  if (doseCriteria == null || doseCriteria.isEmpty) {
+    return const <Map<String, dynamic>>[];
+  }
+
+  // Measurements available for this member. Age is always present; weight and
+  // height are added only when recorded.
+  final variables = <String, num>{'age': ageInMonths};
+  if (weight != null) variables['weight'] = weight;
+  if (height != null) variables['height'] = height;
+
+  final result = <Map<String, dynamic>>[];
+
+  for (final criteria in doseCriteria) {
+    final raw = criteria.condition?.toLowerCase().trim() ?? '';
+
+    // No condition-based filter → always eligible.
+    if (raw.isEmpty) {
+      result.add(criteria.toMap());
+      continue;
+    }
+
+    final normalized = raw.replaceAll(' ', '').replaceAll('&&', 'and');
+    if (!normalized.contains('age')) continue;
+
+    final clauses = normalized.split('and').where((e) => e.isNotEmpty).toList();
+    if (clauses.isEmpty) continue;
+
+    final matchesAllClauses = clauses.every((clause) {
+      // Find which measurement this clause references.
+      final variable =
+          variables.keys.firstWhereOrNull((k) => clause.contains(k));
+
+      // A weight/height clause for a member without that reading (or any other
+      // unrecognised clause) is ignored so eligibility falls back to age.
+      if (variable == null) return true;
+
+      return _evaluateClause(clause, variables);
+    });
+
+    if (matchesAllClauses) result.add(criteria.toMap());
+  }
+
+  return result;
+}
+
 // Helper function matching hasLogWithType logic
 bool _hasLogWithType(attendanceLog, DateTime date, String type) {
   final logTime = type == 'ENTRY'
