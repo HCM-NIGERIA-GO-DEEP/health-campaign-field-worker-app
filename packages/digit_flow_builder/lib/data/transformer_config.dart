@@ -188,6 +188,8 @@ final jsonConfig = {
             "name":
                 "__concatName:beneficiaryDetails.nameOfIndividual,beneficiaryDetails.familyname",
             "gender": "beneficiaryDetails.gender",
+            "height": "beneficiaryDetails.height",
+            "weight": "beneficiaryDetails.weight",
             "dateOfBirth": "beneficiaryDetails.dobPicker",
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
@@ -495,6 +497,8 @@ final jsonConfig = {
             "childName": "__context:childName",
             "ageInMonths": "__context:ageInMonths",
             "gender": "__context:gender",
+            "height": "__context:height",
+            "weight": "__context:weight",
             "headName": "__context:headName",
             "headMobileNumber": "__context:headMobileNumber"
           },
@@ -593,6 +597,8 @@ final jsonConfig = {
             "childName": "__context:childName",
             "ageInMonths": "__context:ageInMonths",
             "gender": "__context:gender",
+            "height": "__context:height",
+            "weight": "__context:weight",
             "headName": "__context:headName",
             "headMobileNumber": "__context:headMobileNumber"
           },
