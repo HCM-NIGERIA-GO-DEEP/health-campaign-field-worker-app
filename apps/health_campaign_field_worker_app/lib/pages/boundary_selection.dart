@@ -217,7 +217,8 @@ class _BoundarySelectionPageState
                                             .read<BeneficiaryDownSyncBloc>()
                                             .add(
                                               DownSyncAllBoundariesEvent(
-                                                projectModel: context.selectedProject,
+                                                projectModel:
+                                                    context.selectedProject,
                                                 boundaries: boundaries,
                                                 batchSize: batchSize,
                                                 pendingSyncCount:
@@ -317,7 +318,8 @@ class _BoundarySelectionPageState
                                               i18.beneficiaryDetails
                                                   .dataDownloadInProgress,
                                             ),
-                                            projectModel: context.selectedProject,
+                                            projectModel:
+                                                context.selectedProject,
                                             boundaries: state
                                                 .selectedLastLevelBoundaries,
                                             appConfiguartion: appConfiguration,
@@ -501,7 +503,8 @@ class _BoundarySelectionPageState
                                               i18.beneficiaryDetails
                                                   .dataDownloadInProgress,
                                             ),
-                                            projectModel: context.selectedProject,
+                                            projectModel:
+                                                context.selectedProject,
                                             boundaries: state
                                                 .selectedLastLevelBoundaries,
                                             appConfiguartion: appConfiguration,
@@ -615,26 +618,6 @@ class _BoundarySelectionPageState
 
                                                 if (context.mounted) {
                                                   if (isOnline &&
-                                                      isDistributor) {
-                                                    context
-                                                        .read<
-                                                            BeneficiaryDownSyncBloc>()
-                                                        .add(
-                                                          DownSyncGetBatchSizeEvent(
-                                                            appConfiguration: [
-                                                              appConfiguration,
-                                                            ],
-                                                            projectModel: context.selectedProject,
-                                                            boundaries: context
-                                                                .read<
-                                                                    BoundaryBloc>()
-                                                                .state
-                                                                .selectedLastLevelBoundaries,
-                                                            pendingSyncCount:
-                                                                pendingSyncCount,
-                                                          ),
-                                                        );
-                                                  } else if (isOnline &&
                                                       isHealthFacilityWorkerOnly) {
                                                     LocalizationParams()
                                                         .setModule(
