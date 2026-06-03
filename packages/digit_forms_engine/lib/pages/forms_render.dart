@@ -4,6 +4,7 @@ import 'package:digit_forms_engine/json_forms.dart';
 import 'package:digit_forms_engine/router/forms_router.gm.dart';
 import 'package:digit_forms_engine/widgets/back_header/back_navigation_help_header.dart';
 import 'package:digit_ui_components/digit_components.dart';
+import 'package:digit_ui_components/services/location_bloc.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/atoms/label_value_list.dart';
 import 'package:digit_ui_components/widgets/atoms/pop_up_card.dart';
@@ -109,6 +110,52 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     ScreenProtectionManager()
         .updatePageProtection(_protectionPageId, preventScreenCapture == true);
     _hasInitializedProtection = true;
+  }
+
+  /// Submit collects [PropertySchema.value] from the bloc schema. latLng is set
+  /// asynchronously on the reactive control, so copy the latest GPS fix into the
+  /// schema before submit (e.g. for TaskModel address via DeliveryDetails.latLng).
+  void _syncLatLngFieldsBeforeSubmit(
+    BuildContext context,
+    SchemaObject schemaObject,
+  ) {
+    final location = context.read<LocationBloc>().state;
+    if (location.latitude == null || location.longitude == null) return;
+
+    final latLngBase = location.latLngString;
+    if (latLngBase.isEmpty || latLngBase == 'Undefined') return;
+
+    final combinedValue = location.accuracy != null
+        ? '$latLngBase,${location.accuracy}'
+        : latLngBase;
+
+    final formsBloc = context.read<FormsBloc>();
+    for (final page in schemaObject.pages.values) {
+      final properties = page.properties;
+      if (properties == null) continue;
+
+      for (final entry in properties.entries) {
+        if (entry.value.format != PropertySchemaFormat.latLng) continue;
+        formsBloc.add(
+          FormsEvent.updateField(
+            context: context,
+            schemaKey: widget.currentSchemaKey,
+            key: entry.key,
+            value: combinedValue,
+          ),
+        );
+      }
+    }
+  }
+
+  void _submitForm(BuildContext context, SchemaObject schemaObject) {
+    _syncLatLngFieldsBeforeSubmit(context, schemaObject);
+    context.read<FormsBloc>().add(
+          FormsSubmitEvent(
+            isEdit: widget.isEdit,
+            schemaKey: widget.currentSchemaKey,
+          ),
+        );
   }
 
   @override
@@ -367,10 +414,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                 );
 
                                 if (shouldSubmit) {
-                                  context.read<FormsBloc>().add(
-                                      FormsSubmitEvent(
-                                          isEdit: widget.isEdit,
-                                          schemaKey: widget.currentSchemaKey));
+                                  _submitForm(context, schemaObject);
                                   // Pop all form pages
                                   context.router.popUntil((route) {
                                     return route.settings.name !=
@@ -486,13 +530,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                                             .showAlertPopUp!
                                                             .primaryActionLabel),
                                                     onPressed: () {
-                                                      context
-                                                          .read<FormsBloc>()
-                                                          .add(FormsSubmitEvent(
-                                                              isEdit:
-                                                                  widget.isEdit,
-                                                              schemaKey: widget
-                                                                  .currentSchemaKey));
+                                                      _submitForm(
+                                                          context, schemaObject);
                                                       // Pop all form pages (FormsRenderRoute)
                                                       Navigator.of(
                                                         ctx,
@@ -537,11 +576,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                         });
                                         return; // Skip default logic
                                       } else {
-                                        context.read<FormsBloc>().add(
-                                            FormsSubmitEvent(
-                                                isEdit: widget.isEdit,
-                                                schemaKey:
-                                                    widget.currentSchemaKey));
+                                        _submitForm(context, schemaObject);
                                         // Pop all form pages (FormsRenderRoute)
 
                                         /// FIXME: NOT BACKWARD COMPATIBLE
@@ -641,11 +676,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                                     schema.showAlertPopUp!
                                                         .primaryActionLabel),
                                                 onPressed: () {
-                                                  context.read<FormsBloc>().add(
-                                                      FormsSubmitEvent(
-                                                          isEdit: widget.isEdit,
-                                                          schemaKey: widget
-                                                              .currentSchemaKey));
+                                                  _submitForm(
+                                                      context, schemaObject);
                                                   // Pop all form pages (FormsRenderRoute)
                                                   Navigator.of(
                                                     ctx,
@@ -684,11 +716,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                       }
                                     });
                                   } else {
-                                    context.read<FormsBloc>().add(
-                                        FormsSubmitEvent(
-                                            isEdit: widget.isEdit,
-                                            schemaKey:
-                                                widget.currentSchemaKey));
+                                    _submitForm(context, schemaObject);
                                     // Pop all form pages (FormsRenderRoute)
 
                                     /// FIXME: NOT BACKWARD COMPATIBLE
@@ -1056,12 +1084,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                           ));
                           _isSubmitting = false;
                         } else {
-                          context.read<FormsBloc>().add(
-                                FormsSubmitEvent(
-                                  isEdit: widget.isEdit,
-                                  schemaKey: widget.currentSchemaKey,
-                                ),
-                              );
+                          _submitForm(context, schemaObject);
                           context.router.popUntil((route) {
                             return route.settings.name != FormsRenderRoute.name;
                           });
@@ -1353,8 +1376,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                 // Add small delay to allow custom component to update schema data
                 await Future.delayed(const Duration(milliseconds: 200));
 
-                context.read<FormsBloc>().add(FormsSubmitEvent(
-                    schemaKey: widget.currentSchemaKey, isEdit: widget.isEdit));
+                _submitForm(context, schemaObject);
 
                 // Pop all form pages (FormsRenderRoute)
                 /// FIXME: NOT BACKWARD COMPATIBLE

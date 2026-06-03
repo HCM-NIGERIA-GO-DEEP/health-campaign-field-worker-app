@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
+import '../../models/entities/roles_type.dart';
 import '../../utils/utils.dart';
 import '../localized.dart';
 
@@ -54,9 +55,10 @@ class _EvaluationKeyDropDownState
   List<ProjectFacilityModel> _healthProjectFacilities({
     required List<FacilityModel> facilities,
     required List<ProjectFacilityModel> projectFacilities,
+    required String facilityUsage,
   }) {
     final healthFacilityIds = facilities
-        .where((f) => f.usage == Constants.healthFacility)
+        .where((f) => f.usage == facilityUsage)
         .map((f) => f.id)
         .toSet();
 
@@ -91,12 +93,22 @@ class _EvaluationKeyDropDownState
             final isReady = facilityState is FacilityFetchedState &&
                 projectFacilityState is ProjectFacilityFetchedState;
 
+            final isDistributor = context.loggedInUserRoles.any(
+              (role) =>
+                  role.code == RolesType.distributor.toValue() ||
+                  role.code == RolesType.communityDistributor.toValue(),
+            );
+            final facilityUsage = isDistributor
+                ? Constants.dhFacility
+                : Constants.healthFacility;
+
             return _buildDropdown(
               context,
               isReady
                   ? _healthProjectFacilities(
                       facilities: facilities,
                       projectFacilities: projectFacilities,
+                      facilityUsage: facilityUsage,
                     )
                   : const [],
             );

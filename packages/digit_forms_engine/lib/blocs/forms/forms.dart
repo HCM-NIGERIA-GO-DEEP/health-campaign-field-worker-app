@@ -129,10 +129,9 @@ class FormsBloc extends Bloc<FormsEvent, FormsState> {
       return;
     }
 
-    final form = ReactiveForm.of(event.context) as FormGroup;
-
-    // Skip if control doesn't exist (hidden field without includeInForm: true)
-    if (form.contains(event.key)) {
+    // Summary submit and other paths may not have a ReactiveForm ancestor.
+    final form = ReactiveForm.of(event.context);
+    if (form is FormGroup && form.contains(event.key)) {
       form.control(event.key).value = event.value;
     }
 

@@ -47,3 +47,11 @@ class AppLocalizations {
     }
   }
 }
+
+extension AppLocalizationsExt on AppLocalizations {
+  String translateWithDefault(String key, {required String fallback}) {
+    final translated = translate(key);
+    // If translation returns the key (meaning not found), use fallback
+    return translated == key ? fallback : translated;
+  }
+}
