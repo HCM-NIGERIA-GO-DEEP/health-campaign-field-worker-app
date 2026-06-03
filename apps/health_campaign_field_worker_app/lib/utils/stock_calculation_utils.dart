@@ -184,11 +184,6 @@ class StockCalculationUtils {
       }
     }
 
-    // Add delivery task quantities to issued stock if in current cycle
-    if (tasks.isNotEmpty) {
-      stockIssued += _getDeliveryTaskValue(tasks, productId);
-    }
-
     // Use distributor calculation if user has distributor role OR if any return was made as sender
     // For distributor, partial used is also deducted from stock in hand
 
@@ -200,6 +195,13 @@ class StockCalculationUtils {
     stockDamaged *= multiplier;
     stockExcess *= multiplier;
     stockLess *= multiplier;
+
+    // Add delivery task quantities to issued stock if in current cycle.
+    // These are already recorded in ml, so add them after unit conversion
+    // to avoid scaling them by the bottle-to-ml multiplier.
+    if (tasks.isNotEmpty) {
+      stockIssued += _getDeliveryTaskValue(tasks, productId);
+    }
 
     final double stockInHand = hasDistributorReturns
         ? stockReceived -
