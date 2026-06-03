@@ -153,9 +153,9 @@ class MainApplicationState extends State<MainApplication>
                   // Use the single shared Location client so all consumers
                   // stream from one native request (no GPS churn); start
                   // continuous balanced tracking once permission is granted.
-                  final bloc = LocationBloc(
-                      location: LocationService.instance.location)
-                    ..add(const LoadLocationEvent());
+                  final bloc =
+                      LocationBloc(location: LocationService.instance.location)
+                        ..add(const LoadLocationEvent());
                   bloc.stream
                       .firstWhere((s) => s.hasPermissions)
                       .then((_) => LocationService.instance.ensureTracking())
@@ -300,14 +300,10 @@ class MainApplicationState extends State<MainApplication>
                                     widget.sql)
                                   ..add(
                                     LocalizationEvent.onLoadLocalization(
-                                      // Boundary localizations (hcm-boundary-*)
-                                      // are a very large dataset and loading
-                                      // them here blocks startup/login (black
-                                      // screen). They are loaded on demand by
-                                      // the screens that need them (home,
-                                      // current boundary, language selection),
-                                      // so they are intentionally excluded from
-                                      // the initial load.
+                                      // Hierarchy-keyed boundary module is
+                                      // deferred to post-project-selection;
+                                      // pre-login load only fetches the
+                                      // non-hierarchy modules.
                                       module: localizationModulesList.interfaces
                                           .where((element) =>
                                               element.type ==
