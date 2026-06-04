@@ -1624,9 +1624,11 @@ class _HomePageState extends LocalizedState<HomePage> {
                           label: localizations.translate(
                             i18.home.progressIndicatorTitle,
                           ),
-                          prefixLabel: localizations.translate(
-                            i18.home.progressIndicatorPrefixLabel,
+                          dosePrefixLabel: localizations.translate(
+                            i18.summaryReport.childrenTreated,
                           ),
+                          itnPrefixLabel:
+                              localizations.translate('ITN_DELIVERED'),
                         ),
                       ),
                 // if (!skipProgressBar)

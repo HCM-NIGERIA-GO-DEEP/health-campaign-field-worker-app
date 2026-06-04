@@ -116,10 +116,19 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
 
       // ── Group tasks by date for children treated ──
       // (filter by logged-in user AND status == 'ADMINISTRATION_SUCCESS' or 'VISITED')
+      // Exclude ITN delivery tasks only; dose/SMC tasks often have no taskType field.
       final tasksByDate = <String, Set<String>>{};
       for (final task in tasks) {
-        if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
+        if (task.status != 'ADMINISTRATION_SUCCESS' &&
+            task.status != 'VISITED') {
           continue;
+        }
+        final taskType = task.additionalFields?.fields
+            .firstWhereOrNull((f) => f.key == 'taskType')
+            ?.value;
+        if (taskType == 'ITN_DELIVERY' || taskType == 'ITN_DELIVERED') {
+          continue;
+        }
         final createdBy =
             task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;

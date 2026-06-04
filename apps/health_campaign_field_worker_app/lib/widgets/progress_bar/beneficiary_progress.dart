@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:digit_data_model/data/repositories/package_repository/local/project_beneficiary.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/theme/spacers.dart';
@@ -13,12 +12,14 @@ import '../progress_indicator/progress_indicator.dart';
 
 class BeneficiaryProgressBar extends StatefulWidget {
   final String label;
-  final String prefixLabel;
+  final String dosePrefixLabel;
+  final String itnPrefixLabel;
 
   const BeneficiaryProgressBar({
     super.key,
     required this.label,
-    required this.prefixLabel,
+    required this.dosePrefixLabel,
+    required this.itnPrefixLabel,
   });
 
   @override
@@ -27,9 +28,28 @@ class BeneficiaryProgressBar extends StatefulWidget {
 
 class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
   int current = 0;
+  int itnCurrent = 0;
 
+  static String? _taskType(TaskModel task) =>
+      task.additionalFields?.fields
+          .firstWhereOrNull((f) => f.key == 'taskType')
+          ?.value;
 
-    @override
+  static bool _isItnDeliveryTask(TaskModel task) {
+    final taskType = _taskType(task);
+    return taskType == 'ITN_DELIVERY' || taskType == 'ITN_DELIVERED';
+  }
+
+  static int _itnDeliveredQuantity(TaskModel task) {
+    var total = 0.0;
+    for (final res in task.resources ?? []) {
+      if (res.isDelivered != true) continue;
+      total += double.tryParse(res.quantity ?? '0') ?? 0.0;
+    }
+    return total.round();
+  }
+
+  @override
   void didChangeDependencies() {
     final taskRepository =
         context.read<LocalRepository<TaskModel, TaskSearchModel>>()
@@ -89,23 +109,22 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
 
           List<TaskModel> allTasks =
               await taskRepository.search(taskSearchQuery);
-          List<TaskModel> results = allTasks.where((task) {
-            final additionalFields = task?.additionalFields?.fields;
-            if (additionalFields == null || additionalFields.isEmpty) {
-              return false;
-            }
-            else return true;
 
-            
-          }).toList();
-          final groupedEntries = results.groupListsBy(
+          final doseTasks = allTasks.where((t) => !_isItnDeliveryTask(t));
+          final groupedEntries = doseTasks.groupListsBy(
             (element) => element.projectBeneficiaryClientReferenceId,
           );
+
+          var itnQuantity = 0;
+          for (final task in allTasks) {
+            if (!_isItnDeliveryTask(task)) continue;
+            itnQuantity += _itnDeliveredQuantity(task);
+          }
+
           if (mounted) {
             setState(() {
-              if (mounted) {
-                current = groupedEntries.entries.length;
-              }
+              current = groupedEntries.entries.length;
+              itnCurrent = itnQuantity;
             });
           }
         }
@@ -126,11 +145,18 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
     final target = targetModel?.targetNo ?? 0.0;
 
     return DigitCard(margin: const EdgeInsets.all(spacer2), children: [
+      if (context.isSmcPresent)
+        ProgressIndicatorContainer(
+          label: '${max(target - current, 0).round()} ${widget.label}',
+          prefixLabel: '$current ${widget.dosePrefixLabel}',
+          suffixLabel: target.toStringAsFixed(0),
+          value: target == 0 ? 0 : min(current / target, 1),
+        ),
       ProgressIndicatorContainer(
-        label: '${max(target - current, 0).round()} ${widget.label}',
-        prefixLabel: '$current ${widget.prefixLabel}',
+        label: '${max(target - itnCurrent, 0).round()} ${widget.label}',
+        prefixLabel: '$itnCurrent ${widget.itnPrefixLabel}',
         suffixLabel: target.toStringAsFixed(0),
-        value: target == 0 ? 0 : min(current / target, 1),
+        value: target == 0 ? 0 : min(itnCurrent / target, 1),
       ),
     ]);
   }
