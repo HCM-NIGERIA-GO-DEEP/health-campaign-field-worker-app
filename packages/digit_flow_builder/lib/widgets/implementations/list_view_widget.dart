@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../action_handler/action_config.dart';
 import '../../layout_renderer.dart';
+import '../../utils/conditional_evaluator.dart';
 import '../../utils/interpolation.dart';
 import '../../widget_registry.dart';
 import '../resolved_flow_widget.dart';
@@ -68,6 +69,33 @@ class ListViewWidget extends ResolvedFlowWidget {
         listIndex: index,
         item: safeItem,
       );
+
+      // Evaluate visibility before building so invisible items are skipped
+      // entirely — this prevents spacing being added around zero-height cards.
+      // LayoutMapper.map always wraps in CrudItemContext, so the old
+      // `mappedChild is SizedBox` check was always false and never filtered
+      // anything, causing inconsistent gaps between cards.
+      final itemEvalContext = {
+        'item': safeItem,
+        'contextData': stateData.rawState,
+        ...stateData.modelMap,
+      };
+      if (processedChild['hidden'] != null) {
+        final hidden = ConditionalEvaluator.evaluate(
+          processedChild['hidden'],
+          itemEvalContext,
+          stateData: stateData,
+        );
+        if (hidden == true) continue;
+      }
+      if (processedChild['visible'] != null) {
+        final visible = ConditionalEvaluator.evaluate(
+          processedChild['visible'],
+          itemEvalContext,
+          stateData: stateData,
+        );
+        if (visible == false) continue;
+      }
 
       final mappedChild = LayoutMapper.map(
         processedChild,

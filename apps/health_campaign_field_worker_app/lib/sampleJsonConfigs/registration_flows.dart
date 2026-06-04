@@ -2474,8 +2474,13 @@ final dynamic sampleFlows = {
           "child": {
             "type": "template",
             "format": "card",
-            "visible": "{{fn:length(item.projectBeneficiaries)}} > 0",
+            // Hide the card entirely when the household has neither
+            // project beneficiaries nor a declined status.
+            "hidden":
+                "{{fn:length(item.projectBeneficiaries)}} == 0 && {{fn:isHouseholdWithoutMembers(item)}} == false",
             "children": [
+              // Row 1 — household name + OPEN button.
+              // The button is only shown for registered (beneficiary) households.
               {
                 "type": "template",
                 "format": "row",
@@ -2490,6 +2495,7 @@ final dynamic sampleFlows = {
                     "type": "template",
                     "label": "OPEN",
                     "format": "button",
+                    "visible": "{{fn:length(item.projectBeneficiaries)}} > 0",
                     "onAction": [
                       {
                         "actions": [
@@ -2566,23 +2572,41 @@ final dynamic sampleFlows = {
                   "mainAxisAlignment": "spaceBetween"
                 }
               },
+              // Row 2 — closed-household status chip (beneficiary households only).
               {
                 "type": "template",
                 "format": "row",
+                "visible": "{{fn:checkIfClosedHousehold(item.tasks.0.status)}}",
                 "children": [
                   {
                     "type": "template",
                     "label": "{{item.tasks.0.status}}",
                     "format": "tag",
                     "fieldName": "statusChip",
-                    "visible":
-                        "{{fn:checkIfClosedHousehold(item.tasks.0.status)}}",
-                    "properties": {"tagType": "error", "bottomGap": 16}
+                    "properties": {"tagType": "error"}
                   }
                 ],
                 "fieldName": "statusRow",
                 "properties": {"mainAxisSize": "min"}
               },
+              // Row 3 — declined tag (declined households only).
+              {
+                "type": "template",
+                "format": "row",
+                "visible": "{{fn:isHouseholdWithoutMembers(item)}}",
+                "children": [
+                  {
+                    "type": "template",
+                    "label": "DECLINED_HOUSEHOLD",
+                    "format": "tag",
+                    "fieldName": "declinedChip",
+                    "properties": {"tagType": "error"}
+                  }
+                ],
+                "fieldName": "declinedRow",
+                "properties": {"mainAxisSize": "min"}
+              },
+              // Table — real member rows for beneficiary households.
               {
                 "data": {
                   "rows": "{{currentItem.individuals}}",
@@ -2610,57 +2634,10 @@ final dynamic sampleFlows = {
                 },
                 "type": "template",
                 "format": "table",
+                "visible": "{{fn:length(item.projectBeneficiaries)}} > 0",
                 "fieldName": "memberTable"
-              }
-            ],
-            "fieldName": "memberCard"
-          },
-          "format": "listView",
-          "hidden": false,
-          "fieldName": "listView",
-          "properties": {"spacing": "spacer4"},
-          "schemaCode": null
-        },
-        {
-          "data": "members",
-          "type": "template",
-          "child": {
-            "type": "template",
-            "format": "card",
-            "visible": "{{fn:isHouseholdWithoutMembers(item)}}",
-            "children": [
-              {
-                "type": "template",
-                "format": "row",
-                "children": [
-                  {
-                    "type": "template",
-                    "value": "{{ item.headIndividual.0.name.givenName }}",
-                    "format": "textTemplate",
-                    "fieldName": "headOfHousehold"
-                  },
-                ],
-                "fieldName": "detailsRow",
-                "properties": {
-                  "mainAxisSize": "max",
-                  "mainAxisAlignment": "spaceBetween"
-                }
               },
-              {
-                "type": "template",
-                "format": "row",
-                "children": [
-                  {
-                    "type": "template",
-                    "label": "DECLINED_HOUSEHOLD",
-                    "format": "tag",
-                    "fieldName": "statusChip",
-                    "properties": {"tagType": "error", "bottomGap": 16}
-                  }
-                ],
-                "fieldName": "statusRow",
-                "properties": {"mainAxisSize": "min"}
-              },
+              // Table — placeholder rows for declined households.
               {
                 "data": {
                   "showPlaceholderRow": true,
@@ -2687,7 +2664,8 @@ final dynamic sampleFlows = {
                 },
                 "type": "template",
                 "format": "table",
-                "fieldName": "memberTable"
+                "visible": "{{fn:isHouseholdWithoutMembers(item)}}",
+                "fieldName": "declinedMemberTable"
               }
             ],
             "fieldName": "memberCard"
@@ -2993,29 +2971,21 @@ final dynamic sampleFlows = {
             "task"
           ],
           "primary": "household",
-          "pagination": {"limit": 5, "maxItems": 15}
+          "pagination": {"limit": 30, "maxItems": 60}
         }
       },
       "scrollListener": {
+        "triggerMode": "end",
         "debounceMs": 0,
-        "onScrollUp": [
+        "showLoadingIndicator": true,
+        "onScroll": [
           {
             "actionType": "REFRESH_SEARCH",
             "properties": {
-              "pagination": {"limit": 5, "maxItems": 15}
+              "pagination": {"limit": 30, "maxItems": 60}
             }
           }
-        ],
-        "triggerMode": "bidirectional",
-        "onScrollDown": [
-          {
-            "actionType": "REFRESH_SEARCH",
-            "properties": {
-              "pagination": {"limit": 5, "maxItems": 15}
-            }
-          }
-        ],
-        "showLoadingIndicator": true
+        ]
       },
       "submitCondition": null,
       "preventScreenCapture": false
@@ -3989,10 +3959,7 @@ final dynamic sampleFlows = {
                     "key": "lastDeliveredTaskClientReferenceId",
                     "value": "{{navigation.lastDeliveredTaskClientReferenceId}}"
                   },
-                  {
-                    "key": "projectType",
-                    "value": "{{fn:getProjectType()}}"
-                  }
+                  {"key": "projectType", "value": "{{fn:getProjectType()}}"}
                 ],
                 "onError": [
                   {
@@ -4437,10 +4404,7 @@ final dynamic sampleFlows = {
                         "value":
                             "{{navigation.ProjectBeneficiaryClientReferenceId}}"
                       },
-                      {
-                        "key": "projectType",
-                        "value": "{{fn:getProjectType()}}"
-                      }
+                      {"key": "projectType", "value": "{{fn:getProjectType()}}"}
                     ],
                     "onError": [
                       {
@@ -4970,10 +4934,7 @@ final dynamic sampleFlows = {
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
                   },
-                  {
-                    "key": "projectType",
-                    "value": "{{fn:getProjectType()}}"
-                  }
+                  {"key": "projectType", "value": "{{fn:getProjectType()}}"}
                 ],
                 "onError": [
                   {

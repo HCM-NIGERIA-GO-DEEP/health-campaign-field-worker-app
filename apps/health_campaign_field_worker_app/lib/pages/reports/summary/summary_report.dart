@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
-
 import '../../../router/app_router.dart';
 import '../../../utils/i18_key_constants.dart' as i18;
 import '../../../utils/stock_calculation_utils.dart';
@@ -59,6 +58,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           LocalRepository<ProjectResourceModel, ProjectResourceSearchModel>>();
       final productVariantRepo = context.read<
           LocalRepository<ProductVariantModel, ProductVariantSearchModel>>();
+      final userActionRepo = context.read<UserActionLocalRepository>();
 
       // This report is only visible to distributor users.
       // Distributors always use their own UUID as the facility identifier
@@ -185,17 +185,47 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         }
       }
 
-      // ── Load UserAction STOCK_BALANCE records (same as stock_balance_card) ──
-      // These are the authoritative running balances maintained by StockBalanceExecutor.
-      // They are updated on every stock receipt AND every delivery, so they are
-      // always the single source of truth for the current balance.
-      final userActionRepo = context.read<UserActionLocalRepository>();
+      // ── Load UserAction STOCK_BALANCE records (authoritative for distributors) ──
+      // StockBalanceExecutor maintains a running ledger updated on every stock
+      // receipt and every delivery, making it the single source of truth for
+      // the current distributor balance.
       final userActionBalances = await _loadUserActionBalances(
         userActionRepo,
         effectiveFacilityId,
         productVariants,
         projectId,
       );
+
+      // ── REJECTED RETURNED correction (mirrors stock_balance_card logic) ──
+      // StockBalanceExecutor may not credit back quantities for returns that were
+      // rejected by the upstream warehouse. Build the per-product correction so
+      // the report balance matches what the stock card shows.
+      final rejectedReturnedByProduct = <String, double>{};
+      for (final stock in allStocks) {
+        if (stock.senderId != effectiveFacilityId) continue;
+        final fields = stock.additionalFields?.fields;
+        if (fields == null) continue;
+        String? stockEntryType;
+        String? status;
+        for (final field in fields) {
+          if (field.key == 'stockEntryType') {
+            stockEntryType = (field.value as String?)?.toUpperCase();
+          } else if (field.key == 'status') {
+            status = (field.value as String?)?.toUpperCase();
+          }
+        }
+        final transactionType = stock.transactionType?.toUpperCase() ?? '';
+        if (stockEntryType == 'RETURNED' &&
+            transactionType == 'DISPATCHED' &&
+            status == 'REJECTED') {
+          final pvId = stock.productVariantId;
+          if (pvId != null) {
+            final quantity = double.tryParse(stock.quantity ?? '0') ?? 0;
+            rejectedReturnedByProduct[pvId] =
+                (rejectedReturnedByProduct[pvId] ?? 0) + quantity;
+          }
+        }
+      }
 
       // ── Collect stock dates (for date rows) ──
       final stockDates = <String>{};
@@ -274,16 +304,15 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           cumulativeConsumed[pv.id] =
               (cumulativeConsumed[pv.id] ?? 0.0) + dailyConsumed;
 
-          // ── Balance: use UserAction record as authoritative source ──
-          // stock_balance_card merges stockInHand with UserAction balances and
-          // UserAction always takes precedence. The UserAction record is a running
-          // ledger updated by StockBalanceExecutor on every stock receipt AND
-          // every delivery — so it already includes all deductions.
-          // For the report we use the UserAction balance directly; if unavailable
-          // we fall back to stockInHand minus cumulative consumed.
-          double balance;
+          // UserAction is the authoritative running balance for distributors.
+          // Apply the REJECTED RETURNED correction so the figure matches the
+          // stock card (StockBalanceExecutor may undercount rejected returns).
+          // stockInHand from calculateStockMetrics already handles REJECTED
+          // RETURNED correctly, so no correction needed on the fallback path.
+          final rejectedCorrection = rejectedReturnedByProduct[pv.id] ?? 0.0;
+          final double balance;
           if (userActionBalances.containsKey(pv.id)) {
-            balance = userActionBalances[pv.id]!;
+            balance = userActionBalances[pv.id]! + rejectedCorrection;
           } else {
             final stockInHand = metrics['stockInHand'] ?? 0.0;
             balance = stockInHand - (cumulativeConsumed[pv.id] ?? 0.0);
