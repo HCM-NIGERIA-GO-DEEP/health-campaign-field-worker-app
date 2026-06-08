@@ -1918,7 +1918,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-registration-${context.selectedProject.referenceID},hcm-beneficiary,hcm-inventory-${context.selectedProject.referenceID}';
+                    'hcm-registration-${context.selectedProject.referenceID},hcm-beneficiary,hcm-inventory-${context.selectedProject.referenceID},hcm-common';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
                 FlowBuilderSingleton().setPersistenceConfiguration(
@@ -2097,7 +2097,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-inventory-${context.selectedProject.referenceID}';
+                'hcm-inventory-${context.selectedProject.referenceID},hcm-common';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
@@ -2157,7 +2157,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-stockreconciliation-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
+                'hcm-stockreconciliation-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-common';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
@@ -2299,7 +2299,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-hfreferral-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}';
+                    'hcm-hfreferral-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()},hcm-common';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
@@ -2324,7 +2324,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
+                'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-common';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
