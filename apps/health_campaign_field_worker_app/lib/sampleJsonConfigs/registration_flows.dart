@@ -2322,6 +2322,181 @@ final dynamic sampleFlows = {
         //   "schemaCode": null,
         //   "suffixIcon": "FilterAlt"
         // },
+        // {
+        //   "data": "members",
+        //   "type": "template",
+        //   "child": {
+        //     "type": "template",
+        //     "format": "card",
+        //     // "visible": "{{fn:length(item.projectBeneficiaries)}} > 0",
+        //     "visible": true,
+        //     "children": [
+        //       {
+        //         "type": "template",
+        //         "format": "row",
+        //         "children": [
+        //           {
+        //             "type": "template",
+        //             "value":
+        //                 "{{ item.headIndividual.0.name.givenName }} {{ item.headIndividual.0.name.familyName }}",
+        //             "format": "textTemplate",
+        //             "fieldName": "headOfHousehold"
+        //           },
+        //           {
+        //             "type": "template",
+        //             "label": "OPEN",
+        //             "format": "button",
+        //             "onAction": [
+        //               {
+        //                 "actions": [
+        //                   {
+        //                     "actionType": "REVERSE_TRANSFORM",
+        //                     "properties": {
+        //                       "data": [
+        //                         {
+        //                           "key": "entities",
+        //                           "value": "{{item.HouseholdModel}}"
+        //                         },
+        //                         {
+        //                           "key": "entities",
+        //                           "value": "{{item.headIndividual}}"
+        //                         }
+        //                       ],
+        //                       "configName": "beneficiaryRegistration",
+        //                       "entityTypes": [
+        //                         "HouseholdModel",
+        //                         "IndividualModel"
+        //                       ]
+        //                     }
+        //                   },
+        //                   {
+        //                     "actionType": "NAVIGATION",
+        //                     "properties": {
+        //                       "data": [
+        //                         {
+        //                           "key": "HouseholdClientReferenceId",
+        //                           "value":
+        //                               "{{ item.HouseholdModel.clientReferenceId }}"
+        //                         },
+        //                         {"key": "isEdit", "value": "true"},
+        //                         {"key": "isNotBeneficiary", "value": "true"}
+        //                       ],
+        //                       "name": "HOUSEHOLD",
+        //                       "type": "FORM"
+        //                     }
+        //                   }
+        //                 ],
+        //                 "condition": {
+        //                   "expression":
+        //                       "{{fn:length(item.projectBeneficiaries)}}<=0"
+        //                 }
+        //               },
+        //               {
+        //                 "actions": [
+        //                   {
+        //                     "actionType": "NAVIGATION",
+        //                     "properties": {
+        //                       "data": [
+        //                         {
+        //                           "key": "HouseholdClientReferenceId",
+        //                           "value":
+        //                               "{{ item.HouseholdModel.clientReferenceId }}"
+        //                         }
+        //                       ],
+        //                       "name": "householdOverview",
+        //                       "type": "TEMPLATE"
+        //                     }
+        //                   }
+        //                 ],
+        //                 "condition": {
+        //                   "expression":
+        //                       "{{item.tasks.0.status}} != CLOSED_HOUSEHOLD"
+        //                 }
+        //               },
+        //               {
+        //                 "actions": [
+        //                   {
+        //                     "actionType": "REVERSE_TRANSFORM",
+        //                     "properties": {
+        //                       "data": [
+        //                         {"key": "entities", "value": "{{item}}"}
+        //                       ],
+        //                       "configName": "beneficiaryRegistration",
+        //                       "entityTypes": ["HouseholdModel", "TaskModel"]
+        //                     }
+        //                   },
+        //                   {
+        //                     "actionType": "NAVIGATION",
+        //                     "properties": {
+        //                       "data": [
+        //                         {
+        //                           "key": "HouseholdClientReferenceId",
+        //                           "value":
+        //                               "{{ item.HouseholdModel.clientReferenceId }}"
+        //                         },
+        //                         {"key": "isEdit", "value": "true"},
+        //                         {"key": "isClosedHousehold", "value": "true"}
+        //                       ],
+        //                       "name": "HOUSEHOLD",
+        //                       "type": "FORM"
+        //                     }
+        //                   }
+        //                 ],
+        //                 "condition": {
+        //                   "expression":
+        //                       "{{item.tasks.0.status}} == CLOSED_HOUSEHOLD"
+        //                 }
+        //               }
+        //             ],
+        //             "fieldName": "openMemberCard",
+        //             "properties": {"size": "medium", "type": "secondary"}
+        //           }
+        //         ],
+        //         "fieldName": "detailsRow",
+        //         "properties": {
+        //           "mainAxisSize": "max",
+        //           "mainAxisAlignment": "spaceBetween"
+        //         }
+        //       },
+        //       {
+        //         "data": {
+        //           "rows": "{{currentItem.individuals}}",
+        //           "source": "individuals",
+        //           "columns": [
+        //             {
+        //               "header": "BENEFICIARY",
+        //               "hidden": false,
+        //               "isActive": true,
+        //               "cellValue":
+        //                   "{{item.name.givenName}} {{item.name.familyName}}"
+        //             },
+        //             {
+        //               "header": "AGE_OF_BENEFICIARY",
+        //               "hidden": false,
+        //               "isActive": true,
+        //               "cellValue": "{{fn:formatDate(item.dateOfBirth, 'age')}}"
+        //             },
+        //             {
+        //               "header": "GENDER",
+        //               "hidden": false,
+        //               "isActive": true,
+        //               "cellValue": "{{item.gender}}"
+        //             }
+        //           ]
+        //         },
+        //         "type": "template",
+        //         "format": "table",
+        //         "fieldName": "memberTable"
+        //       }
+        //     ],
+        //     "fieldName": "memberCard"
+        //   },
+        //   "format": "listView",
+        //   "hidden": false,
+        //   "fieldName": "listView",
+        //   "properties": {"spacing": "spacer4"},
+        //   "schemaCode": null
+        // }
         {
           "data": "members",
           "type": "template",
@@ -2338,9 +2513,10 @@ final dynamic sampleFlows = {
                   {
                     "type": "template",
                     "value":
-                        "{{ item.headIndividual.0.name.givenName }} {{ item.headIndividual.0.name.familyName }}",
+                        "{{ item.headIndividual.0.identifiers.0.identifierId }}",
                     "format": "textTemplate",
-                    "fieldName": "headOfHousehold"
+                    "fieldName": "beneficiaryId",
+                    "properties": {"style": "headingS"}
                   },
                   {
                     "type": "template",
@@ -2348,6 +2524,30 @@ final dynamic sampleFlows = {
                     "format": "button",
                     "onAction": [
                       {
+                        // ITN Delivered -> household overview (read-only preview)
+                        "actions": [
+                          {
+                            "actionType": "NAVIGATION",
+                            "properties": {
+                              "data": [
+                                {
+                                  "key": "HouseholdClientReferenceId",
+                                  "value":
+                                      "{{ item.HouseholdModel.clientReferenceId }}"
+                                }
+                              ],
+                              "name": "householdOverview",
+                              "type": "TEMPLATE"
+                            }
+                          }
+                        ],
+                        "condition": {
+                          "expression":
+                              "{{fn:isDelivered(item.tasks.0.status)}}"
+                        }
+                      },
+                      {
+                        // Not Visited with no project beneficiary -> registration flow
                         "actions": [
                           {
                             "actionType": "REVERSE_TRANSFORM",
@@ -2392,60 +2592,25 @@ final dynamic sampleFlows = {
                         }
                       },
                       {
+                        // Not Visited with existing beneficiary -> resume household workflow
                         "actions": [
                           {
                             "actionType": "NAVIGATION",
                             "properties": {
                               "data": [
-                                {
+                                { 
+                                  
                                   "key": "HouseholdClientReferenceId",
                                   "value":
                                       "{{ item.HouseholdModel.clientReferenceId }}"
                                 }
                               ],
-                              "name": "householdOverview",
+                              "name": "HOUSEHOLD",
                               "type": "TEMPLATE"
                             }
                           }
                         ],
-                        "condition": {
-                          "expression":
-                              "{{item.tasks.0.status}} != CLOSED_HOUSEHOLD"
-                        }
-                      },
-                      {
-                        "actions": [
-                          {
-                            "actionType": "REVERSE_TRANSFORM",
-                            "properties": {
-                              "data": [
-                                {"key": "entities", "value": "{{item}}"}
-                              ],
-                              "configName": "beneficiaryRegistration",
-                              "entityTypes": ["HouseholdModel", "TaskModel"]
-                            }
-                          },
-                          {
-                            "actionType": "NAVIGATION",
-                            "properties": {
-                              "data": [
-                                {
-                                  "key": "HouseholdClientReferenceId",
-                                  "value":
-                                      "{{ item.HouseholdModel.clientReferenceId }}"
-                                },
-                                {"key": "isEdit", "value": "true"},
-                                {"key": "isClosedHousehold", "value": "true"}
-                              ],
-                              "name": "HOUSEHOLD",
-                              "type": "FORM"
-                            }
-                          }
-                        ],
-                        "condition": {
-                          "expression":
-                              "{{item.tasks.0.status}} == CLOSED_HOUSEHOLD"
-                        }
+                        "condition": {"expression": "DEFAULT"}
                       }
                     ],
                     "fieldName": "openMemberCard",
@@ -2459,34 +2624,28 @@ final dynamic sampleFlows = {
                 }
               },
               {
-                "data": {
-                  "rows": "{{currentItem.individuals}}",
-                  "source": "individuals",
-                  "columns": [
-                    {
-                      "header": "BENEFICIARY",
-                      "hidden": false,
-                      "isActive": true,
-                      "cellValue":
-                          "{{item.name.givenName}} {{item.name.familyName}}"
-                    },
-                    {
-                      "header": "AGE_OF_BENEFICIARY",
-                      "hidden": false,
-                      "isActive": true,
-                      "cellValue": "{{fn:formatDate(item.dateOfBirth, 'age')}}"
-                    },
-                    {
-                      "header": "GENDER",
-                      "hidden": false,
-                      "isActive": true,
-                      "cellValue": "{{item.gender}}"
-                    }
-                  ]
-                },
                 "type": "template",
-                "format": "table",
-                "fieldName": "memberTable"
+                "value":
+                    "{{ item.headIndividual.0.name.givenName }} {{ item.headIndividual.0.name.familyName }}",
+                "format": "textTemplate",
+                "fieldName": "householdName",
+                "properties": {"style": "headingS"}
+              },
+              {
+                "type": "template",
+                "value": "SEARCH_HOUSEHOLD_STATUS_ITN_DELIVERED",
+                "format": "textTemplate",
+                "visible": "{{fn:isDelivered(item.tasks.0.status)}} == true",
+                "fieldName": "statusDelivered",
+                "properties": {}
+              },
+              {
+                "type": "template",
+                "value": "SEARCH_HOUSEHOLD_STATUS_NOT_VISITED",
+                "format": "textTemplate",
+                "visible": "{{fn:isDelivered(item.tasks.0.status)}} == false",
+                "fieldName": "statusNotVisited",
+                "properties": {}
               }
             ],
             "fieldName": "memberCard"
@@ -2710,6 +2869,14 @@ final dynamic sampleFlows = {
         "filters": [],
         "relations": [
           {
+            "name": "household",
+            "match": {
+              "field": "clientReferenceId",
+              "equalsFrom": "clientReferenceId"
+            },
+            "entity": "HouseholdModel"
+          },
+          {
             "name": "members",
             "match": {
               "field": "householdClientReferenceId",
@@ -2748,7 +2915,7 @@ final dynamic sampleFlows = {
             "name": "projectBeneficiaries",
             "match": {
               "field": "beneficiaryClientReferenceId",
-              "inFrom": "individuals.clientReferenceId"
+              "inFrom": "household.clientReferenceId"
             },
             "entity": "ProjectBeneficiaryModel"
           },

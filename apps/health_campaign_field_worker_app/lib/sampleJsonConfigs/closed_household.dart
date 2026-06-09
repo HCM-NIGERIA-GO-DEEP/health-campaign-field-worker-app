@@ -31,7 +31,7 @@ final dynamic sampleCloseHouseholdFlows = {
               "format": "date",
               "hidden": false,
               "tooltip": "",
-              "helpText": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_date_HELP_TEXT",
+              "helpText": "",
               "infoText": "",
               "readOnly": true,
               "fieldName": "date",
@@ -58,7 +58,7 @@ final dynamic sampleCloseHouseholdFlows = {
               "hidden": false,
               "tooltip": "",
               "helpText":
-                  "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_settlement_HELP_TEXT",
+                  "",
               "infoText": "",
               "readOnly": false,
               "fieldName": "settlement",
@@ -280,20 +280,19 @@ final dynamic sampleCloseHouseholdFlows = {
           "label": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDSUCCESS_HEADING",
           "description": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDSUCCESS_DESCRIPTION",
           "properties": {"type": "success"},
-          "primaryAction": {
+          "secondaryAction": {
             "label":
-                "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDSUCCESS_PRIMARY_ACTION_LABEL",
+                "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDSUCCESS_SECONDARY_ACTION_LABEL",
             "onAction": [
-              
               {
                 "actionType": "NAVIGATION",
                 "properties": {"type": "HOME"}
               }
             ]
           },
-          "secondaryAction": {
+          "primaryAction": {
             "label":
-                "CLOSEHOUSEHOLD_CLOSEHOUSEHOLD_SUCCESS_SECONDARY_ACTION_LABEL",
+                "CLOSEHOUSEHOLD_CLOSEHOUSEHOLD_SUCCESS_PRIMARY_ACTION_LABEL",
             "onAction": [
               {
                 "actionType": "NAVIGATION",
@@ -361,7 +360,7 @@ final dynamic sampleCloseHouseholdFlows = {
       "footer": [
         {
           "type": "template",
-          "label": "REGISTER_BENEFICIARY",
+          "label": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_ACTION_LABEL",
           "format": "button",
           "onAction": [
             {
@@ -585,7 +584,7 @@ final dynamic sampleCloseHouseholdFlows = {
       "footer": [
         {
           "type": "template",
-          "label": "REGISTER_BENEFICIARY_PREVIEW_SCREEN",
+          "label": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDSUCCESS_SECONDARY_ACTION_LABEL",
           "format": "button",
           "onAction": [
             {
@@ -597,8 +596,8 @@ final dynamic sampleCloseHouseholdFlows = {
                     "value": "{{navigation.HouseholdClientReferenceId}}"
                   }
                 ],
-                "name": "CLOSEHOUSEHOLD",
-                "type": "TEMPLATE"
+                // "name": "CLOSEHOUSEHOLD",
+                "type": "HOME",
               }
             }
           ],

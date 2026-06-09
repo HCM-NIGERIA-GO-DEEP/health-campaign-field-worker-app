@@ -152,7 +152,8 @@ class _HomePageState extends LocalizedState<HomePage> {
     CustomComponentRegistry().registerBuilder(
       'resourceCard',
       (context, stateAccessor) {
-        final beneficiaryDetails = stateAccessor.getPageData('householdOverview');
+        final beneficiaryDetails =
+            stateAccessor.getPageData('householdOverview');
 
         if (beneficiaryDetails != null &&
             stateAccessor.currentPageName == 'DELIVERY') {
@@ -1853,6 +1854,63 @@ class _HomePageState extends LocalizedState<HomePage> {
 
     final Map<String, Widget> homeItemsMap = {
       // INFO : Need to add home items of package Here
+      // i18.home.fileComplaint:
+      //     homeShowcaseData.distributorFileComplaint.buildWith(
+      //   child: HomeItemCard(
+      //     icon: Icons.announcement,
+      //     label: i18.home.fileComplaint,
+      //     onPressed: () async {
+      //       context.router.push(CurrentBoundaryRoute(
+      //         onBoundarySelected: (ctx) async {
+      //           final moduleName =
+      //               'hcm-complaints-${context.selectedProject.referenceID}';
+      //           triggerLocalization(module: moduleName);
+      //           isTriggerLocalisation = false;
+
+      //           await FlowNavigationUtils.navigateToFlowModule(
+      //             context: ctx,
+      //             config: FlowModuleConfig(
+      //               schemaKey: 'COMPLAINTS',
+      //               sampleFlows: sampleComplaintFlows,
+      //               relationshipMappings: const [
+      //                 RelationshipMapping(
+      //                     from: 'pgrComplainant',
+      //                     to: 'pgrService',
+      //                     localKey: 'complaintClientReferenceId',
+      //                     foreignKey: 'clientReferenceId'),
+      //                 RelationshipMapping(
+      //                     from: 'address',
+      //                     to: 'pgrService',
+      //                     localKey: 'relatedClientReferenceId',
+      //                     foreignKey: 'clientReferenceId'),
+      //               ],
+      //               nestedModelMappings: const [
+      //                 NestedModelMapping(
+      //                   rootModel: 'pgrService',
+      //                   fields: {
+      //                     'user': NestedFieldMapping(
+      //                       table: 'pgrComplainant',
+      //                       localKey: 'clientReferenceId',
+      //                       foreignKey: 'complaintClientReferenceId',
+      //                       type: NestedMappingType.one,
+      //                     ),
+      //                     'address': NestedFieldMapping(
+      //                       table: 'address',
+      //                       localKey: 'clientReferenceId',
+      //                       foreignKey: 'relatedClientReferenceId',
+      //                       type: NestedMappingType.one,
+      //                     )
+      //                   },
+      //                 ),
+      //               ],
+      //             ),
+      //           );
+      //         },
+      //       ));
+      //     },
+      //   ),
+      // ),
+
       i18.home.fileComplaint:
           homeShowcaseData.distributorFileComplaint.buildWith(
         child: HomeItemCard(
@@ -1866,12 +1924,18 @@ class _HomePageState extends LocalizedState<HomePage> {
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
-                await FlowNavigationUtils.navigateToFlowModule(
-                  context: ctx,
-                  config: FlowModuleConfig(
-                    schemaKey: 'COMPLAINTS',
-                    sampleFlows: sampleComplaintFlows,
-                    relationshipMappings: const [
+                final prefs = await SharedPreferences.getInstance();
+                final schemaJsonRaw = prefs.getString('app_config_schemas');
+
+                FlowBuilderSingleton().setPersistenceConfiguration(
+                    persistenceConfiguration:
+                        PersistenceConfiguration.offlineFirst);
+                WidgetRegistry.initialize();
+
+                CrudBlocSingleton().setData(
+                  crudService: DigitCrudService(
+                    context: ctx,
+                    relationshipMap: [
                       RelationshipMapping(
                           from: 'pgrComplainant',
                           to: 'pgrService',
@@ -1883,7 +1947,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                           localKey: 'relatedClientReferenceId',
                           foreignKey: 'clientReferenceId'),
                     ],
-                    nestedModelMappings: const [
+                    nestedModelMappings: [
                       NestedModelMapping(
                         rootModel: 'pgrService',
                         fields: {
@@ -1902,8 +1966,42 @@ class _HomePageState extends LocalizedState<HomePage> {
                         },
                       ),
                     ],
+                    searchEntityRepository: ctx.read<SearchEntityRepository>(),
                   ),
+                  dynamicEntityModelListener: EntityModelMapMapper(),
                 );
+
+                try {
+                  if (false) {
+                    final allSchemas =
+                        json.decode(schemaJsonRaw!) as Map<String, dynamic>;
+                    final data = allSchemas['COMPLAINTS'];
+
+                    final complaintData = data?['data'];
+                    final flowsData = (complaintData['flows'] as List<dynamic>?)
+                            ?.map((e) => Map<String, dynamic>.from(e as Map))
+                            .toList() ??
+                        [];
+                    FlowRegistry.setConfig(flowsData);
+                    NavigationRegistry.setupNavigation(ctx);
+
+                    ctx.router.push(
+                      FlowBuilderHomeRoute(
+                          pageName: complaintData["initialPage"]),
+                    );
+                  } else {
+                    FlowRegistry.setConfig(sampleComplaintFlows["flows"]
+                        as List<Map<String, dynamic>>);
+                    NavigationRegistry.setupNavigation(ctx);
+                    ctx.router.push(
+                      FlowBuilderHomeRoute(
+                          pageName: sampleComplaintFlows["initialPage"]),
+                    );
+                    // }
+                  }
+                } catch (e) {
+                  debugPrint('error $e');
+                }
               },
             ));
           },
@@ -1928,8 +2026,8 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.beneficiaryLabel:
           homeShowcaseData.distributorBeneficiaries.buildWith(
         child: HomeItemCard(
-          icon: Icons.all_inbox,
-          label: i18.home.beneficiaryLabel,
+          icon: Icons.home,
+          label: i18.home.houseToHouse,
           onPressed: () async {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
@@ -2266,7 +2364,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                   dynamicEntityModelListener: EntityModelMapMapper(),
                 );
                 try {
-                  if (false) {
+                  if (true) {
                     final allSchemas =
                         json.decode(schemaJsonRaw!) as Map<String, dynamic>;
                     final data = allSchemas['CLOSEHOUSEHOLD'];
@@ -2302,6 +2400,160 @@ class _HomePageState extends LocalizedState<HomePage> {
         ),
       ),
 
+      // i18.home.manageStockLabel:
+      //     homeShowcaseData.warehouseManagerManageStock.buildWith(
+      //   child: HomeItemCard(
+      //     icon: Icons.store_mall_directory,
+      //     label: i18.home.manageStockLabel,
+      //     onPressed: () async {
+      //       context.router
+      //           .push(CurrentBoundaryRoute(onBoundarySelected: (ctx) async {
+      //         final moduleName =
+      //             'hcm-inventory-${context.selectedProject.referenceID}';
+      //         triggerLocalization(module: moduleName);
+      //         isTriggerLocalisation = false;
+
+      //         final prefs = await SharedPreferences.getInstance();
+      //         final schemaJsonRaw = prefs.getString('app_config_schemas');
+
+      //         FlowBuilderSingleton().setPersistenceConfiguration(
+      //             persistenceConfiguration:
+      //                 PersistenceConfiguration.offlineFirst);
+      //         WidgetRegistry.initialize();
+
+      //         CrudBlocSingleton().setData(
+      //           crudService: DigitCrudService(
+      //             context: ctx,
+      //             relationshipMap: [
+      //               RelationshipMapping(
+      //                   from: 'facility',
+      //                   to: 'projectFacility',
+      //                   localKey: 'id',
+      //                   foreignKey: 'facilityId'),
+      //               RelationshipMapping(
+      //                   from: 'projectResource',
+      //                   to: 'projectFacility',
+      //                   localKey: 'projectId',
+      //                   foreignKey: 'projectId'),
+      //               RelationshipMapping(
+      //                   from: 'productVariant',
+      //                   to: 'projectResource',
+      //                   localKey: 'id',
+      //                   foreignKey: 'resource'),
+      //             ],
+      //             nestedModelMappings: [
+      //               NestedModelMapping(
+      //                 rootModel: 'projectFacility',
+      //                 fields: {
+      //                   'facility': NestedFieldMapping(
+      //                     table: 'facility',
+      //                     localKey: 'facilityId',
+      //                     foreignKey: 'id',
+      //                     type: NestedMappingType.one,
+      //                   ),
+      //                   'projectResources': NestedFieldMapping(
+      //                     table: 'projectResource',
+      //                     localKey: 'projectId',
+      //                     foreignKey: 'projectId',
+      //                     type: NestedMappingType.many,
+      //                   ),
+      //                 },
+      //               ),
+      //             ],
+      //             searchEntityRepository: ctx.read<SearchEntityRepository>(),
+      //           ),
+      //           dynamicEntityModelListener: EntityModelMapMapper(),
+      //         );
+
+      //         try {
+      //           if (true) {
+      //             final allSchemas =
+      //                 json.decode(schemaJsonRaw!) as Map<String, dynamic>;
+      //             final data = allSchemas['INVENTORY'];
+
+      //             final complaintData = data?['data'];
+      //             final flowsData = (complaintData['flows'] as List<dynamic>?)
+      //                     ?.map((e) => Map<String, dynamic>.from(e as Map))
+      //                     .toList() ??
+      //                 [];
+      //             FlowRegistry.setConfig(flowsData);
+      //             NavigationRegistry.setupNavigation(ctx);
+
+      //             ctx.router.push(
+      //               FlowBuilderHomeRoute(
+      //                   pageName: complaintData["initialPage"]),
+      //             );
+      //           } else {
+      //             FlowRegistry.setConfig(sampleInventoryFlows["flows"]
+      //                 as List<Map<String, dynamic>>);
+      //             NavigationRegistry.setupNavigation(ctx);
+      //             ctx.router.push(
+      //               FlowBuilderHomeRoute(
+      //                   pageName: sampleInventoryFlows["initialPage"]),
+      //             );
+      //             // }
+      //           }
+      //         } catch (e) {
+      //           debugPrint('error $e');
+      //         }
+      //       }));
+
+      //       // FlowBuilderSingleton().setBoundary(
+      //       //     boundary: BoundaryModel(
+      //       //         code: LeastLevelBoundarySingleton().boundary?.first));
+
+      //       // final moduleName =
+      //       //     'hcm-inventory-${context.selectedProject.referenceID}';
+      //       // triggerLocalization(module: moduleName);
+      //       // isTriggerLocalisation = false;
+
+      //       // await FlowNavigationUtils.navigateToFlowModule(
+      //       //   context: context,
+      //       //   config: FlowModuleConfig(
+      //       //     schemaKey: 'INVENTORY',
+      //       //     sampleFlows: sampleInventoryFlows,
+      //       //     relationshipMappings: const [
+      //       //       RelationshipMapping(
+      //       //           from: 'facility',
+      //       //           to: 'projectFacility',
+      //       //           localKey: 'id',
+      //       //           foreignKey: 'facilityId'),
+      //       //       RelationshipMapping(
+      //       //           from: 'projectResource',
+      //       //           to: 'projectFacility',
+      //       //           localKey: 'projectId',
+      //       //           foreignKey: 'projectId'),
+      //       //       RelationshipMapping(
+      //       //           from: 'productVariant',
+      //       //           to: 'projectResource',
+      //       //           localKey: 'id',
+      //       //           foreignKey: 'resource'),
+      //       //     ],
+      //       //     nestedModelMappings: const [
+      //       // NestedModelMapping(
+      //       //   rootModel: 'projectFacility',
+      //       //   fields: {
+      //       //     'facility': NestedFieldMapping(
+      //       //       table: 'facility',
+      //       //       localKey: 'facilityId',
+      //       //       foreignKey: 'id',
+      //       //       type: NestedMappingType.one,
+      //       //     ),
+      //       //     'projectResources': NestedFieldMapping(
+      //       //       table: 'projectResource',
+      //       //       localKey: 'projectId',
+      //       //       foreignKey: 'projectId',
+      //       //       type: NestedMappingType.many,
+      //       //     ),
+      //       //   },
+      //       // ),
+      //       //     ],
+      //       //   ),
+      //       // );
+      //     },
+      //   ),
+      // ),
+
       i18.home.manageStockLabel:
           homeShowcaseData.warehouseManagerManageStock.buildWith(
         child: HomeItemCard(
@@ -2317,12 +2569,17 @@ class _HomePageState extends LocalizedState<HomePage> {
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
-            await FlowNavigationUtils.navigateToFlowModule(
-              context: context,
-              config: FlowModuleConfig(
-                schemaKey: 'INVENTORY',
-                sampleFlows: sampleInventoryFlows,
-                relationshipMappings: const [
+            final prefs = await SharedPreferences.getInstance();
+            final schemaJsonRaw = prefs.getString('app_config_schemas');
+
+            FlowBuilderSingleton().setPersistenceConfiguration(
+                persistenceConfiguration:
+                    PersistenceConfiguration.offlineFirst);
+            WidgetRegistry.initialize();
+            CrudBlocSingleton().setData(
+              crudService: DigitCrudService(
+                context: context,
+                relationshipMap: const [
                   RelationshipMapping(
                       from: 'facility',
                       to: 'projectFacility',
@@ -2358,11 +2615,106 @@ class _HomePageState extends LocalizedState<HomePage> {
                     },
                   ),
                 ],
+                searchEntityRepository: context.read<SearchEntityRepository>(),
               ),
+              dynamicEntityModelListener: EntityModelMapMapper(),
             );
+
+            try {
+              if (false) {
+                final allSchemas =
+                    json.decode(schemaJsonRaw!) as Map<String, dynamic>;
+                final data = allSchemas['INVENTORY'];
+
+                final inventoryData = data?['data'];
+                final flowsData = (inventoryData['flows'] as List<dynamic>?)
+                        ?.map((e) => Map<String, dynamic>.from(e as Map))
+                        .toList() ??
+                    [];
+                FlowRegistry.setConfig(flowsData);
+                NavigationRegistry.setupNavigation(context);
+
+                context.router.push(
+                  FlowBuilderHomeRoute(pageName: inventoryData["initialPage"]),
+                );
+              } else {
+                FlowRegistry.setConfig(sampleInventoryFlows["flows"]
+                    as List<Map<String, dynamic>>);
+                NavigationRegistry.setupNavigation(context);
+                context.router.push(
+                  FlowBuilderHomeRoute(
+                      pageName: sampleInventoryFlows["initialPage"]),
+                );
+              }
+            } catch (e) {
+              debugPrint('error $e');
+            }
           },
         ),
       ),
+
+      // i18.home.manageStockLabel:
+      //     homeShowcaseData.warehouseManagerManageStock.buildWith(
+      //   child: HomeItemCard(
+      //     icon: Icons.store_mall_directory,
+      //     label: i18.home.manageStockLabel,
+      //     onPressed: () async {
+      //       FlowBuilderSingleton().setBoundary(
+      //           boundary: BoundaryModel(
+      //               code: LeastLevelBoundarySingleton().boundary?.first));
+
+      //       final moduleName =
+      //           'hcm-inventory-${context.selectedProject.referenceID}';
+      //       triggerLocalization(module: moduleName);
+      //       isTriggerLocalisation = false;
+
+      //       await FlowNavigationUtils.navigateToFlowModule(
+      //         context: context,
+      //         config: FlowModuleConfig(
+      //           schemaKey: 'INVENTORY',
+      //           sampleFlows: sampleInventoryFlows,
+      //           relationshipMappings: const [
+      //             RelationshipMapping(
+      //                 from: 'facility',
+      //                 to: 'projectFacility',
+      //                 localKey: 'id',
+      //                 foreignKey: 'facilityId'),
+      //             RelationshipMapping(
+      //                 from: 'projectResource',
+      //                 to: 'projectFacility',
+      //                 localKey: 'projectId',
+      //                 foreignKey: 'projectId'),
+      //             RelationshipMapping(
+      //                 from: 'productVariant',
+      //                 to: 'projectResource',
+      //                 localKey: 'id',
+      //                 foreignKey: 'resource'),
+      //           ],
+      //           nestedModelMappings: const [
+      //             NestedModelMapping(
+      //               rootModel: 'projectFacility',
+      //               fields: {
+      //                 'facility': NestedFieldMapping(
+      //                   table: 'facility',
+      //                   localKey: 'facilityId',
+      //                   foreignKey: 'id',
+      //                   type: NestedMappingType.one,
+      //                 ),
+      //                 'projectResources': NestedFieldMapping(
+      //                   table: 'projectResource',
+      //                   localKey: 'projectId',
+      //                   foreignKey: 'projectId',
+      //                   type: NestedMappingType.many,
+      //                 ),
+      //               },
+      //             ),
+      //           ],
+      //         ),
+      //       );
+      //     },
+      //   ),
+      // ),
+
       i18.home.stockReconciliationLabel:
           homeShowcaseData.wareHouseManagerStockReconciliation.buildWith(
         child: HomeItemCard(

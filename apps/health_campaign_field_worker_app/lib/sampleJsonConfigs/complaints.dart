@@ -719,8 +719,8 @@ final dynamic sampleComplaintFlows = {
                 },
                 {
                   "type": "minLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGITS"
+                  "value": 11,
+                  "message": "MOBILE_LENGTH_11_DIGITS"
                 },
                 {
                   "type": "maxLength",
@@ -788,12 +788,12 @@ final dynamic sampleComplaintFlows = {
                 {
                   "type": "minLength",
                   "value": 11,
-                  "message": "MOBILE_LENGTH_11_DIGIT"
+                  "message": "MOBILE_LENGTH_11_DIGITS"
                 },
                 {
                   "type": "maxLength",
                   "value": 11,
-                  "message": "MOBILE_LENGTH_11_DIGIT"
+                  "message": "MOBILE_LENGTH_11_DIGITS"
                 }
               ],
               "errorMessage": "",

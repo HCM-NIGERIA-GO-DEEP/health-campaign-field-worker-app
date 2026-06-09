@@ -21,7 +21,13 @@ class TextWidget extends ResolvedFlowWidget {
     final value = json['value'] ?? '';
 
     // Get style from properties
-    final properties = json['properties'] as Map<String, dynamic>? ?? {};
+    // final properties = json['properties'] as Map<String, dynamic>? ?? {};
+
+    final rawProperties = json['properties'];
+    final properties = rawProperties == null
+        ? <String, dynamic>{}
+        : Map<String, dynamic>.from(rawProperties as Map);
+
     final styleKey = properties['style']?.toString();
     final separatedBy = properties['separatedBy'];
     final replaceAll = properties['replaceAll'] as List?;

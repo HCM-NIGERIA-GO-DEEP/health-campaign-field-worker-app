@@ -1874,9 +1874,12 @@ void initializeFunctionRegistry() {
   });
 
   FunctionRegistry.register('getNumberOfITNForDelivery', (args, stateData) {
-    final memberCount = args.isNotEmpty ? args.first : null;
-    if (memberCount == null) return 0;
-    return memberCount * 2;
+    final memberCount = args.isNotEmpty ? int.tryParse(args.first.toString()) : null;
+    if (memberCount == null || memberCount <= 0) return 0;
+    if (memberCount == 1 || memberCount == 2) return 1;
+    if (memberCount == 3 || memberCount == 4) return 2;
+    if (memberCount == 5 || memberCount == 6) return 3;
+    if (memberCount >= 7) return 4;
   });
 
   FunctionRegistry.register('getLatestBeneficiaryId', (args, stateData) {

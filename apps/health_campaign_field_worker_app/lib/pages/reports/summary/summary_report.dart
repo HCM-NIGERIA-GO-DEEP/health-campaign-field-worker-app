@@ -41,8 +41,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       final projectId = context.projectId;
 
       // Repositories
-      final householdRepo = context
-          .read<LocalRepository<HouseholdModel, HouseholdSearchModel>>();
+      final householdRepo =
+          context.read<LocalRepository<HouseholdModel, HouseholdSearchModel>>();
       final taskRepo =
           context.read<LocalRepository<TaskModel, TaskSearchModel>>();
 
@@ -74,10 +74,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         return facilityLevel == null || facilityLevel == 'current';
       }).toList();
 
-      final facilityIds =
-          currentFacilities.map((pf) => pf.facilityId).toList();
-      final facilities = await facilityRepo
-          .search(FacilitySearchModel(id: facilityIds));
+      final facilityIds = currentFacilities.map((pf) => pf.facilityId).toList();
+      final facilities =
+          await facilityRepo.search(FacilitySearchModel(id: facilityIds));
 
       // Match stock_balance_card: distributors always use userUuid
       final effectiveFacilityId = isDistributor
@@ -100,7 +99,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // Fetch all data
       final households = await householdRepo.search(HouseholdSearchModel());
       final tasks = await taskRepo.search(TaskSearchModel());
-      final householdMembers = await householdMemberRepo.search(HouseholdMemberSearchModel());
+      final householdMembers =
+          await householdMemberRepo.search(HouseholdMemberSearchModel());
 
       // Fetch stock records (received + sent for facility)
       final receivedStocks = await stockRepo
@@ -121,10 +121,11 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // ── Group households by date (filter by logged-in user) ──
       final hhByDate = <String, int>{};
       for (final hh in households) {
-        final createdBy = hh.clientAuditDetails?.createdBy ?? hh.auditDetails?.createdBy;
+        final createdBy =
+            hh.clientAuditDetails?.createdBy ?? hh.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
-        final epochMs = hh.clientAuditDetails?.createdTime ??
-            hh.auditDetails?.createdTime;
+        final epochMs =
+            hh.clientAuditDetails?.createdTime ?? hh.auditDetails?.createdTime;
         if (epochMs == null) continue;
         final date = _epochToDateString(epochMs);
         hhByDate[date] = (hhByDate[date] ?? 0) + 1;
@@ -133,13 +134,13 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       final totalMembersByDate = <String, int>{};
       for (final hh in households) {
         final totalMembers = hh.memberCount ?? 0;
-        final epochMs = hh.clientAuditDetails?.createdTime ??
-            hh.auditDetails?.createdTime;
+        final epochMs =
+            hh.clientAuditDetails?.createdTime ?? hh.auditDetails?.createdTime;
         if (epochMs == null) continue;
         final date = _epochToDateString(epochMs);
-        totalMembersByDate[date] = (totalMembersByDate[date] ?? 0) + totalMembers;
+        totalMembersByDate[date] =
+            (totalMembersByDate[date] ?? 0) + totalMembers;
       }
-
 
       final totalITNByDate = <String, int>{};
       for (final task in tasks) {
@@ -151,14 +152,12 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
 
         // Filter by logged-in user
         final createdBy =
-            task.clientAuditDetails?.createdBy ??
-            task.auditDetails?.createdBy;
+            task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
 
         if (createdBy != userUuid) continue;
 
         // Get created time
-        final epochMs =
-            task.clientAuditDetails?.createdTime ??
+        final epochMs = task.clientAuditDetails?.createdTime ??
             task.auditDetails?.createdTime;
 
         if (epochMs == null) continue;
@@ -177,24 +176,20 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
 
           if (pvId == null || pvId.isEmpty) continue;
 
-          final qty =
-              (double.tryParse(res.quantity ?? '0') ?? 0).toInt();
+          final qty = (double.tryParse(res.quantity ?? '0') ?? 0).toInt();
 
-          totalITNByDate[date] =
-              (totalITNByDate[date] ?? 0) + qty;
+          totalITNByDate[date] = (totalITNByDate[date] ?? 0) + qty;
         }
       }
-
-    
 
       // ── Group tasks by date for children treated ──
       // (filter by logged-in user AND status == 'ADMINISTRATION_SUCCESS' or 'VISITED')
       final tasksByDate = <String, Set<String>>{};
       for (final task in tasks) {
-        if (task.status != 'ADMINISTRATION_SUCCESS' &&
-            task.status != 'VISITED') continue;
-        final createdBy = task.clientAuditDetails?.createdBy ??
-            task.auditDetails?.createdBy;
+        if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
+          continue;
+        final createdBy =
+            task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
         final epochMs = task.clientAuditDetails?.createdTime ??
             task.auditDetails?.createdTime;
@@ -225,10 +220,10 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // Key: "date|productVariantId" -> sum of quantity
       final consumedByDateProduct = <String, double>{};
       for (final task in tasks) {
-        if (task.status != 'ADMINISTRATION_SUCCESS' &&
-            task.status != 'VISITED') continue;
-        final createdBy = task.clientAuditDetails?.createdBy ??
-            task.auditDetails?.createdBy;
+        if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
+          continue;
+        final createdBy =
+            task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
         final epochMs = task.clientAuditDetails?.createdTime ??
             task.auditDetails?.createdTime;
@@ -241,7 +236,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           if (pvId == null || pvId.isEmpty) continue;
           final qty = double.tryParse(res.quantity ?? '0') ?? 0.0;
           final key = '$date|$pvId';
-          consumedByDateProduct[key] = (consumedByDateProduct[key] ?? 0.0) + qty;
+          consumedByDateProduct[key] =
+              (consumedByDateProduct[key] ?? 0.0) + qty;
         }
       }
 
@@ -391,19 +387,18 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       DigitTableColumn(
         header: localizations.translate(i18.summaryReport.householdsRegistered),
         cellValue: 'hhRegistered',
-        width: 250,
-        
+        // width: 250,
       ),
       DigitTableColumn(
-        header: localizations.translate(i18.summaryReport.numberOfPeopleInHouseholds),
+        header: localizations
+            .translate(i18.summaryReport.numberOfPeopleInHouseholds),
         cellValue: 'numberOfPeopleInHouseholds',
       ),
       DigitTableColumn(
-        header: localizations.translate(i18.summaryReport.numberOfITNDistributed),
+        header:
+            localizations.translate(i18.summaryReport.numberOfITNDistributed),
         cellValue: 'numberOfITNDistributed',
       ),
-      
-      
     ];
 
     // Add stock columns per product variant
@@ -480,89 +475,229 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       return DigitTableRow(tableRow: cells);
     }).toList();
 
-    return Scaffold(
-      body: ScrollableContent(
-        enableFixedDigitButton: true,
-        header: BackNavigationHelpHeaderWidget(
-          handleback: () {
-            context.router.replaceAll([HomeRoute()]);
-          },
-        ),
-        footer: DigitCard(
-          margin: const EdgeInsets.only(top: spacer2),
-          children: [
-            DigitButton(
-              mainAxisSize: MainAxisSize.max,
-              label: localizations.translate(i18.summaryReport.backToHome),
-              type: DigitButtonType.primary,
-              size: DigitButtonSize.large,
-              onPressed: () {
-                context.router.replaceAll([HomeRoute()]);
-              },
-            ),
-          ],
-        ),
+    // return Scaffold(
+    //   body: ScrollableContent(
+    //     enableFixedDigitButton: true,
+    //     header: BackNavigationHelpHeaderWidget(
+    //       handleback: () {
+    //         context.router.replaceAll([HomeRoute()]);
+    //       },
+    //     ),
+    //     footer: DigitCard(
+    //       margin: const EdgeInsets.only(top: spacer2),
+    //       children: [
+    //         DigitButton(
+    //           mainAxisSize: MainAxisSize.max,
+    //           label: localizations.translate(i18.summaryReport.backToHome),
+    //           type: DigitButtonType.primary,
+    //           size: DigitButtonSize.large,
+    //           onPressed: () {
+    //             context.router.replaceAll([HomeRoute()]);
+    //           },
+    //         ),
+    //       ],
+    //     ),
+    //     children: [
+    //       Padding(
+    //         padding: const EdgeInsets.all(spacer2),
+    //         child: Align(
+    //           alignment: Alignment.centerLeft,
+    //           child: Text(
+    //             localizations.translate(i18.summaryReport.heading),
+    //             style: textTheme.headingXl.copyWith(
+    //               color: theme.colorTheme.primary.primary2,
+    //             ),
+    //             overflow: TextOverflow.ellipsis,
+    //           ),
+    //         ),
+    //       ),
+    //       // Padding(
+    //       //   padding: const EdgeInsets.symmetric(horizontal: spacer2),
+    //       //   child: Text(
+    //       //     localizations.translate(i18.summaryReport.description),
+    //       //     style: textTheme.bodyL,
+    //       //   ),
+    //       // ),
+    //       const SizedBox(height: spacer2),
+    //       // Padding(
+    //       //   padding: const EdgeInsets.symmetric(horizontal: spacer2),
+    //       //   child: InfoCard(
+    //       //     title: localizations.translate(i18.summaryReport.infoCardTitle),
+    //       //     description: localizations
+    //       //         .translate(i18.summaryReport.infoCardDescription),
+    //       //     type: InfoType.info,
+    //       //   ),
+    //       // ),
+    //       // const SizedBox(height: spacer2),
+    //       if (_isLoading)
+    //         const Center(child: CircularProgressIndicator())
+    //       else if (_reportRows.isEmpty)
+    //         Padding(
+    //           padding: const EdgeInsets.all(spacer4),
+    //           child: Center(
+    //             child: Text(
+    //               localizations.translate(i18.common.noResultsFound),
+    //               style: textTheme.bodyL,
+    //             ),
+    //           ),
+    //         )
+    //       else
+    //         Padding(
+    //             padding: const EdgeInsets.symmetric(horizontal: spacer2),
+    //             child: SizedBox(
+    //               height: MediaQuery.of(context).size.height * 0.6,
+    //               child: DigitTable(
+    //                 enableBorder: true,
+    //                 showPagination: false,
+    //                 showSelectedState: false,
+    //                 columns: columns,
+    //                 rows: rows,
+    //                 // tableHeight: (rows.length * 50.0).clamp(100, 400),
+    //                 // tableHeight: 1000,
+    //                 tableHeight: MediaQuery.of(context).size.height * 0.6,
+    //               ),
+    //             )),
+    //       const SizedBox(height: spacer2),
+    //     ],
+    //   ),
+    // );
+
+    return ScrollableContent(
+      enableFixedDigitButton: true,
+      header: BackNavigationHelpHeaderWidget(
+        handleback: () {
+          context.router.replaceAll([HomeRoute()]);
+        },
+      ),
+      footer: DigitCard(
+        margin: const EdgeInsets.only(top: spacer2),
         children: [
-          Padding(
-            padding: const EdgeInsets.all(spacer2),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                localizations.translate(i18.summaryReport.heading),
-                style: textTheme.headingXl.copyWith(
-                  color: theme.colorTheme.primary.primary2,
-                ),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
+          DigitButton(
+            mainAxisSize: MainAxisSize.max,
+            label: localizations.translate(i18.summaryReport.backToHome),
+            type: DigitButtonType.primary,
+            size: DigitButtonSize.large,
+            onPressed: () {
+              context.router.replaceAll([HomeRoute()]);
+            },
           ),
-          // Padding(
-          //   padding: const EdgeInsets.symmetric(horizontal: spacer2),
-          //   child: Text(
-          //     localizations.translate(i18.summaryReport.description),
-          //     style: textTheme.bodyL,
-          //   ),
-          // ),
-          const SizedBox(height: spacer2),
-          // Padding(
-          //   padding: const EdgeInsets.symmetric(horizontal: spacer2),
-          //   child: InfoCard(
-          //     title: localizations.translate(i18.summaryReport.infoCardTitle),
-          //     description: localizations
-          //         .translate(i18.summaryReport.infoCardDescription),
-          //     type: InfoType.info,
-          //   ),
-          // ),
-          // const SizedBox(height: spacer2),
-          if (_isLoading)
-            const Center(child: CircularProgressIndicator())
-          else if (_reportRows.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.all(spacer4),
-              child: Center(
-                child: Text(
-                  localizations.translate(i18.common.noResultsFound),
-                  style: textTheme.bodyL,
-                ),
-              ),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: spacer2),
-              child: DigitTable(
-                enableBorder: true,
-                showPagination: false,
-                showSelectedState: false,
-                columns: columns,
-                rows: rows,
-                // tableHeight: (rows.length * 50.0).clamp(100, 400),
-                // tableHeight: 1000,
-                tableHeight: MediaQuery.of(context).size.height * 0.6,
-              ),
-            ),
-          const SizedBox(height: spacer2),
         ],
       ),
+      // children: [
+      //   Padding(
+      //     padding: const EdgeInsets.all(spacer2),
+      //     child: Align(
+      //       alignment: Alignment.centerLeft,
+      //       child: Text(
+      //         localizations.translate(i18.summaryReport.heading),
+      //         style: textTheme.headingXl.copyWith(
+      //           color: theme.colorTheme.primary.primary2,
+      //         ),
+      //         overflow: TextOverflow.ellipsis,
+      //       ),
+      //     ),
+      //   ),
+      //   // Padding(
+      //   //   padding: const EdgeInsets.symmetric(horizontal: spacer2),
+      //   //   child: Text(
+      //   //     localizations.translate(i18.summaryReport.description),
+      //   //     style: textTheme.bodyL,
+      //   //   ),
+      //   // ),
+      //   const SizedBox(height: spacer2),
+      //   // Padding(
+      //   //   padding: const EdgeInsets.symmetric(horizontal: spacer2),
+      //   //   child: InfoCard(
+      //   //     title: localizations.translate(i18.summaryReport.infoCardTitle),
+      //   //     description: localizations
+      //   //         .translate(i18.summaryReport.infoCardDescription),
+      //   //     type: InfoType.info,
+      //   //   ),
+      //   // ),
+      //   // const SizedBox(height: spacer2),
+      //   if (_isLoading)
+      //     const Center(child: CircularProgressIndicator())
+      //   else if (_reportRows.isEmpty)
+      //     Padding(
+      //       padding: const EdgeInsets.all(spacer4),
+      //       child: Center(
+      //         child: Text(
+      //           localizations.translate(i18.common.noResultsFound),
+      //           style: textTheme.bodyL,
+      //         ),
+      //       ),
+      //     )
+      //   else
+      //     Padding(
+      //         padding: const EdgeInsets.symmetric(horizontal: spacer2),
+      //         child: SizedBox(
+      //           height: MediaQuery.of(context).size.height * 0.6,
+      //           child: DigitTable(
+      //             enableBorder: true,
+      //             showPagination: false,
+      //             showSelectedState: false,
+      //             columns: columns,
+      //             rows: rows,
+      //             // tableHeight: (rows.length * 50.0).clamp(100, 400),
+      //             // tableHeight: 1000,
+      //             tableHeight: MediaQuery.of(context).size.height * 0.6,
+      //           ),
+      //         )),
+      //   const SizedBox(height: spacer2),
+      // ],
+      slivers: [
+        SliverToBoxAdapter(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(spacer2),
+                child: Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    localizations.translate(i18.summaryReport.heading),
+                    style: textTheme.headingXl.copyWith(
+                      color: theme.colorTheme.primary.primary2,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              const SizedBox(height: spacer2),
+              if (_isLoading)
+                const Center(child: CircularProgressIndicator())
+              else if (_reportRows.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.all(spacer4),
+                  child: Center(
+                    child: Text(
+                      localizations.translate(i18.common.noResultsFound),
+                      style: textTheme.bodyL,
+                    ),
+                  ),
+                )
+              else
+                ClipRect(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: spacer2),
+                    child: SizedBox(
+                      height: MediaQuery.of(context).size.height * 0.6,
+                      child: DigitTable(
+                        enableBorder: true,
+                        showPagination: false,
+                        showSelectedState: false,
+                        columns: columns,
+                        rows: rows,
+                        tableHeight: MediaQuery.of(context).size.height * 0.6,
+                      ),
+                    ),
+                  ),
+                ),
+              const SizedBox(height: spacer2),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

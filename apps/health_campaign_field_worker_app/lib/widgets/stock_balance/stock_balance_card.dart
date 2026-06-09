@@ -83,7 +83,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
             .where((f) => f.key == 'facilityLevel')
             .firstOrNull
             ?.value;
-        return facilityLevel == null || facilityLevel == 'current';
+        // return facilityLevel == null || facilityLevel == 'current';
+        return facilityLevel == 'current';
       }).toList();
 
       // Get facility details for names
@@ -241,6 +242,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       ...userActionBalances,
     };
 
+    print("mergedBalances: $mergedBalances"); 
+
     StockBalanceCache.instance.setCache(effectiveFacilityId, mergedBalances);
     if (mounted) {
       setState(() {
@@ -354,6 +357,7 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
 
         // Per-commodity stock balance bars
         ..._productVariants.map((product) {
+          print("--- ${_stockBalances}");
           final balance = max(_stockBalances[product.id] ?? 0.0, 0.0);
           final color = _getColorForBalance(balance);
           final progress =

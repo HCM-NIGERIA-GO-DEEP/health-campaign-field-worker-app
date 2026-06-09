@@ -41,7 +41,13 @@ class ListViewWidget extends ResolvedFlowWidget {
     }
 
     // Read spacing property (e.g., "spacer4")
-    final properties = json['properties'] as Map<String, dynamic>?;
+    // final properties = json['properties'] as Map<String, dynamic>?;
+  
+    final rawProperties = json['properties'];
+    final properties = rawProperties == null
+        ? null
+        : Map<String, dynamic>.from(rawProperties as Map);
+
     final spacingKey = properties?['spacing']?.toString();
     final double spacing = _mapSpacingValue(context, spacingKey);
 

@@ -387,6 +387,8 @@ class FunctionRegistries {
     });
 
     FunctionRegistry.register('hasResults', (args, stateData) {
+      print('hasResults called with args: $args');
+      print('hasResults called with args: $args.isEmpty: ${args.isEmpty}');
       if (args.isEmpty) return false;
       final modelKey = args.first?.toString() ?? '';
       if (modelKey.isEmpty || stateData?.modelMap == null) return false;

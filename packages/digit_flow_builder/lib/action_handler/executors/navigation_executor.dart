@@ -240,7 +240,6 @@ class NavigationExecutor extends ActionExecutor {
       });
       debugPrint('NAVIGATION: Stored existingModels for $targetCompositeKey');
     }
-
     return contextData;
   }
 }

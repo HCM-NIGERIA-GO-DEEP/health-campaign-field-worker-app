@@ -1082,6 +1082,9 @@ final jsonConfig = {
           "householdType": "__context:householdType",
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
+          "additionalFields": {
+            "date": "closeHouseholdDetails.date"
+          }
         }
       },
       "IndividualModel": {
@@ -1179,7 +1182,6 @@ final jsonConfig = {
               "__switch:__context:beneficiaryType:{INDIVIDUAL:__ref:IndividualModel.clientReferenceId,HOUSEHOLD:__ref:HouseholdModel.clientReferenceId}",
           "nonRecoverableError": "errors.nonRecoverable",
           "clientReferenceId": "__generate:uuid",
-
           /// Note: Generate uuid
           "rowVersion": "meta.rowVersion",
           "dateOfRegistration": "__value:DATETIME.NOW",
