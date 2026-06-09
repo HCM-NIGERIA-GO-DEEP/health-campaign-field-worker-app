@@ -23,6 +23,7 @@ class TextWidget extends ResolvedFlowWidget {
     // Get style from properties
     final properties = json['properties'] as Map<String, dynamic>? ?? {};
     final styleKey = properties['style']?.toString();
+    final textAlign = _parseTextAlign(properties['textAlign']?.toString());
     final separatedBy = properties['separatedBy'];
     final replaceAll = properties['replaceAll'] as List?;
     final textStyle = _parseTextStyle(context, styleKey);
@@ -52,11 +53,31 @@ class TextWidget extends ResolvedFlowWidget {
           color:
               _parseTextColor(context, properties['color']?.toString()) ?? null,
         ),
+        textAlign: textAlign,
         overflow: TextOverflow.ellipsis,
         maxLines: json["maxLines"] ?? 2,
       ),
       properties,
     );
+  }
+
+  TextAlign _parseTextAlign(String? alignKey) {
+    switch (alignKey) {
+      case 'center':
+        return TextAlign.center;
+      case 'right':
+        return TextAlign.right;
+      case 'left':
+        return TextAlign.left;
+      case 'justify':
+        return TextAlign.justify;
+      case 'start':
+        return TextAlign.start;
+      case 'end':
+        return TextAlign.end;
+      default:
+        return TextAlign.start;
+    }
   }
 
   Color? _parseTextColor(BuildContext context, String? colorKey) {

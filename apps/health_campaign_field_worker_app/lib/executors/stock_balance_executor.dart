@@ -9,6 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
 
 import '../models/entities/roles_type.dart';
+import '../utils/function_registries.dart';
 import '../utils/stock_calculation_utils.dart';
 import '../utils/utils.dart';
 
@@ -363,6 +364,12 @@ class StockBalanceExecutor extends ActionExecutor {
       await userActionRepo.create(balanceAction);
     }
 
+    // Immediately update the in-memory cache so validation functions see the new balance
+    final updatedCache =
+        Map<String, double>.from(StockBalanceCache.instance.cache);
+    updatedCache[productVariantId] = stockInHand;
+    StockBalanceCache.instance.setCache(facilityId, updatedCache);
+
     debugPrint(
       'UPDATE_STOCK_BALANCE: Updated balance for $facilityId/$productVariantId = $stockInHand (current: $currentBalance, delivered: $deliveredQuantity, existing record: ${existing != null})',
     );
@@ -439,6 +446,12 @@ class StockBalanceExecutor extends ActionExecutor {
     } else {
       await userActionRepo.create(balanceAction);
     }
+
+    // Immediately update the in-memory cache so validation functions see the new balance
+    final updatedCache =
+        Map<String, double>.from(StockBalanceCache.instance.cache);
+    updatedCache[productVariantId] = newBalance;
+    StockBalanceCache.instance.setCache(facilityId, updatedCache);
 
     debugPrint(
       'UPDATE_STOCK_BALANCE: Updated balance for $facilityId/$productVariantId = $newBalance (previous: $currentBalance, delta: $quantityDelta, existing record: ${existing != null})',

@@ -390,66 +390,70 @@ final dynamic sampleFlows = {
       "name": "beneficiaryDetails",
       "order": 9,
       "footer": [
-        // {
-        //   "type": "template",
-        //   "label": "RECORD_CYCLE_DOSE",
-        //   "format": "actionPopup",
-        //   "fieldName": "insufficientStockPopUp",
-        //   "visible":
-        //       "{{fn:hasStockForDelivery(contextData.0.eligibleProductVariants)}} == false",
-        //   "properties": {
-        //     "icon": "Warning",
-        //     "size": "large",
-        //     "type": "primary",
-        //     "suffixIcon": null,
-        //     "popupConfig": {
-        //       "body": [
-        //         {
-        //           "type": "template",
-        //           "value": "{{fn:getInsufficientStockMessage()}}",
-        //           "format": "textTemplate",
-        //           "fieldName": "insufficientStockMessageText"
-        //         }
-        //       ],
-        //       "type": "default",
-        //       "title": "INSUFFICIENT_STOCK_TITLE",
-        //       "titleIcon": "Warning",
-        //       "footerActions": [
-        //         {
-        //           "type": "template",
-        //           "label": "GO_BACK",
-        //           "format": "button",
-        //           "onAction": [
-        //             {
-        //               "actionType": "CLOSE_POPUP",
-        //               "properties": {"parentScreenKey": "beneficiaryDetails"}
-        //             }
-        //           ],
-        //           "fieldName": "closePopUp",
-        //           "properties": {
-        //             "size": "large",
-        //             "type": "primary",
-        //             "mainAxisSize": "max"
-        //           }
-        //         }
-        //       ],
-        //       "showCloseButton": true,
-        //       "barrierDismissible": true
-        //     },
-        //     "mainAxisSize": "max",
-        //     "mainAxisAlignment": "center"
-        //   },
-        //   "schemaCode": null,
-        //   "suffixIcon": null
-        // },
+        {
+          "type": "template",
+          "label": "RECORD_CYCLE_DOSE",
+          "format": "actionPopup",
+          "fieldName": "insufficientStockPopUp",
+          "visible":
+              "{{fn:hasStockForDelivery(contextData.0.eligibleProductVariants)}} == false",
+          "properties": {
+            "icon": "Warning",
+            "size": "large",
+            "type": "primary",
+            "suffixIcon": null,
+            "popupConfig": {
+              "body": [
+                {
+                  "type": "template",
+                  "value": "{{fn:getInsufficientStockMessage()}}",
+                  "format": "textTemplate",
+                  "fieldName": "insufficientStockMessageText",
+                  "maxLines": 8,
+                  "properties": {"textAlign": "center"}
+                }
+              ],
+              "type": "alert",
+              "title": "INSUFFICIENT_STOCK_TITLE",
+              "titleIcon": "Warning",
+              "footerActions": [
+                {
+                  "type": "template",
+                  "label": "BACK_TO_HOME_LABEL",
+                  "format": "button",
+                  "onAction": [
+                    {
+                      "actionType": "CLOSE_POPUP",
+                      "properties": {"parentScreenKey": "beneficiaryDetails"}
+                    },
+                    {
+                      "actionType": "NAVIGATION",
+                      "properties": {"name": "HOME", "type": "HOME"}
+                    }
+                  ],
+                  "fieldName": "closeInsufficientStockDeliveryPopUp",
+                  "properties": {
+                    "size": "large",
+                    "type": "primary",
+                    "mainAxisSize": "max"
+                  }
+                }
+              ],
+              "showCloseButton": true,
+              "barrierDismissible": true
+            },
+            "mainAxisSize": "max",
+            "mainAxisAlignment": "center"
+          },
+          "schemaCode": null,
+          "suffixIcon": null
+        },
         {
           "type": "template",
           "label": "RECORD_CYCLE_DOSE",
           "format": "button",
-          // "visible":
-          //     "{{fn:canRecordDelivery(contextData.0.nextCycleId)}}==true && {{fn:hasStockForDelivery(contextData.0.eligibleProductVariants)}} == true",
-          // "disabled":
-          //     "{{fn:hasStockForDelivery(contextData.0.eligibleProductVariants)}} == false",
+          "visible":
+              "{{fn:hasStockForDelivery(contextData.0.eligibleProductVariants)}} == true",
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -515,6 +519,7 @@ final dynamic sampleFlows = {
       "screenType": "TEMPLATE",
       "description": "BENEFICIARY_DETAILS_DESC",
       "initActions": [
+        {"actionType": "LOAD_STOCK_BALANCE"},
         {
           "actionType": "SEARCH_EVENT",
           "properties": {
@@ -1012,8 +1017,62 @@ final dynamic sampleFlows = {
         {
           "type": "template",
           "label": "REGISTER_BENEFICIARY",
+          "format": "actionPopup",
+          "fieldName": "insufficientStockOverviewPopUp",
+          "visible": "{{fn:hasStockForRegistration()}}==false",
+          "properties": {
+            "size": "large",
+            "type": "primary",
+            "popupConfig": {
+              "body": [
+                {
+                  "type": "template",
+                  "value": "{{fn:getRegistrationInsufficientStockMessage()}}",
+                  "format": "textTemplate",
+                  "fieldName": "insufficientStockOverviewText",
+                  "maxLines": 8,
+                  "properties": {"textAlign": "center"}
+                }
+              ],
+              "type": "alert",
+              "title": "INSUFFICIENT_STOCK_TITLE",
+              "titleIcon": "Warning",
+              "footerActions": [
+                {
+                  "type": "template",
+                  "label": "BACK_TO_HOME_LABEL",
+                  "format": "button",
+                  "onAction": [
+                    {
+                      "actionType": "CLOSE_POPUP",
+                      "properties": {"parentScreenKey": "householdOverview"}
+                    },
+                    {
+                      "actionType": "NAVIGATION",
+                      "properties": {"name": "HOME", "type": "HOME"}
+                    }
+                  ],
+                  "fieldName": "closeInsufficientStockOverviewPopUp",
+                  "properties": {
+                    "size": "large",
+                    "type": "primary",
+                    "mainAxisSize": "max"
+                  }
+                }
+              ],
+              "showCloseButton": true,
+              "barrierDismissible": true
+            },
+            "mainAxisSize": "max",
+            "mainAxisAlignment": "center"
+          },
+          "schemaCode": null
+        },
+        {
+          "type": "template",
+          "label": "REGISTER_BENEFICIARY",
           "format": "button",
-          "visible": true,
+          "visible": "{{fn:hasStockForRegistration()}}==true",
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -1093,6 +1152,7 @@ final dynamic sampleFlows = {
       "description": "REGISTRATION_HOUSEHOLD_OVERVIEW_DESC",
       "initActions": [
         {"actionType": "LOAD_UNIQUE_ID_POOL"},
+        {"actionType": "LOAD_STOCK_BALANCE"},
         {
           "actionType": "SEARCH_EVENT",
           "properties": {
@@ -1279,7 +1339,6 @@ final dynamic sampleFlows = {
               "operator": "equals"
             }
           },
-          
         },
         "rootEntity": "HouseholdModel",
         "wrapperName": "HouseholdWrapper",
@@ -2340,17 +2399,72 @@ final dynamic sampleFlows = {
         }
       ],
       "initActions": [
-        {"actionType": "LOAD_UNIQUE_ID_POOL"}
+        {"actionType": "LOAD_UNIQUE_ID_POOL"},
+        {"actionType": "LOAD_STOCK_BALANCE"}
       ],
       "name": "searchBeneficiary",
       "order": 1,
       "footer": [
         {
+          "type": "template",
+          "label": "REGISTER_NEW_BENEFICIARY",
+          "format": "actionPopup",
+          "fieldName": "insufficientStockRegistrationPopUp",
+          "visible": "{{fn:hasStockForRegistration()}}==false",
+          "properties": {
+            "size": "large",
+            "type": "primary",
+            "popupConfig": {
+              "body": [
+                {
+                  "type": "template",
+                  "value": "{{fn:getRegistrationInsufficientStockMessage()}}",
+                  "format": "textTemplate",
+                  "fieldName": "insufficientStockRegistrationText",
+                  "maxLines": 8,
+                  "properties": {"textAlign": "center"}
+                }
+              ],
+              "type": "alert",
+              "title": "INSUFFICIENT_STOCK_TITLE",
+              "titleIcon": "Warning",
+              "footerActions": [
+                {
+                  "type": "template",
+                  "label": "BACK_TO_HOME_LABEL",
+                  "format": "button",
+                  "onAction": [
+                    {
+                      "actionType": "CLOSE_POPUP",
+                      "properties": {"parentScreenKey": "searchBeneficiary"}
+                    },
+                    {
+                      "actionType": "NAVIGATION",
+                      "properties": {"name": "HOME", "type": "HOME"}
+                    }
+                  ],
+                  "fieldName": "closeInsufficientStockRegistrationPopUp",
+                  "properties": {
+                    "size": "large",
+                    "type": "primary",
+                    "mainAxisSize": "max"
+                  }
+                }
+              ],
+              "showCloseButton": true,
+              "barrierDismissible": true
+            },
+            "mainAxisSize": "max",
+            "mainAxisAlignment": "center"
+          },
+          "schemaCode": null
+        },
+        {
           "icon": "FilterAlt",
           "type": "template",
           // "disabled": "{{searchBar}} == null || {{searchBar}} == ''",
           "visible":
-              "{{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==false",
+              "{{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==false && {{fn:hasStockForRegistration()}}==true",
           "label": "REGISTER_NEW_BENEFICIARY",
           "format": "actionPopup",
           "fieldName": "beneficiaryIdMinCheck",
@@ -2437,7 +2551,7 @@ final dynamic sampleFlows = {
           "format": "button",
           "disabled": "{{searchBar}} == null || {{searchBar}} == ''",
           "visible":
-              "{{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==true",
+              "{{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==true && {{fn:hasStockForRegistration()}}==true",
           "onAction": [
             {
               "actionType": "NAVIGATION",

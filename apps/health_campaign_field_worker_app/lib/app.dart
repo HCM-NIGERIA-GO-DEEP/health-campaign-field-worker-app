@@ -30,6 +30,7 @@ import 'data/repositories/remote/bandwidth_check.dart';
 import 'data/repositories/remote/localization.dart';
 import 'data/repositories/remote/mdms.dart';
 import 'data/repositories/remote/notification_token.dart';
+import 'executors/load_stock_balance_executor.dart';
 import 'executors/stock_balance_executor.dart';
 import 'executors/update_identifier_status_executor.dart';
 import 'executors/navigate_to_downsync_executor.dart';
@@ -71,6 +72,10 @@ class MainApplicationState extends State<MainApplication>
     requestDisableBatteryOptimization();
 
     // Register custom action executors
+    ActionHandler.registry.register(
+      'LOAD_STOCK_BALANCE',
+      LoadStockBalanceExecutor(),
+    );
     ActionHandler.registry.register(
       'UPDATE_STOCK_BALANCE',
       StockBalanceExecutor(),

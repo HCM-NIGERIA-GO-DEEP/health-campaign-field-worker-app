@@ -1,10 +1,10 @@
 import 'dart:convert';
 
 import 'package:collection/collection.dart';
-import 'package:crypto/crypto.dart';
 import 'package:digit_crud_bloc/digit_crud_bloc.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
+import 'package:digit_flow_builder/blocs/app_localization.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -396,6 +396,28 @@ class FunctionRegistries {
   }
 
   void _registerStockFunctions() {
+    // Returns true when at least one product has a balance > 0.
+    // Fail-open: returns true when the cache has no facility set yet.
+    FunctionRegistry.register('hasStockForRegistration', (args, stateData) {
+      final cache = StockBalanceCache.instance;
+      if (cache.facilityId.isEmpty) return true;
+      if (cache.cache.isEmpty) return false;
+      return cache.cache.values.any((balance) => balance > 0);
+    });
+
+    // Returns the insufficient stock message for registration popups.
+    FunctionRegistry.register('getRegistrationInsufficientStockMessage',
+        (args, stateData) {
+      final cache = StockBalanceCache.instance;
+      final totalBalance =
+          cache.cache.values.fold<double>(0, (sum, v) => sum + v);
+      final localization = FlowBuilderLocalization.of(context);
+      final message =
+          localization.translate('INSUFFICIENT_STOCK_REGISTRATION_MESSAGE');
+      final balanceLabel = localization.translate('ITN_BALANCE_LABEL');
+      return '$message\n$balanceLabel = ${totalBalance.toStringAsFixed(0)}';
+    });
+
     FunctionRegistry.register('hasStockForDelivery', (args, stateData) {
       if (args.isEmpty) return true;
       final eligibleProducts = args.first;
@@ -445,23 +467,26 @@ class FunctionRegistries {
     });
 
     FunctionRegistry.register('getInsufficientStockMessage', (args, stateData) {
+      final localization = FlowBuilderLocalization.of(context);
+      final message =
+          localization.translate('INSUFFICIENT_STOCK_DISTRIBUTION_MESSAGE');
+      final balanceLabel = localization.translate('ITN_BALANCE_LABEL');
+      final requiredLabel = localization.translate('REQUIRED_LABEL');
+
       final result = StockBalanceCache.instance.stockCheckResult;
       if (result is Map) {
-        final key = result['key'] as String?;
         final products = result['products'] as List?;
-        if (key == 'INSUFFICIENT_STOCK' && products != null) {
-          String message = '';
-          for (int i = 0; i < products.length; i++) {
-            final p = products[i] as Map<String, dynamic>;
-            final name = p['name'] ?? 'Unknown';
-            final required = p['required'] ?? 0;
-            final available = p['available'] ?? 0;
-            message += '\n$name: $required REQUIRED, $available AVAILABLE';
-          }
-          return '$key$message';
+        if (products != null && products.isNotEmpty) {
+          final p = products.first as Map<String, dynamic>;
+          final available = (p['available'] as num?)?.toDouble() ?? 0.0;
+          final required = (p['required'] as num?)?.toDouble() ?? 0.0;
+          return '$message\n$balanceLabel = ${available.toStringAsFixed(0)}\n$requiredLabel = ${required.toStringAsFixed(0)}';
         }
       }
-      return '';
+      // Fallback: use total balance from cache
+      final totalBalance = StockBalanceCache.instance.cache.values
+          .fold<double>(0, (sum, v) => sum + v);
+      return '$message\n$balanceLabel = ${totalBalance.toStringAsFixed(0)}';
     });
   }
 
