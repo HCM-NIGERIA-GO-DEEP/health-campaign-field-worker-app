@@ -497,12 +497,15 @@ class FunctionRegistries {
         }
       }
 
-      // Find the last ADMINISTRATION_SUCCESS or DELIVERED task
+      // Find the last ADMINISTRATION_SUCCESS or DELIVERED task.
+      // Redose is SMC-only; skip any task tagged additionalFields.flow == 'riDone'.
       Map<String, dynamic>? lastDeliveryTask;
       for (int i = tasks.length - 1; i >= 0; i--) {
-        final status = tasks[i]['status']?.toString().toUpperCase() ?? '';
+        final task = tasks[i];
+        if (_taskHasRiFlow(task)) continue;
+        final status = task['status']?.toString().toUpperCase() ?? '';
         if (status == 'ADMINISTRATION_SUCCESS') {
-          lastDeliveryTask = tasks[i];
+          lastDeliveryTask = task;
           break;
         }
       }
@@ -641,6 +644,23 @@ class FunctionRegistries {
           return receiverId;
       }
     });
+  }
+
+  /// Returns true when the task carries `additionalFields.flow == 'riDone'`,
+  /// marking it as an RI flow task. Used by SMC-only logic (e.g. redose stock
+  /// check) to skip RI tasks. Mirrors `_isRiEntity` in
+  /// `digit_flow_builder/utils/function_registry.dart`, which is private.
+  static bool _taskHasRiFlow(Map<String, dynamic> task) {
+    final additionalFields = task['additionalFields'];
+    if (additionalFields is! Map) return false;
+    final fields = additionalFields['fields'];
+    if (fields is! List) return false;
+    for (final field in fields) {
+      if (field is Map && field['key'] == 'flow') {
+        return field['value']?.toString() == 'riDone';
+      }
+    }
+    return false;
   }
 }
 
