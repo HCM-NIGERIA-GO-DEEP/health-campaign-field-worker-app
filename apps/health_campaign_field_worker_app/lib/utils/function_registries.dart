@@ -403,7 +403,7 @@ class FunctionRegistries {
       final cache = StockBalanceCache.instance;
       if (cache.facilityId.isEmpty) return true;
       if (cache.cache.isEmpty) return false;
-      return cache.cache.values.any((balance) => balance >= 0);
+      return cache.cache.values.any((balance) => balance > 0);
     });
 
     // Returns a formatted message listing each product's available balance.
