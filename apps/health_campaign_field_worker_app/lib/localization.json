@@ -142,7 +142,13 @@
   {
     "code": "REQUIRED_LABEL",
     "locale": "",
-    "message": "Required",
+    "message": "ITN to be distributed",
+    "module": "hcm-beneficiary"
+  },
+  {
+    "code": "BACK_TO_HOUSEHOLD_DETAILS_LABEL",
+    "locale": "",
+    "message": "Back To Household Details",
     "module": "hcm-beneficiary"
   }
 ]
