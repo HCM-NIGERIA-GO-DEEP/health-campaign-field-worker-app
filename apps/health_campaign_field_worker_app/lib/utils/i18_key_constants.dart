@@ -31,7 +31,6 @@ const stockDetailsReturnedShowcase = StockDetailsReturnedShowcase();
 const stockReconciliationShowcase = StockReconciliationShowcase();
 const stockReconciliationMetrics = StockReconciliationMetrics();
 
-
 class Attendance {
   const Attendance();
 
@@ -886,6 +885,10 @@ class Home {
 
   String get stockBalanceLabel => 'HOME_STOCK_BALANCE_LABEL';
 
+  String get insufficientStockTitle => 'INSUFFICIENT_STOCK_TITLE';
+
+  String get returnToHouseholdScreen => 'RETURN_TO_HOUSEHOLD_SCREEN_LABEL';
+
   String get faceRegistrationLabel => 'HOME_FACE_REGISTRATION_LABEL';
 
   String get coreCommonNoInternet => 'CORE_COMMON_NO_INTERNET';
@@ -927,7 +930,6 @@ class BeneficiaryID {
   String get beneficiaryIdsReFetch => 'BENEFICIARY_IDS_RE_FETCH';
 
   String get totalBeneficiaryIds => 'TOTAL_BENEFICIARY_IDS';
-
 }
 
 class DataShare {
@@ -1536,7 +1538,8 @@ class SummaryReport {
 
   String get childrenTreated => 'SUMMARY_REPORT_CHILDREN_TREATED';
 
-  String get childrenTreatedPercent => 'SUMMARY_REPORT_CHILDREN_TREATED_PERCENT';
+  String get childrenTreatedPercent =>
+      'SUMMARY_REPORT_CHILDREN_TREATED_PERCENT';
 
   String get backToHome => 'SUMMARY_REPORT_BACK_TO_HOME';
 
