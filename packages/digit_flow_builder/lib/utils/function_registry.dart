@@ -2200,7 +2200,7 @@ void initializeFunctionRegistry() {
   /// for the current cycle has been administered. Scans the full task list
   /// instead of looking at `item.task.last`, so that subsequent SMC delivery
   /// tasks do not displace the RI-administered signal.
-  FunctionRegistry.register('hasRIAdministered', (args, stateData) {
+  FunctionRegistry.register('hasRIFullyImmunized', (args, stateData) {
     if (args.isEmpty || args.first is! List) return false;
 
     final riTasks = _filterByFlow(args.first as List, keepRi: true);
@@ -2214,10 +2214,8 @@ void initializeFunctionRegistry() {
 
     for (final task in riTasks) {
       final status = task['status']?.toString().trim().toUpperCase();
-      final isAdministered = status == 'ADMINISTERED' ||
-          status == TaskStatus.delivered ||
-          status == TaskStatus.administrationSuccess;
-      if (!isAdministered) continue;
+      final ineligible = status == TaskStatus.ineligible;
+      if (!ineligible) continue;
 
       if (selectedCycle == null || selectedCycle.id == 0) return true;
 
@@ -2231,6 +2229,11 @@ void initializeFunctionRegistry() {
           if (field is Map && field['key'] == 'cycleIndex') {
             taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
             break;
+          }
+          if (field is Map &&
+              field['key'] == 'flow' &&
+              field['value'] != "riDone") {
+            return false;
           }
         }
       }
