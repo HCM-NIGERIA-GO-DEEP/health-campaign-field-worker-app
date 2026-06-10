@@ -18,7 +18,6 @@ import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/router/flow_builder_routes.gm.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
 import 'package:digit_flow_builder/widgets/flow_widget_interface.dart';
-import 'package:digit_formula_parser/digit_formula_parser.dart';
 import 'package:digit_location_tracker/utils/utils.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/utils/component_utils.dart';
@@ -154,12 +153,17 @@ class _HomePageState extends LocalizedState<HomePage> {
           );
         }
 
-        // REDOSE flow - compute product variants same as DELIVERY
-        // Use navigation params to filter by age condition
+        // REDOSE flow - compute product variants same as DELIVERY.
+        // Use navigation params to filter dose criteria by the member's
+        // age / weight / height, mirroring checkEligibilityForAgeAndSideEffect.
         final navParams = FlowCrudStateRegistry().getNavigationParams('REDOSE');
         final cycleIndex = navParams?['cycleIndex'];
-        final ageStr = navParams?['selectedIndividualAgeInMonths'];
-        final age = int.tryParse(ageStr?.toString() ?? '');
+        final age = int.tryParse(
+            navParams?['selectedIndividualAgeInMonths']?.toString() ?? '');
+        // weight / height are optional; the helper ignores their clauses when
+        // the measurement is not recorded.
+        final weight = num.tryParse(navParams?['weight']?.toString() ?? '');
+        final height = num.tryParse(navParams?['height']?.toString() ?? '');
 
         final projectType = context.selectedProjectType;
         final cycles = projectType?.cycles;
@@ -171,30 +175,15 @@ class _HomePageState extends LocalizedState<HomePage> {
 
         // Use first delivery's dose criteria (all deliveries have same criteria)
         final firstDelivery = currentCycle?.deliveries?.firstOrNull;
-        final matchingCriteria = <Map<String, dynamic>>[];
 
-        if (firstDelivery?.doseCriteria != null && age != null) {
-          for (final dc in firstDelivery!.doseCriteria!) {
-            if (dc.condition != null && dc.condition!.isNotEmpty) {
-              // Evaluate condition e.g. "3<=ageandage<=11"
-              final sanitized = dc.condition!
-                  .replaceAll(' and ', ' && ')
-                  .replaceAll('and', '&&');
-              try {
-                final parser = FormulaParser(sanitized, {'age': age});
-                final result = parser.parse;
-                if (result['isSuccess'] && result['value'] == true) {
-                  matchingCriteria.add(dc.toMap());
-                }
-              } catch (e) {
-                debugPrint('REDOSE condition eval error: $e');
-              }
-            } else {
-              // No condition - include by default
-              matchingCriteria.add(dc.toMap());
-            }
-          }
-        }
+        final matchingCriteria = age == null
+            ? <Map<String, dynamic>>[]
+            : filterEligibleDoseCriteria(
+                firstDelivery?.doseCriteria,
+                ageInMonths: age,
+                weight: weight,
+                height: height,
+              );
 
         final redoseState = FlowCrudState(
           stateWrapper: [
@@ -1929,7 +1918,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-registration-${context.selectedProject.referenceID},hcm-beneficiary,hcm-inventory-${context.selectedProject.referenceID}';
+                    'hcm-registration-${context.selectedProject.referenceID},hcm-beneficiary,hcm-inventory-${context.selectedProject.referenceID},hcm-common';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
                 FlowBuilderSingleton().setPersistenceConfiguration(
@@ -2036,6 +2025,12 @@ class _HomePageState extends LocalizedState<HomePage> {
                             foreignKey: 'taskclientReferenceId',
                             type: NestedMappingType.many,
                           ),
+                          'address': NestedFieldMapping(
+                            table: 'address',
+                            localKey: 'clientReferenceId',
+                            foreignKey: 'relatedClientReferenceId',
+                            type: NestedMappingType.one,
+                          ),
                         },
                       ),
                     ],
@@ -2102,7 +2097,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-inventory-${context.selectedProject.referenceID}';
+                'hcm-inventory-${context.selectedProject.referenceID},hcm-common';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
@@ -2162,7 +2157,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-stockreconciliation-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
+                'hcm-stockreconciliation-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-common';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
@@ -2304,7 +2299,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-hfreferral-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}';
+                    'hcm-hfreferral-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()},hcm-common';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
@@ -2329,7 +2324,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
+                'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-common';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 

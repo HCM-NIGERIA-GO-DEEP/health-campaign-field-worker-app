@@ -77,10 +77,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         return facilityLevel == null || facilityLevel == 'current';
       }).toList();
 
-      final facilityIds =
-          currentFacilities.map((pf) => pf.facilityId).toList();
-      final facilities = await facilityRepo
-          .search(FacilitySearchModel(id: facilityIds));
+      final facilityIds = currentFacilities.map((pf) => pf.facilityId).toList();
+      final facilities =
+          await facilityRepo.search(FacilitySearchModel(id: facilityIds));
 
       // Match stock_balance_card: distributors always use userUuid
       final effectiveFacilityId = isDistributor
@@ -132,8 +131,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         final createdBy =
             hh.clientAuditDetails?.createdBy ?? hh.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
-        final epochMs = hh.clientAuditDetails?.createdTime ??
-            hh.auditDetails?.createdTime;
+        final epochMs =
+            hh.clientAuditDetails?.createdTime ?? hh.auditDetails?.createdTime;
         if (epochMs == null) continue;
         final date = _epochToDateString(epochMs);
         hhByDate[date] = (hhByDate[date] ?? 0) + 1;
@@ -143,10 +142,10 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // (filter by logged-in user AND status == 'ADMINISTRATION_SUCCESS' or 'VISITED')
       final tasksByDate = <String, Set<String>>{};
       for (final task in tasks) {
-        if (task.status != 'ADMINISTRATION_SUCCESS' &&
-            task.status != 'VISITED') continue;
-        final createdBy = task.clientAuditDetails?.createdBy ??
-            task.auditDetails?.createdBy;
+        if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
+          continue;
+        final createdBy =
+            task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
         final epochMs = task.clientAuditDetails?.createdTime ??
             task.auditDetails?.createdTime;
@@ -177,10 +176,10 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // Key: "date|productVariantId" -> sum of quantity
       final consumedByDateProduct = <String, double>{};
       for (final task in tasks) {
-        if (task.status != 'ADMINISTRATION_SUCCESS' &&
-            task.status != 'VISITED') continue;
-        final createdBy = task.clientAuditDetails?.createdBy ??
-            task.auditDetails?.createdBy;
+        if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
+          continue;
+        final createdBy =
+            task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
         final epochMs = task.clientAuditDetails?.createdTime ??
             task.auditDetails?.createdTime;
@@ -261,11 +260,14 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
                   productId: pv.id,
                   loggedInUserUuid: userUuid,
                   isDistributor: isDistributor,
+                  calculatePartial: true,
+                  multiplier: Constants.stockBottleToMlMultiplier,
                 )
               : StockCalculationUtils.emptyMetrics;
 
           final totalReceived = metrics['stockReceived'] ?? 0.0;
           final totalReturned = metrics['stockReturned'] ?? 0.0;
+          final totalWastage = metrics['stockWastage'] ?? 0.0;
 
           // Daily consumed (for this day only)
           final key = '$date|${pv.id}';
@@ -276,7 +278,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
               (cumulativeConsumed[pv.id] ?? 0.0) + dailyConsumed;
           final totalConsumed = cumulativeConsumed[pv.id]!;
 
-          final balance = totalReceived - totalConsumed - totalReturned;
+          final balance =
+              totalReceived - totalConsumed - totalReturned - totalWastage;
 
           stockData[pv.id] = _ProductStockData(
             received: totalReceived,
