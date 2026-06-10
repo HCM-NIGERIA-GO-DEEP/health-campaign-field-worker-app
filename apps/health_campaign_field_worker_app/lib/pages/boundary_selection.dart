@@ -217,7 +217,8 @@ class _BoundarySelectionPageState
                                             .read<BeneficiaryDownSyncBloc>()
                                             .add(
                                               DownSyncAllBoundariesEvent(
-                                                projectModel: context.selectedProject,
+                                                projectModel:
+                                                    context.selectedProject,
                                                 boundaries: boundaries,
                                                 batchSize: batchSize,
                                                 pendingSyncCount:
@@ -291,6 +292,13 @@ class _BoundarySelectionPageState
                                         dialogType:
                                             DigitProgressDialogType.dataFound,
                                         isPop: true,
+                                        onProceedWithoutDownloading:
+                                            isDistributor
+                                                ? () => context.router
+                                                        .replaceAll([
+                                                      SelectTeamMembersRoute()
+                                                    ])
+                                                : null,
                                       );
                                     },
                                     inProgress: (syncCount, totalCount) {
@@ -317,7 +325,8 @@ class _BoundarySelectionPageState
                                               i18.beneficiaryDetails
                                                   .dataDownloadInProgress,
                                             ),
-                                            projectModel: context.selectedProject,
+                                            projectModel:
+                                                context.selectedProject,
                                             boundaries: state
                                                 .selectedLastLevelBoundaries,
                                             appConfiguartion: appConfiguration,
@@ -363,6 +372,7 @@ class _BoundarySelectionPageState
                                       context.router
                                           .popAndPush((AcknowledgementRoute(
                                         isDataRecordSuccess: true,
+                                        showSelectTeam: isDistributor,
                                         description: dataDescription,
                                         label: localizations.translate(i18
                                             .acknowledgementSuccess
@@ -416,6 +426,10 @@ class _BoundarySelectionPageState
                                       dialogType:
                                           DigitProgressDialogType.failed,
                                       isPop: true,
+                                      onProceedWithoutDownloading: isDistributor
+                                          ? () => context.router.replaceAll(
+                                              [SelectTeamMembersRoute()])
+                                          : null,
                                     ),
                                     totalCountCheckFailed: () =>
                                         showDownloadDialog(
@@ -443,6 +457,10 @@ class _BoundarySelectionPageState
                                       dialogType:
                                           DigitProgressDialogType.checkFailed,
                                       isPop: true,
+                                      onProceedWithoutDownloading: isDistributor
+                                          ? () => context.router.replaceAll(
+                                              [SelectTeamMembersRoute()])
+                                          : null,
                                     ),
                                     insufficientStorage: () {
                                       clickedStatus.value = false;
@@ -501,7 +519,8 @@ class _BoundarySelectionPageState
                                               i18.beneficiaryDetails
                                                   .dataDownloadInProgress,
                                             ),
-                                            projectModel: context.selectedProject,
+                                            projectModel:
+                                                context.selectedProject,
                                             boundaries: state
                                                 .selectedLastLevelBoundaries,
                                             appConfiguartion: appConfiguration,
@@ -540,6 +559,7 @@ class _BoundarySelectionPageState
                                       context.router
                                           .popAndPush((AcknowledgementRoute(
                                         isDataRecordSuccess: true,
+                                        showSelectTeam: isDistributor,
                                         description: '',
                                         label: localizations.translate(i18
                                             .acknowledgementSuccess
@@ -624,7 +644,8 @@ class _BoundarySelectionPageState
                                                             appConfiguration: [
                                                               appConfiguration,
                                                             ],
-                                                            projectModel: context.selectedProject,
+                                                            projectModel: context
+                                                                .selectedProject,
                                                             boundaries: context
                                                                 .read<
                                                                     BoundaryBloc>()
