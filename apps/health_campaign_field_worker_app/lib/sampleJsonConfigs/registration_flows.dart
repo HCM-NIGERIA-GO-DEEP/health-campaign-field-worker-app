@@ -1293,6 +1293,134 @@ final dynamic sampleFlows = {
                   },
                   {
                     "type": "template",
+                    "label": "NOT_ELIGIBLE",
+                    "format": "tag",
+                    "visible":
+                        "{{fn:checkRIEligibility(item.individual.0.dateOfBirth, item.task, contextData.0.currentRunningCycle)}}==false && {{fn:length(item.hFReferral)}}>0 && {{fn:isHead(item.member)}}==false && {{fn:hasRIReferralForCurrentCycle(item.hFReferral)}}==false",
+                    "fieldName": "riNotEligible",
+                    "properties": {"tagType": "error", "bottomGap": 16}
+                  },
+                  {
+                    "type": "template",
+                    "label": "ADMINISTERED_SUCCESS",
+                    "format": "tag",
+                    "visible":
+                        "{{fn:isRIDelivered(item.task.last.status)}}==true && {{fn:checkRIEligibility(item.individual.0.dateOfBirth, item.task, contextData.0.currentRunningCycle)}}==true && {{fn:hasRIReferralForCurrentCycle(item.hFReferral)}}==false",
+                    "fieldName": "riAdministrationSuccess",
+                    "properties": {"tagType": "success", "bottomGap": 16}
+                  },
+                  {
+                    "type": "template",
+                    "label": "{{fn:getRIInEligibleStatus(item.task)}}",
+                    "format": "tag",
+                    "visible":
+                        "{{fn:checkRIEligibility(item.individual.0.dateOfBirth, item.task, contextData.0.currentRunningCycle)}}==false && {{fn:length(item.hFReferral)}}<=0 && {{fn:isHead(item.member)}}==false",
+                    "fieldName": "riNotEligibleStatus",
+                    "properties": {"tagType": "error"}
+                  },
+                  {
+                    "type": "template",
+                    "label": "BENEFICIARY_REFERRED",
+                    "format": "tag",
+                    "hidden": false,
+                    "visible":
+                        "{{fn:hasRIReferralForCurrentCycle(item.hFReferral)}}==true && {{fn:isHead(item.member)}}==false",
+                    "fieldName": "riBeneficiaryReferred",
+                    "properties": {"tagType": "error"}
+                  },
+                  {
+                    "type": "template",
+                    "label": "RI_DELIVERY",
+                    "format": "button",
+                    "visible":
+                        "{{fn:checkRIEligibility(item.individual.0.dateOfBirth, item.task,contextData.0.currentRunningCycle)}} == true  && {{fn:checkAllRIDoseDelivered(item.task)}} == false && {{fn:hasRIReferralForCurrentCycle(item.hFReferral)}}==false && {{fn:isHead(item.member)}} == false",
+                    "onAction": [
+                      {
+                        "actionType": "NAVIGATION",
+                        "properties": {
+                          "data": [
+                            {
+                              "key": "selectedIndividualClientReferenceId",
+                              "value": "{{item.individual.0.clientReferenceId}}"
+                            },
+                            {
+                              "key": "selectedIndividualIdentifierId",
+                              "value":
+                                  "{{item.individual.0.identifiers.0.identifierId}}"
+                            },
+                            {
+                              "key": "HouseholdClientReferenceId",
+                              "value":
+                                  "{{item.member.0.householdClientReferenceId}}"
+                            },
+                            {
+                              "key": "memberCount",
+                              "value":
+                                  "{{contextData.0.household.HouseholdModel.memberCount}}"
+                            },
+                            {
+                              "key": "ProjectBeneficiaryClientReferenceId",
+                              "value":
+                                  "{{item.projectBeneficiary.0.clientReferenceId}}"
+                            },
+                            {
+                              "key": "selectedIndividualName",
+                              "value": "{{fn:str(item.individual.0.name)}}"
+                            },
+                            {
+                              "key": "selectedIndividualGender",
+                              "value": "{{fn:str(item.individual.0.gender)}}"
+                            },
+                            {
+                              "key": "selectedIndividualAgeInMonths",
+                              "value":
+                                  "{{fn:formatDate(item.individual.0.dateOfBirth, 'ageInMonths')}}"
+                            },
+                            {
+                              "key": "childName",
+                              "value": "{{fn:str(item.individual.0.name)}}"
+                            },
+                            {
+                              "key": "ageInMonths",
+                              "value":
+                                  "{{fn:formatDate(item.individual.0.dateOfBirth, 'ageInMonths')}}"
+                            },
+                            {
+                              "key": "gender",
+                              "value": "{{fn:str(item.individual.0.gender)}}"
+                            },
+                            {
+                              "key": "headName",
+                              "value":
+                                  "{{fn:str(contextData.0.headIndividual.IndividualModel.name)}}"
+                            },
+                            {
+                              "key": "headMobileNumber",
+                              "value":
+                                  "{{fn:str(contextData.0.headIndividual.IndividualModel.mobileNumber)}}"
+                            },
+                            {
+                              "key": "cycleIndex",
+                              "value": "{{contextData.0.currentRunningCycle}}"
+                            }
+                          ],
+                          "name": "RI_CHECKLIST",
+                          "type": "FORM"
+                        }
+                      }
+                    ],
+                    "fieldName": "riDeliveryButton",
+                    "mandatory": true,
+                    "properties": {
+                      "size": "medium",
+                      "type": "primary",
+                      "mainAxisSize": "max",
+                      "mainAxisAlignment": "center",
+                      "bottomGap": 16
+                    }
+                  },
+                  {
+                    "type": "template",
                     "label": "HOUSEHOLD_OVERVIEW_UNABLE_TO_DELIVER_LABEL",
                     "format": "button",
                     "visible":
@@ -4705,6 +4833,656 @@ final dynamic sampleFlows = {
                   {"key": "ec4", "value": "{{eligibilityChecklist.ec4}}"},
                   {"key": "ec5", "value": "{{eligibilityChecklist.ec5}}"},
                   {"key": "sourceFlow", "value": "CHECKLIST"},
+                  {
+                    "key": "selectedIndividualClientReferenceId",
+                    "value":
+                        "{{navigation.selectedIndividualClientReferenceId}}"
+                  },
+                  {
+                    "key": "selectedIndividualIdentifierId",
+                    "value": "{{navigation.selectedIndividualIdentifierId}}"
+                  },
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{ navigation.HouseholdClientReferenceId }}"
+                  },
+                  {
+                    "key": "ProjectBeneficiaryClientReferenceId",
+                    "value":
+                        "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                  },
+                  {
+                    "key": "selectedIndividualName",
+                    "value": "{{navigation.selectedIndividualName}}"
+                  },
+                  {
+                    "key": "selectedIndividualGender",
+                    "value": "{{navigation.selectedIndividualGender}}"
+                  },
+                  {
+                    "key": "selectedIndividualAgeInMonths",
+                    "value": "{{navigation.selectedIndividualAgeInMonths}}"
+                  },
+                  {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
+                  {"key": "memberCount", "value": "{{navigation.memberCount}}"},
+                  {"key": "childName", "value": "{{navigation.childName}}"},
+                  {"key": "ageInMonths", "value": "{{navigation.ageInMonths}}"},
+                  {"key": "gender", "value": "{{navigation.gender}}"},
+                  {"key": "headName", "value": "{{navigation.headName}}"},
+                  {
+                    "key": "headMobileNumber",
+                    "value": "{{navigation.headMobileNumber}}"
+                  },
+                ],
+                "name": "REFER_BENEFICIARY",
+                "type": "FORM",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Navigation failed."}
+                  }
+                ],
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "householdOverview"
+              }
+            }
+          ],
+          "condition": {"expression": "DEFAULT"}
+        }
+      ],
+      "screenType": "FORM",
+      "initActions": [],
+      "wrapperConfig": {},
+      "scrollListener": {}
+    },
+    {
+      "name": "RI_CHECKLIST",
+      "order": 7,
+      "pages": [
+        {
+          "body": null,
+          "flow": "RI_CHECKLIST",
+          "page": "riEligibilityChecklist",
+          "type": "object",
+          "label": "APPONE_RI_ELIGIBILITY_CHECKLIST_SCREEN_HEADING",
+          "order": 1,
+          "footer": [
+            {
+              "label":
+                  "APPONE_REGISTRATION_DELIVERYDETAILS_ACTION_BUTTON_LABEL_1",
+              "format": "button",
+              "fieldName": "riEligibilityChecklistSubmitButton",
+              "onAction": [
+                {
+                  "actionType": "NAVIGATION",
+                  "properties": {
+                    "name": "household-acknowledgement",
+                    "type": "template"
+                  }
+                }
+              ],
+              "properties": {
+                "size": "large",
+                "type": "primary",
+                "mainAxisSize": "max",
+                "mainAxisAlignment": "center"
+              }
+            }
+          ],
+          "module": "REGISTRATION",
+          "heading": "APPONE_RI_ELIGIBILITY_CHECKLIST_SCREEN_HEADING",
+          "summary": false,
+          "version": 1,
+          "onAction": [
+            {
+              "actionId": 1,
+              "actions": [
+                {
+                  "actionType": "FETCH_TRANSFORMER_CONFIG",
+                  "properties": {
+                    "data": [
+                      {
+                        "key": "selectedIndividualClientReferenceId",
+                        "value":
+                            "{{navigation.selectedIndividualClientReferenceId}}"
+                      },
+                      {
+                        "key": "individualClientReferenceId",
+                        "value":
+                            "{{navigation.selectedIndividualClientReferenceId}}"
+                      },
+                      {
+                        "key": "selectedIndividualIdentifierId",
+                        "value": "{{navigation.selectedIndividualIdentifierId}}"
+                      },
+                      {
+                        "key": "beneficiaryId",
+                        "value": "{{navigation.selectedIndividualIdentifierId}}"
+                      },
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value": "{{ navigation.HouseholdClientReferenceId }}"
+                      },
+                      {
+                        "key": "memberCount",
+                        "value": "{{navigation.memberCount}}"
+                      },
+                      {"key": "childName", "value": "{{navigation.childName}}"},
+                      {
+                        "key": "ageInMonths",
+                        "value": "{{navigation.ageInMonths}}"
+                      },
+                      {"key": "gender", "value": "{{navigation.gender}}"},
+                      {"key": "headName", "value": "{{navigation.headName}}"},
+                      {
+                        "key": "headMobileNumber",
+                        "value": "{{navigation.headMobileNumber}}"
+                      },
+                      {
+                        "key": "ProjectBeneficiaryClientReferenceId",
+                        "value":
+                            "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      }
+                    ],
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {
+                          "message": "Failed to fetch ineligible config."
+                        }
+                      }
+                    ],
+                    "configName": "riAdministrationConfig"
+                  }
+                },
+                {
+                  "actionType": "CREATE_EVENT",
+                  "properties": {
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {
+                          "message": "Failed to create task records."
+                        }
+                      }
+                    ]
+                  }
+                },
+                {
+                  "actionType": "NAVIGATION",
+                  "properties": {
+                    "data": [
+                      {
+                        "key": "selectedIndividualClientReferenceId",
+                        "value":
+                            "{{navigation.selectedIndividualClientReferenceId}}"
+                      },
+                      {
+                        "key": "selectedIndividualIdentifierId",
+                        "value": "{{navigation.selectedIndividualIdentifierId}}"
+                      },
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value": "{{ navigation.HouseholdClientReferenceId }}"
+                      },
+                      {
+                        "key": "ProjectBeneficiaryClientReferenceId",
+                        "value":
+                            "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      }
+                    ],
+                    "name": "household-acknowledgement",
+                    "type": "TEMPLATE",
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {"message": "Navigation failed."}
+                      }
+                    ],
+                    "navigationMode": "popUntilAndPush",
+                    "popUntilPageName": "householdOverview"
+                  }
+                }
+              ],
+              "condition": {
+                "expression":
+                    "riEligibilityChecklist.chcSeen==YES && riEligibilityChecklist.fullyImmunized==YES"
+              }
+            },
+            {
+              "actionId": 2,
+              "actions": [
+                {
+                  "actionType": "NAVIGATION",
+                  "properties": {
+                    "data": [
+                      {
+                        "key": "selectedIndividualClientReferenceId",
+                        "value":
+                            "{{navigation.selectedIndividualClientReferenceId}}"
+                      },
+                      {
+                        "key": "selectedIndividualIdentifierId",
+                        "value": "{{navigation.selectedIndividualIdentifierId}}"
+                      },
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value": "{{ navigation.HouseholdClientReferenceId }}"
+                      },
+                      {
+                        "key": "ProjectBeneficiaryClientReferenceId",
+                        "value":
+                            "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      },
+                      {
+                        "key": "selectedIndividualName",
+                        "value": "{{navigation.selectedIndividualName}}"
+                      },
+                      {
+                        "key": "selectedIndividualGender",
+                        "value": "{{navigation.selectedIndividualGender}}"
+                      },
+                      {
+                        "key": "selectedIndividualAgeInMonths",
+                        "value": "{{navigation.selectedIndividualAgeInMonths}}"
+                      },
+                      {"key": "childName", "value": "{{navigation.childName}}"},
+                      {
+                        "key": "ageInMonths",
+                        "value": "{{navigation.ageInMonths}}"
+                      },
+                      {"key": "gender", "value": "{{navigation.gender}}"},
+                      {"key": "headName", "value": "{{navigation.headName}}"},
+                      {
+                        "key": "headMobileNumber",
+                        "value": "{{navigation.headMobileNumber}}"
+                      },
+                      {
+                        "key": "cycleIndex",
+                        "value": "{{navigation.cycleIndex}}"
+                      },
+                      {
+                        "key": "chcSeen",
+                        "value": "{{riEligibilityChecklist.chcSeen}}"
+                      },
+                      {
+                        "key": "fullyImmunized",
+                        "value": "{{riEligibilityChecklist.fullyImmunized}}"
+                      },
+                      {
+                        "key": "partiallyImmunized",
+                        "value": "{{riEligibilityChecklist.partiallyImmunized}}"
+                      },
+                      {
+                        "key": "zeroDose",
+                        "value": "{{riEligibilityChecklist.zeroDose}}"
+                      },
+                      {
+                        "key": "unimmunized",
+                        "value": "{{riEligibilityChecklist.unimmunized}}"
+                      },
+                      {"key": "sourceFlow", "value": "RI_CHECKLIST"}
+                    ],
+                    "name": "REFER_BENEFICIARY",
+                    "type": "FORM",
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {"message": "Navigation failed."}
+                      }
+                    ],
+                    "navigationMode": "popUntilAndPush",
+                    "popUntilPageName": "householdOverview"
+                  }
+                }
+              ],
+              "condition": {"expression": "DEFAULT"}
+            }
+          ],
+          "navigateTo": {
+            "name": "household-acknowledgement",
+            "type": "template"
+          },
+          "properties": [
+            {
+              "type": "string",
+              "enums": [
+                {"code": "YES", "name": "QUESTION_1_YES"},
+                {"code": "NO", "name": "QUESTION_1_NO"}
+              ],
+              "label": "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_1_LABEL",
+              "order": 1,
+              "value": "",
+              "format": "radio",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "required": true,
+              "fieldName": "chcSeen",
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_1_LABEL_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": "",
+              "includeInForm": true,
+              "isMultiSelect": false,
+              "dropDownOptions": [
+                {"code": "YES", "name": "QUESTION_1_YES"},
+                {"code": "NO", "name": "QUESTION_1_NO"}
+              ],
+              "includeInSummary": true,
+              "required.message":
+                  "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_1_LABEL_REQUIRED_MESSAGE"
+            },
+            {
+              "type": "string",
+              "enums": [
+                {"code": "YES", "name": "QUESTION_2_YES"},
+                {"code": "NO", "name": "QUESTION_2_NO"}
+              ],
+              "label": "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_2_LABEL",
+              "order": 2,
+              "value": "",
+              "format": "radio",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_2_HELP_TEXT",
+              "infoText": "",
+              "readOnly": false,
+              "required": true,
+              "fieldName": "fullyImmunized",
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_2_LABEL_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": "",
+              "includeInForm": true,
+              "isMultiSelect": false,
+              "dropDownOptions": [
+                {"code": "YES", "name": "QUESTION_2_YES"},
+                {"code": "NO", "name": "QUESTION_2_NO"}
+              ],
+              "includeInSummary": true,
+              "required.message":
+                  "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_2_LABEL_REQUIRED_MESSAGE",
+              "visibilityCondition": {
+                "expression": [
+                  {"condition": "riEligibilityChecklist.chcSeen==YES"}
+                ]
+              }
+            },
+            {
+              "type": "string",
+              "enums": [
+                {"code": "YES", "name": "QUESTION_3_YES"},
+                {"code": "NO", "name": "QUESTION_3_NO"}
+              ],
+              "label": "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_3_LABEL",
+              "order": 3,
+              "value": "",
+              "format": "radio",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_3_HELP_TEXT",
+              "infoText": "",
+              "readOnly": false,
+              "required": true,
+              "fieldName": "partiallyImmunized",
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_3_LABEL_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": "",
+              "includeInForm": true,
+              "isMultiSelect": false,
+              "dropDownOptions": [
+                {"code": "YES", "name": "QUESTION_3_YES"},
+                {"code": "NO", "name": "QUESTION_3_NO"}
+              ],
+              "includeInSummary": true,
+              "required.message":
+                  "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_3_LABEL_REQUIRED_MESSAGE",
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition":
+                        "riEligibilityChecklist.chcSeen==YES && riEligibilityChecklist.fullyImmunized==NO"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "string",
+              "enums": [
+                {"code": "YES", "name": "QUESTION_4_YES"},
+                {"code": "NO", "name": "QUESTION_4_NO"}
+              ],
+              "label": "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_4_LABEL",
+              "order": 4,
+              "value": "",
+              "format": "radio",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "required": true,
+              "fieldName": "zeroDose",
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_4_LABEL_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": "",
+              "includeInForm": true,
+              "isMultiSelect": false,
+              "dropDownOptions": [
+                {"code": "YES", "name": "QUESTION_4_YES"},
+                {"code": "NO", "name": "QUESTION_4_NO"}
+              ],
+              "includeInSummary": true,
+              "required.message":
+                  "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_4_LABEL_REQUIRED_MESSAGE",
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition":
+                        "riEligibilityChecklist.chcSeen==YES && riEligibilityChecklist.fullyImmunized==NO"
+                  }
+                ]
+              }
+            },
+            {
+              "type": "string",
+              "enums": [
+                {"code": "YES", "name": "QUESTION_5_YES"},
+                {"code": "NO", "name": "QUESTION_5_NO"}
+              ],
+              "label": "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_5_LABEL",
+              "order": 5,
+              "value": "",
+              "format": "radio",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "required": true,
+              "fieldName": "unimmunized",
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_5_LABEL_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": "",
+              "includeInForm": true,
+              "isMultiSelect": false,
+              "dropDownOptions": [
+                {"code": "YES", "name": "QUESTION_5_YES"},
+                {"code": "NO", "name": "QUESTION_5_NO"}
+              ],
+              "includeInSummary": true,
+              "required.message":
+                  "APPONE_RI_ELIGIBILITYCHECKLIST_QUESTION_5_LABEL_REQUIRED_MESSAGE",
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition":
+                        "riEligibilityChecklist.chcSeen==YES && riEligibilityChecklist.fullyImmunized==NO"
+                  }
+                ]
+              }
+            }
+          ],
+          "actionLabel":
+              "APPONE_REGISTRATION_DELIVERYDETAILS_ACTION_BUTTON_LABEL_1",
+          "description": "APPONE_RI_ELIGIBILITY_CHECKLIST_SCREEN_DESCRIPTION",
+          "showTabView": false,
+          "showAlertPopUp": {
+            "title": "APPONE_RI_ELIGIBILITYCHECKLIST_ALERT_TITLE",
+            "conditions": [
+              {
+                "value": "Fully immunized",
+                "expression":
+                    "riEligibilityChecklist.chcSeen==YES && riEligibilityChecklist.fullyImmunized==YES"
+              },
+              {"value": "Refer", "expression": "DEFAULT"}
+            ],
+            "description": "APPONE_RI_ELIGIBILITYCHECKLIST_ALERT_DESCRIPTION",
+            "primaryActionLabel": "ACTION_SUBMIT",
+            "secondaryActionLabel": "ACTION_CANCEL"
+          },
+          "submitCondition": null,
+          "preventScreenCapture": false
+        }
+      ],
+      "summary": false,
+      "version": 1,
+      "category": "DELIVERY",
+      "disabled": false,
+      "onAction": [
+        {
+          "actionId": 1,
+          "actions": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {
+                    "key": "selectedIndividualClientReferenceId",
+                    "value":
+                        "{{navigation.selectedIndividualClientReferenceId}}"
+                  },
+                  {
+                    "key": "selectedIndividualIdentifierId",
+                    "value": "{{navigation.selectedIndividualIdentifierId}}"
+                  },
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{ navigation.HouseholdClientReferenceId }}"
+                  },
+                  {
+                    "key": "ProjectBeneficiaryClientReferenceId",
+                    "value":
+                        "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                  }
+                ],
+                "name": "household-acknowledgement",
+                "type": "TEMPLATE",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Navigation failed."}
+                  }
+                ],
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "householdOverview"
+              }
+            }
+          ],
+          "condition": {
+            "expression":
+                "riEligibilityChecklist.chcSeen==YES && riEligibilityChecklist.fullyImmunized==YES"
+          }
+        },
+        {
+          "actionId": 2,
+          "actions": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {
+                    "key": "chcSeen",
+                    "value": "{{riEligibilityChecklist.chcSeen}}"
+                  },
+                  {
+                    "key": "fullyImmunized",
+                    "value": "{{riEligibilityChecklist.fullyImmunized}}"
+                  },
+                  {
+                    "key": "partiallyImmunized",
+                    "value": "{{riEligibilityChecklist.partiallyImmunized}}"
+                  },
+                  {
+                    "key": "zeroDose",
+                    "value": "{{riEligibilityChecklist.zeroDose}}"
+                  },
+                  {
+                    "key": "unimmunized",
+                    "value": "{{riEligibilityChecklist.unimmunized}}"
+                  },
+                  {"key": "sourceFlow", "value": "RI_CHECKLIST"},
                   {
                     "key": "selectedIndividualClientReferenceId",
                     "value":

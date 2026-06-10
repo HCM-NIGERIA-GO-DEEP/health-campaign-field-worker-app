@@ -487,6 +487,7 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__listItem:id",
             "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:smcDone",
             "deliveryStrategy": "__listItem:deliveryStrategy",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
@@ -587,6 +588,7 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:smcDone",
             "deliveryStrategy": "__context:deliveryStrategy",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
@@ -683,6 +685,7 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:smcDone",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
             "memberCount": "__context:memberCount",
@@ -694,6 +697,84 @@ final jsonConfig = {
             "gender": "__context:gender",
             "headName": "__context:headName",
             "headMobileNumber": "__context:headMobileNumber"
+          },
+          "clientAuditDetails": "__generate:clientAudit",
+          "auditDetails": "__generate:audit"
+        }
+      }
+    }
+  },
+  "riAdministrationConfig": {
+    "fallbackModel": "TaskModel",
+    "models": {
+      "TaskModel": {
+        "mappings": {
+          "id": "taskDetails.id",
+          "projectId": "__context:projectId",
+          "projectBeneficiaryId": "taskDetails.projectBeneficiaryId",
+          "projectBeneficiaryClientReferenceId":
+              "__context:ProjectBeneficiaryClientReferenceId",
+          "createdBy": "__context:userId",
+          "status": "__value:INELIGIBLE",
+          "nonRecoverableError": "errors.nonRecoverable",
+          "clientReferenceId": "__generate:uuid",
+          "tenantId": "__context:tenantId",
+          "rowVersion": "meta.rowVersion",
+          "plannedStartDate": "taskDetails.plannedStartDate",
+          "plannedEndDate": "taskDetails.plannedEndDate",
+          "actualStartDate": "taskDetails.actualStartDate",
+          "actualEndDate": "taskDetails.actualEndDate",
+          "createdDate": "__generate:timestamp",
+          "address": {
+            "id": "address.id",
+            "relatedClientReferenceId": "__ref:TaskModel.clientReferenceId",
+            "doorNo": "address.doorNo",
+            "latitude": "address.latLng[0]",
+            "longitude": "address.latLng[1]",
+            "locationAccuracy": "address.latLng[1]",
+            "addressLine1": "address.addressLine1",
+            "addressLine2": "address.addressLine2",
+            "landmark": "address.landmark",
+            "city": "address.city",
+            "type": "__value:PERMANENT",
+            "pincode": "address.pincode",
+            "buildingName": "address.buildingName",
+            "street": "address.street",
+            "boundaryType": "address.boundaryType",
+            "boundary": "address.boundary",
+            "locality": {
+              "code": "__context:selectedBoundaryCode",
+              "name": "__context:boundary.name",
+              "nonRecoverableError": "address.nonRecoverable",
+              "tenantId": "__context:tenantId",
+              "rowVersion": "meta.rowVersion"
+            },
+            "nonRecoverableError": "address.nonRecoverable",
+            "tenantId": "__context:tenantId",
+            "rowVersion": "meta.rowVersion",
+            "clientAuditDetails": "__generate:clientAudit",
+            "auditDetails": "__generate:audit"
+          },
+          "additionalFields": {
+            "doseIndex": "__context:doseIndex",
+            "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:riDone",
+            "householdClientReferenceId":
+                "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId",
+            "childName": "__context:childName",
+            "ageInMonths": "__context:ageInMonths",
+            "gender": "__context:gender",
+            "headName": "__context:headName",
+            "headMobileNumber": "__context:headMobileNumber",
+            "chcSeen": "riEligibilityChecklist.chcSeen",
+            "fullyImmunized": "riEligibilityChecklist.fullyImmunized",
+            "partiallyImmunized": "riEligibilityChecklist.partiallyImmunized",
+            "zeroDose": "riEligibilityChecklist.zeroDose",
+            "unimmunized": "riEligibilityChecklist.unimmunized"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -755,6 +836,7 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:smcDone",
             "comment": "unableToDeliver.comment",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
@@ -829,6 +911,7 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:smcDone",
             "reasonForRedose": "RedoseDetails.reasonForRedose",
             "redoseComments": "RedoseDetails.redoseComments",
             "taskType": "__value:REDOSE",
@@ -1431,7 +1514,7 @@ final jsonConfig = {
           "referralCode": "__context:selectedIndividualClientReferenceId",
           "name": "__context:selectedIndividualName",
           "symptom":
-              "__switch:__context:sourceFlow:{CHECKLIST:__context:referralReasons,default:referBeneficiary.referralReason}",
+              "__switch:__context:sourceFlow:{CHECKLIST:__context:referralReasons,RI_CHECKLIST:__context:referralReasons,default:referBeneficiary.referralReason}",
           "nonRecoverableError": "referral.nonRecoverable",
           "clientReferenceId": "__generate:uuid",
           "rowVersion": "meta.rowVersion",
@@ -1453,8 +1536,15 @@ final jsonConfig = {
             "ec3Value": "__context:ec3",
             "ec4Value": "__context:ec4",
             "ec5Value": "__context:ec5",
+            "chcSeen": "__context:chcSeen",
+            "fullyImmunized": "__context:fullyImmunized",
+            "partiallyImmunized": "__context:partiallyImmunized",
+            "zeroDose": "__context:zeroDose",
+            "unimmunized": "__context:unimmunized",
             // Referral reasons mapped from checklist: SICK for ec1=YES, FEVER for ec2=YES
-            "referralReasons": "__context:referralReasons"
+            "referralReasons": "__context:referralReasons",
+            "flow":
+                "__switch:__context:sourceFlow:{RI_CHECKLIST:__value:riDone,CHECKLIST:__value:smcDone}"
           }
         }
       }
