@@ -523,6 +523,29 @@ void initializeFunctionRegistry() {
     }
   });
 
+  /// Returns a widgetData map flagging whether a just-registered member is
+  /// age-eligible for delivery. Used by a CUSTOM_DATA action right after the
+  /// add-member create, so the post-submit navigation can branch the member
+  /// straight into the delivery CHECKLIST (eligible) or back to the household
+  /// overview (ineligible).
+  ///
+  /// - **Function Name**: `'deliveryEligibilityFlag'`
+  /// - **Arguments**: A list whose first element is the member's date of birth.
+  /// - **Returns**: `{'isDeliveryEligible': true|false}`.
+  ///
+  /// Delegates to [checkEligibilityForAgeAndSideEffect] with a single DOB
+  /// argument (no tasks), which reduces to the pure age-in-dose-criteria check
+  /// for the current cycle — keeping this gate consistent with the delivery
+  /// button's own eligibility logic on the household overview.
+  FunctionRegistry.register('deliveryEligibilityFlag', (args, stateData) {
+    final dob = args.isNotEmpty ? args.first : null;
+    final eligibilityFn =
+        FunctionRegistry.get('checkEligibilityForAgeAndSideEffect');
+    final eligible = (eligibilityFn?.call([dob], stateData) as bool?) ?? false;
+
+    return {'isDeliveryEligible': eligible};
+  });
+
   FunctionRegistry.register("getInEligibleStatus", (args, stateData) {
     // No arguments passed
     if (args.isEmpty) return TaskStatus.ineligible;
