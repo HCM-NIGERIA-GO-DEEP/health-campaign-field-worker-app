@@ -2655,8 +2655,12 @@ class _HomePageState extends LocalizedState<HomePage> {
       if (!filteredLabels.contains(i18.home.summaryReportLabel)) {
         filteredLabels.add(i18.home.summaryReportLabel);
       }
+      if (!filteredLabels.contains(i18.home.teamSelectionLabel)) {
+        filteredLabels.add(i18.home.teamSelectionLabel);
+      }
     } else {
       filteredLabels.remove(i18.home.summaryReportLabel);
+      filteredLabels.remove(i18.home.teamSelectionLabel);
     }
 
     final List<Widget> widgetList =

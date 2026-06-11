@@ -292,13 +292,6 @@ class _BoundarySelectionPageState
                                         dialogType:
                                             DigitProgressDialogType.dataFound,
                                         isPop: true,
-                                        onProceedWithoutDownloading:
-                                            isDistributor
-                                                ? () => context.router
-                                                        .replaceAll([
-                                                      SelectTeamMembersRoute()
-                                                    ])
-                                                : null,
                                       );
                                     },
                                     inProgress: (syncCount, totalCount) {
@@ -372,7 +365,6 @@ class _BoundarySelectionPageState
                                       context.router
                                           .popAndPush((AcknowledgementRoute(
                                         isDataRecordSuccess: true,
-                                        showSelectTeam: isDistributor,
                                         description: dataDescription,
                                         label: localizations.translate(i18
                                             .acknowledgementSuccess
@@ -426,10 +418,6 @@ class _BoundarySelectionPageState
                                       dialogType:
                                           DigitProgressDialogType.failed,
                                       isPop: true,
-                                      onProceedWithoutDownloading: isDistributor
-                                          ? () => context.router.replaceAll(
-                                              [SelectTeamMembersRoute()])
-                                          : null,
                                     ),
                                     totalCountCheckFailed: () =>
                                         showDownloadDialog(
@@ -457,10 +445,6 @@ class _BoundarySelectionPageState
                                       dialogType:
                                           DigitProgressDialogType.checkFailed,
                                       isPop: true,
-                                      onProceedWithoutDownloading: isDistributor
-                                          ? () => context.router.replaceAll(
-                                              [SelectTeamMembersRoute()])
-                                          : null,
                                     ),
                                     insufficientStorage: () {
                                       clickedStatus.value = false;
@@ -559,7 +543,6 @@ class _BoundarySelectionPageState
                                       context.router
                                           .popAndPush((AcknowledgementRoute(
                                         isDataRecordSuccess: true,
-                                        showSelectTeam: isDistributor,
                                         description: '',
                                         label: localizations.translate(i18
                                             .acknowledgementSuccess
@@ -685,7 +668,10 @@ class _BoundarySelectionPageState
                                                         code: AppSharedPreferences()
                                                             .getSelectedLocale!));
                                                     context.router.replaceAll(
-                                                        [HomeRoute()]);
+                                                      isDistributor
+                                                          ? [SelectTeamMembersRoute()]
+                                                          : [HomeRoute()],
+                                                    );
                                                   }
                                                 }
                                               }
