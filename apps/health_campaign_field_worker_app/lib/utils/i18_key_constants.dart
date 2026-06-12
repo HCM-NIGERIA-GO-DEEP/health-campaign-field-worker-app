@@ -30,7 +30,7 @@ const selectSurveyFormShowcase = SelectSurveyFormShowcase();
 const stockDetailsReturnedShowcase = StockDetailsReturnedShowcase();
 const stockReconciliationShowcase = StockReconciliationShowcase();
 const stockReconciliationMetrics = StockReconciliationMetrics();
-
+const selectTeam = SelectTeam();
 
 class Attendance {
   const Attendance();
@@ -891,6 +891,8 @@ class Home {
   String get coreCommonSkipContinue => 'CORE_COMMON_SKIP_CONTINUE';
 
   String get summaryReportLabel => 'HOME_SUMMARY_REPORT_LABEL';
+
+  String get teamSelectionLabel => 'HOME_TEAM_SELECTION_LABEL';
 }
 
 class BeneficiaryID {
@@ -925,7 +927,6 @@ class BeneficiaryID {
   String get beneficiaryIdsReFetch => 'BENEFICIARY_IDS_RE_FETCH';
 
   String get totalBeneficiaryIds => 'TOTAL_BENEFICIARY_IDS';
-
 }
 
 class DataShare {
@@ -1008,6 +1009,22 @@ class AcknowledgementSuccess {
   String get downloadmoredata => 'DOWNLOAD_MORE_DATA';
 
   String get dataDownloadedSuccessLabel => 'DATA_DOWNLOADED_SUCCESS_LABEL';
+
+  String get goToSelectTeam => 'GO_TO_SELECT_TEAM';
+}
+
+class SelectTeam {
+  const SelectTeam();
+
+  String get selectTeamMembersTitle => 'SELECT_TEAM_MEMBERS';
+
+  String get teamMember1Label => 'TEAM_MEMBER_1';
+
+  String get teamMember2Label => 'TEAM_MEMBER_2';
+
+  String get submit => 'CORE_COMMON_SUBMIT';
+
+  String get loadingTeamMembers => 'LOADING_TEAM_MEMBERS';
 }
 
 class ProjectSelection {
@@ -1530,7 +1547,8 @@ class SummaryReport {
 
   String get childrenTreated => 'SUMMARY_REPORT_CHILDREN_TREATED';
 
-  String get childrenTreatedPercent => 'SUMMARY_REPORT_CHILDREN_TREATED_PERCENT';
+  String get childrenTreatedPercent =>
+      'SUMMARY_REPORT_CHILDREN_TREATED_PERCENT';
 
   String get backToHome => 'SUMMARY_REPORT_BACK_TO_HOME';
 

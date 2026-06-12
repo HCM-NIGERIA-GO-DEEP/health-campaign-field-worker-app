@@ -2560,6 +2560,16 @@ class _HomePageState extends LocalizedState<HomePage> {
           },
         ),
       ),
+
+      i18.home.teamSelectionLabel: homeShowcaseData.teamSelection.buildWith(
+        child: HomeItemCard(
+          icon: Icons.group,
+          label: i18.home.teamSelectionLabel,
+          onPressed: () {
+            context.router.push(SelectTeamMembersRoute());
+          },
+        ),
+      ),
     };
 
     final Map<String, GlobalKey> homeItemsShowcaseMap = {
@@ -2592,6 +2602,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.db: homeShowcaseData.db.showcaseKey,
       i18.home.stockSyncDataLabel: homeShowcaseData.stockSyncData.showcaseKey,
       i18.home.summaryReportLabel: homeShowcaseData.summaryReport.showcaseKey,
+      i18.home.teamSelectionLabel: homeShowcaseData.teamSelection.showcaseKey,
     };
 
     final homeItemsLabel = <String>[
@@ -2615,6 +2626,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.dataShare,
       i18.home.stockSyncDataLabel,
       i18.home.summaryReportLabel,
+      i18.home.teamSelectionLabel,
       i18.home.db,
     ];
 
@@ -2643,8 +2655,12 @@ class _HomePageState extends LocalizedState<HomePage> {
       if (!filteredLabels.contains(i18.home.summaryReportLabel)) {
         filteredLabels.add(i18.home.summaryReportLabel);
       }
+      if (!filteredLabels.contains(i18.home.teamSelectionLabel)) {
+        filteredLabels.add(i18.home.teamSelectionLabel);
+      }
     } else {
       filteredLabels.remove(i18.home.summaryReportLabel);
+      filteredLabels.remove(i18.home.teamSelectionLabel);
     }
 
     final List<Widget> widgetList =
