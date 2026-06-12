@@ -342,7 +342,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         entityIndex++) {
       final product = _selectedProducts[entityIndex];
       final stockInHand = _stockInHandMap[product.id] ?? 0.0;
-      final maxValue = (stockInHand / Constants.stockBottleToMlMultiplier)
+      final maxValue = stockInHand
           .toInt(); // Convert back to bottle count for validation message
 
       debugPrint(
