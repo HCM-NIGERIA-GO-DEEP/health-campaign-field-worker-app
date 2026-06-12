@@ -998,7 +998,12 @@ void initializeFunctionRegistry() {
             if (f is Map &&
                 f['key'] == 'taskType' &&
                 f['value']?.toString().toUpperCase() == 'REDOSE') {
-              return false;
+              return false; // Exclude REDOSE tasks from delivery evaluation
+            }
+            if (f is Map &&
+                f['key'] == 'flow' &&
+                f['value']?.toString().toUpperCase() == 'VASDONE') {
+              return false; // Exclude VAS tasks as well
             }
           }
         }
@@ -1836,6 +1841,38 @@ void initializeFunctionRegistry() {
     }
 
     return false;
+  });
+
+  FunctionRegistry.register("vasWithinTheAge", (args, stateData) {
+    // No arguments passed
+    if (args.isEmpty) return false;
+
+    final individual = args.first;
+
+    // --- Resolve individual (Map / EntityModel) and its DOB ---
+    final dob = _resolveDateOfBirth(individual);
+    if (dob == null) return false;
+
+    final age = DigitDateUtils.calculateAge(dob);
+    final totalAgeMonths = age.years * 12 + age.months;
+
+    // --- ProjectType comes from FlowBuilderSingleton ---
+    final projectType = FlowBuilderSingleton().vasProjectType;
+    if (projectType == null) return false;
+
+    // --- Current active cycle ---
+    final currentCycle = projectType.cycles?.firstWhereOrNull(
+      (e) =>
+          e.startDate < DateTime.now().millisecondsSinceEpoch &&
+          e.endDate > DateTime.now().millisecondsSinceEpoch,
+    );
+    if (currentCycle == null) return false;
+
+    // --- Check eligibility (age, plus weight/height when recorded) ---
+    final isWithinAge =
+        _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
+
+    return isWithinAge;
   });
 
   // GET symptoms for referral - this is a placeholder function to demonstrate how to register a function that processes data and returns a result based on certain conditions. In a real implementation, the symptom values would likely come from the stateData or arguments rather than being hardcoded.
