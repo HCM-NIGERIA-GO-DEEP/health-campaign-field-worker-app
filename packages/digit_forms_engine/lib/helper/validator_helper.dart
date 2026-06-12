@@ -1,4 +1,5 @@
 import 'package:digit_forms_engine/helper/form_builder_helper.dart';
+import 'package:digit_formula_parser/digit_formula_parser.dart';
 import 'package:flutter/foundation.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
@@ -200,6 +201,55 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
           }
           break;
 
+        // Relative max bound: the maximum allowed value is an arithmetic
+        // expression that may reference other fields, e.g. "{{memberCount - 1}}".
+        // The expression is evaluated live against sibling field values via
+        // FormulaParser; this field's value must be <= the evaluated bound.
+        case 'relativeMax':
+          if (rule.value is String) {
+            validators.add(Validators.delegate((control) {
+              if (control.value == null || control.value.toString().isEmpty) {
+                return null;
+              }
+              final numValue = num.tryParse(control.value.toString());
+              if (numValue == null) return null;
+              final bound =
+                  _evaluateRelativeBound(rule.value, control, schemaKey);
+              if (bound == null) return null;
+              if (numValue > bound) {
+                return {
+                  'relativeMax': {'max': bound, 'actual': numValue}
+                };
+              }
+              return null;
+            }) as Validator<T>);
+          }
+          break;
+
+        // Relative min bound: the minimum allowed value is an arithmetic
+        // expression that may reference other fields, e.g. "{{childrenCount + 1}}".
+        // This field's value must be >= the evaluated bound.
+        case 'relativeMin':
+          if (rule.value is String) {
+            validators.add(Validators.delegate((control) {
+              if (control.value == null || control.value.toString().isEmpty) {
+                return null;
+              }
+              final numValue = num.tryParse(control.value.toString());
+              if (numValue == null) return null;
+              final bound =
+                  _evaluateRelativeBound(rule.value, control, schemaKey);
+              if (bound == null) return null;
+              if (numValue < bound) {
+                return {
+                  'relativeMin': {'min': bound, 'actual': numValue}
+                };
+              }
+              return null;
+            }) as Validator<T>);
+          }
+          break;
+
         default:
           if (kDebugMode) {
             // print('Unknown validation type: ${rule.type}');
@@ -314,4 +364,59 @@ Map<String, dynamic>? _notEqualToValidator(
   }
 
   return null;
+}
+
+/// Evaluates a relative numeric bound for `relativeMax` / `relativeMin`
+/// validators.
+///
+/// The [template] is an arithmetic expression wrapped in `{{ }}` that may
+/// reference other field names, e.g. `"{{memberCount - 1}}"`. Field references
+/// are resolved against the sibling controls in the current page FormGroup
+/// first (so the bound reflects live edits), then the cross-page
+/// [_pagesRegistry] when a [schemaKey] is available, and the expression is
+/// evaluated with [FormulaParser].
+///
+/// Returns null when the expression is empty, references an unresolved/empty
+/// field, or fails to evaluate to a number — in which case the validator passes
+/// (the referenced field's own validation handles its emptiness).
+num? _evaluateRelativeBound(
+    dynamic template, AbstractControl<dynamic> control, String? schemaKey) {
+  if (template is! String) return null;
+
+  var expr = template.trim();
+  if (expr.startsWith('{{') && expr.endsWith('}}')) {
+    expr = expr.substring(2, expr.length - 2).trim();
+  }
+  if (expr.isEmpty) return null;
+
+  final values = <String, dynamic>{};
+
+  // 1) Cross-page values from the registry (static schema values).
+  if (schemaKey != null) {
+    final pages = _pagesRegistry[schemaKey];
+    pages?.forEach((pageKey, pageSchema) {
+      pageSchema.properties?.forEach((fieldKey, fieldSchema) {
+        values['$pageKey.$fieldKey'] = fieldSchema.value;
+        values.putIfAbsent(fieldKey, () => fieldSchema.value);
+      });
+    });
+  }
+
+  // 2) Sibling (live) values take precedence over static registry values.
+  final form = control.parent;
+  if (form is FormGroup) {
+    form.controls.forEach((key, c) {
+      values[key] = c.value;
+    });
+  }
+
+  try {
+    final result =
+        FormulaParser(expr, values.isEmpty ? {'dummy': {}} : values).parse;
+    final value = result['value'];
+    if (value is num) return value;
+    return num.tryParse(value?.toString() ?? '');
+  } catch (_) {
+    return null;
+  }
 }
