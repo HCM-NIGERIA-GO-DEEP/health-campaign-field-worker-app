@@ -313,6 +313,7 @@ class FunctionRegistries {
       }
     });
 
+
     FunctionRegistry.register('getProjectProductVariantIds', (args, stateData) {
       try {
         List<Map<String, dynamic>>? productVariants;

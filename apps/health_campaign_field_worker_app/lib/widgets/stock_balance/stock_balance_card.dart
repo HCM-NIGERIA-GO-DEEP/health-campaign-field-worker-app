@@ -243,6 +243,7 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
     };
 
     print("mergedBalances: $mergedBalances"); 
+    
 
     StockBalanceCache.instance.setCache(effectiveFacilityId, mergedBalances);
     if (mounted) {
@@ -251,6 +252,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       });
     }
   }
+
+  
 
   Future<Map<String, double>> _loadUserActionBalances(
     UserActionLocalRepository userActionRepo,
@@ -308,6 +311,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       return const SizedBox.shrink();
     }
 
+    print("_facilities----- $_facilities");
+
     return DigitCard(
       margin: const EdgeInsets.all(spacer2),
       children: [
@@ -319,13 +324,15 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
               emptyItemText: localizations.translate('NO_FACILITIES_FOUND'),
               items: _facilities
                   .map((f) => DropdownItem(
-                        name: localizations.translate(f.id),
+                        // name: localizations.translate(f.id),
+                        name: f.name ?? f.id,
                         code: f.id,
                       ))
                   .toList(),
               selectedOption: _selectedFacility != null
                   ? DropdownItem(
-                      name: localizations.translate(_selectedFacility!.id),
+                      // name: localizations.translate(_selectedFacility!.id),
+                      name: _selectedFacility!.name ?? _selectedFacility!.id,
                       code: _selectedFacility!.id,
                     )
                   : null,

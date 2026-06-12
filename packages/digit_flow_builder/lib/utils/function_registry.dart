@@ -9,6 +9,7 @@ import 'package:digit_ui_components/utils/date_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:digit_data_model/data_model.dart';
 
 import 'interpolation.dart';
 
@@ -544,6 +545,69 @@ void initializeFunctionRegistry() {
 
     return false;
   });
+
+  FunctionRegistry.register("isClosedHousehold", (args, stateData) {
+  if (args.isEmpty || args.first == null) return false;
+  final tasks = args.first;
+
+  if (tasks is! List || tasks.isEmpty) return false;
+
+  String? getStatus(dynamic task) {
+    if (task is Map) return task['status']?.toString()?.toUpperCase();
+    try {
+      return (task as dynamic).status?.toString()?.toUpperCase();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  final lastStatus = getStatus(tasks.last);
+  if (lastStatus == 'ADMINISTRATION_SUCCESS') return true;
+
+  return false;
+});
+
+  // FunctionRegistry.register("isClosedHousehold", (args, stateData) {
+  //   final data = args;
+  //   if (args.isEmpty || args.first == null) return false;
+  //   final tasks = args.first;
+  //   print(tasks is! List);
+  //   print(tasks.isEmpty);
+
+  //   // Return true if last task status is ADMINISTRATION_SUCCESS
+  //   final lastTask = tasks.last;
+  //   final lastStatus = (lastTask is TaskModel
+  //           ? lastTask.status
+  //           : lastTask is Map
+  //               ? lastTask['status']?.toString()
+  //               : null)
+  //       ?.toUpperCase();
+
+  //   if (lastStatus == 'ADMINISTRATION_SUCCESS') return true;
+
+  //   return tasks.any((task) {
+  //     final status = (task is TaskModel
+  //             ? task.status
+  //             : task is Map
+  //                 ? task['status']?.toString()
+  //                 : null)
+  //         ?.toUpperCase();
+  //     return status == 'CLOSED_HOUSEHOLD';
+  //   });
+  // });
+
+
+
+  // FunctionRegistry.register("isClosedHousehold", (args, stateData) {
+  //   print("isClosedHousehold function called with args: $args");
+
+  //   final task = args;
+
+  //   print(task);
+
+  //   return false;
+
+  // });
 
   /// Registers a function to check if all doses have been delivered for a member.
   ///
@@ -1868,13 +1932,14 @@ void initializeFunctionRegistry() {
     return (currentCount ?? 0) >= minCount;
   });
 
-   FunctionRegistry.register('houseHoldFooterVisibility', (args, stateData) {
+  FunctionRegistry.register('houseHoldFooterVisibility', (args, stateData) {
     final navData = args.isNotEmpty ? args.first : null;
     return navData != null && navData['showButton'] == true;
   });
 
   FunctionRegistry.register('getNumberOfITNForDelivery', (args, stateData) {
-    final memberCount = args.isNotEmpty ? int.tryParse(args.first.toString()) : null;
+    final memberCount =
+        args.isNotEmpty ? int.tryParse(args.first.toString()) : null;
     if (memberCount == null || memberCount <= 0) return 0;
     if (memberCount == 1 || memberCount == 2) return 1;
     if (memberCount == 3 || memberCount == 4) return 2;

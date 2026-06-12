@@ -2137,10 +2137,10 @@ class _HomePageState extends LocalizedState<HomePage> {
                       const NestedModelMapping(
                         rootModel: 'task',
                         fields: {
-                          'resource': NestedFieldMapping(
-                            table: 'resource',
-                            localKey: 'taskclientReferenceId',
-                            foreignKey: 'clientReferenceId',
+                          'resources': NestedFieldMapping(
+                            table: 'taskResource',
+                            localKey: 'clientReferenceId',
+                            foreignKey: 'taskclientReferenceId',
                             type: NestedMappingType.many,
                           ),
                         },
