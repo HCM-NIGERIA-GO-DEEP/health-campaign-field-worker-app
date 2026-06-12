@@ -8,7 +8,6 @@ import 'package:digit_flow_builder/widget_registry.dart';
 import 'package:digit_formula_parser/digit_formula_parser.dart';
 import 'package:digit_ui_components/utils/date_utils.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import 'interpolation.dart';
@@ -144,6 +143,19 @@ bool checkStatusInternal(
   }
 
   return true;
+}
+
+ProjectTypeModel? _resolveProjectTypeForSourceFlow(dynamic sourceFlow) {
+  final normalized = sourceFlow?.toString().trim().toUpperCase();
+  final singleton = FlowBuilderSingleton();
+
+  if (normalized == 'VASCHECKLIST' ||
+      normalized == 'VASDELIVERY' ||
+      normalized == 'VAS') {
+    return singleton.vasProjectType;
+  }
+
+  return singleton.projectType;
 }
 
 /// Checks if a side effect was recorded for the last task within the current cycle.
@@ -748,6 +760,23 @@ void initializeFunctionRegistry() {
           }
         }
 
+        final additionalFields = task['additionalFields'];
+        final fields = additionalFields is Map
+            ? additionalFields['fields'] as List?
+            : null;
+
+        if (fields != null) {
+          String? flowType;
+          for (final field in fields) {
+            if (field is Map && field['key'] == 'flow') {
+              flowType = field['value']?.toString();
+            }
+          }
+          if (flowType != "smcDone") {
+            continue; // Skip non-SMC tasks
+          }
+        }
+
         // BENEFICIARY_DIED returns false immediately regardless of cycle
         if (task['status'] == TaskStatus.beneficiaryDied) return false;
 
@@ -756,10 +785,6 @@ void initializeFunctionRegistry() {
 
         // For other ineligible statuses, only check tasks matching the current cycle
         if (currentRunningCycle != null) {
-          final additionalFields = task['additionalFields'];
-          final fields = additionalFields is Map
-              ? additionalFields['fields'] as List?
-              : null;
           int? taskCycleIndex;
           if (fields != null) {
             for (final field in fields) {
@@ -863,17 +888,44 @@ void initializeFunctionRegistry() {
     // No arguments passed
     if (args.isEmpty) return false;
 
-    final value = args.first;
+    final statusValue = args.first;
+    final flowValue = args.length > 1 ? args[1] : null;
 
     // Must be a string
-    if (value is! String) return false;
+    if (statusValue is! String) return false;
+    if (flowValue is! String) return false;
 
     // Normalize (uppercase + trim)
-    final status = value.trim().toUpperCase();
+    final status = statusValue.trim().toUpperCase();
+    final flow = flowValue.trim().toUpperCase();
 
     // Match valid delivered statuses
-    if (status == TaskStatus.administrationSuccess ||
-        status == TaskStatus.delivered) {
+    if ((status == TaskStatus.administrationSuccess ||
+            status == TaskStatus.delivered) &&
+        flow == 'SMCDONE') {
+      return true;
+    }
+
+    return false;
+  });
+
+  FunctionRegistry.register("isVASDelivered", (args, stateData) {
+    // No arguments passed
+    if (args.isEmpty) return false;
+
+    final statusValue = args.first;
+    final flowValue = args.length > 1 ? args[1] : null;
+
+    // Must be a string
+    if (statusValue is! String) return false;
+    if (flowValue is! String) return false;
+
+    // Normalize (uppercase + trim)
+    final status = statusValue.trim().toUpperCase();
+    final flow = flowValue.trim().toUpperCase();
+
+    // Match valid delivered statuses
+    if (status == TaskStatus.administrationSuccess && flow == 'VASDONE') {
       return true;
     }
 
@@ -959,6 +1011,7 @@ void initializeFunctionRegistry() {
 
       int? lastCycle;
       int? lastDose;
+      String? taskType;
 
       if (fields != null) {
         for (final field in fields) {
@@ -969,12 +1022,16 @@ void initializeFunctionRegistry() {
             if (field['key'] == 'doseIndex') {
               lastDose = int.tryParse(field['value']?.toString() ?? '');
             }
+            if (field['key'] == 'flow') {
+              taskType = field['value']?.toString();
+            }
           }
         }
       }
 
       final lastTaskStatus = lastTask['status']?.toString().toUpperCase();
       final isDelivered = lastTaskStatus == 'DELIVERED';
+      final isSMC = taskType == "smcDone";
 
       // If last dose equals total deliveries in cycle AND cycle matches AND status is NOT delivered
       // -> return true (last dose attempted but not delivered)
@@ -982,6 +1039,7 @@ void initializeFunctionRegistry() {
           lastDose == selectedCycle.deliveries?.length &&
           lastCycle != null &&
           lastCycle == selectedCycle.id &&
+          isSMC &&
           (lastTaskStatus == 'ADMINISTRATION_SUCCESS' ||
               lastTaskStatus == 'DELIVERED')) {
         return true;
@@ -1658,13 +1716,14 @@ void initializeFunctionRegistry() {
 
   /// Checks if a referral exists for the current running cycle.
   ///
-  /// - **Function Name**: `'hasReferralForCurrentCycle'`
+  /// - **Function Name**: `'hasSMCReferralForCurrentCycle'`
   /// - **Arguments**: First argument is the hFReferral list.
   /// - **Returns**: `true` if a referral exists for the current cycle, `false` otherwise.
-  FunctionRegistry.register("hasReferralForCurrentCycle", (args, stateData) {
+  FunctionRegistry.register("hasSMCReferralForCurrentCycle", (args, stateData) {
     if (args.isEmpty || args.first == null) return false;
 
     final referrals = args.first;
+
     if (referrals is! List || referrals.isEmpty) return false;
 
     // Get current active cycle from FlowBuilderSingleton
@@ -1681,18 +1740,96 @@ void initializeFunctionRegistry() {
     final smcReferrals = _filterByFlow(referrals, keepRi: false);
 
     for (final refMap in smcReferrals) {
+      String? flowType;
+      int? referralCycle;
       final additionalFields = refMap['additionalFields'];
       final fields =
           additionalFields is Map ? additionalFields['fields'] as List? : null;
       if (fields != null) {
         for (final field in fields) {
+          if (field is Map && field['key'] == 'flow') {
+            flowType = field['value']?.toString();
+          }
           if (field is Map && field['key'] == 'referralCycle') {
-            final referralCycle =
-                int.tryParse(field['value']?.toString() ?? '');
-            if (referralCycle == selectedCycle.id) return true;
+            referralCycle = int.tryParse(field['value']?.toString() ?? '');
           }
         }
+        if (referralCycle == selectedCycle.id && flowType == "smcDone") {
+          return true; // Ensure it's an SMC referral for the current cycle
+        }
       }
+    }
+
+    return false;
+  });
+
+  /// Checks if a referral exists for the current running cycle.
+  ///
+  /// - **Function Name**: `'hasVASReferralForCurrentCycle'`
+  /// - **Arguments**: First argument is the hFReferral list.
+  /// - **Returns**: `true` if a referral exists for the current cycle, `false` otherwise.
+  FunctionRegistry.register("hasVASReferralForCurrentCycle", (args, stateData) {
+    if (args.isEmpty || args.first == null) return false;
+
+    final referrals = args.first;
+
+    if (referrals is! List || referrals.isEmpty) return false;
+
+    // Get current active cycle from FlowBuilderSingleton
+    final projectType = FlowBuilderSingleton().projectType;
+    final selectedCycle = projectType?.cycles?.firstWhereOrNull(
+      (e) =>
+          e.startDate < DateTime.now().millisecondsSinceEpoch &&
+          e.endDate > DateTime.now().millisecondsSinceEpoch,
+    );
+
+    if (selectedCycle == null) return false;
+
+    // Only consider VAS referrals (exclude RI referrals marked with flow == 'riDone').
+    final vasReferrals = _filterByFlow(referrals, keepRi: false);
+
+    for (final refMap in vasReferrals) {
+      String? flowType;
+      int? referralCycle;
+      final additionalFields = refMap['additionalFields'];
+      final fields =
+          additionalFields is Map ? additionalFields['fields'] as List? : null;
+      if (fields != null) {
+        for (final field in fields) {
+          if (field is Map && field['key'] == 'flow') {
+            flowType = field['value']?.toString();
+          }
+          if (field is Map && field['key'] == 'referralCycle') {
+            referralCycle = int.tryParse(field['value']?.toString() ?? '');
+          }
+        }
+        if (referralCycle == selectedCycle.id && flowType == "vasDone") {
+          return true; // Ensure it's a VAS referral for the current cycle
+        }
+      }
+    }
+
+    return false;
+  });
+
+  FunctionRegistry.register("hasVASIneligible", (args, stateData) {
+    // No arguments passed
+    if (args.isEmpty) return false;
+
+    final statusValue = args.first;
+    final flowValue = args.length > 1 ? args[1] : null;
+
+    // Must be a string
+    if (statusValue is! String) return false;
+    if (flowValue is! String) return false;
+
+    // Normalize (uppercase + trim)
+    final status = statusValue.trim().toUpperCase();
+    final flow = flowValue.trim().toUpperCase();
+
+    // Match valid delivered statuses
+    if (status == TaskStatus.ineligible && flow == 'VASDONE') {
+      return true;
     }
 
     return false;
@@ -1753,7 +1890,8 @@ void initializeFunctionRegistry() {
   });
 
   FunctionRegistry.register("canRecordDelivery", (args, stateData) {
-    final projectType = FlowBuilderSingleton().projectType;
+    final sourceFlow = args.length > 1 ? args[1] : null;
+    final projectType = _resolveProjectTypeForSourceFlow(sourceFlow);
     if (projectType == null || projectType.cycles == null) {
       return true; // Default to true if no project config
     }
