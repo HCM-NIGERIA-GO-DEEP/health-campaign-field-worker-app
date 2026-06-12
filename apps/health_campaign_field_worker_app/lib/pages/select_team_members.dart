@@ -173,8 +173,8 @@ class _SelectTeamMembersPageState
 
         if (member.username.isEmpty || member.userUuid.isEmpty) continue;
 
-        if (roleCodes.contains('RC')) recorders.add(member);
-        if (roleCodes.contains('DS')) dispensers.add(member);
+        if (roleCodes.contains('DISTRIBUTOR')) recorders.add(member);
+        if (roleCodes.contains('DISPENSER')) dispensers.add(member);
       }
 
       return (recorders: recorders, dispensers: dispensers);
@@ -415,26 +415,26 @@ class _SelectTeamMembersPageState
 
   AdditionalField? _findLatestMapping(List<AdditionalField> fields) {
     AdditionalField? latest;
-    int maxIndex = 0;
-    for (final f in fields) {
-      final match = _mappingKeyPattern.firstMatch(f.key);
+    var maxIndex = 0;
+    for (final field in fields) {
+      final match = _mappingKeyPattern.firstMatch(field.key);
       if (match == null) continue;
-      final n = int.tryParse(match.group(1)!) ?? 0;
-      if (n > maxIndex) {
-        maxIndex = n;
-        latest = f;
+      final index = int.tryParse(match.group(1)!) ?? 0;
+      if (index > maxIndex) {
+        maxIndex = index;
+        latest = field;
       }
     }
     return latest;
   }
 
   int _nextMappingIndex(List<AdditionalField> fields) {
-    int maxIndex = 0;
-    for (final f in fields) {
-      final match = _mappingKeyPattern.firstMatch(f.key);
+    var maxIndex = 0;
+    for (final field in fields) {
+      final match = _mappingKeyPattern.firstMatch(field.key);
       if (match == null) continue;
-      final n = int.tryParse(match.group(1)!) ?? 0;
-      if (n > maxIndex) maxIndex = n;
+      final index = int.tryParse(match.group(1)!) ?? 0;
+      if (index > maxIndex) maxIndex = index;
     }
     return maxIndex + 1;
   }
