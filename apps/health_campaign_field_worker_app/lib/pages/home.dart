@@ -137,7 +137,7 @@ class _HomePageState extends LocalizedState<HomePage> {
     FlowWidgetFactory.register(CustomRowWidget());
     FlowWidgetFactory.register(SignatureCompareWidget());
 
-    // Register resource card for DELIVERY and REDOSE
+    // Register resource card for DELIVERY, VAS DELIVERY and REDOSE
     CustomComponentRegistry().registerBuilder(
       'resourceCard',
       (context, stateAccessor) {
@@ -146,10 +146,21 @@ class _HomePageState extends LocalizedState<HomePage> {
 
         if (beneficiaryDetails != null &&
             stateAccessor.currentPageName == 'DELIVERY') {
-          // DELIVERY flow
+          // Regular DELIVERY flow
           return ResourceCard(
             stateData: beneficiaryDetails,
             pageSchema: 'DELIVERY',
+          );
+        }
+
+        final vasDetails = stateAccessor.getPageData('vasDetails');
+
+        if (vasDetails != null &&
+            stateAccessor.currentPageName == 'VASDELIVERY') {
+          // VAS DELIVERY flow
+          return ResourceCard(
+            stateData: vasDetails,
+            pageSchema: 'VASDELIVERY',
           );
         }
 
@@ -2722,6 +2733,7 @@ void setPackagesSingleton(BuildContext context) {
           projectId: context.projectId,
           selectedBeneficiaryType: context.beneficiaryType,
           projectType: context.selectedProjectType,
+          vasProjectType: context.vasProjectType,
           selectedProject: context.selectedProject,
           userRoles: context.loggedInUserRoles
               .map((role) => {
