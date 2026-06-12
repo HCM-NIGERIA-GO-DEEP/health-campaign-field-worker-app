@@ -887,24 +887,27 @@ void initializeFunctionRegistry() {
     return TaskStatus.ineligible;
   });
 
-  FunctionRegistry.register("isDelivered", (args, stateData) {
+  FunctionRegistry.register("isSMCFlowDone", (args, stateData) {
     // No arguments passed
     if (args.isEmpty) return false;
 
     final statusValue = args.first;
-    final flowValue = args.length > 1 ? args[1] : null;
-
-    // Must be a string
-    if (statusValue is! String) return false;
-    if (flowValue is! String) return false;
+    final referalFlowValue = args.length > 1 ? args[1] : null;
+    final flowValue = args.length > 2 ? args[2] : null;
 
     // Normalize (uppercase + trim)
-    final status = statusValue.trim().toUpperCase();
-    final flow = flowValue.trim().toUpperCase();
+    final status = statusValue?.trim()?.toUpperCase();
+    final flow = flowValue?.trim()?.toUpperCase();
+    final referralFlow = referalFlowValue?.trim()?.toUpperCase();
 
+    // SMC flow is considered done if referral flow is marked as SMCDONE, regardless of task status
+    if (referralFlow == "SMCDONE") {
+      return true;
+    }
     // Match valid delivered statuses
     if ((status == TaskStatus.administrationSuccess ||
-            status == TaskStatus.delivered) &&
+            status == TaskStatus.delivered ||
+            status == TaskStatus.ineligible) &&
         flow == 'SMCDONE') {
       return true;
     }
@@ -912,24 +915,56 @@ void initializeFunctionRegistry() {
     return false;
   });
 
+  FunctionRegistry.register("isDelivered", (args, stateData) {
+    // No arguments passed
+    if (args.isEmpty) return false;
+
+    final tasks = args.first;
+
+    for (var task in tasks) {
+      final statusValue = task.status;
+      if (statusValue is! String) continue;
+      final status = statusValue.trim().toUpperCase();
+      final List? fields = task.additionalFields?.fields;
+      final flowType = fields
+          ?.firstWhereOrNull((f) => f.key == 'flow')
+          ?.value
+          ?.toString()
+          .trim()
+          .toUpperCase();
+
+      // Match valid delivered statuses
+      if ((status == TaskStatus.administrationSuccess ||
+              status == TaskStatus.delivered) &&
+          flowType == 'SMCDONE') {
+        return true;
+      }
+    }
+    return false;
+  });
+
   FunctionRegistry.register("isVASDelivered", (args, stateData) {
     // No arguments passed
     if (args.isEmpty) return false;
 
-    final statusValue = args.first;
-    final flowValue = args.length > 1 ? args[1] : null;
+    final tasks = args.first;
 
-    // Must be a string
-    if (statusValue is! String) return false;
-    if (flowValue is! String) return false;
+    for (var task in tasks) {
+      final statusValue = task.status;
+      if (statusValue is! String) continue;
+      final status = statusValue.trim().toUpperCase();
+      final List? fields = task.additionalFields?.fields;
+      final flowType = fields
+          ?.firstWhereOrNull((f) => f.key == 'flow')
+          ?.value
+          ?.toString()
+          .trim()
+          .toUpperCase();
 
-    // Normalize (uppercase + trim)
-    final status = statusValue.trim().toUpperCase();
-    final flow = flowValue.trim().toUpperCase();
-
-    // Match valid delivered statuses
-    if (status == TaskStatus.administrationSuccess && flow == 'VASDONE') {
-      return true;
+      // Match valid delivered statuses
+      if (status == TaskStatus.administrationSuccess && flowType == 'VASDONE') {
+        return true;
+      }
     }
 
     return false;
