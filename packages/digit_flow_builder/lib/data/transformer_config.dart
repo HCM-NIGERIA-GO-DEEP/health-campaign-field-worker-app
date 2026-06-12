@@ -1094,21 +1094,21 @@ final jsonConfig = {
             "gender": "__context:gender",
             "headName": "__context:headName",
             "headMobileNumber": "__context:headMobileNumber",
-            "deliveryComment": "VASDetails.deliveryComment"
+            "deliveryComment": "VASDeliveryDetails.deliveryComment"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
         },
         "listMappings": {
           "TaskResourceModel": {
-            "listSource": "VASDetails.resourceCard",
+            "listSource": "VASDeliveryDetails.resourceCard",
             "mappings": {
               "id": "id",
               "clientReferenceId": "__generate:uuid",
               "taskId": "taskId",
               "productVariantId":
-                  "VASDetails.resourceCard.resourceDelivered.productId",
-              "quantity": "VASDetails.resourceCard.quantityDistributed",
+                  "VASDeliveryDetails.resourceCard.resourceDelivered.productId",
+              "quantity": "VASDeliveryDetails.resourceCard.quantityDistributed",
               "isDelivered": "__value:true",
               "deliveryComment": "__value:VAS",
               "nonRecoverableError": "error.nonRecoverable",
