@@ -891,25 +891,67 @@ void initializeFunctionRegistry() {
     // No arguments passed
     if (args.isEmpty) return false;
 
-    final statusValue = args.first;
-    final referalFlowValue = args.length > 1 ? args[1] : null;
-    final flowValue = args.length > 2 ? args[2] : null;
+    final tasks = args.first;
+    final referrals = args.length > 1 ? args[1] : null;
 
-    // Normalize (uppercase + trim)
-    final status = statusValue?.trim()?.toUpperCase();
-    final flow = flowValue?.trim()?.toUpperCase();
-    final referralFlow = referalFlowValue?.trim()?.toUpperCase();
+    for (var referral in (referrals ?? [])) {
+      final List? fields = referral.additionalFields?.fields;
+      final flowType = fields
+          ?.firstWhereOrNull((f) => f.key == 'flow')
+          ?.value
+          ?.toString()
+          .trim()
+          .toUpperCase();
 
-    // SMC flow is considered done if referral flow is marked as SMCDONE, regardless of task status
-    if (referralFlow == "SMCDONE") {
-      return true;
+      // Referral flow is considered done if marked as SMCDONE, regardless of task status
+      if (flowType == "SMCDONE") {
+        return true;
+      }
     }
-    // Match valid delivered statuses
-    if ((status == TaskStatus.administrationSuccess ||
-            status == TaskStatus.delivered ||
-            status == TaskStatus.ineligible) &&
-        flow == 'SMCDONE') {
-      return true;
+
+    for (var task in tasks) {
+      final statusValue = task.status;
+      if (statusValue is! String) continue;
+      final status = statusValue.trim().toUpperCase();
+      final List? fields = task.additionalFields?.fields;
+      final flowType = fields
+          ?.firstWhereOrNull((f) => f.key == 'flow')
+          ?.value
+          ?.toString()
+          .trim()
+          .toUpperCase();
+
+      // Match valid delivered statuses
+      if ((status == TaskStatus.administrationSuccess ||
+              status == TaskStatus.delivered ||
+              status == TaskStatus.ineligible) &&
+          flowType == 'SMCDONE') {
+        return true;
+      }
+    }
+
+    return false;
+  });
+
+  FunctionRegistry.register("hasSMCReferral", (args, stateData) {
+    // No arguments passed
+    if (args.isEmpty) return false;
+
+    final referrals = args.first;
+
+    for (var referral in (referrals ?? [])) {
+      final List? fields = referral.additionalFields?.fields;
+      final flowType = fields
+          ?.firstWhereOrNull((f) => f.key == 'flow')
+          ?.value
+          ?.toString()
+          .trim()
+          .toUpperCase();
+
+      // Referral flow is considered done if marked as SMCDONE, regardless of task status
+      if (flowType == "SMCDONE") {
+        return true;
+      }
     }
 
     return false;
@@ -1859,20 +1901,24 @@ void initializeFunctionRegistry() {
     // No arguments passed
     if (args.isEmpty) return false;
 
-    final statusValue = args.first;
-    final flowValue = args.length > 1 ? args[1] : null;
+    final tasks = args.first;
 
-    // Must be a string
-    if (statusValue is! String) return false;
-    if (flowValue is! String) return false;
+    for (var task in tasks) {
+      final statusValue = task.status;
+      if (statusValue is! String) continue;
+      final status = statusValue.trim().toUpperCase();
+      final List? fields = task.additionalFields?.fields;
+      final flowType = fields
+          ?.firstWhereOrNull((f) => f.key == 'flow')
+          ?.value
+          ?.toString()
+          .trim()
+          .toUpperCase();
 
-    // Normalize (uppercase + trim)
-    final status = statusValue.trim().toUpperCase();
-    final flow = flowValue.trim().toUpperCase();
-
-    // Match valid delivered statuses
-    if (status == TaskStatus.ineligible && flow == 'VASDONE') {
-      return true;
+      // Match valid delivered statuses
+      if (status == TaskStatus.ineligible && flowType == 'VASDONE') {
+        return true;
+      }
     }
 
     return false;
@@ -1917,14 +1963,16 @@ void initializeFunctionRegistry() {
 
     if (navigationData == null) return null;
 
+    String defaultSymptom = 'SICK';
+
     final String? sourceFlow = navigationData['sourceFlow'];
     final List<String> symptoms = [];
 
-    if (sourceFlow == 'CHECKLIST') {
+    if (sourceFlow == 'CHECKLIST' || sourceFlow == 'VASCHECKLIST') {
       String? ec1 = navigationData['ec1'];
       String? ec2 = navigationData['ec2'];
 
-      if (ec1 == null && ec2 == null) return null;
+      if (ec1 == null && ec2 == null) return defaultSymptom;
 
       if (ec1 == 'YES') symptoms.add('SICK');
       if (ec2 == 'YES') symptoms.add('FEVER');
@@ -1937,17 +1985,17 @@ void initializeFunctionRegistry() {
       if (zeroDose == null &&
           partiallyImmunized == null &&
           unimmunized == null) {
-        return null;
+        return defaultSymptom;
       }
 
       if (zeroDose == 'YES') symptoms.add('ZERO_DOSE');
       if (partiallyImmunized == 'YES') symptoms.add('PARTIALLY_IMMUNIZED');
       if (unimmunized == 'YES') symptoms.add('UNIMMUNIZED');
     } else {
-      return null;
+      return defaultSymptom;
     }
 
-    if (symptoms.isEmpty) return null;
+    if (symptoms.isEmpty) return defaultSymptom;
 
     return symptoms.join(',');
   });
