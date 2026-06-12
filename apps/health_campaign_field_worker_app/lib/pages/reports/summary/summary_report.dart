@@ -260,8 +260,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
                   productId: pv.id,
                   loggedInUserUuid: userUuid,
                   isDistributor: isDistributor,
-                  calculatePartial: true,
-                  multiplier: Constants.stockBottleToMlMultiplier,
                 )
               : StockCalculationUtils.emptyMetrics;
 

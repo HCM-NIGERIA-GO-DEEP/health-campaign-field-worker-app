@@ -263,8 +263,6 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       loggedInUserUuid: context.loggedInUserUuid,
       isDistributor: _isDistributor,
       tasks: tasks,
-      multiplier: Constants.stockBottleToMlMultiplier,
-      calculatePartial: true,
     );
 
     StockBalanceCache.instance.setCache(effectiveFacilityId, balances);

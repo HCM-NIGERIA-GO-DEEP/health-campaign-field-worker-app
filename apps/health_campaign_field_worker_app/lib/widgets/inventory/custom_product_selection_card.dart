@@ -205,8 +205,6 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         loggedInUserUuid: loggedInUserUuid,
         isDistributor: _isDistributor,
         tasks: tasks,
-        multiplier: Constants.stockBottleToMlMultiplier,
-        calculatePartial: true,
       );
 
       // Merge: UserAction balances take precedence (they include delivery deductions)
