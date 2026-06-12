@@ -161,7 +161,7 @@ final dynamic sampleCloseHouseholdFlows = {
         {
           "actionType": "CREATE_EVENT",
           "properties": {
-            "entity": "HOUSEHOLD, INDIVIDUAL, MEMBER, PROJECTBENEFICIARY",
+            "entity": "HouseholdModel, IndividualModel, HouseholdMemberModel, ProjectBeneficiaryModel, TaskModel",
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
