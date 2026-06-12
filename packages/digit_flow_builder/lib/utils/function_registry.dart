@@ -1,4 +1,6 @@
 import 'package:collection/collection.dart';
+import 'dart:convert';
+
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendance_log.dart';
 import 'package:digit_data_model/models/entities/project_type.dart';
@@ -8,6 +10,7 @@ import 'package:digit_flow_builder/widget_registry.dart';
 import 'package:digit_formula_parser/digit_formula_parser.dart';
 import 'package:digit_ui_components/utils/date_utils.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
 import 'interpolation.dart';
@@ -1887,6 +1890,14 @@ void initializeFunctionRegistry() {
     }
 
     return false;
+  });
+
+  FunctionRegistry.register("getVASProjectCycles", (args, stateData) {
+    final cycles =
+        FlowBuilderSingleton().vasProjectType?.cycles ?? <ProjectCycle>[];
+    return cycles
+        .map((c) => jsonDecode(c.toJson()) as Map<String, dynamic>)
+        .toList();
   });
 
   FunctionRegistry.register("canRecordDelivery", (args, stateData) {
