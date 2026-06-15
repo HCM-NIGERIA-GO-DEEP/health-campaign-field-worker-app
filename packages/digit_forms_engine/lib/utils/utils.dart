@@ -5,8 +5,8 @@ import 'package:intl/intl.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 import 'package:uuid/uuid.dart';
 
-import '../blocs/app_localization.dart';
 import '../models/property_schema/property_schema.dart';
+import 'forms_function_config.dart';
 
 class Constants {
   static RegExp mobileNumberRegExp =
@@ -511,5 +511,59 @@ final functionRegistry = {
 
     final today = DateTime.now();
     return (today.year - dob.year) * 12 + today.month - dob.month;
+  },
+
+  // Calculates wastage for a returned stock entry.
+  //
+  // Rule: wastage = stockBalance - (returned bottles * 30ml + partial ml),
+  // where `returned` is the count of full/unused bottles (30 ml each) and
+  // `partial` is the ml entered by the user. The current product's balance is
+  // resolved via the host-app hook (see [FormsFunctionConfig]).
+  //
+  // args: [returned, partial, productVariantId]
+  'calculateWastage': (List<dynamic> args) {
+    num toNum(dynamic v) =>
+        v is num ? v : num.tryParse(v?.toString() ?? '') ?? 0;
+
+    final returned = args.isNotEmpty ? toNum(args[0]) : 0;
+    final partial = args.length > 1 ? toNum(args[1]) : 0;
+    final productVariantId = args.length > 2 ? args[2]?.toString() : null;
+
+    if (returned <= 0) {
+      return 0; // Invalid input, return 0 wastage
+    }
+    final balance = (productVariantId != null && productVariantId.isNotEmpty)
+        ? FormsFunctionConfig.instance.stockBalanceResolver?.call(
+              productVariantId,
+            ) ??
+            0
+        : 0;
+
+    final partialInMl = partial > 0 ? balance % 30 : 0;
+    final wastage = balance - ((returned * 30) + partialInMl);
+    final result = wastage < 0 ? 0 : wastage;
+    return result == result.roundToDouble() ? result.toInt() : result;
+  },
+
+  'calculatePartial': (List<dynamic> args) {
+    num toNum(dynamic v) =>
+        v is num ? v : num.tryParse(v?.toString() ?? '') ?? 0;
+
+    final returned = args.isNotEmpty ? toNum(args[0]) : 0;
+    final partial = args.length > 1 ? toNum(args[1]) : 0;
+    final productVariantId = args.length > 2 ? args[2]?.toString() : null;
+
+    if (returned <= 0) {
+      return 0; // Invalid input, return 0 wastage
+    }
+    final balance = (productVariantId != null && productVariantId.isNotEmpty)
+        ? FormsFunctionConfig.instance.stockBalanceResolver?.call(
+              productVariantId,
+            ) ??
+            0
+        : 0;
+
+    final partialInMl = partial > 0 ? balance % 30 : 0;
+    return partialInMl;
   },
 };

@@ -10,7 +10,6 @@
     {
       "screenType": "FORM",
       "name": "CLOSEHOUSEHOLD",
-      "project": "LLIN-mz",
       "version": 1,
       "disabled": false,
       "isSelected": true,

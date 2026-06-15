@@ -358,7 +358,10 @@ class IndividualLocalRepository
                 }).toList() ??
                 [])
             .toList();
-        final addressCompanions = addressList.expand((e) => [e[0]]).toList();
+        final addressCompanions = addressList
+            .where((e) => e.isNotEmpty)
+            .expand((e) => [e[0]])
+            .toList();
         final nameCompanions = entities.map((e) {
           if (e.name != null) {
             return e.name!

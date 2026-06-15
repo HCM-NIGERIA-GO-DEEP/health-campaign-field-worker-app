@@ -2110,7 +2110,7 @@ final dynamic sampleInventoryFlows = {
                   "type": "template",
                   "fieldName": "viewTransactionGroupedItemText",
                   "value":
-                      "{{item.additionalFields.fields.sku}}: {{item.quantity}}"
+                      "{{item.additionalFields.fields.sku}}: {{fn:mlToBottles(item.quantity)}}"
                 }
               },
               {
@@ -2246,7 +2246,7 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key":
                         "{{fn:getQuantityLabel(item.additionalFields.fields.sku)}}",
-                    "value": "{{item.quantity}}"
+                    "value": "{{fn:mlToBottles(item.quantity)}}"
                   },
                   {
                     "key": "INVENTORY_COMMENTS_LABEL",
@@ -2421,7 +2421,7 @@ final dynamic sampleInventoryFlows = {
                   "type": "template",
                   "fieldName": "incomingTransactionsGroupedItemText",
                   "value":
-                      "{{item.additionalFields.fields.sku}}: {{item.quantity}}"
+                      "{{item.additionalFields.fields.sku}}: {{fn:mlToBottles(item.quantity)}}"
                 }
               },
               {
@@ -2460,7 +2460,8 @@ final dynamic sampleInventoryFlows = {
                         },
                         {
                           "key": "quantity",
-                          "value": "{{item.items[0].quantity}}"
+                          "value":
+                              "{{fn:mlToBottles(item.items[0].quantity)}}"
                         },
                         {
                           "key": "wayBillNumber",
@@ -2547,7 +2548,10 @@ final dynamic sampleInventoryFlows = {
               },
               {"key": "userFacilityId", "value": "{{fn:getUserFacilityId()}}"},
               {"key": "sku", "value": "{{navigation.sku}}"},
-              {"key": "quantity", "value": "{{navigation.quantity}}"}
+              {
+                "key": "quantity",
+                "value": "{{fn:bottlesToMl(navigation.quantity)}}"
+              }
             ],
             "onError": [
               {
@@ -2632,7 +2636,10 @@ final dynamic sampleInventoryFlows = {
               },
               {"key": "userFacilityId", "value": "{{fn:getUserFacilityId()}}"},
               {"key": "sku", "value": "{{navigation.sku}}"},
-              {"key": "quantity", "value": "{{navigation.quantity}}"}
+              {
+                "key": "quantity",
+                "value": "{{fn:bottlesToMl(navigation.quantity)}}"
+              }
             ],
             "onError": [
               {

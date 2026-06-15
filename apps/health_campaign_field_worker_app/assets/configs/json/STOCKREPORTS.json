@@ -18,7 +18,10 @@
           "format": "backLink",
           "label": "STOCKREPORTS_VIEW_REPORTS_BACK_BUTTON_LABEL",
           "onAction": [
-            {"actionType": "BACK_NAVIGATION", "properties": {}}
+            {
+              "actionType": "BACK_NAVIGATION",
+              "properties": {}
+            }
           ]
         }
       ],
@@ -48,17 +51,27 @@
           {
             "name": "facility",
             "entity": "FacilityModel",
-            "match": {"field": "id", "equalsFrom": "facilityId"}
+            "match": {
+              "field": "id",
+              "equalsFrom": "facilityId"
+            }
           },
           {
             "name": "productVariant",
             "entity": "ProductVariantModel",
-            "match": {"field": "id", "equalsFrom": "resource"}
+            "match": {
+              "field": "id",
+              "equalsFrom": "resource"
+            }
           }
         ],
         "searchConfig": {
           "primary": "projectFacility",
-          "select": ["projectFacility", "facility", "productVariant"]
+          "select": [
+            "projectFacility",
+            "facility",
+            "productVariant"
+          ]
         }
       },
       "body": [
@@ -68,7 +81,9 @@
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_RECIEVE_HEADING",
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_RECIEVE_DESCRIPTION",
           "fieldName": "stockRecieved",
-          "properties": {"icon": "Assessment"},
+          "properties": {
+            "icon": "Assessment"
+          },
           "icon": "Assessment",
           "onAction": [
             {
@@ -77,12 +92,18 @@
                 "type": "TEMPLATE",
                 "name": "reportDetails",
                 "data": [
-                  {"key": "reportType", "value": "ISSUED"},
+                  {
+                    "key": "reportType",
+                    "value": "ISSUED"
+                  },
                   {
                     "key": "facilities",
                     "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
                   },
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                  {
+                    "key": "productVariants",
+                    "value": "{{ProductVariantModel}}"
+                  }
                 ]
               }
             }
@@ -95,7 +116,9 @@
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_ISSUED_DESCRIPTION",
           "icon": "Assessment",
           "fieldName": "stockIssued",
-          "properties": {"icon": "Assessment"},
+          "properties": {
+            "icon": "Assessment"
+          },
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -103,12 +126,18 @@
                 "type": "TEMPLATE",
                 "name": "reportDetails",
                 "data": [
-                  {"key": "reportType", "value": "dispatch"},
+                  {
+                    "key": "reportType",
+                    "value": "dispatch"
+                  },
                   {
                     "key": "facilities",
                     "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
                   },
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                  {
+                    "key": "productVariants",
+                    "value": "{{ProductVariantModel}}"
+                  }
                 ]
               }
             }
@@ -121,7 +150,9 @@
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_RETURNED_DESCRIPTION",
           "icon": "Assessment",
           "fieldName": "stockReturned",
-          "properties": {"icon": "Assessment"},
+          "properties": {
+            "icon": "Assessment"
+          },
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -129,12 +160,18 @@
                 "type": "TEMPLATE",
                 "name": "reportDetails",
                 "data": [
-                  {"key": "reportType", "value": "returned"},
+                  {
+                    "key": "reportType",
+                    "value": "returned"
+                  },
                   {
                     "key": "facilities",
                     "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
                   },
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                  {
+                    "key": "productVariants",
+                    "value": "{{ProductVariantModel}}"
+                  }
                 ]
               }
             }
@@ -152,9 +189,18 @@
               "actionType": "NAVIGATION",
               "properties": {
                 "data": [
-                  {"key": "reportType", "value": "damage"},
-                  {"key": "facilities", "value": "{{FacilityModel}}"},
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                  {
+                    "key": "reportType",
+                    "value": "damage"
+                  },
+                  {
+                    "key": "facilities",
+                    "value": "{{FacilityModel}}"
+                  },
+                  {
+                    "key": "productVariants",
+                    "value": "{{ProductVariantModel}}"
+                  }
                 ],
                 "name": "reportDetails",
                 "type": "TEMPLATE"
@@ -162,7 +208,9 @@
             }
           ],
           "fieldName": "stockDamaged",
-          "properties": {"icon": "Assessment"},
+          "properties": {
+            "icon": "Assessment"
+          },
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_DESCRIPTION"
         },
         {
@@ -177,9 +225,18 @@
               "actionType": "NAVIGATION",
               "properties": {
                 "data": [
-                  {"key": "reportType", "value": "loss"},
-                  {"key": "facilities", "value": "{{FacilityModel}}"},
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                  {
+                    "key": "reportType",
+                    "value": "loss"
+                  },
+                  {
+                    "key": "facilities",
+                    "value": "{{FacilityModel}}"
+                  },
+                  {
+                    "key": "productVariants",
+                    "value": "{{ProductVariantModel}}"
+                  }
                 ],
                 "name": "reportDetails",
                 "type": "TEMPLATE"
@@ -187,7 +244,9 @@
             }
           ],
           "fieldName": "stockLoss",
-          "properties": {"icon": "Assessment"},
+          "properties": {
+            "icon": "Assessment"
+          },
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_DESCRIPTION"
         },
         {
@@ -201,9 +260,18 @@
               "actionType": "NAVIGATION",
               "properties": {
                 "data": [
-                  {"key": "reportType", "value": "excess"},
-                  {"key": "facilities", "value": "{{FacilityModel}}"},
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                  {
+                    "key": "reportType",
+                    "value": "excess"
+                  },
+                  {
+                    "key": "facilities",
+                    "value": "{{FacilityModel}}"
+                  },
+                  {
+                    "key": "productVariants",
+                    "value": "{{ProductVariantModel}}"
+                  }
                 ],
                 "name": "reportDetails",
                 "type": "TEMPLATE"
@@ -211,7 +279,9 @@
             }
           ],
           "fieldName": "stockExcess",
-          "properties": {"icon": "Assessment"},
+          "properties": {
+            "icon": "Assessment"
+          },
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_EXCESS_DESCRIPTION"
         },
         {
@@ -225,9 +295,18 @@
               "actionType": "NAVIGATION",
               "properties": {
                 "data": [
-                  {"key": "reportType", "value": "less"},
-                  {"key": "facilities", "value": "{{FacilityModel}}"},
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                  {
+                    "key": "reportType",
+                    "value": "less"
+                  },
+                  {
+                    "key": "facilities",
+                    "value": "{{FacilityModel}}"
+                  },
+                  {
+                    "key": "productVariants",
+                    "value": "{{ProductVariantModel}}"
+                  }
                 ],
                 "name": "reportDetails",
                 "type": "TEMPLATE"
@@ -235,7 +314,9 @@
             }
           ],
           "fieldName": "stockLess",
-          "properties": {"icon": "Assessment"},
+          "properties": {
+            "icon": "Assessment"
+          },
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_LESS_DESCRIPTION"
         },
         {
@@ -245,7 +326,9 @@
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_RECON_DESCRIPTION",
           "icon": "Assessment",
           "fieldName": "stockReconciliation",
-          "properties": {"icon": "Assessment"},
+          "properties": {
+            "icon": "Assessment"
+          },
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -253,12 +336,18 @@
                 "type": "TEMPLATE",
                 "name": "reckonReportDetails",
                 "data": [
-                  {"key": "reportType", "value": "reconciliation"},
+                  {
+                    "key": "reportType",
+                    "value": "reconciliation"
+                  },
                   {
                     "key": "facilities",
                     "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
                   },
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
+                  {
+                    "key": "productVariants",
+                    "value": "{{ProductVariantModel}}"
+                  }
                 ]
               }
             }
@@ -280,7 +369,9 @@
         "relations": [],
         "searchConfig": {
           "primary": "stock",
-          "select": ["stock"]
+          "select": [
+            "stock"
+          ]
         }
       },
       "header": [
@@ -289,7 +380,10 @@
           "format": "backLink",
           "label": "STOCKREPORTS_REPORT_DETAILS_BACK_BUTTON_LABEL",
           "onAction": [
-            {"actionType": "BACK_NAVIGATION", "properties": {}}
+            {
+              "actionType": "BACK_NAVIGATION",
+              "properties": {}
+            }
           ]
         }
       ],
@@ -308,7 +402,10 @@
           "onAction": [
             {
               "actionType": "BACK_NAVIGATION",
-              "properties": {"type": "HOME", "name": "HOME"}
+              "properties": {
+                "type": "HOME",
+                "name": "HOME"
+              }
             }
           ]
         }
@@ -351,13 +448,11 @@
                       },
                       {
                         "key": "additionalFields",
-                        "value":
-                            "{{fn:getStockEntryType(navigation.reportType)}}",
+                        "value": "{{fn:getStockEntryType(navigation.reportType)}}",
                         "operation": "contains"
                       },
                       {
-                        "key":
-                            "{{fn:getSenderOrReceiver(navigation.reportType)}}",
+                        "key": "{{fn:getSenderOrReceiver(navigation.reportType)}}",
                         "value": "{{selectedFacility}}",
                         "operation": "equals"
                       }
@@ -395,13 +490,11 @@
                       },
                       {
                         "key": "additionalFields",
-                        "value":
-                            "{{fn:getStockEntryType(navigation.reportType)}}",
+                        "value": "{{fn:getStockEntryType(navigation.reportType)}}",
                         "operation": "contains"
                       },
                       {
-                        "key":
-                            "{{fn:getSenderOrReceiver(navigation.reportType)}}",
+                        "key": "{{fn:getSenderOrReceiver(navigation.reportType)}}",
                         "value": "{{selectedFacility}}",
                         "operation": "equals"
                       }
@@ -417,20 +510,22 @@
           "format": "infoCard",
           "label": "STOCK_REPORT_DETAILS_INFO_CARD_LABEL",
           "description": "STOCK_REPORT_DETAILS_INFO_CARD_DESCRIPTION",
-          "properties": {"type": "info"},
+          "properties": {
+            "type": "info"
+          },
           "fieldName": "infoCardReportDetails",
-          "visible":
-              "{{fn:isEmpty(selectedFacility)}} && {{fn:isEmpty(selectedProduct)}}"
+          "visible": "{{fn:isEmpty(selectedFacility)}} && {{fn:isEmpty(selectedProduct)}}"
         },
         {
           "type": "template",
           "format": "infoCard",
           "label": "STOCK_REPORT_DETAILS_NO_RECORD_FOUND_INFO",
           "description": "STOCK_REPORT_DETAILS_NO_RECORD_FOUND_DESCRIPTION",
-          "properties": {"type": "info"},
+          "properties": {
+            "type": "info"
+          },
           "fieldName": "noRecordFoundInfoReportDetails",
-          "visible":
-              "{{fn:isEmpty(stock)}} && {{fn:isNotEmpty(selectedFacility)}}"
+          "visible": "{{fn:isEmpty(stock)}} && {{fn:isNotEmpty(selectedFacility)}}"
         },
         {
           "type": "template",
@@ -441,23 +536,19 @@
             "columns": [
               {
                 "header": "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_1_LABEL",
-                "cellValue":
-                    "{{fn:formatDate(item.dateOfEntry, 'date', 'dd MMM yyyy')}}"
+                "cellValue": "{{fn:formatDate(item.dateOfEntry, 'date', 'dd MMM yyyy')}}"
               },
               {
-                "header":
-                    "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_PRODUCT_LABEL",
-                "cellValue":
-                    "{{fn:getAdditionalFieldValue(item.additionalFields.fields, 'sku')}}"
+                "header": "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_PRODUCT_LABEL",
+                "cellValue": "{{item.additionalFields.fields.sku}}"
               },
               {
                 "header": "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_2_LABEL",
-                "cellValue":
-                    "{{fn:getAdditionalFieldValue(item.additionalFields.fields, 'mrnNumber')}}"
+                "cellValue": "{{item.additionalFields.fields.mrnNumber}}"
               },
               {
                 "header": "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_3_LABEL",
-                "cellValue": "{{item.waybillNumber}}"
+                "cellValue": "{{item.additionalFields.fields.wayBillNumber}}"
               },
               {
                 "header": "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_4_LABEL",
@@ -483,7 +574,9 @@
         "relations": [],
         "searchConfig": {
           "primary": "stockReconciliation",
-          "select": ["stockReconciliation"]
+          "select": [
+            "stockReconciliation"
+          ]
         }
       },
       "header": [
@@ -492,7 +585,10 @@
           "format": "backLink",
           "label": "STOCKRECON_REPORT_DETAILS_BACK_BUTTON_LABEL",
           "onAction": [
-            {"actionType": "BACK_NAVIGATION", "properties": {}}
+            {
+              "actionType": "BACK_NAVIGATION",
+              "properties": {}
+            }
           ]
         }
       ],
@@ -511,7 +607,10 @@
           "onAction": [
             {
               "actionType": "BACK_NAVIGATION",
-              "properties": {"type": "HOME", "name": "HOME"}
+              "properties": {
+                "type": "HOME",
+                "name": "HOME"
+              }
             }
           ]
         }
@@ -607,20 +706,21 @@
           "fieldName": "infoCardReckonReportDetails",
           "label": "STOCKRECON_REPORT_DETAILS_INFO_CARD_LABEL",
           "description": "STOCKRECON_REPORT_DETAILS_INFO_CARD_DESCRIPTION",
-          "properties": {"type": "info"},
-          "visible":
-              "{{fn:isEmpty(selectedReconFacility)}} && {{fn:isEmpty(selectedReckonProduct)}}"
+          "properties": {
+            "type": "info"
+          },
+          "visible": "{{fn:isEmpty(selectedReconFacility)}} && {{fn:isEmpty(selectedReckonProduct)}}"
         },
         {
           "type": "template",
           "format": "infoCard",
           "fieldName": "noRecordFoundInfoReckonReportDetails",
           "label": "STOCKRECON_REPORT_DETAILS_NO_RECORD_FOUND_INFO",
-          "description":
-              "STOCKRECON_REPORT_DETAILS_NO_RECORD_FOUND_DESCRIPTION",
-          "properties": {"type": "info"},
-          "visible":
-              "{{fn:isEmpty(stockReconciliation)}} && {{fn:isNotEmpty(selectedReconFacility)}}"
+          "description": "STOCKRECON_REPORT_DETAILS_NO_RECORD_FOUND_DESCRIPTION",
+          "properties": {
+            "type": "info"
+          },
+          "visible": "{{fn:isEmpty(stockReconciliation)}} && {{fn:isNotEmpty(selectedReconFacility)}}"
         },
         {
           "type": "template",
@@ -631,8 +731,7 @@
             "columns": [
               {
                 "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_1_LABEL",
-                "cellValue":
-                    "{{fn:formatDate(item.dateOfReconciliation, 'date', 'dd MMM yyyy')}}"
+                "cellValue": "{{fn:formatDate(item.dateOfReconciliation, 'date', 'dd MMM yyyy')}}"
               },
               {
                 "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_2_LABEL",
@@ -646,22 +745,7 @@
                 "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_4_LABEL",
                 "cellValue": "{{item.additionalFields.fields.stockReturned}}"
               },
-              {
-                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_5_LABEL",
-                "cellValue": "{{item.additionalFields.fields.stockLost}}"
-              },
-              {
-                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_6_LABEL",
-                "cellValue": "{{item.additionalFields.fields.stockDamaged}}"
-              },
-              {
-                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_EXCESS_LABEL",
-                "cellValue": "{{item.additionalFields.fields.stockExcess}}"
-              },
-              {
-                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_LESS_LABEL",
-                "cellValue": "{{item.additionalFields.fields.stockLess}}"
-              },
+             
               {
                 "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_7_LABEL",
                 "cellValue": "{{item.physicalCount}}"

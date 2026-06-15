@@ -179,6 +179,15 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
           ? null
           : existingDownSyncData.first.lastSyncedTime;
 
+      // Guard against device clock skew: a lastSyncedTime in the future (saved
+      // from a fast device clock) would make `lastChangedSince` exclude all
+      // genuinely-new server records. Treat a future timestamp as "never
+      // synced" so a full re-fetch occurs and the state self-heals.
+      if (lastSyncedTime != null &&
+          lastSyncedTime > DateTime.now().millisecondsSinceEpoch) {
+        lastSyncedTime = null;
+      }
+
       // Always start from offset 0 for total count check since
       // lastChangedSince already scopes the query to new/modified records
       final totalCount = await (stockRemoteRepository as StockRemoteRepository)
@@ -232,6 +241,14 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
         int? lastSyncedTime = existingDownSyncData.isEmpty
             ? null
             : existingDownSyncData.first.lastSyncedTime;
+
+        // Guard against device clock skew (see _handleCheckTotalCount): a
+        // future-dated lastSyncedTime would filter out all new records, so
+        // treat it as "never synced" to force a full re-fetch.
+        if (lastSyncedTime != null &&
+            lastSyncedTime > DateTime.now().millisecondsSinceEpoch) {
+          lastSyncedTime = null;
+        }
 
         // Create initial downsync record if not exists
         if (existingDownSyncData.isEmpty) {

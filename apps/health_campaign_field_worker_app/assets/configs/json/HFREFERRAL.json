@@ -562,7 +562,6 @@
           ],
           "module": "HFREFERRAL",
           "heading": "HFREFERRAL_SIDEEFFECTFROMSICK_HEADING",
-          "project": "MR-DN",
           "summary": false,
           "version": 1,
           "onAction": [
@@ -914,7 +913,6 @@
           ],
           "module": "HFREFERRAL",
           "heading": "HFREFERRAL_SIDEEFFECTFROMPREVIOUSCYCLE_HEADING",
-          "project": "MR-DN",
           "summary": false,
           "version": 1,
           "onAction": [
@@ -1142,7 +1140,6 @@
           ],
           "module": "HFREFERRAL",
           "heading": "HFREFERRAL_REFERRAL_DETAILS_HEADING",
-          "project": "MR-DN",
           "summary": false,
           "version": 1,
           "onAction": [
@@ -1680,7 +1677,6 @@
           ],
           "module": "HFREFERRAL",
           "heading": "HFREFERRAL_SIDEEFFECTFROMFEVER_HEADING",
-          "project": "MR-DN",
           "summary": false,
           "version": 1,
           "onAction": [
@@ -2094,7 +2090,6 @@
           ],
           "module": "HFREFERRAL",
           "heading": "HFREFERRAL_SIDEEFFECTFROMCURRENTCYCLE_HEADING",
-          "project": "MR-DN",
           "summary": false,
           "version": 1,
           "onAction": [
@@ -2319,7 +2314,6 @@
           ],
           "module": "HFREFERRAL",
           "heading": "HFREFERRAL_FACILITY_DETAILS_HEADING",
-          "project": "MR-DN",
           "summary": false,
           "version": 1,
           "onAction": [
@@ -2493,7 +2487,6 @@
           "preventScreenCapture": false
         }
       ],
-      "project": "MR-DN",
       "summary": false,
       "version": 2,
       "category": "HFREFERRAL",

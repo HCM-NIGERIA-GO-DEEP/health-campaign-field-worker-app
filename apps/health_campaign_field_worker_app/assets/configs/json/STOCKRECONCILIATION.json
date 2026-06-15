@@ -10,7 +10,6 @@
     {
       "screenType": "FORM",
       "name": "stockReconciliationDetails",
-      "project": "LLIN-mz",
       "version": 1,
       "disabled": false,
       "isSelected": true,
@@ -121,6 +120,12 @@
                   "value": 0,
                   "message":
                       "STOCKRECONCILIATION_STOCKRECONCILIATION_manualCount_MIN_ERROR"
+                },
+                {
+                  "type": "max",
+                  "value": 1000000,
+                  "message":
+                      "STOCKRECONCILIATION_STOCKRECONCILIATION_manualCount_MAX_ERROR"
                 }
               ],
               "errorMessage": "",

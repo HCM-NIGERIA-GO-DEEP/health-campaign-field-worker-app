@@ -9,6 +9,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
 
 import '../models/entities/roles_type.dart';
+import '../utils/function_registries.dart';
+import '../utils/function_registries.dart';
 import '../utils/stock_calculation_utils.dart';
 import '../utils/utils.dart';
 
@@ -130,7 +132,24 @@ class StockBalanceExecutor extends ActionExecutor {
       final productVariantId = stock.productVariantId;
       if (productVariantId == null) continue;
 
-      final quantity = double.tryParse(stock.quantity ?? '0') ?? 0;
+      var quantity = double.tryParse(stock.quantity ?? '0') ?? 0;
+      final wastage = double.tryParse(stock.additionalFields?.fields
+                  ?.firstWhere((f) => f.key == 'quantityWastage',
+                      orElse: () => const AdditionalField('', ''))
+                  .value ??
+              '0') ??
+          0;
+      final partial = double.tryParse(stock.additionalFields?.fields
+                  ?.firstWhere((f) => f.key == 'quantityPartialUsed',
+                      orElse: () => const AdditionalField('', ''))
+                  .value ??
+              '0') ??
+          0;
+      quantity = quantity -
+          (wastage / Constants.stockBottleToMlMultiplier) -
+          (partial /
+              Constants
+                  .stockBottleToMlMultiplier); // Subtract wastage and partial from total quantity
       final transactionType = stock.transactionType?.toUpperCase() ?? '';
       final stockEntryType = _getStockEntryType(stock);
       final isReceiver = stock.receiverId == facilityId;
@@ -183,7 +202,6 @@ class StockBalanceExecutor extends ActionExecutor {
     for (final entry in productDeltas.entries) {
       await _updateStockBalanceFromStock(
         context: context,
-        userActionRepo: userActionRepo,
         facilityId: facilityId,
         productVariantId: entry.key,
         quantityDelta: entry.value,
@@ -217,7 +235,7 @@ class StockBalanceExecutor extends ActionExecutor {
       return;
     }
 
-    final userActionRepo = context.read<UserActionLocalRepository>();
+    // final userActionRepo = context.read<UserActionLocalRepository>();
 
     final isDistributor = context.loggedInUserRoles.any((role) =>
         role.code == RolesType.distributor.toValue() ||
@@ -274,7 +292,6 @@ class StockBalanceExecutor extends ActionExecutor {
     for (final entry in deliveredQuantities.entries) {
       await _updateStockBalanceFromDelivery(
         context: context,
-        userActionRepo: userActionRepo,
         facilityId: facilityId,
         productVariantId: entry.key,
         deliveredQuantity: entry.value,
@@ -287,7 +304,6 @@ class StockBalanceExecutor extends ActionExecutor {
 
   Future<void> _updateStockBalanceFromDelivery({
     required BuildContext context,
-    required UserActionLocalRepository userActionRepo,
     required String facilityId,
     required String productVariantId,
     required double deliveredQuantity,
@@ -299,79 +315,33 @@ class StockBalanceExecutor extends ActionExecutor {
     final balanceKey = generateBalanceKey(facilityId, productVariantId,
         context.selectedProject.referenceID, context.loggedInUser.id);
 
-    final existingBalances = await userActionRepo.search(
-      UserActionSearchModel(clientReferenceId: [balanceKey]),
-    );
+    // final existingBalances = await userActionRepo.search(
+    //   UserActionSearchModel(clientReferenceId: [balanceKey]),
+    // );
 
-    final existing =
-        existingBalances.isNotEmpty ? existingBalances.first : null;
+    // final existing =
+    //     existingBalances.isNotEmpty ? existingBalances.first : null;
 
-    // Get the current balance from UserAction (reflects all previous transactions including deliveries/returns)
-    double currentBalance = 0.0;
-    if (existing != null) {
-      final existingBalanceField = existing.additionalFields?.fields
-          ?.firstWhereOrNull((f) => f.key == 'balance');
-      currentBalance =
-          double.tryParse(existingBalanceField?.value ?? '0') ?? 0.0;
-    }
+    // Get the current balance from cache (which should have been updated by stock transactions)
+    var stockCache = StockBalanceCache.instance.cache;
+    double currentBalance = stockCache[productVariantId] ??
+        0.0; // Default to 0 if no existing balance found in cache
 
     // deliveredQuantity can be positive (delivery) or negative (return)
     // For delivery: new balance = current - delivered
     // For return: new balance = current + |returned| (since returned quantity comes as negative)
     final stockInHand = currentBalance - deliveredQuantity;
 
-    final now = DateTime.now().millisecondsSinceEpoch;
-
-    final balanceAction = UserActionModel(
-      clientReferenceId: balanceKey,
-      action: 'STOCK_BALANCE',
-      projectId: projectId,
-      boundaryCode: boundaryCode,
-      latitude: 0.0,
-      longitude: 0.0,
-      locationAccuracy: 0.0,
-      isSync: false,
-      timestamp: now,
-      id: existing?.id,
-      rowVersion: existing?.rowVersion,
-      tenantId: existing?.tenantId ?? context.selectedProject.tenantId,
-      nonRecoverableError: false,
-      additionalFields: UserActionAdditionalFields(
-        version: 1,
-        fields: [
-          AdditionalField('balance', stockInHand.toString()),
-          AdditionalField('facilityId', facilityId),
-          AdditionalField('productVariantId', productVariantId),
-          AdditionalField('deliveredQuantity', deliveredQuantity.toString()),
-        ],
-      ),
-      auditDetails: existing?.auditDetails ??
-          AuditDetails(
-            createdBy: loggedInUserUuid,
-            createdTime: now,
-          ),
-      clientAuditDetails: ClientAuditDetails(
-        createdBy: existing?.clientAuditDetails?.createdBy ?? loggedInUserUuid,
-        createdTime: existing?.clientAuditDetails?.createdTime ?? now,
-        lastModifiedBy: loggedInUserUuid,
-        lastModifiedTime: now,
-      ),
-    );
-
-    if (existing != null) {
-      await userActionRepo.update(balanceAction);
-    } else {
-      await userActionRepo.create(balanceAction);
-    }
+    StockBalanceCache.instance
+        .setCache(facilityId, {productVariantId: stockInHand});
 
     debugPrint(
-      'UPDATE_STOCK_BALANCE: Updated balance for $facilityId/$productVariantId = $stockInHand (current: $currentBalance, delivered: $deliveredQuantity, existing record: ${existing != null})',
+      'UPDATE_STOCK_BALANCE: Updated balance for $facilityId/$productVariantId = $stockInHand (current: $currentBalance, delivered: $deliveredQuantity)',
     );
   }
 
   Future<void> _updateStockBalanceFromStock({
     required BuildContext context,
-    required UserActionLocalRepository userActionRepo,
     required String facilityId,
     required String productVariantId,
     required String projectId,
@@ -379,71 +349,19 @@ class StockBalanceExecutor extends ActionExecutor {
     required double quantityDelta,
     bool isDistributor = false,
   }) async {
-    final loggedInUserUuid = _getLoggedInUserUuid(context);
-    final balanceKey = generateBalanceKey(facilityId, productVariantId,
-        context.selectedProject.referenceID, context.loggedInUser.id);
-
-    final existingBalances = await userActionRepo.search(
-      UserActionSearchModel(clientReferenceId: [balanceKey]),
-    );
-
-    final existing =
-        existingBalances.isNotEmpty ? existingBalances.first : null;
-
-    // Always use the UserAction balance as the authoritative source
-    double currentBalance = 0.0;
-    if (existing != null) {
-      final existingBalanceField = existing.additionalFields?.fields
-          ?.firstWhereOrNull((f) => f.key == 'balance');
-      currentBalance =
-          double.tryParse(existingBalanceField?.value ?? '0') ?? 0.0;
-    }
+    // Get the current balance from cache (which should have been updated by stock transactions)
+    var stockCache = StockBalanceCache.instance.cache;
+    double currentBalance = stockCache[productVariantId] ??
+        0.0; // Default to 0 if no existing balance found in cache
 
     // Apply the transaction delta to the current balance
     final newBalance = currentBalance + quantityDelta;
 
-    final now = DateTime.now().millisecondsSinceEpoch;
-
-    final balanceAction = UserActionModel(
-      clientReferenceId: balanceKey,
-      action: 'STOCK_BALANCE',
-      projectId: projectId,
-      boundaryCode: boundaryCode,
-      latitude: 0.0,
-      longitude: 0.0,
-      locationAccuracy: 0.0,
-      isSync: false,
-      timestamp: now,
-      id: existing?.id,
-      rowVersion: existing?.rowVersion ?? 1,
-      tenantId: existing?.tenantId ?? context.selectedProject.tenantId,
-      nonRecoverableError: false,
-      additionalFields: UserActionAdditionalFields(
-        version: 1,
-        fields: [
-          AdditionalField('balance', newBalance.toString()),
-          AdditionalField('facilityId', facilityId),
-          AdditionalField('productVariantId', productVariantId),
-        ],
-      ),
-      auditDetails: existing?.auditDetails ??
-          AuditDetails(createdBy: loggedInUserUuid, createdTime: now),
-      clientAuditDetails: ClientAuditDetails(
-        createdBy: existing?.clientAuditDetails?.createdBy ?? loggedInUserUuid,
-        createdTime: existing?.clientAuditDetails?.createdTime ?? now,
-        lastModifiedBy: loggedInUserUuid,
-        lastModifiedTime: now,
-      ),
-    );
-
-    if (existing != null) {
-      await userActionRepo.update(balanceAction);
-    } else {
-      await userActionRepo.create(balanceAction);
-    }
+    // StockBalanceCache.instance
+    //     .setCache(facilityId, {productVariantId: newBalance});
 
     debugPrint(
-      'UPDATE_STOCK_BALANCE: Updated balance for $facilityId/$productVariantId = $newBalance (previous: $currentBalance, delta: $quantityDelta, existing record: ${existing != null})',
+      'UPDATE_STOCK_BALANCE: Updated balance for $facilityId/$productVariantId = $newBalance (previous: $currentBalance, delta: $quantityDelta)',
     );
   }
 }

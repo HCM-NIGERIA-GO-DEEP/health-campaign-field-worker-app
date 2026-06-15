@@ -227,9 +227,10 @@ abstract class RemoteRepository<D extends EntityModel,
 
     final responseMap = response.data;
 
-    if (!responseMap.containsKey(
-      entityName,
-    )) {
+    if (!responseMap.containsKey(entityName)) {
+      if (responseMap.containsKey('DownloadLinks')) {
+        return responseMap;
+      }
       throw InvalidApiResponseException(
         data: query.toMap(),
         path: searchPath,

@@ -190,6 +190,8 @@ class Constants {
   static const String downloadSuccessAnimation =
       'assets/animated_json/download_success.json';
 
+  static const double stockBottleToMlMultiplier = 30.0;
+
   static List<LocalRepository> getLocalRepositories(
     LocalSqlDataStore sql,
     Isar isar,

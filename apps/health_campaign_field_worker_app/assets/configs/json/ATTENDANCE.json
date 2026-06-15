@@ -64,7 +64,11 @@
                 "value": "{{singleton.selectedProject.id}}",
                 "operation": "equals"
               },
-              {"key": "uploadToServer", "value": true, "operation": "equals"}
+              {
+                "key": "uploadToServer",
+                "value": true,
+                "operation": "equals"
+              }
             ],
             "name": "attendance",
             "type": "SEARCH_EVENT"
@@ -77,21 +81,37 @@
           {
             "name": "attendees",
             "entity": "AttendeeModel",
-            "match": {"field": "registerId", "equalsFrom": "id"}
+            "match": {
+              "field": "registerId",
+              "equalsFrom": "id"
+            }
           },
           {
             "name": "attendanceLog",
             "entity": "AttendanceLogModel",
-            "match": {"field": "registerId", "equalsFrom": "id"}
+            "match": {
+              "field": "registerId",
+              "equalsFrom": "id"
+            }
           }
         ],
         "rootEntity": "AttendanceRegisterModel",
         "wrapperName": "AttendanceWrapper",
         "searchConfig": {
-          "select": ["attendanceRegister", "attendee", "attendance"],
+          "select": [
+            "attendanceRegister",
+            "attendee",
+            "attendance"
+          ],
           "primary": "attendanceRegister",
-          "pagination": {"limit": 10, "maxItems": 30},
-          "orderBy": {"field": "startDate", "order": "DESC"}
+          "pagination": {
+            "limit": 10,
+            "maxItems": 30
+          },
+          "orderBy": {
+            "field": "startDate",
+            "order": "DESC"
+          }
         }
       },
       "scrollListener": {
@@ -102,7 +122,10 @@
           {
             "actionType": "REFRESH_SEARCH",
             "properties": {
-              "pagination": {"limit": 10, "maxItems": 30}
+              "pagination": {
+                "limit": 10,
+                "maxItems": 30
+              }
             }
           }
         ]
@@ -113,7 +136,10 @@
           "type": "template",
           "label": "CORE_COMMON_BACK",
           "onAction": [
-            {"actionType": "BACK_NAVIGATION", "properties": {}}
+            {
+              "actionType": "BACK_NAVIGATION",
+              "properties": {}
+            }
           ]
         }
       ],
@@ -131,7 +157,9 @@
           "format": "listView",
           "hidden": "{{fn:isEmpty(contextData)}}",
           "fieldName": "listView",
-          "properties": {"spacing": "spacer4"},
+          "properties": {
+            "spacing": "spacer4"
+          },
           "child": {
             "type": "template",
             "format": "card",
@@ -141,13 +169,11 @@
                 "data": [
                   {
                     "key": "CAMPAIGN_NAME_LABEL",
-                    "value":
-                        "{{item.AttendanceRegisterModel.additionalDetails.campaignName}}"
+                    "value": "{{item.AttendanceRegisterModel.additionalDetails.campaignName}}"
                   },
                   {
                     "key": "EVENT_TYPE_LABEL",
-                    "value":
-                        "{{item.AttendanceRegisterModel.additionalDetails.eventType}}"
+                    "value": "{{item.AttendanceRegisterModel.additionalDetails.eventType}}"
                   },
                   {
                     "key": "STAFF_COUNT_LABEL",
@@ -155,13 +181,11 @@
                   },
                   {
                     "key": "START_DATE_LABEL",
-                    "value":
-                        "{{fn:formatDate(item.AttendanceRegisterModel.startDate, 'date', dd MMM yyyy)}}"
+                    "value": "{{fn:formatDate(item.AttendanceRegisterModel.startDate, 'date', dd MMM yyyy)}}"
                   },
                   {
                     "key": "END_DATE_LABEL",
-                    "value":
-                        "{{fn:formatDate(item.AttendanceRegisterModel.endDate, 'date', dd MMM yyyy)}}"
+                    "value": "{{fn:formatDate(item.AttendanceRegisterModel.endDate, 'date', dd MMM yyyy)}}"
                   },
                   {
                     "key": "STATUS_LABEL",
@@ -169,8 +193,7 @@
                   },
                   {
                     "key": "ATTENDANCE_COMPLETION_LABEL",
-                    "value":
-                        "{{fn:calculateCompletedDays(item.AttendanceRegisterModel, item.attendanceLog)}}"
+                    "value": "{{fn:calculateCompletedDays(item.AttendanceRegisterModel, item.attendanceLog)}}"
                   }
                 ],
                 "type": "template",
@@ -181,8 +204,7 @@
                 "type": "template",
                 "label": "ATTENDANCE_OPEN_REGISTER",
                 "format": "button",
-                "visible":
-                    "{{fn:showOpenRegisterButton(item.AttendanceRegisterModel, contextData.0)}}",
+                "visible": "{{fn:showOpenRegisterButton(item.AttendanceRegisterModel, contextData.0)}}",
                 "onAction": [
                   {
                     "actionType": "NAVIGATION",
@@ -194,8 +216,14 @@
                           "key": "registerId",
                           "value": "{{ item.AttendanceRegisterModel.id }}"
                         },
-                        {"key": "entryTime", "value": "{{fn:entryTime()}}"},
-                        {"key": "exitTime", "value": "{{fn:exitTime()}}"}
+                        {
+                          "key": "entryTime",
+                          "value": "{{fn:entryTime()}}"
+                        },
+                        {
+                          "key": "exitTime",
+                          "value": "{{fn:exitTime()}}"
+                        }
                       ]
                     }
                   }
@@ -221,7 +249,10 @@
         {
           "actionType": "CLEAR_STATE",
           "properties": {
-            "filterKeys": ["referenceId", "givenName"],
+            "filterKeys": [
+              "referenceId",
+              "givenName"
+            ],
             "triggerSearch": false
           }
         },
@@ -256,7 +287,10 @@
           {
             "name": "attendees",
             "entity": "AttendeeModel",
-            "match": {"field": "registerId", "equalsFrom": "id"},
+            "match": {
+              "field": "registerId",
+              "equalsFrom": "id"
+            },
             "mappedFields": {
               "name": "{{individual.0.name.givenName}}",
               "individualNumber": "{{individual.0.individualId}}",
@@ -266,14 +300,20 @@
               {
                 "name": "individual",
                 "entity": "IndividualModel",
-                "match": {"field": "id", "equalsFrom": "individualId"}
+                "match": {
+                  "field": "id",
+                  "equalsFrom": "individualId"
+                }
               }
             ]
           },
           {
             "name": "attendanceLog",
             "entity": "AttendanceLogModel",
-            "match": {"field": "registerId", "equalsFrom": "id"}
+            "match": {
+              "field": "registerId",
+              "equalsFrom": "id"
+            }
           }
         ],
         "rootEntity": "AttendanceRegisterModel",
@@ -295,14 +335,16 @@
           "type": "template",
           "label": "CORE_COMMON_BACK",
           "onAction": [
-            {"actionType": "BACK_NAVIGATION", "properties": {}}
+            {
+              "actionType": "BACK_NAVIGATION",
+              "properties": {}
+            }
           ]
         }
       ],
       "footer": [
         {
-          "visible":
-              "{{fn:showAttendanceQRButton(widgetData.selectedDate, widgetData.sessionToggle, contextData.0.AttendanceRegisterModel)}}",
+          "visible": "{{fn:showAttendanceQRButton(widgetData.selectedDate, widgetData.sessionToggle, contextData.0.AttendanceRegisterModel)}}",
           "format": "attendanceQRScannerButton",
           "type": "template",
           "fieldName": "createReferral",
@@ -344,13 +386,14 @@
             {
               "actionType": "CUSTOM_DATA",
               "properties": {
-                "entities":
-                    "{{fn:createAttendanceLog(widgetData, contextData.0.AttendanceRegisterModel, 0)}}"
+                "entities": "{{fn:createAttendanceLog(widgetData, contextData.0.AttendanceRegisterModel, contextData.0.attendanceLog, 0)}}"
               }
             },
             {
               "actionType": "CREATE_EVENT",
-              "properties": {"entity": "AttendanceLogModel"}
+              "properties": {
+                "entity": "AttendanceLogModel"
+              }
             },
             {
               "actionType": "NAVIGATION",
@@ -366,8 +409,7 @@
           "type": "template",
           "fieldName": "submitAttendance",
           "label": "CORE_COMMON_SUBMIT",
-          "disabled":
-              "{{fn:allAttendanceSelected(widgetData, contextData.0.AttendanceRegisterModel)}}==false",
+          "disabled": "{{fn:allAttendanceSelected(widgetData, contextData.0.AttendanceRegisterModel)}}==false",
           "onAction": [],
           "properties": {
             "type": "secondary",
@@ -406,17 +448,21 @@
                     "mainAxisAlignment": "center"
                   },
                   "onAction": [
-                    {"actionType": "CLOSE_POPUP", "properties": {}},
+                    {
+                      "actionType": "CLOSE_POPUP",
+                      "properties": {}
+                    },
                     {
                       "actionType": "CUSTOM_DATA",
                       "properties": {
-                        "entities":
-                            "{{fn:createAttendanceLog(widgetData, contextData.0.AttendanceRegisterModel, 1)}}"
+                        "entities": "{{fn:createAttendanceLog(widgetData, contextData.0.AttendanceRegisterModel, contextData.0.attendanceLog, 1)}}"
                       }
                     },
                     {
                       "actionType": "CREATE_EVENT",
-                      "properties": {"entity": "AttendanceLogModel"}
+                      "properties": {
+                        "entity": "AttendanceLogModel"
+                      }
                     },
                     {
                       "actionType": "NAVIGATION",
@@ -439,7 +485,10 @@
                     "mainAxisAlignment": "center"
                   },
                   "onAction": [
-                    {"actionType": "CLOSE_POPUP", "properties": {}}
+                    {
+                      "actionType": "CLOSE_POPUP",
+                      "properties": {}
+                    }
                   ]
                 }
               ]
@@ -470,8 +519,7 @@
             {
               "actionType": "CUSTOM_DATA",
               "properties": {
-                "widgetData":
-                    "{{fn:setAttendanceDate(widgetData.selectedDate, contextData.0.AttendanceRegisterModel, widgetData.sessionToggle)}}"
+                "widgetData": "{{fn:setAttendanceDate(widgetData.selectedDate, contextData.0.AttendanceRegisterModel, widgetData.sessionToggle)}}"
               }
             }
           ]
@@ -480,8 +528,7 @@
           "type": "template",
           "format": "labeledToggle",
           "fieldKey": "sessionToggle",
-          "visible":
-              "{{fn:isNotSingleSession(contextData.0.AttendanceRegisterModel)}}",
+          "visible": "{{fn:isNotSingleSession(contextData.0.AttendanceRegisterModel)}}",
           "activeLabel": "Morning Session",
           "inactiveLabel": "Afternoon Session",
           "onAction": [
@@ -498,8 +545,7 @@
             {
               "actionType": "CUSTOM_DATA",
               "properties": {
-                "widgetData":
-                    "{{fn:setAttendanceDate(widgetData.selectedDate, contextData.0.AttendanceRegisterModel, widgetData.sessionToggle)}}"
+                "widgetData": "{{fn:setAttendanceDate(widgetData.selectedDate, contextData.0.AttendanceRegisterModel, widgetData.sessionToggle)}}"
               }
             }
           ]
@@ -538,7 +584,10 @@
                 "fieldName": "searchBar",
                 "mandatory": true,
                 "validations": [
-                  {"type": "minSearchChars", "value": 2}
+                  {
+                    "type": "minSearchChars",
+                    "value": 2
+                  }
                 ],
                 "minSearchChars": 2
               }
@@ -578,8 +627,14 @@
                         },
                         {
                           "data": [
-                            {"code": "PRESENT", "name": "PRESENT"},
-                            {"code": "ABSENT", "name": "ABSENT"}
+                            {
+                              "code": "PRESENT",
+                              "name": "PRESENT"
+                            },
+                            {
+                              "code": "ABSENT",
+                              "name": "ABSENT"
+                            }
                           ],
                           "type": "template",
                           "format": "radioList",
@@ -664,7 +719,10 @@
                               "radius": "spacer3"
                             },
                             "onAction": [
-                              {"actionType": "CLOSE_POPUP", "properties": {}}
+                              {
+                                "actionType": "CLOSE_POPUP",
+                                "properties": {}
+                              }
                             ]
                           }
                         }
@@ -678,13 +736,15 @@
           ]
         },
         {
-          "items":
-              "{{fn:todayAttendeesList(widgetData, contextData.0.attendees, contextData.0.AttendanceRegisterModel)}}",
+          "items": "{{fn:todayAttendeesList(widgetData, contextData.0.attendees, contextData.0.AttendanceRegisterModel)}}",
           "type": "template",
           "format": "groupListView",
           "fieldName": "groupListView",
           "emptyListMessage": "NO_RESULTS_FOUND",
-          "properties": {"spacing": "spacer4", "groupTextStyle": "headingM"},
+          "properties": {
+            "spacing": "spacer4",
+            "groupTextStyle": "headingM"
+          },
           "groupBy": {
             "field": "entity.tag"
           },
@@ -700,7 +760,9 @@
               "field": "status",
               "widgetKey": "checkboxValue",
               "operation": "in",
-              "values": [-1.0]
+              "values": [
+                -1.0
+              ]
             },
             {
               "type": "sort",
@@ -737,8 +799,7 @@
               {
                 "type": "template",
                 "format": "customRow",
-                "hide":
-                    "{{fn:hideMarkAttendanceButtons(widgetData, item, contextData.0.AttendanceRegisterModel)}}",
+                "hide": "{{fn:hideMarkAttendanceButtons(widgetData, item, contextData.0.AttendanceRegisterModel)}}",
                 "properties": {
                   "mainAxisAlignment": "start",
                   "crossAxisAlignment": "stretch",
@@ -754,8 +815,7 @@
                       "selectionConditions": [
                         {
                           "condition": "NOT_EMPTY",
-                          "target":
-                              "{{fn:getCurrentSignature(widgetData, item.entity.individualId)}}"
+                          "target": "{{fn:getCurrentSignature(widgetData, item.entity.individualId)}}"
                         },
                         {
                           "condition": "CONTAINS",
@@ -790,17 +850,12 @@
                             "fieldName": "signature",
                             "fieldKey": "{{item.entity.individualId}}",
                             "groupKey": "signatureCollection",
-                            "signatureData":
-                                "{{fn:getExistingSignature(item.entity.individualId, contextData.0.attendanceRegisterModel)}}",
-                            "clearSignatureLabel":
-                                "MARK_ATTENDANCE_CLEAR_SIGNATURE_LABEL",
-                            "saveSignatureLabel":
-                                "MARK_ATTENDANCE_CONFIRM_LABEL",
-                            "signatureRequiredLabel":
-                                "MARK_ATTENDANCE_SIGNATURE_REQUIRED_LABEL",
+                            "signatureData": "{{fn:getExistingSignature(item.entity.individualId, contextData.0.attendanceLog)}}",
+                            "clearSignatureLabel": "MARK_ATTENDANCE_CLEAR_SIGNATURE_LABEL",
+                            "saveSignatureLabel": "MARK_ATTENDANCE_CONFIRM_LABEL",
+                            "signatureRequiredLabel": "MARK_ATTENDANCE_SIGNATURE_REQUIRED_LABEL",
                             "popupConfig": {
-                              "title":
-                                  "MARK_ATTENDANCE_COMPARE_SIGNATURE_LABEL",
+                              "title": "MARK_ATTENDANCE_COMPARE_SIGNATURE_LABEL",
                               "titleIcon": "CheckCircle",
                               "showCloseButton": true,
                               "barrierDismissible": true,
@@ -809,24 +864,15 @@
                                   "type": "template",
                                   "format": "signatureCompare",
                                   "registerId": "{{item.entity.registerId}}",
-                                  "individualId":
-                                      "{{item.entity.individualId}}",
-                                  "individualName":
-                                      "{{item.entity.first.individual.name.givenName}}",
-                                  "existingSignatureData":
-                                      "{{fn:getExistingSignature(item.entity.individualId, contextData.0.attendanceRegisterModel)}}",
-                                  "currentSignatureData":
-                                      "{{fn:getCurrentSignature(widgetData, item.entity.individualId)}}",
-                                  "compareSignatureLabel":
-                                      "MARK_ATTENDANCE_COMPARE_SIGNATURE_LABEL",
-                                  "presentSignatureLabel":
-                                      "MARK_ATTENDANCE_PRESENT_SIGNATURE_LABEL",
-                                  "absentSignatureLabel":
-                                      "MARK_ATTENDANCE_ABSENT_SIGNATURE_LABEL",
-                                  "referenceSignatureLabel":
-                                      "MARK_ATTENDANCE_REFERENCE_SIGNATURE_LABEL",
-                                  "actualSignatureLabel":
-                                      "MARK_ATTENDANCE_ACTUAL_SIGNATURE_LABEL",
+                                  "individualId": "{{item.entity.individualId}}",
+                                  "individualName": "{{item.entity.first.individual.name.givenName}}",
+                                  "existingSignatureData": "{{fn:getExistingSignature(item.entity.individualId, contextData.0.attendanceLog)}}",
+                                  "currentSignatureData": "{{fn:getCurrentSignature(widgetData, item.entity.individualId)}}",
+                                  "compareSignatureLabel": "MARK_ATTENDANCE_COMPARE_SIGNATURE_LABEL",
+                                  "presentSignatureLabel": "MARK_ATTENDANCE_PRESENT_SIGNATURE_LABEL",
+                                  "absentSignatureLabel": "MARK_ATTENDANCE_ABSENT_SIGNATURE_LABEL",
+                                  "referenceSignatureLabel": "MARK_ATTENDANCE_REFERENCE_SIGNATURE_LABEL",
+                                  "actualSignatureLabel": "MARK_ATTENDANCE_ACTUAL_SIGNATURE_LABEL",
                                   "onAction": [
                                     {
                                       "actionType": "CLOSE_POPUP",
@@ -900,7 +946,10 @@
                               ]
                             },
                             "onAction": [
-                              {"actionType": "CLOSE_POPUP", "properties": {}}
+                              {
+                                "actionType": "CLOSE_POPUP",
+                                "properties": {}
+                              }
                             ]
                           }
                         ],
@@ -927,7 +976,10 @@
                         "mainAxisAlignment": "center"
                       },
                       "onAction": [
-                        {"actionType": "CLOSE_POPUP", "properties": {}}
+                        {
+                          "actionType": "CLOSE_POPUP",
+                          "properties": {}
+                        }
                       ]
                     }
                   }
@@ -948,7 +1000,10 @@
           "onAction": [
             {
               "actionType": "BACK_NAVIGATION",
-              "properties": {"name": "manageAttendance", "type": "TEMPLATE"}
+              "properties": {
+                "name": "manageAttendance",
+                "type": "TEMPLATE"
+              }
             }
           ],
           "mandatory": true
@@ -962,7 +1017,9 @@
           "heading": "ATTENDANCE_SUBMITTED_SUCCESS_MSG",
           "fieldName": "attendanceSuccess",
           "mandatory": true,
-          "properties": {"type": "success"},
+          "properties": {
+            "type": "success"
+          },
           "description": "ACKNOWLEDGEMENT_SUCCESS_DESCRIPTION_TEXT",
           "primaryAction": {
             "type": "template",
@@ -982,11 +1039,12 @@
             ],
             "fieldName": "backToAttendance",
             "mandatory": true,
-            "properties": {"type": "primary"}
+            "properties": {
+              "type": "primary"
+            }
           }
         }
       ]
     }
   ]
 }
-

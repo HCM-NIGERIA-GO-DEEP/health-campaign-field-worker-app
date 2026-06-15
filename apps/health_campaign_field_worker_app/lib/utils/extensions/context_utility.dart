@@ -62,6 +62,65 @@ extension ContextUtilityExtensions on BuildContext {
     return projectType;
   }
 
+  ProjectTypeModel? get vasProjectType {
+    return ProjectTypeModel(
+      id: 'ba15b5df-9333-425c-b2ee-d4719e723fd4',
+      code: 'VAS',
+      name: 'Configuration for Multi Round Campaigns',
+      group: 'MALARIA',
+      beneficiaryType: BeneficiaryType.individual,
+      validMaxAge: 60,
+      validMinAge: 3,
+      cycles: [
+        ProjectCycle(
+          id: 1,
+          startDate: 1781202600000,
+          endDate: 1783276199000,
+          deliveries: [
+            ProjectCycleDelivery(
+              id: 1,
+              deliveryStrategy: 'VAS',
+              doseCriteria: [
+                DeliveryDoseCriteria(
+                  condition: '6<=ageandage<=11',
+                  productVariants: [
+                    DeliveryProductVariant(
+                      quantity: 1,
+                      productVariantId: 'PVAR-2025-05-22-000009',
+                      name: 'Blue VAS',
+                    ),
+                  ],
+                ),
+                DeliveryDoseCriteria(
+                  condition: '12<=ageandage<=59',
+                  productVariants: [
+                    DeliveryProductVariant(
+                      quantity: 1,
+                      productVariantId: 'PVAR-2025-05-22-000010',
+                      name: 'Red VAS',
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ],
+      resources: [
+        ProjectProductVariantModel(
+          productVariantId: 'PVAR-2025-05-22-000009',
+          name: 'Blue VAS',
+          isBaseUnitVariant: false,
+        ),
+        ProjectProductVariantModel(
+          productVariantId: 'PVAR-2025-05-22-000010',
+          name: 'Red VAS',
+          isBaseUnitVariant: true,
+        ),
+      ],
+    );
+  }
+
   List<String> get cycles {
     final projectBloc = _get<ProjectBloc>();
 

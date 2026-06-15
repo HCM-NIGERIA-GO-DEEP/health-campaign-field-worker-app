@@ -111,8 +111,6 @@ void main() async {
     client: _dio,
     sql: _sql,
   ));
-
-
 }
 
 class AppLifecycleObserver extends WidgetsBindingObserver {
