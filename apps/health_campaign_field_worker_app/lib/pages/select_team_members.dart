@@ -328,7 +328,7 @@ class _SelectTeamMembersPageState
   // ─── Submit ───────────────────────────────────────────────────────────────
 
   Future<void> _submitSelection() async {
-    if (_selectedMember1 == null || _selectedMember2 == null) {
+    if (_selectedMember2 == null) {
       Toast.showToast(
         context,
         message: localizations.translate(i18.common.corecommonRequired),
@@ -462,9 +462,7 @@ class _SelectTeamMembersPageState
             SafeArea(
               child: DigitButton(
                 mainAxisSize: MainAxisSize.max,
-                isDisabled: _isSubmitting ||
-                    _selectedMember1 == null ||
-                    _selectedMember2 == null,
+                isDisabled: _isSubmitting || _selectedMember2 == null,
                 label: localizations.translate(i18.common.coreCommonSubmit),
                 type: DigitButtonType.primary,
                 size: DigitButtonSize.large,
@@ -489,40 +487,40 @@ class _SelectTeamMembersPageState
                 if (_isLoading)
                   const Center(child: CircularProgressIndicator())
                 else ...[
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: spacer2),
-                    child: LabeledField(
-                      label: localizations
-                          .translate(i18.selectTeam.teamMember1Label),
-                      isRequired: true,
-                      capitalizedFirstLetter: false,
-                      child: DigitDropdown<String>(
-                        onTap: () {},
-                        sentenceCaseEnabled: false,
-                        items: recorderItems,
-                        emptyItemText:
-                            localizations.translate(i18.common.noMatchFound),
-                        selectedOption: _selectedMember1 != null
-                            ? DropdownItem(
-                                name: _selectedMember1!.name,
-                                code: _selectedMember1!.username,
-                              )
-                            : null,
-                        onSelect: (value) {
-                          setState(() {
-                            _selectedMember1 = _recorderMembers.firstWhere(
-                              (m) => m.username == value.code,
-                            );
-                          });
-                        },
-                        onChange: (value) {
-                          if (value.isEmpty) {
-                            setState(() => _selectedMember1 = null);
-                          }
-                        },
-                      ),
-                    ),
-                  ),
+                  // Padding(
+                  //   padding: const EdgeInsets.symmetric(vertical: spacer2),
+                  //   child: LabeledField(
+                  //     label: localizations
+                  //         .translate(i18.selectTeam.teamMember1Label),
+                  //     isRequired: true,
+                  //     capitalizedFirstLetter: false,
+                  //     child: DigitDropdown<String>(
+                  //       onTap: () {},
+                  //       sentenceCaseEnabled: false,
+                  //       items: recorderItems,
+                  //       emptyItemText:
+                  //           localizations.translate(i18.common.noMatchFound),
+                  //       selectedOption: _selectedMember1 != null
+                  //           ? DropdownItem(
+                  //               name: _selectedMember1!.name,
+                  //               code: _selectedMember1!.username,
+                  //             )
+                  //           : null,
+                  //       onSelect: (value) {
+                  //         setState(() {
+                  //           _selectedMember1 = _recorderMembers.firstWhere(
+                  //             (m) => m.username == value.code,
+                  //           );
+                  //         });
+                  //       },
+                  //       onChange: (value) {
+                  //         if (value.isEmpty) {
+                  //           setState(() => _selectedMember1 = null);
+                  //         }
+                  //       },
+                  //     ),
+                  //   ),
+                  // ),
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: spacer2),
                     child: LabeledField(
