@@ -50,6 +50,10 @@ class HomeItemCard extends StatelessWidget {
                   customIcon,
                   width: customIconSize ?? 25,
                   height: customIconSize ?? 25,
+                  colorFilter: ColorFilter.mode(
+                    theme.colorTheme.primary.primary1,
+                    BlendMode.srcIn,
+                  ),
                 ),
               ),
             ),
