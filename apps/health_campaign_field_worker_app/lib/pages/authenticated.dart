@@ -377,17 +377,24 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
         }
 
         if (activeRegister == null) {
-          // No register loaded yet (e.g. boundary not picked / sync hasn't
-          // run). Defer — _checkTriggers will replay this trigger once a
-          // matching register appears.
+          if (registers.isNotEmpty) {
+            // Registers exist locally but none overlap today — defer until
+            // a valid one appears (e.g. boundary change or new day).
+            debugPrint(
+                '  → DEFER (Guard 2): registers exist but none active today — markPending');
+            _reVerificationScheduler?.markPending(trigger.triggerIndex);
+            return;
+          }
+          // No registers at all — fail-open so distributors without attendance
+          // registers are not permanently blocked from re-verification.
           debugPrint(
-              '  → DEFER (Guard 2): no active register for today — markPending');
-          _reVerificationScheduler?.markPending(trigger.triggerIndex);
-          return;
+              '  → PASS (Guard 2): no registers locally — proceeding with default config');
         }
-        debugPrint('  [Guard 2] active register id=${activeRegister.id} ✓');
+        if (activeRegister != null) {
+          debugPrint('  [Guard 2] active register id=${activeRegister.id} ✓');
+        }
 
-        if (!_configFromRegister) {
+        if (!_configFromRegister && activeRegister != null) {
           _configFromRegister = true;
           // Pull MDMS config from the bloc again — it may have finished
           // loading after _startReVerificationScheduler's initial read,

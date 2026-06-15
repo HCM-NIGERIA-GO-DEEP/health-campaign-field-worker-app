@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/hf_referral.dart';
 import 'package:disk_space_update/disk_space_update.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -16,6 +17,7 @@ import '../../data/local_store/no_sql/schema/app_configuration.dart';
 import '../../data/local_store/secure_store/secure_store.dart';
 import '../../data/repositories/remote/bandwidth_check.dart';
 import '../../models/downsync/downsync.dart';
+import '../../services/beneficiary_file_downsync_importer.dart';
 import '../../utils/background_service.dart';
 import '../../utils/environment_config.dart';
 import '../../utils/utils.dart';
@@ -323,7 +325,16 @@ class BeneficiaryDownSyncBloc
         );
 
         if (initialResults.isNotEmpty) {
-          final count = initialResults["DownsyncCriteria"]["totalCount"] as int;
+          final int count;
+          if (initialResults.containsKey('DownloadLinks')) {
+            final links = (initialResults['DownloadLinks'] as List).cast<Map<String, dynamic>>();
+            count = links.fold<int>(0, (s, l) {
+              final v = l['recordCount'];
+              return s + (v is int ? v : (v is num ? v.toInt() : int.tryParse(v?.toString() ?? '') ?? 0));
+            });
+          } else {
+            count = initialResults["DownsyncCriteria"]["totalCount"] as int;
+          }
           if (count > 0) {
             boundaryCounts[boundaryCode] = count;
             totalServerCount += count;
@@ -418,7 +429,52 @@ class BeneficiaryDownSyncBloc
               ),
             );
 
-            if (downSyncResults.isNotEmpty) {
+            if (downSyncResults.containsKey('DownloadLinks')) {
+              final rawLinks = (downSyncResults['DownloadLinks'] as List).cast<Map<String, dynamic>>();
+              final links = rawLinks.map(BeneficiaryDownloadLink.fromMap).toList();
+              final importer = BeneficiaryFileDownsyncImporter(
+                dio: Dio(),
+                individualLocalRepository: individualLocalRepository,
+                householdLocalRepository: householdLocalRepository,
+                householdMemberLocalRepository: householdMemberLocalRepository,
+                projectBeneficiaryLocalRepository:
+                    projectBeneficiaryLocalRepository,
+                taskLocalRepository: taskLocalRepository,
+                sideEffectLocalRepository: sideEffectLocalRepository,
+                referralLocalRepository: referralLocalRepository,
+                hfReferralLocalRepository: hfReferralLocalRepository,
+                serviceLocalRepository: serviceLocalRepository,
+              );
+              await importer.importLinks(links, onProgress: (imported, _) {
+                emit(BeneficiaryDownSyncState.multiBoundaryInProgress(
+                  i, boundaries.length, boundaryName, imported, totalCount,
+                ));
+              });
+              await downSyncLocalRepository.update(
+                loopDownSyncData.isEmpty
+                    ? DownsyncModel(
+                        offset: 0,
+                        limit: 0,
+                        totalCount: totalCount,
+                        locality: boundaryCode,
+                        boundaryName: boundaryName,
+                      )
+                    : loopDownSyncData.first.copyWith(
+                        offset: 0,
+                        limit: 0,
+                        totalCount: totalCount,
+                        locality: boundaryCode,
+                        boundaryName: boundaryName,
+                      ),
+              );
+              completedResults.add(DownsyncModel(
+                offset: totalCount,
+                totalCount: totalCount,
+                locality: boundaryCode,
+                boundaryName: boundaryName,
+              ));
+              break;
+            } else if (downSyncResults.isNotEmpty) {
               await writeToFile(event.projectModel.id, boundaryCode,
                   boundaryName, downSyncResults);
               await SyncServiceSingleton()
@@ -476,7 +532,8 @@ class BeneficiaryDownSyncBloc
 
       await LocalSecureStore.instance.setManualSyncTrigger(false);
       emit(BeneficiaryDownSyncState.multiBoundarySuccess(completedResults));
-    } catch (e) {
+    } catch (e, stack) {
+      debugPrint('[DownloadAllBoundaries] ERROR: $e\n$stack');
       await LocalSecureStore.instance.setManualSyncTrigger(false);
       emit(const BeneficiaryDownSyncState.failed());
     }

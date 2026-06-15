@@ -100,7 +100,9 @@ class _HomePageState extends LocalizedState<HomePage> {
   final StreamController<double> stockDownloadProgress =
       StreamController<double>.broadcast();
 
-  /// Check if the logged-in user needs face enrollment (first time only).
+  /// Check if the logged-in user needs face enrollment/verification.
+  /// Only shown once per login session — skipped if the gate was already
+  /// passed (isFaceGatePassed=true, cleared on logout via deleteAll()).
   void _checkFaceEnrollment() async {
     try {
       if (!context.isDistributorRole) return;
@@ -108,9 +110,15 @@ class _HomePageState extends LocalizedState<HomePage> {
       final individualId = await LocalSecureStore.instance.userIndividualId;
       if (individualId == null || !mounted) return;
 
+      // Skip if already enrolled OR if gate was already passed this session.
+      // isFaceGatePassed is set by both enrollment and verification paths and
+      // is cleared by deleteAll() on logout — so it resets on each fresh login
+      // but persists across app restarts within the same login session.
       final isEnrollmentComplete =
           await LocalSecureStore.instance.isFaceEnrollmentComplete;
-      if (isEnrollmentComplete || !mounted) return;
+      final hasPassedGate =
+          await LocalSecureStore.instance.isFaceGatePassed;
+      if (isEnrollmentComplete || hasPassedGate || !mounted) return;
 
       _faceGateActive = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {

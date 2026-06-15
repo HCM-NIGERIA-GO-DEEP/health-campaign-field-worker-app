@@ -145,6 +145,7 @@ class _NonMobileFaceEnrollPageState extends State<NonMobileFaceEnrollPage> {
         userUuid: context.loggedInUserUuid,
         projectId: projectId,
         boundaryCode: context.boundaryOrNull?.code ?? '',
+        subjectName: widget.individualName,
       );
       await logger.logEnrollment(
         success: true,

@@ -75,21 +75,36 @@ class _FaceAuthHistoryPageState extends State<FaceAuthHistoryPage> {
 
       final idToName = <String, String>{};
       final idToDisplayId = <String, String>{};
+
+      // Seed logged-in user's name directly from UserModel — their individual
+      // record is not stored in the local individual table (only fetched from
+      // remote during login), so the DB lookup below would miss them.
+      if (myId.isNotEmpty) {
+        try {
+          final selfName = context.loggedInUserModel?.name ?? '';
+          if (selfName.isNotEmpty) idToName[myId] = selfName;
+        } catch (_) {}
+      }
+
       try {
         final individualRepo = context
             .read<LocalRepository<IndividualModel, IndividualSearchModel>>();
         final uniqueIds = combined.map((e) => e.individualId).toSet().toList();
         if (uniqueIds.isNotEmpty) {
-          final individuals = await individualRepo.search(
+          final byId = await individualRepo.search(
             IndividualSearchModel(id: uniqueIds),
           );
-          for (final ind in individuals) {
-            if (ind.id != null) {
-              idToName[ind.id!] = ind.name?.givenName ?? '';
-              // individualId is the human-readable "IND-..." code;
-              // ind.id is the UUID we look up by.
+          final byClientRef = await individualRepo.search(
+            IndividualSearchModel(clientReferenceId: uniqueIds),
+          );
+          final allIndividuals = {...byId, ...byClientRef}.toList();
+          for (final ind in allIndividuals) {
+            final name = ind.name?.givenName ?? '';
+            for (final key in [ind.id, ind.clientReferenceId]) {
+              if (key == null || key.isEmpty) continue;
+              if (name.isNotEmpty) idToName[key] = name;
               if (ind.individualId != null && ind.individualId!.isNotEmpty) {
-                idToDisplayId[ind.id!] = ind.individualId!;
+                idToDisplayId[key] = ind.individualId!;
               }
             }
           }
