@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/stock.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/user_action.dart';
 import 'package:digit_ui_components/digit_components.dart';
@@ -154,6 +155,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
   }
 
   void _setupStockListener(String facilityId) {
+    final taskRepo = context.read<LocalRepository<TaskModel, TaskSearchModel>>()
+        as TaskLocalRepository;
     final stockRepo =
         context.read<LocalRepository<StockModel, StockSearchModel>>()
             as StockLocalRepository;
@@ -165,15 +168,37 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
 
     // Build balance keys for UserAction listener
     final balanceKeys = _productVariants
-        .map((pv) => generateBalanceKey(effectiveFacilityId, pv.id))
+        .map((pv) => generateBalanceKey(effectiveFacilityId, pv.id,
+            context.selectedProject.referenceID, context.loggedInUser.id))
         .toList();
+
+    final projectId = context.projectId;
+    final createdBy = context.loggedInUserUuid;
+    final selectedCycle = context.selectedCycle;
 
     // Listen to StockModel changes
     stockRepo.listenToChanges(
       query: StockSearchModel(receiverId: facilityId),
       listener: (receivedStocks) async {
         if (!mounted) return;
-        await _refreshBalances(stockRepo, userActionRepo, effectiveFacilityId);
+        await _refreshBalances(
+            taskRepo, stockRepo, userActionRepo, effectiveFacilityId);
+      },
+    );
+
+    // Listen to TaskModel changes
+    taskRepo.listenToChanges(
+      query: TaskSearchModel(
+        projectId: projectId,
+        createdBy: createdBy,
+        plannedStartDate: selectedCycle?.startDate,
+        plannedEndDate: selectedCycle?.endDate,
+        limit: 1,
+      ),
+      listener: (tasks) async {
+        if (!mounted) return;
+        await _refreshBalances(
+            taskRepo, stockRepo, userActionRepo, effectiveFacilityId);
       },
     );
 
@@ -184,26 +209,33 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
         listener: (actions) async {
           if (!mounted) return;
           await _refreshBalances(
-              stockRepo, userActionRepo, effectiveFacilityId);
+              taskRepo, stockRepo, userActionRepo, effectiveFacilityId);
         },
       );
     }
   }
 
   Future<void> _loadInitialBalances(String effectiveFacilityId) async {
+    final taskRepo = context.read<LocalRepository<TaskModel, TaskSearchModel>>()
+        as TaskLocalRepository;
     final stockRepo =
         context.read<LocalRepository<StockModel, StockSearchModel>>()
             as StockLocalRepository;
     final userActionRepo = context.read<UserActionLocalRepository>();
-    await _refreshBalances(stockRepo, userActionRepo, effectiveFacilityId);
+    await _refreshBalances(
+        taskRepo, stockRepo, userActionRepo, effectiveFacilityId);
   }
 
   Future<void> _refreshBalances(
+    TaskLocalRepository taskRepo,
     StockLocalRepository stockRepo,
     UserActionLocalRepository userActionRepo,
     String effectiveFacilityId,
   ) async {
     if (!mounted) return;
+
+    final tasks =
+        await StockCalculationUtils.loadDeliveryTasks(context, taskRepo);
 
     // Fetch all stocks for this facility
     final receivedStocks = await stockRepo.search(
@@ -230,25 +262,13 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       productIds: productIds,
       loggedInUserUuid: context.loggedInUserUuid,
       isDistributor: _isDistributor,
+      tasks: tasks,
     );
 
-    // Fetch UserAction records with saved stock balances (from delivery)
-    final userActionBalances =
-        await _loadUserActionBalances(userActionRepo, effectiveFacilityId);
-
-    // Merge: UserAction balances take precedence (they include delivery deductions)
-    final mergedBalances = <String, double>{
-      ...balances,
-      ...userActionBalances,
-    };
-
-    print("mergedBalances: $mergedBalances"); 
-    
-
-    StockBalanceCache.instance.setCache(effectiveFacilityId, mergedBalances);
+    StockBalanceCache.instance.setCache(effectiveFacilityId, balances);
     if (mounted) {
       setState(() {
-        _stockBalances = mergedBalances;
+        _stockBalances = balances;
       });
     }
   }
@@ -264,14 +284,17 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
     try {
       // Build balance keys for this facility
       final balanceKeys = _productVariants
-          .map((pv) => generateBalanceKey(facilityId, pv.id))
+          .map((pv) => generateBalanceKey(facilityId, pv.id,
+              context.selectedProject.referenceID, context.loggedInUser.id))
           .toList();
 
       if (balanceKeys.isEmpty) return balances;
 
       // Search directly with clientReferenceIds
       final actions = await userActionRepo.search(
-        UserActionSearchModel(clientReferenceId: balanceKeys, projectId: context.selectedProject.id),
+        UserActionSearchModel(
+            clientReferenceId: balanceKeys,
+            projectId: context.selectedProject.id),
       );
 
       for (final action in actions) {

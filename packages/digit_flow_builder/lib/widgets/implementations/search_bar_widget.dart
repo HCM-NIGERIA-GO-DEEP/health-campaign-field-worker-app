@@ -33,8 +33,7 @@ class SearchBarWidget extends ResolvedFlowWidget {
           validation['type'] == 'minSearchChars') {
         final condition = validation['condition'] as Map<String, dynamic>?;
         final expression = condition?['expression'] as String?;
-        final conditionMet =
-            expression == null ||
+        final conditionMet = expression == null ||
             expression == 'DEFAULT' ||
             ConditionalEvaluator.evaluateExpression(
               expression,
@@ -53,12 +52,13 @@ class SearchBarWidget extends ResolvedFlowWidget {
       }
     }
 
-    final initialValue =
-        compositeKey != null
-            ? (FlowCrudStateRegistry().get(compositeKey)?.widgetData?[fieldName]
-                    ?.toString() ??
-                '')
-            : '';
+    final initialValue = compositeKey != null
+        ? (FlowCrudStateRegistry()
+                .get(compositeKey)
+                ?.widgetData?[fieldName]
+                ?.toString() ??
+            '')
+        : '';
 
     return _ReactiveSearchBar(
       key: ValueKey('${compositeKey}_$fieldName'),
@@ -176,10 +176,9 @@ class _ReactiveSearchBarState extends State<_ReactiveSearchBar> {
       widget.fieldName: value,
     };
 
-    final updatedState =
-        (currentState ?? const FlowCrudState()).copyWith(
-          widgetData: updatedWidgetData,
-        );
+    final updatedState = (currentState ?? const FlowCrudState()).copyWith(
+      widgetData: updatedWidgetData,
+    );
 
     FlowCrudStateRegistry().update(compositeKey, updatedState);
   }
@@ -189,7 +188,8 @@ class _ReactiveSearchBarState extends State<_ReactiveSearchBar> {
       return;
     }
 
-    final actionsList = List<Map<String, dynamic>>.from(widget.json['onAction']);
+    final actionsList =
+        List<Map<String, dynamic>>.from(widget.json['onAction']);
     final currentEvalContext = widget.resolved.getFreshEvalContext();
 
     for (final raw in actionsList) {
@@ -230,7 +230,8 @@ class _ReactiveSearchBarState extends State<_ReactiveSearchBar> {
       return;
     }
 
-    final actionsList = List<Map<String, dynamic>>.from(widget.json['onAction']);
+    final actionsList =
+        List<Map<String, dynamic>>.from(widget.json['onAction']);
     final currentEvalContext = widget.resolved.getFreshEvalContext();
 
     for (final raw in actionsList) {

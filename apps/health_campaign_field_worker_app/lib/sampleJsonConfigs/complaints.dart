@@ -57,6 +57,7 @@ final dynamic sampleComplaintFlows = {
                             "name": "pgrService",
                             "filterKeys": ["serviceRequestId", "mobileNumber"],
                             "widgetKeys": ["complaintNumber", "mobileNumber"],
+                            "filterKeys": ["serviceRequestId", "mobileNumber"],
                             "triggerSearch": true
                           }
                         }
@@ -680,8 +681,13 @@ final dynamic sampleComplaintFlows = {
                 },
                 {
                   "type": "maxLength",
-                  "value": 64,
+                  "value": 63,
                   "message": "COMPLAINT_DETAILS_name_LABEL_MAX_VALIDATION"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^[a-zA-Z0-9 ]+\$",
+                  "message": "COMPLAINT_DETAILS_name_LABEL_PATTERN_VALIDATION"
                 }
               ],
               "errorMessage": "",
@@ -702,6 +708,7 @@ final dynamic sampleComplaintFlows = {
               "format": "mobileNumber",
               "hidden": false,
               "tooltip": "",
+              "pattern": "^\\d+",
               "helpText": "",
               "infoText": "",
               "readOnly": false,
@@ -719,8 +726,8 @@ final dynamic sampleComplaintFlows = {
                 },
                 {
                   "type": "minLength",
-                  "value": 11,
-                  "message": "MOBILE_LENGTH_11_DIGITS"
+                  "value": 10,
+                  "message": "MOBILE_LENGTH_10_DIGIT"
                 },
                 {
                   "type": "maxLength",
@@ -729,6 +736,7 @@ final dynamic sampleComplaintFlows = {
                 }
               ],
               "errorMessage": "",
+              "pattern.message": "MB_ONLY_NUMBERS",
               "isMultiSelect": false,
               "autoFillCondition": [
                 {
@@ -761,8 +769,13 @@ final dynamic sampleComplaintFlows = {
                 },
                 {
                   "type": "maxLength",
-                  "value": 64,
+                  "value": 63,
                   "message": "SUPERVISOR_DETAILS_name_LABEL_MAX_VALIDATION"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^[a-zA-Z0-9 ]+\$",
+                  "message": "SUPERVISOR_DETAILS_name_LABEL_PATTERN_VALIDATION"
                 }
               ],
               "errorMessage": "",
@@ -775,6 +788,7 @@ final dynamic sampleComplaintFlows = {
               "value": "",
               "format": "mobileNumber",
               "hidden": false,
+              "pattern": "^\\d+",
               "tooltip": "",
               "helpText": "",
               "infoText": "",
@@ -797,6 +811,7 @@ final dynamic sampleComplaintFlows = {
                 }
               ],
               "errorMessage": "",
+              "pattern.message": "MB_ONLY_NUMBERS",
               "isMultiSelect": false
             },
             {

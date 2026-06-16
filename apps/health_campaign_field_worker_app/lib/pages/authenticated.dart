@@ -249,6 +249,7 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                       ),
                       BlocProvider(
                         create: (ctx) => StockDownSyncBloc(
+                          context: context,
                           localSecureStore: LocalSecureStore.instance,
                           bandwidthCheckRepository: BandwidthCheckRepository(
                             DioClient().dio,

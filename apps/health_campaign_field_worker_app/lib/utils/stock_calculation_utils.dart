@@ -1,9 +1,31 @@
+import 'package:collection/collection.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_data_model/models/entities/user_action.dart';
+import 'package:flutter/material.dart';
+import 'package:transit_post/data/repositories/local/user_action.dart';
+
+import 'extensions/extensions.dart';
 
 /// Generates a balance key for UserAction STOCK_BALANCE records.
-/// Uses format: bal_{facilityId}{productVariantId}
-String generateBalanceKey(String facilityId, String productVariantId) =>
-    'bal_$facilityId$productVariantId';
+/// Uses format: bal_{facilityId}{productVariantId}{campaignId}{userId}
+String generateBalanceKey(String facilityId, String productVariantId,
+    String? campaignId, int? userId) {
+  if (campaignId == null || userId == null) {
+    throw ArgumentError(
+        'campaignId and userId are required to generate balance key');
+  }
+  String filterFacilityId = facilityId.replaceAll("F", "").replaceAll("-", "");
+  String filterProductVariantId =
+      productVariantId.replaceAll("PVAR", "").replaceAll("-", "");
+  String filterCampaignId = campaignId.length >= 5
+      ? campaignId.substring(campaignId.length - 5)
+      : campaignId;
+  String filterUserId = userId.toString();
+  String generatedKey =
+      'b_$filterFacilityId$filterProductVariantId$filterCampaignId$filterUserId';
+  return generatedKey;
+}
 
 class StockCalculationUtils {
   static String _getAdditionalFieldValue(StockModel stock, String key) {
@@ -21,10 +43,54 @@ class StockCalculationUtils {
     return _getAdditionalFieldValue(stock, 'stockEntryType');
   }
 
+  static double _getDeliveryTaskValue(
+    List<TaskModel> tasks,
+    String productVariantId,
+  ) {
+    double total = 0;
+    for (final task in tasks) {
+      for (final TaskResourceModel resource in task.resources ?? []) {
+        if (resource.productVariantId != productVariantId) continue;
+        double quantity = double.tryParse(resource.quantity ?? '0') ?? 0;
+        total += quantity;
+      }
+    }
+    return total;
+  }
+
+  static Future<List<TaskModel>> loadDeliveryTasks(
+    BuildContext context,
+    TaskLocalRepository taskRepo,
+  ) async {
+    final projectId = context.projectId;
+    final createdBy = context.loggedInUserUuid;
+    final selectedCycle = context.selectedCycle;
+    final administerSuccessTasks = await taskRepo.search(
+      TaskSearchModel(
+        projectId: projectId,
+        status: "ADMINISTRATION_SUCCESS",
+        createdBy: createdBy,
+        plannedStartDate: selectedCycle?.startDate,
+        plannedEndDate: selectedCycle?.endDate,
+      ),
+    );
+    final visitedTasks = await taskRepo.search(
+      TaskSearchModel(
+        projectId: projectId,
+        status: "VISITED",
+        createdBy: createdBy,
+        plannedStartDate: selectedCycle?.startDate,
+        plannedEndDate: selectedCycle?.endDate,
+      ),
+    );
+    return [...administerSuccessTasks, ...visitedTasks];
+  }
+
   static Map<String, double> calculateStockMetrics({
     required List<StockModel> stockList,
     required String facilityId,
     required String productId,
+    List<TaskModel> tasks = const [],
     String? loggedInUserUuid,
     bool isDistributor = false,
     bool calculatePartial = false,
@@ -115,6 +181,11 @@ class StockCalculationUtils {
           status == 'ACCEPTED') {
         stockReceived += quantity;
       }
+    }
+
+    // Add delivery task quantities to issued stock if in current cycle
+    if (tasks.isNotEmpty) {
+      stockIssued += _getDeliveryTaskValue(tasks, productId);
     }
 
     // Use distributor calculation if user has distributor role OR if any return was made as sender
@@ -234,10 +305,58 @@ class StockCalculationUtils {
     }
   }
 
+  static Future<Map<String, double>> loadUserActionBalances(
+    BuildContext context,
+    UserActionLocalRepository userActionRepo,
+    String facilityId,
+    List<ProductVariantModel> productVariants,
+  ) async {
+    final balances = <String, double>{};
+
+    try {
+      // Build balance keys for this facility
+      final balanceKeys = productVariants
+          .map((pv) => generateBalanceKey(facilityId, pv.id,
+              context.selectedProject.referenceID, context.loggedInUser.id))
+          .toList();
+
+      if (balanceKeys.isEmpty) return balances;
+
+      // Search directly with clientReferenceIds
+      final actions = await userActionRepo.search(
+        UserActionSearchModel(
+            clientReferenceId: balanceKeys,
+            projectId: context.selectedProject.id),
+      );
+
+      for (final action in actions) {
+        final fields = action.additionalFields?.fields;
+        if (fields == null) continue;
+
+        final productVariantId =
+            fields.firstWhereOrNull((f) => f.key == 'productVariantId')?.value;
+        final balanceStr =
+            fields.firstWhereOrNull((f) => f.key == 'balance')?.value;
+
+        if (productVariantId != null && balanceStr != null) {
+          final balance = double.tryParse(balanceStr);
+          if (balance != null) {
+            balances[productVariantId] = balance;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Error loading UserAction balances: $e');
+    }
+
+    return balances;
+  }
+
   static Map<String, double> calculateStockInHandForProducts({
     required List<StockModel> stockList,
     required String facilityId,
     required List<String> productIds,
+    List<TaskModel> tasks = const [],
     String? loggedInUserUuid,
     bool isDistributor = false,
   }) {
@@ -249,6 +368,7 @@ class StockCalculationUtils {
         productId: productId,
         loggedInUserUuid: loggedInUserUuid,
         isDistributor: isDistributor,
+        tasks: tasks,
       );
       result[productId] = metrics['stockInHand'] ?? 0.0;
     }

@@ -214,6 +214,38 @@ class ActionHandler {
           }
         });
 
+        // Fill in widget values from contextData snapshot for any keys that a
+        // prior CLEAR_STATE wiped from the registry. Registry values already
+        // written above take priority; this only fills gaps.
+        final snapshotWidgetData =
+            contextData['widgetData'] as Map<String, dynamic>? ?? {};
+        snapshotWidgetData.forEach((key, value) {
+          if (evaluationData.containsKey(key)) return;
+          if (value is List) {
+            if (value.length == 1) {
+              var singleValue = value.first;
+              if (singleValue is String &&
+                  singleValue.length >= 2 &&
+                  singleValue.startsWith('"') &&
+                  singleValue.endsWith('"')) {
+                singleValue = singleValue.substring(1, singleValue.length - 1);
+              }
+              evaluationData[key] = singleValue;
+            } else {
+              evaluationData[key] = value;
+              for (var item in value) {
+                if (item is String) evaluationData[item] = item;
+              }
+            }
+          } else if (value == 'true') {
+            evaluationData[key] = true;
+          } else if (value == 'false') {
+            evaluationData[key] = false;
+          } else {
+            evaluationData[key] = value;
+          }
+        });
+
         // Get stateWrapper and item for resolving paths in condition expressions
         final stateWrapper = currentState?.stateWrapper;
         final item = contextData['item'] as Map<String, dynamic>?;

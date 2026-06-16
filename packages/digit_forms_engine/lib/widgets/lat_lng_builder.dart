@@ -3,11 +3,18 @@ part of 'json_schema_builder.dart';
 class JsonSchemaLatLngBuilder extends JsonSchemaBuilder<String> {
   final String? label;
 
+  /// When true, the widget captures the device location into the form control
+  /// silently — no visible field, no loader dialog. Used for hidden latLng
+  /// fields whose value still needs to flow into transformers (e.g. saving
+  /// lat/long on a Task during the delivery flow).
+  final bool silent;
+
   const JsonSchemaLatLngBuilder({
     super.key,
     required super.formControlName,
     required super.form,
     this.label,
+    this.silent = false,
     super.validations,
     super.helpText,
     super.isRequired,
@@ -24,6 +31,7 @@ class JsonSchemaLatLngBuilder extends JsonSchemaBuilder<String> {
       helpText: helpText,
       isRequired: isRequired,
       tooltipText: tooltipText,
+      silent: silent,
     );
   }
 }
@@ -36,6 +44,7 @@ class _LatLngBuilderStatefulWrapper extends StatefulWidget {
   final String? helpText;
   final bool? isRequired;
   final String? tooltipText;
+  final bool silent;
 
   const _LatLngBuilderStatefulWrapper({
     required this.form,
@@ -45,6 +54,7 @@ class _LatLngBuilderStatefulWrapper extends StatefulWidget {
     this.helpText,
     this.isRequired,
     this.tooltipText,
+    this.silent = false,
   });
 
   @override
@@ -78,6 +88,20 @@ class _LatLngBuilderStatefulWrapperState
       } else {
         _accuracy = null;
       }
+    } else if (widget.silent) {
+      // Hidden field: capture the location quietly (no loader dialog, no UI).
+      // Use the already-loaded LocationBloc state if present, and trigger a
+      // fetch to refresh. The BlocListener in build() writes the value into
+      // the form control so transformers can persist it (e.g. on a Task).
+      _isFetchingLocation = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        final locationState = context.read<LocationBloc>().state;
+        if (locationState.longitude != null) {
+          _applyLocationState(locationState);
+        }
+        context.read<LocationBloc>().add(const LoadLocationEvent());
+      });
     } else {
       // Show loader dialog for initial fetch and then trigger location fetch
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -120,10 +144,46 @@ class _LatLngBuilderStatefulWrapperState
     });
   }
 
+  /// Writes the latest location into the form control as "lat,lng[,accuracy]".
+  /// Does not touch UI state, so it is safe to call from silent (hidden) mode.
+  void _applyLocationState(LocationState state) {
+    if (state.longitude == null) return;
+
+    final incomingLatLng = state.latLngString;
+    final incomingAccuracy = state.accuracy;
+
+    final bool shouldUpdate = (incomingLatLng != null) &&
+        (incomingLatLng != _latLngValue ||
+            (incomingAccuracy != null && incomingAccuracy != _accuracy));
+
+    if (shouldUpdate) {
+      _latLngValue = incomingLatLng;
+      _accuracy = incomingAccuracy;
+
+      final combinedValue = incomingAccuracy != null
+          ? '$incomingLatLng,$incomingAccuracy'
+          : incomingLatLng;
+
+      widget.form.control(widget.formControlName).value = combinedValue;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = FormLocalization.of(context);
     final theme = Theme.of(context);
+
+    // Silent (hidden) mode: only listen for the location and write it into the
+    // form control. Render nothing — no field, no loader dialog.
+    if (widget.silent) {
+      return BlocListener<LocationBloc, LocationState>(
+        listener: (context, state) {
+          if (!_isFetchingLocation) return;
+          _applyLocationState(state);
+        },
+        child: const SizedBox.shrink(),
+      );
+    }
 
     return BlocConsumer<LocationBloc, LocationState>(
       listener: (context, state) {

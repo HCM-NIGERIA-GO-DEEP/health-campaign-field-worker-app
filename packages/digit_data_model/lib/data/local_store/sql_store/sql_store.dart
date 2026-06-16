@@ -146,8 +146,27 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
   @override
   int get schemaVersion => 9; // Increment schema version
 
+  Future<void> _createTaskSearchIndexes() async {
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS task_search_project_created_status
+      ON task (project_id, client_created_by, status);
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS task_search_project_created_status_modifiedtime
+      ON task (project_id, client_created_by, status, client_modified_time);
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS task_search_project_created_status_plannedstart
+      ON task (project_id, client_created_by, status, planned_start_date);
+    ''');
+  }
+
   @override
   MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (migrator) async {
+          await migrator.createAll();
+          await _createTaskSearchIndexes();
+        },
         onUpgrade: (migrator, from, to) async {
           if (from < 5) {
             //Add column for projectType in Project Table
@@ -326,6 +345,26 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
               }
             }
           }
+
+          if (from < 10) {
+            try {
+              await _createTaskSearchIndexes();
+            } catch (e) {
+              if (kDebugMode) {
+                print("Failed to create task search indexes");
+              }
+            }
+          }
+
+          if (from < 11) {
+            try {
+              await _createTaskSearchIndexes();
+            } catch (e) {
+              if (kDebugMode) {
+                print("Failed to create planned start task search index");
+              }
+            }
+          }
         },
       );
 
@@ -381,7 +420,8 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
   /// [encryptionKey] - The encryption key to use for the new encrypted database.
   ///
   /// Returns [DatabaseMigrationResult] indicating the result of the migration.
-  static Future<DatabaseMigrationResult> migrateToEncrypted(String encryptionKey) async {
+  static Future<DatabaseMigrationResult> migrateToEncrypted(
+      String encryptionKey) async {
     final dbFolder = await getApplicationDocumentsDirectory();
     final dbFile = File(p.join(dbFolder.path, 'db.sqlite'));
     final tempEncryptedFile =
@@ -448,7 +488,8 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
         testEncDb.dispose();
 
         if (kDebugMode) {
-          print('Database is already encrypted with the correct key, no migration needed');
+          print(
+              'Database is already encrypted with the correct key, no migration needed');
         }
         return DatabaseMigrationResult.noMigrationNeeded;
       } catch (e) {

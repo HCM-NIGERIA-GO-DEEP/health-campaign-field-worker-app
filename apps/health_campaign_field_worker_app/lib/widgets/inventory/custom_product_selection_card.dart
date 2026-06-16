@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:digit_crud_bloc/digit_crud_bloc.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
@@ -12,7 +13,10 @@ import 'package:digit_ui_components/digit_components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
+import 'package:transit_post/data/repositories/local/user_action.dart';
 
+import '../../models/entities/roles_type.dart';
+import '../../utils/extensions/extensions.dart';
 import '../../utils/stock_calculation_utils.dart';
 import '../localized.dart';
 
@@ -181,12 +185,29 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       final loggedInUserUuid = FlowBuilderSingleton().loggedInUserUuid;
       final productIds = _selectedProducts.map((p) => p.id).toList();
 
-      _stockInHandMap = StockCalculationUtils.calculateStockInHandForProducts(
+      final taskRepo =
+          context.read<LocalRepository<TaskModel, TaskSearchModel>>()
+              as TaskLocalRepository;
+
+      // Get relevant tasks for the facility and products
+      final tasks =
+          await StockCalculationUtils.loadDeliveryTasks(context, taskRepo);
+
+      var _isDistributor = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.distributor.toValue());
+
+      final stockTransactionBalance =
+          StockCalculationUtils.calculateStockInHandForProducts(
         stockList: stockList,
         facilityId: facilityId,
         productIds: productIds,
         loggedInUserUuid: loggedInUserUuid,
+        isDistributor: _isDistributor,
+        tasks: tasks,
       );
+
+      // Merge: UserAction balances take precedence (they include delivery deductions)
+      _stockInHandMap = stockTransactionBalance;
 
       debugPrint(
           'ProductSelectionCard: Calculated stockInHand: $_stockInHandMap');
@@ -348,10 +369,14 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
           ValidationRule(
             type: 'max',
             value: min(maxValue, 10000000),
-            message: maxValue >10000000 ? localizations.translate('QUANTITY_CANNOT_EXCEED_STOCK_MAX_LIMIT_VALUE') :maxValue > 0
-                 ?  localizations.translate('QUANTITY_CANNOT_EXCEED_STOCK_IN_HAND_VALUE')
-                .replaceAll('{maxValue}', maxValue.toString())
-                : localizations.translate("NO_STOCK_AVAILABLE_IN_HAND"),
+            message: maxValue > 10000000
+                ? localizations
+                    .translate('QUANTITY_CANNOT_EXCEED_STOCK_MAX_LIMIT_VALUE')
+                : maxValue > 0
+                    ? localizations
+                        .translate('QUANTITY_CANNOT_EXCEED_STOCK_IN_HAND_VALUE')
+                        .replaceAll('{maxValue}', maxValue.toString())
+                    : localizations.translate("NO_STOCK_AVAILABLE_IN_HAND"),
           ),
         ];
 

@@ -168,6 +168,8 @@ extension ContextUtilityExtensions on BuildContext {
     return individualUUID;
   }
 
+  int? get currentCycleIndex => selectedCycle?.id;
+
   String? get currentRegisteredToken {
     final authBloc = _get<PushNotificationBloc>();
     final fcmToken = authBloc.state.whenOrNull(

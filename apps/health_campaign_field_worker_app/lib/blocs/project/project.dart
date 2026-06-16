@@ -1040,7 +1040,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         syncedCount += stockEntries.length;
       }
 
-      await downSyncStockBalances(project.id);
+      await downSyncStockBalances(project);
 
       // NOTE: Added this to create user action if there is no existing record but stock balance is there
       // After stock download, calculate and create/update UserAction balance records
@@ -1059,7 +1059,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     }
   }
 
-  Future<void> downSyncStockBalances(String projectId) async {
+  Future<void> downSyncStockBalances(project) async {
     try {
       final userObject = await localSecureStore.userRequestModel;
       final userRoles = userObject?.roles.map((e) => e.code) ?? [];
@@ -1068,11 +1068,11 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
               userRoles.contains(RolesType.communityDistributor.toValue());
 
       final projectFacilities = await projectFacilityLocalRepository.search(
-        ProjectFacilitySearchModel(projectId: [projectId]),
+        ProjectFacilitySearchModel(projectId: [project.id]),
       );
 
       final projectResources = await projectResourceLocalRepository.search(
-        ProjectResourceSearchModel(projectId: [projectId]),
+        ProjectResourceSearchModel(projectId: [project.id]),
       );
 
       final currentFacilities = projectFacilities.where((pf) {
@@ -1106,16 +1106,19 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
       // Build balance keys for all facility × product variant combinations
       final balanceKeys = <String>[];
+
       for (final facilityId in facilityIds) {
         for (final productVariantId in productVariantIds) {
-          balanceKeys.add(generateBalanceKey(facilityId, productVariantId));
+          String balanceKey = generateBalanceKey(facilityId, productVariantId,
+              project.referenceID, userObject?.id);
+          balanceKeys.add(balanceKey);
         }
       }
 
       // Fetch from server
       final remoteBalances = await userActionRemoteRepository.search(
         UserActionSearchModel(
-            clientReferenceId: balanceKeys, projectId: projectId),
+            clientReferenceId: balanceKeys, projectId: project.id),
       );
 
       if (remoteBalances.isEmpty) return;
@@ -1219,7 +1222,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
           );
 
           final balance = metrics['stockInHand'] ?? 0.0;
-          final balanceKey = generateBalanceKey(facilityId, productVariantId);
+          final balanceKey = generateBalanceKey(facilityId, productVariantId,
+              project.referenceID, userObject?.id);
 
           // Check if UserAction already exists
           final existingActions = await userActionLocalRepository.search(

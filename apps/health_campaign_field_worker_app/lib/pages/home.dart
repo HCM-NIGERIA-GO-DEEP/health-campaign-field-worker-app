@@ -48,14 +48,11 @@ import '../data/local_store/no_sql/schema/service_registry.dart';
 import '../data/local_store/secure_store/secure_store.dart';
 import '../models/entities/roles_type.dart';
 import '../router/app_router.dart';
-import '../sampleJsonConfigs/attendance/attendance_flows.dart';
 import '../sampleJsonConfigs/closed_household.dart';
 import '../sampleJsonConfigs/complaints.dart';
-import '../sampleJsonConfigs/hf_referral.dart';
 import '../sampleJsonConfigs/inventory_reports.dart';
 import '../sampleJsonConfigs/manage_stock.dart';
 import '../sampleJsonConfigs/registration_flows.dart';
-import '../sampleJsonConfigs/stock_reconciliation.dart';
 import '../utils/attendance_utils.dart';
 import '../utils/date_util_attendance.dart';
 import '../utils/debound.dart';
@@ -222,10 +219,10 @@ class _HomePageState extends LocalizedState<HomePage> {
     CustomComponentRegistry().registerBuilder(
       'evaluationFacility',
       (context, stateAccessor) {
-        // Build your component with access to all this data
         return const EvaluationKeyDropDown(
             schemaName: "REFERRAL_CREATE",
-            formControlName: "evaluationFacility");
+            formControlName: "evaluationFacility",
+            displayPrefix: "FAC_");
       },
     );
 
@@ -234,7 +231,9 @@ class _HomePageState extends LocalizedState<HomePage> {
       (context, stateAccessor) {
         // Build your component with access to all this data
         return const EvaluationKeyDropDown(
-            schemaName: "REFER_BENEFICIARY", formControlName: "healthFacility");
+            schemaName: "REFER_BENEFICIARY",
+            formControlName: "healthFacility",
+            displayPrefix: "FAC_");
       },
     );
 
@@ -658,6 +657,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             hasLogForSession = true;
           } else {
             hasLogForSession = false;
+            return hasLogForSession;
           }
         }
       }
@@ -978,9 +978,9 @@ class _HomePageState extends LocalizedState<HomePage> {
 
     FunctionRegistry.register('getExistingSignature', (args, stateData) {
       final individualId = args.isNotEmpty ? args[0]?.toString() : null;
-      final attendanceRegisterModel = args.length > 1 ? args[1] : null;
+      final attendanceLogs = args.length > 1 ? args[1] : null;
 
-      final attendanceLogs = attendanceRegisterModel?.attendanceLog ?? [];
+      // final attendanceLogs = attendanceRegisterModel?.attendanceLog ?? [];
 
       if (attendanceLogs == null || attendanceLogs.isEmpty) return null;
       List logs = attendanceLogs.where((log) {
@@ -999,10 +999,12 @@ class _HomePageState extends LocalizedState<HomePage> {
 
       final widgetData = args.first as Map;
       final attendanceRegisterModel = args.length > 1 ? args[1] : null;
-      final uploadToServer = args.length > 2 ? args[2] as int? : 0;
+      var attendanceLogs = args.length > 2 ? args[2] as List? : null;
+      final uploadToServer = args.length > 3 ? args[3] as int? : 0;
 
       final registerId = attendanceRegisterModel?.id ?? '';
-      List attendanceLogs = attendanceRegisterModel?.attendanceLog ?? [];
+      attendanceLogs =
+          attendanceLogs ?? attendanceRegisterModel?.attendanceLog ?? [];
 
       final attendanceCollection = widgetData['attendanceCollection'] as Map?;
       final signatureCollection = widgetData['signatureCollection'] as Map?;
@@ -1030,7 +1032,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       final userUuid = FlowBuilderSingleton().loggedInUser?.uuid ?? '';
       final now = DateTime.now().millisecondsSinceEpoch;
 
-      List todayAttendanceLogs = attendanceLogs.where((log) {
+      List todayAttendanceLogs = attendanceLogs!.where((log) {
         final logTime = log.time;
         return logTime == entryTime || logTime == exitTime;
       }).toList();
@@ -1920,7 +1922,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-complaints-${context.selectedProject.referenceID}';
+                    'hcm-complaints-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
@@ -2188,6 +2190,139 @@ class _HomePageState extends LocalizedState<HomePage> {
         ),
       ),
 
+      // i18.home.beneficiaryLabel:
+      //     homeShowcaseData.distributorBeneficiaries.buildWith(
+      //   child: HomeItemCard(
+      //     icon: Icons.home,
+      //     label: i18.home.houseToHouse,
+      //     onPressed: () async {
+      //       context.router.push(CurrentBoundaryRoute(
+      //         onBoundarySelected: (ctx) async {
+      //           final moduleName =
+      //               'hcm-registration-${context.selectedProject.referenceID},hcm-beneficiary,hcm-inventory-${context.selectedProject.referenceID}';
+      //           triggerLocalization(module: moduleName);
+      //           isTriggerLocalisation = false;
+      //           FlowBuilderSingleton().setPersistenceConfiguration(
+      //               persistenceConfiguration:
+      //                   PersistenceConfiguration.offlineFirst);
+
+      //           await FlowNavigationUtils.navigateToFlowModule(
+      //             context: ctx,
+      //             config: FlowModuleConfig(
+      //               schemaKey: 'REGISTRATION',
+      //               relationshipMappings: [
+      //                 const RelationshipMapping(
+      //                     from: 'name',
+      //                     to: 'individual',
+      //                     localKey: 'individualClientReferenceId',
+      //                     foreignKey: 'clientReferenceId'),
+      //                 const RelationshipMapping(
+      //                     from: 'identifier',
+      //                     to: 'individual',
+      //                     localKey: 'individualClientReferenceId',
+      //                     foreignKey: 'clientReferenceId'),
+      //                 const RelationshipMapping(
+      //                     from: 'householdMember',
+      //                     to: 'individual',
+      //                     localKey: 'individualClientReferenceId',
+      //                     foreignKey: 'clientReferenceId'),
+      //                 const RelationshipMapping(
+      //                     from: 'address',
+      //                     to: 'household',
+      //                     localKey: 'relatedClientReferenceId',
+      //                     foreignKey: 'clientReferenceId'),
+      //                 const RelationshipMapping(
+      //                     from: 'householdMember',
+      //                     to: 'household',
+      //                     localKey: 'householdClientReferenceId',
+      //                     foreignKey: 'clientReferenceId'),
+      //                 const RelationshipMapping(
+      //                     from: 'projectBeneficiary',
+      //                     to: 'task',
+      //                     localKey: 'clientReferenceId',
+      //                     foreignKey: 'projectBeneficiaryClientReferenceId'),
+      //                 const RelationshipMapping(
+      //                     from: 'identifier',
+      //                     to: 'hFReferral',
+      //                     localKey: 'identifierId',
+      //                     foreignKey: 'beneficiaryId'),
+      //                 if (FlowBuilderSingleton().beneficiaryType ==
+      //                     BeneficiaryType.household)
+      //                   const RelationshipMapping(
+      //                     from: 'projectBeneficiary',
+      //                     to: 'household',
+      //                     localKey: 'beneficiaryClientReferenceId',
+      //                     foreignKey: 'clientReferenceId',
+      //                   )
+      //                 else
+      //                   const RelationshipMapping(
+      //                     from: 'projectBeneficiary',
+      //                     to: 'individual',
+      //                     localKey: 'beneficiaryClientReferenceId',
+      //                     foreignKey: 'clientReferenceId',
+      //                   ),
+      //               ],
+      //               nestedModelMappings: const [
+      //                 NestedModelMapping(
+      //                   rootModel: 'individual',
+      //                   fields: {
+      //                     'name': NestedFieldMapping(
+      //                       table: 'name',
+      //                       localKey: 'clientReferenceId',
+      //                       foreignKey: 'individualClientReferenceId',
+      //                       type: NestedMappingType.one,
+      //                     ),
+      //                     'address': NestedFieldMapping(
+      //                       table: 'address',
+      //                       localKey: 'clientReferenceId',
+      //                       foreignKey: 'relatedClientReferenceId',
+      //                       type: NestedMappingType.many,
+      //                     ),
+      //                     'identifiers': NestedFieldMapping(
+      //                       table: 'identifier',
+      //                       localKey: 'clientReferenceId',
+      //                       foreignKey: 'individualClientReferenceId',
+      //                       type: NestedMappingType.many,
+      //                     ),
+      //                   },
+      //                 ),
+      //                 NestedModelMapping(
+      //                   rootModel: 'household',
+      //                   fields: {
+      //                     'address': NestedFieldMapping(
+      //                       table: 'address',
+      //                       localKey: 'clientReferenceId',
+      //                       foreignKey: 'relatedClientReferenceId',
+      //                       type: NestedMappingType.one,
+      //                     ),
+      //                   },
+      //                 ),
+      //                 NestedModelMapping(
+      //                   rootModel: 'task',
+      //                   fields: {
+      //                     'resources': NestedFieldMapping(
+      //                       table: 'taskResource',
+      //                       localKey: 'clientReferenceId',
+      //                       foreignKey: 'taskclientReferenceId',
+      //                       type: NestedMappingType.many,
+      //                     ),
+      //                     'address': NestedFieldMapping(
+      //                       table: 'address',
+      //                       localKey: 'clientReferenceId',
+      //                       foreignKey: 'relatedClientReferenceId',
+      //                       type: NestedMappingType.one,
+      //                     ),
+      //                   },
+      //                 ),
+      //               ],
+      //             ),
+      //           );
+      //         },
+      //       ));
+      //     },
+      //   ),
+      // ),
+
       /// TODO: NEED TO UPDATE CLF
 
       // i18.home.clfLabel: homeShowcaseData.clf.buildWith(
@@ -2364,7 +2499,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                   dynamicEntityModelListener: EntityModelMapMapper(),
                 );
                 try {
-                  if (true) {
+                  if (false) {
                     final allSchemas =
                         json.decode(schemaJsonRaw!) as Map<String, dynamic>;
                     final data = allSchemas['CLOSEHOUSEHOLD'];
@@ -2672,6 +2807,99 @@ class _HomePageState extends LocalizedState<HomePage> {
       //         context: context,
       //         config: FlowModuleConfig(
       //           schemaKey: 'INVENTORY',
+      //           relationshipMappings: const [
+      //             RelationshipMapping(
+      //                 from: 'facility',
+      //                 to: 'projectFacility',
+      //                 localKey: 'id',
+      //                 foreignKey: 'facilityId'),
+      //             RelationshipMapping(
+      //                 from: 'projectResource',
+      //                 to: 'projectFacility',
+      //                 localKey: 'projectId',
+      //                 foreignKey: 'projectId'),
+      //             RelationshipMapping(
+      //                 from: 'productVariant',
+      //                 to: 'projectResource',
+      //                 localKey: 'id',
+      //                 foreignKey: 'resource'),
+      //           ],
+      //           nestedModelMappings: const [
+      //             NestedModelMapping(
+      //               rootModel: 'projectFacility',
+      //               fields: {
+      //                 'facility': NestedFieldMapping(
+      //                   table: 'facility',
+      //                   localKey: 'facilityId',
+      //                   foreignKey: 'id',
+      //                   type: NestedMappingType.one,
+      //                 ),
+      //                 'projectResources': NestedFieldMapping(
+      //                   table: 'projectResource',
+      //                   localKey: 'projectId',
+      //                   foreignKey: 'projectId',
+      //                   type: NestedMappingType.many,
+      //                 ),
+      //               },
+      //             ),
+      //           ],
+      //           searchEntityRepository: context.read<SearchEntityRepository>(),
+      //         ),
+      //         dynamicEntityModelListener: EntityModelMapMapper(),
+      //       );
+
+      //       try {
+      //         if (false) {
+      //           final allSchemas =
+      //               json.decode(schemaJsonRaw!) as Map<String, dynamic>;
+      //           final data = allSchemas['INVENTORY'];
+
+      //           final inventoryData = data?['data'];
+      //           final flowsData = (inventoryData['flows'] as List<dynamic>?)
+      //                   ?.map((e) => Map<String, dynamic>.from(e as Map))
+      //                   .toList() ??
+      //               [];
+      //           FlowRegistry.setConfig(flowsData);
+      //           NavigationRegistry.setupNavigation(context);
+
+      //           context.router.push(
+      //             FlowBuilderHomeRoute(pageName: inventoryData["initialPage"]),
+      //           );
+      //         } else {
+      //           FlowRegistry.setConfig(sampleInventoryFlows["flows"]
+      //               as List<Map<String, dynamic>>);
+      //           NavigationRegistry.setupNavigation(context);
+      //           context.router.push(
+      //             FlowBuilderHomeRoute(
+      //                 pageName: sampleInventoryFlows["initialPage"]),
+      //           );
+      //         }
+      //       } catch (e) {
+      //         debugPrint('error $e');
+      //       }
+      //     },
+      //   ),
+      // ),
+
+      // i18.home.manageStockLabel:
+      //     homeShowcaseData.warehouseManagerManageStock.buildWith(
+      //   child: HomeItemCard(
+      //     icon: Icons.store_mall_directory,
+      //     label: i18.home.manageStockLabel,
+      //     onPressed: () async {
+      //       FlowBuilderSingleton().setBoundary(
+      //           boundary: BoundaryModel(
+      //               code: LeastLevelBoundarySingleton().boundary?.first));
+
+      //       final moduleName =
+      //           'hcm-inventory-${context.selectedProject.referenceID}';
+      //       triggerLocalization(module: moduleName);
+      //       isTriggerLocalisation = false;
+
+      //       await FlowNavigationUtils.navigateToFlowModule(
+      //         context: context,
+      //         config: FlowModuleConfig(
+      //           schemaKey: 'INVENTORY',
       //           sampleFlows: sampleInventoryFlows,
       //           relationshipMappings: const [
       //             RelationshipMapping(
@@ -2726,7 +2954,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-stockreconciliation-${context.selectedProject.referenceID}';
+                'hcm-stockreconciliation-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
@@ -2734,7 +2962,6 @@ class _HomePageState extends LocalizedState<HomePage> {
               context: context,
               config: FlowModuleConfig(
                 schemaKey: 'STOCKRECONCILIATION',
-                sampleFlows: stockReconciliationFlows,
                 relationshipMappings: const [
                   RelationshipMapping(
                       from: 'facility',
@@ -2869,7 +3096,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-hfreferral-${context.selectedProject.referenceID}';
+                    'hcm-hfreferral-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
@@ -2877,7 +3104,6 @@ class _HomePageState extends LocalizedState<HomePage> {
                   context: ctx,
                   config: FlowModuleConfig(
                     schemaKey: 'HFREFERRAL',
-                    sampleFlows: sampleReferralFlows,
                   ),
                 );
               },
@@ -2885,6 +3111,77 @@ class _HomePageState extends LocalizedState<HomePage> {
           },
         ),
       ),
+
+      // i18.home.viewReportsLabel: homeShowcaseData.inventoryReport.buildWith(
+      //   child: HomeItemCard(
+      //     icon: Icons.announcement,
+      //     label: i18.home.viewReportsLabel,
+      //     onPressed: () async {
+      //       FlowBuilderSingleton().setBoundary(
+      //           boundary: BoundaryModel(
+      //               code: LeastLevelBoundarySingleton().boundary?.first));
+
+      //       final moduleName =
+      //           'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
+      //       triggerLocalization(module: moduleName);
+      //       isTriggerLocalisation = false;
+
+      //       await FlowNavigationUtils.navigateToFlowModule(
+      //         context: context,
+      //         config: FlowModuleConfig(
+      //           schemaKey: 'STOCKREPORTS',
+      //           relationshipMappings: const [
+      //             RelationshipMapping(
+      //                 from: 'facility',
+      //                 to: 'projectFacility',
+      //                 localKey: 'id',
+      //                 foreignKey: 'facilityId'),
+      //             RelationshipMapping(
+      //                 from: 'projectResource',
+      //                 to: 'projectFacility',
+      //                 localKey: 'projectId',
+      //                 foreignKey: 'projectId'),
+      //             RelationshipMapping(
+      //                 from: 'productVariant',
+      //                 to: 'projectResource',
+      //                 localKey: 'id',
+      //                 foreignKey: 'resource'),
+      //             RelationshipMapping(
+      //                 from: 'stockReconciliation',
+      //                 to: 'facility',
+      //                 localKey: 'facilityId',
+      //                 foreignKey: 'id'),
+      //             RelationshipMapping(
+      //                 from: 'stockReconciliation',
+      //                 to: 'productVariant',
+      //                 localKey: 'productVariantId',
+      //                 foreignKey: 'id'),
+      //           ],
+      //           nestedModelMappings: const [
+      //             NestedModelMapping(
+      //               rootModel: 'projectFacility',
+      //               fields: {
+      //                 'facility': NestedFieldMapping(
+      //                   table: 'facility',
+      //                   localKey: 'facilityId',
+      //                   foreignKey: 'id',
+      //                   type: NestedMappingType.one,
+      //                 ),
+      //                 'projectResources': NestedFieldMapping(
+      //                   table: 'projectResource',
+      //                   localKey: 'projectId',
+      //                   foreignKey: 'projectId',
+      //                   type: NestedMappingType.many,
+      //                 ),
+      //               },
+      //             ),
+      //           ],
+      //         ),
+      //       );
+      //     },
+      //   ),
+      // ),
+
       i18.home.viewReportsLabel: homeShowcaseData.inventoryReport.buildWith(
         child: HomeItemCard(
           icon: Icons.announcement,
@@ -2895,16 +3192,21 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-stockreports-${context.selectedProject.referenceID}';
+                'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
-            await FlowNavigationUtils.navigateToFlowModule(
-              context: context,
-              config: FlowModuleConfig(
-                schemaKey: 'STOCKREPORTS',
-                sampleFlows: inventoryReportFlows,
-                relationshipMappings: const [
+            final prefs = await SharedPreferences.getInstance();
+            final schemaJsonRaw = prefs.getString('app_config_schemas');
+
+            FlowBuilderSingleton().setPersistenceConfiguration(
+                persistenceConfiguration:
+                    PersistenceConfiguration.offlineFirst);
+            WidgetRegistry.initialize();
+            CrudBlocSingleton().setData(
+              crudService: DigitCrudService(
+                context: context,
+                relationshipMap: const [
                   RelationshipMapping(
                       from: 'facility',
                       to: 'projectFacility',
@@ -2950,117 +3252,123 @@ class _HomePageState extends LocalizedState<HomePage> {
                     },
                   ),
                 ],
+                searchEntityRepository: context.read<SearchEntityRepository>(),
               ),
+              dynamicEntityModelListener: EntityModelMapMapper(),
             );
+
+            try {
+              if (false) {
+                final allSchemas =
+                    json.decode(schemaJsonRaw!) as Map<String, dynamic>;
+                final data = allSchemas['STOCKREPORTS'];
+
+                final reportsData = data?['data'];
+                final flowsData = (reportsData['flows'] as List<dynamic>?)
+                        ?.map((e) => Map<String, dynamic>.from(e as Map))
+                        .toList() ??
+                    [];
+                FlowRegistry.setConfig(flowsData);
+                NavigationRegistry.setupNavigation(context);
+
+                context.router.push(
+                  FlowBuilderHomeRoute(pageName: reportsData["initialPage"]),
+                );
+              } else {
+                FlowRegistry.setConfig(inventoryReportFlows["flows"]
+                    as List<Map<String, dynamic>>);
+                NavigationRegistry.setupNavigation(context);
+                context.router.push(
+                  FlowBuilderHomeRoute(
+                      pageName: inventoryReportFlows["initialPage"]),
+                );
+              }
+            } catch (e) {
+              debugPrint('error $e');
+            }
           },
         ),
       ),
+
       i18.home.manageAttendanceLabel:
           homeShowcaseData.manageAttendance.buildWith(
         child: HomeItemCard(
           icon: Icons.fingerprint_outlined,
           label: i18.home.manageAttendanceLabel,
           onPressed: () async {
-            // Set up CRUD service
-            CrudBlocSingleton().setData(
-              crudService: DigitCrudService(
-                context: context,
-                relationshipMap: const [
-                  RelationshipMapping(
-                    from: 'attendanceRegister',
-                    to: 'attendee',
-                    localKey: 'id',
-                    foreignKey: 'registerId',
-                  ),
-                  RelationshipMapping(
-                    from: 'attendanceRegister',
-                    to: 'attendance',
-                    localKey: 'id',
-                    foreignKey: 'registerId',
-                  ),
-                  RelationshipMapping(
-                    from: 'individual',
-                    to: 'name',
-                    localKey: 'clientReferenceId',
-                    foreignKey: 'individualClientReferenceId',
-                  ),
-                  RelationshipMapping(
-                    from: 'attendee',
-                    to: 'individual',
-                    localKey: 'individualId',
-                    foreignKey: 'id',
-                  ),
-                ],
-                nestedModelMappings: const [
-                  NestedModelMapping(
-                    rootModel: 'attendanceRegister',
-                    fields: {
-                      'attendees': NestedFieldMapping(
-                        table: 'attendee',
-                        localKey: 'id',
-                        foreignKey: 'registerId',
-                        type: NestedMappingType.many,
-                      ),
-                      'attendanceLog': NestedFieldMapping(
-                        table: 'attendance',
-                        localKey: 'id',
-                        foreignKey: 'registerId',
-                        type: NestedMappingType.many,
-                      ),
-                    },
-                  ),
-                  NestedModelMapping(
-                    rootModel: 'individual',
-                    fields: {
-                      'name': NestedFieldMapping(
-                        table: 'name',
-                        localKey: 'clientReferenceId',
-                        foreignKey: 'individualClientReferenceId',
-                        type: NestedMappingType.one,
-                      ),
-                    },
-                  ),
-                ],
-                searchEntityRepository: context.read<SearchEntityRepository>(),
-              ),
-              dynamicEntityModelListener: EntityModelMapMapper(),
-            );
-
-            final prefs = await SharedPreferences.getInstance();
-            final schemaJsonRaw = prefs.getString('app_config_schemas');
-
             FlowBuilderSingleton().setPersistenceConfiguration(
                 persistenceConfiguration:
                     PersistenceConfiguration.offlineFirst);
-            WidgetRegistry.initialize();
-            try {
-              NavigationRegistry.setupNavigation(context);
-              context.router
-                  .push(CurrentBoundaryRoute(onBoundarySelected: (ctx) async {
-                if (isTriggerLocalisation) {
-                  final moduleName =
-                      'hcm-complaints-${context.selectedProject.referenceID}';
-                  const module = "hcm-attendance";
-                  triggerLocalization(module: module);
-                  isTriggerLocalisation = false;
-                }
-                // triggerLocalization(module: moduleName);
-                Map<String, dynamic> attendanceData =
-                    attendanceFlows; // Adding custom attendance flows as the flows are not coming from the server for attendance module
-                List<Map<String, dynamic>> flowsData =
-                    (attendanceData['flows'] as List<dynamic>?)
-                            ?.map((e) => Map<String, dynamic>.from(e as Map))
-                            .toList() ??
-                        [];
-                FlowRegistry.setConfig(flowsData);
-                NavigationRegistry.setupNavigation(context);
-                context.router.push(
-                  FlowBuilderHomeRoute(pageName: attendanceData["initialPage"]),
-                );
-              }));
-            } catch (e) {
-              debugPrint('error $e');
-            }
+
+            context.router
+                .push(CurrentBoundaryRoute(onBoundarySelected: (ctx) async {
+              final moduleName =
+                  "hcm-attendance,hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}";
+              triggerLocalization(module: moduleName);
+
+              await FlowNavigationUtils.navigateToFlowModule(
+                context: ctx,
+                config: const FlowModuleConfig(
+                  schemaKey: 'ATTENDANCE',
+                  relationshipMappings: [
+                    RelationshipMapping(
+                      from: 'attendanceRegister',
+                      to: 'attendee',
+                      localKey: 'id',
+                      foreignKey: 'registerId',
+                    ),
+                    RelationshipMapping(
+                      from: 'attendanceRegister',
+                      to: 'attendance',
+                      localKey: 'id',
+                      foreignKey: 'registerId',
+                    ),
+                    RelationshipMapping(
+                      from: 'individual',
+                      to: 'name',
+                      localKey: 'clientReferenceId',
+                      foreignKey: 'individualClientReferenceId',
+                    ),
+                    RelationshipMapping(
+                      from: 'attendee',
+                      to: 'individual',
+                      localKey: 'individualId',
+                      foreignKey: 'id',
+                    ),
+                  ],
+                  nestedModelMappings: [
+                    NestedModelMapping(
+                      rootModel: 'attendanceRegister',
+                      fields: {
+                        'attendees': NestedFieldMapping(
+                          table: 'attendee',
+                          localKey: 'id',
+                          foreignKey: 'registerId',
+                          type: NestedMappingType.many,
+                        ),
+                        'attendanceLog': NestedFieldMapping(
+                          table: 'attendance',
+                          localKey: 'id',
+                          foreignKey: 'registerId',
+                          type: NestedMappingType.many,
+                        ),
+                      },
+                    ),
+                    NestedModelMapping(
+                      rootModel: 'individual',
+                      fields: {
+                        'name': NestedFieldMapping(
+                          table: 'name',
+                          localKey: 'clientReferenceId',
+                          foreignKey: 'individualClientReferenceId',
+                          type: NestedMappingType.one,
+                        ),
+                      },
+                    ),
+                  ],
+                ),
+              );
+            }));
           },
         ),
       ),

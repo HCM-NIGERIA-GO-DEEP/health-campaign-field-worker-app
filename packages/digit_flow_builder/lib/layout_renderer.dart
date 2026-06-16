@@ -38,6 +38,24 @@ class LayoutRendererPage extends LocalizedStatefulWidget {
 }
 
 class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
+  static const Set<String> _hideBoundaryTagScreenNames = {
+    'manageStock',
+    'returnOrIssueSelection',
+    'scanStockReceipt',
+    'RECORDSTOCK',
+    'RECORDLESSEXCESS',
+    'stockSuccess',
+    'viewTransaction',
+    'viewTransactionDetails',
+    'incomingTransactions',
+    'stockReceiptDetails',
+    'viewReports',
+    'reportDetails',
+    'reckonReportDetails',
+    'stockReconciliationDetails',
+    'stockReconciliationSuccess',
+  };
+
   // Scroll listener state
   Timer? _debounceTimer;
   bool _hasTriggeredAtBottom = false;
@@ -252,6 +270,19 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
     _hasTriggeredAtTop = false;
   }
 
+  bool _shouldHideBoundaryTag() {
+    final category = (widget.config['category'] as String?)?.toUpperCase();
+    if (category == 'INVENTORY' ||
+        category == 'STOCKREPORTS' ||
+        category == 'STOCKRECONCILIATION') {
+      return true;
+    }
+
+    final screenName = widget.config['name'] as String?;
+    return screenName != null &&
+        _hideBoundaryTagScreenNames.contains(screenName);
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<dynamic> body = widget.config['body'] ?? [];
@@ -305,20 +336,42 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
             );
           },
           child: LocalizationContext(
-          localization: localizations,
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (notification) =>
-                _handleScrollNotification(notification, compositeKey),
-            child: Stack(
-              children: [
-                Scaffold(
-                  body: ScrollableContent(
-                    header: headers.isNotEmpty
-                        ? Padding(
-                            padding: const EdgeInsets.only(
-                                top: spacer4, left: spacer4),
-                            child: Row(
-                              children: headers
+            localization: localizations,
+            child: NotificationListener<ScrollNotification>(
+              onNotification: (notification) =>
+                  _handleScrollNotification(notification, compositeKey),
+              child: Stack(
+                children: [
+                  Scaffold(
+                    body: ScrollableContent(
+                      header: headers.isNotEmpty
+                          ? Padding(
+                              padding: const EdgeInsets.only(
+                                  top: spacer4, left: spacer4),
+                              child: Row(
+                                children: headers
+                                    .map((e) => LayoutMapper.map(
+                                          preprocessConfigWithState(
+                                              e, stateData),
+                                          stateData,
+                                          context,
+                                          screenKey: screenKey,
+                                          (action) {
+                                            ActionHandler.execute(
+                                                action, context, {
+                                              'wrappers': const [],
+                                              '_compositeKey': compositeKey,
+                                            });
+                                          },
+                                        ))
+                                    .toList(),
+                              ),
+                            )
+                          : null,
+                      enableFixedDigitButton: actions.isNotEmpty ? true : false,
+                      footer: actions.isNotEmpty
+                          ? DigitCard(
+                              children: actions
                                   .map((e) => LayoutMapper.map(
                                         preprocessConfigWithState(e, stateData),
                                         stateData,
@@ -333,132 +386,120 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
                                         },
                                       ))
                                   .toList(),
-                            ),
-                          )
-                        : null,
-                    enableFixedDigitButton: actions.isNotEmpty ? true : false,
-                    footer: actions.isNotEmpty
-                        ? DigitCard(
-                            children: actions
-                                .map((e) => LayoutMapper.map(
-                                      preprocessConfigWithState(e, stateData),
+                            )
+                          : null,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.all(spacer4),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (!_shouldHideBoundaryTag()) ...[
+                                Tag(
+                                  label: localizations.translate(
+                                      FlowBuilderSingleton().boundary?.code ??
+                                          ""),
+                                  isIcon: true,
+                                  customTextStyle: Theme.of(context)
+                                      .digitTextTheme(context)
+                                      .bodyS
+                                      .copyWith(
+                                          color: Theme.of(context)
+                                              .colorTheme
+                                              .alert
+                                              .info),
+                                  type: TagType.monochrome,
+                                  customIcon: Icon(
+                                    Icons.location_on_outlined,
+                                    color:
+                                        Theme.of(context).colorTheme.alert.info,
+                                    size: 16,
+                                  ),
+                                  themeData: TagThemeData(
+                                      monochromeBackgroundColor:
+                                          Theme.of(context)
+                                              .colorTheme
+                                              .alert
+                                              .infoBg,
+                                      iconLabelGap: spacer1),
+                                ),
+                                const SizedBox(height: spacer2),
+                              ],
+                              DigitTextBlock(
+                                padding: EdgeInsets.zero,
+                                heading: _resolveHeading(
+                                    widget.config['heading'], screenKey),
+                                headingStyle: Theme.of(context)
+                                    .digitTextTheme(context)
+                                    .headingXl
+                                    .copyWith(
+                                        color: Theme.of(context)
+                                            .colorTheme
+                                            .primary
+                                            .primary2),
+                                description: _resolveDescription(
+                                    widget.config['description'], screenKey),
+                              ),
+                              const SizedBox(height: spacer4),
+                              ...body
+                                  .asMap()
+                                  .entries
+                                  .map<MapEntry<bool, CrudItemContext>>(
+                                      (entry) {
+                                final e = entry.value;
+                                final processed =
+                                    preprocessConfigWithState(e, stateData);
+                                final isVisible = _checkWidgetVisibility(
+                                    processed, stateData, screenKey);
+
+                                return MapEntry(
+                                  isVisible,
+                                  CrudItemContext(
+                                    stateData: stateData,
+                                    screenKey: screenKey,
+                                    compositeKey: compositeKey,
+                                    child: LayoutMapper.map(
+                                      processed,
                                       stateData,
                                       context,
-                                      screenKey: screenKey,
                                       (action) {
                                         ActionHandler.execute(action, context, {
                                           'wrappers': const [],
                                           '_compositeKey': compositeKey,
                                         });
                                       },
-                                    ))
-                                .toList(),
-                          )
-                        : null,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(spacer4),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Tag(
-                              label: localizations.translate(
-                                  FlowBuilderSingleton().boundary?.code ?? ""),
-                              isIcon: true,
-                              customTextStyle: Theme.of(context)
-                                  .digitTextTheme(context)
-                                  .bodyS
-                                  .copyWith(
-                                      color: Theme.of(context)
-                                          .colorTheme
-                                          .alert
-                                          .info),
-                              type: TagType.monochrome,
-                              customIcon: Icon(
-                                Icons.location_on_outlined,
-                                color: Theme.of(context).colorTheme.alert.info,
-                                size: 16,
-                              ),
-                              themeData: TagThemeData(
-                                  monochromeBackgroundColor:
-                                      Theme.of(context).colorTheme.alert.infoBg,
-                                  iconLabelGap: spacer1),
-                            ),
-                            const SizedBox(height: spacer2),
-                            DigitTextBlock(
-                              padding: EdgeInsets.zero,
-                              heading: _resolveHeading(
-                                  widget.config['heading'], screenKey),
-                              headingStyle: Theme.of(context)
-                                  .digitTextTheme(context)
-                                  .headingXl
-                                  .copyWith(
-                                      color: Theme.of(context)
-                                          .colorTheme
-                                          .primary
-                                          .primary2),
-                              description: _resolveDescription(
-                                  widget.config['description'], screenKey),
-                            ),
-                            const SizedBox(height: spacer4),
-                            ...body
-                                .asMap()
-                                .entries
-                                .map<MapEntry<bool, CrudItemContext>>((entry) {
-                              final e = entry.value;
-                              final processed =
-                                  preprocessConfigWithState(e, stateData);
-                              final isVisible = _checkWidgetVisibility(
-                                  processed, stateData, screenKey);
-
-                              return MapEntry(
-                                isVisible,
-                                CrudItemContext(
-                                  stateData: stateData,
-                                  screenKey: screenKey,
-                                  compositeKey: compositeKey,
-                                  child: LayoutMapper.map(
-                                    processed,
-                                    stateData,
-                                    context,
-                                    (action) {
-                                      ActionHandler.execute(action, context, {
-                                        'wrappers': const [],
-                                        '_compositeKey': compositeKey,
-                                      });
-                                    },
-                                    compositeKey: compositeKey,
+                                      compositeKey: compositeKey,
+                                    ),
+                                  ),
+                                );
+                              }).expand((entry) {
+                                if (!entry.key) return <Widget>[];
+                                return <Widget>[
+                                  entry.value,
+                                  const SizedBox(height: spacer4),
+                                ];
+                              }).toList()
+                                ..removeLast(),
+                              // Scroll loading indicator at bottom of content
+                              if (_showLoadingIndicator && isLoading)
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                      vertical: spacer4),
+                                  child: Center(
+                                    child: DigitLoaders.inlineLoader(),
                                   ),
                                 ),
-                              );
-                            }).expand((entry) {
-                              if (!entry.key) return <Widget>[];
-                              return <Widget>[
-                                entry.value,
-                                const SizedBox(height: spacer4),
-                              ];
-                            }).toList()
-                              ..removeLast(),
-                            // Scroll loading indicator at bottom of content
-                            if (_showLoadingIndicator && isLoading)
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                    vertical: spacer4),
-                                child: Center(
-                                  child: DigitLoaders.inlineLoader(),
-                                ),
-                              ),
-                          ],
-                        ),
-                      )
-                    ],
+                            ],
+                          ),
+                        )
+                      ],
+                    ),
                   ),
-                ),
-                // Loading overlay when search/CRUD operation is in progress
-                if (isLoading) DigitLoaders.inlineLoader(),
-              ],
+                  // Loading overlay when search/CRUD operation is in progress
+                  if (isLoading) DigitLoaders.inlineLoader(),
+                ],
+              ),
             ),
-          ),
           ),
         );
       },

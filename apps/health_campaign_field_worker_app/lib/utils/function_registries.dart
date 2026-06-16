@@ -51,6 +51,23 @@ class FunctionRegistries {
   }
 
   void _registerInventoryFunctions() {
+    FunctionRegistry.register('bottlesToMl', (args, stateData) {
+      if (args.isEmpty) return 0;
+      final raw = args.first;
+      final bottles =
+          (raw is num) ? raw : num.tryParse(raw?.toString() ?? '') ?? 0;
+      return bottles * 30;
+    });
+
+    FunctionRegistry.register('mlToBottles', (args, stateData) {
+      if (args.isEmpty) return 0;
+      final raw = args.first;
+      final ml = (raw is num) ? raw : num.tryParse(raw?.toString() ?? '') ?? 0;
+      final bottles = ml / 30;
+      final rounded = bottles.roundToDouble();
+      return bottles == rounded ? rounded.toInt() : bottles;
+    });
+
     FunctionRegistry.register('getQuantityLabel', (args, stateData) {
       if (args.isEmpty) return 'APPONE_INVENTORY_QUANTITY_RECEIVED_LABEL';
       final sku = args.first?.toString() ?? '';
@@ -186,6 +203,15 @@ class FunctionRegistries {
       return facilityFromWhich == 'DELIVERY_TEAM' ? 'STAFF' : 'WAREHOUSE';
     });
 
+    FunctionRegistry.register('getTeamCode', (args, stateData) {
+      if (args.isEmpty) return '';
+      final teamCode = args.first?.toString() ?? '';
+      if (teamCode.contains("||")) {
+        return teamCode.split("||").last.trim();
+      }
+      return teamCode;
+    });
+
     FunctionRegistry.register('getTransactionStatusType', (args, stateData) {
       if (args.isEmpty) return 'default';
       final transactionType = args.first?.toString().toUpperCase() ?? '';
@@ -313,7 +339,6 @@ class FunctionRegistries {
       }
     });
 
-
     FunctionRegistry.register('getProjectProductVariantIds', (args, stateData) {
       try {
         List<Map<String, dynamic>>? productVariants;
@@ -404,7 +429,30 @@ class FunctionRegistries {
       final cache = StockBalanceCache.instance;
       if (cache.facilityId.isEmpty) return true;
       if (cache.cache.isEmpty) return false;
+      final s = cache.cache.values.any((balance) => balance > 0);
+      print(s);
       return cache.cache.values.any((balance) => balance > 0);
+    });
+
+    FunctionRegistry.register("isClosedHousehold", (args, stateData) {
+      if (args.isEmpty || args.first == null) return false;
+      final tasks = args.first;
+
+      if (tasks is! List || tasks.isEmpty) return false;
+
+      String? getStatus(dynamic task) {
+        if (task is Map) return task['status']?.toString()?.toUpperCase();
+        try {
+          return (task as dynamic).status?.toString()?.toUpperCase();
+        } catch (_) {
+          return null;
+        }
+      }
+
+      final lastStatus = getStatus(tasks.last);
+      if (lastStatus == 'ADMINISTRATION_SUCCESS') return true;
+
+      return false;
     });
 
     // Returns a formatted message listing each product's available balance.
@@ -481,6 +529,74 @@ class FunctionRegistries {
       return false;
     });
 
+    FunctionRegistry.register('hasStockForRedose', (args, stateData) {
+      if (args.isEmpty || args.first == null) return true;
+      final cache = StockBalanceCache.instance;
+      if (cache.facilityId.isEmpty) return true;
+
+      // Normalise task list
+      List<Map<String, dynamic>> tasks = [];
+      if (args.first is List) {
+        for (final item in args.first as List) {
+          if (item is Map<String, dynamic>) {
+            tasks.add(item);
+          } else if (item is Map) {
+            tasks.add(Map<String, dynamic>.from(item));
+          } else {
+            try {
+              tasks.add((item as dynamic).toMap() as Map<String, dynamic>);
+            } catch (_) {
+              try {
+                tasks.add((item as dynamic).toJson() as Map<String, dynamic>);
+              } catch (_) {}
+            }
+          }
+        }
+      }
+
+      // Find the last ADMINISTRATION_SUCCESS or DELIVERED task
+      Map<String, dynamic>? lastDeliveryTask;
+      for (int i = tasks.length - 1; i >= 0; i--) {
+        final status = tasks[i]['status']?.toString().toUpperCase() ?? '';
+        if (status == 'ADMINISTRATION_SUCCESS') {
+          lastDeliveryTask = tasks[i];
+          break;
+        }
+      }
+
+      if (lastDeliveryTask == null) return true;
+
+      final List resources = lastDeliveryTask['resources'];
+      if (resources.isEmpty) return true;
+
+      final List<Map<String, dynamic>> insufficientProducts = [];
+      for (final resource in resources) {
+        final productId = resource['productVariantId']?.toString();
+        if (productId == null || productId.isEmpty) continue;
+
+        final quantity =
+            double.tryParse(resource['quantity']?.toString() ?? '1') ?? 1.0;
+        final balance = cache.cache[productId] ?? 0.0;
+        if (balance < quantity) {
+          insufficientProducts.add({
+            'name': productId,
+            'required': quantity,
+            'available': balance,
+          });
+        }
+      }
+
+      if (insufficientProducts.isEmpty) {
+        cache.setStockCheckResult(null);
+        return true;
+      }
+      cache.setStockCheckResult({
+        'key': 'INSUFFICIENT_STOCK',
+        'products': insufficientProducts,
+      });
+      return false;
+    });
+
     FunctionRegistry.register('getInsufficientStockMessage', (args, stateData) {
       final result = StockBalanceCache.instance.stockCheckResult;
       if (result is Map) {
@@ -495,10 +611,10 @@ class FunctionRegistries {
             final available = p['available'] ?? 0;
             message += '\n$name: $required REQUIRED, $available AVAILABLE';
           }
-          return '$key$message';
+          return '$key::$message';
         }
       }
-      return '';
+      return 'INSUFFICIENT_STOCK';
     });
   }
 

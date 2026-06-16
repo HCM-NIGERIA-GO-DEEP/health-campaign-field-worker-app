@@ -12,6 +12,9 @@ final dynamic sampleCloseHouseholdFlows = {
       "name": "CLOSEHOUSEHOLD",
       "project": "LLIN-mz",
       "version": 1,
+      "initActions": [
+        {"actionType": "LOAD_UNIQUE_ID_POOL"}
+      ],
       "disabled": false,
       "isSelected": true,
       "pages": [
@@ -57,8 +60,7 @@ final dynamic sampleCloseHouseholdFlows = {
               "format": "locality",
               "hidden": false,
               "tooltip": "",
-              "helpText":
-                  "",
+              "helpText": "",
               "infoText": "",
               "readOnly": false,
               "fieldName": "settlement",
@@ -148,7 +150,48 @@ final dynamic sampleCloseHouseholdFlows = {
               "validations": [],
               "errorMessage": "",
               "isMultiSelect": false
-            }
+            },
+            {
+              "type": "string",
+              "enums": [
+                {"code": "DEFAULT", "name": "DEFAULT"},
+                {
+                  "code": "UNIQUE_BENEFICIARY_ID",
+                  "name": "UNIQUE_BENEFICIARY_ID"
+                }
+              ],
+              "label":
+                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_identifiers",
+              "order": 10,
+              "value": "{{identifiers}}",
+              "format": "idPopulator",
+              "hidden": true,
+              "includeInForm": true,
+              "isMdms": true,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "required": true,
+              "fieldName": "identifiers",
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": "HCM.ID_TYPE_OPTIONS_POPULATOR",
+              "systemDate": false,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_idpopulator_mandatory_message"
+                }
+              ],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "required.message":
+                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_idpopulator_mandatory_message"
+            },
           ],
           "value": "",
           "required": null,
@@ -205,6 +248,14 @@ final dynamic sampleCloseHouseholdFlows = {
                   {
                     "key": "HouseholdClientReferenceId",
                     "value": "{{entities.HouseholdModel.clientReferenceId}}"
+                  },
+                  {
+                    "key": "UNIQUE_BENEFICIARY_ID",
+                    "value": "{{identifiers}}"
+                  },
+                  {
+                    "key": "uniqueBeneficiaryIdModel",
+                    "value": "{{latestBeneficiaryIdModel}}"
                   }
                 ]
               }
@@ -215,6 +266,9 @@ final dynamic sampleCloseHouseholdFlows = {
       "overView": "CLOSEHOUSEHOLD_SUMMARY_HEADING",
       "summary": false,
       "onAction": [
+        {
+          "actionType": "LOAD_UNIQUE_ID_POOL"
+        },
         {
           "actionType": "FETCH_TRANSFORMER_CONFIG",
           "properties": {
@@ -259,6 +313,14 @@ final dynamic sampleCloseHouseholdFlows = {
                 "value":
                     "{{entities.ProjectBeneficiaryModel.clientReferenceId}}"
               },
+              {
+                "key": "UNIQUE_BENEFICIARY_ID",
+                "value": "{{identifiers}}"
+              },
+              {
+                "key": "uniqueBeneficiaryIdModel",
+                "value": "{{latestBeneficiaryIdModel}}"
+              }
             ]
           }
         }
@@ -323,13 +385,15 @@ final dynamic sampleCloseHouseholdFlows = {
                 {
                   "key": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_DATE_LABEL",
                   // "value": "{{fn:getAdditionalFieldValue(contextData.0.HouseholdModel.additionalFields.fields, 'date')}}",
-                  "value": "{{fn:formatDate(contextData.0.HouseholdModel.additionalFields.fields.date, 'date', dd MMM yyyy)}}",
+                  "value":
+                      "{{fn:formatDate(contextData.0.HouseholdModel.additionalFields.fields.date, 'date', dd MMM yyyy)}}",
                   "isActive": true,
                 },
                 {
                   "key":
                       "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_SETTLEMENT_LABEL",
-                  "value": "{{contextData.0.HouseholdModel.address.locality.code}}",
+                  "value":
+                      "{{contextData.0.HouseholdModel.address.locality.code}}",
                   "isActive": true
                 },
                 {
@@ -342,7 +406,8 @@ final dynamic sampleCloseHouseholdFlows = {
                 {
                   "key":
                       "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_GPS_ACCURACY_LABEL",
-                  "value": "{{contextData.0.HouseholdModel.address.locationAccuracy}}",
+                  "value":
+                      "{{contextData.0.HouseholdModel.address.locationAccuracy}}",
                   "isActive": true,
                 },
               ],
@@ -547,13 +612,15 @@ final dynamic sampleCloseHouseholdFlows = {
               "data": [
                 {
                   "key": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_DATE_LABEL",
-                  "value": "{{fn:formatDate(contextData.0.HouseholdModel.additionalFields.fields.date, 'date', dd MMM yyyy)}}",
+                  "value":
+                      "{{fn:formatDate(contextData.0.HouseholdModel.additionalFields.fields.date, 'date', dd MMM yyyy)}}",
                   "isActive": true
                 },
                 {
                   "key":
                       "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_SETTLEMENT_LABEL",
-                  "value": "{{contextData.0.HouseholdModel.address.locality.code}}",
+                  "value":
+                      "{{contextData.0.HouseholdModel.address.locality.code}}",
                   "isActive": true
                 },
                 {
@@ -566,7 +633,8 @@ final dynamic sampleCloseHouseholdFlows = {
                 {
                   "key":
                       "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_GPS_ACCURACY_LABEL",
-                  "value": "{{contextData.0.HouseholdModel.address.locationAccuracy}}",
+                  "value":
+                      "{{contextData.0.HouseholdModel.address.locationAccuracy}}",
                   "isActive": true
                 },
               ],
@@ -584,7 +652,8 @@ final dynamic sampleCloseHouseholdFlows = {
       "footer": [
         {
           "type": "template",
-          "label": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDSUCCESS_SECONDARY_ACTION_LABEL",
+          "label":
+              "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDSUCCESS_SECONDARY_ACTION_LABEL",
           "format": "button",
           "onAction": [
             {

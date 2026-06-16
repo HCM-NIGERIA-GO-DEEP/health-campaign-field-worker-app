@@ -90,10 +90,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
   /// Flows in which the in-app back navigation header and the
   /// Android system back button must be disabled.
-  static const Set<String> _backDisabledSchemas = {
-    'CHECKLIST',
-    'REFER_BENEFICIARY'
-  };
+  static const Set<String> _backDisabledSchemas = {};
 
   bool get _isBackDisabled =>
       _backDisabledSchemas.contains(widget.currentSchemaKey);
@@ -391,6 +388,28 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
                                 // Evaluate conditionalNavigateTo (if present)
                                 if (conditionalNavigateList != null) {
+                                  // REFERRAL_CREATE flow only: treat a comma-separated
+                                  // referralSymptom (e.g. "SICK,FEVER") as its
+                                  // last segment so single-symptom rules match.
+                                  Map<String, dynamic>?
+                                      normalizedNavigationParams =
+                                      widget.navigationParams;
+                                  if (widget.currentSchemaKey ==
+                                          'REFERRAL_CREATE' &&
+                                      widget.navigationParams != null) {
+                                    final rawSymptom = widget
+                                        .navigationParams!['referralSymptom'];
+                                    if (rawSymptom is String &&
+                                        rawSymptom.contains(',')) {
+                                      normalizedNavigationParams =
+                                          Map<String, dynamic>.from(
+                                              widget.navigationParams!);
+                                      normalizedNavigationParams[
+                                              'referralSymptom'] =
+                                          rawSymptom.split(',').last.trim();
+                                    }
+                                  }
+
                                   for (final conditionItem
                                       in conditionalNavigateList) {
                                     final condition = conditionItem.condition;
@@ -410,7 +429,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                       pages: formState
                                           .cachedSchemas[currentSchemaKey]!
                                           .pages,
-                                      navigationParams: widget.navigationParams,
+                                      navigationParams:
+                                          normalizedNavigationParams,
                                     );
 
                                     // Evaluate condition - use direct isEdit check for isEdit conditions

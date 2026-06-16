@@ -320,6 +320,22 @@ class TransformerExecutor extends ActionExecutor {
 
     contextData['entities'] = entities;
 
+    // TEMP DEBUG (latlng): trace where the delivery task's lat/long comes from.
+    if (configName == 'delivery') {
+      final deliveryDetails =
+          (formValuesToUse ?? const {})['DeliveryDetails'];
+      final latLngInForm = deliveryDetails is Map ? deliveryDetails['latLng'] : null;
+      debugPrint('LATLNG-DEBUG: configName=$configName, '
+          'DeliveryDetails.latLng in formData = "$latLngInForm"');
+      for (final e in entities) {
+        final m = e.toMap();
+        if (getEntityTypeName(e) == 'TaskModel') {
+          final addr = m['address'];
+          debugPrint('LATLNG-DEBUG: TaskModel.address = $addr');
+        }
+      }
+    }
+
     // Pass existingModels to contextData even for forceCreate,
     // so UPDATE_EVENT with source: "existingModels" can update the originals
     // Filter to only include models matching the created entities' productVariantId

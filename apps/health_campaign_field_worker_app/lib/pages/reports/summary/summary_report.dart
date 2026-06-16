@@ -1,3 +1,5 @@
+import 'package:digit_data_model/data/repositories/package_repository/local/household.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/household_member.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
@@ -47,7 +49,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           context.read<LocalRepository<TaskModel, TaskSearchModel>>();
 
       final householdMemberRepo = context.read<
-          LocalRepository<HouseholdMemberModel, HouseholdMemberSearchModel>>();
+          LocalRepository<HouseholdMemberModel,
+              HouseholdMemberSearchModel>>() as HouseholdMemberLocalRepository;
       final stockRepo =
           context.read<LocalRepository<StockModel, StockSearchModel>>();
       final projectResourceRepo = context.read<
@@ -98,9 +101,12 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
 
       // Fetch all data
       final households = await householdRepo.search(HouseholdSearchModel());
-      final tasks = await taskRepo.search(TaskSearchModel());
-      final householdMembers =
-          await householdMemberRepo.search(HouseholdMemberSearchModel());
+      final tasks = await taskRepo.search(TaskSearchModel(
+        createdBy: userUuid,
+        projectId: projectId,
+      ));
+      final householdMembers = await householdMemberRepo.search(
+          HouseholdMemberSearchModel(), userUuid);
 
       // Fetch stock records (received + sent for facility)
       final receivedStocks = await stockRepo
@@ -313,6 +319,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
 
           final totalReceived = metrics['stockReceived'] ?? 0.0;
           final totalReturned = metrics['stockReturned'] ?? 0.0;
+          final totalWastage = metrics['stockWastage'] ?? 0.0;
 
           // Daily consumed (for this day only)
           final key = '$date|${pv.id}';
@@ -323,7 +330,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
               (cumulativeConsumed[pv.id] ?? 0.0) + dailyConsumed;
           final totalConsumed = cumulativeConsumed[pv.id]!;
 
-          final balance = totalReceived - totalConsumed - totalReturned;
+          final balance =
+              totalReceived - totalConsumed - totalReturned - totalWastage;
 
           stockData[pv.id] = _ProductStockData(
             received: totalReceived,

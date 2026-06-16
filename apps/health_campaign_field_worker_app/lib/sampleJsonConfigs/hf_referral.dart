@@ -1350,7 +1350,7 @@ final dynamic sampleReferralFlows = {
                 },
                 {
                   "type": "max",
-                  "value": 1800,
+                  "value": 59,
                   "message":
                       "HFREFERRAL_REFERRAL_DETAILS_ageInMonths_VALIDATION"
                 }
@@ -1532,6 +1532,27 @@ final dynamic sampleReferralFlows = {
             {
               "type": "custom",
               "condition":
+                  "navigation.isEdit==true&&navigation.referralSymptom==SICK,FEVER",
+              "navigateTo": {
+                "data": [
+                  {
+                    "key": "clientReferenceId",
+                    "value": "{{navigation.clientReferenceId}}"
+                  },
+                  {
+                    "key": "referralSymptom",
+                    "value": "{{navigation.referralSymptom}}"
+                  },
+                  {"key": "isEdit", "value": "true"},
+                  {"key": "rowVersion", "value": "{{navigation.rowVersion}}"}
+                ],
+                "name": "sideEffectFever",
+                "type": "form"
+              }
+            },
+            {
+              "type": "custom",
+              "condition":
                   "navigation.isEdit==true&&navigation.referralSymptom==SICK",
               "navigateTo": {
                 "data": [
@@ -1566,6 +1587,10 @@ final dynamic sampleReferralFlows = {
             },
             {
               "condition": "referralDetails.referralReason==FEVER",
+              "navigateTo": {"name": "sideEffectFever", "type": "form"}
+            },
+            {
+              "condition": "referralDetails.referralReason==SICK,FEVER",
               "navigateTo": {"name": "sideEffectFever", "type": "form"}
             },
             {
@@ -2416,6 +2441,7 @@ final dynamic sampleReferralFlows = {
               "helpText": "",
               "infoText": "",
               "readOnly": false,
+              "displayPrefix": "FAC_",
               "required": true,
               "fieldName": "evaluationFacility",
               "mandatory": true,

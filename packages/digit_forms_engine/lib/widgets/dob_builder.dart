@@ -69,7 +69,19 @@ class JsonSchemaDOBBuilder extends JsonSchemaBuilder<String> {
     FormGroup formGroup,
     Map<String, dynamic>? navParams,
   ) {
-    final rule = validations?.firstWhere(
+    final isHead = _evaluateCondition('isHead', formGroup, navParams);
+
+    ValidationRule? rule;
+    if (isHead) {
+      final headRule = validations?.firstWhere(
+        (v) => v.type == '${type}Head',
+        orElse: () => const ValidationRule(type: '', value: null),
+      );
+      if (headRule != null && headRule.type.isNotEmpty) {
+        rule = headRule;
+      }
+    }
+    rule ??= validations?.firstWhere(
       (v) => v.type == type,
       orElse: () => const ValidationRule(type: '', value: null),
     );
@@ -185,9 +197,21 @@ class JsonSchemaDOBBuilder extends JsonSchemaBuilder<String> {
   String? _getDobErrorMessage(
       AbstractControl<dynamic> control, BuildContext context) {
     final loc = FormLocalization.of(context);
+    final isHead = _evaluateCondition('isHead', form, navigationParams);
 
     for (final rule in validations ?? []) {
-      if (control.hasError(rule.type) && control.touched) {
+      // Map head-specific rule types (e.g. "minAgeHead") onto the base error
+      // key set by the validator ("minAge"). Skip rules from the wrong branch.
+      final isHeadRule = rule.type.endsWith('Head');
+      final baseType = isHeadRule
+          ? rule.type.substring(0, rule.type.length - 'Head'.length)
+          : rule.type;
+
+      if (baseType == 'minAge' || baseType == 'maxAge') {
+        if (isHead != isHeadRule) continue;
+      }
+
+      if (control.hasError(baseType) && control.touched) {
         final messageKey = rule.message ?? 'Invalid';
         // Evaluate templated messages like {{isHead ? AGE_VALIDATION_ADDMEMBER_HEAD : AGE_VALIDATION_ADDMEMBER}}
         final resolvedMessage =
