@@ -136,6 +136,80 @@ extension ContextUtilityExtensions on BuildContext {
     );
   }
 
+  ProjectTypeModel? get orsProjectType {
+    final projectBloc = _get<ProjectBloc>();
+    final projectState = projectBloc.state;
+
+    ProjectTypeModel? projectType =
+        projectState.selectedProject?.additionalDetails?.projectType;
+    ProjectType? orsProjectType =
+        projectState.allProjectTypes?.firstWhereOrNull((e) => e.code == 'ORS');
+
+    List<ProjectProductVariantModel> productVariants =
+        projectType?.resources ?? [];
+
+    return ProjectTypeModel(
+      id: orsProjectType?.id ?? '',
+      code: orsProjectType?.code ?? '',
+      name: orsProjectType?.name ?? '',
+      group: orsProjectType?.group ?? '',
+      beneficiaryType:
+          BeneficiaryType.individual, // Default to individual if null
+      validMaxAge: orsProjectType?.validMaxAge ?? 0,
+      validMinAge: orsProjectType?.validMinAge ?? 0,
+      cycles: orsProjectType?.cycles
+          ?.map(
+            (cycle) => ProjectCycle(
+              id: cycle.id,
+              startDate: cycle.startDate ?? 0,
+              endDate: cycle.endDate ?? 0,
+              deliveries: cycle.deliveries
+                  ?.map(
+                    (delivery) => ProjectCycleDelivery(
+                      id: delivery.id,
+                      deliveryStrategy: delivery.deliveryStrategy ?? '',
+                      doseCriteria: delivery.doseCriteria
+                          ?.map(
+                            (dose) => DeliveryDoseCriteria(
+                              condition: dose.condition,
+                              productVariants: dose.productVariants
+                                  ?.map(
+                                    (variant) => DeliveryProductVariant(
+                                      name: productVariants
+                                              .firstWhereOrNull(
+                                                (pv) =>
+                                                    pv.productVariantId ==
+                                                    variant.productVariantId,
+                                              )
+                                              ?.name ??
+                                          '',
+                                      quantity: variant.quantity,
+                                      productVariantId:
+                                          variant.productVariantId ?? '',
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  )
+                  .toList(),
+            ),
+          )
+          .toList(),
+      resources: orsProjectType?.resources
+          ?.map(
+            (resource) => ProjectProductVariantModel(
+              productVariantId: resource.productVariantId ?? '',
+              // name: resource.name ?? '',
+              // isBaseUnitVariant: resource.isBaseUnitVariant ?? false,
+            ),
+          )
+          .toList(),
+    );
+  }
+
   List<String> get cycles {
     final projectBloc = _get<ProjectBloc>();
 

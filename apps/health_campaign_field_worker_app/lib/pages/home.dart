@@ -2732,6 +2732,7 @@ void setPackagesSingleton(BuildContext context) {
           selectedBeneficiaryType: context.beneficiaryType,
           projectType: context.selectedProjectType,
           vasProjectType: context.vasProjectType,
+          orsProjectType: context.orsProjectType,
           selectedProject: context.selectedProject,
           userRoles: context.loggedInUserRoles
               .map((role) => {
