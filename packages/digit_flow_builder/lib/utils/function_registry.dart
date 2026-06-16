@@ -937,17 +937,34 @@ void initializeFunctionRegistry() {
               ? additionalFields['fields'] as List?
               : null;
           String? flow;
+          String? deliveryStrategy;
+          String? taskType;
           if (fields != null) {
             for (final f in fields) {
               if (f is Map && f['key'] == 'flow') {
                 flow = f['value']?.toString().toUpperCase();
               }
+              if (f is Map && f['key'] == 'deliveryStrategy') {
+                deliveryStrategy = f['value']?.toString().toUpperCase();
+              }
+              if (f is Map && f['key'] == 'taskType') {
+                taskType = f['value']?.toString().toUpperCase();
+              }
             }
           }
-          if ((status == TaskStatus.administrationSuccess ||
+          final isCompletedStatus =
+              status == TaskStatus.administrationSuccess ||
                   status == TaskStatus.delivered ||
-                  status == TaskStatus.ineligible) &&
-              flow == 'SMCDONE') {
+                  status == TaskStatus.ineligible;
+          // SMC is "done" once an SMC delivery task is completed. New tasks are
+          // tagged flow == 'SMCDONE'; legacy tasks carry no flow field but always
+          // have an SMC deliveryStrategy (DIRECT / INDIRECT). VAS tasks are tagged
+          // taskType == 'VAS' and must NOT count as SMC completion.
+          final isSmcTask = flow == 'SMCDONE' ||
+              (taskType != 'VAS' &&
+                  deliveryStrategy != null &&
+                  deliveryStrategy != 'VAS');
+          if (isCompletedStatus && isSmcTask) {
             return true;
           }
         }
@@ -1023,9 +1040,18 @@ void initializeFunctionRegistry() {
           ?.toString()
           .trim()
           .toUpperCase();
+      final taskType = fields
+          ?.firstWhereOrNull((f) => f.key == 'taskType')
+          ?.value
+          ?.toString()
+          .trim()
+          .toUpperCase();
 
-      // Match valid delivered statuses
-      if (status == TaskStatus.administrationSuccess && flowType == 'VASDONE') {
+      // VAS is delivered once a VAS task is administered. New VAS tasks are
+      // tagged flow == 'VASDONE' and taskType == 'VAS'; accept either so the
+      // VAS button correctly hides after delivery.
+      if (status == TaskStatus.administrationSuccess &&
+          (flowType == 'VASDONE' || taskType == 'VAS')) {
         return true;
       }
     }

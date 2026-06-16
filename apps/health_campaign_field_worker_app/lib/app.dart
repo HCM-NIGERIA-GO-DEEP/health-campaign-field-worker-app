@@ -217,11 +217,20 @@ class MainApplicationState extends State<MainApplication>
                           appConfig.backendInterface;
                       var firstLanguage;
                       firstLanguage = appConfig.languages?.lastOrNull?.value;
+                      // Persist the forced locale first (setSelectedLocale
+                      // normalizes en_MZ -> en_NG, the locale the localization
+                      // data is actually stored under), then read it back so
+                      // every downstream consumer (delegates, flow builder,
+                      // boundary screens, AppLocalizations) stays consistent.
+                      AppSharedPreferences().setSelectedLocale("en_MZ");
                       final selectedLocale =
                           AppSharedPreferences().getSelectedLocale ??
                               firstLanguage;
-                      AppSharedPreferences().setSelectedLocale("en_MZ");
-                      LocalizationParams().setLocale(Locale(selectedLocale));
+                      final selectedLocaleParts = selectedLocale.split('_');
+                      LocalizationParams().setLocale(Locale(
+                        selectedLocaleParts.first,
+                        selectedLocaleParts.last,
+                      ));
                       final languages = appConfig.languages;
 
                       return MultiBlocProvider(

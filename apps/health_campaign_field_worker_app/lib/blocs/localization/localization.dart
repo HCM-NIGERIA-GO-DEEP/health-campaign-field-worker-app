@@ -15,6 +15,11 @@ part 'localization.freezed.dart';
 
 typedef LocalizationEmitter = Emitter<LocalizationState>;
 
+// Server stores localization under en_NG but MDMS app config has en_MZ
+const _localeAliases = {'en_MZ': 'en_NG'};
+
+String _resolveLocale(String locale) => _localeAliases[locale] ?? locale;
+
 class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
   final LocalizationRepository localizationRepository;
   final LocalSqlDataStore sql;
@@ -51,13 +56,14 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
       try {
         var localizationList;
 
+        final resolvedLocale = _resolveLocale(event.locale);
         var localResults = await LocalizationLocalRepository()
             .fetchLocalization(
-                sql: sql, locale: event.locale, module: allModules.join(','));
+                sql: sql, locale: resolvedLocale, module: allModules.join(','));
         if (localResults.isEmpty) {
           var results = await localizationRepository.loadLocalization(
             path: event.path,
-            locale: event.locale,
+            locale: resolvedLocale,
             module: allModules.join(','),
             tenantId: event.tenantId,
           );
@@ -67,11 +73,11 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
               var localizationList;
               var localResults = await LocalizationLocalRepository()
                   .fetchLocalization(
-                      sql: sql, locale: event.locale, module: boundaryModule);
+                      sql: sql, locale: resolvedLocale, module: boundaryModule);
               if (localResults.isEmpty) {
                 var results = await localizationRepository.loadLocalization(
                   path: event.path,
-                  locale: event.locale,
+                  locale: resolvedLocale,
                   module: boundaryModule,
                   tenantId: event.tenantId,
                 );
@@ -97,7 +103,7 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
       rethrow;
     } finally {
       LocalizationParams().setModule(event.module, false);
-      final List codes = event.locale.split('_');
+      final List codes = _resolveLocale(event.locale).split('_');
       await _loadLocale(codes);
       emit(state.copyWith(loading: false, retryModule: null));
     }
@@ -115,9 +121,10 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
       try {
         var localizationList;
 
+        final resolvedLocale = _resolveLocale(event.locale);
         var results = await localizationRepository.loadLocalization(
           path: event.path,
-          locale: event.locale,
+          locale: resolvedLocale,
           module: allModules.join(','),
           tenantId: event.tenantId,
         );

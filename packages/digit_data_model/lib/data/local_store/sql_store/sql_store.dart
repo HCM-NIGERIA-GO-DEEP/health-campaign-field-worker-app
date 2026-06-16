@@ -146,7 +146,22 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
 
   /// The `schemaVersion` getter returns the schema version of the database.
   @override
-  int get schemaVersion => 10; // Added FaceAuthEvent table and faceImage column
+  int get schemaVersion => 11; // Added task search indexes for performance
+
+  Future<void> _createTaskSearchIndexes() async {
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS task_search_project_created_status
+      ON task (project_id, client_created_by, status);
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS task_search_project_created_status_modifiedtime
+      ON task (project_id, client_created_by, status, client_modified_time);
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS task_search_project_created_status_plannedstart
+      ON task (project_id, client_created_by, status, planned_start_date);
+    ''');
+  }
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -341,6 +356,15 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
             } catch (e) {
               if (kDebugMode) {
                 print("Failed to add faceImage column to FaceAuthEvent: $e");
+              }
+            }
+          }
+          if (from < 11) {
+            try {
+              await _createTaskSearchIndexes();
+            } catch (e) {
+              if (kDebugMode) {
+                print("Failed to create task search indexes: $e");
               }
             }
           }

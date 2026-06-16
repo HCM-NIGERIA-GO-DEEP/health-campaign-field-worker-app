@@ -6,10 +6,356 @@ import 'dart:math' as math;
 import 'package:digit_crud_bloc/models/global_search_params.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:drift/drift.dart' hide OrderBy;
-import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' as debug;
 
 class QueryBuilder {
+  /// Looks up a dynamic table by camelCase name.
+  static TableInfo<Table, Object?> _tableInfo(
+      LocalSqlDataStore sql, String tableName) {
+    return sql.allTables.firstWhere(
+      (t) => t.actualTableName == camelToSnake(tableName),
+      orElse: () => throw Exception('Table $tableName not found'),
+    );
+  }
+
+  /// Looks up a column on a dynamic table by camelCase name.
+  static GeneratedColumn<Object> _columnOf(
+      TableInfo<Table, Object?> table, String columnCamel) {
+    final snake = camelToSnake(columnCamel);
+    return table.$columns.firstWhere(
+      (c) => c.$name == snake,
+      orElse: () => throw Exception(
+          'Column $columnCamel not found in ${table.actualTableName}'),
+    );
+  }
+
+  /// Builds a Drift `Expression<bool>` representing
+  /// `primaryKeyColumn IN (SELECT path.last.localKey FROM path.first.from
+  ///   [INNER JOIN ...] WHERE <filtersOnFirstTable>)`.
+  ///
+  /// This lets SQLite plan the multi-table join + filter as one statement,
+  /// using indexes on each joined column. It replaces the previous pipeline
+  /// of materializing primary-key sets in Dart and re-binding them as a
+  /// large IN(...) clause.
+  static Expression<bool> buildPrimaryKeySubqueryExpression({
+    required LocalSqlDataStore sql,
+    required List<RelationshipMapping> path,
+    required List<SearchFilter> filtersOnFirstTable,
+    required GeneratedColumn<Object> primaryKeyColumn,
+  }) {
+    if (path.isEmpty) {
+      throw ArgumentError('Relationship path must not be empty');
+    }
+
+    final firstTable = _tableInfo(sql, path.first.from);
+    final lastRel = path.last;
+    final projectTable = _tableInfo(sql, lastRel.from);
+    final projectColumn = _columnOf(projectTable, lastRel.localKey);
+
+    final subquery = sql.selectOnly(firstTable, distinct: true)
+      ..addColumns([projectColumn]);
+
+    // INNER JOIN every hop except the last (whose `to` table is the primary
+    // table — we don't need to join it, the FK on `from` already suffices).
+    final joins = <Join>[];
+    for (var i = 0; i < path.length - 1; i++) {
+      final rel = path[i];
+      final fromTable = _tableInfo(sql, rel.from);
+      final toTable = _tableInfo(sql, rel.to);
+      final localCol = _columnOf(fromTable, rel.localKey);
+      final foreignCol = _columnOf(toTable, rel.foreignKey);
+      // FK columns in this schema are TEXT; cast both sides to compare.
+      joins.add(innerJoin(
+        toTable,
+        (localCol as Expression<String>)
+            .equalsExp(foreignCol as Expression<String>),
+      ));
+    }
+    if (joins.isNotEmpty) {
+      subquery.join(joins);
+    }
+
+    // Filters apply to the first (originally-rooted) related table.
+    for (final filter in filtersOnFirstTable) {
+      if (filter.operator == 'within') {
+        final expr = _buildWithinBoundingBoxExpression(firstTable, filter);
+        if (expr != null) subquery.where(expr);
+        continue;
+      }
+      if (filter.operator == 'containsAll') {
+        final expr = _buildContainsAllExpression(firstTable, filter);
+        if (expr != null) subquery.where(expr);
+        continue;
+      }
+      if (filter.operator == 'equalsAny') {
+        final expr = _buildEqualsAnyExpression(firstTable, filter);
+        if (expr != null) subquery.where(expr);
+        continue;
+      }
+      final col = _columnOf(firstTable, filter.field);
+      final expr = _filterToExpression(col, filter);
+      if (expr != null) subquery.where(expr);
+    }
+
+    // primaryKey IN (subquery)
+    return (primaryKeyColumn as Expression<String>).isInQuery(subquery);
+  }
+
+  /// Builds a single `primary_pk IN (SELECT pivot_fk FROM pivot
+  ///   INNER JOIN related_table_1 …
+  ///   INNER JOIN related_table_2 …
+  ///   WHERE all_filters)` expression that combines multiple related-table
+  /// filter groups into ONE subquery — provided every group's path ends at
+  /// the same pivot table (the table directly connected to primary).
+  ///
+  /// When that condition holds, this replaces N separately-materialized
+  /// `pk IN (subN)` clauses with a single subquery SQLite can plan as one
+  /// statement, picking the most selective filter first. Major win for both
+  /// COUNT and the data query when COUNT enumerates large result sets.
+  ///
+  /// Returns null when the input paths don't share a pivot — the caller
+  /// must fall back to one subquery per related table.
+  static Expression<bool>? buildCombinedSubqueryExpression({
+    required LocalSqlDataStore sql,
+    required List<
+            ({List<RelationshipMapping> path, List<SearchFilter> filters})>
+        pathFilterPairs,
+    required GeneratedColumn<Object> primaryKeyColumn,
+  }) {
+    if (pathFilterPairs.isEmpty) return null;
+    for (final pair in pathFilterPairs) {
+      if (pair.path.isEmpty) return null;
+    }
+
+    // Pivot = the `from` table of the last hop (the one connecting to primary).
+    // All paths must share the same pivot for the combine to be valid.
+    final pivotTable = pathFilterPairs.first.path.last.from;
+    final pivotFkField = pathFilterPairs.first.path.last.localKey;
+    for (final pair in pathFilterPairs) {
+      if (pair.path.last.from != pivotTable ||
+          pair.path.last.localKey != pivotFkField) {
+        return null; // paths diverge before primary; can't combine
+      }
+    }
+
+    final pivotInfo = _tableInfo(sql, pivotTable);
+    final pivotFkColumn = _columnOf(pivotInfo, pivotFkField);
+
+    final subquery = sql.selectOnly(pivotInfo, distinct: true)
+      ..addColumns([pivotFkColumn]);
+
+    final joinedTables = <String>{pivotTable};
+    final joins = <Join>[];
+
+    // Walk each path BACKWARD from pivot toward the originally-filtered table,
+    // so every join condition references tables already in scope.
+    for (final pair in pathFilterPairs) {
+      for (var i = pair.path.length - 2; i >= 0; i--) {
+        final rel = pair.path[i];
+        if (joinedTables.contains(rel.from)) continue;
+
+        final fromInfo = _tableInfo(sql, rel.from);
+        final toInfo = _tableInfo(sql, rel.to);
+        final localCol = _columnOf(fromInfo, rel.localKey);
+        final foreignCol = _columnOf(toInfo, rel.foreignKey);
+
+        joins.add(innerJoin(
+          fromInfo,
+          (localCol as Expression<String>)
+              .equalsExp(foreignCol as Expression<String>),
+        ));
+        joinedTables.add(rel.from);
+      }
+    }
+    if (joins.isNotEmpty) subquery.join(joins);
+
+    // Apply each group's filters on its originally-rooted table.
+    for (final pair in pathFilterPairs) {
+      final filterTable = _tableInfo(sql, pair.path.first.from);
+      for (final filter in pair.filters) {
+        if (filter.operator == 'within') {
+          final expr = _buildWithinBoundingBoxExpression(filterTable, filter);
+          if (expr != null) subquery.where(expr);
+          continue;
+        }
+        if (filter.operator == 'containsAll') {
+          final expr = _buildContainsAllExpression(filterTable, filter);
+          if (expr != null) subquery.where(expr);
+          continue;
+        }
+        if (filter.operator == 'equalsAny') {
+          final expr = _buildEqualsAnyExpression(filterTable, filter);
+          if (expr != null) subquery.where(expr);
+          continue;
+        }
+        final col = _columnOf(filterTable, filter.field);
+        final expr = _filterToExpression(col, filter);
+        if (expr != null) subquery.where(expr);
+      }
+    }
+
+    return (primaryKeyColumn as Expression<String>).isInQuery(subquery);
+  }
+
+  /// Builds a lat/lon bounding-box `Expression<bool>` for a 'within' filter
+  /// applied inside a cross-table subquery. The subquery can only do the
+  /// coarse bounding-box prefilter — exact Haversine refinement requires
+  /// reading lat/lon into Dart, which the primary-table queryRawTable path
+  /// handles when 'within' is rooted on the primary table itself.
+  static Expression<bool>? _buildWithinBoundingBoxExpression(
+      TableInfo<Table, Object?> table, SearchFilter filter) {
+    if (filter.coordinates == null || filter.value == null) return null;
+
+    final latField = table.$columns.firstWhere(
+      (c) => c.$name == 'latitude',
+      orElse: () => throw Exception(
+          'Latitude column not found in ${table.actualTableName}'),
+    );
+    final lonField = table.$columns.firstWhere(
+      (c) => c.$name == 'longitude',
+      orElse: () => throw Exception(
+          'Longitude column not found in ${table.actualTableName}'),
+    );
+
+    final centerLat = filter.coordinates!.latitude;
+    final centerLon = filter.coordinates!.longitude;
+    final radiusInKm = (filter.value as num).toDouble();
+
+    const earthRadius = 6371.0;
+    const degToRad = math.pi / 180.0;
+
+    final deltaLat = radiusInKm / earthRadius;
+    final deltaLon =
+        radiusInKm / (earthRadius * math.cos(centerLat * degToRad));
+
+    final minLat = centerLat - deltaLat;
+    final maxLat = centerLat + deltaLat;
+    final minLon = centerLon - deltaLon;
+    final maxLon = centerLon + deltaLon;
+
+    return (latField as Expression<double>).isBetweenValues(minLat, maxLat) &
+        (lonField as Expression<double>).isBetweenValues(minLon, maxLon);
+  }
+
+  /// Builds `(col1 = v OR col2 = v …)` for an `equalsAny` filter applied
+  /// inside a cross-table subquery. Mirrors the queryRawTable path's
+  /// existing equalsAny handling.
+  static Expression<bool>? _buildEqualsAnyExpression(
+      TableInfo<Table, Object?> table, SearchFilter filter) {
+    if (filter.value == null) return null;
+    final columnNames = filter.field
+        .split(',')
+        .map((f) => camelToSnake(f.trim()))
+        .where((f) => f.isNotEmpty)
+        .toList();
+    if (columnNames.isEmpty) return null;
+
+    Expression<bool>? combined;
+    for (final colName in columnNames) {
+      final col = table.$columns.firstWhere(
+        (c) => c.$name == colName,
+        orElse: () => throw Exception(
+            'Column $colName not found in ${table.actualTableName}'),
+      );
+      final clause = col.equals(filter.value);
+      combined = combined == null ? clause : combined | clause;
+    }
+    return combined;
+  }
+
+  /// Builds the `containsAll` expression: split the value on whitespace and
+  /// require every part to appear (LIKE) in at least one of the
+  /// comma-separated columns.
+  ///
+  /// Example: field='givenName,familyName', value='John Smith' →
+  ///   (given_name LIKE %John% OR family_name LIKE %John%) AND
+  ///   (given_name LIKE %Smith% OR family_name LIKE %Smith%)
+  static Expression<bool>? _buildContainsAllExpression(
+      TableInfo<Table, Object?> table, SearchFilter filter) {
+    final columnNames = filter.field
+        .split(',')
+        .map((f) => camelToSnake(f.trim()))
+        .where((f) => f.isNotEmpty)
+        .toList();
+    final parts = filter.value
+            ?.toString()
+            .trim()
+            .split(RegExp(r'\s+'))
+            .where((t) => t.isNotEmpty)
+            .toList() ??
+        const <String>[];
+    if (parts.isEmpty || columnNames.isEmpty) return null;
+
+    final columns = columnNames.map((colName) {
+      return table.$columns.firstWhere(
+        (c) => c.$name == colName,
+        orElse: () => throw Exception(
+            'Column $colName not found in ${table.actualTableName}'),
+      ) as Expression<String>;
+    }).toList();
+
+    Expression<bool>? combined;
+    for (final part in parts) {
+      Expression<bool> partClause = columns.first.like('%$part%');
+      for (var i = 1; i < columns.length; i++) {
+        partClause = partClause | columns[i].like('%$part%');
+      }
+      combined = combined == null ? partClause : combined & partClause;
+    }
+    return combined;
+  }
+
+  /// Converts a SearchFilter to a Drift `Expression<bool>` for the given
+  /// column. Mirrors the operator set handled by `queryRawTable`.
+  /// Returns null when the filter resolves to "match everything" (e.g.
+  /// `in []`).
+  static Expression<bool>? _filterToExpression(
+      GeneratedColumn<Object> col, SearchFilter filter) {
+    switch (filter.operator) {
+      case 'equals':
+        return col.equals(filter.value);
+      case 'notEqual':
+      case 'notEquals':
+        return col.equals(filter.value).not();
+      case 'contains':
+        return (col as Expression<String>).like('${filter.value}%');
+      case 'notContains':
+        return col.isNull() |
+            (col as Expression<String>).like('%${filter.value}%').not();
+      case 'isNotNull':
+        return col.isNotNull();
+      case 'isNull':
+        return col.isNull();
+      case 'in':
+        {
+          final list = _normalizeToList(filter.value);
+          if (list.isEmpty) return null;
+          if (col is GeneratedColumn<int>) {
+            return col.isIn(list
+                .map((v) => v is int ? v : int.tryParse(v.toString()) ?? 0)
+                .toList());
+          }
+          return (col as GeneratedColumn<String>)
+              .isIn(list.map((v) => v.toString()).toList());
+        }
+      case 'notIn':
+        {
+          final list = _normalizeToList(filter.value);
+          if (list.isEmpty) return null;
+          if (col is GeneratedColumn<int>) {
+            return col.isNotIn(list
+                .map((v) => v is int ? v : int.tryParse(v.toString()) ?? 0)
+                .toList());
+          }
+          return (col as GeneratedColumn<String>)
+              .isNotIn(list.map((v) => v.toString()).toList());
+        }
+      default:
+        throw Exception('Unsupported operator in subquery: ${filter.operator}');
+    }
+  }
+
   /// Normalizes a value to a List for 'in' and 'notIn' operators.
   /// Handles cases where a single string is passed instead of a list.
   /// Also trims string values.

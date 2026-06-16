@@ -6,6 +6,7 @@ import 'package:digit_crud_bloc/digit_crud_bloc.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
+import 'package:digit_forms_engine/forms_engine.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -24,6 +25,15 @@ class FunctionRegistries {
     _registerFacilityFunctions();
     _registerStockFunctions();
     _registerViewTransactionFunctions();
+    _registerFormsEngineHooks();
+  }
+
+  /// Wires app-side data into the forms engine's built-in functions.
+  /// Lets `calculateWastage` read the current product's stock balance from
+  /// the in-memory [StockBalanceCache].
+  void _registerFormsEngineHooks() {
+    FormsFunctionConfig.instance.stockBalanceResolver =
+        (productVariantId) => StockBalanceCache.instance.cache[productVariantId] ?? 0;
   }
 
   void _registerGenerateFunctions() {
@@ -50,6 +60,25 @@ class FunctionRegistries {
   }
 
   void _registerInventoryFunctions() {
+    FunctionRegistry.register('bottlesToMl', (args, stateData) {
+      if (args.isEmpty) return 0;
+      final raw = args.first;
+      final bottles = (raw is num)
+          ? raw
+          : num.tryParse(raw?.toString() ?? '') ?? 0;
+      return bottles * 30;
+    });
+
+    FunctionRegistry.register('mlToBottles', (args, stateData) {
+      if (args.isEmpty) return 0;
+      final raw = args.first;
+      final ml =
+          (raw is num) ? raw : num.tryParse(raw?.toString() ?? '') ?? 0;
+      final bottles = ml / 30;
+      final rounded = bottles.roundToDouble();
+      return bottles == rounded ? rounded.toInt() : bottles;
+    });
+
     FunctionRegistry.register('getQuantityLabel', (args, stateData) {
       if (args.isEmpty) return 'APPONE_INVENTORY_QUANTITY_RECEIVED_LABEL';
       final sku = args.first?.toString() ?? '';
@@ -478,12 +507,15 @@ class FunctionRegistries {
         }
       }
 
-      // Find the last ADMINISTRATION_SUCCESS or DELIVERED task
+      // Find the last ADMINISTRATION_SUCCESS or DELIVERED task.
+      // Redose is SMC-only; skip any task tagged additionalFields.flow == 'riDone'.
       Map<String, dynamic>? lastDeliveryTask;
       for (int i = tasks.length - 1; i >= 0; i--) {
-        final status = tasks[i]['status']?.toString().toUpperCase() ?? '';
+        final task = tasks[i];
+        if (_taskHasRiFlow(task)) continue;
+        final status = task['status']?.toString().toUpperCase() ?? '';
         if (status == 'ADMINISTRATION_SUCCESS') {
-          lastDeliveryTask = tasks[i];
+          lastDeliveryTask = task;
           break;
         }
       }
@@ -622,6 +654,23 @@ class FunctionRegistries {
           return receiverId;
       }
     });
+  }
+
+  /// Returns true when the task carries `additionalFields.flow == 'riDone'`,
+  /// marking it as an RI flow task. Used by SMC-only logic (e.g. redose stock
+  /// check) to skip RI tasks. Mirrors `_isRiEntity` in
+  /// `digit_flow_builder/utils/function_registry.dart`, which is private.
+  static bool _taskHasRiFlow(Map<String, dynamic> task) {
+    final additionalFields = task['additionalFields'];
+    if (additionalFields is! Map) return false;
+    final fields = additionalFields['fields'];
+    if (fields is! List) return false;
+    for (final field in fields) {
+      if (field is Map && field['key'] == 'flow') {
+        return field['value']?.toString() == 'riDone';
+      }
+    }
+    return false;
   }
 }
 

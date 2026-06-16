@@ -14,6 +14,7 @@ import 'package:transit_post/data/repositories/local/user_action.dart';
 
 import '../../blocs/app_initialization/app_initialization.dart';
 import '../../models/entities/roles_type.dart';
+import '../../utils/constants.dart';
 import '../../utils/function_registries.dart';
 import '../../utils/i18_key_constants.dart' as i18;
 import '../../utils/stock_calculation_utils.dart';
@@ -175,6 +176,26 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
     stockRepo.listenToChanges(
       query: StockSearchModel(receiverId: facilityId),
       listener: (receivedStocks) async {
+        if (!mounted) return;
+        await _refreshBalances(
+            taskRepo, stockRepo, userActionRepo, effectiveFacilityId);
+      },
+    );
+
+    // Listen to TaskModel changes (triggers when delivery tasks are created/updated)
+    final projectId = context.projectId;
+    final createdBy = context.loggedInUserUuid;
+    final selectedCycle = context.selectedCycle;
+
+    taskRepo.listenToChanges(
+      query: TaskSearchModel(
+        projectId: projectId,
+        createdBy: createdBy,
+        plannedStartDate: selectedCycle?.startDate,
+        plannedEndDate: selectedCycle?.endDate,
+        limit: 1,
+      ),
+      listener: (tasks) async {
         if (!mounted) return;
         await _refreshBalances(
             taskRepo, stockRepo, userActionRepo, effectiveFacilityId);

@@ -2717,7 +2717,10 @@ mixin _$ShowAlertPopUp {
   String? get description => throw _privateConstructorUsedError; // optional
   String get primaryActionLabel => throw _privateConstructorUsedError;
   String get secondaryActionLabel => throw _privateConstructorUsedError;
-  List<AlertCondition>? get conditions => throw _privateConstructorUsedError;
+  List<AlertCondition>? get conditions =>
+      throw _privateConstructorUsedError; // optional
+// Optional numbered points to render below the description (each entry is a localization key).
+  List<String>? get points => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -2736,7 +2739,8 @@ abstract class $ShowAlertPopUpCopyWith<$Res> {
       String? description,
       String primaryActionLabel,
       String secondaryActionLabel,
-      List<AlertCondition>? conditions});
+      List<AlertCondition>? conditions,
+      List<String>? points});
 }
 
 /// @nodoc
@@ -2757,6 +2761,7 @@ class _$ShowAlertPopUpCopyWithImpl<$Res, $Val extends ShowAlertPopUp>
     Object? primaryActionLabel = null,
     Object? secondaryActionLabel = null,
     Object? conditions = freezed,
+    Object? points = freezed,
   }) {
     return _then(_value.copyWith(
       title: null == title
@@ -2779,6 +2784,10 @@ class _$ShowAlertPopUpCopyWithImpl<$Res, $Val extends ShowAlertPopUp>
           ? _value.conditions
           : conditions // ignore: cast_nullable_to_non_nullable
               as List<AlertCondition>?,
+      points: freezed == points
+          ? _value.points
+          : points // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
     ) as $Val);
   }
 }
@@ -2796,7 +2805,8 @@ abstract class _$$ShowAlertPopUpImplCopyWith<$Res>
       String? description,
       String primaryActionLabel,
       String secondaryActionLabel,
-      List<AlertCondition>? conditions});
+      List<AlertCondition>? conditions,
+      List<String>? points});
 }
 
 /// @nodoc
@@ -2815,6 +2825,7 @@ class __$$ShowAlertPopUpImplCopyWithImpl<$Res>
     Object? primaryActionLabel = null,
     Object? secondaryActionLabel = null,
     Object? conditions = freezed,
+    Object? points = freezed,
   }) {
     return _then(_$ShowAlertPopUpImpl(
       title: null == title
@@ -2837,6 +2848,10 @@ class __$$ShowAlertPopUpImplCopyWithImpl<$Res>
           ? _value._conditions
           : conditions // ignore: cast_nullable_to_non_nullable
               as List<AlertCondition>?,
+      points: freezed == points
+          ? _value._points
+          : points // ignore: cast_nullable_to_non_nullable
+              as List<String>?,
     ));
   }
 }
@@ -2849,8 +2864,10 @@ class _$ShowAlertPopUpImpl implements _ShowAlertPopUp {
       this.description,
       required this.primaryActionLabel,
       required this.secondaryActionLabel,
-      final List<AlertCondition>? conditions})
-      : _conditions = conditions;
+      final List<AlertCondition>? conditions,
+      final List<String>? points})
+      : _conditions = conditions,
+        _points = points;
 
   factory _$ShowAlertPopUpImpl.fromJson(Map<String, dynamic> json) =>
       _$$ShowAlertPopUpImplFromJson(json);
@@ -2874,9 +2891,23 @@ class _$ShowAlertPopUpImpl implements _ShowAlertPopUp {
     return EqualUnmodifiableListView(value);
   }
 
+// optional
+// Optional numbered points to render below the description (each entry is a localization key).
+  final List<String>? _points;
+// optional
+// Optional numbered points to render below the description (each entry is a localization key).
+  @override
+  List<String>? get points {
+    final value = _points;
+    if (value == null) return null;
+    if (_points is EqualUnmodifiableListView) return _points;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
   @override
   String toString() {
-    return 'ShowAlertPopUp(title: $title, description: $description, primaryActionLabel: $primaryActionLabel, secondaryActionLabel: $secondaryActionLabel, conditions: $conditions)';
+    return 'ShowAlertPopUp(title: $title, description: $description, primaryActionLabel: $primaryActionLabel, secondaryActionLabel: $secondaryActionLabel, conditions: $conditions, points: $points)';
   }
 
   @override
@@ -2892,7 +2923,8 @@ class _$ShowAlertPopUpImpl implements _ShowAlertPopUp {
             (identical(other.secondaryActionLabel, secondaryActionLabel) ||
                 other.secondaryActionLabel == secondaryActionLabel) &&
             const DeepCollectionEquality()
-                .equals(other._conditions, _conditions));
+                .equals(other._conditions, _conditions) &&
+            const DeepCollectionEquality().equals(other._points, _points));
   }
 
   @JsonKey(ignore: true)
@@ -2903,7 +2935,8 @@ class _$ShowAlertPopUpImpl implements _ShowAlertPopUp {
       description,
       primaryActionLabel,
       secondaryActionLabel,
-      const DeepCollectionEquality().hash(_conditions));
+      const DeepCollectionEquality().hash(_conditions),
+      const DeepCollectionEquality().hash(_points));
 
   @JsonKey(ignore: true)
   @override
@@ -2926,7 +2959,8 @@ abstract class _ShowAlertPopUp implements ShowAlertPopUp {
       final String? description,
       required final String primaryActionLabel,
       required final String secondaryActionLabel,
-      final List<AlertCondition>? conditions}) = _$ShowAlertPopUpImpl;
+      final List<AlertCondition>? conditions,
+      final List<String>? points}) = _$ShowAlertPopUpImpl;
 
   factory _ShowAlertPopUp.fromJson(Map<String, dynamic> json) =
       _$ShowAlertPopUpImpl.fromJson;
@@ -2941,6 +2975,9 @@ abstract class _ShowAlertPopUp implements ShowAlertPopUp {
   String get secondaryActionLabel;
   @override
   List<AlertCondition>? get conditions;
+  @override // optional
+// Optional numbered points to render below the description (each entry is a localization key).
+  List<String>? get points;
   @override
   @JsonKey(ignore: true)
   _$$ShowAlertPopUpImplCopyWith<_$ShowAlertPopUpImpl> get copyWith =>

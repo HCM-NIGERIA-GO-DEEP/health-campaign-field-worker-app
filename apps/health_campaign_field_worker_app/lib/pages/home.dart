@@ -2549,6 +2549,7 @@ class _HomePageState extends LocalizedState<HomePage> {
           },
         ),
       ),
+
     };
 
     final Map<String, GlobalKey> homeItemsShowcaseMap = {

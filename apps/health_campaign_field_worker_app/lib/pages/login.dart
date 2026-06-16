@@ -85,14 +85,21 @@ class _LoginPageState extends LocalizedState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final textTheme = theme.digitTextTheme(context);
 
     return Scaffold(
       appBar: AppBar(
         foregroundColor: theme.colorTheme.paper.primary,
         backgroundColor: theme.colorTheme.primary.primary2,
       ),
-      body: BlocListener<AuthBloc, AuthState>(
+      body: _buildLoginBody(context),
+    );
+  }
+
+  Widget _buildLoginBody(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.digitTextTheme(context);
+
+    return BlocListener<AuthBloc, AuthState>(
         listener: (context, state) {
           state.maybeWhen(
             orElse: () {},
@@ -282,7 +289,6 @@ class _LoginPageState extends LocalizedState<LoginPage> {
             ),
           ],
         ),
-      ),
     );
   }
 
