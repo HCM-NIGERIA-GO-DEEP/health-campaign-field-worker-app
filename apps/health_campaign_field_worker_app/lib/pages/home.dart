@@ -21,6 +21,7 @@ import 'package:digit_flow_builder/widgets/flow_widget_interface.dart';
 import 'package:digit_location_tracker/utils/utils.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/utils/component_utils.dart';
+import 'package:digit_ui_components/widgets/atoms/digit_loader.dart';
 import 'package:drift_db_viewer/drift_db_viewer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -2657,47 +2658,44 @@ class _HomePageState extends LocalizedState<HomePage> {
   }
 
   void triggerLocalization({String? module, bool? loadOnline}) {
-    context.read<AppInitializationBloc>().state.maybeWhen(
-          orElse: () {},
-          initialized: (
-            AppConfiguration appConfiguration,
-            _,
-            __,
-          ) {
-            final appConfig = appConfiguration;
-            final localizationModulesList = appConfiguration.backendInterface;
-            final selectedLocale = AppSharedPreferences().getSelectedLocale;
-            LocalizationParams()
-                .setCode(LeastLevelBoundarySingleton().boundary);
-            if (loadOnline == true) {
-              context
-                  .read<LocalizationBloc>()
-                  .add(LocalizationEvent.onRemoteLoadLocalization(
-                    module: module ??
-                        "${localizationModulesList?.interfaces.where((element) => element.type == Modules.localizationModule).map((e) => e.name.toString()).join(',')}",
-                    tenantId: envConfig.variables.tenantId,
-                    locale: selectedLocale!,
-                    path: Constants.localizationApiPath,
-                  ));
-            } else {
-              context
-                  .read<LocalizationBloc>()
-                  .add(LocalizationEvent.onLoadLocalization(
-                    module: module != null && module.isNotEmpty
-                        ? "$module,hcm-common,hcm-login,hcm-scanner,hcm-checklist,hcm-beneficiary"
-                        : localizationModulesList?.interfaces
-                                .where(
-                                    (e) => e.type == Modules.localizationModule)
-                                .map((e) => e.name.toString())
-                                .join(',') ??
-                            "",
-                    tenantId: envConfig.variables.tenantId,
-                    locale: selectedLocale!,
-                    path: Constants.localizationApiPath,
-                  ));
-            }
-          },
-        );
+    Future.microtask(() {
+      context.read<AppInitializationBloc>().state.maybeWhen(
+            orElse: () {},
+            initialized: (
+              AppConfiguration appConfiguration,
+              _,
+              __,
+            ) {
+              final localizationModulesList = appConfiguration.backendInterface;
+              final selectedLocale = AppSharedPreferences().getSelectedLocale;
+              LocalizationParams()
+                  .setCode(LeastLevelBoundarySingleton().boundary);
+
+              if (loadOnline == true) {
+                context
+                    .read<LocalizationBloc>()
+                    .add(LocalizationEvent.onRemoteLoadLocalization(
+                      module: module ??
+                          "${localizationModulesList?.interfaces.where((element) => element.type == Modules.localizationModule).map((e) => e.name.toString()).join(',')},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}",
+                      tenantId: envConfig.variables.tenantId,
+                      locale: selectedLocale!,
+                      path: Constants.localizationApiPath,
+                    ));
+              } else {
+                context
+                    .read<LocalizationBloc>()
+                    .add(LocalizationEvent.onLoadLocalization(
+                      module: module != null && module.isNotEmpty
+                          ? "$module,hcm-common,hcm-login,hcm-scanner,hcm-checklist,hcm-beneficiary,hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}"
+                          : "${localizationModulesList?.interfaces.where((e) => e.type == Modules.localizationModule).map((e) => e.name.toString()).join(',')},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}",
+                      tenantId: envConfig.variables.tenantId,
+                      locale: selectedLocale!,
+                      path: Constants.localizationApiPath,
+                    ));
+              }
+            },
+          );
+    });
   }
 }
 
