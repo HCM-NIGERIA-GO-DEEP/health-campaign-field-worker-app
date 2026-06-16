@@ -63,61 +63,76 @@ extension ContextUtilityExtensions on BuildContext {
   }
 
   ProjectTypeModel? get vasProjectType {
+    final projectBloc = _get<ProjectBloc>();
+    final projectState = projectBloc.state;
+
+    ProjectTypeModel? projectType =
+        projectState.selectedProject?.additionalDetails?.projectType;
+    ProjectType? vasProjectType =
+        projectState.allProjectTypes?.firstWhereOrNull((e) => e.code == 'VAS');
+
+    List<ProjectProductVariantModel> productVariants =
+        projectType?.resources ?? [];
+
     return ProjectTypeModel(
-      id: 'ba15b5df-9333-425c-b2ee-d4719e723fd4',
-      code: 'VAS',
-      name: 'Configuration for Multi Round Campaigns',
-      group: 'MALARIA',
-      beneficiaryType: BeneficiaryType.individual,
-      validMaxAge: 60,
-      validMinAge: 3,
-      cycles: [
-        ProjectCycle(
-          id: 1,
-          startDate: 1781202600000,
-          endDate: 1783276199000,
-          deliveries: [
-            ProjectCycleDelivery(
-              id: 1,
-              deliveryStrategy: 'VAS',
-              doseCriteria: [
-                DeliveryDoseCriteria(
-                  condition: '6<=ageandage<=11',
-                  productVariants: [
-                    DeliveryProductVariant(
-                      quantity: 1,
-                      productVariantId: 'PVAR-2025-05-22-000009',
-                      name: 'Blue VAS',
+      id: vasProjectType?.id ?? '',
+      code: vasProjectType?.code ?? '',
+      name: vasProjectType?.name ?? '',
+      group: vasProjectType?.group ?? '',
+      beneficiaryType:
+          BeneficiaryType.individual, // Default to individual if null
+      validMaxAge: vasProjectType?.validMaxAge ?? 0,
+      validMinAge: vasProjectType?.validMinAge ?? 0,
+      cycles: vasProjectType?.cycles
+          ?.map(
+            (cycle) => ProjectCycle(
+              id: cycle.id,
+              startDate: cycle.startDate ?? 0,
+              endDate: cycle.endDate ?? 0,
+              deliveries: cycle.deliveries
+                  ?.map(
+                    (delivery) => ProjectCycleDelivery(
+                      id: delivery.id,
+                      deliveryStrategy: delivery.deliveryStrategy ?? '',
+                      doseCriteria: delivery.doseCriteria
+                          ?.map(
+                            (dose) => DeliveryDoseCriteria(
+                              condition: dose.condition,
+                              productVariants: dose.productVariants
+                                  ?.map(
+                                    (variant) => DeliveryProductVariant(
+                                      name: productVariants
+                                              .firstWhereOrNull(
+                                                (pv) =>
+                                                    pv.productVariantId ==
+                                                    variant.productVariantId,
+                                              )
+                                              ?.name ??
+                                          '',
+                                      quantity: variant.quantity,
+                                      productVariantId:
+                                          variant.productVariantId ?? '',
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          )
+                          .toList(),
                     ),
-                  ],
-                ),
-                DeliveryDoseCriteria(
-                  condition: '12<=ageandage<=59',
-                  productVariants: [
-                    DeliveryProductVariant(
-                      quantity: 1,
-                      productVariantId: 'PVAR-2025-05-22-000010',
-                      name: 'Red VAS',
-                    ),
-                  ],
-                ),
-              ],
+                  )
+                  .toList(),
             ),
-          ],
-        ),
-      ],
-      resources: [
-        ProjectProductVariantModel(
-          productVariantId: 'PVAR-2025-05-22-000009',
-          name: 'Blue VAS',
-          isBaseUnitVariant: false,
-        ),
-        ProjectProductVariantModel(
-          productVariantId: 'PVAR-2025-05-22-000010',
-          name: 'Red VAS',
-          isBaseUnitVariant: true,
-        ),
-      ],
+          )
+          .toList(),
+      resources: vasProjectType?.resources
+          ?.map(
+            (resource) => ProjectProductVariantModel(
+              productVariantId: resource.productVariantId ?? '',
+              // name: resource.name ?? '',
+              // isBaseUnitVariant: resource.isBaseUnitVariant ?? false,
+            ),
+          )
+          .toList(),
     );
   }
 
