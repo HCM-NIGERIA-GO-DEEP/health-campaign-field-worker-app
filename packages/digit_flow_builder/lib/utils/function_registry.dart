@@ -963,7 +963,7 @@ void initializeFunctionRegistry() {
 
     final tasks = args.first;
 
-    for (var task in tasks) {
+    for (var task in tasks ?? []) {
       final statusValue = task.status;
       if (statusValue is! String) continue;
       final status = statusValue.trim().toUpperCase();
