@@ -668,7 +668,10 @@ class _BoundarySelectionPageState
                                                         code: AppSharedPreferences()
                                                             .getSelectedLocale!));
                                                     context.router.replaceAll(
-                                                        [HomeRoute()]);
+                                                      isDistributor
+                                                          ? [SelectTeamMembersRoute()]
+                                                          : [HomeRoute()],
+                                                    );
                                                   }
                                                 }
                                               }

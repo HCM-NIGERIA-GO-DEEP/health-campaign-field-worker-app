@@ -27,6 +27,7 @@ abstract class _$AppRouter extends RootStackRouter {
           label: args.label,
           description: args.description,
           descriptionTableData: args.descriptionTableData,
+          showSelectTeam: args.showSelectTeam,
         ),
       );
     },
@@ -219,6 +220,17 @@ abstract class _$AppRouter extends RootStackRouter {
         ),
       );
     },
+    SelectTeamMembersRoute.name: (routeData) {
+      final args = routeData.argsAs<SelectTeamMembersRouteArgs>(
+          orElse: () => const SelectTeamMembersRouteArgs());
+      return AutoRoutePage<dynamic>(
+        routeData: routeData,
+        child: SelectTeamMembersPage(
+          key: args.key,
+          appLocalizations: args.appLocalizations,
+        ),
+      );
+    },
     SummaryReportRoute.name: (routeData) {
       return AutoRoutePage<dynamic>(
         routeData: routeData,
@@ -261,6 +273,7 @@ class AcknowledgementRoute extends PageRouteInfo<AcknowledgementRouteArgs> {
     String? label,
     String? description,
     Map<String, dynamic>? descriptionTableData,
+    bool showSelectTeam = false,
     List<PageRouteInfo>? children,
   }) : super(
           AcknowledgementRoute.name,
@@ -271,6 +284,7 @@ class AcknowledgementRoute extends PageRouteInfo<AcknowledgementRouteArgs> {
             label: label,
             description: description,
             descriptionTableData: descriptionTableData,
+            showSelectTeam: showSelectTeam,
           ),
           initialChildren: children,
         );
@@ -289,6 +303,7 @@ class AcknowledgementRouteArgs {
     this.label,
     this.description,
     this.descriptionTableData,
+    this.showSelectTeam = false,
   });
 
   final Key? key;
@@ -303,9 +318,11 @@ class AcknowledgementRouteArgs {
 
   final Map<String, dynamic>? descriptionTableData;
 
+  final bool showSelectTeam;
+
   @override
   String toString() {
-    return 'AcknowledgementRouteArgs{key: $key, appLocalizations: $appLocalizations, isDataRecordSuccess: $isDataRecordSuccess, label: $label, description: $description, descriptionTableData: $descriptionTableData}';
+    return 'AcknowledgementRouteArgs{key: $key, appLocalizations: $appLocalizations, isDataRecordSuccess: $isDataRecordSuccess, label: $label, description: $description, descriptionTableData: $descriptionTableData, showSelectTeam: $showSelectTeam}';
   }
 }
 
@@ -956,6 +973,44 @@ class ProjectSelectionRouteArgs {
   @override
   String toString() {
     return 'ProjectSelectionRouteArgs{key: $key, appLocalizations: $appLocalizations}';
+  }
+}
+
+/// generated route for
+/// [SelectTeamMembersPage]
+class SelectTeamMembersRoute extends PageRouteInfo<SelectTeamMembersRouteArgs> {
+  SelectTeamMembersRoute({
+    Key? key,
+    AppLocalizations? appLocalizations,
+    List<PageRouteInfo>? children,
+  }) : super(
+          SelectTeamMembersRoute.name,
+          args: SelectTeamMembersRouteArgs(
+            key: key,
+            appLocalizations: appLocalizations,
+          ),
+          initialChildren: children,
+        );
+
+  static const String name = 'SelectTeamMembersRoute';
+
+  static const PageInfo<SelectTeamMembersRouteArgs> page =
+      PageInfo<SelectTeamMembersRouteArgs>(name);
+}
+
+class SelectTeamMembersRouteArgs {
+  const SelectTeamMembersRouteArgs({
+    this.key,
+    this.appLocalizations,
+  });
+
+  final Key? key;
+
+  final AppLocalizations? appLocalizations;
+
+  @override
+  String toString() {
+    return 'SelectTeamMembersRouteArgs{key: $key, appLocalizations: $appLocalizations}';
   }
 }
 
