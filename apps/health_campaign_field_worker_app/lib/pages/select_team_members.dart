@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
@@ -110,12 +112,13 @@ class _SelectTeamMembersPageState
           .isEmpty) {
         final remoteStaff = await remoteStaffRepo.search(
           ProjectStaffSearchModel(projectId: [projectId]),
+          limit: 1000,
         );
         if (remoteStaff.isNotEmpty) {
-          for (final staff in remoteStaff) {
-            await localStaffRepo.create(staff, createOpLog: false);
-          }
           staffList = remoteStaff;
+          // Cache locally as a read-only copy in the background. The loader
+          // uses the in-memory `remoteStaff`, so it must not wait on disk.
+          unawaited(_cacheStaff(localStaffRepo, remoteStaff));
         }
       }
       if (staffList.isEmpty) return empty;
@@ -260,14 +263,52 @@ class _SelectTeamMembersPageState
         result[userUuid] = individual;
       }
 
-      for (final ind in toCreate) {
-        // Save without OpLog — this is a read-only cache, not a local mutation
-        await localRepo.create(ind, createOpLog: false);
-      }
+      // Persist to local as a read-only cache in the background — callers use
+      // the in-memory `result`, so they need not wait on disk.
+      unawaited(_cacheIndividuals(localRepo, toCreate));
     } catch (_) {
       // silently ignore; result may be partial
     }
     return result;
+  }
+
+  /// Persists fetched [individuals] to the local DB as a read-only cache,
+  /// off the critical path. Uses per-item [LocalRepository.create] (not
+  /// bulkCreate) because the individual bulkCreate path indexes a missing
+  /// address and these cached records carry none.
+  ///
+  /// These records must stay free of audit details: IndividualLocalRepository
+  /// .create currently ignores `createOpLog`, so an OpLog entry is avoided only
+  /// because `createOplogEntry` short-circuits on null auditDetails. Adding
+  /// audit fields here would wrongly sync cache data upstream. Failures are
+  /// non-fatal — the caller already holds the data in memory.
+  Future<void> _cacheIndividuals(
+    LocalRepository<IndividualModel, IndividualSearchModel> localRepo,
+    List<IndividualModel> individuals,
+  ) async {
+    for (final ind in individuals) {
+      try {
+        await localRepo.create(ind, createOpLog: false);
+      } catch (_) {
+        // skip this record; caching is best-effort
+      }
+    }
+  }
+
+  /// Persists fetched [staff] to the local DB as a read-only cache (no OpLog),
+  /// off the critical path. Failures are non-fatal — the caller already holds
+  /// the data in memory.
+  Future<void> _cacheStaff(
+    LocalRepository<ProjectStaffModel, ProjectStaffSearchModel> localRepo,
+    List<ProjectStaffModel> staff,
+  ) async {
+    for (final s in staff) {
+      try {
+        await localRepo.create(s, createOpLog: false);
+      } catch (_) {
+        // skip this record; caching is best-effort
+      }
+    }
   }
 
   // ─── Existing mapping loading ─────────────────────────────────────────────
