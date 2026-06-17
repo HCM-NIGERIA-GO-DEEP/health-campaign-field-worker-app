@@ -43,7 +43,6 @@ class _SelectTeamMembersPageState
   List<_TeamMember> _recorderMembers = [];
   List<_TeamMember> _dispenserMembers = [];
   bool _isLoading = true;
-  _TeamMember? _selectedMember1;
   _TeamMember? _selectedMember2;
   bool _isSubmitting = false;
 
@@ -76,8 +75,6 @@ class _SelectTeamMembersPageState
     setState(() {
       _recorderMembers = split.recorders;
       _dispenserMembers = split.dispensers;
-      _selectedMember1 =
-          split.recorders.firstWhereOrNull((m) => m.userUuid == mapping.uuid1);
       _selectedMember2 =
           split.dispensers.firstWhereOrNull((m) => m.userUuid == mapping.uuid2);
       _isLoading = false;
@@ -401,7 +398,7 @@ class _SelectTeamMembersPageState
 
         final nextIndex = _nextMappingIndex(existingFields);
         final newValue =
-            '${_selectedMember1!.userUuid},${_selectedMember2!.userUuid},${DateTime.now().millisecondsSinceEpoch}';
+            '${_selectedMember2!.userUuid},${DateTime.now().millisecondsSinceEpoch}';
 
         final updatedFields = [
           ...existingFields,
