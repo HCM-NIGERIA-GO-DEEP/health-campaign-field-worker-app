@@ -2108,7 +2108,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-inventory-${context.selectedProject.referenceID}';
+                'hcm-inventory-${context.selectedProject.referenceID},hcm-common';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
@@ -2168,7 +2168,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-stockreconciliation-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
+                'hcm-stockreconciliation-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-common';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
@@ -2335,7 +2335,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
+                'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-common';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
@@ -2610,7 +2610,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.beneficiaryLabel,
       // i18.home.clfLabel, // TODO: Uncomment when CLF is implemented
       i18.home.transitPostLabel,
-      i18.home.closedHouseHoldLabel,
+      // i18.home.closedHouseHoldLabel,
       i18.home.manageStockLabel,
       i18.home.stockReconciliationLabel,
       i18.home.mySurveyForm,
