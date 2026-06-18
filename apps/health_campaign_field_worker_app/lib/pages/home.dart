@@ -2661,6 +2661,9 @@ class _HomePageState extends LocalizedState<HomePage> {
     Future.microtask(() {
       context.read<AppInitializationBloc>().state.maybeWhen(
             orElse: () {},
+            loading: () {
+              DigitLoaders.overlayLoader(context: context);
+            },
             initialized: (
               AppConfiguration appConfiguration,
               _,
