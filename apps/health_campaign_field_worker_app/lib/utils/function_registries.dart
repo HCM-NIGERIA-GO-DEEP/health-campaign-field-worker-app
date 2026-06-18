@@ -63,17 +63,15 @@ class FunctionRegistries {
     FunctionRegistry.register('bottlesToMl', (args, stateData) {
       if (args.isEmpty) return 0;
       final raw = args.first;
-      final bottles = (raw is num)
-          ? raw
-          : num.tryParse(raw?.toString() ?? '') ?? 0;
+      final bottles =
+          (raw is num) ? raw : num.tryParse(raw?.toString() ?? '') ?? 0;
       return bottles * 30;
     });
 
     FunctionRegistry.register('mlToBottles', (args, stateData) {
       if (args.isEmpty) return 0;
       final raw = args.first;
-      final ml =
-          (raw is num) ? raw : num.tryParse(raw?.toString() ?? '') ?? 0;
+      final ml = (raw is num) ? raw : num.tryParse(raw?.toString() ?? '') ?? 0;
       final bottles = ml / 30;
       final rounded = bottles.roundToDouble();
       return bottles == rounded ? rounded.toInt() : bottles;
@@ -606,8 +604,8 @@ class FunctionRegistries {
     FunctionRegistry.register('getFirstPageParty', (args, stateData) {
       if (args.length < 3) return '';
       final stockEntryType = getStockEntryTypeFromFields(args[0]);
-      final senderId = args[1]?.toString() ?? '';
-      final receiverId = args[2]?.toString() ?? '';
+      final senderId = 'FAC_${args[1]?.toString()}' ?? '';
+      final receiverId = 'FAC_${args[2]?.toString()}' ?? '';
       switch (stockEntryType) {
         case 'RECEIPT':
         case 'RETURNED':
