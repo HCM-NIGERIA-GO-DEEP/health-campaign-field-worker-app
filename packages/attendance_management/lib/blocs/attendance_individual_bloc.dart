@@ -78,6 +78,9 @@ class AttendanceIndividualBloc
                 id: a.id,
                 type: a.type,
                 uploadToServer: a.uploadToServer,
+                // Preserve additional details so a previously captured
+                // signature can be surfaced as the reference for comparison.
+                additionalDetails: a.additionalDetails,
               ))
           .toList();
 
@@ -111,7 +114,12 @@ class AttendanceIndividualBloc
             } else {
               status = newStatus;
             }
-            return e.copyWith(status: status);
+            // Retain the signature (and other additional fields) captured when
+            // marking present so it can be persisted to the attendance log.
+            return e.copyWith(
+              status: status,
+              additionalFields: event.additionalFields ?? e.additionalFields,
+            );
           }
           return e;
         }).toList();
@@ -178,6 +186,22 @@ class AttendanceIndividualBloc
               if (event.additionalDetails != null) {
                 entryAdditionalDetails.addAll(event.additionalDetails!);
                 exitAdditionalDetails.addAll(event.additionalDetails!);
+              }
+
+              // Persist the captured signature (if any) onto the entry log.
+              String? signatureData;
+              final fields = e.additionalFields?.fields;
+              if (fields != null) {
+                for (final field in fields) {
+                  if (field.key == 'signature' && field.value != null) {
+                    signatureData = field.value.toString();
+                    break;
+                  }
+                }
+              }
+              if (signatureData != null) {
+                entryAdditionalDetails['signature'] = signatureData;
+                entryAdditionalDetails['isFirstSignature'] = "true";
               }
 
               list.addAll([
@@ -312,6 +336,19 @@ class AttendanceIndividualBloc
                   l.time == event.entryTime ||
                   (event.isSingleSession && l.time == twelvePM)))
           .toList();
+      // Surface the worker's first/reference signature (if any) from prior
+      // logs so the mark-present flow can compare against it.
+      String? referenceSignature;
+      for (final log in logResponse.where(
+          (l) => l.individualId == e.individualId && l.type == EnumValues.entry.toValue())) {
+        final details = log.additionalDetails;
+        final signature = details != null ? details['signature'] : null;
+        if (signature != null) {
+          referenceSignature = signature.toString();
+          if (details?['isFirstSignature'] == "true") break;
+        }
+      }
+
       entryLogList.any((entry) => entry.uploadToServer == true);
       anyLogPresent = logResponse
           .where((l) =>
@@ -321,6 +358,12 @@ class AttendanceIndividualBloc
           .any((log) => log.uploadToServer == true);
 
       return e.copyWith(
+          additionalFields: referenceSignature != null
+              ? AttendeeAdditionalFields(version: 1, fields: [
+                  ...?e.additionalFields?.fields,
+                  AdditionalField('signature', referenceSignature),
+                ])
+              : e.additionalFields,
           status: ((entryLogList.isEmpty || exitLogList.isEmpty) &&
                   anyLogPresent != true)
               ? -1

@@ -25,6 +25,10 @@ class FaceEnrollmentView extends StatefulWidget {
   final void Function(bool success, String? pin) onResult;
   final VoidCallback onCancel;
 
+  /// Optional logout action. When provided, a logout control is shown on the
+  /// enrollment intro screen so a user can sign out instead of enrolling.
+  final VoidCallback? onLogout;
+
   const FaceEnrollmentView({
     super.key,
     required this.faceModelService,
@@ -33,6 +37,7 @@ class FaceEnrollmentView extends StatefulWidget {
     required this.enrolledBy,
     required this.onResult,
     required this.onCancel,
+    this.onLogout,
   });
 
   @override
@@ -57,7 +62,10 @@ class _FaceEnrollmentViewState extends State<FaceEnrollmentView> {
   @override
   Widget build(BuildContext context) {
     if (_showIntro) {
-      return _IntroScreen(onStart: _startEnrollment);
+      return _IntroScreen(
+        onStart: _startEnrollment,
+        onLogout: widget.onLogout,
+      );
     }
 
     return BlocConsumer<FaceEnrollmentBloc, FaceEnrollmentState>(
@@ -186,8 +194,9 @@ class _FaceEnrollmentViewState extends State<FaceEnrollmentView> {
 
 class _IntroScreen extends StatelessWidget {
   final VoidCallback onStart;
+  final VoidCallback? onLogout;
 
-  const _IntroScreen({required this.onStart});
+  const _IntroScreen({required this.onStart, this.onLogout});
 
   @override
   Widget build(BuildContext context) {
@@ -196,6 +205,27 @@ class _IntroScreen extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: cs.surface,
+      appBar: onLogout == null
+          ? null
+          : AppBar(
+              backgroundColor: cs.surface,
+              elevation: 0,
+              automaticallyImplyLeading: false,
+              actions: [
+                TextButton.icon(
+                  onPressed: onLogout,
+                  icon: Icon(Icons.logout, color: cs.primary, size: 20),
+                  label: Text(
+                    'Logout',
+                    style: TextStyle(
+                      color: cs.primary,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
+            ),
       body: ScrollableContent(
         enableFixedDigitButton: true,
         footer: DigitCard(

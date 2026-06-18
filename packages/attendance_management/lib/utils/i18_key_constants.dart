@@ -303,4 +303,25 @@ class Attendance {
   String get faceEventLogin => 'Login';
   String get faceEventCheckIn => 'Check-in';
   String get faceEventReVerify => 'Re-verify';
+
+  String get captureSignatureLabel => 'MARK_ATTENDANCE_CAPTURE_SIGNATURE_LABEL';
+
+  String get clearSignatureLabel => 'MARK_ATTENDANCE_CLEAR_SIGNATURE_LABEL';
+
+  String get confirmSignatureLabel => 'MARK_ATTENDANCE_CONFIRM_LABEL';
+
+  String get signatureRequiredLabel =>
+      'MARK_ATTENDANCE_SIGNATURE_REQUIRED_LABEL';
+
+  String get compareSignatureLabel => 'MARK_ATTENDANCE_COMPARE_SIGNATURE_LABEL';
+
+  String get referenceSignatureLabel =>
+      'MARK_ATTENDANCE_REFERENCE_SIGNATURE_LABEL';
+
+  String get actualSignatureLabel => 'MARK_ATTENDANCE_ACTUAL_SIGNATURE_LABEL';
+
+  String get signatureMatchedLabel => 'MARK_ATTENDANCE_PRESENT_SIGNATURE_LABEL';
+
+  String get signatureNotMatchedLabel =>
+      'MARK_ATTENDANCE_ABSENT_SIGNATURE_LABEL';
 }

@@ -33,6 +33,7 @@ import '../utils/date_util_attendance.dart';
 import '../widgets/attendance_qr_scanner.dart';
 import '../widgets/back_navigation_help_header.dart';
 import '../widgets/no_result_card.dart';
+import '../widgets/signature_capture_dialog.dart';
 
 @RoutePage()
 class MarkAttendancePage extends LocalizedStatefulWidget {
@@ -66,6 +67,11 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
   /// Face auth event dots per individualId for the currently selected date.
   Map<String, List<FaceEventDot>> _faceEventDots = {};
 
+  /// Captured signatures (base64 PNG) keyed by individualId for the current
+  /// session. Populated when a worker is marked present and threaded into the
+  /// attendance log additionalDetails at save time.
+  final Map<String, String> _signatures = {};
+
   @override
   void initState() {
     controller = TextEditingController();
@@ -79,6 +85,8 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
           LocalRepository<AttendanceLogModel, AttendanceLogSearchModel>>(),
     );
     form = buildForm(); // Initialize the form using your method
+    debugPrint(
+        '[TeamCodeTrace] register name=${widget.registerModel.name} number=${widget.registerModel.registerNumber} additionalDetails=${widget.registerModel.additionalDetails}');
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // Each call is isolated so a throw in setRegisterData or
@@ -752,35 +760,82 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                                                         !markManualAttendance
                                                     ? false
                                                     : true,
-                                            onMarkPresent: () {
+                                            onMarkPresent: () async {
+                                              // Toggling an already-present
+                                              // worker off needs no signature —
+                                              // forward the toggle event as-is.
+                                              if (individual.status == 1) {
+                                                context
+                                                    .read<
+                                                        AttendanceIndividualBloc>()
+                                                    .add(_buildMarkEvent(
+                                                        individual));
+                                                return;
+                                              }
+
+                                              final individualId =
+                                                  individual.individualId;
+
+                                              // Reference = the worker's "first"
+                                              // signature: captured earlier this
+                                              // session, else loaded from prior
+                                              // attendance logs.
+                                              final referenceSignature =
+                                                  _signatures[individualId] ??
+                                                      _extractSignature(individual
+                                                          .additionalFields);
+
+                                              final captured =
+                                                  await showSignatureCaptureDialog(
+                                                context,
+                                                existingSignature:
+                                                    referenceSignature,
+                                              );
+                                              // Dismissed without confirming —
+                                              // do not mark present.
+                                              if (captured == null) return;
+                                              if (!context.mounted) return;
+
+                                              // Compare the captured signature
+                                              // against the reference (shown
+                                              // when one exists) and let the
+                                              // user confirm the match.
+                                              final matched =
+                                                  await showSignatureCompareDialog(
+                                                context,
+                                                referenceSignature:
+                                                    referenceSignature,
+                                                currentSignature: captured,
+                                              );
+                                              if (matched == null) return;
+                                              if (!context.mounted) return;
+                                              if (!matched) {
+                                                // Signatures don't match — mark
+                                                // the worker absent.
+                                                context
+                                                    .read<
+                                                        AttendanceIndividualBloc>()
+                                                    .add(_buildMarkEvent(
+                                                        individual,
+                                                        present: false));
+                                                return;
+                                              }
+
+                                              // First signature becomes the
+                                              // reference for later compares.
+                                              if (referenceSignature == null) {
+                                                _signatures[individualId!] =
+                                                    captured;
+                                              }
+
                                               context
                                                   .read<
                                                       AttendanceIndividualBloc>()
-                                                  .add(
-                                                    AttendanceMarkEvent(
-                                                        individualId: individual
-                                                            .individualId!,
-                                                        registerId: individual
-                                                            .registerId!,
-                                                        status: 1.0,
-                                                        isSingleSession: widget
-                                                                    .registerModel
-                                                                    .additionalDetails?[
-                                                                EnumValues
-                                                                    .sessions
-                                                                    .toValue()] !=
-                                                            2,
-                                                        entryTime: entryTime,
-                                                        exitTime: exitTime,
-                                                        additionalFields:
-                                                            AttendeeAdditionalFields(
-                                                                version: 1,
-                                                                fields: [
-                                                              const AdditionalField(
-                                                                  'isMarkedManually',
-                                                                  true),
-                                                            ])),
-                                                  );
+                                                  .add(_buildMarkEvent(individual,
+                                                      signature: captured,
+                                                      isFirstSignature:
+                                                          referenceSignature ==
+                                                              null));
                                             },
                                             onMarkAbsent: () {
                                               context
@@ -837,6 +892,48 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                 }),
               ),
             )));
+  }
+
+  /// Builds the [AttendanceMarkEvent] for an attendee, optionally attaching the
+  /// captured signature so it is persisted to the attendance log.
+  AttendanceMarkEvent _buildMarkEvent(
+    AttendeeModel individual, {
+    bool present = true,
+    String? signature,
+    bool isFirstSignature = false,
+  }) {
+    return AttendanceMarkEvent(
+      individualId: individual.individualId!,
+      registerId: individual.registerId!,
+      status: present ? 1.0 : 0.0,
+      isSingleSession: widget.registerModel
+              .additionalDetails?[EnumValues.sessions.toValue()] !=
+          2,
+      entryTime: entryTime,
+      exitTime: exitTime,
+      additionalFields: AttendeeAdditionalFields(
+        version: 1,
+        fields: [
+          const AdditionalField('isMarkedManually', true),
+          if (signature != null) AdditionalField('signature', signature),
+          if (signature != null)
+            AdditionalField('isFirstSignature', isFirstSignature.toString()),
+        ],
+      ),
+    );
+  }
+
+  /// Extracts a stored signature (base64) from an attendee's additional fields,
+  /// used as the reference signature for comparison.
+  String? _extractSignature(AttendeeAdditionalFields? additionalFields) {
+    final fields = additionalFields?.fields;
+    if (fields == null) return null;
+    for (final field in fields) {
+      if (field.key == 'signature' && field.value != null) {
+        return field.value.toString();
+      }
+    }
+    return null;
   }
 
   Future<dynamic> showWarningDialog(BuildContext context, dynamic k) {

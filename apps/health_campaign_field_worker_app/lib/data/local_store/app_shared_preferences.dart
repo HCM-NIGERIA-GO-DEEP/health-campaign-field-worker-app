@@ -5,12 +5,11 @@ class AppSharedPreferences {
   static const String userSelectedLocale = 'userSelectedLocale';
 
   // The MDMS app config for the `ba` tenant declares the language locale as
-  // `en_MZ`, but the server stores all localization data under `en_NG`. Every
-  // consumer of the selected locale (flow builder, boundary selection, app
-  // localization) must use the locale the data actually lives under, otherwise
-  // localized lookups miss and raw keys are shown. Normalize at this single
-  // chokepoint so reads/writes are always consistent with the stored data.
-  static const Map<String, String> _localeAliases = {'en_MZ': 'en_NG'};
+  // `en_MZ`, and the UAT server stores all localization data under `en_MZ`
+  // too, so no normalization is needed. This alias map is kept as the single
+  // chokepoint for any future locale remapping; leave it empty for an identity
+  // mapping so every consumer reads the locale the data actually lives under.
+  static const Map<String, String> _localeAliases = <String, String>{};
 
   static String _resolveLocale(String locale) =>
       _localeAliases[locale] ?? locale;

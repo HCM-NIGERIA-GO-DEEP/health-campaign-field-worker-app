@@ -15,8 +15,9 @@ part 'localization.freezed.dart';
 
 typedef LocalizationEmitter = Emitter<LocalizationState>;
 
-// Server stores localization under en_NG but MDMS app config has en_MZ
-const _localeAliases = {'en_MZ': 'en_NG'};
+// UAT server stores localization under en_MZ, matching the MDMS app config,
+// so no remapping is needed. Kept empty as the single locale-alias chokepoint.
+const _localeAliases = <String, String>{};
 
 String _resolveLocale(String locale) => _localeAliases[locale] ?? locale;
 
