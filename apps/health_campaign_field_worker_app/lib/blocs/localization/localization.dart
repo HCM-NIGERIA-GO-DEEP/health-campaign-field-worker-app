@@ -15,7 +15,7 @@ part 'localization.freezed.dart';
 
 typedef LocalizationEmitter = Emitter<LocalizationState>;
 
-// UAT server stores localization under en_MZ, matching the MDMS app config,
+// bauchi server stores localization under en_NG, matching the MDMS app config,
 // so no remapping is needed. Kept empty as the single locale-alias chokepoint.
 const _localeAliases = <String, String>{};
 
@@ -39,7 +39,7 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
     OnLoadLocalizationEvent event,
     LocalizationEmitter emit,
   ) async {
-    emit(state.copyWith(loading: true));
+    emit(state.copyWith(loading: true, isLocalizationLoadCompleted: false));
 
     try {
       final boundaryModuleCheck =
@@ -106,7 +106,11 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
       LocalizationParams().setModule(event.module, false);
       final List codes = _resolveLocale(event.locale).split('_');
       await _loadLocale(codes);
-      emit(state.copyWith(loading: false, retryModule: null));
+      emit(state.copyWith(
+        loading: false,
+        retryModule: null,
+        isLocalizationLoadCompleted: true,
+      ));
     }
   }
 

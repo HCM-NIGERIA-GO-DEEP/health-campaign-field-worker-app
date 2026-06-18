@@ -15,6 +15,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 import '../blocs/app_initialization/app_initialization.dart';
 import '../blocs/auth/auth.dart';
 import '../blocs/localization/app_localization.dart';
+import '../blocs/localization/localization.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../data/local_store/no_sql/schema/service_registry.dart';
 import '../router/app_router.dart';
@@ -91,7 +92,17 @@ class _LoginPageState extends LocalizedState<LoginPage> {
         foregroundColor: theme.colorTheme.paper.primary,
         backgroundColor: theme.colorTheme.primary.primary2,
       ),
-      body: _buildLoginBody(context),
+      // Show a loader until localization has finished fetching so the login
+      // form never renders with raw (untranslated) keys.
+      body: BlocBuilder<LocalizationBloc, LocalizationState>(
+        builder: (context, localizationState) {
+          if (!localizationState.isLocalizationLoadCompleted) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          return _buildLoginBody(context);
+        },
+      ),
     );
   }
 

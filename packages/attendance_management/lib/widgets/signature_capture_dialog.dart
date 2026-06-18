@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:digit_ui_components/digit_components.dart';
+import 'package:digit_ui_components/theme/ComponentTheme/button_theme.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/atoms/pop_up_card.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
@@ -134,51 +135,66 @@ class _SignatureCompare extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        if (referenceSignature != null) ...[
-          _signatureTile(context, referenceSignature!, referenceLabel),
+    return AspectRatio(
+      aspectRatio: 1,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const SizedBox(height: spacer2),
+          if (referenceSignature != null)
+            Expanded(
+              child: _signatureTile(context, referenceSignature!, referenceLabel),
+            ),
           const SizedBox(height: spacer3),
+          Expanded(
+            child: _signatureTile(context, currentSignature, actualLabel),
+          ),
+          const SizedBox(height: spacer4),
         ],
-        _signatureTile(context, currentSignature, actualLabel),
-      ],
+      ),
     );
   }
 
   Widget _signatureTile(BuildContext context, String base64Data, String label) {
     final theme = Theme.of(context);
     return ClipRRect(
-      borderRadius: BorderRadius.circular(spacer2),
+      borderRadius: BorderRadius.circular(radius4),
       child: Container(
         decoration: BoxDecoration(
-          border: Border.all(color: theme.colorTheme.generic.divider),
-          borderRadius: BorderRadius.circular(spacer2),
+          border: Border.all(
+            width: Base.defaultBorderWidth,
+            color: theme.colorTheme.generic.divider,
+          ),
+          borderRadius: BorderRadius.circular(radius4),
           color: theme.colorTheme.paper.secondary,
         ),
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Padding(
-              padding: const EdgeInsets.all(spacer2),
+            Center(
               child: Image.memory(
                 base64Decode(base64Data),
-                height: 90,
+                color: null,
+                colorBlendMode: null,
+                height: referenceSignature == null ? 200 : 90,
                 fit: BoxFit.contain,
                 gaplessPlayback: true,
               ),
             ),
             Positioned(
               bottom: 0,
-              left: 0,
-              right: 0,
+              width: MediaQuery.of(context).size.width,
               child: Container(
-                padding: const EdgeInsets.all(spacer1),
-                color: theme.colorTheme.primary.primary1.withOpacity(0.12),
-                child: Center(
-                  child: Text(label, style: theme.digitTextTheme(context).bodyS),
+                padding: const EdgeInsets.all(2),
+                decoration: BoxDecoration(
+                  color: Colors.blueAccent.withAlpha(50),
+                  border: Border.all(
+                    width: Base.defaultBorderWidth,
+                    color: Colors.blueAccent,
+                  ),
                 ),
+                child: Center(child: Text(label)),
               ),
             ),
           ],
@@ -245,15 +261,32 @@ class _SignatureCaptureState extends State<_SignatureCapture> {
         const SizedBox(height: spacer4),
         Row(
           children: [
+            // Clear Button
             Expanded(
               child: DigitButton(
                 label: widget.clearSignatureLabel,
                 type: DigitButtonType.secondary,
                 size: DigitButtonSize.small,
-                onPressed: _signatureController.clear,
+                onPressed: () {
+                  _signatureController.clear();
+                },
+                digitButtonThemeData: DigitButtonThemeData(
+                  primaryDigitButtonColor:
+                      DigitButtonThemeData.defaultTheme(context)
+                          .primaryDigitButtonColor,
+                  DigitButtonColor: DigitButtonThemeData.defaultTheme(context)
+                      .DigitButtonColor,
+                  disabledColor:
+                      DigitButtonThemeData.defaultTheme(context).disabledColor,
+                  radius: BorderRadius.circular(spacer2),
+                  largeRadius: BorderRadius.circular(spacer2),
+                  smallMediumRadius: BorderRadius.circular(spacer2),
+                  padding: const EdgeInsets.all(spacer2),
+                ),
               ),
             ),
             const SizedBox(width: spacer3),
+            // Save Button
             Expanded(
               child: DigitButton(
                 label: widget.saveSignatureLabel,
@@ -261,6 +294,19 @@ class _SignatureCaptureState extends State<_SignatureCapture> {
                 size: DigitButtonSize.small,
                 isDisabled: _isSaving,
                 onPressed: _isSaving ? () {} : _saveSignature,
+                digitButtonThemeData: DigitButtonThemeData(
+                  primaryDigitButtonColor:
+                      DigitButtonThemeData.defaultTheme(context)
+                          .primaryDigitButtonColor,
+                  DigitButtonColor: DigitButtonThemeData.defaultTheme(context)
+                      .DigitButtonColor,
+                  disabledColor:
+                      DigitButtonThemeData.defaultTheme(context).disabledColor,
+                  radius: BorderRadius.circular(spacer2),
+                  largeRadius: BorderRadius.circular(spacer2),
+                  smallMediumRadius: BorderRadius.circular(spacer2),
+                  padding: const EdgeInsets.all(spacer2),
+                ),
               ),
             ),
           ],

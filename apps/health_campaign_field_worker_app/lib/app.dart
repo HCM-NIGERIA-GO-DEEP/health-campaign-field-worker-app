@@ -217,20 +217,18 @@ class MainApplicationState extends State<MainApplication>
                           appConfig.backendInterface;
                       var firstLanguage;
                       firstLanguage = appConfig.languages?.lastOrNull?.value;
-                      // Persist the forced locale (en_MZ, the locale the UAT
-                      // localization data is stored under) first, then read it
-                      // back so every downstream consumer (delegates, flow
-                      // builder, boundary screens, AppLocalizations) stays
-                      // consistent.
-                      AppSharedPreferences().setSelectedLocale("en_MZ");
+                      // Force the locale to en_NG (the locale the bauchi server
+                      // stores localization data under). The MDMS app config for
+                      // the `ba` tenant declares en_MZ, but the actual data lives
+                      // under en_NG, so override it here before reading it back so
+                      // every consumer (delegates, flow builder, boundary screens,
+                      // AppLocalizations) queries the locale the data is stored under.
+                      AppSharedPreferences().setSelectedLocale("en_NG");
                       final selectedLocale =
                           AppSharedPreferences().getSelectedLocale ??
                               firstLanguage;
-                      final selectedLocaleParts = selectedLocale.split('_');
-                      LocalizationParams().setLocale(Locale(
-                        selectedLocaleParts.first,
-                        selectedLocaleParts.last,
-                      ));
+                      AppSharedPreferences().setSelectedLocale(selectedLocale);
+                      LocalizationParams().setLocale(Locale(selectedLocale));
                       final languages = appConfig.languages;
 
                       return MultiBlocProvider(

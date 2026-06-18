@@ -5,7 +5,7 @@ class AppSharedPreferences {
   static const String userSelectedLocale = 'userSelectedLocale';
 
   // The MDMS app config for the `ba` tenant declares the language locale as
-  // `en_MZ`, and the UAT server stores all localization data under `en_MZ`
+  // `en_NG`, and the bauchi server stores all localization data under `en_NG`
   // too, so no normalization is needed. This alias map is kept as the single
   // chokepoint for any future locale remapping; leave it empty for an identity
   // mapping so every consumer reads the locale the data actually lives under.

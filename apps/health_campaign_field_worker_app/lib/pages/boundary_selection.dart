@@ -57,7 +57,7 @@ class _BoundarySelectionPageState
   @override
   void initState() {
     context.syncRefresh();
-    setLocale = AppSharedPreferences().getSelectedLocale ?? "en_MZ";
+    setLocale = AppSharedPreferences().getSelectedLocale ?? "en_NG";
     LocalizationParams().setModule('common', false);
     LocalizationParams().setCode([
       i18.common.coreCommonContinue,
