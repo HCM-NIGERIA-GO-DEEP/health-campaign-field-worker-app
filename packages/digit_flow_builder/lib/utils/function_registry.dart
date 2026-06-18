@@ -158,6 +158,12 @@ ProjectTypeModel? _resolveProjectTypeForSourceFlow(dynamic sourceFlow) {
     return singleton.vasProjectType;
   }
 
+  if (normalized == 'ORSCHECKLIST' ||
+      normalized == 'ORSDELIVERY' ||
+      normalized == 'ORS') {
+    return singleton.orsProjectType;
+  }
+
   return singleton.projectType;
 }
 
@@ -985,6 +991,7 @@ void initializeFunctionRegistry() {
     return false;
   });
 
+  // Registers a function to check if VAS has been delivered for a member.
   FunctionRegistry.register("isVASDelivered", (args, stateData) {
     // No arguments passed
     if (args.isEmpty) return false;
@@ -1010,6 +1017,67 @@ void initializeFunctionRegistry() {
     }
 
     return false;
+  });
+
+  // Registers a function to check if ORS has been delivered for a member.
+  FunctionRegistry.register("isORSDelivered", (args, stateData) {
+    // No arguments passed
+    if (args.isEmpty) return false;
+
+    final tasks = args.first;
+
+    for (var task in tasks) {
+      final statusValue = task.status;
+      if (statusValue is! String) continue;
+      final status = statusValue.trim().toUpperCase();
+      final List? fields = task.additionalFields?.fields;
+      final flowType = fields
+          ?.firstWhereOrNull((f) => f.key == 'flow')
+          ?.value
+          ?.toString()
+          .trim()
+          .toUpperCase();
+
+      // Match valid delivered statuses
+      if (status == TaskStatus.administrationSuccess && flowType == 'ORSDONE') {
+        return true;
+      }
+    }
+
+    return false;
+  });
+
+  // Registers a function to check if ORS is eligible for a member.
+  FunctionRegistry.register("isORSEligible", (args, stateData) {
+    // No arguments passed
+    if (args.isEmpty) return false;
+
+    final individual = args.first;
+
+    // --- Resolve individual (Map / EntityModel) and its DOB ---
+    final dob = _resolveDateOfBirth(individual);
+    if (dob == null) return false;
+
+    final age = DigitDateUtils.calculateAge(dob);
+    final totalAgeMonths = age.years * 12 + age.months;
+
+    // --- ProjectType comes from FlowBuilderSingleton ---
+    final projectType = FlowBuilderSingleton().orsProjectType;
+    if (projectType == null) return false;
+
+    // --- Current active cycle ---
+    final currentCycle = projectType.cycles?.firstWhereOrNull(
+      (e) =>
+          e.startDate < DateTime.now().millisecondsSinceEpoch &&
+          e.endDate > DateTime.now().millisecondsSinceEpoch,
+    );
+    if (currentCycle == null) return false;
+
+    // --- Check eligibility (age, plus weight/height when recorded) ---
+    final isWithinAge =
+        _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
+
+    return isWithinAge;
   });
 
   /// Registers a function to check if all doses have been delivered for a member.
@@ -1081,6 +1149,11 @@ void initializeFunctionRegistry() {
                 f['key'] == 'flow' &&
                 f['value']?.toString().toUpperCase() == 'VASDONE') {
               return false; // Exclude VAS tasks as well
+            }
+            if (f is Map &&
+                f['key'] == 'flow' &&
+                f['value']?.toString().toUpperCase() == 'ORSDONE') {
+              return false; // Exclude ORS tasks as well
             }
           }
         }
@@ -1956,6 +2029,38 @@ void initializeFunctionRegistry() {
     return isWithinAge;
   });
 
+  FunctionRegistry.register("orsWithinTheAge", (args, stateData) {
+    // No arguments passed
+    if (args.isEmpty) return false;
+
+    final individual = args.first;
+
+    // --- Resolve individual (Map / EntityModel) and its DOB ---
+    final dob = _resolveDateOfBirth(individual);
+    if (dob == null) return false;
+
+    final age = DigitDateUtils.calculateAge(dob);
+    final totalAgeMonths = age.years * 12 + age.months;
+
+    // --- ProjectType comes from FlowBuilderSingleton ---
+    final projectType = FlowBuilderSingleton().orsProjectType;
+    if (projectType == null) return false;
+
+    // --- Current active cycle ---
+    final currentCycle = projectType.cycles?.firstWhereOrNull(
+      (e) =>
+          e.startDate < DateTime.now().millisecondsSinceEpoch &&
+          e.endDate > DateTime.now().millisecondsSinceEpoch,
+    );
+    if (currentCycle == null) return false;
+
+    // --- Check eligibility (age, plus weight/height when recorded) ---
+    final isWithinAge =
+        _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
+
+    return isWithinAge;
+  });
+
   // GET symptoms for referral - this is a placeholder function to demonstrate how to register a function that processes data and returns a result based on certain conditions. In a real implementation, the symptom values would likely come from the stateData or arguments rather than being hardcoded.
 
   FunctionRegistry.register("getSymptomsReferral", (args, stateData) {
@@ -2015,6 +2120,14 @@ void initializeFunctionRegistry() {
   FunctionRegistry.register("getVASProjectCycles", (args, stateData) {
     final cycles =
         FlowBuilderSingleton().vasProjectType?.cycles ?? <ProjectCycle>[];
+    return cycles
+        .map((c) => jsonDecode(c.toJson()) as Map<String, dynamic>)
+        .toList();
+  });
+
+  FunctionRegistry.register("getORSProjectCycles", (args, stateData) {
+    final cycles =
+        FlowBuilderSingleton().orsProjectType?.cycles ?? <ProjectCycle>[];
     return cycles
         .map((c) => jsonDecode(c.toJson()) as Map<String, dynamic>)
         .toList();
