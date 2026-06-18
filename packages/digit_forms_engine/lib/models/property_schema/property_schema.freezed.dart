@@ -2719,7 +2719,6 @@ mixin _$ShowAlertPopUp {
   String get secondaryActionLabel => throw _privateConstructorUsedError;
   List<AlertCondition>? get conditions =>
       throw _privateConstructorUsedError; // optional
-// Optional numbered points to render below the description (each entry is a localization key).
   List<String>? get points => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -2892,10 +2891,7 @@ class _$ShowAlertPopUpImpl implements _ShowAlertPopUp {
   }
 
 // optional
-// Optional numbered points to render below the description (each entry is a localization key).
   final List<String>? _points;
-// optional
-// Optional numbered points to render below the description (each entry is a localization key).
   @override
   List<String>? get points {
     final value = _points;
@@ -2976,7 +2972,6 @@ abstract class _ShowAlertPopUp implements ShowAlertPopUp {
   @override
   List<AlertCondition>? get conditions;
   @override // optional
-// Optional numbered points to render below the description (each entry is a localization key).
   List<String>? get points;
   @override
   @JsonKey(ignore: true)

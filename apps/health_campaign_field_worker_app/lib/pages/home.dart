@@ -20,10 +20,10 @@ import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/router/flow_builder_routes.gm.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
 import 'package:digit_flow_builder/widgets/flow_widget_interface.dart';
-import 'package:digit_formula_parser/digit_formula_parser.dart';
 import 'package:digit_location_tracker/utils/utils.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/utils/component_utils.dart';
+import 'package:digit_ui_components/widgets/atoms/digit_loader.dart';
 import 'package:drift_db_viewer/drift_db_viewer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -196,7 +196,7 @@ class _HomePageState extends LocalizedState<HomePage> {
 
         if (beneficiaryDetails != null &&
             stateAccessor.currentPageName == 'DELIVERY') {
-          // DELIVERY flow
+          // Regular DELIVERY flow
           return ResourceCard(
             stateData: beneficiaryDetails,
             pageSchema: 'DELIVERY',
@@ -1021,9 +1021,9 @@ class _HomePageState extends LocalizedState<HomePage> {
 
     FunctionRegistry.register('getExistingSignature', (args, stateData) {
       final individualId = args.isNotEmpty ? args[0]?.toString() : null;
-      final attendanceRegisterModel = args.length > 1 ? args[1] : null;
+      final attendanceLogs = args.length > 1 ? args[1] : null;
 
-      final attendanceLogs = attendanceRegisterModel?.attendanceLog ?? [];
+      // final attendanceLogs = attendanceRegisterModel?.attendanceLog ?? [];
 
       if (attendanceLogs == null || attendanceLogs.isEmpty) return null;
       List logs = attendanceLogs.where((log) {
@@ -1042,10 +1042,12 @@ class _HomePageState extends LocalizedState<HomePage> {
 
       final widgetData = args.first as Map;
       final attendanceRegisterModel = args.length > 1 ? args[1] : null;
-      final uploadToServer = args.length > 2 ? args[2] as int? : 0;
+      var attendanceLogs = args.length > 2 ? args[2] as List? : null;
+      final uploadToServer = args.length > 3 ? args[3] as int? : 0;
 
       final registerId = attendanceRegisterModel?.id ?? '';
-      List attendanceLogs = attendanceRegisterModel?.attendanceLog ?? [];
+      attendanceLogs =
+          attendanceLogs ?? attendanceRegisterModel?.attendanceLog ?? [];
 
       final attendanceCollection = widgetData['attendanceCollection'] as Map?;
       final signatureCollection = widgetData['signatureCollection'] as Map?;
@@ -1073,7 +1075,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       final userUuid = FlowBuilderSingleton().loggedInUser?.uuid ?? '';
       final now = DateTime.now().millisecondsSinceEpoch;
 
-      List todayAttendanceLogs = attendanceLogs.where((log) {
+      List todayAttendanceLogs = attendanceLogs!.where((log) {
         final logTime = log.time;
         return logTime == entryTime || logTime == exitTime;
       }).toList();
@@ -2647,48 +2649,44 @@ class _HomePageState extends LocalizedState<HomePage> {
   }
 
   void triggerLocalization({String? module, bool? loadOnline}) {
-    context.read<AppInitializationBloc>().state.maybeWhen(
-          orElse: () {},
-          initialized: (
-            AppConfiguration appConfiguration,
-            _,
-            __,
-          ) {
-            final appConfig = appConfiguration;
-            final localizationModulesList = appConfiguration.backendInterface;
-            final selectedLocale =
-                "en_MZ" ?? AppSharedPreferences().getSelectedLocale;
-            LocalizationParams()
-                .setCode(LeastLevelBoundarySingleton().boundary);
-            if (loadOnline == true) {
-              context
-                  .read<LocalizationBloc>()
-                  .add(LocalizationEvent.onRemoteLoadLocalization(
-                    module: module ??
-                        "${localizationModulesList?.interfaces.where((element) => element.type == Modules.localizationModule).map((e) => e.name.toString()).join(',')}",
-                    tenantId: envConfig.variables.tenantId,
-                    locale: selectedLocale!,
-                    path: Constants.localizationApiPath,
-                  ));
-            } else {
-              context
-                  .read<LocalizationBloc>()
-                  .add(LocalizationEvent.onLoadLocalization(
-                    module: module != null && module.isNotEmpty
-                        ? "$module,hcm-common,hcm-login,hcm-scanner,hcm-checklist,hcm-beneficiary"
-                        : localizationModulesList?.interfaces
-                                .where(
-                                    (e) => e.type == Modules.localizationModule)
-                                .map((e) => e.name.toString())
-                                .join(',') ??
-                            "",
-                    tenantId: envConfig.variables.tenantId,
-                    locale: selectedLocale!,
-                    path: Constants.localizationApiPath,
-                  ));
-            }
-          },
-        );
+    Future.microtask(() {
+      context.read<AppInitializationBloc>().state.maybeWhen(
+            orElse: () {},
+            initialized: (
+              AppConfiguration appConfiguration,
+              _,
+              __,
+            ) {
+              final localizationModulesList = appConfiguration.backendInterface;
+              final selectedLocale = AppSharedPreferences().getSelectedLocale;
+              LocalizationParams()
+                  .setCode(LeastLevelBoundarySingleton().boundary);
+
+              if (loadOnline == true) {
+                context
+                    .read<LocalizationBloc>()
+                    .add(LocalizationEvent.onRemoteLoadLocalization(
+                      module: module ??
+                          "${localizationModulesList?.interfaces.where((element) => element.type == Modules.localizationModule).map((e) => e.name.toString()).join(',')},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}",
+                      tenantId: envConfig.variables.tenantId,
+                      locale: selectedLocale!,
+                      path: Constants.localizationApiPath,
+                    ));
+              } else {
+                context
+                    .read<LocalizationBloc>()
+                    .add(LocalizationEvent.onLoadLocalization(
+                      module: module != null && module.isNotEmpty
+                          ? "$module,hcm-common,hcm-login,hcm-scanner,hcm-checklist,hcm-beneficiary,hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}"
+                          : "${localizationModulesList?.interfaces.where((e) => e.type == Modules.localizationModule).map((e) => e.name.toString()).join(',')},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}",
+                      tenantId: envConfig.variables.tenantId,
+                      locale: selectedLocale!,
+                      path: Constants.localizationApiPath,
+                    ));
+              }
+            },
+          );
+    });
   }
 }
 

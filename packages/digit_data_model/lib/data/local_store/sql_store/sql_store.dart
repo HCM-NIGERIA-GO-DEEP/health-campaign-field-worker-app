@@ -165,6 +165,10 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
+        onCreate: (migrator) async {
+          await migrator.createAll();
+          await _createTaskSearchIndexes();
+        },
         onUpgrade: (migrator, from, to) async {
           if (from < 5) {
             //Add column for projectType in Project Table
@@ -423,7 +427,8 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
   /// [encryptionKey] - The encryption key to use for the new encrypted database.
   ///
   /// Returns [DatabaseMigrationResult] indicating the result of the migration.
-  static Future<DatabaseMigrationResult> migrateToEncrypted(String encryptionKey) async {
+  static Future<DatabaseMigrationResult> migrateToEncrypted(
+      String encryptionKey) async {
     final dbFolder = await getApplicationDocumentsDirectory();
     final dbFile = File(p.join(dbFolder.path, 'db.sqlite'));
     final tempEncryptedFile =
@@ -490,7 +495,8 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
         testEncDb.dispose();
 
         if (kDebugMode) {
-          print('Database is already encrypted with the correct key, no migration needed');
+          print(
+              'Database is already encrypted with the correct key, no migration needed');
         }
         return DatabaseMigrationResult.noMigrationNeeded;
       } catch (e) {

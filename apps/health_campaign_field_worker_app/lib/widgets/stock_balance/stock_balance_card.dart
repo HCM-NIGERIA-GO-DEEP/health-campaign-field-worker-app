@@ -172,6 +172,10 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
             context.selectedProject.referenceID, context.loggedInUser.id))
         .toList();
 
+    final projectId = context.projectId;
+    final createdBy = context.loggedInUserUuid;
+    final selectedCycle = context.selectedCycle;
+
     // Listen to StockModel changes
     stockRepo.listenToChanges(
       query: StockSearchModel(receiverId: facilityId),
@@ -183,10 +187,6 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
     );
 
     // Listen to TaskModel changes (triggers when delivery tasks are created/updated)
-    final projectId = context.projectId;
-    final createdBy = context.loggedInUserUuid;
-    final selectedCycle = context.selectedCycle;
-
     taskRepo.listenToChanges(
       query: TaskSearchModel(
         projectId: projectId,
@@ -263,23 +263,12 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       loggedInUserUuid: context.loggedInUserUuid,
       isDistributor: _isDistributor,
       tasks: tasks,
-      currentCycleIndex: context.currentCycleIndex,
     );
 
-    // Fetch UserAction records with saved stock balances (from delivery)
-    final userActionBalances =
-        await _loadUserActionBalances(userActionRepo, effectiveFacilityId);
-
-    // Merge: UserAction balances take precedence (they include delivery deductions)
-    final mergedBalances = <String, double>{
-      ...balances,
-      // ...userActionBalances,
-    };
-
-    StockBalanceCache.instance.setCache(effectiveFacilityId, mergedBalances);
+    StockBalanceCache.instance.setCache(effectiveFacilityId, balances);
     if (mounted) {
       setState(() {
-        _stockBalances = mergedBalances;
+        _stockBalances = balances;
       });
     }
   }

@@ -403,11 +403,13 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     projects.removeDuplicates((element) => element.id);
 
     final selectedProject = await localSecureStore.selectedProject;
+    final allProjectTypes = await localSecureStore.getAllProjectTypes;
     emit(
       ProjectState(
         loading: false,
         projects: projects,
         selectedProject: selectedProject,
+        allProjectTypes: allProjectTypes,
       ),
     );
 
@@ -943,6 +945,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
             .setBoundary(boundaries: findLeastLevelBoundaries(boundaries));
         await localSecureStore.setSelectedProject(event.model);
         await localSecureStore.setSelectedProjectType(reqProjectType);
+        await localSecureStore
+            .setAllProjectTypes(projectType.projectTypeWrapper?.projectTypes);
       }
       await localSecureStore.setProjectSetUpComplete(event.model.id, true);
     } catch (_) {
@@ -990,9 +994,11 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     }
 
     final getSelectedProject = await localSecureStore.selectedProject;
+    final allProjectTypes = await localSecureStore.getAllProjectTypes;
 
     emit(state.copyWith(
       selectedProject: getSelectedProject,
+      allProjectTypes: allProjectTypes,
       loading: false,
       syncError: null,
     ));
@@ -1611,6 +1617,7 @@ class ProjectState with _$ProjectState {
 
   const factory ProjectState({
     @Default([]) List<ProjectModel> projects,
+    List<ProjectType>? allProjectTypes,
     ProjectType? projectType,
     ProjectCycle? selectedCycle,
     ProjectModel? selectedProject,

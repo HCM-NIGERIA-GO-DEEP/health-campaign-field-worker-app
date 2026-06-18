@@ -360,8 +360,10 @@ DateTime? _resolveDateOfBirth(dynamic individual) {
     dob = individual['dateOfBirth'];
   } else if (individual is EntityModel) {
     dob = individual.toMap()['dateOfBirth'];
-  } else if (individual is DateTime || individual is int || individual is String) {
-    // Caller may pass the date of birth directly (e.g. config uses
+  } else if (individual is DateTime ||
+      individual is int ||
+      individual is String) {
+    // Caller may pass the date of birth value directly (e.g. config uses
     // `item.individual.0.dateOfBirth`) instead of the individual object.
     dob = individual;
   } else {
@@ -707,30 +709,19 @@ void initializeFunctionRegistry() {
   /// 3. If the `checkStatus` function allows for a new task to be created.
   FunctionRegistry.register('checkEligibilityForAgeAndSideEffect',
       (args, stateData) {
-    print('ELIG_DEBUG: ENTER argsLen=${args.length} '
-        'firstType=${args.isNotEmpty ? args.first.runtimeType : "none"}');
-    if (args.isEmpty) {
-      print('ELIG_DEBUG: -> false (args empty)');
-      return false;
-    }
+    if (args.isEmpty) return false;
 
 // --- Resolve individual (Map / EntityModel) and its DOB ---
     final individual = args.first;
     final dob = _resolveDateOfBirth(individual);
-    if (dob == null) {
-      print('ELIG_DEBUG: -> false (dob null) individual=$individual');
-      return false;
-    }
+    if (dob == null) return false;
 
     final age = DigitDateUtils.calculateAge(dob);
     final totalAgeMonths = age.years * 12 + age.months;
 
 // --- ProjectType comes from FlowBuilderSingleton ---
     final projectType = FlowBuilderSingleton().projectType;
-    if (projectType == null) {
-      print('ELIG_DEBUG: -> false (projectType null) ageMonths=$totalAgeMonths');
-      return false;
-    }
+    if (projectType == null) return false;
 
 // --- Tasks & SideEffects come from stateData ---
     final rawTasks = args.length > 1 ? args[1] : [];
@@ -740,25 +731,16 @@ void initializeFunctionRegistry() {
     final sideEffects = (stateData.modelMap['sideEffects'] as List?) ?? [];
 
 // --- Current active cycle ---
-    final now = DateTime.now().millisecondsSinceEpoch;
     final currentCycle = projectType.cycles?.firstWhereOrNull(
-      (e) => e.startDate < now && e.endDate > now,
+      (e) =>
+          e.startDate < DateTime.now().millisecondsSinceEpoch &&
+          e.endDate > DateTime.now().millisecondsSinceEpoch,
     );
-    print('ELIG_DEBUG: now=$now dob=$dob ageMonths=$totalAgeMonths '
-        'cyclesCount=${projectType.cycles?.length} '
-        'cycleWindows=${projectType.cycles?.map((c) => '${c.id}:${c.startDate}-${c.endDate}').toList()} '
-        'currentCycle=${currentCycle?.id}');
-    if (currentCycle == null) {
-      print('ELIG_DEBUG: -> false (no active cycle for now=$now)');
-      return false;
-    }
+    if (currentCycle == null) return false;
 
 // --- Check eligibility (age, plus weight/height when recorded) ---
     final isWithinAge =
         _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
-    print('ELIG_DEBUG: cycle=${currentCycle.id} ageMonths=$totalAgeMonths '
-        'doseCriteriaConditions=${(currentCycle.deliveries ?? <ProjectCycleDelivery>[]).expand((d) => d.doseCriteria ?? <DeliveryDoseCriteria>[]).map((c) => c.condition).toList()} '
-        'isWithinAge=$isWithinAge');
 
     if (!isWithinAge) return false;
 
@@ -915,79 +897,67 @@ void initializeFunctionRegistry() {
     // No arguments passed
     if (args.isEmpty) return false;
 
-    final first = args.first;
-    final second = args.length > 1 ? args[1] : null;
+    final tasks = args.first;
+    final referrals = args.length > 1 ? args[1] : null;
 
-    // New calling convention used by the bundled REGISTRATION config:
-    //   isSMCFlowDone(item.task /* List */, item.hFReferral /* List */)
-    // SMC is "done" when an SMC referral exists for the current cycle, or the
-    // member has a completed SMC task (administered / delivered / ineligible).
-    if (first is List || second is List) {
-      if (second is List &&
-          FunctionRegistry.invokeBool(
-              'hasSMCReferralForCurrentCycle', [second], stateData)) {
+    for (var referral in (referrals ?? [])) {
+      final List? fields = referral.additionalFields?.fields;
+      final flowType = fields
+          ?.firstWhereOrNull((f) => f.key == 'flow')
+          ?.value
+          ?.toString()
+          .trim()
+          .toUpperCase();
+
+      // Referral flow is considered done if marked as SMCDONE, regardless of task status
+      if (flowType == "SMCDONE") {
         return true;
       }
-      if (first is List) {
-        final tasks = _filterByFlow(first, keepRi: false);
-        for (final task in tasks) {
-          final status = task['status']?.toString().trim().toUpperCase();
-          final additionalFields = task['additionalFields'];
-          final fields = additionalFields is Map
-              ? additionalFields['fields'] as List?
-              : null;
-          String? flow;
-          String? deliveryStrategy;
-          String? taskType;
-          if (fields != null) {
-            for (final f in fields) {
-              if (f is Map && f['key'] == 'flow') {
-                flow = f['value']?.toString().toUpperCase();
-              }
-              if (f is Map && f['key'] == 'deliveryStrategy') {
-                deliveryStrategy = f['value']?.toString().toUpperCase();
-              }
-              if (f is Map && f['key'] == 'taskType') {
-                taskType = f['value']?.toString().toUpperCase();
-              }
-            }
-          }
-          final isCompletedStatus =
-              status == TaskStatus.administrationSuccess ||
-                  status == TaskStatus.delivered ||
-                  status == TaskStatus.ineligible;
-          // SMC is "done" once an SMC delivery task is completed. New tasks are
-          // tagged flow == 'SMCDONE'; legacy tasks carry no flow field but always
-          // have an SMC deliveryStrategy (DIRECT / INDIRECT). VAS tasks are tagged
-          // taskType == 'VAS' and must NOT count as SMC completion.
-          final isSmcTask = flow == 'SMCDONE' ||
-              (taskType != 'VAS' &&
-                  deliveryStrategy != null &&
-                  deliveryStrategy != 'VAS');
-          if (isCompletedStatus && isSmcTask) {
-            return true;
-          }
-        }
+    }
+
+    for (var task in tasks) {
+      final statusValue = task.status;
+      if (statusValue is! String) continue;
+      final status = statusValue.trim().toUpperCase();
+      final List? fields = task.additionalFields?.fields;
+      final flowType = fields
+          ?.firstWhereOrNull((f) => f.key == 'flow')
+          ?.value
+          ?.toString()
+          .trim()
+          .toUpperCase();
+
+      // Match valid delivered statuses
+      if ((status == TaskStatus.administrationSuccess ||
+              status == TaskStatus.delivered ||
+              status == TaskStatus.ineligible) &&
+          flowType == 'SMCDONE') {
+        return true;
       }
-      return false;
     }
 
-    // Legacy calling convention: (statusString, referralFlow, flowString).
-    final flowValue = args.length > 2 ? args[2] : null;
-    final status = first is String ? first.trim().toUpperCase() : null;
-    final flow = flowValue is String ? flowValue.trim().toUpperCase() : null;
-    final referralFlow = second is String ? second.trim().toUpperCase() : null;
+    return false;
+  });
 
-    // SMC flow is considered done if referral flow is marked as SMCDONE, regardless of task status
-    if (referralFlow == "SMCDONE") {
-      return true;
-    }
-    // Match valid delivered statuses
-    if ((status == TaskStatus.administrationSuccess ||
-            status == TaskStatus.delivered ||
-            status == TaskStatus.ineligible) &&
-        flow == 'SMCDONE') {
-      return true;
+  FunctionRegistry.register("hasSMCReferral", (args, stateData) {
+    // No arguments passed
+    if (args.isEmpty) return false;
+
+    final referrals = args.first;
+
+    for (var referral in (referrals ?? [])) {
+      final List? fields = referral.additionalFields?.fields;
+      final flowType = fields
+          ?.firstWhereOrNull((f) => f.key == 'flow')
+          ?.value
+          ?.toString()
+          .trim()
+          .toUpperCase();
+
+      // Referral flow is considered done if marked as SMCDONE, regardless of task status
+      if (flowType == "SMCDONE") {
+        return true;
+      }
     }
 
     return false;
@@ -995,12 +965,11 @@ void initializeFunctionRegistry() {
 
   FunctionRegistry.register("isDelivered", (args, stateData) {
     // No arguments passed
-    if (args.isEmpty || args.first == null) return false;
+    if (args.isEmpty) return false;
 
     final tasks = args.first;
-    if (tasks is! List || tasks.isEmpty) return false;
 
-    for (var task in tasks) {
+    for (var task in tasks ?? []) {
       final statusValue = task.status;
       if (statusValue is! String) continue;
       final status = statusValue.trim().toUpperCase();
@@ -1024,10 +993,9 @@ void initializeFunctionRegistry() {
 
   FunctionRegistry.register("isVASDelivered", (args, stateData) {
     // No arguments passed
-    if (args.isEmpty || args.first == null) return false;
+    if (args.isEmpty) return false;
 
     final tasks = args.first;
-    if (tasks is! List || tasks.isEmpty) return false;
 
     for (var task in tasks) {
       final statusValue = task.status;
@@ -1040,18 +1008,9 @@ void initializeFunctionRegistry() {
           ?.toString()
           .trim()
           .toUpperCase();
-      final taskType = fields
-          ?.firstWhereOrNull((f) => f.key == 'taskType')
-          ?.value
-          ?.toString()
-          .trim()
-          .toUpperCase();
 
-      // VAS is delivered once a VAS task is administered. New VAS tasks are
-      // tagged flow == 'VASDONE' and taskType == 'VAS'; accept either so the
-      // VAS button correctly hides after delivery.
-      if (status == TaskStatus.administrationSuccess &&
-          (flowType == 'VASDONE' || taskType == 'VAS')) {
+      // Match valid delivered statuses
+      if (status == TaskStatus.administrationSuccess && flowType == 'VASDONE') {
         return true;
       }
     }
@@ -1900,17 +1859,6 @@ void initializeFunctionRegistry() {
   /// DELIVERY / NOT_VISITED conditions resolve instead of producing an empty
   /// (malformed) expression when the function is missing from the registry.
   FunctionRegistry.register("hasReferralForCurrentCycle", (args, stateData) {
-    final result =
-        FunctionRegistry.call("hasSMCReferralForCurrentCycle", args, stateData);
-    print('ELIG_DEBUG: hasReferralForCurrentCycle -> $result '
-        'firstType=${args.isNotEmpty ? args.first.runtimeType : "none"}');
-    return result;
-  });
-
-  /// Alias used by the bundled REGISTRATION config (`hasSMCReferral`). Delegates
-  /// to the current-cycle SMC referral check so the inEligible status tag
-  /// resolves instead of producing an empty (malformed) expression.
-  FunctionRegistry.register("hasSMCReferral", (args, stateData) {
     return FunctionRegistry.call(
         "hasSMCReferralForCurrentCycle", args, stateData);
   });
@@ -1968,20 +1916,24 @@ void initializeFunctionRegistry() {
     // No arguments passed
     if (args.isEmpty) return false;
 
-    final statusValue = args.first;
-    final flowValue = args.length > 1 ? args[1] : null;
+    final tasks = args.first;
 
-    // Must be a string
-    if (statusValue is! String) return false;
-    if (flowValue is! String) return false;
+    for (var task in tasks) {
+      final statusValue = task.status;
+      if (statusValue is! String) continue;
+      final status = statusValue.trim().toUpperCase();
+      final List? fields = task.additionalFields?.fields;
+      final flowType = fields
+          ?.firstWhereOrNull((f) => f.key == 'flow')
+          ?.value
+          ?.toString()
+          .trim()
+          .toUpperCase();
 
-    // Normalize (uppercase + trim)
-    final status = statusValue.trim().toUpperCase();
-    final flow = flowValue.trim().toUpperCase();
-
-    // Match valid delivered statuses
-    if (status == TaskStatus.ineligible && flow == 'VASDONE') {
-      return true;
+      // Match valid delivered statuses
+      if (status == TaskStatus.ineligible && flowType == 'VASDONE') {
+        return true;
+      }
     }
 
     return false;
@@ -2026,14 +1978,16 @@ void initializeFunctionRegistry() {
 
     if (navigationData == null) return null;
 
+    String defaultSymptom = 'SICK';
+
     final String? sourceFlow = navigationData['sourceFlow'];
     final List<String> symptoms = [];
 
-    if (sourceFlow == 'CHECKLIST') {
+    if (sourceFlow == 'CHECKLIST' || sourceFlow == 'VASCHECKLIST') {
       String? ec1 = navigationData['ec1'];
       String? ec2 = navigationData['ec2'];
 
-      if (ec1 == null && ec2 == null) return null;
+      if (ec1 == null && ec2 == null) return defaultSymptom;
 
       if (ec1 == 'YES') symptoms.add('SICK');
       if (ec2 == 'YES') symptoms.add('FEVER');
@@ -2046,17 +2000,17 @@ void initializeFunctionRegistry() {
       if (zeroDose == null &&
           partiallyImmunized == null &&
           unimmunized == null) {
-        return null;
+        return defaultSymptom;
       }
 
       if (zeroDose == 'YES') symptoms.add('ZERO_DOSE');
       if (partiallyImmunized == 'YES') symptoms.add('PARTIALLY_IMMUNIZED');
       if (unimmunized == 'YES') symptoms.add('UNIMMUNIZED');
     } else {
-      return null;
+      return defaultSymptom;
     }
 
-    if (symptoms.isEmpty) return null;
+    if (symptoms.isEmpty) return defaultSymptom;
 
     return symptoms.join(',');
   });

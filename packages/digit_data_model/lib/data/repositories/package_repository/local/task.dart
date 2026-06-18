@@ -129,10 +129,6 @@ class TaskLocalRepository extends LocalRepository<TaskModel, TaskSearchModel> {
                   query.plannedStartDate!,
                   query.plannedEndDate!,
                 ),
-              if (query.status != null)
-                sql.task.status.equals(
-                  query.status!,
-                ),
             ]))
             ..orderBy([
               OrderingTerm(

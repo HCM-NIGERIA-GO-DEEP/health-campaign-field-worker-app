@@ -6,7 +6,6 @@ import 'dart:math' as math;
 import 'package:digit_crud_bloc/models/global_search_params.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:drift/drift.dart' hide OrderBy;
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart' as debug;
 
 class QueryBuilder {
@@ -367,7 +366,11 @@ class QueryBuilder {
       // Split by comma if it contains commas, otherwise wrap as single-item list
       final trimmed = value.trim();
       if (trimmed.contains(',')) {
-        return trimmed.split(',').map((v) => v.trim()).where((v) => v.isNotEmpty).toList();
+        return trimmed
+            .split(',')
+            .map((v) => v.trim())
+            .where((v) => v.isNotEmpty)
+            .toList();
       }
       return [trimmed];
     }
@@ -440,10 +443,14 @@ class QueryBuilder {
           // Supports OR condition: field contains comma-separated column names
           // Example: field='senderId,receiverId', value='F-123'
           // Generates: (sender_id = ? OR receiver_id = ?)
-          final columns = filter.field.split(',').map((f) => camelToSnake(f.trim())).toList();
+          final columns = filter.field
+              .split(',')
+              .map((f) => camelToSnake(f.trim()))
+              .toList();
           return '(${columns.map((c) => '$c = ?').join(' OR ')})';
-        case 'containsName':
-          // Tokenized search across comma-separated columns.
+        case 'containsAll':
+          // Every whitespace-separated part of the value must be contained
+          // in at least one of the comma-separated columns.
           // Example: field='givenName,familyName', value='John Smith'
           // Generates: ((given_name LIKE ? OR family_name LIKE ?) AND
           //            (given_name LIKE ? OR family_name LIKE ?))
@@ -451,17 +458,17 @@ class QueryBuilder {
               .split(',')
               .map((f) => camelToSnake(f.trim()))
               .toList();
-          final tokens = filter.value
+          final parts = filter.value
                   ?.toString()
                   .trim()
                   .split(RegExp(r'\s+'))
                   .where((t) => t.isNotEmpty)
                   .toList() ??
               const <String>[];
-          if (tokens.isEmpty || cols.isEmpty) return '1 = 1';
-          final tokenClauses = tokens.map((_) =>
-              '(${cols.map((c) => '$c LIKE ?').join(' OR ')})');
-          return '(${tokenClauses.join(' AND ')})';
+          if (parts.isEmpty || cols.isEmpty) return '1 = 1';
+          final partClauses = parts
+              .map((_) => '(${cols.map((c) => '$c LIKE ?').join(' OR ')})');
+          return '(${partClauses.join(' AND ')})';
         default:
           throw Exception('Unsupported operator: ${filter.operator}');
       }
@@ -480,7 +487,7 @@ class QueryBuilder {
           args.add(Variable.withString(filter.value.toString()));
           break;
         case 'contains':
-          args.add(Variable.withString('%${filter.value}%'));
+          args.add(Variable.withString('${filter.value}%'));
           break;
         case 'notContains':
           args.add(Variable.withString('%${filter.value}%'));
@@ -499,20 +506,20 @@ class QueryBuilder {
             args.add(Variable.withString(filter.value.toString()));
           }
           break;
-        case 'containsName':
-          // One '%token%' arg per (token, column) pair, matching the
+        case 'containsAll':
+          // One '%part%' arg per (part, column) pair, matching the
           // clause structure built in buildWhereClauseRaw.
           final cols = filter.field.split(',');
-          final tokens = filter.value
+          final parts = filter.value
                   ?.toString()
                   .trim()
                   .split(RegExp(r'\s+'))
                   .where((t) => t.isNotEmpty)
                   .toList() ??
               const <String>[];
-          for (final token in tokens) {
+          for (final part in parts) {
             for (var i = 0; i < cols.length; i++) {
-              args.add(Variable.withString('%$token%'));
+              args.add(Variable.withString('%$part%'));
             }
           }
           break;
@@ -527,6 +534,14 @@ class QueryBuilder {
     return args;
   }
 
+  /// SQLite's bundled engine limits the number of bound parameters per
+  /// statement (typically 999 on platforms shipping SQLCipher). When the
+  /// resolver/hydration paths produce a wider FK set than this, we transparently
+  /// chunk the IN list, run multiple queries, and concatenate results.
+  /// Safe only for paths without pagination/count/ordering (resolver hops and
+  /// nested hydration). The primary-table path is unaffected.
+  static const int _maxInListSize = 500;
+
   static Future<List<Map<String, dynamic>>> queryRawTable({
     required LocalSqlDataStore sql,
     required String table,
@@ -536,13 +551,59 @@ class QueryBuilder {
     bool isPrimaryTable = false,
     void Function(int count)? onCountFetched,
     SearchOrderBy? orderBy,
+    List<String>? selectColumns,
+    List<Expression<bool>>? extraConstraints,
   }) async {
+    // Auto-chunk over-sized IN/notIn lists before the SQL ever gets built.
+    // Only safe for queries that don't paginate / count / order — the resolver
+    // and hydration paths fit this criterion.
+    if (!isPrimaryTable &&
+        pagination == null &&
+        onCountFetched == null &&
+        orderBy == null) {
+      final int oversizeIndex = filters.indexWhere((f) =>
+          (f.operator == 'in' || f.operator == 'notIn') &&
+          _normalizeToList(f.value).length > _maxInListSize);
+      if (oversizeIndex >= 0) {
+        final big = filters[oversizeIndex];
+        final allValues = _normalizeToList(big.value);
+        final merged = <Map<String, dynamic>>[];
+        for (var i = 0; i < allValues.length; i += _maxInListSize) {
+          final end = (i + _maxInListSize <= allValues.length)
+              ? i + _maxInListSize
+              : allValues.length;
+          final chunk = allValues.sublist(i, end);
+          final chunkedFilters = List<SearchFilter>.from(filters);
+          chunkedFilters[oversizeIndex] = SearchFilter(
+            root: big.root,
+            field: big.field,
+            operator: big.operator,
+            value: chunk,
+            coordinates: big.coordinates,
+          );
+          final chunkRows = await queryRawTable(
+            sql: sql,
+            table: table,
+            filters: chunkedFilters,
+            select: select,
+            isPrimaryTable: false,
+            selectColumns: selectColumns,
+          );
+          merged.addAll(chunkRows);
+        }
+        return merged;
+      }
+    }
+
     final dynamicTable = sql.allTables.firstWhere(
       (t) => t.actualTableName == camelToSnake(table),
       orElse: () => throw Exception('Table $table not found'),
     );
 
     final List<Expression<bool>> whereClauses = [];
+    if (extraConstraints != null && extraConstraints.isNotEmpty) {
+      whereClauses.addAll(extraConstraints);
+    }
 
     double? centerLat, centerLon, radiusInKm;
 
@@ -592,13 +653,15 @@ class QueryBuilder {
 
       // Handle equalsAny operator separately (multiple columns with OR)
       if (filter.operator == 'equalsAny') {
-        final columnNames = filter.field.split(',').map((f) => camelToSnake(f.trim())).toList();
+        final columnNames =
+            filter.field.split(',').map((f) => camelToSnake(f.trim())).toList();
         final List<Expression<bool>> orClauses = [];
 
         for (final colName in columnNames) {
           final col = dynamicTable.$columns.firstWhere(
             (c) => c.$name == colName,
-            orElse: () => throw Exception('Column $colName not found in $table'),
+            orElse: () =>
+                throw Exception('Column $colName not found in $table'),
           );
           orClauses.add(col.equals(filter.value));
         }
@@ -614,41 +677,11 @@ class QueryBuilder {
         continue;
       }
 
-      // Handle containsName: tokenize value on whitespace and match each
-      // token against any of the comma-separated columns. Every token must
-      // appear in at least one column.
-      if (filter.operator == 'containsName') {
-        final columnNames = filter.field
-            .split(',')
-            .map((f) => camelToSnake(f.trim()))
-            .toList();
-        final tokens = filter.value
-                ?.toString()
-                .trim()
-                .split(RegExp(r'\s+'))
-                .where((t) => t.isNotEmpty)
-                .toList() ??
-            const <String>[];
-
-        if (tokens.isEmpty || columnNames.isEmpty) continue;
-
-        final columns = columnNames.map((colName) {
-          return dynamicTable.$columns.firstWhere(
-            (c) => c.$name == colName,
-            orElse: () =>
-                throw Exception('Column $colName not found in $table'),
-          ) as Expression<String>;
-        }).toList();
-
-        Expression<bool>? combined;
-        for (final token in tokens) {
-          Expression<bool> tokenClause = columns.first.like('%$token%');
-          for (var i = 1; i < columns.length; i++) {
-            tokenClause = tokenClause | columns[i].like('%$token%');
-          }
-          combined = combined == null ? tokenClause : combined & tokenClause;
-        }
-        if (combined != null) whereClauses.add(combined);
+      // Handle containsAll: split value on whitespace and require every
+      // part to appear (LIKE) in at least one of the comma-separated columns.
+      if (filter.operator == 'containsAll') {
+        final expr = _buildContainsAllExpression(dynamicTable, filter);
+        if (expr != null) whereClauses.add(expr);
         continue;
       }
 
@@ -671,8 +704,8 @@ class QueryBuilder {
               .add((col as Expression<String>).like('%${filter.value}%'));
           break;
         case 'notContains':
-          whereClauses
-              .add(col.isNull() | (col as Expression<String>).like('%${filter.value}%').not());
+          whereClauses.add(col.isNull() |
+              (col as Expression<String>).like('%${filter.value}%').not());
           break;
         case 'isNotNull':
           whereClauses.add(col.isNotNull());
@@ -684,7 +717,9 @@ class QueryBuilder {
           final list = _normalizeToList(filter.value);
           if (list.isEmpty) break; // Empty list = no filter (match all)
           if (col is GeneratedColumn<int>) {
-            whereClauses.add(col.isIn(list.map((v) => v is int ? v : int.tryParse(v.toString()) ?? 0).toList()));
+            whereClauses.add(col.isIn(list
+                .map((v) => v is int ? v : int.tryParse(v.toString()) ?? 0)
+                .toList()));
           } else if (col is GeneratedColumn<String>) {
             whereClauses.add(col.isIn(list.map((v) => v.toString()).toList()));
           }
@@ -693,9 +728,12 @@ class QueryBuilder {
           final list = _normalizeToList(filter.value);
           if (list.isEmpty) break; // Empty list = no filter (match all)
           if (col is GeneratedColumn<int>) {
-            whereClauses.add(col.isNotIn(list.map((v) => v is int ? v : int.tryParse(v.toString()) ?? 0).toList()));
+            whereClauses.add(col.isNotIn(list
+                .map((v) => v is int ? v : int.tryParse(v.toString()) ?? 0)
+                .toList()));
           } else if (col is GeneratedColumn<String>) {
-            whereClauses.add(col.isNotIn(list.map((v) => v.toString()).toList()));
+            whereClauses
+                .add(col.isNotIn(list.map((v) => v.toString()).toList()));
           }
           break;
         default:
@@ -703,89 +741,100 @@ class QueryBuilder {
       }
     }
 
-    // Primary count query
+    // Primary count query — built as a Future so it can run in parallel with
+    // the data query below rather than serially.
+    Future<int>? countFuture;
+    Expression<int>? countExpr;
     if (isPrimaryTable && onCountFetched != null) {
-      // Run same query without pagination, only filters
-      final whereClause =
-          buildWhereClauseRaw(filters.where((f) => f.root == table).toList());
-      final whereArgs =
-          buildWhereArgs(filters.where((f) => f.root == table).toList());
-
-      int finalCount;
-
       if (centerLat != null && centerLon != null && radiusInKm != null) {
-        // Need lat/lon values for Haversine filtering
-        final countQuery = sql.customSelect(
-          'SELECT latitude, longitude FROM ${camelToSnake(table)} WHERE $whereClause',
-          variables: whereArgs,
-        );
+        // Geo path: need lat/lon to apply Haversine filtering in Dart.
+        final whereClause =
+            buildWhereClauseRaw(filters.where((f) => f.root == table).toList());
+        final whereArgs =
+            buildWhereArgs(filters.where((f) => f.root == table).toList());
+        countFuture = () async {
+          final rawResults = await sql
+              .customSelect(
+                'SELECT latitude, longitude FROM ${camelToSnake(table)} WHERE $whereClause',
+                variables: whereArgs,
+              )
+              .get();
 
-        final rawResults = await countQuery.get();
+          const earthRadius = 6371.0;
+          const degToRad = math.pi / 180.0;
 
-        const earthRadius = 6371.0;
-        const degToRad = math.pi / 180.0;
-
-        double haversine(double lat1, double lon1, double lat2, double lon2) {
-          final dLat = (lat2 - lat1) * degToRad;
-          final dLon = (lon2 - lon1) * degToRad;
-          final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
-              math.cos(lat1 * degToRad) *
-                  math.cos(lat2 * degToRad) *
-                  math.sin(dLon / 2) *
-                  math.sin(dLon / 2);
-          final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
-          return earthRadius * c;
-        }
-
-        finalCount = rawResults.where((row) {
-          double? lat;
-          double? lon;
-
-          try {
-            final latVal = row.read<double>('latitude');
-            lat = (latVal is int) ? latVal.toDouble() : latVal as double?;
-          } catch (e) {
-            debugPrint('Failed to read latitude: $e');
-            lat = null;
+          double haversine(double lat1, double lon1, double lat2, double lon2) {
+            final dLat = (lat2 - lat1) * degToRad;
+            final dLon = (lon2 - lon1) * degToRad;
+            final a = math.sin(dLat / 2) * math.sin(dLat / 2) +
+                math.cos(lat1 * degToRad) *
+                    math.cos(lat2 * degToRad) *
+                    math.sin(dLon / 2) *
+                    math.sin(dLon / 2);
+            final c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a));
+            return earthRadius * c;
           }
 
-          try {
-            final lonVal = row.read<double>('longitude');
-            lon = (lonVal is int) ? lonVal.toDouble() : lonVal as double?;
-          } catch (e) {
-            debugPrint('Failed to read longitude: $e');
-            lon = null;
-          }
-
-          if (lat == null || lon == null) {
-            debugPrint('Skipping row due to null lat/lon');
-            return false;
-          }
-
-          final distance = haversine(centerLat!, centerLon!, lat, lon);
-          debugPrint('Lat: $lat, Lon: $lon → Distance: $distance km');
-          return distance <= radiusInKm!;
-        }).length;
+          return rawResults.where((row) {
+            double? lat;
+            double? lon;
+            try {
+              final latVal = row.read<double>('latitude');
+              lat = (latVal is int) ? latVal.toDouble() : latVal as double?;
+            } catch (_) {
+              lat = null;
+            }
+            try {
+              final lonVal = row.read<double>('longitude');
+              lon = (lonVal is int) ? lonVal.toDouble() : lonVal as double?;
+            } catch (_) {
+              lon = null;
+            }
+            if (lat == null || lon == null) return false;
+            return haversine(centerLat!, centerLon!, lat, lon) <= radiusInKm!;
+          }).length;
+        }();
       } else {
-        // Original optimized COUNT query
-        final countQuery = sql.customSelect(
-          'SELECT COUNT(*) AS total FROM ${camelToSnake(table)} WHERE $whereClause',
-          variables: whereArgs,
-        );
-
-        final rawResults = await countQuery.get();
-        finalCount = rawResults.first.read<int>('total');
+        // Use Drift's selectOnly so the same Expression<bool> whereClauses
+        // (including cross-table subquery constraints) apply uniformly to
+        // both the data fetch and the count.
+        countExpr = countAll();
+        final countQuery = sql.selectOnly(dynamicTable)
+          ..addColumns([countExpr]);
+        if (whereClauses.isNotEmpty) {
+          countQuery.where(buildAnd(whereClauses));
+        }
+        countFuture =
+            countQuery.getSingle().then((row) => row.read(countExpr!) ?? 0);
       }
-
-      onCountFetched(finalCount);
     }
 
-    // Data fetch query
-    final dataQuery = sql.selectOnly(dynamicTable, distinct: true);
+    // Data fetch query.
+    // The primary table is already unique by primary key, so DISTINCT only adds
+    // a sort/dedupe pass for no gain. Keep it only when the caller can't
+    // guarantee uniqueness (i.e. legacy paths that don't project specific
+    // columns and aren't the primary table).
+    final useDistinct = !isPrimaryTable && selectColumns == null;
+    final dataQuery = sql.selectOnly(dynamicTable, distinct: useDistinct);
     if (whereClauses.isNotEmpty) {
       dataQuery.where(buildAnd(whereClauses));
     }
-    dataQuery.addColumns(dynamicTable.$columns);
+
+    // Project only requested columns when provided, else fetch all columns.
+    final List<GeneratedColumn<Object>> projectedColumns;
+    if (selectColumns != null && selectColumns.isNotEmpty) {
+      final wantedSnake = selectColumns.map((c) => camelToSnake(c)).toSet();
+      projectedColumns = dynamicTable.$columns
+          .where((c) => wantedSnake.contains(c.$name))
+          .toList();
+      if (projectedColumns.isEmpty) {
+        // Fallback: avoid an empty SELECT list.
+        projectedColumns.addAll(dynamicTable.$columns);
+      }
+    } else {
+      projectedColumns = dynamicTable.$columns.toList();
+    }
+    dataQuery.addColumns(projectedColumns);
 
     // Apply ordering if provided
     if (orderBy != null && isPrimaryTable) {
@@ -808,20 +857,43 @@ class QueryBuilder {
       dataQuery.limit(pagination.limit, offset: pagination.offset);
     }
 
+    // Drift serializes statements on a single connection, so a "parallel"
+    // future actually executes back-to-back. Time count and data separately
+    // so we can see which one is the cost.
+    int countMs = 0;
+    if (countFuture != null) {
+      final cs = Stopwatch()..start();
+      final total = await countFuture;
+      countMs = cs.elapsedMilliseconds;
+      onCountFetched!(total);
+    }
+    final dataSw = Stopwatch()..start();
     final results = await dataQuery.get();
+    final dataMs = dataSw.elapsedMilliseconds;
+    if (isPrimaryTable) {
+      debug.debugPrint(
+          '[QueryPerf] $table count=${countMs}ms data=${dataMs}ms rows=${results.length}');
+    }
+
+    // Only callers that fetch the full row need additional_fields decoded
+    // (entity hydration). Resolver / hydration FK-only queries skip the JSON
+    // work entirely.
+    final shouldDecodeAdditionalFields = selectColumns == null;
+    final modelNameCamel = _snakeToCamel(table);
 
     // Map result rows
     List<Map<String, dynamic>> rows = results.map((row) {
       final rowMap = {
-        for (final column in dynamicTable.$columns)
+        for (final column in projectedColumns)
           column.$name: column is GeneratedColumnWithTypeConverter
               ? row.readWithConverter(column)
               : row.read(column),
       };
 
-      rowMap['modelName'] = _snakeToCamel(table);
+      rowMap['modelName'] = modelNameCamel;
 
-      if (rowMap.containsKey('additional_fields')) {
+      if (shouldDecodeAdditionalFields &&
+          rowMap.containsKey('additional_fields')) {
         final raw = rowMap['additional_fields'];
         if (raw is String && raw.trim().isNotEmpty) {
           try {
@@ -829,9 +901,7 @@ class QueryBuilder {
             if (decoded is Map<String, dynamic>) {
               rowMap['additional_fields'] = decoded;
             }
-          } catch (e) {
-            debugPrint('Failed to decode additional_fields JSON: $e');
-          }
+          } catch (e) {}
         }
       }
 

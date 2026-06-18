@@ -406,7 +406,7 @@ class Constants {
         .firstWhereOrNull((element) => element.service == service)
         ?.actions
         .firstWhereOrNull((element) =>
-    element.entityName == entityName && element.action == action)
+            element.entityName == entityName && element.action == action)
         ?.path;
 
     return actionResult ?? '';
