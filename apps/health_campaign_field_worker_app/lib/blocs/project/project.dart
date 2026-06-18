@@ -713,7 +713,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
                     MdmsMasterDetailModel(
                       'FormConfig',
                       filter:
-                          "[?(@.project=='${event.model.referenceID}' && @.isSelected==true)]",
+                          "[?(@.project=='CMP-2026-05-26-000243' && @.isSelected==true)]",
                     ),
                   ],
                 ),

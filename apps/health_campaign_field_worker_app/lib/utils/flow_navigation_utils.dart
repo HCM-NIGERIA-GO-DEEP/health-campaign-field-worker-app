@@ -77,20 +77,20 @@ class FlowNavigationUtils {
       // Initialize widget registry
       WidgetRegistry.initialize();
 
-      // Get schema from shared preferences
-      final prefs = await SharedPreferences.getInstance();
-      final schemaJsonRaw = prefs.getString('app_config_schemas');
+      // // Get schema from shared preferences
+      // final prefs = await SharedPreferences.getInstance();
+      // final schemaJsonRaw = prefs.getString('app_config_schemas');
 
-      if (schemaJsonRaw != null && config.schemaKey != "ATTENDANCE") {
-        final allSchemas = json.decode(schemaJsonRaw) as Map<String, dynamic>;
-        final moduleSchema = allSchemas[config.schemaKey];
+      // if (schemaJsonRaw != null && config.schemaKey != "ATTENDANCE") {
+      //   final allSchemas = json.decode(schemaJsonRaw) as Map<String, dynamic>;
+      //   final moduleSchema = allSchemas[config.schemaKey];
 
-        if (moduleSchema != null) {
-          Map<String, dynamic> configData = moduleSchema['data'];
-          await _navigate(context, configData);
-          return;
-        }
-      }
+      //   if (moduleSchema != null) {
+      //     Map<String, dynamic> configData = moduleSchema['data'];
+      //     await _navigate(context, configData);
+      //     return;
+      //   }
+      // }
 
       if (config.sampleFlows != null) {
         await _navigate(context, config.sampleFlows);

@@ -63,11 +63,13 @@ class BoundaryLocalRepository
       final r = result.read(sql.boundary.boundaryNum);
 
       if (query.isSingle == true) {
-        (selectQuery
-              ..where(buildAnd([
-                sql.boundary.boundaryNum.isSmallerOrEqualValue(r!),
-              ])))
-            .limit(r);
+        if (r != null) {
+          (selectQuery
+                ..where(buildAnd([
+                  sql.boundary.boundaryNum.isSmallerOrEqualValue(r),
+                ])))
+              .limit(r);
+        }
       } else {
         (selectQuery
           ..where(buildAnd([
