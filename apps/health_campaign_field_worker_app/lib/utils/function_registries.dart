@@ -223,6 +223,28 @@ class FunctionRegistries {
       return '';
     });
 
+    // Resolves the delivery-team (CDD) name to persist on a stock transaction,
+    // for whichever side the team is on:
+    // - Issue (team is the RECEIVER): the team QR is scanned into teamCode as
+    //   "userName||userUuid" -> use that userName.
+    // - Return (team is the SENDER): senderId is the logged-in user's uuid
+    //   (see the transformer senderId mapping), so the matching name is the
+    //   logged-in user's name, passed in from context.
+    // - Warehouse <-> warehouse: '' (no staff party involved).
+    // args: [teamCode, facilityFromWhich, loggedInUserName]
+    FunctionRegistry.register('getDeliveryTeamName', (args, stateData) {
+      final teamCode = args.isNotEmpty ? (args[0]?.toString() ?? '') : '';
+      if (teamCode.contains("||")) {
+        return teamCode.split("||").first.trim();
+      }
+      final facilityFromWhich =
+          args.length > 1 ? (args[1]?.toString() ?? '') : '';
+      if (facilityFromWhich == 'DELIVERY_TEAM') {
+        return args.length > 2 ? (args[2]?.toString() ?? '') : '';
+      }
+      return '';
+    });
+
     FunctionRegistry.register('getTransactionStatusType', (args, stateData) {
       if (args.isEmpty) return 'default';
       final transactionType = args.first?.toString().toUpperCase() ?? '';
@@ -596,6 +618,27 @@ class FunctionRegistries {
       return '';
     }
 
+    // Prefixes a facility id with FAC_ (skips empty ids so we never show a bare
+    // "FAC_"). Used to display facility parties on the transaction screens.
+    String withFacilityPrefix(dynamic id) {
+      final value = id?.toString() ?? '';
+      return value.isEmpty ? '' : 'FAC_$value';
+    }
+
+    // Resolves the delivery-team (CDD) userName for display. Prefers the
+    // captured deliveryTeamName (set when the team is the RECEIVER, e.g. an
+    // issue). When the team is the SENDER (e.g. a return) the name was not
+    // captured into deliveryTeamName, but the raw scanned QR is persisted in
+    // the deliveryTeam field as "userName||userUuid" -> extract the name from
+    // there. Returns '' when no name is available (caller falls back to the id).
+    String resolveTeamName(dynamic fields) {
+      final captured = getFieldValue(fields, 'deliveryTeamName');
+      if (captured.isNotEmpty) return captured;
+      final scanned = getFieldValue(fields, 'deliveryTeam');
+      if (scanned.contains('||')) return scanned.split('||').first.trim();
+      return '';
+    }
+
     FunctionRegistry.register('getFirstPagePartyLabel', (args, stateData) {
       if (args.isEmpty) return 'INVENTORY_TRANSACTING_PARTY_LABEL';
       final stockEntryType = getStockEntryTypeFromFields(args.first);
@@ -617,30 +660,30 @@ class FunctionRegistries {
       final stockEntryType = getStockEntryTypeFromFields(args[0]);
       final senderType = args.length > 3 ? (args[3]?.toString() ?? '') : '';
       final receiverType = args.length > 4 ? (args[4]?.toString() ?? '') : '';
-      final teamName = getFieldValue(args[0], 'deliveryTeamName');
-      // NEW: a STAFF party (delivery team member) is an individual, not a
+      final teamName = resolveTeamName(args[0]);
+      // A STAFF party (CDD / delivery team member) is an individual, not a
       // facility -> show the captured userName (deliveryTeamName), no FAC_
-      // prefix; fall back to the raw id when no name was captured. Every
-      // facility (non-STAFF) party keeps the original behaviour unchanged.
+      // prefix; fall back to the raw id (userUUID) only when no name was
+      // captured. Facility (non-STAFF) parties get the FAC_ prefix.
       switch (stockEntryType) {
         case 'RECEIPT':
         case 'RETURNED':
           if (senderType == 'STAFF') {
             return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
           }
-          return 'FAC_${args[1]?.toString()}';
+          return withFacilityPrefix(args[1]);
         case 'ISSUED':
         case 'DAMAGED':
         case 'LOSS':
           if (receiverType == 'STAFF') {
             return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
           }
-          return 'FAC_${args[2]?.toString()}';
+          return withFacilityPrefix(args[2]);
         default:
           if (senderType == 'STAFF') {
             return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
           }
-          return 'FAC_${args[1]?.toString()}';
+          return withFacilityPrefix(args[1]);
       }
     });
 
@@ -665,28 +708,29 @@ class FunctionRegistries {
       final stockEntryType = getStockEntryTypeFromFields(args[0]);
       final senderType = args.length > 3 ? (args[3]?.toString() ?? '') : '';
       final receiverType = args.length > 4 ? (args[4]?.toString() ?? '') : '';
-      final teamName = getFieldValue(args[0], 'deliveryTeamName');
-      // NEW: STAFF party -> show captured userName (no FAC_ here either, second
-      // page never prefixed); fall back to raw id. Facility parties unchanged.
+      final teamName = resolveTeamName(args[0]);
+      // STAFF party -> show captured userName (no FAC_ prefix); fall back to the
+      // raw id. Facility parties get the FAC_ prefix so the details page matches
+      // the transaction list (getFirstPageParty).
       switch (stockEntryType) {
         case 'RECEIPT':
         case 'RETURNED':
           if (receiverType == 'STAFF') {
             return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
           }
-          return args[2]?.toString() ?? '';
+          return withFacilityPrefix(args[2]);
         case 'ISSUED':
         case 'DAMAGED':
         case 'LOSS':
           if (senderType == 'STAFF') {
             return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
           }
-          return args[1]?.toString() ?? '';
+          return withFacilityPrefix(args[1]);
         default:
           if (receiverType == 'STAFF') {
             return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
           }
-          return args[2]?.toString() ?? '';
+          return withFacilityPrefix(args[2]);
       }
     });
   }
