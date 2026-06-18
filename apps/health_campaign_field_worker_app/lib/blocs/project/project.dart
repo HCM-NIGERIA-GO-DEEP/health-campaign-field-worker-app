@@ -702,6 +702,13 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         debugPrint(e.toString());
       }
 
+      String? campaignID = event.model.referenceID;
+      var projectTypeString = event.model.projectType;
+
+      if (projectTypeString == "ORS-Zinc") {
+        campaignID = "CMP-2026-06-17-000376";
+      }
+
       try {
         final formConfigResult = await mdmsRepository.searchMDMS(
           envConfig.variables.mdmsApiPath,
@@ -715,7 +722,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
                     MdmsMasterDetailModel(
                       'FormConfig',
                       filter:
-                          "[?(@.project=='${event.model.referenceID}' && @.isSelected==true)]",
+                          "[?(@.project=='$campaignID' && @.isSelected==true)]",
                     ),
                   ],
                 ),
