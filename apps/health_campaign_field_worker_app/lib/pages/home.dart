@@ -154,14 +154,25 @@ class _HomePageState extends LocalizedState<HomePage> {
           );
         }
 
+        // VAS DELIVERY flow - VAS details are stored in a separate page data key
         final vasDetails = stateAccessor.getPageData('vasDetails');
-
         if (vasDetails != null &&
             stateAccessor.currentPageName == 'VASDELIVERY') {
           // VAS DELIVERY flow
           return ResourceCard(
             stateData: vasDetails,
             pageSchema: 'VASDELIVERY',
+          );
+        }
+
+        // ORS DELIVERY flow - ORS details are stored in a separate page data key
+        final orsDetails = stateAccessor.getPageData('orsDetails');
+        if (orsDetails != null &&
+            stateAccessor.currentPageName == 'ORSDELIVERY') {
+          // ORS DELIVERY flow
+          return ResourceCard(
+            stateData: orsDetails,
+            pageSchema: 'ORSDELIVERY',
           );
         }
 
