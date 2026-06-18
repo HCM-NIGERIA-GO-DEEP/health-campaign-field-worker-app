@@ -501,7 +501,13 @@ final jsonConfig = {
             "height": "__context:height",
             "weight": "__context:weight",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+            // Eligibility checklist answers (null-skipped for non-checklist paths)
+            "ec1Value": "__context:ec1",
+            "ec2Value": "__context:ec2",
+            "ec3Value": "__context:ec3",
+            "ec4Value": "__context:ec4",
+            "ec5Value": "__context:ec5"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -602,7 +608,16 @@ final jsonConfig = {
             "height": "__context:height",
             "weight": "__context:weight",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+            // Eligibility checklist answers, threaded via navigation params
+            // from the eligibilityChecklist page through beneficiaryDetails →
+            // DELIVERY. Skipped automatically (null) for direct deliveries that
+            // never went through the checklist.
+            "ec1Value": "__context:ec1",
+            "ec2Value": "__context:ec2",
+            "ec3Value": "__context:ec3",
+            "ec4Value": "__context:ec4",
+            "ec5Value": "__context:ec5"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -696,7 +711,13 @@ final jsonConfig = {
             "ageInMonths": "__context:ageInMonths",
             "gender": "__context:gender",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+            // Eligibility checklist answers (the ineligibility reason)
+            "ec1Value": "__context:ec1",
+            "ec2Value": "__context:ec2",
+            "ec3Value": "__context:ec3",
+            "ec4Value": "__context:ec4",
+            "ec5Value": "__context:ec5"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -999,7 +1020,13 @@ final jsonConfig = {
             "height": "__context:height",
             "weight": "__context:weight",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+            // Eligibility checklist answers (null-skipped for non-checklist paths)
+            "ec1Value": "__context:ec1",
+            "ec2Value": "__context:ec2",
+            "ec3Value": "__context:ec3",
+            "ec4Value": "__context:ec4",
+            "ec5Value": "__context:ec5"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -1162,6 +1189,7 @@ final jsonConfig = {
             "transportType": "stockDetails.transportType",
             "vehicle_number": "stockDetails.vehicleNumber",
             "deliveryTeam": "stockDetails.deliveryTeam",
+            "deliveryTeamName": "__context:deliveryTeamName",
             "mrnNumber": "__context:mrnNumber",
             "stockEntryType": "__context:stockEntryType",
             "primaryRole": "__context:primaryRole",

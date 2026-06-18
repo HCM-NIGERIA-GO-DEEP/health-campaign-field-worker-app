@@ -221,6 +221,18 @@ class FunctionRegistries {
       return teamCode;
     });
 
+    // Extracts the userName (part before "||") from the scanned team QR
+    // ("userName||userUuid"). Returns '' when no userName is present
+    // (e.g. when the scanned QR only contains the userUuid).
+    FunctionRegistry.register('getTeamName', (args, stateData) {
+      if (args.isEmpty) return '';
+      final teamCode = args.first?.toString() ?? '';
+      if (teamCode.contains("||")) {
+        return teamCode.split("||").first.trim();
+      }
+      return '';
+    });
+
     FunctionRegistry.register('getTransactionStatusType', (args, stateData) {
       if (args.isEmpty) return 'default';
       final transactionType = args.first?.toString().toUpperCase() ?? '';
@@ -585,6 +597,18 @@ class FunctionRegistries {
       return '';
     }
 
+    // Reads a single value from the additionalFields key/value list.
+    String getFieldValue(dynamic fields, String key) {
+      if (fields is List) {
+        for (var field in fields) {
+          if (field is Map && field['key'] == key) {
+            return field['value']?.toString() ?? '';
+          }
+        }
+      }
+      return '';
+    }
+
     FunctionRegistry.register('getFirstPagePartyLabel', (args, stateData) {
       if (args.isEmpty) return 'INVENTORY_TRANSACTING_PARTY_LABEL';
       final stockEntryType = getStockEntryTypeFromFields(args.first);
@@ -604,18 +628,32 @@ class FunctionRegistries {
     FunctionRegistry.register('getFirstPageParty', (args, stateData) {
       if (args.length < 3) return '';
       final stockEntryType = getStockEntryTypeFromFields(args[0]);
-      final senderId = 'FAC_${args[1]?.toString()}' ?? '';
-      final receiverId = 'FAC_${args[2]?.toString()}' ?? '';
+      final senderType = args.length > 3 ? (args[3]?.toString() ?? '') : '';
+      final receiverType = args.length > 4 ? (args[4]?.toString() ?? '') : '';
+      final teamName = getFieldValue(args[0], 'deliveryTeamName');
+      // NEW: a STAFF party (delivery team member) is an individual, not a
+      // facility -> show the captured userName (deliveryTeamName), no FAC_
+      // prefix; fall back to the raw id when no name was captured. Every
+      // facility (non-STAFF) party keeps the original behaviour unchanged.
       switch (stockEntryType) {
         case 'RECEIPT':
         case 'RETURNED':
-          return senderId;
+          if (senderType == 'STAFF') {
+            return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
+          }
+          return 'FAC_${args[1]?.toString()}';
         case 'ISSUED':
         case 'DAMAGED':
         case 'LOSS':
-          return receiverId;
+          if (receiverType == 'STAFF') {
+            return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
+          }
+          return 'FAC_${args[2]?.toString()}';
         default:
-          return senderId;
+          if (senderType == 'STAFF') {
+            return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
+          }
+          return 'FAC_${args[1]?.toString()}';
       }
     });
 
@@ -638,18 +676,30 @@ class FunctionRegistries {
     FunctionRegistry.register('getSecondPageParty', (args, stateData) {
       if (args.length < 3) return '';
       final stockEntryType = getStockEntryTypeFromFields(args[0]);
-      final senderId = args[1]?.toString() ?? '';
-      final receiverId = args[2]?.toString() ?? '';
+      final senderType = args.length > 3 ? (args[3]?.toString() ?? '') : '';
+      final receiverType = args.length > 4 ? (args[4]?.toString() ?? '') : '';
+      final teamName = getFieldValue(args[0], 'deliveryTeamName');
+      // NEW: STAFF party -> show captured userName (no FAC_ here either, second
+      // page never prefixed); fall back to raw id. Facility parties unchanged.
       switch (stockEntryType) {
         case 'RECEIPT':
         case 'RETURNED':
-          return receiverId;
+          if (receiverType == 'STAFF') {
+            return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
+          }
+          return args[2]?.toString() ?? '';
         case 'ISSUED':
         case 'DAMAGED':
         case 'LOSS':
-          return senderId;
+          if (senderType == 'STAFF') {
+            return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
+          }
+          return args[1]?.toString() ?? '';
         default:
-          return receiverId;
+          if (receiverType == 'STAFF') {
+            return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
+          }
+          return args[2]?.toString() ?? '';
       }
     });
   }
