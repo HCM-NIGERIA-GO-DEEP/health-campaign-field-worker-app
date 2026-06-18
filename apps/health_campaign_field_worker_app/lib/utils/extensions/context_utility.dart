@@ -142,8 +142,8 @@ extension ContextUtilityExtensions on BuildContext {
 
     ProjectTypeModel? projectType =
         projectState.selectedProject?.additionalDetails?.projectType;
-    ProjectType? orsProjectType =
-        projectState.allProjectTypes?.firstWhereOrNull((e) => e.code == 'ORS');
+    ProjectType? orsProjectType = projectState.allProjectTypes
+        ?.firstWhereOrNull((e) => e.code == 'ORS-Zinc');
 
     List<ProjectProductVariantModel> productVariants =
         projectType?.resources ?? [];
@@ -171,7 +171,8 @@ extension ContextUtilityExtensions on BuildContext {
                       doseCriteria: delivery.doseCriteria
                           ?.map(
                             (dose) => DeliveryDoseCriteria(
-                              condition: dose.condition,
+                              condition: dose.condition
+                                  ?.replaceAll('age', 'ageandage'),
                               productVariants: dose.productVariants
                                   ?.map(
                                     (variant) => DeliveryProductVariant(
@@ -182,7 +183,7 @@ extension ContextUtilityExtensions on BuildContext {
                                                     variant.productVariantId,
                                               )
                                               ?.name ??
-                                          '',
+                                          'ORS-Zinc',
                                       quantity: variant.quantity,
                                       productVariantId:
                                           variant.productVariantId ?? '',
