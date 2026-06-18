@@ -1652,6 +1652,7 @@ final jsonConfig = {
           "additionalFields": {
             // Static field mappings
             "boundaryCode": "facilityDetails.administrativeUnit",
+            "localityCode": "__context:selectedBoundaryCode",
             "referralCycle": "referralDetails.referralCycle",
             "gender": "referralDetails.gender",
             "ageInMonths": "referralDetails.ageInMonths",
@@ -1691,6 +1692,7 @@ final jsonConfig = {
           "additionalFields": {
             // Explicit field mappings matching ReferralReconEnums/ReferralReconAdditionalFields
             "boundaryCode": "facilityDetails.administrativeArea",
+            "localityCode": "__context:selectedBoundaryCode",
             "referredBy": "__context:userUUID",
             "referralComments": "referBeneficiary.referralComments",
             "nameOfReferral": "__context:selectedIndividualName",
