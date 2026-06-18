@@ -791,7 +791,13 @@ final jsonConfig = {
             "ageInMonths": "__context:ageInMonths",
             "gender": "__context:gender",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+            // Eligibility checklist answers (the ineligibility reason)
+            "ec1Value": "__context:ec1",
+            "ec2Value": "__context:ec2",
+            "ec3Value": "__context:ec3",
+            "ec4Value": "__context:ec4",
+            "ec5Value": "__context:ec5"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
