@@ -191,6 +191,7 @@ final jsonConfig = {
             "height": "beneficiaryDetails.height",
             "weight": "beneficiaryDetails.weight",
             "dateOfBirth": "beneficiaryDetails.dobPicker",
+            "ageInMonths": "__ageInMonths:beneficiaryDetails.dobPicker",
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
             "beneficiaryId": "beneficiaryDetails.beneficiaryId"
@@ -421,6 +422,7 @@ final jsonConfig = {
                 "__concatName:beneficiaryDetails.nameOfIndividual,beneficiaryDetails.familyname",
             "gender": "beneficiaryDetails.gender",
             "dateOfBirth": "beneficiaryDetails.dobPicker",
+            "ageInMonths": "__ageInMonths:beneficiaryDetails.dobPicker",
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
             "beneficiaryId": "beneficiaryDetails.beneficiaryId"
