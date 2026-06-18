@@ -1856,6 +1856,20 @@ class _HomePageState extends LocalizedState<HomePage> {
       return null;
     }
 
+    // Feature source configuration:
+    // `true`  = use server JSON
+    // `false` = use local JSON (development/testing only)
+    //
+    // IMPORTANT: Set all flags to `true` before a production/release build.
+    const isRemoteComplaintFlows = true;
+    const isRemoteRegistrationFlows = true;
+    const isRemoteCloseHouseholdFlows = true;
+    const isRemoteInventoryFlows = true;
+    const isRemoteInventoryReportFlows = true;
+    const isRemoteStockReconciliationFlows = true;
+    //////
+    ///
+
     final Map<String, Widget> homeItemsMap = {
       // INFO : Need to add home items of package Here
       // i18.home.fileComplaint:
@@ -1976,7 +1990,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                 );
 
                 try {
-                  if (true) {
+                  if (isRemoteComplaintFlows) {
                     final allSchemas =
                         json.decode(schemaJsonRaw!) as Map<String, dynamic>;
                     final data = allSchemas['COMPLAINTS'];
@@ -2155,7 +2169,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                   dynamicEntityModelListener: EntityModelMapMapper(),
                 );
                 try {
-                  if (true) {
+                  if (isRemoteRegistrationFlows) {
                     final allSchemas =
                         json.decode(schemaJsonRaw!) as Map<String, dynamic>;
                     final data = allSchemas['REGISTRATION'];
@@ -2501,7 +2515,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                   dynamicEntityModelListener: EntityModelMapMapper(),
                 );
                 try {
-                  if (true) {
+                  if (isRemoteCloseHouseholdFlows) {
                     final allSchemas =
                         json.decode(schemaJsonRaw!) as Map<String, dynamic>;
                     final data = allSchemas['CLOSEHOUSEHOLD'];
@@ -2758,7 +2772,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             );
 
             try {
-              if (true) {
+              if (isRemoteInventoryFlows) {
                 final allSchemas =
                     json.decode(schemaJsonRaw!) as Map<String, dynamic>;
                 final data = allSchemas['INVENTORY'];
@@ -3090,7 +3104,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             );
 
             try {
-              if (true) {
+              if (isRemoteStockReconciliationFlows) {
                 final allSchemas =
                     json.decode(schemaJsonRaw!) as Map<String, dynamic>;
                 final data = allSchemas['STOCKRECONCILIATION'];
@@ -3372,7 +3386,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             );
 
             try {
-              if (true) {
+              if (isRemoteInventoryReportFlows) {
                 final allSchemas =
                     json.decode(schemaJsonRaw!) as Map<String, dynamic>;
                 final data = allSchemas['STOCKREPORTS'];
