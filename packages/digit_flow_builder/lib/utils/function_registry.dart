@@ -1794,9 +1794,9 @@ void initializeFunctionRegistry() {
 
     if (deliveryCompletionTime == null) return true;
 
-    // Check if 30 minutes (1800000 ms) have passed since delivery
+    // Check if 1 day (86400000 ms) has passed since delivery
     final now = DateTime.now().millisecondsSinceEpoch;
-    const redoseWindowMs = 30 * 60 * 1000; // 30 minutes in milliseconds
+    const redoseWindowMs = 24 * 60 * 60 * 1000; // 1 day in milliseconds
 
     return (now - deliveryCompletionTime) > redoseWindowMs;
   });
