@@ -6975,7 +6975,14 @@ final dynamic sampleInventoryFlows = {
               "systemDate": false,
               "errorMessage": "",
               "isMultiSelect": false,
-              "enums": null
+              "enums": null,
+              "validations": [
+                {
+                  "type": "pattern",
+                  "value": "^[a-zA-Z0-9 ]+\$",
+                  "message": "INVENTORY_VEHICLE_NUMBER_HELPTEXT"
+                }
+              ]
             }
           ],
           "value": null,
@@ -7032,6 +7039,11 @@ final dynamic sampleInventoryFlows = {
                   "type": "required",
                   "value": false,
                   "message": "INVENTORY_WAYBILL_NUMBER_REQUIRED_ERROR_MESSAGE"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^[a-zA-Z0-9]+\$",
+                  "message": "INVENTORY_WAYBILL_NUMBER_REQUIRED_ERROR_MESSAGE"
                 }
               ],
               "errorMessage": "",
@@ -7057,6 +7069,11 @@ final dynamic sampleInventoryFlows = {
                 {
                   "type": "required",
                   "value": false,
+                  "message": "INVENTORY_BATCH_NUMBER_REQUIRED_ERROR_MESSAGE"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^[a-zA-Z0-9 ]+\$",
                   "message": "INVENTORY_BATCH_NUMBER_REQUIRED_ERROR_MESSAGE"
                 }
               ],
@@ -7981,7 +7998,7 @@ final dynamic sampleInventoryFlows = {
                 {
                   "type": "regex",
                   "value": "^[0-9]+\$",
-                  "message": "INVENTORY_VALID_NUMBER_REQUIRED_MESSAGE"
+                  "message": "INVENTORY_VALID_NUMBER_REQUIRED_MESSAGE"  
                 }
               ],
               "errorMessage": "",
@@ -8500,8 +8517,7 @@ final dynamic sampleInventoryFlows = {
                   },
                   {
                     "key": "INVENTORY_WAYBILL_NUMBER_LABEL",
-                    // "value": "{{item.additionalFields.fields.wayBillNumber}}"
-                    "value": "{{item.waybillNumber}}"
+                    "value": "{{item.additionalFields.fields.wayBillNumber}}"
                   },
                   {
                     "key": "INVENTORY_BATCH_NUMBER_LABEL",

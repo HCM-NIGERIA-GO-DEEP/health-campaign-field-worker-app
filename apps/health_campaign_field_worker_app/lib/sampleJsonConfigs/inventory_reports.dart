@@ -1,5 +1,4 @@
 final dynamic inventoryReportFlows = {
-  
   "name": "STOCKREPORTS",
   "initialPage": "viewReports",
   "order": 5,

@@ -58,11 +58,16 @@ class LoadUniqueIdPoolExecutor extends ActionExecutor {
       currentWidgetData['latestBeneficiaryIdModel'] = latestIdModel;
       currentWidgetData['latestBeneficiaryId'] = latestIdModel?.id;
 
-      final updatedState =
-          currentState?.copyWith(widgetData: currentWidgetData);
-      if (updatedState != null) {
-        FlowCrudStateRegistry().update(compositeKey, updatedState);
-      }
+      // final updatedState = currentState?.copyWith(widgetData: currentWidgetData);
+      // if (updatedState != null) {
+      //   FlowCrudStateRegistry().update(compositeKey, updatedState);
+      // }
+      final updatedState = (currentState ?? const FlowCrudState()).copyWith(
+        widgetData: currentWidgetData,
+      );
+      FlowCrudStateRegistry().update(compositeKey, updatedState);
+
+      print(contextData);
 
       return {
         ...contextData,

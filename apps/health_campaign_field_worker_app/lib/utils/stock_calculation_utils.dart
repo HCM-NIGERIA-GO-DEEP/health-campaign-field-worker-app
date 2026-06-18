@@ -245,7 +245,7 @@ class StockCalculationUtils {
         stockReceived(quantity);
       }
     } else if (transactionType == 'DISPATCHED') {
-      if (stockEntryType == 'RETURNED') {
+      if (stockEntryType == 'RETURNED' && status != 'REJECTED') {
         stockReturned(quantity);
         stockWastage(wastage);
         stockPartialUsed(partialUsed);

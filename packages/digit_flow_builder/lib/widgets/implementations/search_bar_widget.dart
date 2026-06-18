@@ -101,16 +101,30 @@ class _ReactiveSearchBar extends StatefulWidget {
 }
 
 class _ReactiveSearchBarState extends State<_ReactiveSearchBar> {
+  static final RegExp _nonAsciiRegex = RegExp(r'[^\x00-\x7F]');
+
   late final TextEditingController _controller;
   String _lastHandledValue = '';
   bool _syncingExternalValue = false;
 
+  String _sanitizeInput(String value) {
+    return value.replaceAll(_nonAsciiRegex, '');
+  }
+
   @override
   void initState() {
     super.initState();
-    _controller = TextEditingController(text: widget.initialValue);
-    _lastHandledValue = widget.initialValue;
+    final sanitizedInitialValue = _sanitizeInput(widget.initialValue);
+    _controller = TextEditingController(text: sanitizedInitialValue);
+    _lastHandledValue = sanitizedInitialValue;
     _controller.addListener(_handleControllerChange);
+
+    if (sanitizedInitialValue != widget.initialValue) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        _updateWidgetData(sanitizedInitialValue);
+      });
+    }
   }
 
   @override
@@ -125,7 +139,17 @@ class _ReactiveSearchBarState extends State<_ReactiveSearchBar> {
       return;
     }
 
-    final value = _controller.text;
+    final value = _sanitizeInput(_controller.text);
+
+    if (value != _controller.text) {
+      _syncingExternalValue = true;
+      _controller.value = TextEditingValue(
+        text: value,
+        selection: TextSelection.collapsed(offset: value.length),
+      );
+      _syncingExternalValue = false;
+    }
+
     if (value == _lastHandledValue) {
       return;
     }
@@ -355,8 +379,8 @@ class _ReactiveSearchBarState extends State<_ReactiveSearchBar> {
     return ValueListenableBuilder<FlowCrudState?>(
       valueListenable: FlowCrudStateRegistry().listen(compositeKey),
       builder: (context, flowState, child) {
-        final externalValue =
-            flowState?.widgetData?[widget.fieldName]?.toString() ?? '';
+        final externalValue = _sanitizeInput(
+            flowState?.widgetData?[widget.fieldName]?.toString() ?? '');
 
         if (externalValue != _controller.text) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -371,6 +395,8 @@ class _ReactiveSearchBarState extends State<_ReactiveSearchBar> {
             );
             _lastHandledValue = externalValue;
             _syncingExternalValue = false;
+
+            _updateWidgetData(externalValue);
           });
         }
 

@@ -880,7 +880,7 @@ final jsonConfig = {
           "referenceIdType": "__value:PROJECT",
           "quantity":
               "__switch:__context:stockEntryType:{RECEIPT:stockProductDetails.quantityReceived,RETURNED:stockProductDetails.quantityReturned,ISSUED:stockProductDetails.quantitySent,DAMAGED:stockProductDetails.quantityDamaged,LOSS:stockProductDetails.quantityLost}",
-          "waybillNumber": "stockProductDetails.wayBillNumber",
+          "wayBillNumber": "stockProductDetails.wayBillNumber",
           "transactionType": "__context:transactionType",
           "transactionReason":
               "__switch:__context:stockEntryType:{RECEIPT:__value:RECEIVED,RETURNED:__value:RETURNED,ISSUED:__value:ISSUED,DAMAGED:stockDetails.transactionReason,LOSS:stockDetails.transactionReason}",
@@ -905,7 +905,7 @@ final jsonConfig = {
             "transportType": "stockDetails.transportType",
             "vehicle_number": "stockDetails.vehicleNumber",
             "deliveryTeam": "stockDetails.deliveryTeam",
-            "waybillNumber": "stockProductDetails.wayBillNumber",
+            "wayBillNumber": "stockProductDetails.wayBillNumber",
             "mrnNumber": "__context:mrnNumber",
             "stockEntryType": "__context:stockEntryType",
             "primaryRole": "__context:primaryRole",
@@ -935,7 +935,7 @@ final jsonConfig = {
           "referenceId": "__context:projectId",
           "referenceIdType": "__value:PROJECT",
           "quantity": "__context:quantity",
-          "waybillNumber": "stockReceiptDetails.wayBillNumber",
+          "wayBillNumber": "stockReceiptDetails.wayBillNumber",
           "transactionType": "__context:transactionType",
           "transactionReason": "__value:RECEIVED",
           "campaignNumber": "__context:selectedProject.referenceID",
@@ -952,7 +952,7 @@ final jsonConfig = {
             "expiryDate": "stockReceiptDetails.expiryDate",
             "comments": "stockReceiptDetails.comment",
             "mrnNumber": "__context:mrnNumber",
-            "waybillNumber": "stockReceiptDetails.wayBillNumber",
+            "wayBillNumber": "stockReceiptDetails.wayBillNumber",
             "stockEntryType": "__context:stockEntryType",
             "primaryRole": "__context:primaryRole",
             "secondaryRole": "__context:secondaryRole"
@@ -976,7 +976,7 @@ final jsonConfig = {
           "referenceIdType": "__value:PROJECT",
           "quantity": "__context:quantity",
           "campaignNumber": "__context:selectedProject.referenceID",
-          "waybillNumber": "stockReceiptDetails.wayBillNumber",
+          "wayBillNumber": "stockReceiptDetails.wayBillNumber",
           "transactionType": "__value:DISPATCHED",
           "transactionReason": "__value:null",
           "senderId": "__context:senderFacilityId",
@@ -1224,10 +1224,15 @@ final jsonConfig = {
           "IdentifierModel": {
             "mappings": {
               "id": "id",
-              // "identifierType": "__value:DEFAULT",
-              "identifierType": "closeHouseholdDetails.identifiers[0]",
-              // "identifierId": "__generate:uuid",
-              "identifierId": "closeHouseholdDetails.identifiers[1]",
+              "identifierType": "__value:DEFAULT",
+              "identifierId": "__generate:uuid",
+              
+              // "identifierType": "closeHouseholdDetails.identifiers[0]",
+              // "identifierId": "closeHouseholdDetails.identifiers[1]",
+
+              // "identifierType": "__value:UNIQUE_BENEFICIARY_ID",
+              // "identifierId": "__context:latestBeneficiaryId[1]",
+              
               "boundaryCode": "__context:selectedBoundaryCode",
               "nonRecoverableError": "error.nonRecoverable",
               "individualClientReferenceId":

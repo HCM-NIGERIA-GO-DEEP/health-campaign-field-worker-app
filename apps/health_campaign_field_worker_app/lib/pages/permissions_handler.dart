@@ -429,7 +429,7 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
   }
 
   /// Handle actions from config
-  void _handleAction(Map<String, dynamic> action) {
+  Future<void> _handleAction(Map<String, dynamic> action) async {
     final actionType = action['actionType'] as String?;
     final properties = action['properties'] as Map<String, dynamic>? ?? {};
 
@@ -437,15 +437,15 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
       case 'REQUEST_PERMISSION':
         final permission = properties['permission'] as String?;
         if (permission != null) {
-          _requestPermissionByName(permission);
+          await _requestPermissionByName(permission);
         }
         break;
       case 'OPEN_APP_SETTINGS':
-        openAppSettings();
+        await openAppSettings();
         break;
       case 'BACK_NAVIGATION':
         if (context.router.canPop()) {
-          context.router.maybePop();
+          await context.router.maybePop();
         }
         break;
     }
@@ -502,7 +502,7 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
                 value: backgroundActivityConfirmed,
                 onChanged: (val) {
                   setState(() {
-                    backgroundActivityConfirmed = val ?? false;
+                    backgroundActivityConfirmed = val;
                   });
                 },
               ),
@@ -733,23 +733,154 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
   ) {
     final label = config['label'] as String? ?? '';
     final properties = config['properties'] as Map<String, dynamic>? ?? {};
-    final onAction = config['onAction'] as List<dynamic>?;
+    final onActionRaw = config['onAction'];
+    final onActions = onActionRaw is List
+        ? onActionRaw
+        : (onActionRaw is Map<String, dynamic> ? [onActionRaw] : const []);
+    final translatedLabel = localizations.translate(label);
 
-    return DigitButton(
-      label: localizations.translate(label),
-      type: _parseButtonType(properties['type']),
-      size: _parseButtonSize(properties['size']),
-      mainAxisSize: properties['mainAxisSize'] == 'max'
-          ? MainAxisSize.max
-          : MainAxisSize.min,
-      onPressed: () {
-        if (onAction != null) {
-          for (var action in onAction) {
-            _handleAction(action as Map<String, dynamic>);
-          }
+    final fixedWidthValue = properties['fixedWidth'];
+    final fixedWidth = fixedWidthValue is num
+        ? fixedWidthValue.toDouble()
+        : (fixedWidthValue is String ? double.tryParse(fixedWidthValue) : null);
+
+    final shouldUseTwoLines = properties['allowTwoLines'] != false;
+    final labelMaxChars = properties['maxCharsPerLine'] is int
+        ? properties['maxCharsPerLine'] as int
+        : 18;
+    final resolvedLabel = shouldUseTwoLines
+        ? _formatButtonLabelForTwoLines(
+            translatedLabel,
+            maxCharsPerLine: labelMaxChars,
+          )
+        : translatedLabel;
+
+    final buttonType = _parseButtonType(properties['type']);
+    final buttonSize = _parseButtonSize(properties['size']);
+    final buttonHeight = switch (buttonSize) {
+      DigitButtonSize.small => 46.0,
+      DigitButtonSize.medium => 54.0,
+      DigitButtonSize.large => 62.0,
+    };
+
+    void onPressed() async {
+      for (final action in onActions) {
+        if (action is Map<String, dynamic>) {
+          await _handleAction(action);
         }
-      },
+      }
+    }
+
+    final labelWidget = Text(
+      resolvedLabel,
+      textAlign: TextAlign.center,
+      maxLines: 2,
+      softWrap: true,
+      overflow: TextOverflow.ellipsis,
+      style: textTheme.bodyS.copyWith(
+        color: buttonType == DigitButtonType.primary
+            ? Colors.white
+            : theme.colorTheme.primary.primary1,
+      ),
     );
+
+    Widget button;
+    switch (buttonType) {
+      case DigitButtonType.primary:
+        button = ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: theme.colorTheme.primary.primary1,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: spacer2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(spacer1),
+            ),
+          ),
+          onPressed: onPressed,
+          child: labelWidget,
+        );
+        break;
+      case DigitButtonType.secondary:
+        button = OutlinedButton(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: theme.colorTheme.primary.primary1,
+            side: BorderSide(color: theme.colorTheme.primary.primary1),
+            padding: const EdgeInsets.symmetric(horizontal: spacer2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(spacer1),
+            ),
+          ),
+          onPressed: onPressed,
+          child: labelWidget,
+        );
+        break;
+      case DigitButtonType.tertiary:
+        button = TextButton(
+          style: TextButton.styleFrom(
+            foregroundColor: theme.colorTheme.primary.primary1,
+            padding: const EdgeInsets.symmetric(horizontal: spacer2),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(spacer1),
+            ),
+          ),
+          onPressed: onPressed,
+          child: labelWidget,
+        );
+        break;
+      case DigitButtonType.link:
+        button = TextButton(
+          style: TextButton.styleFrom(
+            foregroundColor: theme.colorTheme.primary.primary1,
+            padding: const EdgeInsets.symmetric(horizontal: spacer2),
+          ),
+          onPressed: onPressed,
+          child: labelWidget,
+        );
+        break;
+    }
+
+    return Align(
+      alignment: Alignment.centerRight,
+      child: SizedBox(
+        width: fixedWidth ?? 160,
+        child: SizedBox(
+          height: buttonHeight,
+          child: button,
+        ),
+      ),
+    );
+  }
+
+  String _formatButtonLabelForTwoLines(
+    String label, {
+    int maxCharsPerLine = 18,
+  }) {
+    if (label.isEmpty ||
+        label.contains('\n') ||
+        label.length <= maxCharsPerLine) {
+      return label;
+    }
+
+    final firstSpaceAfterLimit = label.indexOf(' ', maxCharsPerLine);
+    final firstSpaceBeforeLimit = label.lastIndexOf(' ', maxCharsPerLine);
+
+    int splitIndex = -1;
+    if (firstSpaceBeforeLimit > 0) {
+      splitIndex = firstSpaceBeforeLimit;
+    } else if (firstSpaceAfterLimit > 0) {
+      splitIndex = firstSpaceAfterLimit;
+    } else if (label.length > maxCharsPerLine) {
+      splitIndex = maxCharsPerLine;
+    }
+
+    if (splitIndex <= 0 || splitIndex >= label.length - 1) {
+      return label;
+    }
+
+    final firstLine = label.substring(0, splitIndex).trimRight();
+    final secondLine = label.substring(splitIndex).trimLeft();
+    return '$firstLine\n$secondLine';
   }
 
   Widget _buildTag(

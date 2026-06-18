@@ -431,6 +431,7 @@ class FunctionRegistries {
       if (cache.cache.isEmpty) return false;
       final s = cache.cache.values.any((balance) => balance > 0);
       print(s);
+      print(cache.cache.values.any((balance) => balance > 0));
       return cache.cache.values.any((balance) => balance > 0);
     });
 

@@ -1,6 +1,6 @@
 final dynamic sampleCloseHouseholdFlows = {
   "name": "CLOSEDHOUSEHOLD",
-  "initialPage": "CLOSEHOUSEHOLD",
+  "initialPage": "closeHouseholdRegistration",
   "order": 7,
   "project": "LLIN-mz",
   "version": 1,
@@ -9,7 +9,7 @@ final dynamic sampleCloseHouseholdFlows = {
   "flows": [
     {
       "screenType": "FORM",
-      "name": "CLOSEHOUSEHOLD",
+      "name": "closeHouseholdRegistration",
       "project": "LLIN-mz",
       "version": 1,
       "initActions": [
@@ -126,7 +126,7 @@ final dynamic sampleCloseHouseholdFlows = {
                   "value": "3",
                   "message":
                       "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_headName_MIN_LENGTH_ERROR"
-                },
+                }
               ],
               "errorMessage": "",
               "isMultiSelect": false,
@@ -163,7 +163,7 @@ final dynamic sampleCloseHouseholdFlows = {
               "label":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_identifiers",
               "order": 10,
-              "value": "{{identifiers}}",
+              "value": "",
               "format": "idPopulator",
               "hidden": true,
               "includeInForm": true,
@@ -179,19 +179,12 @@ final dynamic sampleCloseHouseholdFlows = {
               "innerLabel": "",
               "schemaCode": "HCM.ID_TYPE_OPTIONS_POPULATOR",
               "systemDate": false,
-              "validations": [
-                {
-                  "type": "required",
-                  "value": true,
-                  "message":
-                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_idpopulator_mandatory_message"
-                }
-              ],
+              "validations": [],
               "errorMessage": "",
               "isMultiSelect": false,
               "required.message":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_idpopulator_mandatory_message"
-            },
+            }
           ],
           "value": "",
           "required": null,
@@ -214,6 +207,12 @@ final dynamic sampleCloseHouseholdFlows = {
               "actionType": "FETCH_TRANSFORMER_CONFIG",
               "properties": {
                 "configName": "closeHouseholdRegistration",
+                "data": [
+                  {
+                    "key": "latestBeneficiaryId",
+                    "value": "{{navigation.UNIQUE_BENEFICIARY_ID}}"
+                  }
+                ],
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",
@@ -251,7 +250,7 @@ final dynamic sampleCloseHouseholdFlows = {
                   },
                   {
                     "key": "UNIQUE_BENEFICIARY_ID",
-                    "value": "{{identifiers}}"
+                    "value": "{{navigation.UNIQUE_BENEFICIARY_ID}}"
                   },
                   {
                     "key": "uniqueBeneficiaryIdModel",
@@ -261,18 +260,21 @@ final dynamic sampleCloseHouseholdFlows = {
               }
             }
           ]
-        },
+        }
       ],
       "overView": "CLOSEHOUSEHOLD_SUMMARY_HEADING",
       "summary": false,
       "onAction": [
         {
-          "actionType": "LOAD_UNIQUE_ID_POOL"
-        },
-        {
           "actionType": "FETCH_TRANSFORMER_CONFIG",
           "properties": {
             "configName": "closeHouseholdRegistration",
+            "data": [
+              {
+                "key": "latestBeneficiaryId",
+                "value": "{{navigation.UNIQUE_BENEFICIARY_ID}}"
+              }
+            ],
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
@@ -315,12 +317,12 @@ final dynamic sampleCloseHouseholdFlows = {
               },
               {
                 "key": "UNIQUE_BENEFICIARY_ID",
-                "value": "{{identifiers}}"
-              },
-              {
-                "key": "uniqueBeneficiaryIdModel",
-                "value": "{{latestBeneficiaryIdModel}}"
+                "value": "{{navigation.UNIQUE_BENEFICIARY_ID}}"
               }
+              // {
+              //   "key": "latestBeneficiaryId",
+              //   "value": "{{closeHouseholdDetails.identifiers[1]}}"
+              // },
             ]
           }
         }
@@ -387,7 +389,7 @@ final dynamic sampleCloseHouseholdFlows = {
                   // "value": "{{fn:getAdditionalFieldValue(contextData.0.HouseholdModel.additionalFields.fields, 'date')}}",
                   "value":
                       "{{fn:formatDate(contextData.0.HouseholdModel.additionalFields.fields.date, 'date', dd MMM yyyy)}}",
-                  "isActive": true,
+                  "isActive": true
                 },
                 {
                   "key":
@@ -408,8 +410,8 @@ final dynamic sampleCloseHouseholdFlows = {
                       "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_GPS_ACCURACY_LABEL",
                   "value":
                       "{{contextData.0.HouseholdModel.address.locationAccuracy}}",
-                  "isActive": true,
-                },
+                  "isActive": true
+                }
               ],
               "type": "template",
               "format": "labelPairList",
@@ -418,7 +420,7 @@ final dynamic sampleCloseHouseholdFlows = {
           ],
           "properties": {"type": "primary", "cardType": "primary"},
           "schemaCode": null
-        },
+        }
       ],
       "name": "closedHouseholdSummary",
       "order": 2,
@@ -454,7 +456,7 @@ final dynamic sampleCloseHouseholdFlows = {
             "mainAxisSize": "max",
             "mainAxisAlignment": "center"
           }
-        },
+        }
       ],
       "header": [
         {
@@ -636,7 +638,7 @@ final dynamic sampleCloseHouseholdFlows = {
                   "value":
                       "{{contextData.0.HouseholdModel.address.locationAccuracy}}",
                   "isActive": true
-                },
+                }
               ],
               "type": "template",
               "format": "labelPairList",
@@ -645,7 +647,7 @@ final dynamic sampleCloseHouseholdFlows = {
           ],
           "properties": {"type": "primary", "cardType": "primary"},
           "schemaCode": null
-        },
+        }
       ],
       "name": "previewScreen",
       "order": 4,
@@ -665,8 +667,7 @@ final dynamic sampleCloseHouseholdFlows = {
                     "value": "{{navigation.HouseholdClientReferenceId}}"
                   }
                 ],
-                // "name": "CLOSEHOUSEHOLD",
-                "type": "HOME",
+                "type": "HOME"
               }
             }
           ],
@@ -678,7 +679,7 @@ final dynamic sampleCloseHouseholdFlows = {
             "mainAxisSize": "max",
             "mainAxisAlignment": "center"
           }
-        },
+        }
       ],
       "header": [
         {
@@ -687,7 +688,7 @@ final dynamic sampleCloseHouseholdFlows = {
           "onAction": [
             {
               "actionType": "NAVIGATION",
-              "properties": {"name": "CLOSEHOUSEHOLD", "type": "FORM"}
+              "properties": {"name": "HOME", "type": "TEMPLATE"}
             }
           ]
         }
@@ -825,6 +826,6 @@ final dynamic sampleCloseHouseholdFlows = {
       },
       "submitCondition": null,
       "preventScreenCapture": false
-    },
-  ]
+    }
+  ],
 };

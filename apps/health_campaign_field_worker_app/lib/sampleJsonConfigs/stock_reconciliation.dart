@@ -121,6 +121,12 @@ final dynamic stockReconciliationFlows = {
                   "value": 0,
                   "message":
                       "STOCKRECONCILIATION_STOCKRECONCILIATION_manualCount_MIN_ERROR"
+                },
+                {
+                  "type": "max",
+                  "value": 10000000,
+                  "message":
+                      "STOCKRECONCILIATION_STOCKRECONCILIATION_manualCount_MAX_ERROR"
                 }
               ],
               "errorMessage": "",
@@ -180,9 +186,9 @@ final dynamic stockReconciliationFlows = {
                     "condition":
                         "stockRecon.manualCount != stockRecon.stockInHand && stockRecon.stockReconciliationCard != ''",
                     "type": "custom"
-                  },
+                  }
                 ]
-              },
+              }
             }
           ],
           "value": null,
@@ -200,7 +206,7 @@ final dynamic stockReconciliationFlows = {
           "isMultiSelect": null,
           "includeInForm": null,
           "includeInSummary": null,
-          "autoEnable": null,
+          "autoEnable": null
         }
       ],
       "onAction": [

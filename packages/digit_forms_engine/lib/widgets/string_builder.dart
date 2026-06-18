@@ -32,10 +32,17 @@ class JsonSchemaStringBuilder extends JsonSchemaBuilder<String> {
     final noEmojiFilter = FilteringTextInputFormatter.allow(
       RegExp(r'[\x00-\x7F]'), // ASCII only (0-127)
     );
-    final formatters = [
-      noEmojiFilter,
-      if (patternFormatter != null) patternFormatter,
-    ];
+    // final formatters = [
+    //   noEmojiFilter,
+    //   if (patternFormatter != null) patternFormatter,
+    // ];
+
+    final formatters = inputType == TextInputType.number
+    ? <TextInputFormatter>[FilteringTextInputFormatter.digitsOnly]
+    : <TextInputFormatter>[
+        noEmojiFilter,
+        if (patternFormatter != null) patternFormatter,
+      ];
 
     return ReactiveFormConsumer(
       builder: (context, formGroup, child) {
