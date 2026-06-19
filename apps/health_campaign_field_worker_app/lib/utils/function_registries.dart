@@ -32,8 +32,8 @@ class FunctionRegistries {
   /// Lets `calculateWastage` read the current product's stock balance from
   /// the in-memory [StockBalanceCache].
   void _registerFormsEngineHooks() {
-    FormsFunctionConfig.instance.stockBalanceResolver =
-        (productVariantId) => StockBalanceCache.instance.cache[productVariantId] ?? 0;
+    FormsFunctionConfig.instance.stockBalanceResolver = (productVariantId) =>
+        StockBalanceCache.instance.cache[productVariantId] ?? 0;
   }
 
   void _registerGenerateFunctions() {
