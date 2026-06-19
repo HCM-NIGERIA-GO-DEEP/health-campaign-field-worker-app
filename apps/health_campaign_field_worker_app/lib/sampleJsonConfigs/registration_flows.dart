@@ -667,7 +667,7 @@ final dynamic sampleFlows = {
               {"left": "{{endDate}}", "right": "{{now}}", "operator": "gt"}
             ],
             "select": "{{id}}",
-            "default": -1,
+            "default": 1,
             "takeFirst": true
           }
         },
@@ -1121,13 +1121,6 @@ final dynamic sampleFlows = {
                   },
                   {
                     "type": "template",
-                    "value": "{{item.individual.0.identifiers.0.identifierId}}",
-                    "format": "textTemplate",
-                    "fieldName": "beneficiaryId",
-                    "properties": {"bottomGap": 16}
-                  },
-                  {
-                    "type": "template",
                     "label": "IS_HEAD",
                     "format": "tag",
                     "visible": "{{fn:isHead(item.member)}}",
@@ -1512,7 +1505,7 @@ final dynamic sampleFlows = {
                     "label": "REDOSE_ADMINISTRATION",
                     "format": "button",
                     "visible":
-                        "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task,contextData.0.currentRunningCycle)}} == true && {{fn:checkAllDoseDelivered(item.task)}} == true && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false && {{fn:hasStockForRedose(item.task)}} == true",
+                        "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task,contextData.0.currentRunningCycle)}} == true && {{fn:checkAllDoseDelivered(item.task)}} == true && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false && {{fn:hasStockForRedose(item.task)}} == true && {{fn:isRedoseCompleted(item.task)}}==false",
                     "disabled":
                         "{{fn:isRedoseWindowExpired(item.task)}}==true || {{fn:isRedoseCompleted(item.task)}}==true",
                     "onAction": [
@@ -1926,7 +1919,7 @@ final dynamic sampleFlows = {
               {"left": "{{endDate}}", "right": "{{now}}", "operator": "gt"}
             ],
             "select": "{{id}}",
-            "default": -1,
+            "default": 1,
             "takeFirst": true
           }
         },
