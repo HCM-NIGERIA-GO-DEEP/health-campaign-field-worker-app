@@ -1256,6 +1256,14 @@ final dynamic sampleFlows = {
                             {
                               "key": "cycleIndex",
                               "value": "{{contextData.0.currentRunningCycle}}"
+                            },
+                            {
+                              "key": "doseIndex",
+                              "value": "1"
+                            },
+                            {
+                              "key": "deliveryStrategy",
+                              "value": "DIRECT"
                             }
                           ],
                           "name": "DELIVERY",

@@ -46,6 +46,14 @@ class IdGen {
 
   /// Generates a version 1 UUID and returns it as a string.
   String get identifier => uuid.v1();
+
+  /// Generates a random alphanumeric string of the specified length.
+  String generateRandomAlphanumeric(int length) {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final random = Random();
+    return String.fromCharCodes(Iterable.generate(
+        length, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
+  }
 }
 
 /// `DigitDataModelSingleton` is a singleton class that holds environment configuration variables.

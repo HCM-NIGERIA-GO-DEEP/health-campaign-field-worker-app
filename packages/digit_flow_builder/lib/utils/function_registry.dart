@@ -859,16 +859,16 @@ void initializeFunctionRegistry() {
       }
 
       final lastTaskStatus = lastTask['status']?.toString().toUpperCase();
-      final isDelivered = lastTaskStatus == 'DELIVERED';
+      final isDelivered = lastTaskStatus == 'ADMINISTRATION_SUCCESS' || lastTaskStatus == 'DELIVERED';
 
-      // If last dose equals total deliveries in cycle AND cycle matches AND status is NOT delivered
-      // -> return true (last dose attempted but not delivered)
-      if (lastDose != null &&
-          lastDose == selectedCycle.deliveries?.length &&
-          lastCycle != null &&
-          lastCycle == selectedCycle.id &&
-          (lastTaskStatus == 'ADMINISTRATION_SUCCESS' ||
-              lastTaskStatus == 'DELIVERED')) {
+      final directDeliveries = selectedCycle.deliveries?.where((d) => d.deliveryStrategy?.toUpperCase() == 'DIRECT').toList() ?? [];
+      final targetLength = directDeliveries.isNotEmpty ? directDeliveries.length : selectedCycle.deliveries?.length;
+
+      // If last dose equals total direct deliveries in cycle (or is null due to older task) AND cycle matches AND status is delivered
+      // -> return true (all doses delivered)
+      if ((lastDose == null || lastDose == targetLength) &&
+          (lastCycle == null || lastCycle == selectedCycle.id) &&
+          isDelivered) {
         return true;
       }
 
@@ -2080,19 +2080,9 @@ void initializeFunctionRegistry() {
   });
 
   FunctionRegistry.register('hasMinimumBeneficiaryId', (args, stateData) {
-    final minCountArg = args.isNotEmpty ? args.first : null;
-    final minCount = minCountArg is int
-        ? minCountArg
-        : int.tryParse(minCountArg?.toString() ?? '');
-
-    if (minCount == null) return false;
-
-    final currentCountArg = args.length > 1 ? args[1] : null;
-    final currentCount = currentCountArg is int
-        ? currentCountArg
-        : int.tryParse(currentCountArg?.toString() ?? '');
-
-    return (currentCount ?? 0) >= minCount;
+    // TEMPORARY OVERRIDE: Always return true to disable the beneficiary ID pool check
+    // This removes the "download beneficiary ID" popups from the UI.
+    return true;
   });
 
   FunctionRegistry.register('getLatestBeneficiaryId', (args, stateData) {
