@@ -2758,7 +2758,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             );
 
             try {
-              if (true) {
+              if (false) {
                 final allSchemas =
                     json.decode(schemaJsonRaw!) as Map<String, dynamic>;
                 final data = allSchemas['INVENTORY'];
