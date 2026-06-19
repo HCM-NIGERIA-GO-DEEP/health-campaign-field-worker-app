@@ -2052,29 +2052,34 @@ final dynamic sampleInventoryFlows = {
                 },
                 "children": [
                   {
-                    "format": "column",
+                    "format": "expanded",
                     "type": "template",
-                    "fieldName": "viewTransactionPartyColumn",
-                    "properties": {
-                      "mainAxisAlignment": "spaceBetween",
-                      "mainAxisSize": "min"
-                    },
-                    "children": [
-                      {
-                        "format": "textTemplate",
-                        "type": "template",
-                        "fieldName": "viewTransactionPartyLabelText",
-                        "value":
-                            "{{fn:getFirstPagePartyLabel(item.items[0].additionalFields.fields)}}"
+                    "fieldName": "viewTransactionPartyExpanded",
+                    "child": {
+                      "format": "column",
+                      "type": "template",
+                      "fieldName": "viewTransactionPartyColumn",
+                      "properties": {
+                        "mainAxisAlignment": "spaceBetween",
+                        "mainAxisSize": "min"
                       },
-                      {
-                        "format": "textTemplate",
-                        "type": "template",
-                        "fieldName": "viewTransactionPartyValueText",
-                        "value":
-                            "{{fn:getFirstPageParty(item.items[0].additionalFields.fields, item.items[0].senderId, item.items[0].receiverId)}}"
-                      }
-                    ]
+                      "children": [
+                        {
+                          "format": "textTemplate",
+                          "type": "template",
+                          "fieldName": "viewTransactionPartyLabelText",
+                          "value":
+                              "{{fn:getFirstPagePartyLabel(item.items[0].additionalFields.fields)}}"
+                        },
+                        {
+                          "format": "textTemplate",
+                          "type": "template",
+                          "fieldName": "viewTransactionPartyValueText",
+                          "value":
+                              "{{fn:getFirstPageParty(item.items[0].additionalFields.fields, item.items[0].senderId, item.items[0].receiverId)}}"
+                        }
+                      ]
+                    }
                   },
                   {
                     "format": "actionPopup",
