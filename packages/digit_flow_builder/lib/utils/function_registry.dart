@@ -406,33 +406,66 @@ void initializeFunctionRegistry() {
   /// 3. If the `checkStatus` function allows for a new task to be created.
   FunctionRegistry.register('checkEligibilityForAgeAndSideEffect',
       (args, stateData) {
-    if (args.isEmpty) return false;
+    print('DEBUG: checkEligibilityForAgeAndSideEffect - STARTED. args=$args');
+    if (args.isEmpty) {
+      print('DEBUG: checkEligibilityForAgeAndSideEffect - args is empty. returning false.');
+      return false;
+    }
 
-// --- Resolve DOB ---
-    final dobString = args.first?.toString() ?? '';
-    if (dobString.isEmpty) return false;
+    final projectType = FlowBuilderSingleton().projectType;
+    if (projectType == null) {
+      print('DEBUG: checkEligibilityForAgeAndSideEffect - projectType is null. returning false.');
+      return false;
+    }
 
-    final dob = DigitDateUtils.getFormattedDateToDateTime(dobString);
-    if (dob == null) return false;
+    // --- Current active cycle ---
+    var currentCycle = projectType.cycles?.firstWhereOrNull(
+      (e) =>
+          (e.startDate ?? 0) < DateTime.now().millisecondsSinceEpoch &&
+          (e.endDate ?? 0) > DateTime.now().millisecondsSinceEpoch,
+    );
+
+    if (currentCycle == null && projectType.cycles != null && projectType.cycles!.isNotEmpty) {
+      print('DEBUG: checkEligibilityForAgeAndSideEffect - currentCycle is null, falling back to first cycle');
+      currentCycle = projectType.cycles!.first;
+    }
+
+    if (currentCycle == null) {
+      print('DEBUG: checkEligibilityForAgeAndSideEffect - currentCycle is still null after fallback. returning false.');
+      return false;
+    }
+
+    final tasks = args.length > 1 ? args[1] : [];
+    final dobValue = args.first;
+    if (dobValue == null) {
+      print('DEBUG: checkEligibilityForAgeAndSideEffect - dobValue is null. returning false.');
+      return false;
+    }
+
+    DateTime? dob;
+    if (dobValue is int) {
+      dob = DateTime.fromMillisecondsSinceEpoch(dobValue);
+    } else if (dobValue is String) {
+      final timestamp = int.tryParse(dobValue);
+      if (timestamp != null) {
+        dob = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      } else {
+        dob = DigitDateUtils.getFormattedDateToDateTime(dobValue);
+      }
+    } else if (dobValue is DateTime) {
+      dob = dobValue;
+    }
+
+    if (dob == null) {
+      print('DEBUG: checkEligibilityForAgeAndSideEffect - dob parsed to null. dobValue=$dobValue. returning false.');
+      return false;
+    }
 
     final age = DigitDateUtils.calculateAge(dob);
-    final totalAgeMonths = age.years * 12 + age.months;
-
-// --- ProjectType comes from FlowBuilderSingleton ---
-    final projectType = FlowBuilderSingleton().projectType;
-    if (projectType == null) return false;
-
-// --- Tasks & SideEffects come from stateData ---
-    final tasks = args.length > 1 ? args[1] : [];
+    final totalAgeMonths = (age.years * 12) + age.months;
     final sideEffects = (stateData.modelMap['sideEffects'] as List?) ?? [];
 
-// --- Current active cycle ---
-    final currentCycle = projectType.cycles?.firstWhereOrNull(
-      (e) =>
-          e.startDate < DateTime.now().millisecondsSinceEpoch &&
-          e.endDate > DateTime.now().millisecondsSinceEpoch,
-    );
-    if (currentCycle == null) return false;
+
 
 // --- Check age eligibility ---
     final isWithinAge =
@@ -496,9 +529,49 @@ void initializeFunctionRegistry() {
       }
     }
 
-    if (tasks.isNotEmpty && sideEffects.isNotEmpty) {
-      final lastTask = tasks.last as Map<String, dynamic>;
-      final lastSideEffect = sideEffects.last as Map<String, dynamic>;
+    if (tasks != null && tasks is List && tasks.isNotEmpty && sideEffects.isNotEmpty) {
+      print('DEBUG: checkEligibilityForAgeAndSideEffect - Tasks and SideEffects are NOT empty!');
+      final lastTaskItem = tasks.last;
+      Map<String, dynamic>? lastTask;
+
+      if (lastTaskItem is Map<String, dynamic>) {
+        lastTask = lastTaskItem;
+      } else if (lastTaskItem is Map) {
+        lastTask = Map<String, dynamic>.from(lastTaskItem);
+      } else {
+        try {
+          lastTask = (lastTaskItem as dynamic).toMap() as Map<String, dynamic>;
+        } catch (_) {
+          try {
+            lastTask =
+                (lastTaskItem as dynamic).toJson() as Map<String, dynamic>;
+          } catch (e) {
+            print('DEBUG: checkEligibilityForAgeAndSideEffect - Failed to parse lastTask: $e');
+            return _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
+          }
+        }
+      }
+
+      final lastSideEffectItem = sideEffects.last;
+      Map<String, dynamic>? lastSideEffect;
+      if (lastSideEffectItem is Map<String, dynamic>) {
+        lastSideEffect = lastSideEffectItem;
+      } else if (lastSideEffectItem is Map) {
+        lastSideEffect = Map<String, dynamic>.from(lastSideEffectItem);
+      } else {
+        try {
+          lastSideEffect = (lastSideEffectItem as dynamic).toMap()
+              as Map<String, dynamic>;
+        } catch (_) {
+          try {
+            lastSideEffect = (lastSideEffectItem as dynamic).toJson()
+                as Map<String, dynamic>;
+          } catch (e) {
+            print('DEBUG: checkEligibilityForAgeAndSideEffect - Failed to parse lastSideEffect: $e');
+            return _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
+          }
+        }
+      }
 
       final lastTaskTime = (lastTask['clientReferenceId'] ==
               lastSideEffect['taskClientReferenceId'])
@@ -506,20 +579,25 @@ void initializeFunctionRegistry() {
           : null;
 
       recordedSideEffect = lastTaskTime != null &&
-          (lastTaskTime >= currentCycle.startDate &&
-              lastTaskTime <= currentCycle.endDate);
+          (DateTime.now().millisecondsSinceEpoch - lastTaskTime) <= 172800000;
 
       final isWithinAge =
           _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
+
+      print('DEBUG: checkEligibilityForAgeAndSideEffect - isWithinAge=$isWithinAge, recordedSideEffect=$recordedSideEffect');
 
       if (!isWithinAge) return false;
 
       final checkStatusFn = FunctionRegistry.get('checkStatus');
       final statusOk = checkStatusFn?.call([], stateData) as bool? ?? false;
 
+      print('DEBUG: checkEligibilityForAgeAndSideEffect - statusOk=$statusOk');
+
       return recordedSideEffect && !statusOk ? false : true;
     } else {
-      return _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
+      final res = _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
+      print('DEBUG: checkEligibilityForAgeAndSideEffect - No side effects or tasks, returning _isAgeEligibleFromDoseCriteria: $res');
+      return res;
     }
   });
 
@@ -531,19 +609,19 @@ void initializeFunctionRegistry() {
     final projectType = FlowBuilderSingleton().projectType;
     if (projectType == null) return TaskStatus.ineligible;
 
-    // --- Current active cycle ---
-    Map<String, dynamic>? currentCycle;
-    for (final e in projectType.cycles ?? []) {
-      if ((e.startDate ?? 0) < DateTime.now().millisecondsSinceEpoch &&
-          (e.endDate ?? 0) > DateTime.now().millisecondsSinceEpoch) {
-        currentCycle = {
-          "startDate": e.startDate,
-          "endDate": e.endDate,
-        };
-        break;
-      }
-    }
-    if (currentCycle == null) return TaskStatus.ineligible;
+    // // --- Current active cycle ---
+    // Map<String, dynamic>? currentCycle;
+    // for (final e in projectType.cycles ?? []) {
+    //   if ((e.startDate ?? 0) < DateTime.now().millisecondsSinceEpoch &&
+    //       (e.endDate ?? 0) > DateTime.now().millisecondsSinceEpoch) {
+    //     currentCycle = {
+    //       "startDate": e.startDate,
+    //       "endDate": e.endDate,
+    //     };
+    //     break;
+    //   }
+    // }
+    // if (currentCycle == null) return TaskStatus.ineligible;
 
     final tasks = args.first;
 
@@ -576,6 +654,11 @@ void initializeFunctionRegistry() {
 
     if (status.isEmpty) return TaskStatus.ineligible.toString();
 
+    if (status == TaskStatus.administrationSuccess ||
+        status == TaskStatus.delivered) {
+      return '';
+    }
+
     // Return the status string for ineligible/non-delivered statuses
     if (status == TaskStatus.ineligible ||
         status == TaskStatus.beneficiaryDied ||
@@ -587,20 +670,57 @@ void initializeFunctionRegistry() {
     }
 
     // Default to ineligible
-    return TaskStatus.ineligible;
+    return TaskStatus.ineligible.toString();
   });
 
   FunctionRegistry.register("isDelivered", (args, stateData) {
     // No arguments passed
-    if (args.isEmpty) return false;
+    if (args.isEmpty) {
+      print('DEBUG: isDelivered - args is empty');
+      return false;
+    }
 
-    final value = args.first;
+    final tasks = args.first;
 
-    // Must be a string
-    if (value is! String) return false;
+    if (tasks == null) {
+      print('DEBUG: isDelivered - tasks is null');
+      return false;
+    }
+
+    if (tasks is! List || tasks.isEmpty) {
+      print('DEBUG: isDelivered - tasks is not list or is empty');
+      return false;
+    }
+
+    final item = tasks.last;
+    Map<String, dynamic>? lastTask;
+
+    if (item is Map<String, dynamic>) {
+      lastTask = item;
+    } else if (item is Map) {
+      lastTask = Map<String, dynamic>.from(item);
+    } else {
+      try {
+        lastTask = (item as dynamic).toMap() as Map<String, dynamic>;
+      } catch (_) {
+        try {
+          lastTask = (item as dynamic).toJson() as Map<String, dynamic>;
+        } catch (e) {
+          print('DEBUG: isDelivered - failed to parse last task: $e');
+          return false;
+        }
+      }
+    }
+
+    if (lastTask == null) {
+      print('DEBUG: isDelivered - lastTask is null after parse');
+      return false;
+    }
 
     // Normalize (uppercase + trim)
-    final status = value.trim().toUpperCase();
+    final status = lastTask['status']?.toString().trim().toUpperCase() ?? '';
+
+    print('DEBUG: isDelivered - status evaluated to: $status');
 
     // Match valid delivered statuses
     if (status == TaskStatus.administrationSuccess ||
@@ -1488,7 +1608,24 @@ void initializeFunctionRegistry() {
 
     if (identifier == null) return false;
 
-    if (identifier["identifierType"] == 'UNIQUE_BENEFICIARY_ID') {
+    Map<String, dynamic> idMap;
+    if (identifier is Map) {
+      idMap = Map<String, dynamic>.from(identifier);
+    } else {
+      try {
+        idMap = (identifier as dynamic).toMap() as Map<String, dynamic>;
+      } catch (_) {
+        try {
+          idMap = (identifier as dynamic).toJson() as Map<String, dynamic>;
+        } catch (_) {
+          return false;
+        }
+      }
+    }
+
+    if (idMap["identifierType"] == 'UNIQUE_BENEFICIARY_ID' &&
+        idMap["identifierId"] != null &&
+        idMap["identifierId"].toString().trim().isNotEmpty) {
       return true;
     }
 
