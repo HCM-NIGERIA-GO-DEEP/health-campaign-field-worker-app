@@ -200,7 +200,7 @@ class _HomePageState extends LocalizedState<HomePage> {
         if (beneficiaryDetails?.stateWrapper?.isNotEmpty == true) {
           mergedState.addAll(beneficiaryDetails!.stateWrapper!.first);
         }
-        
+
         mergedState['eligibleProductVariants'] = matchingCriteria;
 
         final computedState = FlowCrudState(
@@ -1935,7 +1935,7 @@ class _HomePageState extends LocalizedState<HomePage> {
               onBoundarySelected: (ctx) async {
                 final moduleName =
                     'hcm-registration-${context.selectedProject.referenceID},hcm-beneficiary,hcm-inventory-${context.selectedProject.referenceID}';
-                triggerLocalization(module: moduleName);
+                triggerLocalization(module: moduleName, loadOnline: true);
                 isTriggerLocalisation = false;
                 FlowBuilderSingleton().setPersistenceConfiguration(
                     persistenceConfiguration:
