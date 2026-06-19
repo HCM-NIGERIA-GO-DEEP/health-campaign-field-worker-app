@@ -147,7 +147,16 @@ class _HomePageState extends LocalizedState<HomePage> {
         var beneficiaryDetails =
             stateAccessor.getPageData('beneficiaryDetails');
 
-        // Extract navigation parameters to compute product variants manually
+        if (beneficiaryDetails != null && currentPage == 'DELIVERY') {
+          // DELIVERY flow when navigated from beneficiaryDetails
+          return ResourceCard(
+            stateData: beneficiaryDetails,
+            pageSchema: 'DELIVERY',
+          );
+        }
+
+        // REDOSE/DELIVERY flow - compute product variants manually when bypassing wrappers
+        // Use navigation params to filter by age condition
         final navParams =
             FlowCrudStateRegistry().getNavigationParams('DELIVERY') ??
                 FlowCrudStateRegistry().getNavigationParams('REDOSE') ??
@@ -195,20 +204,20 @@ class _HomePageState extends LocalizedState<HomePage> {
           }
         }
 
-        // Merge existing beneficiaryDetails state with the computed eligible variants
-        final Map<String, dynamic> mergedState = {};
-        if (beneficiaryDetails?.stateWrapper?.isNotEmpty == true) {
-          mergedState.addAll(beneficiaryDetails!.stateWrapper!.first);
+        if (matchingCriteria.isNotEmpty) {
+          // Inject it into the stateWrapper so ResourceCard can read it
+          beneficiaryDetails =
+              (beneficiaryDetails ?? const FlowCrudState()).copyWith(
+            stateWrapper: [
+              {
+                'eligibleProductVariants': matchingCriteria,
+              }
+            ],
+          );
         }
 
-        mergedState['eligibleProductVariants'] = matchingCriteria;
-
-        final computedState = FlowCrudState(
-          stateWrapper: [mergedState],
-        );
-
         return ResourceCard(
-          stateData: computedState,
+          stateData: beneficiaryDetails,
           pageSchema: currentPage,
         );
       },
@@ -1935,7 +1944,7 @@ class _HomePageState extends LocalizedState<HomePage> {
               onBoundarySelected: (ctx) async {
                 final moduleName =
                     'hcm-registration-${context.selectedProject.referenceID},hcm-beneficiary,hcm-inventory-${context.selectedProject.referenceID}';
-                triggerLocalization(module: moduleName, loadOnline: true);
+                triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
                 FlowBuilderSingleton().setPersistenceConfiguration(
                     persistenceConfiguration:

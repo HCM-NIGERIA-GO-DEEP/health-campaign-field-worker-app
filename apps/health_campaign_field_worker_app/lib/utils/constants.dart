@@ -113,6 +113,7 @@ class Constants {
     'hcm-login',
     'hcm-common',
     'hcm-scanner',
+    'hcm-home',
     'hcm-beneficiary',
     'hcm-peer-to-peer',
     'hcm-transit-post',
@@ -125,6 +126,7 @@ class Constants {
     'hcm-common',
     'hcm-login',
     'hcm-scanner',
+    'hcm-home',
     'hcm-beneficiary',
     'hcm-peer-to-peer',
     'hcm-transit-post',
@@ -136,6 +138,7 @@ class Constants {
   static const List<String> homeLocalizationModules = [
     'hcm-login',
     'hcm-common',
+    'hcm-home',
     'hcm-beneficiary',
     'digit-privacy-policy',
     'hcm-scanner',
@@ -394,7 +397,7 @@ class Constants {
         .firstWhereOrNull((element) => element.service == service)
         ?.actions
         .firstWhereOrNull((element) =>
-    element.entityName == entityName && element.action == action)
+            element.entityName == entityName && element.action == action)
         ?.path;
 
     return actionResult ?? '';

@@ -408,13 +408,15 @@ void initializeFunctionRegistry() {
       (args, stateData) {
     print('DEBUG: checkEligibilityForAgeAndSideEffect - STARTED. args=$args');
     if (args.isEmpty) {
-      print('DEBUG: checkEligibilityForAgeAndSideEffect - args is empty. returning false.');
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - args is empty. returning false.');
       return false;
     }
 
     final projectType = FlowBuilderSingleton().projectType;
     if (projectType == null) {
-      print('DEBUG: checkEligibilityForAgeAndSideEffect - projectType is null. returning false.');
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - projectType is null. returning false.');
       return false;
     }
 
@@ -425,20 +427,25 @@ void initializeFunctionRegistry() {
           (e.endDate ?? 0) > DateTime.now().millisecondsSinceEpoch,
     );
 
-    if (currentCycle == null && projectType.cycles != null && projectType.cycles!.isNotEmpty) {
-      print('DEBUG: checkEligibilityForAgeAndSideEffect - currentCycle is null, falling back to first cycle');
+    if (currentCycle == null &&
+        projectType.cycles != null &&
+        projectType.cycles!.isNotEmpty) {
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - currentCycle is null, falling back to first cycle');
       currentCycle = projectType.cycles!.first;
     }
 
     if (currentCycle == null) {
-      print('DEBUG: checkEligibilityForAgeAndSideEffect - currentCycle is still null after fallback. returning false.');
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - currentCycle is still null after fallback. returning false.');
       return false;
     }
 
     final tasks = args.length > 1 ? args[1] : [];
     final dobValue = args.first;
     if (dobValue == null) {
-      print('DEBUG: checkEligibilityForAgeAndSideEffect - dobValue is null. returning false.');
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - dobValue is null. returning false.');
       return false;
     }
 
@@ -457,15 +464,14 @@ void initializeFunctionRegistry() {
     }
 
     if (dob == null) {
-      print('DEBUG: checkEligibilityForAgeAndSideEffect - dob parsed to null. dobValue=$dobValue. returning false.');
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - dob parsed to null. dobValue=$dobValue. returning false.');
       return false;
     }
 
     final age = DigitDateUtils.calculateAge(dob);
     final totalAgeMonths = (age.years * 12) + age.months;
     final sideEffects = (stateData.modelMap['sideEffects'] as List?) ?? [];
-
-
 
 // --- Check age eligibility ---
     final isWithinAge =
@@ -529,8 +535,12 @@ void initializeFunctionRegistry() {
       }
     }
 
-    if (tasks != null && tasks is List && tasks.isNotEmpty && sideEffects.isNotEmpty) {
-      print('DEBUG: checkEligibilityForAgeAndSideEffect - Tasks and SideEffects are NOT empty!');
+    if (tasks != null &&
+        tasks is List &&
+        tasks.isNotEmpty &&
+        sideEffects.isNotEmpty) {
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - Tasks and SideEffects are NOT empty!');
       final lastTaskItem = tasks.last;
       Map<String, dynamic>? lastTask;
 
@@ -546,7 +556,8 @@ void initializeFunctionRegistry() {
             lastTask =
                 (lastTaskItem as dynamic).toJson() as Map<String, dynamic>;
           } catch (e) {
-            print('DEBUG: checkEligibilityForAgeAndSideEffect - Failed to parse lastTask: $e');
+            print(
+                'DEBUG: checkEligibilityForAgeAndSideEffect - Failed to parse lastTask: $e');
             return _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
           }
         }
@@ -560,14 +571,15 @@ void initializeFunctionRegistry() {
         lastSideEffect = Map<String, dynamic>.from(lastSideEffectItem);
       } else {
         try {
-          lastSideEffect = (lastSideEffectItem as dynamic).toMap()
-              as Map<String, dynamic>;
+          lastSideEffect =
+              (lastSideEffectItem as dynamic).toMap() as Map<String, dynamic>;
         } catch (_) {
           try {
             lastSideEffect = (lastSideEffectItem as dynamic).toJson()
                 as Map<String, dynamic>;
           } catch (e) {
-            print('DEBUG: checkEligibilityForAgeAndSideEffect - Failed to parse lastSideEffect: $e');
+            print(
+                'DEBUG: checkEligibilityForAgeAndSideEffect - Failed to parse lastSideEffect: $e');
             return _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
           }
         }
@@ -584,7 +596,8 @@ void initializeFunctionRegistry() {
       final isWithinAge =
           _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
 
-      print('DEBUG: checkEligibilityForAgeAndSideEffect - isWithinAge=$isWithinAge, recordedSideEffect=$recordedSideEffect');
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - isWithinAge=$isWithinAge, recordedSideEffect=$recordedSideEffect');
 
       if (!isWithinAge) return false;
 
@@ -596,7 +609,8 @@ void initializeFunctionRegistry() {
       return recordedSideEffect && !statusOk ? false : true;
     } else {
       final res = _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
-      print('DEBUG: checkEligibilityForAgeAndSideEffect - No side effects or tasks, returning _isAgeEligibleFromDoseCriteria: $res');
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - No side effects or tasks, returning _isAgeEligibleFromDoseCriteria: $res');
       return res;
     }
   });
@@ -1970,9 +1984,12 @@ void initializeFunctionRegistry() {
     // Get current running cycle
     final projectType = FlowBuilderSingleton().projectType;
     final now = DateTime.now().millisecondsSinceEpoch;
-    final selectedCycle = projectType?.cycles?.firstWhereOrNull(
+    var selectedCycle = projectType?.cycles?.firstWhereOrNull(
       (e) => (e.startDate ?? 0) < now && (e.endDate ?? 0) > now,
     );
+
+    // If current time is out of bounds, fallback to cycle 1 (matching checkEligibility logic)
+    selectedCycle ??= projectType?.cycles?.firstWhereOrNull((e) => e.id == 1);
 
     if (selectedCycle == null) return false;
 
