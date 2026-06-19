@@ -122,7 +122,9 @@ class _LoginPageState extends LocalizedState<LoginPage> {
               Toast.showToast(
                 context,
                 message: message ??
-                    localizations.translate(i18.login.unableToLoginText),
+                    localizations.translateWithDefault(
+                        i18.login.unableToLoginText,
+                        fallback: 'Impossible de se connecter'),
                 type: ToastType.error,
               );
             },
@@ -137,8 +139,9 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                   margin: const EdgeInsets.all(spacer2),
                   children: [
                     Text(
-                      localizations.translate(
+                      localizations.translateWithDefault(
                         i18.login.labelText,
+                        fallback: 'Connexion',
                       ),
                       style: textTheme.headingXl.copyWith(
                         color: theme.colorTheme.primary.primary2,
@@ -148,14 +151,17 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                       formControlName: _userId,
                       validationMessages: {
                         "required": (control) {
-                          return localizations.translate(
+                          return localizations.translateWithDefault(
                             '${i18.login.userIdPlaceholder}_IS_REQUIRED',
+                            fallback:
+                                'Identifiant de l\'utilisateur est obligatoire',
                           );
                         },
                       },
                       builder: (field) => LabeledField(
-                        label: localizations.translate(
+                        label: localizations.translateWithDefault(
                           i18.login.userIdPlaceholder,
+                          fallback: 'Identifiant de l\'utilisateur',
                         ),
                         capitalizedFirstLetter: false,
                         isRequired: true,
@@ -173,14 +179,16 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                       formControlName: _password,
                       validationMessages: {
                         "required": (control) {
-                          return localizations.translate(
+                          return localizations.translateWithDefault(
                             '${i18.login.passwordPlaceholder}_IS_REQUIRED',
+                            fallback: 'Le mot de passe est obligatoire',
                           );
                         },
                       },
                       builder: (field) => LabeledField(
-                        label: localizations.translate(
+                        label: localizations.translateWithDefault(
                           i18.login.passwordPlaceholder,
+                          fallback: 'Mot de passe',
                         ),
                         isRequired: true,
                         child: DigitPasswordFormInput(
@@ -196,7 +204,9 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                     BlocBuilder<AppInitializationBloc, AppInitializationState>(
                       builder: (context, state) {
                         return DigitButton(
-                          label: localizations.translate(i18.login.actionLabel),
+                          label: localizations.translateWithDefault(
+                              i18.login.actionLabel,
+                              fallback: 'Connexion'),
                           type: DigitButtonType.primary,
                           onPressed: () {
                             form.markAllAsTouched();
@@ -239,43 +249,48 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                         );
                       },
                     ),
-                    DigitButton(
-                      label: localizations.translate(
-                        i18.forgotPassword.actionLabel,
-                      ),
-                      capitalizeLetters: false,
-                      mainAxisSize: MainAxisSize.max,
-                      type: DigitButtonType.tertiary,
-                      size: DigitButtonSize.medium,
-                      onPressed: () => showCustomPopup(
-                        context: context,
-                        builder: (ctx) => Popup(
-                          title: localizations.translate(
-                            i18.forgotPassword.labelText,
-                          ),
-                          description: localizations.translate(
-                            i18.forgotPassword.contentText,
-                          ),
-                          onOutsideTap: () {
-                            Navigator.of(ctx).pop();
-                          },
-                          type: PopUpType.simple,
-                          actions: [
-                            DigitButton(
-                              label: localizations.translate(
-                                i18.forgotPassword.primaryActionLabel,
-                              ),
-                              onPressed: () {
-                                Navigator.of(ctx).pop();
-                                context.router.popUntilRoot();
-                              },
-                              type: DigitButtonType.primary,
-                              size: DigitButtonSize.large,
-                            )
-                          ],
-                        ),
-                      ),
-                    ),
+                    // DigitButton(
+                    //   label: localizations.translateWithDefault(
+                    //     i18.forgotPassword.actionLabel,
+                    //     fallback: 'Mot De Passe Oublié ?',
+                    //   ),
+                    //   capitalizeLetters: false,
+                    //   mainAxisSize: MainAxisSize.max,
+                    //   type: DigitButtonType.tertiary,
+                    //   size: DigitButtonSize.medium,
+                    //   onPressed: () => showCustomPopup(
+                    //     context: context,
+                    //     builder: (ctx) => Popup(
+                    //       title: localizations.translateWithDefault(
+                    //         i18.forgotPassword.labelText,
+                    //         fallback: 'Mot de passe oublié',
+                    //       ),
+                    //       description: localizations.translateWithDefault(
+                    //         i18.forgotPassword.contentText,
+                    //         fallback:
+                    //             'Veuillez contacter votre administrateur si vous avez oublié votre mot de passe.',
+                    //       ),
+                    //       onOutsideTap: () {
+                    //         Navigator.of(ctx).pop();
+                    //       },
+                    //       type: PopUpType.simple,
+                    //       actions: [
+                    //         DigitButton(
+                    //           label: localizations.translateWithDefault(
+                    //             i18.forgotPassword.primaryActionLabel,
+                    //             fallback: 'D\'accord',
+                    //           ),
+                    //           onPressed: () {
+                    //             Navigator.of(ctx).pop();
+                    //             context.router.popUntilRoot();
+                    //           },
+                    //           type: DigitButtonType.primary,
+                    //           size: DigitButtonSize.large,
+                    //         )
+                    //       ],
+                    //     ),
+                    //   ),
+                    // ),
                   ],
                 );
               },
