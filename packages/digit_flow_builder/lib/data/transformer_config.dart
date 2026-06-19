@@ -1112,6 +1112,7 @@ final jsonConfig = {
           "additionalFields": {
             "flow": "__value:vasDone",
             "taskType": "__value:VAS",
+            "isSMCDelivered": "__context:isSMCDelivered",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
             "memberCount": "__context:memberCount",
