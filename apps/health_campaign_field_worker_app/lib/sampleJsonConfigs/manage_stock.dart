@@ -1327,6 +1327,11 @@ final dynamic sampleInventoryFlows = {
                 "value":
                     "{{fn:getTeamCode(formData.warehouseDetails.teamCode)}}"
               },
+              {
+                "key": "deliveryTeamName",
+                "value":
+                    "{{fn:getTeamName(formData.warehouseDetails.teamCode)}}"
+              },
               {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"}
             ],
             "onError": [
@@ -2076,7 +2081,7 @@ final dynamic sampleInventoryFlows = {
                           "type": "template",
                           "fieldName": "viewTransactionPartyValueText",
                           "value":
-                              "{{fn:getFirstPageParty(item.items[0].additionalFields.fields, item.items[0].senderId, item.items[0].receiverId)}}"
+                              "{{fn:getFirstPageParty(item.items[0].additionalFields.fields, item.items[0].senderId, item.items[0].receiverId, item.items[0].senderType, item.items[0].receiverType)}}"
                         }
                       ]
                     }
@@ -2249,7 +2254,7 @@ final dynamic sampleInventoryFlows = {
                     "key":
                         "{{fn:getSecondPagePartyLabel(item.additionalFields.fields)}}",
                     "value":
-                        "{{fn:getSecondPageParty(item.additionalFields.fields, item.senderId, item.receiverId)}}"
+                        "{{fn:getSecondPageParty(item.additionalFields.fields, item.senderId, item.receiverId, item.senderType, item.receiverType)}}"
                   },
                   {
                     "key": "INVENTORY_MRN_NUMBER_LABEL",
@@ -2425,7 +2430,7 @@ final dynamic sampleInventoryFlows = {
                           "fieldName": "incomingTransactionsSenderValueText",
                           "value":
                               "{{fn:getFacilityName(item.items[0].senderId)}}",
-                          "maxLines": 1
+                          "maxLines": 2
                         }
                       ]
                     }
@@ -2485,6 +2490,11 @@ final dynamic sampleInventoryFlows = {
                         {
                           "key": "senderFacilityId",
                           "value": "{{item.items[0].senderId}}"
+                        },
+                        {
+                          "key": "receivedFromName",
+                          "value":
+                              "{{fn:getFacilityName(item.items[0].senderId)}}"
                         },
                         {
                           "key": "quantity",
@@ -2568,6 +2578,10 @@ final dynamic sampleInventoryFlows = {
               {
                 "key": "senderFacilityId",
                 "value": "{{navigation.senderFacilityId}}"
+              },
+              {
+                "key": "receivedFromName",
+                "value": "{{fn:getFacilityName(item.items[0].senderId)}}"
               },
               {
                 "key": "productVariantId",
@@ -2785,7 +2799,7 @@ final dynamic sampleInventoryFlows = {
               "type": "string",
               "label": "INVENTORY_RECEIVED_FROM_LABEL",
               "order": 3,
-              "value": "{{senderFacilityId}}",
+              "value": "{{receivedFromName}}",
               "format": "text",
               "fieldName": "receivedFrom",
               "displayOnly": true
