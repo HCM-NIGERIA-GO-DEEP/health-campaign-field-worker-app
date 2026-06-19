@@ -278,10 +278,26 @@ class ComputedListEvaluator {
 
     // Evaluate each item
     for (final item in list) {
-      if (item is! Map) continue;
+      Map<String, dynamic> itemMap;
+      if (item is Map) {
+        itemMap = Map<String, dynamic>.from(item);
+      } else {
+        try {
+          // Attempt to convert objects to map (e.g. from toJson or toMap)
+          if ((item as dynamic).toJson != null) {
+            itemMap = Map<String, dynamic>.from(item.toJson());
+          } else if ((item as dynamic).toMap != null) {
+            itemMap = Map<String, dynamic>.from(item.toMap());
+          } else {
+            continue;
+          }
+        } catch (_) {
+          continue;
+        }
+      }
 
       // Extract required keys from the condition
-      final resolvedCondition = resolveValueRaw(condition, item);
+      final resolvedCondition = resolveValueRaw(condition, itemMap);
       final requiredKeys = extractKeys(resolvedCondition);
 
       // Build the context map with only required keys and applying transformations
@@ -299,19 +315,25 @@ class ComputedListEvaluator {
         final result = parser.parse;
 
         if (result['isSuccess'] && result['value'] == true) {
-          results.add(item);
+          results.add(itemMap);
         } else if (result['isSuccess'] && result['value'] is num) {
           final computedValue = result['value'];
 
-          if (item['ProductVariants'] is List) {
-            for (final variant in item['ProductVariants']) {
+          if (itemMap['ProductVariants'] is List) {
+            for (final variant in itemMap['ProductVariants']) {
+              if (variant is Map) {
+                variant['quantity'] = computedValue;
+              }
+            }
+          } else if (itemMap['productVariants'] is List) {
+            for (final variant in itemMap['productVariants']) {
               if (variant is Map) {
                 variant['quantity'] = computedValue;
               }
             }
           }
 
-          results.add(item);
+          results.add(itemMap);
         }
       } catch (e) {
         debugPrint('Formula evaluation error in computedList: $e');

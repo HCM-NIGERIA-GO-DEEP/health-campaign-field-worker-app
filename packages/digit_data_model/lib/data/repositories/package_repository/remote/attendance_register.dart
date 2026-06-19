@@ -25,6 +25,10 @@ class AttendanceRemoteRepository extends RemoteRepository<
     int? lastSyncedTime,
     bool? includeOnlyUpdatedByOthers,
   }) async {
+    if (query.attendeeId != null) {
+      return [];
+    }
+
     Response response;
 
     response = await executeFuture(

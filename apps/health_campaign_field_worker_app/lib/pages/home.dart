@@ -39,6 +39,7 @@ import 'package:transit_post/utils/utils.dart';
 import '../blocs/app_initialization/app_initialization.dart';
 import '../blocs/auth/auth.dart';
 import '../blocs/localization/localization.dart';
+import '../blocs/project/project.dart';
 import '../blocs/stock_downsync/stock_downsync.dart';
 import '../data/local_store/app_shared_preferences.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
@@ -142,23 +143,19 @@ class _HomePageState extends LocalizedState<HomePage> {
     CustomComponentRegistry().registerBuilder(
       'resourceCard',
       (context, stateAccessor) {
-        final beneficiaryDetails =
+        final currentPage = stateAccessor.currentPageName;
+        var beneficiaryDetails =
             stateAccessor.getPageData('beneficiaryDetails');
 
-        if (beneficiaryDetails != null &&
-            stateAccessor.currentPageName == 'DELIVERY') {
-          // DELIVERY flow
-          return ResourceCard(
-            stateData: beneficiaryDetails,
-            pageSchema: 'DELIVERY',
-          );
-        }
+        // Extract navigation parameters to compute product variants manually
+        final navParams =
+            FlowCrudStateRegistry().getNavigationParams('DELIVERY') ??
+                FlowCrudStateRegistry().getNavigationParams('REDOSE') ??
+                FlowCrudStateRegistry().getNavigationParams(currentPage);
 
-        // REDOSE flow - compute product variants same as DELIVERY
-        // Use navigation params to filter by age condition
-        final navParams = FlowCrudStateRegistry().getNavigationParams('REDOSE');
         final cycleIndex = navParams?['cycleIndex'];
-        final ageStr = navParams?['selectedIndividualAgeInMonths'];
+        final ageStr = navParams?['selectedIndividualAgeInMonths'] ??
+            navParams?['ageInMonths'];
         final age = int.tryParse(ageStr?.toString() ?? '');
 
         final projectType = context.selectedProjectType;
@@ -166,8 +163,10 @@ class _HomePageState extends LocalizedState<HomePage> {
 
         // Find the cycle matching cycleIndex from nav params
         final currentCycle = cycles?.firstWhereOrNull(
-          (c) => c.id.toString() == cycleIndex?.toString(),
-        );
+              (c) => c.id.toString() == cycleIndex?.toString(),
+            ) ??
+            context.read<ProjectBloc>().state.selectedCycle ??
+            cycles?.firstOrNull;
 
         // Use first delivery's dose criteria (all deliveries have same criteria)
         final firstDelivery = currentCycle?.deliveries?.firstOrNull;
@@ -187,7 +186,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                   matchingCriteria.add(dc.toMap());
                 }
               } catch (e) {
-                debugPrint('REDOSE condition eval error: $e');
+                debugPrint('$currentPage condition eval error: $e');
               }
             } else {
               // No condition - include by default
@@ -196,15 +195,21 @@ class _HomePageState extends LocalizedState<HomePage> {
           }
         }
 
-        final redoseState = FlowCrudState(
-          stateWrapper: [
-            {'eligibleProductVariants': matchingCriteria}
-          ],
+        // Merge existing beneficiaryDetails state with the computed eligible variants
+        final Map<String, dynamic> mergedState = {};
+        if (beneficiaryDetails?.stateWrapper?.isNotEmpty == true) {
+          mergedState.addAll(beneficiaryDetails!.stateWrapper!.first);
+        }
+        
+        mergedState['eligibleProductVariants'] = matchingCriteria;
+
+        final computedState = FlowCrudState(
+          stateWrapper: [mergedState],
         );
 
         return ResourceCard(
-          stateData: redoseState,
-          pageSchema: 'REDOSE',
+          stateData: computedState,
+          pageSchema: currentPage,
         );
       },
     );

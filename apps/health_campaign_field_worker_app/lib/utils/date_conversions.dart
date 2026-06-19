@@ -21,9 +21,13 @@ class DateConversions {
       inputFormat = date.contains('-')
           ? DateFormat('dd-MM-yyyy')
           : DateFormat('dd/MM/yyyy');
-      DateTime inputDate = inputFormat.parse(date);
-
-      return inputDate;
+      try {
+        DateTime inputDate = inputFormat.parse(date);
+        return inputDate;
+      } catch (e) {
+        // Fallback for ISO strings like 2021-06-17T00:00:00.000
+        return DateTime.parse(date).toLocal();
+      }
     } on Exception catch (e) {
       if (kDebugMode) {
         print(e);

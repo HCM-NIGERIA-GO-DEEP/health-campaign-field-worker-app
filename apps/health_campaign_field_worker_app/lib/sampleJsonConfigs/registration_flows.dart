@@ -215,7 +215,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "NAME_OF_INDIVIDUAL",
                   "value":
-                      "{{contextData.0.individuals.IndividualModel.name.givenName}} {{contextData.0.individuals.IndividualModel.name.familyName}}"
+                      "{{contextData.0.individuals.IndividualModel.name.givenName}}"
                 },
                 {
                   "key": "ID_TYPE",
@@ -926,7 +926,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "HOUSEHOLD_HEAD_NAME",
                   "value":
-                      "{{contextData.0.headIndividual.IndividualModel.name.givenName}} {{contextData.0.headIndividual.IndividualModel.name.familyName}}",
+                      "{{contextData.0.headIndividual.IndividualModel.name.givenName}}",
                   "isActive": true
                 },
                 {
@@ -1121,6 +1121,13 @@ final dynamic sampleFlows = {
                   },
                   {
                     "type": "template",
+                    "value": "{{item.individual.0.identifiers.0.identifierId}}",
+                    "format": "textTemplate",
+                    "fieldName": "beneficiaryId",
+                    "properties": {"bottomGap": 16}
+                  },
+                  {
+                    "type": "template",
                     "label": "IS_HEAD",
                     "format": "tag",
                     "visible": "{{fn:isHead(item.member)}}",
@@ -1132,7 +1139,7 @@ final dynamic sampleFlows = {
                     "label": "NOT_ELIGIBLE",
                     "format": "tag",
                     "visible":
-                        "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task, contextData.0.currentRunningCycle)}}==false && && {{fn:length(item.hFReferral)}}>0 && {{fn:isHead(item.member)}}==false && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false",
+                        "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task, contextData.0.currentRunningCycle)}}==false && {{fn:length(item.hFReferral)}}>0 && {{fn:isHead(item.member)}}==false && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false",
                     "fieldName": "notEligible",
                     "properties": {"tagType": "error", "bottomGap": 16}
                   },
@@ -1141,7 +1148,7 @@ final dynamic sampleFlows = {
                     "label": "ADMINISTERED_SUCCESS",
                     "format": "tag",
                     "visible":
-                        "{{fn:isDelivered(item.task.last.status)}}==true && {{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task, contextData.0.currentRunningCycle)}}==true && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false",
+                        "{{fn:isDelivered(item.task)}}==true && {{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task, contextData.0.currentRunningCycle)}}==true && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false",
                     "fieldName": "administrationSuccess",
                     "properties": {"tagType": "success", "bottomGap": 16}
                   },
@@ -1178,7 +1185,7 @@ final dynamic sampleFlows = {
                     "label": "NOT_VISITED",
                     "format": "tag",
                     "visible":
-                        "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task, contextData.0.currentRunningCycle)}}==true && {{fn:isDelivered(item.task.last.status)}}==false && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false && {{fn:isRedoseCompleted(item.task)}}==false",
+                        "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task, contextData.0.currentRunningCycle)}}==true && {{fn:isDelivered(item.task)}}==false && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false && {{fn:isRedoseCompleted(item.task)}}==false",
                     "fieldName": "notVisited",
                     "properties": {"tagType": "info", "bottomGap": 16}
                   },
@@ -1258,7 +1265,7 @@ final dynamic sampleFlows = {
                               "value": "{{contextData.0.currentRunningCycle}}"
                             }
                           ],
-                          "name": "CHECKLIST",
+                          "name": "DELIVERY",
                           "type": "FORM"
                         }
                       }
@@ -2541,8 +2548,7 @@ final dynamic sampleFlows = {
                 "children": [
                   {
                     "type": "template",
-                    "value":
-                        "{{ item.headIndividual.0.name.givenName }} {{ item.headIndividual.0.name.familyName }}",
+                    "value": "{{ item.headIndividual.0.name.givenName }}",
                     "format": "textTemplate",
                     "fieldName": "headOfHousehold"
                   },
@@ -2665,8 +2671,7 @@ final dynamic sampleFlows = {
                       "header": "BENEFICIARY",
                       "hidden": false,
                       "isActive": true,
-                      "cellValue":
-                          "{{item.name.givenName}} {{item.name.familyName}}"
+                      "cellValue": "{{item.name.givenName}}"
                     },
                     {
                       "header": "AGE_OF_BENEFICIARY",
@@ -4192,13 +4197,12 @@ final dynamic sampleFlows = {
                   "properties": {
                     "data": [
                       {
-                        "key": "individualClientReferenceId",
+                        "key": "selectedIndividualClientReferenceId",
                         "value": "{{formData.individual.clientReferenceId}}"
                       },
                       {
-                        "key": "beneficiaryId",
-                        "value":
-                            "{{formData.individual.identifiers.0.identifierId}}"
+                        "key": "selectedIndividualIdentifierId",
+                        "value": "{{formData.identifiers}}"
                       },
                       {
                         "key": "HouseholdClientReferenceId",
@@ -4210,12 +4214,15 @@ final dynamic sampleFlows = {
                             "{{formData.projectBeneficiary.clientReferenceId}}"
                       },
                       {
-                        "key": "childName",
+                        "key": "selectedIndividualName",
                         "value": "{{formData.nameOfIndividual}}"
                       },
-                      {"key": "gender", "value": "{{formData.gender}}"},
                       {
-                        "key": "ageInMonths",
+                        "key": "selectedIndividualGender",
+                        "value": "{{formData.gender}}"
+                      },
+                      {
+                        "key": "selectedIndividualAgeInMonths",
                         "value":
                             "{{fn:formatDate(formData.dobPicker, 'ageInMonths')}}"
                       },
@@ -4224,9 +4231,9 @@ final dynamic sampleFlows = {
                         "value": "{{contextData.0.cycleIndex}}"
                       }
                     ],
-                    "name": "DeliveryDetails",
-                    "type": "form",
-                    "navigationMode": "popUntilAndPush",
+                    "name": "householdOverview",
+                    "type": "TEMPLATE",
+                    "navigationMode": "popUntilAndReplace",
                     "popUntilPageName": "householdOverview"
                   }
                 }
@@ -4287,50 +4294,6 @@ final dynamic sampleFlows = {
               "isMultiSelect": false,
               "required.message":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_mandatory_message_addmember"
-            },
-            {
-              "type": "string",
-              "label":
-                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_familyname_addmember",
-              "order": 2,
-              "value": "",
-              "format": "text",
-              "hidden": true,
-              "isMdms": false,
-              "tooltip": "",
-              "helpText": "",
-              "infoText": "",
-              "readOnly": false,
-              "required": true,
-              "fieldName": "familyname",
-              "mandatory": true,
-              "deleteFlag": false,
-              "innerLabel": "",
-              "schemaCode": null,
-              "systemDate": false,
-              "lengthRange": {
-                "minLength": "2",
-                "errorMessage":
-                    "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_familyname_min_message_addmember"
-              },
-              "validations": [
-                {
-                  "type": "required",
-                  "value": true,
-                  "message":
-                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_familyname_mandatory_message_addmember"
-                },
-                {
-                  "type": "minLength",
-                  "value": "2",
-                  "message":
-                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_familyname_min_message_addmember"
-                }
-              ],
-              "errorMessage": "",
-              "isMultiSelect": false,
-              "required.message":
-                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_familyname_mandatory_message_addmember"
             },
             {
               "type": "string",
@@ -4697,6 +4660,15 @@ final dynamic sampleFlows = {
               "properties": {
                 "entity": "IndividualModel, ProjectBeneficiaryModel"
               }
+            },
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "name": "householdOverview",
+                "type": "TEMPLATE",
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "searchBeneficiary"
+              }
             }
           ],
           "condition": {"type": "custom", "expression": "isEdit == true"}
@@ -4726,12 +4698,12 @@ final dynamic sampleFlows = {
           "properties": {
             "data": [
               {
-                "key": "selectedIndividualClientReferenceId",
+                "key": "individualClientReferenceId",
                 "value":
                     "{{contextData.entities.IndividualModel.clientReferenceId}}"
               },
               {
-                "key": "selectedIndividualIdentifierId",
+                "key": "beneficiaryId",
                 "value":
                     "{{contextData.entities.IndividualModel.identifiers.0.identifierId}}"
               },
@@ -4745,23 +4717,26 @@ final dynamic sampleFlows = {
                     "{{contextData.entities.ProjectBeneficiaryModel.clientReferenceId}}"
               },
               {
-                "key": "selectedIndividualName",
+                "key": "childName",
                 "value":
                     "{{contextData.entities.IndividualModel.name.givenName}}"
               },
               {
-                "key": "selectedIndividualGender",
+                "key": "gender",
                 "value": "{{contextData.entities.IndividualModel.gender}}"
               },
               {
-                "key": "selectedIndividualAgeInMonths",
+                "key": "ageInMonths",
                 "value":
                     "{{fn:formatDate(contextData.entities.IndividualModel.dateOfBirth, 'ageinmonths')}}"
               },
-              {"key": "cycleIndex", "value": "{{contextData.0.cycleIndex}}"}
+              {
+                "key": "cycleIndex",
+                "value": "{{contextData.0.currentRunningCycle}}"
+              }
             ],
-            "name": "ACKNOWLEDGEMENT",
-            "type": "TEMPLATE",
+            "name": "DELIVERY",
+            "type": "FORM",
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
@@ -4769,7 +4744,7 @@ final dynamic sampleFlows = {
               }
             ],
             "navigationMode": "popUntilAndPush",
-            "popUntilPageName": "searchBeneficiary"
+            "popUntilPageName": "householdOverview"
           }
         }
       ],
@@ -5456,8 +5431,8 @@ final dynamic sampleFlows = {
                         "value": "{{formData.household.clientReferenceId}}"
                       }
                     ],
-                    "name": "DeliveryDetails",
-                    "type": "form"
+                    "name": "DELIVERY",
+                    "type": "FORM"
                   }
                 }
               ],
@@ -5697,50 +5672,6 @@ final dynamic sampleFlows = {
               "isMultiSelect": false,
               "required.message":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_mandatory_message"
-            },
-            {
-              "type": "string",
-              "label":
-                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_familyname",
-              "order": 2,
-              "value": "",
-              "format": "text",
-              "hidden": true,
-              "isMdms": false,
-              "tooltip": "",
-              "helpText": "",
-              "infoText": "",
-              "readOnly": false,
-              "required": true,
-              "fieldName": "familyname",
-              "mandatory": true,
-              "deleteFlag": false,
-              "innerLabel": "",
-              "schemaCode": null,
-              "systemDate": false,
-              "lengthRange": {
-                "minLength": "2",
-                "errorMessage":
-                    "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_familyname_min_message"
-              },
-              "validations": [
-                {
-                  "type": "required",
-                  "value": true,
-                  "message":
-                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_familyname_mandatory_message"
-                },
-                {
-                  "type": "minLength",
-                  "value": "2",
-                  "message":
-                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_familyname_min_message"
-                }
-              ],
-              "errorMessage": "",
-              "isMultiSelect": false,
-              "required.message":
-                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_familyname_mandatory_message"
             },
             {
               "type": "boolean",

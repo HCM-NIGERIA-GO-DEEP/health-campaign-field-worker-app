@@ -422,17 +422,19 @@ class MainApplicationState extends State<MainApplication>
                                     getAppLocalizationDelegates(
                                   sql: widget.sql,
                                   appConfig: appConfig,
-                                  selectedLocale: Locale(
-                                    selectedLocale!.split("_").first,
-                                    selectedLocale.split("_").last,
-                                  ),
+                                  selectedLocale: const Locale('fr', 'NG'),
+                                  // Locale(
+                                  //   selectedLocale!.split("_").first,
+                                  //   selectedLocale.split("_").last,
+                                  // ),
                                 ),
-                                locale: languages != null
-                                    ? Locale(
-                                        selectedLocale!.split("_").first,
-                                        selectedLocale.split("_").last,
-                                      )
-                                    : firstLanguage,
+                                // locale: languages != null
+                                //     ? Locale(
+                                //         selectedLocale!.split("_").first,
+                                //         selectedLocale.split("_").last,
+                                //       )
+                                //     : firstLanguage,
+                                locale: const Locale('fr', 'NG'),
                                 theme:
                                     DigitExtendedTheme.instance.getLightTheme(),
                                 routeInformationParser:

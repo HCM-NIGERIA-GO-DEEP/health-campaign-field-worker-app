@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/blocs/product_variant/product_variant.dart';
+import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/product_variant.dart';
 import 'package:digit_data_model/models/entities/project_type.dart';
 import 'package:digit_forms_engine/forms_engine.dart';
@@ -199,7 +200,9 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
       }
     }
 
-    walk(pages!, []);
+    if (pages != null) {
+      walk(pages, []);
+    }
 
     return ReactiveWrapperField<dynamic>(
       formControlName: _resourceCardKey,

@@ -33,6 +33,7 @@ import '../../models/app_config/app_config_model.dart';
 import '../../models/auth/auth_model.dart';
 import '../../models/downsync/downsync.dart';
 import '../../models/entities/roles_type.dart';
+import '../../sampleJsonConfigs/registration_flows.dart';
 import '../../utils/background_service.dart';
 import '../../utils/download_image.dart';
 import '../../utils/environment_config.dart';
@@ -713,7 +714,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
                     MdmsMasterDetailModel(
                       'FormConfig',
                       filter:
-                          "[?(@.project=='CMP-2026-05-26-000243' && @.isSelected==true)]",
+                          "[?(@.project=='${event.model.referenceID}' && @.isSelected==true)]",
                     ),
                   ],
                 ),
@@ -722,10 +723,22 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
           ).toJson(),
         );
 
-        final formConfigs = formConfigResult['HCM-ADMIN-CONSOLE']['FormConfig'];
+        final formConfigs = (formConfigResult is Map && formConfigResult['HCM-ADMIN-CONSOLE'] != null)
+            ? formConfigResult['HCM-ADMIN-CONSOLE']['FormConfig'] ?? []
+            : [];
 
-        for (final config in formConfigs) {
-          await enrichFormSchemasWithEnumsForForms(config);
+        if (formConfigs.isEmpty) {
+          await enrichFormSchemasWithEnumsForForms(
+              sampleFlows as Map<String, dynamic>);
+        } else {
+          for (final config in formConfigs) {
+            if (config['name'] == 'REGISTRATION') {
+              await enrichFormSchemasWithEnumsForForms(
+                  sampleFlows as Map<String, dynamic>);
+            } else {
+              await enrichFormSchemasWithEnumsForForms(config);
+            }
+          }
         }
       } catch (e) {
         emit(
