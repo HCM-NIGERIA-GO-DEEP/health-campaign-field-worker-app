@@ -956,10 +956,10 @@ mixin _$HCMWrapperModel {
   @JsonKey(name: 'CHECKLIST_TYPES')
   List<CheckListTypes> get checklistTypes => throw _privateConstructorUsedError;
   @JsonKey(name: 'DEVICE_CHANGE_REASONS')
-  List<DeviceChangeReasons> get deviceChangeReasons =>
+  List<DeviceChangeReasons>? get deviceChangeReasons =>
       throw _privateConstructorUsedError;
   @JsonKey(name: 'SINGLE_USER_LOGIN')
-  List<SingleUserLogin> get singleUserLogin =>
+  List<SingleUserLogin>? get singleUserLogin =>
       throw _privateConstructorUsedError;
   @JsonKey(name: 'ID_TYPE_OPTIONS_POPULATOR')
   List<IdTypeOptions> get idTypeOptions => throw _privateConstructorUsedError;
@@ -1036,8 +1036,9 @@ abstract class $HCMWrapperModelCopyWith<$Res> {
       List<BackgroundServiceConfig>? backgroundServiceConfig,
       @JsonKey(name: 'CHECKLIST_TYPES') List<CheckListTypes> checklistTypes,
       @JsonKey(name: 'DEVICE_CHANGE_REASONS')
-      List<DeviceChangeReasons> deviceChangeReasons,
-      @JsonKey(name: 'SINGLE_USER_LOGIN') List<SingleUserLogin> singleUserLogin,
+      List<DeviceChangeReasons>? deviceChangeReasons,
+      @JsonKey(name: 'SINGLE_USER_LOGIN')
+      List<SingleUserLogin>? singleUserLogin,
       @JsonKey(name: 'ID_TYPE_OPTIONS_POPULATOR')
       List<IdTypeOptions> idTypeOptions,
       @JsonKey(name: 'HOUSEHOLD_MEMBER_RELATIONSHIP_TYPES')
@@ -1088,8 +1089,8 @@ class _$HCMWrapperModelCopyWithImpl<$Res, $Val extends HCMWrapperModel>
     Object? householdMemberDeletionReasonOptions = null,
     Object? backgroundServiceConfig = freezed,
     Object? checklistTypes = null,
-    Object? deviceChangeReasons = null,
-    Object? singleUserLogin = null,
+    Object? deviceChangeReasons = freezed,
+    Object? singleUserLogin = freezed,
     Object? idTypeOptions = null,
     Object? relationShipTypeOptions = null,
     Object? deliveryCommentOptions = null,
@@ -1141,14 +1142,14 @@ class _$HCMWrapperModelCopyWithImpl<$Res, $Val extends HCMWrapperModel>
           ? _value.checklistTypes
           : checklistTypes // ignore: cast_nullable_to_non_nullable
               as List<CheckListTypes>,
-      deviceChangeReasons: null == deviceChangeReasons
+      deviceChangeReasons: freezed == deviceChangeReasons
           ? _value.deviceChangeReasons
           : deviceChangeReasons // ignore: cast_nullable_to_non_nullable
-              as List<DeviceChangeReasons>,
-      singleUserLogin: null == singleUserLogin
+              as List<DeviceChangeReasons>?,
+      singleUserLogin: freezed == singleUserLogin
           ? _value.singleUserLogin
           : singleUserLogin // ignore: cast_nullable_to_non_nullable
-              as List<SingleUserLogin>,
+              as List<SingleUserLogin>?,
       idTypeOptions: null == idTypeOptions
           ? _value.idTypeOptions
           : idTypeOptions // ignore: cast_nullable_to_non_nullable
@@ -1241,8 +1242,9 @@ abstract class _$$HCMWrapperModelImplCopyWith<$Res>
       List<BackgroundServiceConfig>? backgroundServiceConfig,
       @JsonKey(name: 'CHECKLIST_TYPES') List<CheckListTypes> checklistTypes,
       @JsonKey(name: 'DEVICE_CHANGE_REASONS')
-      List<DeviceChangeReasons> deviceChangeReasons,
-      @JsonKey(name: 'SINGLE_USER_LOGIN') List<SingleUserLogin> singleUserLogin,
+      List<DeviceChangeReasons>? deviceChangeReasons,
+      @JsonKey(name: 'SINGLE_USER_LOGIN')
+      List<SingleUserLogin>? singleUserLogin,
       @JsonKey(name: 'ID_TYPE_OPTIONS_POPULATOR')
       List<IdTypeOptions> idTypeOptions,
       @JsonKey(name: 'HOUSEHOLD_MEMBER_RELATIONSHIP_TYPES')
@@ -1291,8 +1293,8 @@ class __$$HCMWrapperModelImplCopyWithImpl<$Res>
     Object? householdMemberDeletionReasonOptions = null,
     Object? backgroundServiceConfig = freezed,
     Object? checklistTypes = null,
-    Object? deviceChangeReasons = null,
-    Object? singleUserLogin = null,
+    Object? deviceChangeReasons = freezed,
+    Object? singleUserLogin = freezed,
     Object? idTypeOptions = null,
     Object? relationShipTypeOptions = null,
     Object? deliveryCommentOptions = null,
@@ -1344,14 +1346,14 @@ class __$$HCMWrapperModelImplCopyWithImpl<$Res>
           ? _value._checklistTypes
           : checklistTypes // ignore: cast_nullable_to_non_nullable
               as List<CheckListTypes>,
-      deviceChangeReasons: null == deviceChangeReasons
+      deviceChangeReasons: freezed == deviceChangeReasons
           ? _value._deviceChangeReasons
           : deviceChangeReasons // ignore: cast_nullable_to_non_nullable
-              as List<DeviceChangeReasons>,
-      singleUserLogin: null == singleUserLogin
+              as List<DeviceChangeReasons>?,
+      singleUserLogin: freezed == singleUserLogin
           ? _value._singleUserLogin
           : singleUserLogin // ignore: cast_nullable_to_non_nullable
-              as List<SingleUserLogin>,
+              as List<SingleUserLogin>?,
       idTypeOptions: null == idTypeOptions
           ? _value._idTypeOptions
           : idTypeOptions // ignore: cast_nullable_to_non_nullable
@@ -1441,9 +1443,9 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
       @JsonKey(name: 'CHECKLIST_TYPES')
       required final List<CheckListTypes> checklistTypes,
       @JsonKey(name: 'DEVICE_CHANGE_REASONS')
-      required final List<DeviceChangeReasons> deviceChangeReasons,
+      final List<DeviceChangeReasons>? deviceChangeReasons,
       @JsonKey(name: 'SINGLE_USER_LOGIN')
-      required final List<SingleUserLogin> singleUserLogin,
+      final List<SingleUserLogin>? singleUserLogin,
       @JsonKey(name: 'ID_TYPE_OPTIONS_POPULATOR')
       required final List<IdTypeOptions> idTypeOptions,
       @JsonKey(name: 'HOUSEHOLD_MEMBER_RELATIONSHIP_TYPES')
@@ -1587,23 +1589,27 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
     return EqualUnmodifiableListView(_checklistTypes);
   }
 
-  final List<DeviceChangeReasons> _deviceChangeReasons;
+  final List<DeviceChangeReasons>? _deviceChangeReasons;
   @override
   @JsonKey(name: 'DEVICE_CHANGE_REASONS')
-  List<DeviceChangeReasons> get deviceChangeReasons {
+  List<DeviceChangeReasons>? get deviceChangeReasons {
+    final value = _deviceChangeReasons;
+    if (value == null) return null;
     if (_deviceChangeReasons is EqualUnmodifiableListView)
       return _deviceChangeReasons;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_deviceChangeReasons);
+    return EqualUnmodifiableListView(value);
   }
 
-  final List<SingleUserLogin> _singleUserLogin;
+  final List<SingleUserLogin>? _singleUserLogin;
   @override
   @JsonKey(name: 'SINGLE_USER_LOGIN')
-  List<SingleUserLogin> get singleUserLogin {
+  List<SingleUserLogin>? get singleUserLogin {
+    final value = _singleUserLogin;
+    if (value == null) return null;
     if (_singleUserLogin is EqualUnmodifiableListView) return _singleUserLogin;
     // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(_singleUserLogin);
+    return EqualUnmodifiableListView(value);
   }
 
   final List<IdTypeOptions> _idTypeOptions;
@@ -1918,9 +1924,9 @@ abstract class _HCMWrapperModel implements HCMWrapperModel {
       @JsonKey(name: 'CHECKLIST_TYPES')
       required final List<CheckListTypes> checklistTypes,
       @JsonKey(name: 'DEVICE_CHANGE_REASONS')
-      required final List<DeviceChangeReasons> deviceChangeReasons,
+      final List<DeviceChangeReasons>? deviceChangeReasons,
       @JsonKey(name: 'SINGLE_USER_LOGIN')
-      required final List<SingleUserLogin> singleUserLogin,
+      final List<SingleUserLogin>? singleUserLogin,
       @JsonKey(name: 'ID_TYPE_OPTIONS_POPULATOR')
       required final List<IdTypeOptions> idTypeOptions,
       @JsonKey(name: 'HOUSEHOLD_MEMBER_RELATIONSHIP_TYPES')
@@ -1984,10 +1990,10 @@ abstract class _HCMWrapperModel implements HCMWrapperModel {
   List<CheckListTypes> get checklistTypes;
   @override
   @JsonKey(name: 'DEVICE_CHANGE_REASONS')
-  List<DeviceChangeReasons> get deviceChangeReasons;
+  List<DeviceChangeReasons>? get deviceChangeReasons;
   @override
   @JsonKey(name: 'SINGLE_USER_LOGIN')
-  List<SingleUserLogin> get singleUserLogin;
+  List<SingleUserLogin>? get singleUserLogin;
   @override
   @JsonKey(name: 'ID_TYPE_OPTIONS_POPULATOR')
   List<IdTypeOptions> get idTypeOptions;

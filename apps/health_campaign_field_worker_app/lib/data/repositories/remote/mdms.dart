@@ -303,7 +303,7 @@ class MdmsRepository {
     }).toList();
 
     final List<DeviceChangeReasons>? deviceChangeReasons =
-        element?.deviceChangeReasons.map((element) {
+        element?.deviceChangeReasons?.map((element) {
       final deviceChangeReason = DeviceChangeReasons()
         ..name = element.name
         ..code = element.code;
@@ -312,7 +312,7 @@ class MdmsRepository {
     }).toList();
 
     final List<SingleUserLogin>? singleUserLogin =
-        element?.singleUserLogin.map((element) {
+        element?.singleUserLogin?.map((element) {
       final singleUserLogin = SingleUserLogin()
         ..enabled = element.enabled
         ..id = element.id;

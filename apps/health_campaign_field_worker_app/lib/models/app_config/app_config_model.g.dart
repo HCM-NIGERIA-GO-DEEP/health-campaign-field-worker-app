@@ -121,11 +121,11 @@ _$HCMWrapperModelImpl _$$HCMWrapperModelImplFromJson(
       checklistTypes: (json['CHECKLIST_TYPES'] as List<dynamic>)
           .map((e) => CheckListTypes.fromJson(e as Map<String, dynamic>))
           .toList(),
-      deviceChangeReasons: (json['DEVICE_CHANGE_REASONS'] as List<dynamic>)
-          .map((e) => DeviceChangeReasons.fromJson(e as Map<String, dynamic>))
+      deviceChangeReasons: (json['DEVICE_CHANGE_REASONS'] as List<dynamic>?)
+          ?.map((e) => DeviceChangeReasons.fromJson(e as Map<String, dynamic>))
           .toList(),
-      singleUserLogin: (json['SINGLE_USER_LOGIN'] as List<dynamic>)
-          .map((e) => SingleUserLogin.fromJson(e as Map<String, dynamic>))
+      singleUserLogin: (json['SINGLE_USER_LOGIN'] as List<dynamic>?)
+          ?.map((e) => SingleUserLogin.fromJson(e as Map<String, dynamic>))
           .toList(),
       idTypeOptions: (json['ID_TYPE_OPTIONS_POPULATOR'] as List<dynamic>)
           .map((e) => IdTypeOptions.fromJson(e as Map<String, dynamic>))
