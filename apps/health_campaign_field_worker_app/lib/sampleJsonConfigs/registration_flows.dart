@@ -1257,14 +1257,8 @@ final dynamic sampleFlows = {
                               "key": "cycleIndex",
                               "value": "{{contextData.0.currentRunningCycle}}"
                             },
-                            {
-                              "key": "doseIndex",
-                              "value": "1"
-                            },
-                            {
-                              "key": "deliveryStrategy",
-                              "value": "DIRECT"
-                            }
+                            {"key": "doseIndex", "value": "1"},
+                            {"key": "deliveryStrategy", "value": "DIRECT"}
                           ],
                           "name": "DELIVERY",
                           "type": "FORM"
@@ -2685,6 +2679,13 @@ final dynamic sampleFlows = {
                       "hidden": false,
                       "isActive": true,
                       "cellValue": "{{item.gender}}"
+                    },
+                    {
+                      "header": "STATUS",
+                      "hidden": false,
+                      "isActive": true,
+                      "cellValue":
+                          "{{fn:getIndividualStatus(item, currentItem.householdMembers, currentItem.tasks, currentItem.projectBeneficiaries)}}"
                     }
                   ]
                 },
@@ -2962,7 +2963,7 @@ final dynamic sampleFlows = {
             "name": "projectBeneficiaries",
             "match": {
               "field": "beneficiaryClientReferenceId",
-              "inFrom": "individuals.clientReferenceId"
+              "equalsFrom": "clientReferenceId"
             },
             "entity": "ProjectBeneficiaryModel"
           },
@@ -4411,13 +4412,13 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "minLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGIT_ERROR_ADDMEMBER"
+                  "value": 8,
+                  "message": "MOBILE_LENGTH_8_DIGIT_ERROR_ADDMEMBER"
                 },
                 {
                   "type": "maxLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGIT_ERROR_ADDMEMBER"
+                  "value": 8,
+                  "message": "MOBILE_LENGTH_8_DIGIT_ERROR_ADDMEMBER"
                 }
               ],
               "errorMessage": "",

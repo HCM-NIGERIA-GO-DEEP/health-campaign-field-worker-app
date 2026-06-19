@@ -1541,6 +1541,164 @@ void initializeFunctionRegistry() {
     });
   });
 
+  /// Computes the status string for an individual within a household.
+  ///
+  /// - **Function Name**: `'getIndividualStatus'`
+  /// - **Arguments**: First argument is the IndividualModel, second is the list of HouseholdMemberModels.
+  /// - **Returns**: `"IS_HEAD"` if the individual is the head of household, empty string otherwise.
+  FunctionRegistry.register("getIndividualStatus", (args, stateData) {
+    if (args.isEmpty || args[0] == null) return '';
+
+    final individual = args[0];
+    final members = args.length > 1 ? args[1] as List? : null;
+    final tasks = args.length > 2 ? args[2] as List? : null;
+    final pbs = args.length > 3 ? args[3] as List? : null;
+
+    debugPrint('getIndividualStatus called with:');
+    debugPrint('indRefId: ${individual is IndividualModel ? individual.clientReferenceId : (individual is Map ? individual['clientReferenceId'] : null)}');
+    debugPrint('tasks length: ${tasks?.length}, pbs length: ${pbs?.length}');
+
+    final String? indRefId = individual is IndividualModel
+        ? individual.clientReferenceId
+        : (individual is Map ? individual['clientReferenceId']?.toString() : null);
+
+    if (indRefId == null || indRefId.isEmpty) return '';
+
+    // Step 1: Find the task matching the individual
+    dynamic matchedTask;
+    
+    if (tasks != null) {
+      // First try to find a task that explicitly references this individual in its additionalFields (Chad SMC behavior)
+      matchedTask = tasks.firstWhereOrNull((t) {
+        if (t == null) return false;
+        final fields = t is TaskModel
+            ? t.additionalFields?.fields
+            : (t is Map && t['additionalFields'] != null
+                ? t['additionalFields']['fields'] as List?
+                : null);
+        
+        final indRefField = fields?.firstWhereOrNull((f) => 
+            (f is AdditionalField ? f.key : (f is Map ? f['key'] : null)) == 'individualClientReferenceId');
+            
+        if (indRefField != null) {
+          final val = indRefField is AdditionalField ? indRefField.value : (indRefField as Map)['value'];
+          return val?.toString() == indRefId;
+        }
+        return false;
+      });
+
+      // If not found, fall back to standard project beneficiary mapping
+      if (matchedTask == null && pbs != null) {
+        final pb = pbs.firstWhereOrNull((p) {
+          final benRefId = p is ProjectBeneficiaryModel
+              ? p.beneficiaryClientReferenceId
+              : (p is Map ? p['beneficiaryClientReferenceId']?.toString() : null);
+          return benRefId == indRefId;
+        });
+
+        final pbRefId = pb is ProjectBeneficiaryModel
+            ? pb.clientReferenceId
+            : (pb is Map ? pb['clientReferenceId']?.toString() : null);
+
+        if (pbRefId != null) {
+          matchedTask = tasks.firstWhereOrNull((t) {
+            final tRef = t is TaskModel
+                ? t.projectBeneficiaryClientReferenceId
+                : (t is Map ? t['projectBeneficiaryClientReferenceId']?.toString() : null);
+            return tRef == pbRefId;
+          });
+        }
+      }
+    }
+
+    // Step 2: Extract status from matched task
+    if (matchedTask != null) {
+      final fields = matchedTask is TaskModel
+          ? matchedTask.additionalFields?.fields
+          : (matchedTask is Map && matchedTask['additionalFields'] != null
+              ? matchedTask['additionalFields']['fields'] as List?
+              : null);
+
+      final statusField = fields?.firstWhereOrNull((f) => 
+          (f is AdditionalField ? f.key : (f is Map ? f['key'] : null)) == 'TaskStatus');
+
+      if (statusField != null) {
+        final val = statusField is AdditionalField ? statusField.value : (statusField as Map)['value'];
+        if (val != null && val.toString().isNotEmpty) return val.toString();
+      }
+
+      final status = matchedTask is TaskModel ? matchedTask.status : (matchedTask as Map)['status']?.toString();
+      if (status != null && status.isNotEmpty) return status;
+    }
+
+    // Step 3: If no task, check if they are the head
+    if (members != null && members.isNotEmpty) {
+      final member = members.firstWhereOrNull((m) {
+        final mRefId = m is HouseholdMemberModel
+            ? m.individualClientReferenceId
+            : (m is Map ? m['individualClientReferenceId']?.toString() : null);
+        return mRefId == indRefId;
+      });
+
+      if (member != null) {
+        final isHead = member is HouseholdMemberModel
+            ? member.isHeadOfHousehold
+            : (member as Map)['isHeadOfHousehold'];
+        
+        final isHeadBool = isHead is bool ? isHead : (isHead?.toString().toLowerCase() == 'true' || isHead == '1');
+        if (isHeadBool) return 'IS_HEAD';
+      }
+    }
+
+    return 'NOT_VISITED';
+  });
+
+  /// Checks if an individual model represents the head of household.
+  ///
+  /// - **Function Name**: `'isIndividualHead'`
+  /// - **Arguments**: First argument is the IndividualModel, second is the list of HouseholdMemberModels.
+  /// - **Returns**: `true` if the individual is the head of household, `false` otherwise.
+  FunctionRegistry.register("isIndividualHead", (args, stateData) {
+    if (args.length < 2) return false;
+
+    final individual = args[0];
+    final membersList = args[1] as List?;
+
+    if (individual != null && membersList != null && membersList.isNotEmpty) {
+      String? individualRefId;
+      if (individual is IndividualModel) {
+        individualRefId = individual.clientReferenceId;
+      } else if (individual is Map) {
+        individualRefId = individual['clientReferenceId']?.toString();
+      }
+
+      if (individualRefId == null || individualRefId.isEmpty) return false;
+
+      for (final member in membersList) {
+        if (member == null) continue;
+        
+        String? memberIndRefId;
+        dynamic isHead;
+        
+        if (member is HouseholdMemberModel) {
+          memberIndRefId = member.individualClientReferenceId;
+          isHead = member.isHeadOfHousehold;
+        } else if (member is Map) {
+          memberIndRefId = member['individualClientReferenceId']?.toString();
+          isHead = member['isHeadOfHousehold'];
+        }
+
+        if (memberIndRefId == individualRefId) {
+          return isHead is bool
+              ? isHead
+              : isHead is String &&
+                  (isHead.toLowerCase() == 'true' || isHead == '1');
+        }
+      }
+    }
+    return false;
+  });
+
   /// Checks if a referral exists for the current running cycle.
   ///
   /// - **Function Name**: `'hasReferralForCurrentCycle'`
