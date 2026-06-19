@@ -2379,7 +2379,7 @@ final dynamic sampleFlows = {
                   {
                     "key": "givenName,familyName",
                     "value": "field.value",
-                    "operation": "containsName"
+                    "operation": "containsAll"
                   },
                   {
                     "key": "localityBoundaryCode",
@@ -2395,6 +2395,7 @@ final dynamic sampleFlows = {
           ],
           "fieldName": "searchBar",
           "mandatory": true,
+          "debounceMs": 300,
           "validations": [
             {"type": "minSearchChars", "value": 2}
           ],
@@ -2430,9 +2431,9 @@ final dynamic sampleFlows = {
           "fieldName": "idSearchBar",
           "mandatory": true,
           "validations": [
-            {"type": "minSearchChars", "value": 12}
+            {"type": "minSearchChars", "value": 3}
           ],
-          "minSearchChars": 12
+          "minSearchChars": 3
         },
         {
           "icon": "FilterAlt",
