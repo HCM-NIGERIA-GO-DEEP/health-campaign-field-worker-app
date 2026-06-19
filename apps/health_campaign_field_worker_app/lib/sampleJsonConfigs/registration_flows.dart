@@ -667,7 +667,7 @@ final dynamic sampleFlows = {
               {"left": "{{endDate}}", "right": "{{now}}", "operator": "gt"}
             ],
             "select": "{{id}}",
-            "default": -1,
+            "default": 1,
             "takeFirst": true
           }
         },
@@ -1121,13 +1121,6 @@ final dynamic sampleFlows = {
                   },
                   {
                     "type": "template",
-                    "value": "{{item.individual.0.identifiers.0.identifierId}}",
-                    "format": "textTemplate",
-                    "fieldName": "beneficiaryId",
-                    "properties": {"bottomGap": 16}
-                  },
-                  {
-                    "type": "template",
                     "label": "IS_HEAD",
                     "format": "tag",
                     "visible": "{{fn:isHead(item.member)}}",
@@ -1512,7 +1505,7 @@ final dynamic sampleFlows = {
                     "label": "REDOSE_ADMINISTRATION",
                     "format": "button",
                     "visible":
-                        "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task,contextData.0.currentRunningCycle)}} == true && {{fn:checkAllDoseDelivered(item.task)}} == true && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false && {{fn:hasStockForRedose(item.task)}} == true",
+                        "{{fn:checkEligibilityForAgeAndSideEffect(item.individual.0.dateOfBirth, item.task,contextData.0.currentRunningCycle)}} == true && {{fn:checkAllDoseDelivered(item.task)}} == true && {{fn:hasReferralForCurrentCycle(item.hFReferral)}}==false && {{fn:hasStockForRedose(item.task)}} == true && {{fn:isRedoseCompleted(item.task)}}==false",
                     "disabled":
                         "{{fn:isRedoseWindowExpired(item.task)}}==true || {{fn:isRedoseCompleted(item.task)}}==true",
                     "onAction": [
@@ -1926,7 +1919,7 @@ final dynamic sampleFlows = {
               {"left": "{{endDate}}", "right": "{{now}}", "operator": "gt"}
             ],
             "select": "{{id}}",
-            "default": -1,
+            "default": 1,
             "takeFirst": true
           }
         },
@@ -3565,166 +3558,10 @@ final dynamic sampleFlows = {
           "type": "object",
           "label": "REDOSE_DETAILS_SCREEN_HEADING",
           "order": 1,
-          "footer": [
-            {
-              "label": "REDOSE_SUBMIT_BUTTON_LABEL",
-              "format": "button",
-              "fieldName": "redoseSubmitButton",
-              "onAction": [
-                {
-                  "actionType": "NAVIGATION",
-                  "properties": {
-                    "name": "household-acknowledgement",
-                    "type": "template"
-                  }
-                }
-              ],
-              "properties": {
-                "size": "large",
-                "type": "primary",
-                "mainAxisSize": "max",
-                "mainAxisAlignment": "center"
-              }
-            }
-          ],
           "module": "REGISTRATION",
           "heading": "REDOSE_DETAILS_SCREEN_HEADING",
           "summary": false,
           "version": 1,
-          "onAction": [
-            {
-              "actions": [
-                {
-                  "actionType": "SHOW_TOAST",
-                  "properties": {"message": "No stock available for redose."}
-                }
-              ],
-              "condition": "true == false"
-            },
-            {
-              "actions": [
-                {
-                  "actionType": "FETCH_TRANSFORMER_CONFIG",
-                  "properties": {
-                    "data": [
-                      {
-                        "key": "ProjectBeneficiaryClientReferenceId",
-                        "value":
-                            "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                      },
-                      {
-                        "key": "HouseholdClientReferenceId",
-                        "value": "{{navigation.HouseholdClientReferenceId}}"
-                      },
-                      {
-                        "key": "memberCount",
-                        "value": "{{navigation.memberCount}}"
-                      },
-                      {
-                        "key": "individualClientReferenceId",
-                        "value":
-                            "{{navigation.selectedIndividualClientReferenceId}}"
-                      },
-                      {
-                        "key": "beneficiaryId",
-                        "value": "{{navigation.selectedIndividualIdentifierId}}"
-                      },
-                      {"key": "childName", "value": "{{navigation.childName}}"},
-                      {
-                        "key": "ageInMonths",
-                        "value": "{{navigation.ageInMonths}}"
-                      },
-                      {"key": "gender", "value": "{{navigation.gender}}"},
-                      {"key": "headName", "value": "{{navigation.headName}}"},
-                      {
-                        "key": "headMobileNumber",
-                        "value": "{{navigation.headMobileNumber}}"
-                      },
-                      {
-                        "key": "cycleIndex",
-                        "value": "{{navigation.cycleIndex}}"
-                      },
-                      {
-                        "key": "lastDeliveredTaskClientReferenceId",
-                        "value":
-                            "{{navigation.lastDeliveredTaskClientReferenceId}}"
-                      },
-                      {"key": "latitude", "value": "{{navigation.latitude}}"},
-                      {"key": "longitude", "value": "{{navigation.longitude}}"},
-                      {
-                        "key": "locationAccuracy",
-                        "value": "{{navigation.locationAccuracy}}"
-                      }
-                    ],
-                    "onError": [
-                      {
-                        "actionType": "SHOW_TOAST",
-                        "properties": {
-                          "message": "Failed to fetch redose config."
-                        }
-                      }
-                    ],
-                    "configName": "redose"
-                  }
-                },
-                {
-                  "actionType": "CREATE_EVENT",
-                  "properties": {
-                    "status": "VISITED",
-                    "onError": [
-                      {
-                        "actionType": "SHOW_TOAST",
-                        "properties": {
-                          "message": "Failed to create redose task."
-                        }
-                      }
-                    ]
-                  }
-                },
-                {
-                  "actionType": "UPDATE_STOCK_BALANCE",
-                  "properties": {
-                    "entity": "TaskModel",
-                    "onError": [
-                      {
-                        "actionType": "SHOW_TOAST",
-                        "properties": {
-                          "message": "Failed to update stock balance."
-                        }
-                      }
-                    ]
-                  }
-                },
-                {
-                  "actionType": "NAVIGATION",
-                  "properties": {
-                    "data": [
-                      {
-                        "key": "ProjectBeneficiaryClientReferenceId",
-                        "value":
-                            "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                      },
-                      {
-                        "key": "HouseholdClientReferenceId",
-                        "value": "{{navigation.HouseholdClientReferenceId}}"
-                      }
-                    ],
-                    "name": "redoseSuccess",
-                    "type": "TEMPLATE",
-                    "onError": [
-                      {
-                        "actionType": "SHOW_TOAST",
-                        "properties": {"message": "Navigation failed."}
-                      }
-                    ],
-                    "navigationMode": "popUntilAndPush",
-                    "popUntilPageName": "householdOverview"
-                  }
-                }
-              ],
-              "condition": "{{fn:hasStockForRedose(item.task)}} == true"
-            }
-          ],
           "navigateTo": null,
           "properties": [
             {

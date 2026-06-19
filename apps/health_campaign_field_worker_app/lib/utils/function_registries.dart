@@ -473,6 +473,13 @@ class FunctionRegistries {
     });
 
     FunctionRegistry.register('hasStockForRedose', (args, stateData) {
+      // TODO: This has to be changed to calculate it for the users, but for now, we can pass it as true to bypass.
+      bool bypassStockValidation = true;
+      if (bypassStockValidation) {
+        StockBalanceCache.instance.setStockCheckResult(null);
+        return true;
+      }
+
       if (args.isEmpty || args.first == null) return true;
       final cache = StockBalanceCache.instance;
       if (cache.facilityId.isEmpty) return true;
