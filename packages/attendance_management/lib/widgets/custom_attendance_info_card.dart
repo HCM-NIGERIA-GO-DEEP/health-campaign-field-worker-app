@@ -198,15 +198,11 @@ class CustomAttendanceInfoCard extends StatelessWidget {
                 ),
               if (!viewOnly && markManualAttendance)
                 const SizedBox(width: spacer3),
-              if (!viewOnly && markManualAttendance ||
-                  isCurrentDate && status == -1)
+              if (!viewOnly && markManualAttendance)
                 Expanded(
                   child: DigitButton(
                     prefixIcon: Icons.cancel,
-                    label: localizations.translate(
-                        isCurrentDate && status == -1 && !markManualAttendance
-                            ? i18.attendance.markAsAbsent
-                            : i18.attendance.absent),
+                    label: localizations.translate(i18.attendance.absent),
                     capitalizeLetters: true,
                     textColor: status == 0
                         ? theme.colorTheme.paper.primary

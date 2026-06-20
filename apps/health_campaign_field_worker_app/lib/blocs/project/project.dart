@@ -237,6 +237,44 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     } else {
       debugPrint('[FaceAuth] _handleProjectInit: skipped — isOnline=$isOnline, selectedProject=${selectedProject?.id}, roles=${context.loggedInUserRoles.map((r) => r.code).toList()}');
     }
+
+    // ADDITIVE fallback: the block above only fires when a project is already
+    // persisted in secure storage. For a returning / auto-selected user with a
+    // single project, `selectedProject` is null here (the offline load path
+    // never dispatches a ProjectSelectProjectEvent), so face auth events would
+    // never be fetched on login. Also fetch them using the sole loaded project.
+    // Guarded on `selectedProject == null` so this never double-pulls when the
+    // primary block already ran.
+    if (isOnline &&
+        selectedProject == null &&
+        state.projects.length == 1 &&
+        context.loggedInUserRoles.any((role) =>
+            role.code == RolesType.districtSupervisor.toValue() ||
+            role.code == RolesType.teamSupervisor.toValue())) {
+      final fallbackProject = state.selectedProject ?? state.projects.first;
+      try {
+        debugPrint('[FaceAuth] _handleProjectInit(fallback): pulling face auth events for project=${fallbackProject.id}');
+        final localRegisters = await attendanceLocalRepository.search(
+          AttendanceRegisterSearchModel(referenceId: fallbackProject.id),
+        );
+        debugPrint('[FaceAuth] _handleProjectInit(fallback): found ${localRegisters.length} local registers');
+        final attendeeIds = localRegisters
+            .expand((r) => r.attendees ?? [])
+            .map((a) => a.individualId)
+            .where((id) => id != null && id.isNotEmpty)
+            .cast<String>()
+            .toSet()
+            .toList();
+        debugPrint('[FaceAuth] _handleProjectInit(fallback): ${attendeeIds.length} unique attendee IDs: $attendeeIds');
+        if (attendeeIds.isNotEmpty) {
+          await _loadFaceAuthEventsForProject(fallbackProject.id!, attendeeIds);
+        } else {
+          debugPrint('[FaceAuth] _handleProjectInit(fallback): no attendees found, skipping pull');
+        }
+      } catch (e) {
+        debugPrint('[FaceAuth] _handleProjectInit(fallback): error: $e');
+      }
+    }
   }
 
   FutureOr<void> _loadOnline(ProjectEmitter emit) async {

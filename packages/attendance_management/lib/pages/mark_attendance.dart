@@ -203,6 +203,21 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
     super.dispose();
   }
 
+  /// Section header shown above each team's group of attendee cards on the
+  /// mark attendance screen (e.g. "Team 1").
+  Widget _buildTeamHeader(String team) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 16, 4, 8),
+      child: Text(
+        team,
+        style: const TextStyle(
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -729,9 +744,37 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                                 margin:
                                     EdgeInsets.all(theme.spacerTheme.spacer3),
                                 child: ((attendees ?? []).isNotEmpty)
-                                    ? Column(
-                                        children:
-                                            (attendees ?? []).map((individual) {
+                                    ? Builder(builder: (context) {
+                                        // Group attendees by team (the attendee
+                                        // `tag`, e.g. "Team 1"): a left-aligned
+                                        // team header above a bordered box that
+                                        // wraps that team's member cards.
+                                        // Untagged attendees are grouped last
+                                        // without a header.
+                                        final sortedAttendees = [
+                                          ...(attendees ?? [])
+                                        ]..sort((a, b) {
+                                            final ta = (a.tag ?? '').trim();
+                                            final tb = (b.tag ?? '').trim();
+                                            if (ta.isEmpty && tb.isEmpty) {
+                                              return 0;
+                                            }
+                                            if (ta.isEmpty) return 1;
+                                            if (tb.isEmpty) return -1;
+                                            return ta
+                                                .toLowerCase()
+                                                .compareTo(tb.toLowerCase());
+                                          });
+                                        final teamGroups =
+                                            <String, List<dynamic>>{};
+                                        for (final a in sortedAttendees) {
+                                          teamGroups
+                                              .putIfAbsent(
+                                                  (a.tag ?? '').trim(), () => [])
+                                              .add(a);
+                                        }
+                                        Widget buildAttendeeCard(
+                                            dynamic individual) {
                                           return CustomAttendanceInfoCard(
                                             isCurrentDate: attendees!.any(
                                                     (a) => a.status == 1) &&
@@ -869,8 +912,63 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                                             },
                                             viewOnly: viewOnly,
                                           );
-                                        }).toList(),
-                                      )
+                                        }
+                                        final sections = <Widget>[];
+                                        teamGroups.forEach((team, members) {
+                                          // Outer Team card: holds the team
+                                          // header and an inner box that wraps
+                                          // the member cards (section in a
+                                          // section).
+                                          sections.add(Container(
+                                            width: double.infinity,
+                                            margin: const EdgeInsets.only(
+                                                bottom: 16),
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFFFFFF),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              border: Border.all(
+                                                  color:
+                                                      const Color(0xFFD6D6D6)),
+                                            ),
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                if (team.isNotEmpty)
+                                                  _buildTeamHeader(team),
+                                                Container(
+                                                  width: double.infinity,
+                                                  padding:
+                                                      const EdgeInsets.all(8),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(
+                                                        0xFFF7F7F7),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            8),
+                                                    border: Border.all(
+                                                        color: const Color(
+                                                            0xFFE0E0E0)),
+                                                  ),
+                                                  child: Column(
+                                                    children: members
+                                                        .map<Widget>(
+                                                            buildAttendeeCard)
+                                                        .toList(),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ));
+                                        });
+                                        return Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: sections,
+                                        );
+                                      })
                                     : NoResultCard(
                                         align: Alignment.center,
                                         label: localizations.translate(

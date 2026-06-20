@@ -77,6 +77,7 @@ Future<bool?> showSignatureCompareDialog(
     context: context,
     barrierDismissible: true,
     builder: (popupContext) {
+      final theme = Theme.of(popupContext);
       return Popup(
         title: localizations.translate(i18.attendance.compareSignatureLabel),
         titleIcon: Icon(
@@ -93,23 +94,61 @@ Future<bool?> showSignatureCompareDialog(
             actualLabel:
                 localizations.translate(i18.attendance.actualSignatureLabel),
           ),
-        ],
-        actions: [
-          DigitButton(
-            label:
-                localizations.translate(i18.attendance.signatureNotMatchedLabel),
-            type: DigitButtonType.secondary,
-            size: DigitButtonSize.large,
-            onPressed: () =>
-                Navigator.of(popupContext, rootNavigator: true).pop(false),
+          const SizedBox(height: spacer2),
+          // Match / no-match actions: full-width row, Matches (green) on the
+          // left, Doesn't match (red) on the right. Filled + rounded.
+          Row(
+            children: [
+              Expanded(
+                child: DigitButton(
+                  label: 'Matches',
+                  prefixIcon: Icons.check,
+                  mainAxisSize: MainAxisSize.max,
+                  type: DigitButtonType.primary,
+                  size: DigitButtonSize.small,
+                  textColor: theme.colorTheme.paper.primary,
+                  iconColor: theme.colorTheme.paper.primary,
+                  digitButtonThemeData: DigitButtonThemeData(
+                    DigitButtonColor: theme.colorTheme.alert.success,
+                    primaryDigitButtonColor: theme.colorTheme.alert.success,
+                    radius: BorderRadius.circular(8),
+                    largeRadius: BorderRadius.circular(8),
+                    smallMediumRadius: BorderRadius.circular(8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 12),
+                  ),
+                  onPressed: () =>
+                      Navigator.of(popupContext, rootNavigator: true)
+                          .pop(true),
+                ),
+              ),
+              const SizedBox(width: spacer2),
+              Expanded(
+                child: DigitButton(
+                  label: "Doesn't match",
+                  prefixIcon: Icons.close,
+                  mainAxisSize: MainAxisSize.max,
+                  type: DigitButtonType.primary,
+                  size: DigitButtonSize.small,
+                  textColor: theme.colorTheme.paper.primary,
+                  iconColor: theme.colorTheme.paper.primary,
+                  digitButtonThemeData: DigitButtonThemeData(
+                    DigitButtonColor: theme.colorTheme.alert.error,
+                    primaryDigitButtonColor: theme.colorTheme.alert.error,
+                    radius: BorderRadius.circular(8),
+                    largeRadius: BorderRadius.circular(8),
+                    smallMediumRadius: BorderRadius.circular(8),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 12),
+                  ),
+                  onPressed: () =>
+                      Navigator.of(popupContext, rootNavigator: true)
+                          .pop(false),
+                ),
+              ),
+            ],
           ),
-          DigitButton(
-            label: localizations.translate(i18.attendance.signatureMatchedLabel),
-            type: DigitButtonType.primary,
-            size: DigitButtonSize.large,
-            onPressed: () =>
-                Navigator.of(popupContext, rootNavigator: true).pop(true),
-          ),
+          const SizedBox(height: spacer3),
         ],
       );
     },
@@ -135,24 +174,27 @@ class _SignatureCompare extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AspectRatio(
-      aspectRatio: 1,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: spacer2),
-          if (referenceSignature != null)
-            Expanded(
-              child: _signatureTile(context, referenceSignature!, referenceLabel),
-            ),
-          const SizedBox(height: spacer3),
-          Expanded(
-            child: _signatureTile(context, currentSignature, actualLabel),
+    // Size each tile to its signature image (no AspectRatio/Expanded) so the
+    // popup stays compact and there's no large empty gap below the pad.
+    final tileHeight = referenceSignature == null ? 230.0 : 130.0;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const SizedBox(height: spacer2),
+        if (referenceSignature != null) ...[
+          SizedBox(
+            height: tileHeight,
+            child:
+                _signatureTile(context, referenceSignature!, referenceLabel),
           ),
-          const SizedBox(height: spacer4),
+          const SizedBox(height: spacer3),
         ],
-      ),
+        SizedBox(
+          height: tileHeight,
+          child: _signatureTile(context, currentSignature, actualLabel),
+        ),
+      ],
     );
   }
 
