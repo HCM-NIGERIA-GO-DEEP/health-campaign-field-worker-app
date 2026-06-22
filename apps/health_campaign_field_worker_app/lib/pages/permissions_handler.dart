@@ -757,10 +757,17 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
 
     final buttonType = _parseButtonType(properties['type']);
     final buttonSize = _parseButtonSize(properties['size']);
-    final buttonHeight = switch (buttonSize) {
-      DigitButtonSize.small => 46.0,
-      DigitButtonSize.medium => 54.0,
-      DigitButtonSize.large => 62.0,
+    final isPermissionGrantButton = onActions.any(
+      (action) =>
+          action is Map<String, dynamic> &&
+          action['actionType'] == 'REQUEST_PERMISSION',
+    );
+    final effectiveButtonSize =
+        isPermissionGrantButton ? DigitButtonSize.small : buttonSize;
+    final buttonHeight = switch (effectiveButtonSize) {
+      DigitButtonSize.small => 40.0,
+      DigitButtonSize.medium => 50.0,
+      DigitButtonSize.large => 60.0,
     };
 
     void onPressed() async {
@@ -843,7 +850,7 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
     return Align(
       alignment: Alignment.centerRight,
       child: SizedBox(
-        width: fixedWidth ?? 160,
+        width: fixedWidth ?? (isPermissionGrantButton ? 120 : 160),
         child: SizedBox(
           height: buttonHeight,
           child: button,

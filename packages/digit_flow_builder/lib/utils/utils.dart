@@ -29,6 +29,7 @@ class FlowBuilderSingleton {
   ProjectTypeModel? _projectType;
   ProjectModel? _selectedProject;
   BoundaryModel? _boundaryModel;
+  BoundaryModel? _stateBoundaryModel;
   PersistenceConfiguration? _persistenceConfiguration = PersistenceConfiguration
       .offlineFirst; // Default to offline first persistence configuration
   Map<String, TemplateConfig>? _templateConfigs;
@@ -38,6 +39,10 @@ class FlowBuilderSingleton {
 
   void setBoundary({required BoundaryModel boundary}) {
     _boundaryModel = boundary;
+  }
+
+  void setStateBoundary({BoundaryModel? boundary}) {
+    _stateBoundaryModel = boundary;
   }
 
   void setPersistenceConfiguration(
@@ -94,6 +99,8 @@ class FlowBuilderSingleton {
   ProjectModel? get selectedProject => _selectedProject;
 
   BoundaryModel? get boundary => _boundaryModel;
+
+  BoundaryModel? get stateBoundary => _stateBoundaryModel;
 
   PersistenceConfiguration? get persistenceConfiguration =>
       _persistenceConfiguration;

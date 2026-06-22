@@ -294,6 +294,42 @@ class _FormScreenWrapper extends LocalizedStatefulWidget {
 }
 
 class _FormScreenWrapperState extends LocalizedState<_FormScreenWrapper> {
+  String? _extractStateCode({
+    String? tenantId,
+    String? materializedPath,
+    String? boundaryCode,
+  }) {
+    final tenantSegments =
+        tenantId?.split('.').where((s) => s.trim().isNotEmpty).toList() ?? [];
+    if (tenantSegments.isNotEmpty) {
+      return tenantSegments.first;
+    }
+
+    final pathSegments = materializedPath
+            ?.split('.')
+            .where((s) => s.trim().isNotEmpty)
+            .toList() ??
+        [];
+    if (pathSegments.isNotEmpty) {
+      return pathSegments.first;
+    }
+
+    final boundarySegments =
+        boundaryCode?.split('.').where((s) => s.trim().isNotEmpty).toList() ??
+            [];
+    if (boundarySegments.isNotEmpty) {
+      return boundarySegments.first;
+    }
+
+    return null;
+  }
+
+  bool _isStateScopedUser(String? tenantId) {
+    final tenantSegments =
+        tenantId?.split('.').where((s) => s.trim().isNotEmpty).toList() ?? [];
+    return tenantSegments.length <= 1;
+  }
+
   @override
   Widget build(BuildContext context) {
     // Use compositeKey passed from ScreenBuilder for consistency
@@ -345,6 +381,24 @@ class _FormScreenWrapperState extends LocalizedState<_FormScreenWrapper> {
             // Get formData from FlowCrudStateRegistry (set by REVERSE_TRANSFORM action)
             final registryFormData = flowState?.formData ?? {};
 
+            // Boundary debug helper: inspect selected boundary values during form render.
+            final boundary = FlowBuilderSingleton().boundary;
+            final userTenantId =
+                FlowBuilderSingleton().loggedInUser?.tenantId ??
+                    FlowBuilderSingleton().tenantId ??
+                    boundary?.tenantId;
+            final isStateScopedUser = _isStateScopedUser(userTenantId);
+            final selectedStateCode =
+                FlowBuilderSingleton().stateBoundary?.code;
+            final stateCode = _extractStateCode(
+              tenantId: userTenantId,
+              materializedPath: boundary?.materializedPath,
+              boundaryCode: boundary?.code,
+            );
+            final administrativeAreaCode = isStateScopedUser
+                ? (selectedStateCode ?? stateCode ?? boundary?.code ?? '')
+                : (boundary?.code ?? '');
+
             return ScannerComparisonProvider(
               duplicateCheckFn: (fieldName, scannedValue, formValues) {
                 // Read the latest cached schema at call time (not build time)
@@ -386,8 +440,8 @@ class _FormScreenWrapperState extends LocalizedState<_FormScreenWrapper> {
                   ...mergedNavParams,
                   if (isEdit) ...registryFormData,
                   // System values always present
-                  'administrativeArea': localizations
-                      .translate(FlowBuilderSingleton().boundary?.code ?? ''),
+                  'administrativeArea':
+                      localizations.translate(administrativeAreaCode),
                   'availableIDs': {'DEFAULT': IdGen.instance.identifier},
                   'loggedInUserName': FlowBuilderSingleton().loggedInUser?.name,
                   'loggedInUserUuid': FlowBuilderSingleton().loggedInUser?.uuid,

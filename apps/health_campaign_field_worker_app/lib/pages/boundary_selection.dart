@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_flow_builder/utils/utils.dart' show FlowBuilderSingleton;
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/utils/component_utils.dart';
@@ -217,7 +218,8 @@ class _BoundarySelectionPageState
                                             .read<BeneficiaryDownSyncBloc>()
                                             .add(
                                               DownSyncAllBoundariesEvent(
-                                                projectModel: context.selectedProject,
+                                                projectModel:
+                                                    context.selectedProject,
                                                 boundaries: boundaries,
                                                 batchSize: batchSize,
                                                 pendingSyncCount:
@@ -317,7 +319,8 @@ class _BoundarySelectionPageState
                                               i18.beneficiaryDetails
                                                   .dataDownloadInProgress,
                                             ),
-                                            projectModel: context.selectedProject,
+                                            projectModel:
+                                                context.selectedProject,
                                             boundaries: state
                                                 .selectedLastLevelBoundaries,
                                             appConfiguartion: appConfiguration,
@@ -501,7 +504,8 @@ class _BoundarySelectionPageState
                                               i18.beneficiaryDetails
                                                   .dataDownloadInProgress,
                                             ),
-                                            projectModel: context.selectedProject,
+                                            projectModel:
+                                                context.selectedProject,
                                             boundaries: state
                                                 .selectedLastLevelBoundaries,
                                             appConfiguartion: appConfiguration,
@@ -624,7 +628,8 @@ class _BoundarySelectionPageState
                                                             appConfiguration: [
                                                               appConfiguration,
                                                             ],
-                                                            projectModel: context.selectedProject,
+                                                            projectModel: context
+                                                                .selectedProject,
                                                             boundaries: context
                                                                 .read<
                                                                     BoundaryBloc>()
@@ -843,6 +848,15 @@ class _BoundarySelectionPageState
                                                                           v.code,
                                                                     ))
                                                                 .toList();
+
+                                                        if (labelIndex == 0) {
+                                                          FlowBuilderSingleton()
+                                                              .setStateBoundary(
+                                                            boundary: boundaries
+                                                                .firstOrNull,
+                                                          );
+                                                        }
+
                                                         (formControls[label]
                                                                 as FormControl<
                                                                     List<
@@ -892,6 +906,17 @@ class _BoundarySelectionPageState
                                                                         .code ==
                                                                     value.code);
 
+                                                        final displayValue =
+                                                            localizations
+                                                                .translate(
+                                                          selectedBoundary
+                                                                  .code ??
+                                                              'No Value',
+                                                        );
+                                                        debugPrint(
+                                                          'Boundary dropdown selected -> label: $label, code: ${selectedBoundary.code}, displayValue: $displayValue, name: ${selectedBoundary.name}',
+                                                        );
+
                                                         // Only reset children if value actually changed
                                                         final previousValue =
                                                             state.selectedBoundaryMap[
@@ -927,6 +952,13 @@ class _BoundarySelectionPageState
                                                                     selectedBoundary,
                                                               ),
                                                             );
+                                                        if (labelIndex == 0) {
+                                                          FlowBuilderSingleton()
+                                                              .setStateBoundary(
+                                                            boundary:
+                                                                selectedBoundary,
+                                                          );
+                                                        }
                                                         formControls[label]
                                                             ?.updateValue(
                                                                 selectedBoundary);
@@ -936,6 +968,10 @@ class _BoundarySelectionPageState
                                                       onChange: (value) {
                                                         if (value.isEmpty) {
                                                           if (labelIndex == 0) {
+                                                            FlowBuilderSingleton()
+                                                                .setStateBoundary(
+                                                              boundary: null,
+                                                            );
                                                             formControls[label]
                                                                 ?.updateValue(
                                                                     null);
