@@ -704,6 +704,20 @@ dynamic _resolvePath(dynamic root, String path) {
         }
       }
     }
+    // String access by numeric index -> comma-split.
+    // Mirrors the entity transformer's _getValueFromPath
+    // (transformer_service.dart), so navigation templates can read
+    // idPopulator "TYPE, ID" values the same way the transformer does.
+    // The idPopulator (id_populator_builder.dart) stores its value as the
+    // combined string "$idType, $idNumber"; e.g. identifiers.1 -> the ID part.
+    // Guarded on contains(',') so plain strings keep the old null behavior.
+    else if (current is String && current.contains(',')) {
+      final idx = int.tryParse(part);
+      if (idx == null) return null;
+      final parts = current.split(',');
+      if (idx < 0 || idx >= parts.length) return null;
+      current = parts[idx].trim();
+    }
     // EntityModel access
     else if (current is EntityModel) {
       final map = current.toMap();
