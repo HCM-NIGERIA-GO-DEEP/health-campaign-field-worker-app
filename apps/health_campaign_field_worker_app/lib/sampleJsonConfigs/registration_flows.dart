@@ -417,9 +417,15 @@ final dynamic sampleFlows = {
             {
               "data": [
                 {
-                  "key": "HOUSEHOLD_HEAD_NAME",
+                  "key": "HOUSEHOLD_FIRST_NAME",
                   "value":
                       "{{contextData.0.headIndividual.IndividualModel.name.givenName}}",
+                  "isActive": true
+                },
+                {
+                  "key": "HOUSEHOLD_LAST_NAME",
+                  "value":
+                      "{{contextData.0.headIndividual.IndividualModel.name.additionalFields.fields.lastName}}",
                   "isActive": true
                 },
                 {
@@ -906,9 +912,15 @@ final dynamic sampleFlows = {
             {
               "data": [
                 {
-                  "key": "HOUSEHOLD_HEAD_NAME",
+                  "key": "HOUSEHOLD_FIRST_NAME",
                   "value":
                       "{{contextData.0.headIndividual.IndividualModel.name.givenName}}",
+                  "isActive": true
+                },
+                {
+                  "key": "HOUSEHOLD_LAST_NAME",
+                  "value":
+                      "{{contextData.0.headIndividual.IndividualModel.name.additionalFields.fields.lastName}}",
                   "isActive": true
                 },
                 {
@@ -2981,6 +2993,36 @@ final dynamic sampleFlows = {
               "isMultiSelect": false,
               "required.message":
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_mandatory_message"
+            },
+            {
+              "type": "string",
+              "label":
+                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_lastName",
+              "order": 2,
+              "value": "",
+              "format": "text",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText":
+                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_lastName_helpText",
+              "infoText": "",
+              "readOnly": false,
+              "required": true,
+              "fieldName": "lastName",
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": false,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": false
+                }
+              ],
+              "errorMessage": "",
+              "isMultiSelect": false
             },
             {
               "type": "string",

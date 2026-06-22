@@ -1952,231 +1952,6 @@ final dynamic sampleInventoryFlows = {
     {
       "screenType": "TEMPLATE",
       "category": "INVENTORY",
-      "name": "viewTransaction",
-      "heading": "INVENTORY_VIEW_TRANSACTION_HEADING",
-      "description": "INVENTORY_VIEW_TRANSACTION_DESCRIPTION",
-      "header": [
-        {
-          "format": "backLink",
-          "label": "CORE_COMMON_BACK",
-          "onAction": [
-            {"actionType": "BACK_NAVIGATION", "properties": {}}
-          ]
-        }
-      ],
-      "footer": [],
-      "initActions": [
-        {
-          "actionType": "SEARCH_EVENT",
-          "properties": {
-            "type": "SEARCH_EVENT",
-            "name": "stock",
-            "data": [
-              {
-                "key": "clientCreatedBy,clientModifiedBy",
-                "value": "{{singleton.loggedInUserUuid}}",
-                "operation": "equalsAny"
-              },
-              {
-                "key": "additionalFields",
-                "value": "\"value\":\"REJECTED\"",
-                "operation": "notContains"
-              }
-            ]
-          }
-        }
-      ],
-      "wrapperConfig": {
-        "wrapperName": "ViewStockWrapper",
-        "groupByType": true,
-        "rootEntity": "StockModel",
-        "groupBy": "additionalFields.fields.mrnNumber",
-        "filters": [],
-        "relations": [
-          {"name": "stock", "entity": "StockModel"}
-        ],
-        "searchConfig": {
-          "primary": "stock",
-          "select": ["stock"],
-          "orderBy": {"field": "clientCreatedTime", "order": "DESC"}
-        }
-      },
-      "body": [
-        {
-          "format": "infoCard",
-          "type": "template",
-          "fieldName": "viewTransactionEmptyStateInfoCard",
-          "hidden": null,
-          "visible": "{{fn:hasResults('StockModel')}} == false",
-          "label": "INVENTORY_NO_TRANSACTIONS_LABEL",
-          "description": "INVENTORY_NO_TRANSACTIONS_DESCRIPTION"
-        },
-        {
-          "format": "listView",
-          "type": "template",
-          "hidden": null,
-          "visible": "{{ context.stock.isNotEmpty }}",
-          "fieldName": "listView",
-          "dataSource": "StockModel",
-          "child": {
-            "format": "card",
-            "type": "template",
-            "fieldName": "viewTransactionListCard",
-            "children": [
-              {
-                "format": "row",
-                "type": "template",
-                "fieldName": "viewTransactionHeaderRow",
-                "properties": {
-                  "mainAxisAlignment": "spaceBetween",
-                  "mainAxisSize": "max"
-                },
-                "children": [
-                  {
-                    "format": "tag",
-                    "type": "template",
-                    "fieldName": "viewTransactionMrnTag",
-                    "label": "MRN {{item.groupKey}}"
-                  },
-                  {
-                    "format": "textTemplate",
-                    "type": "template",
-                    "fieldName": "viewTransactionDateText",
-                    "value":
-                        "{{fn:formatDate(item.items[0].dateOfEntry, 'date', dd MMM yyyy)}}"
-                  }
-                ]
-              },
-              {
-                "format": "row",
-                "type": "template",
-                "fieldName": "viewTransactionPartyRow",
-                "properties": {
-                  "mainAxisAlignment": "spaceBetween",
-                  "mainAxisSize": "max"
-                },
-                "children": [
-                  {
-                    "format": "expanded",
-                    "type": "template",
-                    "fieldName": "viewTransactionPartyExpanded",
-                    "child": {
-                      "format": "column",
-                      "type": "template",
-                      "fieldName": "viewTransactionPartyColumn",
-                      "properties": {
-                        "mainAxisAlignment": "spaceBetween",
-                        "mainAxisSize": "min"
-                      },
-                      "children": [
-                        {
-                          "format": "textTemplate",
-                          "type": "template",
-                          "fieldName": "viewTransactionPartyLabelText",
-                          "value":
-                              "{{fn:getFirstPagePartyLabel(item.items[0].additionalFields.fields)}}"
-                        },
-                        {
-                          "format": "textTemplate",
-                          "type": "template",
-                          "fieldName": "viewTransactionPartyValueText",
-                          "value":
-                              "{{fn:getFirstPageParty(item.items[0].additionalFields.fields, item.items[0].senderId, item.items[0].receiverId, item.items[0].senderType, item.items[0].receiverType)}}"
-                        }
-                      ]
-                    }
-                  },
-                  {
-                    "format": "actionPopup",
-                    "type": "template",
-                    "fieldName": "viewTransactionQrPopup",
-                    "label": "INVENTORY_VIEW_QR_LABEL",
-                    "properties": {
-                      "type": "tertiary",
-                      "size": "medium",
-                      "mainAxisSize": "min",
-                      "mainAxisAlignment": "start",
-                      "popupConfig": {
-                        "type": "default",
-                        "title": "INVENTORY_QR_CODE_TITLE",
-                        "titleIcon": "qr",
-                        "showCloseButton": true,
-                        "barrierDismissible": true,
-                        "body": [
-                          {
-                            "format": "qr_view",
-                            "type": "template",
-                            "fieldName": "viewTransactionQrView",
-                            "data":
-                                "{{item.items[0].additionalFields.fields.mrnNumber}}",
-                            "size": "medium",
-                            "errorCorrectionLevel": "M",
-                            "dataModuleColor": "black",
-                            "backgroundColor": "white",
-                            "padding": 16
-                          }
-                        ],
-                        "footerActions": []
-                      }
-                    },
-                    "suffixIcon": "qr"
-                  }
-                ]
-              },
-              {
-                "format": "listView",
-                "type": "template",
-                "fieldName": "viewTransactionGroupedItemsList",
-                "dataSource": "item.items",
-                "child": {
-                  "format": "textTemplate",
-                  "type": "template",
-                  "fieldName": "viewTransactionGroupedItemText",
-                  "value":
-                      "{{item.additionalFields.fields.sku}}: {{item.quantity}}"
-                }
-              },
-              {
-                "format": "button",
-                "type": "template",
-                "fieldName": "viewTransactionSelectButton",
-                "label": "INVENTORY_SELECT_TRANSACTION_LABEL",
-                "properties": {
-                  "type": "primary",
-                  "size": "medium",
-                  "mainAxisSize": "max",
-                  "mainAxisAlignment": "center"
-                },
-                "onAction": [
-                  {
-                    "actionType": "NAVIGATION",
-                    "properties": {
-                      "type": "TEMPLATE",
-                      "name": "viewTransactionDetails",
-                      "navigationMode": "popUntilAndPush",
-                      "popUntilPageName": "manageStock",
-                      "data": [
-                        {"key": "item", "value": "{{item}}"},
-                        {"key": "item2", "value": "{{item.items[0]}}"},
-                        {"key": "selectedStock", "value": "{{item.groupKey}}"},
-                        {
-                          "key": "clientReferenceId",
-                          "value": "{{item.items[0].clientReferenceId}}"
-                        }
-                      ]
-                    }
-                  }
-                ]
-              }
-            ]
-          },
-          "properties": {"spacing": "spacer4"}
-        }
-      ]
-    },
-    {
-      "screenType": "TEMPLATE",
-      "category": "INVENTORY",
       "name": "viewTransactionDetails",
       "heading": "INVENTORY_STOCK_RECEIPT_DETAILS_HEADING",
       "description": "",
@@ -2254,7 +2029,8 @@ final dynamic sampleInventoryFlows = {
                     "key":
                         "{{fn:getSecondPagePartyLabel(item.additionalFields.fields)}}",
                     "value":
-                        "{{fn:getSecondPageParty(item.additionalFields.fields, item.senderId, item.receiverId, item.senderType, item.receiverType)}}"
+                        "{{fn:getFacilityName(item.senderId, item.receiverId)}}"
+                    // "value": "{{fn:getSecondPageParty(item.additionalFields.fields, item.senderId, item.receiverId)}}"
                   },
                   {
                     "key": "INVENTORY_MRN_NUMBER_LABEL",
@@ -2799,7 +2575,9 @@ final dynamic sampleInventoryFlows = {
               "type": "string",
               "label": "INVENTORY_RECEIVED_FROM_LABEL",
               "order": 3,
-              "value": "{{receivedFromName}}",
+              // "value": "{{senderFacilityId}}",
+              // "value": "fac name",
+              "value": "{{fn:getFacilityName(senderFacilityId)}}",
               "format": "text",
               "fieldName": "receivedFrom",
               "displayOnly": true
@@ -2907,6 +2685,231 @@ final dynamic sampleInventoryFlows = {
             }
           ]
         }
+      ]
+    },
+    {
+      "screenType": "TEMPLATE",
+      "category": "INVENTORY",
+      "name": "viewTransaction",
+      "heading": "INVENTORY_VIEW_TRANSACTION_HEADING",
+      "description": "INVENTORY_VIEW_TRANSACTION_DESCRIPTION",
+      "header": [
+        {
+          "format": "backLink",
+          "label": "CORE_COMMON_BACK",
+          "onAction": [
+            {"actionType": "BACK_NAVIGATION", "properties": {}}
+          ]
+        }
+      ],
+      "footer": [],
+      "initActions": [
+        {
+          "actionType": "SEARCH_EVENT",
+          "properties": {
+            "type": "SEARCH_EVENT",
+            "name": "stock",
+            "data": [
+              {
+                "key": "clientCreatedBy,clientModifiedBy",
+                "value": "{{singleton.loggedInUserUuid}}",
+                "operation": "equalsAny"
+              },
+              {
+                "key": "additionalFields",
+                "value": "\"value\":\"REJECTED\"",
+                "operation": "notContains"
+              }
+            ]
+          }
+        }
+      ],
+      "wrapperConfig": {
+        "wrapperName": "ViewStockWrapper",
+        "groupByType": true,
+        "rootEntity": "StockModel",
+        "groupBy": "additionalFields.fields.mrnNumber",
+        "filters": [],
+        "relations": [
+          {"name": "stock", "entity": "StockModel"}
+        ],
+        "searchConfig": {
+          "primary": "stock",
+          "select": ["stock"],
+          "orderBy": {"field": "clientCreatedTime", "order": "DESC"}
+        }
+      },
+      "body": [
+        {
+          "format": "infoCard",
+          "type": "template",
+          "fieldName": "viewTransactionEmptyStateInfoCard",
+          "hidden": null,
+          "visible": "{{fn:hasResults('StockModel')}} == false",
+          "label": "INVENTORY_NO_TRANSACTIONS_LABEL",
+          "description": "INVENTORY_NO_TRANSACTIONS_DESCRIPTION"
+        },
+        {
+          "format": "listView",
+          "type": "template",
+          "hidden": null,
+          "visible": "{{ context.stock.isNotEmpty }}",
+          "fieldName": "listView",
+          "dataSource": "StockModel",
+          "child": {
+            "format": "card",
+            "type": "template",
+            "fieldName": "viewTransactionListCard",
+            "children": [
+              {
+                "format": "row",
+                "type": "template",
+                "fieldName": "viewTransactionHeaderRow",
+                "properties": {
+                  "mainAxisAlignment": "spaceBetween",
+                  "mainAxisSize": "max"
+                },
+                "children": [
+                  {
+                    "format": "tag",
+                    "type": "template",
+                    "fieldName": "viewTransactionMrnTag",
+                    "label": "MRN {{item.groupKey}}"
+                  },
+                  {
+                    "format": "textTemplate",
+                    "type": "template",
+                    "fieldName": "viewTransactionDateText",
+                    "value":
+                        "{{fn:formatDate(item.items[0].dateOfEntry, 'date', dd MMM yyyy)}}"
+                  }
+                ]
+              },
+              {
+                "format": "row",
+                "type": "template",
+                "fieldName": "viewTransactionPartyRow",
+                "properties": {
+                  "mainAxisAlignment": "spaceBetween",
+                  "mainAxisSize": "max"
+                },
+                "children": [
+                  {
+                    "format": "expanded",
+                    "type": "template",
+                    "fieldName": "viewTransactionPartyExpanded",
+                    "child": {
+                      "format": "column",
+                      "type": "template",
+                      "fieldName": "viewTransactionPartyColumn",
+                      "properties": {
+                        "mainAxisAlignment": "spaceBetween",
+                        "mainAxisSize": "min"
+                      },
+                      "children": [
+                        {
+                          "format": "textTemplate",
+                          "type": "template",
+                          "fieldName": "viewTransactionPartyLabelText",
+                          "value":
+                              "{{fn:getFirstPagePartyLabel(item.items[0].additionalFields.fields)}}"
+                        },
+                        {
+                          "format": "textTemplate",
+                          "type": "template",
+                          "fieldName": "viewTransactionPartyValueText",
+                          "value":
+                              "{{fn:getFirstPageParty(item.items[0].additionalFields.fields, item.items[0].senderId, item.items[0].receiverId, item.items[0].senderType, item.items[0].receiverType)}}"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "format": "actionPopup",
+                    "type": "template",
+                    "fieldName": "viewTransactionQrPopup",
+                    "label": "INVENTORY_VIEW_QR_LABEL",
+                    "properties": {
+                      "type": "tertiary",
+                      "size": "medium",
+                      "mainAxisSize": "min",
+                      "mainAxisAlignment": "start",
+                      "popupConfig": {
+                        "type": "default",
+                        "title": "INVENTORY_QR_CODE_TITLE",
+                        "titleIcon": "qr",
+                        "showCloseButton": true,
+                        "barrierDismissible": true,
+                        "body": [
+                          {
+                            "format": "qr_view",
+                            "type": "template",
+                            "fieldName": "viewTransactionQrView",
+                            "data":
+                                "{{item.items[0].additionalFields.fields.mrnNumber}}",
+                            "size": "medium",
+                            "errorCorrectionLevel": "M",
+                            "dataModuleColor": "black",
+                            "backgroundColor": "white",
+                            "padding": 16
+                          }
+                        ],
+                        "footerActions": []
+                      }
+                    },
+                    "suffixIcon": "qr"
+                  }
+                ]
+              },
+              {
+                "format": "listView",
+                "type": "template",
+                "fieldName": "viewTransactionGroupedItemsList",
+                "dataSource": "item.items",
+                "child": {
+                  "format": "textTemplate",
+                  "type": "template",
+                  "fieldName": "viewTransactionGroupedItemText",
+                  "value":
+                      "{{item.additionalFields.fields.sku}}: {{item.quantity}}"
+                }
+              },
+              {
+                "format": "button",
+                "type": "template",
+                "fieldName": "viewTransactionSelectButton",
+                "label": "INVENTORY_SELECT_TRANSACTION_LABEL",
+                "properties": {
+                  "type": "primary",
+                  "size": "medium",
+                  "mainAxisSize": "max",
+                  "mainAxisAlignment": "center"
+                },
+                "onAction": [
+                  {
+                    "actionType": "NAVIGATION",
+                    "properties": {
+                      "type": "TEMPLATE",
+                      "name": "viewTransactionDetails",
+                      "navigationMode": "popUntilAndPush",
+                      "popUntilPageName": "manageStock",
+                      "data": [
+                        {"key": "item", "value": "{{item}}"},
+                        {"key": "item2", "value": "{{item.items[0]}}"},
+                        {"key": "selectedStock", "value": "{{item.groupKey}}"},
+                        {
+                          "key": "clientReferenceId",
+                          "value": "{{item.items[0].clientReferenceId}}"
+                        }
+                      ]
+                    }
+                  }
+                ]
+              }
+            ]
+          },
+          "properties": {"spacing": "spacer4"}
+        },
       ]
     }
   ]

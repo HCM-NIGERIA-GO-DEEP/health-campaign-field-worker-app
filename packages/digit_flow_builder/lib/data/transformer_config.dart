@@ -77,16 +77,19 @@ final jsonConfig = {
           "name": {
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
-            // "givenName": "beneficiaryDetails.nameOfIndividual",
             "givenName": "householdDetails.nameOfIndividual",
             "familyName": "beneficiaryDetails.familyname",
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit",
+            "additionalFields": {
+              "lastName": "householdDetails.lastName"
+            }
           },
           "additionalFields": {
             "weight": "beneficiaryDetails.weight",
             "height": "beneficiaryDetails.height",
-            "isPregnant": "beneficiaryDetails.isPregnant"
+            "isPregnant": "beneficiaryDetails.isPregnant",
+            "lastName": "householdDetails.lastName"
           },
           "bloodGroup": "health.bloodGroup",
           "gender": "beneficiaryDetails.gender",
@@ -1184,9 +1187,7 @@ final jsonConfig = {
           "householdType": "__context:householdType",
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
-          "additionalFields": {
-            "date": "closeHouseholdDetails.date"
-          }
+          "additionalFields": {"date": "closeHouseholdDetails.date"}
         }
       },
       "IndividualModel": {
@@ -1202,6 +1203,7 @@ final jsonConfig = {
           "photo": "personalDetails.photo",
           "nonRecoverableError": "errors.nonRecoverable",
           "clientReferenceId": "__generate:uuid",
+
           /// Note: Generate uuid
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
@@ -1211,6 +1213,9 @@ final jsonConfig = {
             "givenName": "closeHouseholdDetails.headName",
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit",
+            "additionalFields": {
+              "lastName": "closeHouseholdDetails.lastName"
+            },
           },
           "bloodGroup": "health.bloodGroup",
           "gender": "beneficiaryDetails.gender",
@@ -1226,13 +1231,13 @@ final jsonConfig = {
               "id": "id",
               "identifierType": "__value:DEFAULT",
               "identifierId": "__generate:uuid",
-              
+
               // "identifierType": "closeHouseholdDetails.identifiers[0]",
               // "identifierId": "closeHouseholdDetails.identifiers[1]",
 
               // "identifierType": "__value:UNIQUE_BENEFICIARY_ID",
               // "identifierId": "__context:latestBeneficiaryId[1]",
-              
+
               "boundaryCode": "__context:selectedBoundaryCode",
               "nonRecoverableError": "error.nonRecoverable",
               "individualClientReferenceId":
@@ -1291,6 +1296,7 @@ final jsonConfig = {
               "__switch:__context:beneficiaryType:{INDIVIDUAL:__ref:IndividualModel.clientReferenceId,HOUSEHOLD:__ref:HouseholdModel.clientReferenceId}",
           "nonRecoverableError": "errors.nonRecoverable",
           "clientReferenceId": "__generate:uuid",
+
           /// Note: Generate uuid
           "rowVersion": "meta.rowVersion",
           "dateOfRegistration": "__value:DATETIME.NOW",
