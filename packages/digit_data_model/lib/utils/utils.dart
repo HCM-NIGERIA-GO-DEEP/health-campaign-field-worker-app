@@ -49,7 +49,7 @@ class IdGen {
 
   /// Generates a random alphanumeric string of the specified length.
   String generateRandomAlphanumeric(int length) {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    const chars = '0123456789';
     final random = Random();
     return String.fromCharCodes(Iterable.generate(
         length, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
