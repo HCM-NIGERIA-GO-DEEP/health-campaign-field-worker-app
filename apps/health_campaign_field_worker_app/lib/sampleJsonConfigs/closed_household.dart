@@ -106,7 +106,8 @@ final dynamic sampleCloseHouseholdFlows = {
             },
             {
               "type": "string",
-              "label": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_FIRST_NAME_LABEL",
+              "label":
+                  "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_FIRST_NAME_LABEL",
               "order": 3,
               "value": "",
               "format": "text",
@@ -134,7 +135,8 @@ final dynamic sampleCloseHouseholdFlows = {
             },
             {
               "type": "string",
-              "label": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_LAST_NAME_LABEL",
+              "label":
+                  "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_LAST_NAME_LABEL",
               "order": 3,
               "value": "",
               "format": "text",
@@ -498,10 +500,7 @@ final dynamic sampleCloseHouseholdFlows = {
           "label": "HOUSEHOLD_BACK",
           "format": "backLink",
           "onAction": [
-            {
-              "actionType": "NAVIGATION",
-              "properties": {"name": "closeHouseholdRegistration", "type": "FORM"}
-            }
+            {"actionType": "BACK_NAVIGATION", "properties": {}}
           ]
         }
       ],
