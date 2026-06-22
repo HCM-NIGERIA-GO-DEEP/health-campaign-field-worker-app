@@ -1541,6 +1541,17 @@ class SummaryReport {
   String get stockReturned => 'SUMMARY_REPORT_STOCK_RETURNED';
 
   String get stockBalance => 'SUMMARY_REPORT_STOCK_BALANCE';
+
+  String get childrenAll => 'SUMMARY_REPORT_CHILDREN_3_59M';
+  String get children3to11 => 'SUMMARY_REPORT_CHILDREN_3_11M';
+  String get children12to59 => 'SUMMARY_REPORT_CHILDREN_12_59M';
+  String get boysAll => 'SUMMARY_REPORT_BOYS_3_59M';
+  String get boys3to11 => 'SUMMARY_REPORT_BOYS_3_11M';
+  String get boys12to59 => 'SUMMARY_REPORT_BOYS_12_59M';
+  String get girlsAll => 'SUMMARY_REPORT_GIRLS_3_59M';
+  String get girls3to11 => 'SUMMARY_REPORT_GIRLS_3_11M';
+  String get girls12to59 => 'SUMMARY_REPORT_GIRLS_12_59M';
+  String get totalRow => 'SUMMARY_REPORT_TOTAL';
 }
 
 class NonMobileUser {
