@@ -2068,23 +2068,14 @@ final dynamic sampleInventoryFlows = {
                         "mainAxisAlignment": "spaceBetween",
                         "mainAxisSize": "min"
                       },
-                      "children": [
-                        {
-                          "format": "textTemplate",
-                          "type": "template",
-                          "fieldName": "viewTransactionPartyLabelText",
-                          "value":
-                              "{{fn:getFirstPagePartyLabel(item.items[0].additionalFields.fields)}}"
-                        },
-                        {
-                          "format": "textTemplate",
-                          "type": "template",
-                          "fieldName": "viewTransactionPartyValueText",
-                          "value":
-                              "{{fn:getFirstPageParty(item.items[0].additionalFields.fields, item.items[0].senderId, item.items[0].receiverId, item.items[0].senderType, item.items[0].receiverType)}}"
-                        }
-                      ]
-                    }
+                      {
+                        "format": "textTemplate",
+                        "type": "template",
+                        "fieldName": "viewTransactionPartyValueText",
+                        // "value": "{{fn:getFirstPageParty(item.items[0].additionalFields.fields, item.items[0].senderId, item.items[0].receiverId)}}"
+                        "value": "{{fn:getFacilityName(item.items[0].senderId, item.items[0].receiverId)}}"
+                      }
+                    ]
                   },
                   {
                     "format": "actionPopup",
@@ -2251,10 +2242,10 @@ final dynamic sampleInventoryFlows = {
                     "value": "{{item.transactionReason}}"
                   },
                   {
-                    "key":
-                        "{{fn:getSecondPagePartyLabel(item.additionalFields.fields)}}",
-                    "value":
-                        "{{fn:getSecondPageParty(item.additionalFields.fields, item.senderId, item.receiverId, item.senderType, item.receiverType)}}"
+                    "key": "{{fn:getSecondPagePartyLabel(item.additionalFields.fields)}}",
+                    "value": "{{fn:getFacilityName(item.senderId, item.receiverId)}}"
+                    // "value": "{{fn:getSecondPageParty(item.additionalFields.fields, item.senderId, item.receiverId)}}"
+                    
                   },
                   {
                     "key": "INVENTORY_MRN_NUMBER_LABEL",
@@ -2799,7 +2790,8 @@ final dynamic sampleInventoryFlows = {
               "type": "string",
               "label": "INVENTORY_RECEIVED_FROM_LABEL",
               "order": 3,
-              "value": "{{receivedFromName}}",
+              // "value": "{{senderFacilityId}}", 
+              "value": "{{fn:getFacilityName(senderFacilityId)}}",
               "format": "text",
               "fieldName": "receivedFrom",
               "displayOnly": true

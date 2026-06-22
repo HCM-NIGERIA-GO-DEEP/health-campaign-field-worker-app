@@ -106,7 +106,7 @@ final dynamic sampleCloseHouseholdFlows = {
             },
             {
               "type": "string",
-              "label": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_headName_LABEL",
+              "label": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_FIRST_NAME_LABEL",
               "order": 3,
               "value": "",
               "format": "text",
@@ -126,6 +126,34 @@ final dynamic sampleCloseHouseholdFlows = {
                   "value": "3",
                   "message":
                       "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_headName_MIN_LENGTH_ERROR"
+                }
+              ],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "enums": []
+            },
+            {
+              "type": "string",
+              "label": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_LAST_NAME_LABEL",
+              "order": 3,
+              "value": "",
+              "format": "text",
+              "hidden": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "lastName",
+              "deleteFlag": false,
+              "innerLabel": "",
+              "systemDate": false,
+              "includeInForm": true,
+              "validations": [
+                {
+                  "type": "minLength",
+                  "value": "1",
+                  "message":
+                      "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_lastName_MIN_LENGTH_ERROR"
                 }
               ],
               "errorMessage": "",
@@ -400,9 +428,16 @@ final dynamic sampleCloseHouseholdFlows = {
                 },
                 {
                   "key":
-                      "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_NAME_LABEL",
+                      "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_FIRST_NAME_LABEL",
                   "value":
                       "{{contextData.0.headIndividual.IndividualModel.name.givenName}}",
+                  "isActive": true
+                },
+                {
+                  "key":
+                      "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_LAST_NAME_LABEL",
+                  "value":
+                      "{{contextData.0.headIndividual.IndividualModel.name.additionalFields.fields.lastName}}",
                   "isActive": true
                 },
                 {
@@ -465,7 +500,7 @@ final dynamic sampleCloseHouseholdFlows = {
           "onAction": [
             {
               "actionType": "NAVIGATION",
-              "properties": {"name": "CLOSEHOUSEHOLD", "type": "FORM"}
+              "properties": {"name": "closeHouseholdRegistration", "type": "FORM"}
             }
           ]
         }
@@ -627,9 +662,16 @@ final dynamic sampleCloseHouseholdFlows = {
                 },
                 {
                   "key":
-                      "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_NAME_LABEL",
+                      "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_FIRST_NAME_LABEL",
                   "value":
                       "{{contextData.0.headIndividual.IndividualModel.name.givenName}}",
+                  "isActive": true
+                },
+                {
+                  "key":
+                      "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_LAST_NAME_LABEL",
+                  "value":
+                      "{{contextData.0.headIndividual.IndividualModel.name.additionalFields.fields.lastName}}",
                   "isActive": true
                 },
                 {
