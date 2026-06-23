@@ -2357,7 +2357,7 @@ final dynamic sampleInventoryFlows = {
               },
               {
                 "key": "receivedFromName",
-                "value": "{{fn:getFacilityName(item.items[0].senderId)}}"
+                "value": "{{navigation.receivedFromName}}"
               },
               {
                 "key": "productVariantId",
@@ -2390,6 +2390,10 @@ final dynamic sampleInventoryFlows = {
               {
                 "key": "StockModel.additionalFields.fields.mrnNumber",
                 "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
+              },
+              {
+                "key": "StockModel.additionalFields.fields.comments",
+                "value": "{{formData.stockReceiptDetails.comment}}"
               }
             ]
           }
@@ -2575,9 +2579,7 @@ final dynamic sampleInventoryFlows = {
               "type": "string",
               "label": "INVENTORY_RECEIVED_FROM_LABEL",
               "order": 3,
-              // "value": "{{senderFacilityId}}",
-              // "value": "fac name",
-              "value": "{{fn:getFacilityName(senderFacilityId)}}",
+              "value": "{{receivedFromName}}",
               "format": "text",
               "fieldName": "receivedFrom",
               "displayOnly": true
