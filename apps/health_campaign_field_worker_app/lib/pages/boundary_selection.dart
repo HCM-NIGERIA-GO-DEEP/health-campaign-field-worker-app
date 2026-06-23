@@ -618,6 +618,27 @@ class _BoundarySelectionPageState
 
                                                 if (context.mounted) {
                                                   if (isOnline &&
+                                                      isDistributor) {
+                                                    context
+                                                        .read<
+                                                            BeneficiaryDownSyncBloc>()
+                                                        .add(
+                                                          DownSyncGetBatchSizeEvent(
+                                                            appConfiguration: [
+                                                              appConfiguration,
+                                                            ],
+                                                            projectModel: context
+                                                                .selectedProject,
+                                                            boundaries: context
+                                                                .read<
+                                                                    BoundaryBloc>()
+                                                                .state
+                                                                .selectedLastLevelBoundaries,
+                                                            pendingSyncCount:
+                                                                pendingSyncCount,
+                                                          ),
+                                                        );
+                                                  } else if (isOnline &&
                                                       isHealthFacilityWorkerOnly) {
                                                     LocalizationParams()
                                                         .setModule(
@@ -669,7 +690,9 @@ class _BoundarySelectionPageState
                                                             .getSelectedLocale!));
                                                     context.router.replaceAll(
                                                       isDistributor
-                                                          ? [SelectTeamMembersRoute()]
+                                                          ? [
+                                                              SelectTeamMembersRoute()
+                                                            ]
                                                           : [HomeRoute()],
                                                     );
                                                   }

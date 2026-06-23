@@ -1,5 +1,6 @@
 import 'package:digit_forms_engine/helper/form_builder_helper.dart';
 import 'package:digit_formula_parser/digit_formula_parser.dart';
+import 'package:digit_ui_components/utils/date_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
@@ -259,7 +260,118 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
     }
   }
 
+  // Age bounds (`minAge`/`maxAge`, with head-specific `minAgeHead`/`maxAgeHead`
+  // variants) are not plain numeric comparisons handled in the switch above —
+  // they depend on the entered date-of-birth's age in months and on whether the
+  // member is the household head. They are registered here as a single reactive
+  // validator so the bound actually gates form submission (mirroring the
+  // pick-time check in JsonSchemaDOBBuilder). The error keys deliberately stay
+  // `minAge`/`maxAge` so JsonSchemaDOBBuilder._getDobErrorMessage resolves the
+  // correct (head-aware) message.
+  final ageValidator = _buildAgeValidator<T>(schema, schemaKey);
+  if (ageValidator != null) validators.add(ageValidator);
+
   return validators;
+}
+
+/// Builds a reactive validator enforcing the date-of-birth age bounds declared
+/// on [schema]. Returns null when the schema declares no age rules.
+Validator<T>? _buildAgeValidator<T>(PropertySchema schema, String? schemaKey) {
+  final validations = schema.validations;
+  if (validations == null) return null;
+
+  final hasAgeRule = validations.any((v) =>
+      v.type == 'minAge' ||
+      v.type == 'maxAge' ||
+      v.type == 'minAgeHead' ||
+      v.type == 'maxAgeHead');
+  if (!hasAgeRule) return null;
+
+  return Validators.delegate((control) {
+    final value = control.value?.toString();
+    // Empty values are the `required` validator's responsibility.
+    if (value == null || value.trim().isEmpty) return null;
+
+    final isHead = _resolveIsHead(schemaKey, control);
+
+    // Prefer the head-specific bound when editing the head; fall back to the
+    // base bound when the head variant is absent.
+    final minMonths = _ageRuleValue(validations, isHead ? 'minAgeHead' : 'minAge') ??
+        _ageRuleValue(validations, 'minAge');
+    final maxMonths = _ageRuleValue(validations, isHead ? 'maxAgeHead' : 'maxAge') ??
+        _ageRuleValue(validations, 'maxAge');
+    if (minMonths == null && maxMonths == null) return null;
+
+    final ageMonths = _ageInMonths(value);
+    if (ageMonths == null) return null; // Unparseable DOB — don't block here.
+
+    if (minMonths != null && ageMonths < minMonths) {
+      return {'minAge': true};
+    }
+    if (maxMonths != null && ageMonths > maxMonths) {
+      return {'maxAge': true};
+    }
+    return null;
+  }) as Validator<T>;
+}
+
+/// Reads an integer-valued age rule (in months) of [type] from [validations].
+int? _ageRuleValue(List<ValidationRule> validations, String type) {
+  for (final rule in validations) {
+    if (rule.type == type) return parseIntValue(rule.value);
+  }
+  return null;
+}
+
+/// Resolves whether the current member is the household head, mirroring
+/// JsonSchemaDOBBuilder._evaluateCondition: navigation params first, then a
+/// sibling `isHead` form control, defaulting to false.
+bool _resolveIsHead(String? schemaKey, AbstractControl<dynamic> control) {
+  bool? coerce(dynamic v) {
+    if (v is bool) return v;
+    if (v is String) return v.toLowerCase() == 'true';
+    if (v is num) return v != 0;
+    return null;
+  }
+
+  if (schemaKey != null) {
+    final navParams = _navigationParamsRegistry[schemaKey];
+    final fromNav = coerce(navParams?['isHead']);
+    if (fromNav != null) return fromNav;
+  }
+
+  final form = control.parent;
+  if (form is FormGroup && form.contains('isHead')) {
+    final fromForm = coerce(form.control('isHead').value);
+    if (fromForm != null) return fromForm;
+  }
+
+  return false;
+}
+
+/// Computes age in whole months from a DOB string in `yyyy-MM-dd` (ISO) or
+/// `dd/MM/yyyy` format, using the same age math as the DOB picker. Returns null
+/// when the value can't be parsed.
+int? _ageInMonths(String value) {
+  DateTime? dob;
+  try {
+    if (RegExp(r'^\d{4}-\d{2}-\d{2}').hasMatch(value)) {
+      dob = DateTime.parse(value);
+    } else if (RegExp(r'^\d{2}/\d{2}/\d{4}$').hasMatch(value)) {
+      final parts = value.split('/');
+      dob = DateTime(
+        int.parse(parts[2]),
+        int.parse(parts[1]),
+        int.parse(parts[0]),
+      );
+    }
+  } catch (_) {
+    return null;
+  }
+  if (dob == null) return null;
+
+  final age = DigitDateUtils.calculateAge(dob);
+  return age.years * 12 + age.months;
 }
 
 /// Checks if the validations contain a rule of type 'required'.

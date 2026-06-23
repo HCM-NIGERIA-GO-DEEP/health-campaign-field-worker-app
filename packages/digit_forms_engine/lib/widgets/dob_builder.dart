@@ -155,43 +155,20 @@ class JsonSchemaDOBBuilder extends JsonSchemaBuilder<String> {
     (int years, int months)? minAge,
     (int years, int months)? maxAge,
   ) {
-    control.removeError('required');
-    control.removeError('minAge');
-    control.removeError('maxAge');
     control.markAsTouched();
 
-    final isRequired = validations?.any((v) => v.type == 'required') ?? false;
-
     if (dob == null) {
-      if (isRequired && control.touched) {
-        control.setErrors({'required': true});
-      }
+      // Clear the value and let the `required` validator decide.
+      control.value = null;
       return;
     }
 
-    final age = DigitDateUtils.calculateAge(dob);
-
-    if (minAge != null) {
-      final minValid = age.years > minAge.$1 ||
-          (age.years == minAge.$1 && age.months >= minAge.$2);
-      if (!minValid) {
-        control.setErrors({'minAge': true});
-        return;
-      }
-    }
-
-    if (maxAge != null) {
-      final maxValid = age.years < maxAge.$1 ||
-          (age.years == maxAge.$1 && age.months <= maxAge.$2);
-      if (!maxValid) {
-        control.setErrors({'maxAge': true});
-        return;
-      }
-    }
-
-    // Store as string in "dd/MM/yyyy" format
-    final formatted = DateFormat('dd/MM/yyyy').format(dob);
-    control.value = formatted;
+    // Always store the selected date (in "dd/MM/yyyy" format). The age bounds
+    // are enforced by the reactive validators registered in buildValidators
+    // (minAge/maxAge, head-aware), which run on this value change and surface
+    // the bound message through _getDobErrorMessage. Out-of-range dates are
+    // still stored, but the control stays invalid so submission is blocked.
+    control.value = DateFormat('dd/MM/yyyy').format(dob);
   }
 
   String? _getDobErrorMessage(
@@ -255,14 +232,5 @@ class JsonSchemaDOBBuilder extends JsonSchemaBuilder<String> {
     }
 
     return result;
-  }
-
-  DateTime? _parseDate(String? value) {
-    if (value == null) return null;
-    try {
-      return DateFormat('dd/MM/yyyy').parseStrict(value);
-    } catch (_) {
-      return null;
-    }
   }
 }

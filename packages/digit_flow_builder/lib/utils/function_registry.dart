@@ -277,6 +277,36 @@ bool _hasLogWithType(attendanceLog, DateTime date, String type) {
   });
 }
 
+/// Resolves the eligibility-checklist answers carried in [navigationData] into
+/// referral reason codes, ordered by descending priority:
+/// ADR (DRUG_SE_PC) > SICK > FEVER.
+///
+/// Mapping: `ec4==YES` -> ADR (DRUG_SE_PC), `ec1==YES` -> SICK,
+/// `ec2==YES` -> FEVER. Reasons are appended in priority order, so the first
+/// element is always the highest-priority reason. Returns an empty list when the
+/// navigation carries no checklist answers (e.g. a manual referral that is not
+/// sourced from the CHECKLIST flow).
+List<String> _resolveReferralReasons(dynamic navigationData) {
+  if (navigationData is! Map) return const [];
+
+  final String? ec1 = navigationData['ec1']?.toString();
+  final String? ec2 = navigationData['ec2']?.toString();
+  final String? ec4 = navigationData['ec4']?.toString();
+
+  // No checklist answers present -> not a checklist-sourced referral.
+  if (ec1 == null && ec2 == null && ec4 == null) return const [];
+
+  final List<String> reasons = [];
+  if (ec4 == 'YES') reasons.add('DRUG_SE_PC'); // ADR - adverse drug reaction
+  if (ec1 == 'YES') reasons.add('SICK');
+  if (ec2 == 'YES') reasons.add('FEVER');
+
+  // Referral reached without an explicit symptom -> default to ADR.
+  if (reasons.isEmpty) reasons.add('DRUG_SE_PC');
+
+  return reasons;
+}
+
 /// Initializes the [FunctionRegistry] with application-specific functions.
 ///
 /// This function should be called at application startup to populate the
@@ -1481,29 +1511,33 @@ void initializeFunctionRegistry() {
     return false;
   });
 
-  // GET symptoms for referral - this is a placeholder function to demonstrate how to register a function that processes data and returns a result based on certain conditions. In a real implementation, the symptom values would likely come from the stateData or arguments rather than being hardcoded.
+  // Referral reasons are resolved from the eligibility-checklist answers and
+  // ordered by priority (ADR/DRUG_SE_PC > SICK > FEVER) via
+  // [_resolveReferralReasons]. They are exposed through three functions so the
+  // config can split a single highest-priority reason from the rest:
+  //  - getSymptomsReferral     -> full ordered list joined by "," (referralReasons)
+  //  - getReferralSymptom      -> the single highest-priority reason (symptom)
+  //  - getReferralReasonsExtra -> the remaining reasons joined by "," (referralReasonsExtra)
 
   FunctionRegistry.register("getSymptomsReferral", (args, stateData) {
-    Map? navigationData = args.isNotEmpty ? args.first : null;
+    final reasons = _resolveReferralReasons(args.isNotEmpty ? args.first : null);
+    if (reasons.isEmpty) return null;
 
-    if (navigationData == null) return null;
+    return reasons.join(',');
+  });
 
-    String? ec1 = navigationData['ec1'];
-    String? ec2 = navigationData['ec2'];
+  FunctionRegistry.register("getReferralSymptom", (args, stateData) {
+    final reasons = _resolveReferralReasons(args.isNotEmpty ? args.first : null);
+    if (reasons.isEmpty) return null;
 
-    if (ec1 == null && ec2 == null) return null;
+    return reasons.first;
+  });
 
-    final List<String> symptoms = [];
+  FunctionRegistry.register("getReferralReasonsExtra", (args, stateData) {
+    final reasons = _resolveReferralReasons(args.isNotEmpty ? args.first : null);
+    if (reasons.length <= 1) return null;
 
-    if (ec1 == 'YES') symptoms.add('SICK');
-    if (ec2 == 'YES') {
-      symptoms.add('FEVER');
-    }
-    if (symptoms.isEmpty) {
-      symptoms.add('DRUG_SE_PC');
-    }
-
-    return symptoms.join(',');
+    return reasons.skip(1).join(',');
   });
 
   FunctionRegistry.register("hasBeneficiaryId", (args, stateData) {
