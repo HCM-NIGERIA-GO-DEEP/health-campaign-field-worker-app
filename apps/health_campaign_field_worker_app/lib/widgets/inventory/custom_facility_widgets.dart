@@ -347,7 +347,7 @@ class _FacilityCardContent extends StatelessWidget {
       return localizations.translate('DELIVERY_TEAM');
     }
     if (facilityId == 'Central Facility' ||
-        facilityId == 'F-CENTRAL-FACILITY') {
+        facilityId == 'F-2026-06-24-030845') {
       return localizations.translate('Central Facility');
     }
     final parentFacility = localProjectFacilities.where((e) {
@@ -582,7 +582,7 @@ class _FacilityCardContent extends StatelessWidget {
 
     if (showCentralFacility && !hasParentInFiltered) {
       facilities.add(DropdownItem(
-        code: centralFacilityId ?? 'F-CENTRAL-FACILITY',
+        code: centralFacilityId ?? 'F-2026-06-24-030845',
         name: localizations.translate('Central Facility'),
       ));
     }
