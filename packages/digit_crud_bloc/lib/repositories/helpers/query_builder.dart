@@ -323,11 +323,11 @@ class QueryBuilder {
       case 'notEquals':
         return col.equals(filter.value).not();
       case 'contains':
-        // Prefix match (LIKE 'val%') so a column index on this field can be
-        // used; substring matching defeats the index. Use `matches` when a
-        // genuine substring lookup is needed (e.g. searching inside a JSON
-        // column like additionalFields).
-        return (col as Expression<String>).like('${filter.value}%');
+        // Substring match (LIKE '%val%'). Needed for lookups inside JSON
+        // columns like additionalFields (e.g. the stock report's
+        // stockEntryType filter), whose values never sit at the start of the
+        // stored string. `matches` is kept as an alias for the same behaviour.
+        return (col as Expression<String>).like('%${filter.value}%');
       case 'matches':
         return (col as Expression<String>).like('%${filter.value}%');
       case 'notContains':
@@ -513,7 +513,7 @@ class QueryBuilder {
           args.add(Variable.withString(filter.value.toString()));
           break;
         case 'contains':
-          args.add(Variable.withString('${filter.value}%'));
+          args.add(Variable.withString('%${filter.value}%'));
           break;
         case 'matches':
           args.add(Variable.withString('%${filter.value}%'));
@@ -739,7 +739,7 @@ class QueryBuilder {
           break;
         case 'contains':
           whereClauses
-              .add((col as Expression<String>).like('${filter.value}%'));
+              .add((col as Expression<String>).like('%${filter.value}%'));
           break;
         case 'matches':
           whereClauses

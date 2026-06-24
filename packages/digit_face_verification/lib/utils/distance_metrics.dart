@@ -58,7 +58,7 @@ class DistanceMetrics {
     required List<double> averagedEmbedding,
     required List<List<double>> angleEmbeddings,
     double baseThreshold = defaultThreshold,
-    double minThreshold = 0.72,
+    double minThreshold = 0.70,
     double maxThreshold = 0.88,
   }) {
     if (angleEmbeddings.length < 2) return baseThreshold;

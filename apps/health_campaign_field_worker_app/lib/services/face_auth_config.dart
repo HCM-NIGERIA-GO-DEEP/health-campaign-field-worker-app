@@ -2,7 +2,7 @@
 /// All values have sensible defaults and can be overridden at instantiation.
 class FaceAuthConfig {
   // Static constants — usable as default parameter values in other classes.
-  static const defaultFaceMatchThreshold = 0.75;
+  static const defaultFaceMatchThreshold = 0.70;
   static const defaultMaxFaceAttempts = 3;
 
   /// Start of re-verification window (hour, 24h format). Default: 8 (8 AM).
@@ -23,7 +23,7 @@ class FaceAuthConfig {
   /// Maximum face verification attempts before PIN fallback. Default: 3.
   final int maxFaceAttempts;
 
-  /// Cosine similarity threshold for face match. Default: 0.75.
+  /// Cosine similarity threshold for face match. Default: 0.70.
   final double faceMatchThreshold;
 
   const FaceAuthConfig({
@@ -33,7 +33,7 @@ class FaceAuthConfig {
     this.minGapMinutes = 180,
     this.countdownDuration = const Duration(minutes: 5),
     this.maxFaceAttempts = 3,
-    this.faceMatchThreshold = 0.75,
+    this.faceMatchThreshold = 0.70,
   });
 
   /// Total minutes in the verification window.

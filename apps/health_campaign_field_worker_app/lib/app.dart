@@ -417,25 +417,13 @@ class MainApplicationState extends State<MainApplication>
                               return MaterialApp.router(
                                 debugShowCheckedModeBanner: false,
                                 builder: (context, child) {
-                                  final env = envConfig.variables.envType;
-                                  if (env == EnvType.prod) {
-                                    return child ?? const SizedBox.shrink();
-                                  }
-
+                                  // Mark every build as a pilot rollout with a
+                                  // corner ribbon, regardless of environment.
                                   return Banner(
-                                    message: envConfig.variables.envType.name,
+                                    message: 'PILOT',
                                     location: BannerLocation.topEnd,
-                                    color: () {
-                                      switch (envConfig.variables.envType) {
-                                        case EnvType.uat || EnvType.demo:
-                                          return Colors.green;
-                                        case EnvType.qa:
-                                          return Colors.pink;
-                                        default:
-                                          return Colors.red;
-                                      }
-                                    }(),
-                                    child: child,
+                                    color: Colors.deepOrange,
+                                    child: child ?? const SizedBox.shrink(),
                                   );
                                 },
                                 supportedLocales: languages != null

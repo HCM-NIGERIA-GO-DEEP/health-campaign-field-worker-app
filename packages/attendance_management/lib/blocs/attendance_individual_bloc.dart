@@ -84,7 +84,10 @@ class AttendanceIndividualBloc
               ))
           .toList();
 
-      checkResponse(filteredLogs ?? [], attendees, event);
+      // Pass the unfiltered logs too: the current-day filter above is only
+      // for today's entry/exit status, but the reference signature must be
+      // resolved from prior days as well.
+      checkResponse(filteredLogs ?? [], attendanceLogs ?? [], attendees, event);
     } catch (ex) {
       emit(AttendanceIndividualState.error(ex.toString()));
     }
@@ -314,6 +317,7 @@ class AttendanceIndividualBloc
   // Function to process response after searching attendance log
   checkResponse(
       List<AttendanceLogModel> logResponse,
+      List<AttendanceLogModel> allLogs,
       List<AttendeeModel> attendees,
       AttendanceIndividualLogSearchEvent event) async {
     bool anyLogPresent = false;
@@ -337,15 +341,23 @@ class AttendanceIndividualBloc
                   (event.isSingleSession && l.time == twelvePM)))
           .toList();
       // Surface the worker's first/reference signature (if any) from prior
-      // logs so the mark-present flow can compare against it.
+      // logs so the mark-present flow can compare against it. This scans the
+      // full (unfiltered) log set so a signature captured on an earlier day is
+      // still found today; entry logs are sorted by time so the earliest
+      // captured signature is the reference.
       String? referenceSignature;
-      for (final log in logResponse.where(
-          (l) => l.individualId == e.individualId && l.type == EnumValues.entry.toValue())) {
+      final priorEntryLogs = allLogs
+          .where((l) =>
+              l.individualId == e.individualId &&
+              l.type == EnumValues.entry.toValue())
+          .toList()
+        ..sort((a, b) => (a.time ?? 0).compareTo(b.time ?? 0));
+      for (final log in priorEntryLogs) {
         final details = log.additionalDetails;
         final signature = details != null ? details['signature'] : null;
         if (signature != null) {
           referenceSignature = signature.toString();
-          if (details?['isFirstSignature'] == "true") break;
+          break;
         }
       }
 
