@@ -38,6 +38,7 @@ class LoginPage extends LocalizedStatefulWidget {
 class _LoginPageState extends LocalizedState<LoginPage> {
   var passwordVisible = false;
   bool isPrivacyEnabled = false;
+  bool _isLocalizationDialogVisible = false;
   static const _userId = 'userId';
   static const _password = 'password';
   static const _privacyCheck = 'privacyCheck';
@@ -48,6 +49,12 @@ class _LoginPageState extends LocalizedState<LoginPage> {
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _isLocalizationDialogVisible = false;
+    super.dispose();
   }
 
   void _checkOtherDeviceLogin(BuildContext context, String username) async {

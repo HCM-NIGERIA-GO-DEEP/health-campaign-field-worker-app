@@ -362,6 +362,22 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
                 print("Failed to add faceImage column to FaceAuthEvent: $e");
               }
             }
+            try {
+              await customStatement(
+                  'CREATE INDEX IF NOT EXISTS identifier_identifierid ON identifier (identifier_id)');
+              await customStatement(
+                  'CREATE INDEX IF NOT EXISTS identifier_individualclientref ON identifier (individual_client_reference_id)');
+              await customStatement(
+                  'CREATE INDEX IF NOT EXISTS address_localityboundarycode ON address (locality_boundary_code)');
+              await customStatement(
+                  'CREATE INDEX IF NOT EXISTS address_relatedclientref ON address (related_client_reference_id)');
+              await customStatement('ANALYZE');
+            } catch (e) {
+              if (kDebugMode) {
+                print(
+                    "Failed to create identifier/address indexes in v10 migration: $e");
+              }
+            }
           }
           if (from < 11) {
             try {
@@ -369,6 +385,19 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
             } catch (e) {
               if (kDebugMode) {
                 print("Failed to create task search indexes: $e");
+              }
+            }
+            try {
+              await customStatement(
+                  'CREATE INDEX IF NOT EXISTS task_status ON task (status)');
+              await customStatement(
+                  'CREATE INDEX IF NOT EXISTS task_project_status ON task (project_id, status, is_deleted)');
+              await customStatement(
+                  'CREATE INDEX IF NOT EXISTS task_clientmodifiedtime ON task (client_modified_time)');
+              await customStatement('ANALYZE');
+            } catch (e) {
+              if (kDebugMode) {
+                print("Failed to create task indexes in v11 migration: $e");
               }
             }
           }
@@ -403,7 +432,10 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
       // Return a `NativeDatabase` that uses the file for storage.
       return NativeDatabase(
         file,
-        logStatements: kDebugMode,
+        // Statement logging is very expensive when queries carry large
+        // IN(...) clauses. Opt-in via dart-define rather than auto-on in debug.
+        logStatements: const bool.fromEnvironment('DRIFT_LOG_STATEMENTS',
+            defaultValue: false),
         setup: (database) {
           // If an encryption key is provided, set it using SQLCipher's PRAGMA key
           if (encryptionKey != null && encryptionKey.isNotEmpty) {
@@ -414,6 +446,11 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
           database.execute('PRAGMA journal_mode = WAL;');
           // Wait up to 5 seconds when the DB is locked by another isolate
           database.execute('PRAGMA busy_timeout = 5000;');
+          // Read-path tuning for large local datasets (120K+ rows).
+          database.execute('PRAGMA cache_size = -20000;'); // ~20 MB page cache
+          database.execute('PRAGMA temp_store = MEMORY;');
+          database.execute('PRAGMA mmap_size = 30000000;'); // 30 MB mmap
+          database.execute('PRAGMA synchronous = NORMAL;');
         },
       );
     });

@@ -1404,6 +1404,8 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
         listener: (context, state) {
           if (state.loading == false) {
             Navigator.of(context, rootNavigator: true).pop();
+          } else {
+            DigitLoaders.overlayLoader(context: context);
           }
         },
         child: SafeArea(

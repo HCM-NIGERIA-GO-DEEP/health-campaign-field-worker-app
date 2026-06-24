@@ -1777,6 +1777,18 @@ void initializeFunctionRegistry() {
         ?.id;
   });
 
+  FunctionRegistry.register("individualName", (args, stateData) {
+    if (args.isEmpty || args.first == null) return "--";
+
+    // Get member(s) list - try 'member' first, then 'members'
+    final name = args.first;
+
+    final firstName = name["givenName"] ?? "";
+    final lastName = name["familyName"] ?? "";
+
+    return "$firstName $lastName".trim();
+  });
+
   /// Checks if the current member is the head of household.
   ///
   /// - **Function Name**: `'isHead'`

@@ -149,6 +149,8 @@ class Scanner {
 
   String get invalidBarcode => 'INVALID_BARCODE';
 
+  String get invalidQRCode => 'INVALID_QRCODE';
+
   String get manualCodeDescription => 'MANUAL_CODE_DESC';
 
   String get resourceCode => 'RESOURCE_CODE';

@@ -191,6 +191,7 @@ final jsonConfig = {
             "height": "beneficiaryDetails.height",
             "weight": "beneficiaryDetails.weight",
             "dateOfBirth": "beneficiaryDetails.dobPicker",
+            "ageInMonths": "__ageInMonths:beneficiaryDetails.dobPicker",
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
             "beneficiaryId": "beneficiaryDetails.beneficiaryId"
@@ -421,6 +422,7 @@ final jsonConfig = {
                 "__concatName:beneficiaryDetails.nameOfIndividual,beneficiaryDetails.familyname",
             "gender": "beneficiaryDetails.gender",
             "dateOfBirth": "beneficiaryDetails.dobPicker",
+            "ageInMonths": "__ageInMonths:beneficiaryDetails.dobPicker",
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
             "beneficiaryId": "beneficiaryDetails.beneficiaryId"
@@ -501,7 +503,13 @@ final jsonConfig = {
             "height": "__context:height",
             "weight": "__context:weight",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+            // Eligibility checklist answers (null-skipped for non-checklist paths)
+            "ec1Value": "__context:ec1",
+            "ec2Value": "__context:ec2",
+            "ec3Value": "__context:ec3",
+            "ec4Value": "__context:ec4",
+            "ec5Value": "__context:ec5"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -602,7 +610,16 @@ final jsonConfig = {
             "height": "__context:height",
             "weight": "__context:weight",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+            // Eligibility checklist answers, threaded via navigation params
+            // from the eligibilityChecklist page through beneficiaryDetails →
+            // DELIVERY. Skipped automatically (null) for direct deliveries that
+            // never went through the checklist.
+            "ec1Value": "__context:ec1",
+            "ec2Value": "__context:ec2",
+            "ec3Value": "__context:ec3",
+            "ec4Value": "__context:ec4",
+            "ec5Value": "__context:ec5"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -696,7 +713,13 @@ final jsonConfig = {
             "ageInMonths": "__context:ageInMonths",
             "gender": "__context:gender",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+            // Eligibility checklist answers (the ineligibility reason)
+            "ec1Value": "__context:ec1",
+            "ec2Value": "__context:ec2",
+            "ec3Value": "__context:ec3",
+            "ec4Value": "__context:ec4",
+            "ec5Value": "__context:ec5"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -999,7 +1022,13 @@ final jsonConfig = {
             "height": "__context:height",
             "weight": "__context:weight",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+            // Eligibility checklist answers (null-skipped for non-checklist paths)
+            "ec1Value": "__context:ec1",
+            "ec2Value": "__context:ec2",
+            "ec3Value": "__context:ec3",
+            "ec4Value": "__context:ec4",
+            "ec5Value": "__context:ec5"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -1083,6 +1112,7 @@ final jsonConfig = {
           "additionalFields": {
             "flow": "__value:vasDone",
             "taskType": "__value:VAS",
+            "isSMCDelivered": "__context:isSMCDelivered",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
             "memberCount": "__context:memberCount",
@@ -1162,6 +1192,7 @@ final jsonConfig = {
             "transportType": "stockDetails.transportType",
             "vehicle_number": "stockDetails.vehicleNumber",
             "deliveryTeam": "stockDetails.deliveryTeam",
+            "deliveryTeamName": "__context:deliveryTeamName",
             "mrnNumber": "__context:mrnNumber",
             "stockEntryType": "__context:stockEntryType",
             "primaryRole": "__context:primaryRole",
@@ -1652,6 +1683,7 @@ final jsonConfig = {
           "additionalFields": {
             // Static field mappings
             "boundaryCode": "facilityDetails.administrativeUnit",
+            "localityCode": "__context:selectedBoundaryCode",
             "referralCycle": "referralDetails.referralCycle",
             "gender": "referralDetails.gender",
             "ageInMonths": "referralDetails.ageInMonths",
@@ -1691,6 +1723,7 @@ final jsonConfig = {
           "additionalFields": {
             // Explicit field mappings matching ReferralReconEnums/ReferralReconAdditionalFields
             "boundaryCode": "facilityDetails.administrativeArea",
+            "localityCode": "__context:selectedBoundaryCode",
             "referredBy": "__context:userUUID",
             "referralComments": "referBeneficiary.referralComments",
             "nameOfReferral": "__context:selectedIndividualName",

@@ -145,42 +145,46 @@ class _UserQRDetailsPageState extends LocalizedState<UserQRDetailsPage> {
     final theme = Theme.of(context);
 
     return state.maybeMap(
-      authenticated: (value) => Column(
-        children: [
-          SizedBox(
-            width: MediaQuery.of(context).size.width / 1.25,
-            height: MediaQuery.of(context).size.width / 1.25,
-            child: Padding(
-              padding: const EdgeInsets.all(spacer2),
-              child: Container(
+      authenticated: (value) {
+        String qrData =
+            "${value.userModel.userName}||${context.loggedInUserUuid}";
+        return Column(
+          children: [
+            SizedBox(
+              width: MediaQuery.of(context).size.width / 1.25,
+              height: MediaQuery.of(context).size.width / 1.25,
+              child: Padding(
                 padding: const EdgeInsets.all(spacer2),
-                decoration: BoxDecoration(
-                    borderRadius:
-                        const BorderRadius.all(Radius.circular(spacer1)),
-                    border: Border.all(
-                      color: theme.colorTheme.primary.primary1,
-                      width: 2,
-                    )),
-                child: QrImageView(
-                  data: context.loggedInUserUuid,
-                  version: QrVersions.auto,
-                  size: MediaQuery.of(context).size.width / 1.25,
+                child: Container(
+                  padding: const EdgeInsets.all(spacer2),
+                  decoration: BoxDecoration(
+                      borderRadius:
+                          const BorderRadius.all(Radius.circular(spacer1)),
+                      border: Border.all(
+                        color: theme.colorTheme.primary.primary1,
+                        width: 2,
+                      )),
+                  child: QrImageView(
+                    data: qrData,
+                    version: QrVersions.auto,
+                    size: MediaQuery.of(context).size.width / 1.25,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: Text(
-              value.userModel.name.toString(),
-              style: DigitTheme.instance.mobileTheme.textTheme.headlineMedium
-                  ?.apply(
-                color: DigitTheme.instance.colorScheme.shadow,
+            const SizedBox(height: 16),
+            Center(
+              child: Text(
+                value.userModel.name.toString(),
+                style: DigitTheme.instance.mobileTheme.textTheme.headlineMedium
+                    ?.apply(
+                  color: DigitTheme.instance.colorScheme.shadow,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        );
+      },
       orElse: () => const Offstage(),
     );
   }

@@ -43979,6 +43979,17 @@ abstract class _$LocalSqlDataStore extends GeneratedDatabase {
       'CREATE INDEX attendance_clientref ON attendance (client_reference_id)');
   late final Index attendanceIndividualid = Index('attendance_individualid',
       'CREATE INDEX attendance_individualid ON attendance (individual_id)');
+  late final Index addressLocalityboundarycode = Index(
+      'address_localityboundarycode',
+      'CREATE INDEX address_localityboundarycode ON address (locality_boundary_code)');
+  late final Index addressRelatedclientref = Index('address_relatedclientref',
+      'CREATE INDEX address_relatedclientref ON address (related_client_reference_id)');
+  late final Index nameGivenname = Index(
+      'name_givenname', 'CREATE INDEX name_givenname ON name (given_name)');
+  late final Index nameFamilyname = Index(
+      'name_familyname', 'CREATE INDEX name_familyname ON name (family_name)');
+  late final Index nameIndividualclientref = Index('name_individualclientref',
+      'CREATE INDEX name_individualclientref ON name (individual_client_reference_id)');
   late final Index projectClinetref = Index('project_clinetref',
       'CREATE INDEX project_clinetref ON project_beneficiary (client_reference_id)');
   late final Index projectProjectid = Index('project_projectid',
@@ -43986,6 +43997,13 @@ abstract class _$LocalSqlDataStore extends GeneratedDatabase {
   late final Index projectProjectbeneficiaryclientref = Index(
       'project_projectbeneficiaryclientref',
       'CREATE INDEX project_projectbeneficiaryclientref ON project_beneficiary (beneficiary_client_reference_id)');
+  late final Index individualClientref = Index('individual_clientref',
+      'CREATE INDEX individual_clientref ON individual (client_reference_id)');
+  late final Index identifierIdentifierid = Index('identifier_identifierid',
+      'CREATE INDEX identifier_identifierid ON identifier (identifier_id)');
+  late final Index identifierIndividualclientref = Index(
+      'identifier_individualclientref',
+      'CREATE INDEX identifier_individualclientref ON identifier (individual_client_reference_id)');
   late final Index stockClientref = Index('stock_clientref',
       'CREATE INDEX stock_clientref ON stock (client_reference_id)');
   late final Index stockProductvariantid = Index('stock_productvariantid',
@@ -44003,6 +44021,8 @@ abstract class _$LocalSqlDataStore extends GeneratedDatabase {
       'CREATE INDEX hfreferral_clientref ON h_f_referral (client_reference_id)');
   late final Index hfreferralProjectid = Index('hfreferral_projectid',
       'CREATE INDEX hfreferral_projectid ON h_f_referral (project_id)');
+  late final Index householdSelfClientref = Index('household_self_clientref',
+      'CREATE INDEX household_self_clientref ON household (client_reference_id)');
   late final Index householdmemberClinetref = Index('householdmember_clinetref',
       'CREATE INDEX householdmember_clinetref ON household_member (client_reference_id)');
   late final Index householdClientref = Index('household_clientref',
@@ -44019,6 +44039,21 @@ abstract class _$LocalSqlDataStore extends GeneratedDatabase {
   late final Index taskProjectbeneficiaryclientref = Index(
       'task_projectbeneficiaryclientref',
       'CREATE INDEX task_projectbeneficiaryclientref ON task (project_beneficiary_client_reference_id)');
+  late final Index taskStatus =
+      Index('task_status', 'CREATE INDEX task_status ON task (status)');
+  late final Index taskProjectStatus = Index('task_project_status',
+      'CREATE INDEX task_project_status ON task (project_id, status, is_deleted)');
+  late final Index taskClientmodifiedtime = Index('task_clientmodifiedtime',
+      'CREATE INDEX task_clientmodifiedtime ON task (client_modified_time)');
+  late final Index taskSearchProjectCreatedStatus = Index(
+      'task_search_project_created_status',
+      'CREATE INDEX task_search_project_created_status ON task (project_id, client_created_by, status)');
+  late final Index taskSearchProjectCreatedStatusModifiedtime = Index(
+      'task_search_project_created_status_modifiedtime',
+      'CREATE INDEX task_search_project_created_status_modifiedtime ON task (project_id, client_created_by, status, client_modified_time)');
+  late final Index taskSearchProjectCreatedStatusPlannedstart = Index(
+      'task_search_project_created_status_plannedstart',
+      'CREATE INDEX task_search_project_created_status_plannedstart ON task (project_id, client_created_by, status, planned_start_date)');
   late final Index taskresourceclinetref = Index('taskresourceclinetref',
       'CREATE INDEX taskresourceclinetref ON task_resource (client_reference_id)');
   late final Index taskresourceTaskclientref = Index(
@@ -44094,9 +44129,17 @@ abstract class _$LocalSqlDataStore extends GeneratedDatabase {
         faceAuthEvent,
         attendanceClientref,
         attendanceIndividualid,
+        addressLocalityboundarycode,
+        addressRelatedclientref,
+        nameGivenname,
+        nameFamilyname,
+        nameIndividualclientref,
         projectClinetref,
         projectProjectid,
         projectProjectbeneficiaryclientref,
+        individualClientref,
+        identifierIdentifierid,
+        identifierIndividualclientref,
         stockClientref,
         stockProductvariantid,
         stockFacilityid,
@@ -44105,6 +44148,7 @@ abstract class _$LocalSqlDataStore extends GeneratedDatabase {
         stockreconProductvariantid,
         hfreferralClientref,
         hfreferralProjectid,
+        householdSelfClientref,
         householdmemberClinetref,
         householdClientref,
         householdmemberIndividualid,
@@ -44112,6 +44156,12 @@ abstract class _$LocalSqlDataStore extends GeneratedDatabase {
         taskProjectid,
         taskProjectbeneficiaryid,
         taskProjectbeneficiaryclientref,
+        taskStatus,
+        taskProjectStatus,
+        taskClientmodifiedtime,
+        taskSearchProjectCreatedStatus,
+        taskSearchProjectCreatedStatusModifiedtime,
+        taskSearchProjectCreatedStatusPlannedstart,
         taskresourceclinetref,
         taskresourceTaskclientref,
         taskresourceProductvariantid,
