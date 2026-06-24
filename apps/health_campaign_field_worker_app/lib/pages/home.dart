@@ -24,7 +24,6 @@ import 'package:digit_location_tracker/utils/utils.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/utils/component_utils.dart';
 import 'package:digit_ui_components/widgets/atoms/digit_loader.dart';
-import 'package:drift_db_viewer/drift_db_viewer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
@@ -2467,21 +2466,6 @@ class _HomePageState extends LocalizedState<HomePage> {
           },
         ),
       ),
-      i18.home.db: homeShowcaseData.db.buildWith(
-        child: HomeItemCard(
-          icon: Icons.table_chart,
-          label: i18.home.db,
-          onPressed: () async {
-            Navigator.of(context).push(
-              MaterialPageRoute(
-                builder: (context) => DriftDbViewer(
-                  context.read<LocalSqlDataStore>(),
-                ),
-              ),
-            );
-          },
-        ),
-      ),
       i18.home.dataShare: homeShowcaseData.dataShare.buildWith(
         child: HomeItemCard(
           icon: Icons.send,
@@ -2572,7 +2556,6 @@ class _HomePageState extends LocalizedState<HomePage> {
           homeShowcaseData.hfBeneficiaryReferral.showcaseKey,
       i18.home.manageAttendanceLabel:
           homeShowcaseData.manageAttendance.showcaseKey,
-      i18.home.db: homeShowcaseData.db.showcaseKey,
       i18.home.closedHouseHoldLabel:
           homeShowcaseData.closedHouseHold.showcaseKey,
       i18.home.dashboard: homeShowcaseData.dashBoard.showcaseKey,
@@ -2581,7 +2564,6 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.beneficiaryIdLabel: homeShowcaseData.beneficiaryId
           .showcaseKey, // TODO: Uncomment when beneficiary downsync is implemented
       i18.home.dataShare: homeShowcaseData.dataShare.showcaseKey,
-      i18.home.db: homeShowcaseData.db.showcaseKey,
       i18.home.stockSyncDataLabel: homeShowcaseData.stockSyncData.showcaseKey,
       i18.home.summaryReportLabel: homeShowcaseData.summaryReport.showcaseKey,
     };
@@ -2607,26 +2589,18 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.dataShare,
       i18.home.stockSyncDataLabel,
       i18.home.summaryReportLabel,
-      i18.home.db,
     ];
 
     final List<String> filteredLabels = homeItemsLabel
-        .where((element) =>
-            state.actionsWrapper.actions
-                .map((e) => e.displayName)
-                .toList()
-                .contains(element) ||
-            element == i18.home.db)
+        .where((element) => state.actionsWrapper.actions
+            .map((e) => e.displayName)
+            .toList()
+            .contains(element))
         .toList();
 
     final showcaseKeys = filteredLabels
-        .where((f) => f != i18.home.db)
         .map((label) => homeItemsShowcaseMap[label]!)
         .toList();
-
-    if (envConfig.variables.envType == EnvType.demo && kReleaseMode) {
-      filteredLabels.remove(i18.home.db);
-    }
 
     final userRoleCodes = state.userModel.roles.map((e) => e.code).toList();
     final isDistributor =
