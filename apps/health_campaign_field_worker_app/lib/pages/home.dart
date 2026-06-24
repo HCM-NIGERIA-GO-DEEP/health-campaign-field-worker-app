@@ -1861,19 +1861,21 @@ class _HomePageState extends LocalizedState<HomePage> {
     // `false` = use local JSON (development/testing only)
     //
     // IMPORTANT: Set all flags to `true` before a production/release build.
-    const isRemoteComplaintFlows = true;
-    const isRemoteRegistrationFlows = true;
-    const isRemoteCloseHouseholdFlows = true;
-    const isRemoteInventoryFlows = true;
-    const isRemoteInventoryReportFlows = true;
-    const isRemoteStockReconciliationFlows = true;
+    // const isRemoteComplaintFlows = true;
+    // const isRemoteRegistrationFlows = true;
+    // const isRemoteCloseHouseholdFlows = true;
+    // const isRemoteInventoryFlows = true;
+    // const isRemoteInventoryReportFlows = true;
+    // const isRemoteStockReconciliationFlows = true;
+    // const isRemoteAttendanceFlows = true;
 
-    // const isRemoteComplaintFlows = false;
-    // const isRemoteRegistrationFlows = false;
-    // const isRemoteCloseHouseholdFlows = false;
-    // const isRemoteInventoryFlows = false;
-    // const isRemoteInventoryReportFlows = false;
-    // const isRemoteStockReconciliationFlows = false;
+    const isRemoteComplaintFlows = false;
+    const isRemoteRegistrationFlows = false;
+    const isRemoteCloseHouseholdFlows = false;
+    const isRemoteInventoryFlows = false;
+    const isRemoteInventoryReportFlows = false;
+    const isRemoteStockReconciliationFlows = false;
+    const isRemoteAttendanceFlows = false;
     //////
     ///
 
@@ -3597,19 +3599,45 @@ class _HomePageState extends LocalizedState<HomePage> {
                   triggerLocalization(module: module);
                   isTriggerLocalisation = false;
                 }
-                // triggerLocalization(module: moduleName);
-                Map<String, dynamic> attendanceData =
-                    attendanceFlows; // Adding custom attendance flows as the flows are not coming from the server for attendance module
-                List<Map<String, dynamic>> flowsData =
-                    (attendanceData['flows'] as List<dynamic>?)
+
+                try {
+                  if (isRemoteAttendanceFlows) {
+                    final allSchemas =
+                        json.decode(schemaJsonRaw!) as Map<String, dynamic>;
+                    final data = allSchemas['ATTENDANCE'];
+
+                    final reportsData = data?['data'];
+                    final flowsData = (reportsData['flows'] as List<dynamic>?)
                             ?.map((e) => Map<String, dynamic>.from(e as Map))
                             .toList() ??
                         [];
-                FlowRegistry.setConfig(flowsData);
-                NavigationRegistry.setupNavigation(context);
-                context.router.push(
-                  FlowBuilderHomeRoute(pageName: attendanceData["initialPage"]),
-                );
+                    FlowRegistry.setConfig(flowsData);
+                    NavigationRegistry.setupNavigation(context);
+
+                    context.router.push(
+                      FlowBuilderHomeRoute(
+                          pageName: reportsData["initialPage"]),
+                    );
+                  } else {
+                    // triggerLocalization(module: moduleName);
+                    Map<String, dynamic> attendanceData =
+                        attendanceFlows; // Adding custom attendance flows as the flows are not coming from the server for attendance module
+                    List<Map<String, dynamic>> flowsData =
+                        (attendanceData['flows'] as List<dynamic>?)
+                                ?.map(
+                                    (e) => Map<String, dynamic>.from(e as Map))
+                                .toList() ??
+                            [];
+                    FlowRegistry.setConfig(flowsData);
+                    NavigationRegistry.setupNavigation(context);
+                    context.router.push(
+                      FlowBuilderHomeRoute(
+                          pageName: attendanceData["initialPage"]),
+                    );
+                  }
+                } catch (e) {
+                  debugPrint('error $e');
+                }
               }));
 
               // if (false) {

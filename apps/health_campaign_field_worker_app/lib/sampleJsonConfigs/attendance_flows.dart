@@ -1,6 +1,6 @@
 final dynamic attendanceFlows = {
   "name": "ATTENDANCE",
-  "initialPage": "manageAttendance",
+  "initialPage": "markAttendance",
   "order": 9,
   "project": "LLIN-mz",
   "version": 1,
@@ -734,65 +734,6 @@ final dynamic attendanceFlows = {
                 "fieldName": "attendanceStatus",
                 "label": "{{fn:attendanceStatus(widgetData, item)}}",
               },
-              // Manual Buttons
-              // {
-              //   "type": "template",
-              //   "format": "customRow",
-              //   "properties": {
-              //     "mainAxisAlignment": "start",
-              //     "crossAxisAlignment": "stretch",
-              //     "spacing": "spacer3"
-              //   },
-              //   "children": [
-              //     {
-              //       "type": "template",
-              //       "format": "expanded",
-              //       "child": {
-              //         "fieldKey": "{{item.individualId}}",
-              //         "fieldValue": "absent",
-              //         "groupKey": "attendanceCollection",
-              //         "type": "template",
-              //         "format": "selectButton",
-              //         "label": "ABSENT",
-              //         "prefixIcon": "Close",
-              //         "properties": {
-              //           "color": "red",
-              //           "type": "secondary",
-              //           "selectedType": "primary",
-              //           "size": "small",
-              //           "mainAxisAlignment": "center"
-              //         },
-              //         "onAction": [
-              //           {"actionType": "CLOSE_POPUP", "properties": {}},
-              //         ]
-              //       }
-              //     },
-              //     {
-              //       "type": "template",
-              //       "format": "expanded",
-              //       "child": {
-              //         "fieldKey": "{{item.individualId}}",
-              //         "fieldValue": "present",
-              //         "groupKey": "attendanceCollection",
-              //         "type": "template",
-              //         "format": "selectButton",
-              //         "label": "PRESENT",
-              //         "prefixIcon": "Check",
-              //         "properties": {
-              //           "color": "green",
-              //           "type": "secondary",
-              //           "selectedType": "primary",
-              //           "size": "small",
-              //           "mainAxisAlignment": "center"
-              //         },
-              //         "onAction": [
-              //           {"actionType": "CLOSE_POPUP", "properties": {}},
-              //         ]
-              //       }
-              //     },
-              //   ]
-              // },
-              //Signature Button
               {
                 "type": "template",
                 "format": "customRow",
