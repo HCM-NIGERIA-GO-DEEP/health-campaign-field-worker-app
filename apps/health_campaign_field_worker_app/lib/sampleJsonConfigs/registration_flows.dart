@@ -2944,8 +2944,7 @@ final dynamic sampleFlows = {
             },
             {
               "type": "string",
-              "label":
-                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual",
+              "label": "HOUSEHOLD_FIRST_NAME",
               "order": 2,
               "value": "",
               "format": "text",
@@ -2996,8 +2995,7 @@ final dynamic sampleFlows = {
             },
             {
               "type": "string",
-              "label":
-                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_lastName",
+              "label": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_lastName",
               "order": 2,
               "value": "",
               "format": "text",
@@ -3016,10 +3014,7 @@ final dynamic sampleFlows = {
               "schemaCode": null,
               "systemDate": false,
               "validations": [
-                {
-                  "type": "required",
-                  "value": false
-                }
+                {"type": "required", "value": false}
               ],
               "errorMessage": "",
               "isMultiSelect": false
