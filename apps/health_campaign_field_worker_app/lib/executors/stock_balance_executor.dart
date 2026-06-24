@@ -120,6 +120,9 @@ class StockBalanceExecutor extends ActionExecutor {
         facilityId = currentFacilities.first.facilityId;
       } else {
         facilityId = stockEntities.first.facilityId;
+        if (facilityId == null || facilityId.isEmpty) {
+          facilityId = StockBalanceCache.instance.hfsFacilityId;
+        }
       }
     }
 
@@ -263,6 +266,8 @@ class StockBalanceExecutor extends ActionExecutor {
 
       if (currentFacilities.isNotEmpty) {
         facilityId = currentFacilities.first.facilityId;
+      } else {
+        facilityId = StockBalanceCache.instance.hfsFacilityId;
       }
     }
 

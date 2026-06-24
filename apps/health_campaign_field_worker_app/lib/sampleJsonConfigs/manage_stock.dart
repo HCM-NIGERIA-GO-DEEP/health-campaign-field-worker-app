@@ -102,12 +102,39 @@ final dynamic sampleInventoryFlows = {
           "icon": "FileUpload",
           "onAction": [
             {
-              "actionType": "NAVIGATION",
-              "properties": {
-                "type": "TEMPLATE",
-                "name": "incomingTransactions",
-                "data": []
-              }
+              "condition": {
+                "expression": "{{fn:hasRole('WAREHOUSE_MANAGER')}} == true"
+              },
+              "actions": [
+                {
+                  "actionType": "NAVIGATION",
+                  "properties": {
+                    "type": "FORM",
+                    "name": "RECORDSTOCK",
+                    "data": [
+                      {"key": "stockEntryType", "value": "RECEIPT"},
+                      {"key": "transactionType", "value": "RECEIVED"},
+                      {"key": "primaryRole", "value": "RECEIVER"},
+                      {"key": "secondaryRole", "value": "SENDER"}
+                    ]
+                  }
+                }
+              ]
+            },
+            {
+              "condition": {
+                "expression": "{{fn:hasRole('WAREHOUSE_MANAGER')}} == false"
+              },
+              "actions": [
+                {
+                  "actionType": "NAVIGATION",
+                  "properties": {
+                    "type": "TEMPLATE",
+                    "name": "incomingTransactions",
+                    "data": []
+                  }
+                }
+              ]
             }
           ]
         },
@@ -565,8 +592,8 @@ final dynamic sampleInventoryFlows = {
                       //   "forIssue": ["Health Facility"]
                       // },
                       "Health Facility": {
-                        "forReceipt": ["State Facility"],
-                        "forIssue": ["DELIVERY_TEAM"]
+                        "forReceipt": ["Central Facility", "Health Facility"],
+                        "forIssue": ["DELIVERY_TEAM", "Central Facility"]
                       }
                     },
                     "useTransactionType": true
@@ -707,8 +734,8 @@ final dynamic sampleInventoryFlows = {
                         "forIssue": ["Health Facility"]
                       },
                       "Health Facility": {
-                        "forReceipt": ["LGA Facility"],
-                        "forIssue": ["DELIVERY_TEAM"]
+                        "forReceipt": ["Central Facility", "Health Facility"],
+                        "forIssue": ["DELIVERY_TEAM", "Central Facility"]
                       }
                     },
                     "useTransactionType": true
@@ -1518,8 +1545,8 @@ final dynamic sampleInventoryFlows = {
                         "forIssue": ["Health Facility"]
                       },
                       "Health Facility": {
-                        "forReceipt": ["LGA Facility"],
-                        "forIssue": ["DELIVERY_TEAM"]
+                        "forReceipt": ["Central Facility", "Health Facility"],
+                        "forIssue": ["DELIVERY_TEAM", "Central Facility"]
                       }
                     },
                     "useTransactionType": true
@@ -1681,8 +1708,8 @@ final dynamic sampleInventoryFlows = {
                         "forIssue": ["Health Facility"]
                       },
                       "Health Facility": {
-                        "forReceipt": ["LGA Facility"],
-                        "forIssue": ["DELIVERY_TEAM"]
+                        "forReceipt": ["Central Facility", "Health Facility"],
+                        "forIssue": ["DELIVERY_TEAM", "Central Facility"]
                       }
                     },
                     "useTransactionType": true
@@ -2110,7 +2137,7 @@ final dynamic sampleInventoryFlows = {
                   "type": "template",
                   "fieldName": "viewTransactionGroupedItemText",
                   "value":
-                      "{{item.additionalFields.fields.sku}}: {{fn:mlToBottles(item.quantity)}}"
+                      "{{item.additionalFields.fields.sku}}: {{item.quantity}}"
                 }
               },
               {
@@ -2246,7 +2273,7 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key":
                         "{{fn:getQuantityLabel(item.additionalFields.fields.sku)}}",
-                    "value": "{{fn:mlToBottles(item.quantity)}}"
+                    "value": "{{item.quantity}}"
                   },
                   {
                     "key": "INVENTORY_COMMENTS_LABEL",
@@ -2275,7 +2302,37 @@ final dynamic sampleInventoryFlows = {
           ]
         }
       ],
-      "footer": [],
+      "footer": [
+        {
+          "format": "button",
+          "type": "template",
+          "fieldName": "recordReceiptManuallyButton",
+          "label": "INVENTORY_RECORD_RECEIPT_MANUALLY",
+          "properties": {
+            "type": "primary",
+            "size": "large",
+            "mainAxisSize": "max",
+            "mainAxisAlignment": "center"
+          },
+          "onAction": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "type": "FORM",
+                "name": "RECORDSTOCK",
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "RECORDSTOCK",
+                "data": [
+                  {"key": "stockEntryType", "value": "RECEIPT"},
+                  {"key": "transactionType", "value": "RECEIVED"},
+                  {"key": "primaryRole", "value": "RECEIVER"},
+                  {"key": "secondaryRole", "value": "SENDER"}
+                ]
+              }
+            }
+          ]
+        }
+      ],
       "initActions": [
         {
           "actionType": "SEARCH_EVENT",
@@ -2421,7 +2478,7 @@ final dynamic sampleInventoryFlows = {
                   "type": "template",
                   "fieldName": "incomingTransactionsGroupedItemText",
                   "value":
-                      "{{item.additionalFields.fields.sku}}: {{fn:mlToBottles(item.quantity)}}"
+                      "{{item.additionalFields.fields.sku}}: {{item.quantity}}"
                 }
               },
               {
@@ -2460,8 +2517,7 @@ final dynamic sampleInventoryFlows = {
                         },
                         {
                           "key": "quantity",
-                          "value":
-                              "{{fn:mlToBottles(item.items[0].quantity)}}"
+                          "value": "{{fn:mlToBottles(item.items[0].quantity)}}"
                         },
                         {
                           "key": "wayBillNumber",

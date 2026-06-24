@@ -97,6 +97,47 @@ class _HomePageState extends LocalizedState<HomePage> {
   final StreamController<double> stockDownloadProgress =
       StreamController<double>.broadcast();
 
+  Future<void> _resolveHfsFacilityId() async {
+    try {
+      final userRoles = context.loggedInUserRoles;
+      final isWareHouseMgr = userRoles.any((role) => role.code == RolesType.warehouseManager.toValue());
+      if (isWareHouseMgr) {
+        final projectFacilityRepo = context.read<
+            LocalRepository<ProjectFacilityModel, ProjectFacilitySearchModel>>();
+        final pfList = await projectFacilityRepo.search(
+          ProjectFacilitySearchModel(projectId: [context.projectId]),
+        );
+        if (pfList.isEmpty) {
+          final facilityRepo = context.read<LocalRepository<FacilityModel, FacilitySearchModel>>();
+          final facilities = await facilityRepo.search(FacilitySearchModel(tenantId: envConfig.variables.tenantId));
+          final userBoundary = LeastLevelBoundarySingleton().boundary?.firstOrNull;
+          if (userBoundary != null) {
+            final matchedFacility = facilities.firstWhereOrNull(
+              (facility) => facility.address?.locality?.code == userBoundary,
+            );
+            if (matchedFacility != null) {
+              StockBalanceCache.instance.hfsFacilityId = matchedFacility.id;
+              debugPrint('Resolved HFS Standalone Facility ID: ${matchedFacility.id}');
+              return;
+            }
+          }
+        } else {
+          final currentPf = pfList.firstWhereOrNull((pf) {
+            final facilityLevel = pf.additionalFields?.fields
+                .where((f) => f.key == 'facilityLevel')
+                .firstOrNull
+                ?.value;
+            return facilityLevel == null || facilityLevel == 'current';
+          }) ?? pfList.first;
+          StockBalanceCache.instance.hfsFacilityId = currentPf.facilityId;
+          debugPrint('Resolved HFS Project Facility ID from API: ${currentPf.facilityId}');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error resolving HFS facility ID: $e');
+    }
+  }
+
   @override
   initState() {
     super.initState();
@@ -2117,6 +2158,7 @@ class _HomePageState extends LocalizedState<HomePage> {
           icon: Icons.store_mall_directory,
           label: i18.home.manageStockLabel,
           onPressed: () async {
+            await _resolveHfsFacilityId();
             FlowBuilderSingleton().setBoundary(
                 boundary: BoundaryModel(
                     code: LeastLevelBoundarySingleton().boundary?.first));
@@ -2177,6 +2219,7 @@ class _HomePageState extends LocalizedState<HomePage> {
           icon: Icons.menu_book,
           label: i18.home.stockReconciliationLabel,
           onPressed: () async {
+            await _resolveHfsFacilityId();
             FlowBuilderSingleton().setBoundary(
                 boundary: BoundaryModel(
                     code: LeastLevelBoundarySingleton().boundary?.first));

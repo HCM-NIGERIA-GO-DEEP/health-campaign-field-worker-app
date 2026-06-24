@@ -53,17 +53,15 @@ class FunctionRegistries {
     FunctionRegistry.register('bottlesToMl', (args, stateData) {
       if (args.isEmpty) return 0;
       final raw = args.first;
-      final bottles = (raw is num)
-          ? raw
-          : num.tryParse(raw?.toString() ?? '') ?? 0;
+      final bottles =
+          (raw is num) ? raw : num.tryParse(raw?.toString() ?? '') ?? 0;
       return bottles * 30;
     });
 
     FunctionRegistry.register('mlToBottles', (args, stateData) {
       if (args.isEmpty) return 0;
       final raw = args.first;
-      final ml =
-          (raw is num) ? raw : num.tryParse(raw?.toString() ?? '') ?? 0;
+      final ml = (raw is num) ? raw : num.tryParse(raw?.toString() ?? '') ?? 0;
       final bottles = ml / 30;
       final rounded = bottles.roundToDouble();
       return bottles == rounded ? rounded.toInt() : bottles;
@@ -233,6 +231,12 @@ class FunctionRegistries {
   }
 
   void _registerFacilityFunctions() {
+    // TODO: Facility ID should be fetched from backend as part of user profile or project facility data
+    // The backend should provide:
+    // 1. User's assigned facility ID in the user profile response
+    // 2. Central facility ID in the project facilities data (marked with facilityLevel: 'parent')
+    // 3. All facility IDs should follow the format 'F-XXXXX' for sync compatibility
+    // Current implementation uses fallbacks until backend provides this data
     FunctionRegistry.register('getUserFacilityId', (args, stateData) {
       final isDistributor = context.loggedInUserRoles
           .where((role) => role.code == RolesType.distributor.toValue())
@@ -242,6 +246,10 @@ class FunctionRegistries {
           .where((role) => role.code == RolesType.warehouseManager.toValue())
           .toList()
           .isNotEmpty;
+      if (isWareHouseMgr &&
+          StockBalanceCache.instance.hfsFacilityId.isNotEmpty) {
+        return StockBalanceCache.instance.hfsFacilityId;
+      }
       if (isDistributor && !isWareHouseMgr) {
         return context.loggedInUserUuid ?? '';
       }
@@ -250,6 +258,7 @@ class FunctionRegistries {
         if (stateData?.modelMap != null) {
           projectFacilities = stateData!.modelMap['ProjectFacilityModel'];
         }
+
         if (projectFacilities == null || projectFacilities.isEmpty) {
           final manageStockState = FlowCrudStateRegistry().get('manageStock');
           final base = manageStockState?.base;
@@ -266,6 +275,10 @@ class FunctionRegistries {
           }
         }
         if (projectFacilities == null || projectFacilities.isEmpty) {
+          if (isWareHouseMgr &&
+              StockBalanceCache.instance.hfsFacilityId.isNotEmpty) {
+            return StockBalanceCache.instance.hfsFacilityId;
+          }
           return '';
         }
         for (var facility in projectFacilities) {
@@ -274,9 +287,17 @@ class FunctionRegistries {
             return facilityId;
           }
         }
+        if (isWareHouseMgr &&
+            StockBalanceCache.instance.hfsFacilityId.isNotEmpty) {
+          return StockBalanceCache.instance.hfsFacilityId;
+        }
         return '';
       } catch (e) {
         debugPrint('getUserFacilityId error: $e');
+        if (isWareHouseMgr &&
+            StockBalanceCache.instance.hfsFacilityId.isNotEmpty) {
+          return StockBalanceCache.instance.hfsFacilityId;
+        }
         return '';
       }
     });
@@ -657,10 +678,13 @@ class StockBalanceCache {
   static StockBalanceCache get instance => _instance;
 
   String _facilityId = '';
+  String _hfsFacilityId = '';
   final Map<String, double> _cache = {};
   dynamic _stockCheckResult;
 
   String get facilityId => _facilityId;
+  String get hfsFacilityId => _hfsFacilityId;
+  set hfsFacilityId(String val) => _hfsFacilityId = val;
   Map<String, double> get cache => _cache;
   dynamic get stockCheckResult => _stockCheckResult;
 
@@ -677,6 +701,7 @@ class StockBalanceCache {
 
   void clear() {
     _facilityId = '';
+    _hfsFacilityId = '';
     _cache.clear();
     _stockCheckResult = null;
   }

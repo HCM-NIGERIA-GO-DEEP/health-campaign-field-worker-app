@@ -909,7 +909,7 @@ final jsonConfig = {
             "primaryRole": "__context:primaryRole",
             "secondaryRole": "__context:secondaryRole",
             "status":
-                "__switch:__context:stockEntryType:{ISSUED:__value:IN_TRANSIT,RETURNED:__value:IN_TRANSIT,LOSS:__value:LOST,DAMAGED:__value:DAMAGED}",
+                "__switch:__context:stockEntryType:{RECEIPT:__value:RECEIVED,ISSUED:__value:IN_TRANSIT,RETURNED:__value:IN_TRANSIT,LOSS:__value:LOST,DAMAGED:__value:DAMAGED,default:__value:null}",
             "scanResource": "stockProductDetails.scanResource",
             "quantityWastage": "stockProductDetails.quantityWastage",
             "quantityPartialUsed": "stockProductDetails.quantityPartialUsed"

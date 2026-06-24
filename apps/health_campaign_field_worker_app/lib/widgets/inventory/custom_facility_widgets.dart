@@ -1,5 +1,8 @@
 import 'package:digit_data_model/models/entities/project_facility.dart';
+import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/blocs/flow_crud_bloc.dart';
+import 'package:digit_flow_builder/utils/function_registry.dart';
+import 'package:digit_flow_builder/utils/interpolation.dart';
 import 'package:digit_forms_engine/blocs/forms/forms.dart';
 import 'package:digit_forms_engine/models/property_schema/property_schema.dart';
 import 'package:digit_forms_engine/widgets/base_reactive_field_wrapper.dart';
@@ -10,6 +13,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import '../../models/entities/roles_type.dart';
 import '../../utils/extensions/extensions.dart';
+import '../../utils/least_level_boundary_singleton.dart';
 import '../localized.dart';
 
 class FacilityCard extends LocalizedStatefulWidget {
@@ -31,6 +35,116 @@ class FacilityCard extends LocalizedStatefulWidget {
 }
 
 class _FacilityCardState extends LocalizedState<FacilityCard> {
+  List<ProjectFacilityModel> _localProjectFacilities = [];
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadProjectFacilities();
+  }
+
+  Future<void> _loadProjectFacilities() async {
+    try {
+      final projectFacilityRepo = context.read<
+          LocalRepository<ProjectFacilityModel, ProjectFacilitySearchModel>>();
+      var pfList = await projectFacilityRepo.search(
+        ProjectFacilitySearchModel(projectId: [context.projectId]),
+      );
+
+      final isWareHouseMgr = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.warehouseManager.toValue());
+      if (isWareHouseMgr) {
+        final hasParent = pfList.any((e) {
+          final facilityLevel = e.additionalFields?.fields
+              .where((f) => f.key == 'facilityLevel')
+              .firstOrNull
+              ?.value;
+          return facilityLevel == 'parent';
+        });
+
+        if (!hasParent) {
+          final facilityRepo = context
+              .read<LocalRepository<FacilityModel, FacilitySearchModel>>();
+          final facilities = await facilityRepo.search(
+              FacilitySearchModel(tenantId: context.selectedProject.tenantId));
+          final userBoundary =
+              LeastLevelBoundarySingleton().boundary?.firstOrNull;
+          String? parentBoundaryCode;
+          if (userBoundary != null) {
+            try {
+              final boundaryRepo = context
+                  .read<LocalRepository<BoundaryModel, BoundarySearchModel>>();
+              final boundaries = await boundaryRepo
+                  .search(BoundarySearchModel(codes: userBoundary));
+              final userBoundaryModel = boundaries.firstOrNull;
+              if (userBoundaryModel != null &&
+                  userBoundaryModel.materializedPath != null) {
+                final pathList = userBoundaryModel.materializedPathList;
+                if (pathList.length >= 2) {
+                  parentBoundaryCode = pathList[pathList.length - 2];
+                }
+              }
+            } catch (_) {}
+          }
+
+          if (pfList.isEmpty) {
+            pfList = facilities.map((facility) {
+              final isCurrent = userBoundary != null &&
+                  facility.address?.locality?.code == userBoundary;
+              final isParent = parentBoundaryCode != null &&
+                  facility.address?.locality?.code == parentBoundaryCode;
+              final facilityLevel =
+                  isCurrent ? 'current' : (isParent ? 'parent' : 'child');
+              return ProjectFacilityModel(
+                id: facility.id,
+                facilityId: facility.id,
+                projectId: context.projectId,
+                additionalFields: ProjectFacilityAdditionalFields(
+                  version: 1,
+                  fields: [
+                    AdditionalField('facilityLevel', facilityLevel),
+                  ],
+                ),
+              );
+            }).toList();
+          } else if (parentBoundaryCode != null) {
+            FacilityModel? parentFacilityModel;
+            for (final facility in facilities) {
+              if (facility.address?.locality?.code == parentBoundaryCode) {
+                parentFacilityModel = facility;
+                break;
+              }
+            }
+            if (parentFacilityModel != null) {
+              pfList = [
+                ...pfList,
+                ProjectFacilityModel(
+                  id: parentFacilityModel.id,
+                  facilityId: parentFacilityModel.id,
+                  projectId: context.projectId,
+                  additionalFields: ProjectFacilityAdditionalFields(
+                    version: 1,
+                    fields: [
+                      AdditionalField('facilityLevel', 'parent'),
+                    ],
+                  ),
+                )
+              ];
+            }
+          }
+        }
+      }
+
+      if (mounted) {
+        setState(() {
+          _localProjectFacilities = pfList;
+        });
+      }
+    } catch (e) {
+      // Silently ignore
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final pages =
@@ -71,6 +185,7 @@ class _FacilityCardState extends LocalizedState<FacilityCard> {
           stateData: widget.stateData,
           pageSchema: widget.schemaName,
           localizations: localizations,
+          localProjectFacilities: _localProjectFacilities,
         );
       },
     );
@@ -84,6 +199,7 @@ class _FacilityCardContent extends StatelessWidget {
   final String pageSchema;
   final dynamic stateData;
   final dynamic localizations;
+  final List<ProjectFacilityModel> localProjectFacilities;
 
   const _FacilityCardContent({
     required this.formKey,
@@ -92,6 +208,7 @@ class _FacilityCardContent extends StatelessWidget {
     required this.pageSchema,
     required this.stateData,
     required this.localizations,
+    required this.localProjectFacilities,
   });
 
   String _normalizeHierarchyValue(String? value) {
@@ -173,9 +290,75 @@ class _FacilityCardContent extends StatelessWidget {
         : null;
   }
 
+  bool _allowsCentralFacilityFromValidation({
+    required String transactionType,
+    String? currentUserBoundaryType,
+  }) {
+    final validations = fieldSchema.validations;
+    if (validations == null || validations.isEmpty) return false;
+
+    final mode =
+        (transactionType == 'DISPATCHED' || transactionType == 'ISSUED')
+            ? 'forIssue'
+            : 'forReceipt';
+    final normalizedBoundaryType =
+        _normalizeHierarchyValue(currentUserBoundaryType);
+
+    for (final validation in validations) {
+      if (validation.type != 'facilityHierarchy') continue;
+
+      final rawValue = validation.value;
+      if (rawValue is! Map) continue;
+
+      final rawHierarchy = rawValue['hierarchyMapping'];
+      if (rawHierarchy is! Map) continue;
+
+      for (final mappingEntry in rawHierarchy.entries) {
+        final levelConfig = mappingEntry.value;
+        if (levelConfig is! Map) continue;
+
+        final hierarchyLevel = _normalizeHierarchyValue(
+          mappingEntry.key?.toString(),
+        );
+        final shouldCheckEntry = normalizedBoundaryType.isEmpty ||
+            hierarchyLevel == normalizedBoundaryType;
+        if (!shouldCheckEntry) continue;
+
+        final options = levelConfig[mode];
+        if (options is! List) continue;
+
+        final hasCentralFacility = options
+            .map((e) => e?.toString())
+            .whereType<String>()
+            .any((entry) =>
+                entry.replaceAll(" ", "").toUpperCase() == 'CENTRALFACILITY');
+
+        if (hasCentralFacility) {
+          return true;
+        }
+      }
+    }
+
+    return false;
+  }
+
   String _getDisplayName(String facilityId, String? deliveryTeamCode) {
     if (facilityId == deliveryTeamCode) {
       return localizations.translate('DELIVERY_TEAM');
+    }
+    if (facilityId == 'Central Facility' ||
+        facilityId == 'F-CENTRAL-FACILITY') {
+      return localizations.translate('Central Facility');
+    }
+    final parentFacility = localProjectFacilities.where((e) {
+      final facilityLevel = e.additionalFields?.fields
+          .where((f) => f.key == 'facilityLevel')
+          .firstOrNull
+          ?.value;
+      return facilityLevel == 'parent';
+    }).firstOrNull;
+    if (parentFacility != null && facilityId == parentFacility.facilityId) {
+      return localizations.translate('Central Facility');
     }
     final isUuid = facilityId.contains('-') && !facilityId.startsWith('F-');
     return isUuid ? facilityId : localizations.translate('FAC_$facilityId');
@@ -183,10 +366,18 @@ class _FacilityCardContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final navigationParams =
+    var navigationParams =
         FlowCrudStateRegistry().getNavigationParams('FORM::$pageSchema') ??
-            FlowCrudStateRegistry().getNavigationParams(pageSchema) ??
-            {};
+            FlowCrudStateRegistry().getNavigationParams(pageSchema);
+    if (navigationParams == null || navigationParams.isEmpty) {
+      navigationParams =
+          FlowCrudStateRegistry().getNavigationParams('FORM::RECORDSTOCK') ??
+              FlowCrudStateRegistry().getNavigationParams('RECORDSTOCK') ??
+              FlowCrudStateRegistry()
+                  .getNavigationParams('FORM::RECORDLESSEXCESS') ??
+              FlowCrudStateRegistry().getNavigationParams('RECORDLESSEXCESS');
+    }
+    navigationParams ??= {};
     final transactionType =
         navigationParams['transactionType']?.toString() ?? '';
     final stockEntryType = navigationParams['stockEntryType']?.toString() ?? '';
@@ -234,16 +425,51 @@ class _FacilityCardContent extends StatelessWidget {
             wrapperData.whereType<ProjectFacilityModel>().toList();
       }
     }
-    projectFacilities ??= [];
+    if (projectFacilities == null || projectFacilities.isEmpty) {
+      projectFacilities = localProjectFacilities;
+    }
 
     final labelFromSchema = fieldSchema.label ?? fieldSchema.innerLabel;
 
     final isToField = formKey == 'facilityToWhich';
     final isFromField = formKey == 'facilityFromWhich';
 
+    final stateDataForRegistry =
+        stateData is CrudStateData ? stateData : CrudStateData({}, []);
+    final userFacilityId = FunctionRegistry.call(
+      'getUserFacilityId',
+      [],
+      stateDataForRegistry,
+    )?.toString();
+
+    // final hasParentFacility = projectFacilities.any((e) =>
+    //     (e as ProjectFacilityModel)
+    //         .additionalFields
+    //         ?.fields
+    //         .any((f) => f.key == 'facilityLevel' && f.value == 'parent') ??
+    //     false);
+    // HFS user has WAREHOUSE_MANAGER role and should act as a standalone warehouse
+    final isHfsStandalone = isWareHouseMgr;
+
     // Filter facilities
     final filteredFacilities = projectFacilities.where((e) {
       final model = e as ProjectFacilityModel;
+
+      if (isHfsStandalone) {
+        if (isFromField &&
+            (transactionType == 'DISPATCHED' ||
+                transactionType == 'ISSUED' ||
+                isReturnFlow ||
+                isLessExcessFlow)) {
+          return model.facilityId == userFacilityId;
+        }
+        if (isToField &&
+            ((transactionType == 'RECEIVED' || transactionType == 'RECEIPT') ||
+                isLessExcessFlow)) {
+          return model.facilityId == userFacilityId;
+        }
+      }
+
       final facilityLevel = model.additionalFields?.fields
           .where((f) => f.key == 'facilityLevel')
           .firstOrNull
@@ -252,12 +478,16 @@ class _FacilityCardContent extends StatelessWidget {
       if (facilityLevel == null) return true;
 
       if (isLessExcessFlow) {
-        if (isToField) return facilityLevel == 'parent';
+        if (isToField)
+          return isHfsStandalone
+              ? facilityLevel == 'current'
+              : facilityLevel == 'parent';
         if (isFromField && !isWareHouseMgr) return false;
         if (isFromField) return facilityLevel == 'current';
       } else if (isReturnFlow) {
         if (isToField && !isWareHouseMgr) return facilityLevel == 'current';
-        if (isToField) return facilityLevel == 'parent';
+        if (isToField)
+          return isHfsStandalone ? false : facilityLevel == 'parent';
         if (isFromField) return facilityLevel == 'current';
       } else if (transactionType == 'DISPATCHED' ||
           transactionType == 'ISSUED') {
@@ -265,12 +495,17 @@ class _FacilityCardContent extends StatelessWidget {
         if (isFromField) return facilityLevel == 'current';
       } else if (transactionType == 'RECEIVED' ||
           transactionType == 'RECEIPT') {
-        if (isToField) return facilityLevel == 'parent';
-        if (isFromField) return facilityLevel == 'parent';
+        if (isToField)
+          return isHfsStandalone
+              ? facilityLevel == 'current'
+              : facilityLevel == 'parent';
+        if (isFromField)
+          return isHfsStandalone ? false : facilityLevel == 'parent';
       } else if (stockEntryType == 'LOSS' || stockEntryType == 'DAMAGED') {
         // For loss and damaged, to field should show parent facility
         if (isToField && !isWareHouseMgr) return facilityLevel == 'current';
-        if (isToField) return facilityLevel == 'parent';
+        if (isToField)
+          return isHfsStandalone ? false : facilityLevel == 'parent';
         if (isFromField) return facilityLevel == 'current';
       }
 
@@ -286,12 +521,12 @@ class _FacilityCardContent extends StatelessWidget {
     var facilities = <DropdownItem>[];
 
     final showDeliveryTeam = (hasDeliveryTeamInConfig ||
-            (isToField && hasDeliveryTeamInValidation)) &&
+            (isToField && (hasDeliveryTeamInValidation || isHfsStandalone))) &&
         ((isToField &&
                 !isReturnFlow &&
                 (transactionType == 'DISPATCHED' ||
                     transactionType == 'ISSUED') &&
-                (!isWareHouseMgr || hasNoChildFacilities)) ||
+                (!isWareHouseMgr || hasNoChildFacilities || isHfsStandalone)) ||
             (isFromField &&
                 !isWareHouseMgr &&
                 (isReturnFlow || isLessExcessFlow)));
@@ -302,13 +537,67 @@ class _FacilityCardContent extends StatelessWidget {
       ));
     }
 
+    final hasCentralFacilityInValidation = _allowsCentralFacilityFromValidation(
+      transactionType: transactionType,
+      currentUserBoundaryType: currentUserBoundaryType,
+    );
+    final showCentralFacility = (isFromField &&
+            (transactionType == 'RECEIVED' || transactionType == 'RECEIPT') &&
+            (isHfsStandalone || hasCentralFacilityInValidation)) ||
+        (isToField &&
+            isReturnFlow &&
+            (isHfsStandalone || hasCentralFacilityInValidation));
+
+    final parentFacility = projectFacilities.where((e) {
+      final model = e as ProjectFacilityModel;
+      final facilityLevel = model.additionalFields?.fields
+          .where((f) => f.key == 'facilityLevel')
+          .firstOrNull
+          ?.value;
+      return facilityLevel == 'parent';
+    }).firstOrNull as ProjectFacilityModel?;
+    final parentFacilityId = parentFacility?.facilityId;
+
+    // Fallback: Try to get central facility from facilities list by checking usage field
+    String? centralFacilityId = parentFacilityId;
+    if (centralFacilityId == null) {
+      // Try to find a facility with usage "Central Facility" from stateData
+      try {
+        final facilityModels = stateData?.modelMap['FacilityModel'];
+        if (facilityModels != null && facilityModels.isNotEmpty) {
+          final centralFacility = facilityModels.where((f) {
+            final usage = f['usage']?.toString().toLowerCase();
+            return usage == 'central facility';
+          }).firstOrNull;
+          centralFacilityId = centralFacility?['id']?.toString();
+        }
+      } catch (_) {
+        // Silently ignore if fetch fails
+      }
+    }
+
+    final hasParentInFiltered = centralFacilityId != null &&
+        filteredFacilities.any(
+            (e) => (e as ProjectFacilityModel).facilityId == centralFacilityId);
+
+    if (showCentralFacility && !hasParentInFiltered) {
+      facilities.add(DropdownItem(
+        code: centralFacilityId ?? 'F-CENTRAL-FACILITY',
+        name: localizations.translate('Central Facility'),
+      ));
+    }
+
     facilities.addAll(filteredFacilities.map((e) {
       final model = e as ProjectFacilityModel;
       final facilityId = model.facilityId;
       final isUuid = facilityId.contains('-') && !facilityId.startsWith('F-');
       return DropdownItem(
         code: facilityId,
-        name: isUuid ? facilityId : localizations.translate('FAC_$facilityId'),
+        name: facilityId == parentFacilityId
+            ? localizations.translate('Central Facility')
+            : (isUuid
+                ? facilityId
+                : localizations.translate('FAC_$facilityId')),
       );
     }).toList());
 
@@ -399,6 +688,27 @@ class _FacilityCardContent extends StatelessWidget {
                     context: context,
                     key: formKey,
                     value: currentFacility,
+                  ),
+                );
+          });
+        }
+
+        // Auto-prefill single option for both fields (especially for standalone receipt)
+        if ((isToField || isFromField) &&
+            (selectedValue == null || selectedValue.isEmpty) &&
+            facilities.length == 1) {
+          final singleFacility = facilities.first.code;
+          selectedValue = singleFacility;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            field.control.value = singleFacility;
+            field.control.markAsTouched();
+            field.control.markAsDirty();
+            context.read<FormsBloc>().add(
+                  FormsEvent.updateField(
+                    schemaKey: pageSchema,
+                    context: context,
+                    key: formKey,
+                    value: singleFacility,
                   ),
                 );
           });

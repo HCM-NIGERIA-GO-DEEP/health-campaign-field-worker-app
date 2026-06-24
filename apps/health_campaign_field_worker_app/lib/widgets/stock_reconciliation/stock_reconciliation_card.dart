@@ -71,6 +71,8 @@ class _StockReconciliationCardState
   List<FacilityModel> _cachedFacilities = [];
   List<ProductVariantModel> _cachedProductVariants = [];
 
+  List<ProductVariantModel> _localProductVariants = [];
+
   // Track if fields have been touched (for showing validation errors)
   bool _facilityTouched = false;
   bool _productTouched = false;
@@ -91,6 +93,41 @@ class _StockReconciliationCardState
         _resetFormFields();
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadProductVariants();
+  }
+
+  Future<void> _loadProductVariants() async {
+    try {
+      final projectResourceRepo = context.read<
+          LocalRepository<ProjectResourceModel, ProjectResourceSearchModel>>();
+      final projectResources = await projectResourceRepo.search(
+        ProjectResourceSearchModel(projectId: [context.projectId]),
+      );
+
+      final productVariantIds = projectResources
+          .map((pr) => pr.resource.productVariantId)
+          .whereType<String>()
+          .toSet()
+          .toList();
+
+      final productVariantRepo = context.read<
+          LocalRepository<ProductVariantModel, ProductVariantSearchModel>>();
+      final productVariants = await productVariantRepo.search(
+        ProductVariantSearchModel(id: productVariantIds),
+      );
+      if (mounted) {
+        setState(() {
+          _localProductVariants = productVariants;
+        });
+      }
+    } catch (e) {
+      // Silently ignore
+    }
   }
 
   /// Reset form fields to clear any previous session values
@@ -534,7 +571,7 @@ class _StockReconciliationCardState
       List<dynamic>? projectFacilities;
       List<dynamic>? allFacilities;
 
-      if (stateWrapper is List && stateWrapper.isNotEmpty) {
+      if (stateWrapper.isNotEmpty) {
         final firstItem = stateWrapper.first;
         if (firstItem is Map) {
           final wrapperList = stateWrapper as List<Map<String, List<dynamic>>>;
@@ -546,6 +583,9 @@ class _StockReconciliationCardState
             (m) => m.containsKey('FacilityModel'),
             orElse: () => {'FacilityModel': []},
           )['FacilityModel'];
+        } else {
+          projectFacilities = stateWrapper.whereType<ProjectFacilityModel>().toList();
+          allFacilities = stateWrapper.whereType<FacilityModel>().toList();
         }
       }
 
@@ -587,20 +627,22 @@ class _StockReconciliationCardState
     try {
       // Access data from FlowCrudState's stateWrapper
       final stateWrapper = flowState?.stateWrapper;
-      if (stateWrapper == null || stateWrapper.isEmpty) return [];
-
-      // stateWrapper is a List<Map<String, List<dynamic>>>
-      for (final wrapperMap in stateWrapper) {
-        if (wrapperMap is Map &&
-            wrapperMap.containsKey('ProductVariantModel')) {
-          final productData = wrapperMap['ProductVariantModel'] as List?;
-          if (productData != null && productData.isNotEmpty) {
-            return productData
-                .map((e) => e is ProductVariantModel
-                    ? e
-                    : ProductVariantModelMapper.fromMap(
-                        e as Map<String, dynamic>))
-                .toList();
+      if (stateWrapper != null && stateWrapper.isNotEmpty) {
+        // stateWrapper is a List<Map<String, List<dynamic>>>
+        for (final wrapperMap in stateWrapper) {
+          if (wrapperMap is Map &&
+              wrapperMap.containsKey('ProductVariantModel')) {
+            final productData = wrapperMap['ProductVariantModel'] as List?;
+            if (productData != null && productData.isNotEmpty) {
+              return productData
+                  .map((e) => e is ProductVariantModel
+                      ? e
+                      : ProductVariantModelMapper.fromMap(
+                          e as Map<String, dynamic>))
+                  .toList();
+            }
+          } else if (wrapperMap is ProductVariantModel) {
+            return stateWrapper.whereType<ProductVariantModel>().toList();
           }
         }
       }
@@ -608,7 +650,7 @@ class _StockReconciliationCardState
       // Silently handle parsing errors
     }
 
-    return [];
+    return _localProductVariants;
   }
 
   void _triggerStockSearchIfReady(BuildContext context) {

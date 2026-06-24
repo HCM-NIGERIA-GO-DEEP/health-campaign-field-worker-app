@@ -49,11 +49,48 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
   Map<String, double> _stockInHandMap = {};
   bool _stockSearchTriggered = false;
 
+  List<ProductVariantModel> _localProductVariants = [];
+
   @override
   void initState() {
     super.initState();
     // Don't call _initializeFromFormData here - localizations is not available yet
     // It will be called in build() when localizations is ready
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadProductVariants();
+  }
+
+  Future<void> _loadProductVariants() async {
+    try {
+      final projectResourceRepo = context.read<
+          LocalRepository<ProjectResourceModel, ProjectResourceSearchModel>>();
+      final projectResources = await projectResourceRepo.search(
+        ProjectResourceSearchModel(projectId: [context.projectId]),
+      );
+
+      final productVariantIds = projectResources
+          .map((pr) => pr.resource.productVariantId)
+          .whereType<String>()
+          .toSet()
+          .toList();
+
+      final productVariantRepo = context.read<
+          LocalRepository<ProductVariantModel, ProductVariantSearchModel>>();
+      final productVariants = await productVariantRepo.search(
+        ProductVariantSearchModel(id: productVariantIds),
+      );
+      if (mounted) {
+        setState(() {
+          _localProductVariants = productVariants;
+        });
+      }
+    } catch (e) {
+      debugPrint('Error loading local product variants: $e');
+    }
   }
 
   /// Gets the facility ID from the previous page's form data (warehouseDetails.facilityToWhich)
@@ -626,16 +663,26 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       return const SizedBox.shrink();
     }
 
-    // Extract data - add null check
+    // Extract data - fallback to local product variants if empty or null
     final wrapperData = widget.stateData?.stateWrapper;
-    if (wrapperData == null) {
-      return const SizedBox.shrink();
+    List<dynamic>? productVariants;
+    if (wrapperData != null && wrapperData is List && wrapperData.isNotEmpty) {
+      final firstItem = wrapperData.first;
+      if (firstItem is Map) {
+        final wrapperList = wrapperData as List<Map<String, List<dynamic>>>;
+        productVariants = wrapperList.firstWhere(
+            (m) => m.containsKey('ProductVariantModel'),
+            orElse: () => {'ProductVariantModel': []})['ProductVariantModel'];
+      } else if (firstItem is ProductVariantModel) {
+        productVariants = wrapperData;
+      } else {
+        productVariants = wrapperData.whereType<ProductVariantModel>().toList();
+      }
     }
-    final wrapperList = wrapperData as List<Map<String, List<dynamic>>>;
-
-    final productVariants = wrapperList.firstWhere(
-        (m) => m.containsKey('ProductVariantModel'),
-        orElse: () => {'ProductVariantModel': []})['ProductVariantModel'];
+    
+    if (productVariants == null || productVariants.isEmpty) {
+      productVariants = _localProductVariants;
+    }
 
     // Initialize from formData on first build (localizations and productVariants are now available)
     if (!_initialized) {

@@ -291,8 +291,9 @@ class TransformerExecutor extends ActionExecutor {
               fallbackFormDataString: fallBackModel,
             );
             entities.addAll(itemEntities);
-          } catch (_) {
-            // Silent fail for entity mapping
+          } catch (e, stack) {
+            debugPrint('TRANSFORMER ERROR (multiEntity): $e');
+            debugPrint(stack.toString());
           }
         }
       } else {

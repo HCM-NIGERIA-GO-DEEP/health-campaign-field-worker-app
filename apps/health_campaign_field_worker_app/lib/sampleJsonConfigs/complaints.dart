@@ -930,13 +930,13 @@ final dynamic sampleComplaintFlows = {
               "validations": [
                 {
                   "type": "minLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGITS"
+                  "value": 8,
+                  "message": "MOBILE_LENGTH_8_DIGITS"
                 },
                 {
                   "type": "maxLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGITS"
+                  "value": 8,
+                  "message": "MOBILE_LENGTH_8_DIGITS"
                 },
                 {
                   "type": "pattern",
