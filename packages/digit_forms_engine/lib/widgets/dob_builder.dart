@@ -155,10 +155,20 @@ class JsonSchemaDOBBuilder extends JsonSchemaBuilder<String> {
     (int years, int months)? minAge,
     (int years, int months)? maxAge,
   ) {
+    // debugPrint('riyaz control errors at START: ${control.errors}');
+    // debugPrint('riyaz DOB received: $dob');
+    // if (dob != null) {
+    //   final age = DigitDateUtils.calculateAge(dob);
+      // debugPrint('riyaz years: ${age.years}');
+      // debugPrint('riyaz months: ${age.months}');
+      // debugPrint('riyaz minAge: $minAge');
+      // debugPrint('riyaz maxAge: $maxAge');
+    // }
+    
     control.removeError('required');
     control.removeError('minAge');
     control.removeError('maxAge');
-    control.markAsTouched();
+    // control.markAsTouched();
 
     final isRequired = validations?.any((v) => v.type == 'required') ?? false;
 
@@ -174,8 +184,12 @@ class JsonSchemaDOBBuilder extends JsonSchemaBuilder<String> {
     if (minAge != null) {
       final minValid = age.years > minAge.$1 ||
           (age.years == minAge.$1 && age.months >= minAge.$2);
+      // debugPrint('riyaz minValid: $minValid, age: $age, minAge: $minAge');
       if (!minValid) {
+        control.value = null;
         control.setErrors({'minAge': true});
+        control.markAsTouched();  
+        // debugPrint('riyaz errors after minAge set: ${control.errors}');
         return;
       }
     }
@@ -184,12 +198,17 @@ class JsonSchemaDOBBuilder extends JsonSchemaBuilder<String> {
       final maxValid = age.years < maxAge.$1 ||
           (age.years == maxAge.$1 && age.months <= maxAge.$2);
       if (!maxValid) {
+        control.value = null;
         control.setErrors({'maxAge': true});
+        control.markAsTouched(); 
+        // debugPrint('riyaz errors after set: ${control.errors}');
+        // debugPrint('riyaz control valid: ${control.valid}');
         return;
       }
     }
 
     // Store as string in "dd/MM/yyyy" format
+    control.markAsTouched(); 
     final formatted = DateFormat('dd/MM/yyyy').format(dob);
     control.value = formatted;
   }
