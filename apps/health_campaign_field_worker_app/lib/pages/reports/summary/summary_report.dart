@@ -371,38 +371,47 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       DigitTableColumn(
         header: localizations.translate(i18.summaryReport.childrenAll),
         cellValue: 'totalAll',
+        width: 500,
       ),
       DigitTableColumn(
         header: localizations.translate(i18.summaryReport.children3to11),
         cellValue: 'total3to11',
+        width: 500,
       ),
       DigitTableColumn(
         header: localizations.translate(i18.summaryReport.children12to59),
         cellValue: 'total12to59',
+        width: 500,
       ),
       DigitTableColumn(
         header: localizations.translate(i18.summaryReport.boysAll),
         cellValue: 'boysAll',
+        width: 500,
       ),
       DigitTableColumn(
         header: localizations.translate(i18.summaryReport.boys3to11),
         cellValue: 'boys3to11',
+        width: 500,
       ),
       DigitTableColumn(
         header: localizations.translate(i18.summaryReport.boys12to59),
         cellValue: 'boys12to59',
+        width: 500,
       ),
       DigitTableColumn(
         header: localizations.translate(i18.summaryReport.girlsAll),
         cellValue: 'girlsAll',
+        width: 500,
       ),
       DigitTableColumn(
         header: localizations.translate(i18.summaryReport.girls3to11),
         cellValue: 'girls3to11',
+        width: 500,
       ),
       DigitTableColumn(
         header: localizations.translate(i18.summaryReport.girls12to59),
         cellValue: 'girls12to59',
+        width: 500,
       ),
       // Stock columns — re-enable by uncommenting _productVariants = productVariants in setState:
       for (final pv in _productVariants) ...[
@@ -454,15 +463,96 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           isTotal ? row.date : _formatDisplayDate(row.date),
           cellKey: 'date',
         ),
-        DigitTableData(row.totalAll.toString(), cellKey: 'totalAll'),
-        DigitTableData(row.total3to11.toString(), cellKey: 'total3to11'),
-        DigitTableData(row.total12to59.toString(), cellKey: 'total12to59'),
-        DigitTableData(row.boysAll.toString(), cellKey: 'boysAll'),
-        DigitTableData(row.boys3to11.toString(), cellKey: 'boys3to11'),
-        DigitTableData(row.boys12to59.toString(), cellKey: 'boys12to59'),
-        DigitTableData(row.girlsAll.toString(), cellKey: 'girlsAll'),
-        DigitTableData(row.girls3to11.toString(), cellKey: 'girls3to11'),
-        DigitTableData(row.girls12to59.toString(), cellKey: 'girls12to59'),
+        DigitTableData(
+          row.totalAll.toString(), 
+          cellKey: 'totalAll', 
+          widget: Center(
+            child: Text(
+              row.totalAll.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+        DigitTableData(
+          row.total3to11.toString(), 
+          cellKey: 'total3to11',
+          widget: Center(
+            child: Text(
+              row.totalAll.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+        DigitTableData(
+          row.total12to59.toString(), 
+          cellKey: 'total12to59',
+          widget: Center(
+            child: Text(
+              row.totalAll.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+        DigitTableData(
+          row.boysAll.toString(), 
+          cellKey: 'boysAll',
+          widget: Center(
+            child: Text(
+              row.totalAll.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+        DigitTableData(
+          row.boys3to11.toString(), 
+          cellKey: 'boys3to11',
+          widget: Center(
+            child: Text(
+              row.totalAll.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+        DigitTableData(
+          row.boys12to59.toString(), 
+          cellKey: 'boys12to59',
+          widget: Center(
+            child: Text(
+              row.totalAll.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+        DigitTableData(
+          row.girlsAll.toString(), 
+          cellKey: 'girlsAll',
+          widget: Center(
+            child: Text(
+              row.totalAll.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+        DigitTableData(
+          row.girls3to11.toString(), 
+          cellKey: 'girls3to11',
+          widget: Center(
+            child: Text(
+              row.totalAll.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+        DigitTableData(
+          row.girls12to59.toString(), 
+          cellKey: 'girls12to59',
+          widget: Center(
+            child: Text(
+              row.totalAll.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
         // Stock cells — active when _productVariants is populated:
         for (final pv in _productVariants) ...[
           DigitTableData(
