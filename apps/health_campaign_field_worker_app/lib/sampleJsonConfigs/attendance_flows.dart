@@ -345,7 +345,7 @@ final dynamic attendanceFlows = {
               "actionType": "CUSTOM_DATA",
               "properties": {
                 "entities":
-                    "{{fn:createAttendanceLog(widgetData, contextData.0.AttendanceRegisterModel, 0)}}"
+                    "{{fn:createAttendanceLog(widgetData, contextData.0.AttendanceRegisterModel, contextData.0.attendanceLog, 0)}}"
               }
             },
             {
@@ -411,7 +411,7 @@ final dynamic attendanceFlows = {
                       "actionType": "CUSTOM_DATA",
                       "properties": {
                         "entities":
-                            "{{fn:createAttendanceLog(widgetData, contextData.0.AttendanceRegisterModel, 1)}}"
+                            "{{fn:createAttendanceLog(widgetData, contextData.0.AttendanceRegisterModel, contextData.0.attendanceLog, 1)}}"
                       }
                     },
                     {

@@ -1001,8 +1001,32 @@ class _HomePageState extends LocalizedState<HomePage> {
 
       final widgetData = args.first as Map;
       final attendanceRegisterModel = args.length > 1 ? args[1] : null;
-      var attendanceLogs = args.length > 2 ? args[2] as List? : null;
-      final uploadToServer = args.length > 3 ? args[3] as int? : 0;
+      List? attendanceLogs;
+      int uploadToServer = 0;
+
+      if (args.length > 2) {
+        final thirdArg = args[2];
+        if (thirdArg is List) {
+          attendanceLogs = thirdArg;
+        } else if (thirdArg is int) {
+          uploadToServer = thirdArg;
+        } else if (thirdArg is bool) {
+          uploadToServer = thirdArg ? 1 : 0;
+        } else if (thirdArg != null) {
+          uploadToServer = int.tryParse(thirdArg.toString()) ?? 0;
+        }
+      }
+
+      if (args.length > 3 && args[3] != null) {
+        final fourthArg = args[3];
+        if (fourthArg is int) {
+          uploadToServer = fourthArg;
+        } else if (fourthArg is bool) {
+          uploadToServer = fourthArg ? 1 : 0;
+        } else {
+          uploadToServer = int.tryParse(fourthArg.toString()) ?? uploadToServer;
+        }
+      }
 
       final registerId = attendanceRegisterModel?.id ?? '';
       attendanceLogs =
