@@ -389,21 +389,22 @@ class _StockReconciliationCardState
                         labelFlex: 5,
                       ),
                       const DigitDivider(),
+                      LabelValueItem(
+                        label: localizations.translate(
+                            i18.stockReconciliationMetrics.stockLost),
+                        value: _stockMetrics['stockLost']!.toStringAsFixed(0),
+                        labelFlex: 5,
+                      ),
+                      const DigitDivider(),
+                      LabelValueItem(
+                        label: localizations.translate(
+                            i18.stockReconciliationMetrics.stockDamaged),
+                        value:
+                            _stockMetrics['stockDamaged']!.toStringAsFixed(0),
+                        labelFlex: 5,
+                      ),
+                      const DigitDivider(),
                       if (isDistributor) ...[
-                        LabelValueItem(
-                          label: localizations.translate(
-                              i18.stockReconciliationMetrics.stockLost),
-                          value: _stockMetrics['stockLost']!.toStringAsFixed(0),
-                          labelFlex: 5,
-                        ),
-                        const DigitDivider(),
-                        LabelValueItem(
-                          label: localizations.translate(
-                              i18.stockReconciliationMetrics.stockDamaged),
-                          value:
-                              _stockMetrics['stockDamaged']!.toStringAsFixed(0),
-                          labelFlex: 5,
-                        ),
                         const DigitDivider(),
                         LabelValueItem(
                           label: localizations.translate(

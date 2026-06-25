@@ -63,14 +63,15 @@ class TableWidget extends ResolvedFlowWidget {
         rawColumns.where((col) => col['isActive'] != false).map((col) {
       final cellValue = col['cellValue'];
       final headerTemplate = col['header']?.toString() ?? '';
+      final columnWidth = (col['width'] as num?)?.toDouble(); // ← read width from JSON
 
-      // Resolve header template using evalContext (supports {{formData.x}}, {{itemData.x}}, etc.)
       final resolvedHeader = resolveTemplate(headerTemplate, evalContext,
           screenKey: resolved.screenKey);
 
       return DigitTableColumn(
         header: localization?.translate(resolvedHeader) ?? resolvedHeader,
         cellValue: cellValue is String ? cellValue : jsonEncode(cellValue),
+        width: columnWidth, // ← pass it in (if DigitTableColumn supports it)
       );
     }).toList();
 
@@ -173,10 +174,12 @@ class TableWidget extends ResolvedFlowWidget {
             cellKey: rawCellValue is Map
                 ? 'conditional_$colIndex'
                 : rawCellValue?.toString() ?? '',
-            widget: Text(
-              displayText,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            widget: SizedBox(
+              child: Text(
+                displayText,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           );
         }).toList(),
