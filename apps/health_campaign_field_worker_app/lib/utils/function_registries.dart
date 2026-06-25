@@ -28,6 +28,20 @@ class FunctionRegistries {
   }
 
   void _registerGenerateFunctions() {
+    FunctionRegistry.register('safeString', (args, stateData) {
+      if (args.isEmpty || args.first == null) return '';
+
+      final value = args.first.toString();
+      final trimmed = value.trim();
+
+      if (trimmed.isEmpty) return '';
+
+      // Some unresolved templates can leak through as literal strings.
+      if (trimmed.contains('{{') && trimmed.contains('}}')) return '';
+
+      return value;
+    });
+
     FunctionRegistry.register('generateUniqueMaterialNoteNumber',
         (args, stateData) {
       int timestamp = DateTime.now().millisecondsSinceEpoch;

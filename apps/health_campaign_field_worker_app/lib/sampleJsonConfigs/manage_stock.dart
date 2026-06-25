@@ -2051,7 +2051,8 @@ final dynamic sampleInventoryFlows = {
                   },
                   {
                     "key": "INVENTORY_COMMENTS_LABEL",
-                    "value": "{{item.additionalFields.fields.comments}}"
+                    "value":
+                        "{{fn:safeString(item.additionalFields.fields.comments)}}"
                   }
                 ]
               }
@@ -2393,7 +2394,8 @@ final dynamic sampleInventoryFlows = {
               },
               {
                 "key": "StockModel.additionalFields.fields.comments",
-                "value": "{{formData.stockReceiptDetails.comment}}"
+                "value":
+                    "{{fn:safeString(formData.stockReceiptDetails.comment)}}"
               }
             ]
           }
