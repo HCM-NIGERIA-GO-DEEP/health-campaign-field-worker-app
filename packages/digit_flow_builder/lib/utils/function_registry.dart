@@ -557,17 +557,17 @@ void initializeFunctionRegistry() {
           }
         }
 
-        if (taskStatus == TaskStatus.beneficiaryRefused) {
+        if (taskStatus == TaskStatus.beneficiaryRefused ||
+            taskStatus == TaskStatus.beneficiaryAbsent ||
+            taskStatus == TaskStatus.beneficiaryReferred ||
+            taskStatus == TaskStatus.adverseEffect) {
           return true;
         }
 
         if (taskStatus == TaskStatus.ineligible ||
             taskStatus == TaskStatus.beneficiaryMigrated ||
-            taskStatus == TaskStatus.beneficiaryAbsent ||
-            taskStatus == TaskStatus.beneficiaryReferred ||
             taskStatus == TaskStatus.sideEffect ||
-            taskStatus == TaskStatus.notAdministered ||
-            taskStatus == TaskStatus.adverseEffect) return false;
+            taskStatus == TaskStatus.notAdministered) return false;
       }
     }
 
@@ -936,7 +936,10 @@ void initializeFunctionRegistry() {
         }
       }
 
-      if (lastTaskStatus == TaskStatus.beneficiaryRefused) {
+      if (lastTaskStatus == TaskStatus.beneficiaryRefused ||
+          lastTaskStatus == TaskStatus.beneficiaryAbsent ||
+          lastTaskStatus == TaskStatus.beneficiaryReferred ||
+          lastTaskStatus == TaskStatus.adverseEffect) {
         return false;
       }
 
@@ -1544,8 +1547,11 @@ void initializeFunctionRegistry() {
               return true;
             }
 
-            if (status == TaskStatus.beneficiaryRefused) {
-              // Do not disable edit for refused beneficiaries, let them be re-administered
+            if (status == TaskStatus.beneficiaryRefused ||
+                status == TaskStatus.beneficiaryAbsent ||
+                status == TaskStatus.beneficiaryReferred ||
+                status == TaskStatus.adverseEffect) {
+              // Do not disable edit for unable to deliver statuses, let them be re-administered
               continue;
             }
 
@@ -1553,11 +1559,8 @@ void initializeFunctionRegistry() {
             if (status == TaskStatus.ineligible ||
                 status == TaskStatus.beneficiaryDied ||
                 status == TaskStatus.beneficiaryMigrated ||
-                status == TaskStatus.beneficiaryAbsent ||
-                status == TaskStatus.beneficiaryReferred ||
                 status == TaskStatus.sideEffect ||
-                status == TaskStatus.notAdministered ||
-                status == TaskStatus.adverseEffect) {
+                status == TaskStatus.notAdministered) {
               return true;
             }
           }
