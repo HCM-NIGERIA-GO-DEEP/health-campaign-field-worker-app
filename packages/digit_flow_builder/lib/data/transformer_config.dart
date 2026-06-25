@@ -706,7 +706,7 @@ final jsonConfig = {
           "projectBeneficiaryClientReferenceId":
               "__context:ProjectBeneficiaryClientReferenceId",
           "createdBy": "__context:userId",
-          "status": "unableToDeliver.reason",
+          "status": "__value:NOT_ADMINISTERED",
           "nonRecoverableError": "errors.nonRecoverable",
           "clientReferenceId": "__generate:uuid",
           "tenantId": "__context:tenantId",
@@ -750,6 +750,7 @@ final jsonConfig = {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
             "comment": "unableToDeliver.comment",
+            "taskStatus": "unableToDeliver.reason",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
             "memberCount": "__context:memberCount",
