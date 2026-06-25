@@ -21,7 +21,11 @@ class TaskStatus {
   static const String beneficiaryMigrated = 'BENEFICIARY_MIGRATED';
   static const String beneficiaryAbsent = 'BENEFICIARY_ABSENT';
   static const String beneficiaryRefused = 'BENEFICIARY_REFUSED';
+  static const String beneficiaryReferred = 'BENEFICIARY_REFERRED';
+  static const String sideEffect = 'SIDE_EFFECT';
+  static const String adverseEffect = 'ADVERSE_EFFECT';
   static const String visited = 'VISITED';
+  static const String notAdministered = 'NOT_ADMINISTERED';
 }
 
 /// The signature for a function that can be registered in the [FunctionRegistry].
@@ -332,6 +336,7 @@ void initializeFunctionRegistry() {
       case 'age':
         final dob = parseDate(rawValue);
         if (dob == null) return '--';
+        if (dob.year == 1970 && dob.month == 1 && dob.day == 1) return '--';
         final age = DigitDateUtils.calculateAge(dob);
         return "${age.years}y ${age.months}m";
 
@@ -376,6 +381,9 @@ void initializeFunctionRegistry() {
         }
 
         if (birthDate == null) return 0;
+        if (birthDate.year == 1970 &&
+            birthDate.month == 1 &&
+            birthDate.day == 1) return 0;
 
         final now = DateTime.now();
         final months =
@@ -531,7 +539,11 @@ void initializeFunctionRegistry() {
         if (task['status'] == TaskStatus.ineligible ||
             task['status'] == TaskStatus.beneficiaryMigrated ||
             task['status'] == TaskStatus.beneficiaryAbsent ||
-            task['status'] == TaskStatus.beneficiaryRefused) return false;
+            task['status'] == TaskStatus.beneficiaryRefused ||
+            task['status'] == TaskStatus.beneficiaryReferred ||
+            task['status'] == TaskStatus.sideEffect ||
+            task['status'] == TaskStatus.notAdministered ||
+            task['status'] == TaskStatus.adverseEffect) return false;
       }
     }
 
@@ -673,12 +685,34 @@ void initializeFunctionRegistry() {
       return '';
     }
 
+    if (status == TaskStatus.notAdministered) {
+      final additionalFields = lastTask['additionalFields'];
+      if (additionalFields is Map) {
+        final fields = additionalFields['fields'] as List?;
+        if (fields != null) {
+          final taskStatusField = fields.firstWhereOrNull((f) =>
+              (f is Map ? f['key'] : null) == 'TaskStatus' ||
+              (f is Map ? f['key'] : null) == 'taskStatus');
+          if (taskStatusField != null) {
+            return (taskStatusField as Map)['value']
+                    ?.toString()
+                    .toUpperCase() ??
+                status;
+          }
+        }
+      }
+      return status;
+    }
+
     // Return the status string for ineligible/non-delivered statuses
     if (status == TaskStatus.ineligible ||
         status == TaskStatus.beneficiaryDied ||
         status == TaskStatus.beneficiaryMigrated ||
         status == TaskStatus.beneficiaryAbsent ||
         status == TaskStatus.beneficiaryRefused ||
+        status == TaskStatus.beneficiaryReferred ||
+        status == TaskStatus.sideEffect ||
+        status == TaskStatus.adverseEffect ||
         status == TaskStatus.notDelivered) {
       return status;
     }
@@ -859,10 +893,16 @@ void initializeFunctionRegistry() {
       }
 
       final lastTaskStatus = lastTask['status']?.toString().toUpperCase();
-      final isDelivered = lastTaskStatus == 'ADMINISTRATION_SUCCESS' || lastTaskStatus == 'DELIVERED';
+      final isDelivered = lastTaskStatus == 'ADMINISTRATION_SUCCESS' ||
+          lastTaskStatus == 'DELIVERED';
 
-      final directDeliveries = selectedCycle.deliveries?.where((d) => d.deliveryStrategy?.toUpperCase() == 'DIRECT').toList() ?? [];
-      final targetLength = directDeliveries.isNotEmpty ? directDeliveries.length : selectedCycle.deliveries?.length;
+      final directDeliveries = selectedCycle.deliveries
+              ?.where((d) => d.deliveryStrategy?.toUpperCase() == 'DIRECT')
+              .toList() ??
+          [];
+      final targetLength = directDeliveries.isNotEmpty
+          ? directDeliveries.length
+          : selectedCycle.deliveries?.length;
 
       // If last dose equals total direct deliveries in cycle (or is null due to older task) AND cycle matches AND status is delivered
       // -> return true (all doses delivered)
@@ -1443,7 +1483,11 @@ void initializeFunctionRegistry() {
                 status == TaskStatus.beneficiaryDied ||
                 status == TaskStatus.beneficiaryMigrated ||
                 status == TaskStatus.beneficiaryAbsent ||
-                status == TaskStatus.beneficiaryRefused) {
+                status == TaskStatus.beneficiaryRefused ||
+                status == TaskStatus.beneficiaryReferred ||
+                status == TaskStatus.sideEffect ||
+                status == TaskStatus.notAdministered ||
+                status == TaskStatus.adverseEffect) {
               return true;
             }
           }
@@ -1555,44 +1599,68 @@ void initializeFunctionRegistry() {
     final pbs = args.length > 3 ? args[3] as List? : null;
 
     debugPrint('getIndividualStatus called with:');
-    debugPrint('indRefId: ${individual is IndividualModel ? individual.clientReferenceId : (individual is Map ? individual['clientReferenceId'] : null)}');
+    debugPrint(
+        'indRefId: ${individual is IndividualModel ? individual.clientReferenceId : (individual is Map ? individual['clientReferenceId'] : null)}');
     debugPrint('tasks length: ${tasks?.length}, pbs length: ${pbs?.length}');
 
     final String? indRefId = individual is IndividualModel
         ? individual.clientReferenceId
-        : (individual is Map ? individual['clientReferenceId']?.toString() : null);
+        : (individual is Map
+            ? individual['clientReferenceId']?.toString()
+            : null);
 
     if (indRefId == null || indRefId.isEmpty) return '';
 
     // Step 1: Find the task matching the individual
     dynamic matchedTask;
-    
+
     if (tasks != null) {
-      // First try to find a task that explicitly references this individual in its additionalFields (Chad SMC behavior)
-      matchedTask = tasks.firstWhereOrNull((t) {
+      final matchingTasks = tasks.where((t) {
         if (t == null) return false;
         final fields = t is TaskModel
             ? t.additionalFields?.fields
             : (t is Map && t['additionalFields'] != null
                 ? t['additionalFields']['fields'] as List?
                 : null);
-        
-        final indRefField = fields?.firstWhereOrNull((f) => 
-            (f is AdditionalField ? f.key : (f is Map ? f['key'] : null)) == 'individualClientReferenceId');
-            
+
+        final indRefField = fields?.firstWhereOrNull((f) =>
+            (f is AdditionalField ? f.key : (f is Map ? f['key'] : null)) ==
+            'individualClientReferenceId');
+
         if (indRefField != null) {
-          final val = indRefField is AdditionalField ? indRefField.value : (indRefField as Map)['value'];
+          final val = indRefField is AdditionalField
+              ? indRefField.value
+              : (indRefField as Map)['value'];
           return val?.toString() == indRefId;
         }
         return false;
-      });
+      }).toList();
+
+      if (matchingTasks.isNotEmpty) {
+        matchingTasks.sort((a, b) {
+          final timeA = a is TaskModel
+              ? (a.clientAuditDetails?.createdTime ?? 0)
+              : (a is Map && a['clientAuditDetails'] != null
+                  ? a['clientAuditDetails']['createdTime'] ?? 0
+                  : 0);
+          final timeB = b is TaskModel
+              ? (b.clientAuditDetails?.createdTime ?? 0)
+              : (b is Map && b['clientAuditDetails'] != null
+                  ? b['clientAuditDetails']['createdTime'] ?? 0
+                  : 0);
+          return timeB.compareTo(timeA);
+        });
+        matchedTask = matchingTasks.first;
+      }
 
       // If not found, fall back to standard project beneficiary mapping
       if (matchedTask == null && pbs != null) {
         final pb = pbs.firstWhereOrNull((p) {
           final benRefId = p is ProjectBeneficiaryModel
               ? p.beneficiaryClientReferenceId
-              : (p is Map ? p['beneficiaryClientReferenceId']?.toString() : null);
+              : (p is Map
+                  ? p['beneficiaryClientReferenceId']?.toString()
+                  : null);
           return benRefId == indRefId;
         });
 
@@ -1601,12 +1669,31 @@ void initializeFunctionRegistry() {
             : (pb is Map ? pb['clientReferenceId']?.toString() : null);
 
         if (pbRefId != null) {
-          matchedTask = tasks.firstWhereOrNull((t) {
+          final fallbackTasks = tasks.where((t) {
             final tRef = t is TaskModel
                 ? t.projectBeneficiaryClientReferenceId
-                : (t is Map ? t['projectBeneficiaryClientReferenceId']?.toString() : null);
+                : (t is Map
+                    ? t['projectBeneficiaryClientReferenceId']?.toString()
+                    : null);
             return tRef == pbRefId;
-          });
+          }).toList();
+
+          if (fallbackTasks.isNotEmpty) {
+            fallbackTasks.sort((a, b) {
+              final timeA = a is TaskModel
+                  ? (a.clientAuditDetails?.createdTime ?? 0)
+                  : (a is Map && a['clientAuditDetails'] != null
+                      ? a['clientAuditDetails']['createdTime'] ?? 0
+                      : 0);
+              final timeB = b is TaskModel
+                  ? (b.clientAuditDetails?.createdTime ?? 0)
+                  : (b is Map && b['clientAuditDetails'] != null
+                      ? b['clientAuditDetails']['createdTime'] ?? 0
+                      : 0);
+              return timeB.compareTo(timeA);
+            });
+            matchedTask = fallbackTasks.first;
+          }
         }
       }
     }
@@ -1619,15 +1706,35 @@ void initializeFunctionRegistry() {
               ? matchedTask['additionalFields']['fields'] as List?
               : null);
 
-      final statusField = fields?.firstWhereOrNull((f) => 
-          (f is AdditionalField ? f.key : (f is Map ? f['key'] : null)) == 'TaskStatus');
+      final statusField = fields?.firstWhereOrNull((f) =>
+          (f is AdditionalField ? f.key : (f is Map ? f['key'] : null)) ==
+              'TaskStatus' ||
+          (f is AdditionalField ? f.key : (f is Map ? f['key'] : null)) ==
+              'taskStatus');
 
       if (statusField != null) {
-        final val = statusField is AdditionalField ? statusField.value : (statusField as Map)['value'];
+        final val = statusField is AdditionalField
+            ? statusField.value
+            : (statusField as Map)['value'];
         if (val != null && val.toString().isNotEmpty) return val.toString();
       }
 
-      final status = matchedTask is TaskModel ? matchedTask.status : (matchedTask as Map)['status']?.toString();
+      final typeField = fields?.firstWhereOrNull((f) =>
+          (f is AdditionalField ? f.key : (f is Map ? f['key'] : null)) ==
+          'taskType');
+
+      if (typeField != null) {
+        final val = typeField is AdditionalField
+            ? typeField.value
+            : (typeField as Map)['value'];
+        if (val?.toString().toUpperCase() == 'REDOSE') {
+          return 'REDOSE_COMPLETED';
+        }
+      }
+
+      final status = matchedTask is TaskModel
+          ? matchedTask.status
+          : (matchedTask as Map)['status']?.toString();
       if (status != null && status.isNotEmpty) return status;
     }
 
@@ -1644,8 +1751,10 @@ void initializeFunctionRegistry() {
         final isHead = member is HouseholdMemberModel
             ? member.isHeadOfHousehold
             : (member as Map)['isHeadOfHousehold'];
-        
-        final isHeadBool = isHead is bool ? isHead : (isHead?.toString().toLowerCase() == 'true' || isHead == '1');
+
+        final isHeadBool = isHead is bool
+            ? isHead
+            : (isHead?.toString().toLowerCase() == 'true' || isHead == '1');
         if (isHeadBool) return 'IS_HEAD';
       }
     }
@@ -1676,10 +1785,10 @@ void initializeFunctionRegistry() {
 
       for (final member in membersList) {
         if (member == null) continue;
-        
+
         String? memberIndRefId;
         dynamic isHead;
-        
+
         if (member is HouseholdMemberModel) {
           memberIndRefId = member.individualClientReferenceId;
           isHead = member.isHeadOfHousehold;
