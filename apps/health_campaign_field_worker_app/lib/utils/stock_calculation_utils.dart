@@ -168,7 +168,7 @@ class StockCalculationUtils {
           quantity: quantity,
           status: status,
           stockIssued: (v) => stockIssued += v,
-          stockReturned: (v) => stockReturned -= v,
+          stockReturned: (v) => stockReturned += v,
           stockLost: (v) => stockLost += v,
           stockDamaged: (v) => stockDamaged += v,
         );
@@ -198,9 +198,8 @@ class StockCalculationUtils {
                 stockIssued +
                 stockDamaged +
                 stockLost)
-        : stockReceived +
-            stockReturned -
-            (stockIssued + stockDamaged + stockLost);
+        : stockReceived -
+            (stockReturned + stockIssued + stockDamaged + stockLost);
 
     return {
       'stockReceived': stockReceived,
