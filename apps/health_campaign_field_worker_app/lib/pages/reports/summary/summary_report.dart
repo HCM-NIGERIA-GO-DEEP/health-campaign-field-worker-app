@@ -208,6 +208,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       };
 
       final ageBuckets = <String, _DateBucket>{};
+      final processedBeneficiariesForDemographics = <String, Set<String>>{};
 
       for (final task in tasks) {
         if (task.status != 'ADMINISTRATION_SUCCESS' &&
@@ -228,7 +229,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
                         ?.toString() ??
                     '') ??
             -1;
-        if (ageMonths < 3 || ageMonths > 59) continue;
+        if (ageMonths == -1) {
+          // If age isn't properly retrieved, still count them in totalAll
+        }
 
         final gender = fields
             .firstWhereOrNull((f) => f.key == 'gender')
@@ -236,8 +239,16 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
             ?.toString();
 
         final date = _epochToDateString(epochMs);
-        allDates.add(date);
-        ageBuckets.putIfAbsent(date, () => _DateBucket()).add(ageMonths, gender);
+        final beneficiaryRef = task.projectBeneficiaryClientReferenceId;
+        
+        if (beneficiaryRef != null && beneficiaryRef.isNotEmpty) {
+          processedBeneficiariesForDemographics.putIfAbsent(date, () => <String>{});
+          if (!processedBeneficiariesForDemographics[date]!.contains(beneficiaryRef)) {
+            processedBeneficiariesForDemographics[date]!.add(beneficiaryRef);
+            allDates.add(date);
+            ageBuckets.putIfAbsent(date, () => _DateBucket()).add(ageMonths, gender);
+          }
+        }
       }
 
       final sortedDates = allDates.toList()..sort();
@@ -478,7 +489,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           cellKey: 'total3to11',
           widget: Center(
             child: Text(
-              row.totalAll.toString(),
+              row.total3to11.toString(),
               textAlign: TextAlign.center,
             ),
           ),
@@ -488,7 +499,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           cellKey: 'total12to59',
           widget: Center(
             child: Text(
-              row.totalAll.toString(),
+              row.total12to59.toString(),
               textAlign: TextAlign.center,
             ),
           ),
@@ -498,7 +509,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           cellKey: 'boysAll',
           widget: Center(
             child: Text(
-              row.totalAll.toString(),
+              row.boysAll.toString(),
               textAlign: TextAlign.center,
             ),
           ),
@@ -508,7 +519,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           cellKey: 'boys3to11',
           widget: Center(
             child: Text(
-              row.totalAll.toString(),
+              row.boys3to11.toString(),
               textAlign: TextAlign.center,
             ),
           ),
@@ -518,7 +529,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           cellKey: 'boys12to59',
           widget: Center(
             child: Text(
-              row.totalAll.toString(),
+              row.boys12to59.toString(),
               textAlign: TextAlign.center,
             ),
           ),
@@ -528,7 +539,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           cellKey: 'girlsAll',
           widget: Center(
             child: Text(
-              row.totalAll.toString(),
+              row.girlsAll.toString(),
               textAlign: TextAlign.center,
             ),
           ),
@@ -538,7 +549,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           cellKey: 'girls3to11',
           widget: Center(
             child: Text(
-              row.totalAll.toString(),
+              row.girls3to11.toString(),
               textAlign: TextAlign.center,
             ),
           ),
@@ -548,7 +559,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           cellKey: 'girls12to59',
           widget: Center(
             child: Text(
-              row.totalAll.toString(),
+              row.girls12to59.toString(),
               textAlign: TextAlign.center,
             ),
           ),
@@ -664,18 +675,18 @@ class _DateBucket {
 
   void add(int ageMonths, String? gender) {
     totalAll++;
-    if (ageMonths <= 11) total3to11++;
-    if (ageMonths >= 12) total12to59++;
+    if (ageMonths >= 3 && ageMonths <= 11) total3to11++;
+    if (ageMonths >= 12 && ageMonths <= 59) total12to59++;
 
     final g = gender?.toUpperCase();
     if (g == 'MALE') {
       boysAll++;
-      if (ageMonths <= 11) boys3to11++;
-      if (ageMonths >= 12) boys12to59++;
+      if (ageMonths >= 3 && ageMonths <= 11) boys3to11++;
+      if (ageMonths >= 12 && ageMonths <= 59) boys12to59++;
     } else if (g == 'FEMALE') {
       girlsAll++;
-      if (ageMonths <= 11) girls3to11++;
-      if (ageMonths >= 12) girls12to59++;
+      if (ageMonths >= 3 && ageMonths <= 11) girls3to11++;
+      if (ageMonths >= 12 && ageMonths <= 59) girls12to59++;
     }
   }
 }
