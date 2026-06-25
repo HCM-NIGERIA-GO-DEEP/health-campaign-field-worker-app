@@ -347,7 +347,7 @@ class _FacilityCardContent extends StatelessWidget {
       return localizations.translate('DELIVERY_TEAM');
     }
     if (facilityId == 'Central Facility' ||
-        facilityId == 'F-2026-06-24-030845') {
+        facilityId == 'F-2026-06-24-030849') {
       return localizations.translate('Central Facility');
     }
     final parentFacility = localProjectFacilities.where((e) {
