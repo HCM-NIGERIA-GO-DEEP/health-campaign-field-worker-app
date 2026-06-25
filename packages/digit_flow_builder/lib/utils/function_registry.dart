@@ -536,14 +536,38 @@ void initializeFunctionRegistry() {
           if (taskCycleIndex != currentRunningCycle) continue;
         }
 
-        if (task['status'] == TaskStatus.ineligible ||
-            task['status'] == TaskStatus.beneficiaryMigrated ||
-            task['status'] == TaskStatus.beneficiaryAbsent ||
-            task['status'] == TaskStatus.beneficiaryRefused ||
-            task['status'] == TaskStatus.beneficiaryReferred ||
-            task['status'] == TaskStatus.sideEffect ||
-            task['status'] == TaskStatus.notAdministered ||
-            task['status'] == TaskStatus.adverseEffect) return false;
+        String taskStatus =
+            task['status']?.toString().toUpperCase().trim() ?? '';
+
+        if (taskStatus == TaskStatus.notAdministered) {
+          final additionalFields = task['additionalFields'];
+          if (additionalFields is Map) {
+            final fields = additionalFields['fields'] as List?;
+            if (fields != null) {
+              final taskStatusField = fields.firstWhereOrNull((f) =>
+                  (f is Map ? f['key'] : null) == 'TaskStatus' ||
+                  (f is Map ? f['key'] : null) == 'taskStatus');
+              if (taskStatusField != null) {
+                taskStatus = (taskStatusField as Map)['value']
+                        ?.toString()
+                        .toUpperCase() ??
+                    taskStatus;
+              }
+            }
+          }
+        }
+
+        if (taskStatus == TaskStatus.beneficiaryRefused) {
+          return true;
+        }
+
+        if (taskStatus == TaskStatus.ineligible ||
+            taskStatus == TaskStatus.beneficiaryMigrated ||
+            taskStatus == TaskStatus.beneficiaryAbsent ||
+            taskStatus == TaskStatus.beneficiaryReferred ||
+            taskStatus == TaskStatus.sideEffect ||
+            taskStatus == TaskStatus.notAdministered ||
+            taskStatus == TaskStatus.adverseEffect) return false;
       }
     }
 
@@ -892,7 +916,30 @@ void initializeFunctionRegistry() {
         }
       }
 
-      final lastTaskStatus = lastTask['status']?.toString().toUpperCase();
+      String lastTaskStatus =
+          lastTask['status']?.toString().toUpperCase() ?? '';
+
+      if (lastTaskStatus == TaskStatus.notAdministered) {
+        final additionalFields = lastTask['additionalFields'];
+        if (additionalFields is Map) {
+          final fields = additionalFields['fields'] as List?;
+          if (fields != null) {
+            final taskStatusField = fields.firstWhereOrNull((f) =>
+                (f is Map ? f['key'] : null) == 'TaskStatus' ||
+                (f is Map ? f['key'] : null) == 'taskStatus');
+            if (taskStatusField != null) {
+              lastTaskStatus =
+                  (taskStatusField as Map)['value']?.toString().toUpperCase() ??
+                      lastTaskStatus;
+            }
+          }
+        }
+      }
+
+      if (lastTaskStatus == TaskStatus.beneficiaryRefused) {
+        return false;
+      }
+
       final isDelivered = lastTaskStatus == 'ADMINISTRATION_SUCCESS' ||
           lastTaskStatus == 'DELIVERED';
 
@@ -1470,7 +1517,26 @@ void initializeFunctionRegistry() {
           }
 
           if (taskMap != null) {
-            final status = taskMap['status']?.toString().toUpperCase().trim();
+            String status =
+                taskMap['status']?.toString().toUpperCase().trim() ?? '';
+
+            if (status == TaskStatus.notAdministered) {
+              final additionalFields = taskMap['additionalFields'];
+              if (additionalFields is Map) {
+                final fields = additionalFields['fields'] as List?;
+                if (fields != null) {
+                  final taskStatusField = fields.firstWhereOrNull((f) =>
+                      (f is Map ? f['key'] : null) == 'TaskStatus' ||
+                      (f is Map ? f['key'] : null) == 'taskStatus');
+                  if (taskStatusField != null) {
+                    status = (taskStatusField as Map)['value']
+                            ?.toString()
+                            .toUpperCase() ??
+                        status;
+                  }
+                }
+              }
+            }
 
             // Disable if any task status is success
             if (status == TaskStatus.administrationSuccess ||
@@ -1478,12 +1544,16 @@ void initializeFunctionRegistry() {
               return true;
             }
 
+            if (status == TaskStatus.beneficiaryRefused) {
+              // Do not disable edit for refused beneficiaries, let them be re-administered
+              continue;
+            }
+
             // Disable if any task is not eligible
             if (status == TaskStatus.ineligible ||
                 status == TaskStatus.beneficiaryDied ||
                 status == TaskStatus.beneficiaryMigrated ||
                 status == TaskStatus.beneficiaryAbsent ||
-                status == TaskStatus.beneficiaryRefused ||
                 status == TaskStatus.beneficiaryReferred ||
                 status == TaskStatus.sideEffect ||
                 status == TaskStatus.notAdministered ||
@@ -1640,15 +1710,20 @@ void initializeFunctionRegistry() {
         matchingTasks.sort((a, b) {
           final timeA = a is TaskModel
               ? (a.clientAuditDetails?.createdTime ?? 0)
-              : (a is Map && a['clientAuditDetails'] != null
-                  ? a['clientAuditDetails']['createdTime'] ?? 0
+              : (a is Map
+                  ? ((a['clientAuditDetails'] ??
+                          a['auditDetails'])?['createdTime'] ??
+                      0)
                   : 0);
           final timeB = b is TaskModel
               ? (b.clientAuditDetails?.createdTime ?? 0)
-              : (b is Map && b['clientAuditDetails'] != null
-                  ? b['clientAuditDetails']['createdTime'] ?? 0
+              : (b is Map
+                  ? ((b['clientAuditDetails'] ??
+                          b['auditDetails'])?['createdTime'] ??
+                      0)
                   : 0);
-          return timeB.compareTo(timeA);
+          if (timeA != timeB) return timeB.compareTo(timeA);
+          return tasks.indexOf(b).compareTo(tasks.indexOf(a));
         });
         matchedTask = matchingTasks.first;
       }
@@ -1682,15 +1757,20 @@ void initializeFunctionRegistry() {
             fallbackTasks.sort((a, b) {
               final timeA = a is TaskModel
                   ? (a.clientAuditDetails?.createdTime ?? 0)
-                  : (a is Map && a['clientAuditDetails'] != null
-                      ? a['clientAuditDetails']['createdTime'] ?? 0
+                  : (a is Map
+                      ? ((a['clientAuditDetails'] ??
+                              a['auditDetails'])?['createdTime'] ??
+                          0)
                       : 0);
               final timeB = b is TaskModel
                   ? (b.clientAuditDetails?.createdTime ?? 0)
-                  : (b is Map && b['clientAuditDetails'] != null
-                      ? b['clientAuditDetails']['createdTime'] ?? 0
+                  : (b is Map
+                      ? ((b['clientAuditDetails'] ??
+                              b['auditDetails'])?['createdTime'] ??
+                          0)
                       : 0);
-              return timeB.compareTo(timeA);
+              if (timeA != timeB) return timeB.compareTo(timeA);
+              return tasks.indexOf(b).compareTo(tasks.indexOf(a));
             });
             matchedTask = fallbackTasks.first;
           }
@@ -1700,23 +1780,29 @@ void initializeFunctionRegistry() {
 
     // Step 2: Extract status from matched task
     if (matchedTask != null) {
+      final String? topLevelStatus = matchedTask is TaskModel
+          ? matchedTask.status
+          : (matchedTask as Map)['status']?.toString();
+
       final fields = matchedTask is TaskModel
           ? matchedTask.additionalFields?.fields
           : (matchedTask is Map && matchedTask['additionalFields'] != null
               ? matchedTask['additionalFields']['fields'] as List?
               : null);
 
-      final statusField = fields?.firstWhereOrNull((f) =>
-          (f is AdditionalField ? f.key : (f is Map ? f['key'] : null)) ==
-              'TaskStatus' ||
-          (f is AdditionalField ? f.key : (f is Map ? f['key'] : null)) ==
-              'taskStatus');
+      if (topLevelStatus?.toUpperCase() == TaskStatus.notAdministered) {
+        final statusField = fields?.firstWhereOrNull((f) =>
+            (f is AdditionalField ? f.key : (f is Map ? f['key'] : null)) ==
+                'TaskStatus' ||
+            (f is AdditionalField ? f.key : (f is Map ? f['key'] : null)) ==
+                'taskStatus');
 
-      if (statusField != null) {
-        final val = statusField is AdditionalField
-            ? statusField.value
-            : (statusField as Map)['value'];
-        if (val != null && val.toString().isNotEmpty) return val.toString();
+        if (statusField != null) {
+          final val = statusField is AdditionalField
+              ? statusField.value
+              : (statusField as Map)['value'];
+          if (val != null && val.toString().isNotEmpty) return val.toString();
+        }
       }
 
       final typeField = fields?.firstWhereOrNull((f) =>
@@ -1732,10 +1818,8 @@ void initializeFunctionRegistry() {
         }
       }
 
-      final status = matchedTask is TaskModel
-          ? matchedTask.status
-          : (matchedTask as Map)['status']?.toString();
-      if (status != null && status.isNotEmpty) return status;
+      if (topLevelStatus != null && topLevelStatus.isNotEmpty)
+        return topLevelStatus;
     }
 
     // Step 3: If no task, check if they are the head
