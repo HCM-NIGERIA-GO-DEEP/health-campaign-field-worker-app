@@ -185,14 +185,12 @@ class PerformSyncUp {
                 await remote.bulkCreate(entities);
               }
             } else if (operationGroupedEntity.key == DataOperation.update) {
-              await Future.delayed(const Duration(seconds: 1));
               if (registry != null) {
                 await registry.update(entities, local);
               } else {
                 await remote.bulkUpdate(entities);
               }
             } else if (operationGroupedEntity.key == DataOperation.delete) {
-              await Future.delayed(const Duration(seconds: 1));
               if (registry != null) {
                 await registry.delete(entities, local);
               } else {
