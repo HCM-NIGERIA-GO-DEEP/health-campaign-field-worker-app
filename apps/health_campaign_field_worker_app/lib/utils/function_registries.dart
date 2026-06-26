@@ -141,7 +141,7 @@ class FunctionRegistries {
       const types = {
         'receipt': ['RECEIVED'],
         'dispatch': ['DISPATCHED'],
-        'returned': ['RECEIVED'],
+        'returned': ['RECEIVED', 'DISPATCHED'],
         'damage': ['DISPATCHED'],
         'loss': ['DISPATCHED']
       };
@@ -183,7 +183,6 @@ class FunctionRegistries {
         'dispatch',
         'damage',
         'loss',
-        'returned',
         'less',
         'excess'
       };
@@ -209,6 +208,85 @@ class FunctionRegistries {
         return teamCode.split("||").last.trim();
       }
       return teamCode;
+    });
+
+    FunctionRegistry.register('getStockTeamCode', (args, stateData) {
+      if (args.length < 4) return '';
+      final stockEntryType = args[0]?.toString().toUpperCase() ?? '';
+      final primaryRole = args[1]?.toString().toUpperCase() ?? '';
+      final warehouseTeamCode = args[2]?.toString() ?? '';
+      final deliveryTeamCode = args[3]?.toString() ?? '';
+
+      // Return flow (user is receiver): sender is identified via QR scan on warehouse page
+      if (stockEntryType == 'RETURNED' && primaryRole == 'RECEIVER') {
+        final warehouseCode = FunctionRegistry.call(
+                'getTeamCode', [warehouseTeamCode], stateData)
+            ?.toString();
+        if (warehouseCode != null && warehouseCode.isNotEmpty) {
+          return warehouseCode;
+        }
+        return FunctionRegistry.call('getTeamCode', [deliveryTeamCode], stateData)
+                ?.toString() ??
+            '';
+      }
+
+      // Issue flow (user is sender): receiver is identified via QR scan on warehouseDetails.teamCode
+      return FunctionRegistry.call('getTeamCode', [warehouseTeamCode], stateData)
+              ?.toString() ??
+          '';
+    });
+
+    FunctionRegistry.register('getStockSenderId', (args, stateData) {
+      if (args.length < 6) return '';
+      final stockEntryType = args[0]?.toString().toUpperCase() ?? '';
+      final primaryRole = args[1]?.toString().toUpperCase() ?? '';
+      final facilityFromWhich = args[2]?.toString() ?? '';
+      final warehouseTeamCode = args[3]?.toString() ?? '';
+      final deliveryTeamCode = args[4]?.toString() ?? '';
+      final loggedInUserUuid = args[5]?.toString() ?? '';
+
+      final teamCode = FunctionRegistry.call(
+            'getStockTeamCode',
+            [stockEntryType, primaryRole, warehouseTeamCode, deliveryTeamCode],
+            stateData,
+          )?.toString() ??
+          '';
+
+      final isStaffSender = facilityFromWhich == 'DELIVERY_TEAM';
+
+      // Stock return: current user is receiver; sender is the QR-scanned party
+      if (stockEntryType == 'RETURNED' && primaryRole == 'RECEIVER') {
+        return isStaffSender ? teamCode : facilityFromWhich;
+      }
+
+      // Stock issue and other outbound: current user / their facility is sender
+      if (isStaffSender) return loggedInUserUuid;
+      return facilityFromWhich;
+    });
+
+    FunctionRegistry.register('getStockReceiverId', (args, stateData) {
+      if (args.length < 5) return '';
+      final stockEntryType = args[0]?.toString().toUpperCase() ?? '';
+      final primaryRole = args[1]?.toString().toUpperCase() ?? '';
+      final facilityToWhich = args[2]?.toString() ?? '';
+      final warehouseTeamCode = args[3]?.toString() ?? '';
+      final deliveryTeamCode = args[4]?.toString() ?? '';
+
+      final teamCode = FunctionRegistry.call(
+            'getStockTeamCode',
+            [stockEntryType, primaryRole, warehouseTeamCode, deliveryTeamCode],
+            stateData,
+          )?.toString() ??
+          '';
+
+      // Stock return: current user's facility is the receiver
+      if (stockEntryType == 'RETURNED' && primaryRole == 'RECEIVER') {
+        return facilityToWhich;
+      }
+
+      // Stock issue: QR-scanned party is the receiver
+      if (facilityToWhich == 'DELIVERY_TEAM') return teamCode;
+      return facilityToWhich;
     });
 
     FunctionRegistry.register('getTransactionStatusType', (args, stateData) {
