@@ -31,6 +31,7 @@ abstract class $DigitScannerPackageRoute extends _i2.AutoRouterModule {
           isGS1code: args.isGS1code,
           singleValue: args.singleValue,
           isEditEnabled: args.isEditEnabled,
+          allowManual: args.allowManual,
           regex: args.regex,
           validations: args.validations,
           initialQrCodes: args.initialQrCodes,
@@ -54,6 +55,7 @@ class DigitScannerRoute extends _i2.PageRouteInfo<DigitScannerRouteArgs> {
     bool isGS1code = false,
     bool singleValue = false,
     bool isEditEnabled = false,
+    bool allowManual = true,
     String? regex,
     List<_i5.ScannerValidation>? validations,
     List<String>? initialQrCodes,
@@ -71,6 +73,7 @@ class DigitScannerRoute extends _i2.PageRouteInfo<DigitScannerRouteArgs> {
             isGS1code: isGS1code,
             singleValue: singleValue,
             isEditEnabled: isEditEnabled,
+            allowManual: allowManual,
             regex: regex,
             validations: validations,
             initialQrCodes: initialQrCodes,
@@ -96,6 +99,7 @@ class DigitScannerRouteArgs {
     this.isGS1code = false,
     this.singleValue = false,
     this.isEditEnabled = false,
+    this.allowManual = true,
     this.regex,
     this.validations,
     this.initialQrCodes,
@@ -117,6 +121,8 @@ class DigitScannerRouteArgs {
 
   final bool isEditEnabled;
 
+  final bool allowManual;
+
   final String? regex;
 
   final List<_i5.ScannerValidation>? validations;
@@ -133,6 +139,6 @@ class DigitScannerRouteArgs {
 
   @override
   String toString() {
-    return 'DigitScannerRouteArgs{key: $key, appLocalizations: $appLocalizations, quantity: $quantity, isGS1code: $isGS1code, singleValue: $singleValue, isEditEnabled: $isEditEnabled, regex: $regex, validations: $validations, initialQrCodes: $initialQrCodes, initialBarcodeData: $initialBarcodeData, scannerId: $scannerId, duplicateCheckFn: $duplicateCheckFn, duplicateCheckMessage: $duplicateCheckMessage}';
+    return 'DigitScannerRouteArgs{key: $key, appLocalizations: $appLocalizations, quantity: $quantity, isGS1code: $isGS1code, singleValue: $singleValue, isEditEnabled: $isEditEnabled, allowManual: $allowManual, regex: $regex, validations: $validations, initialQrCodes: $initialQrCodes, initialBarcodeData: $initialBarcodeData, scannerId: $scannerId, duplicateCheckFn: $duplicateCheckFn, duplicateCheckMessage: $duplicateCheckMessage}';
   }
 }
