@@ -252,6 +252,18 @@ void showDownloadDialog(
     Navigator.of(context, rootNavigator: true).pop();
   }
 
+  // Resolves where to go once the user exits the download dialog without an
+  // in-progress/successful download. Callers (e.g. boundary selection for
+  // distributors) override this via [onProceedWithoutDownloading] to land on a
+  // screen other than home; defaults to home for everyone else.
+  void completeAndExit() {
+    if (onProceedWithoutDownloading != null) {
+      onProceedWithoutDownloading();
+    } else {
+      context.router.replaceAll([HomeRoute()]);
+    }
+  }
+
   switch (dialogType) {
     case DigitProgressDialogType.failed:
     case DigitProgressDialogType.checkFailed:
@@ -275,7 +287,7 @@ void showDownloadDialog(
                   );
             } else {
               Navigator.of(context, rootNavigator: true).pop();
-              context.router.replaceAll([HomeRoute()]);
+              completeAndExit();
             }
           },
         ),
@@ -283,11 +295,7 @@ void showDownloadDialog(
           label: model.secondaryButtonLabel ?? '',
           action: (ctx) {
             Navigator.of(context, rootNavigator: true).pop();
-            if (onProceedWithoutDownloading != null) {
-              onProceedWithoutDownloading();
-            } else {
-              context.router.replaceAll([HomeRoute()]);
-            }
+            completeAndExit();
           },
         ),
       );
@@ -314,7 +322,7 @@ void showDownloadDialog(
                 onPressed: () {
                   if (dialogType == DigitProgressDialogType.pendingSync) {
                     Navigator.of(context, rootNavigator: true).pop();
-                    context.router.replaceAll([HomeRoute()]);
+                    completeAndExit();
                   } else {
                     if ((model.totalCount ?? 0) > 0) {
                       context.read<BeneficiaryDownSyncBloc>().add(
@@ -342,11 +350,7 @@ void showDownloadDialog(
                     await LocalSecureStore.instance.setManualSyncTrigger(false);
                     if (context.mounted) {
                       Navigator.of(context, rootNavigator: true).pop();
-                      if (onProceedWithoutDownloading != null) {
-                        onProceedWithoutDownloading();
-                      } else {
-                        context.router.replaceAll([HomeRoute()]);
-                      }
+                      completeAndExit();
                     }
                   },
                   type: DigitButtonType.secondary,

@@ -115,6 +115,17 @@ class _BoundarySelectionPageState
     // set the param to enable or disable filter of labelList and other boundary conditions
     doFilter = enableFilter();
 
+    // Where to land once the down-sync dialog is dismissed. Distributors must
+    // continue to the team-member selection screen (matching the pre-down-sync
+    // behaviour); everyone else goes home.
+    void navigateAfterDownSync() {
+      if (isDistributor) {
+        context.router.replaceAll([SelectTeamMembersRoute()]);
+      } else {
+        context.router.replaceAll([HomeRoute()]);
+      }
+    }
+
     return PopScope(
       canPop: shouldPop,
       child: BlocBuilder<AppInitializationBloc, AppInitializationState>(
@@ -246,6 +257,8 @@ class _BoundarySelectionPageState
                                       dialogType:
                                           DigitProgressDialogType.pendingSync,
                                       isPop: true,
+                                      onProceedWithoutDownloading:
+                                          navigateAfterDownSync,
                                     ),
                                     dataFound: (initialServerCount, batchSize,
                                         boundaryCounts) {
@@ -292,6 +305,8 @@ class _BoundarySelectionPageState
                                         dialogType:
                                             DigitProgressDialogType.dataFound,
                                         isPop: true,
+                                        onProceedWithoutDownloading:
+                                            navigateAfterDownSync,
                                       );
                                     },
                                     inProgress: (syncCount, totalCount) {
@@ -365,6 +380,7 @@ class _BoundarySelectionPageState
                                       context.router
                                           .popAndPush((AcknowledgementRoute(
                                         isDataRecordSuccess: true,
+                                        showSelectTeam: isDistributor,
                                         description: dataDescription,
                                         label: localizations.translate(i18
                                             .acknowledgementSuccess
@@ -418,6 +434,8 @@ class _BoundarySelectionPageState
                                       dialogType:
                                           DigitProgressDialogType.failed,
                                       isPop: true,
+                                      onProceedWithoutDownloading:
+                                          navigateAfterDownSync,
                                     ),
                                     totalCountCheckFailed: () =>
                                         showDownloadDialog(
@@ -445,6 +463,8 @@ class _BoundarySelectionPageState
                                       dialogType:
                                           DigitProgressDialogType.checkFailed,
                                       isPop: true,
+                                      onProceedWithoutDownloading:
+                                          navigateAfterDownSync,
                                     ),
                                     insufficientStorage: () {
                                       clickedStatus.value = false;
@@ -543,6 +563,7 @@ class _BoundarySelectionPageState
                                       context.router
                                           .popAndPush((AcknowledgementRoute(
                                         isDataRecordSuccess: true,
+                                        showSelectTeam: isDistributor,
                                         description: '',
                                         label: localizations.translate(i18
                                             .acknowledgementSuccess
