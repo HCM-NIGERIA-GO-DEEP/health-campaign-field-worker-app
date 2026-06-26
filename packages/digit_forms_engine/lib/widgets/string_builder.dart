@@ -30,7 +30,7 @@ class JsonSchemaStringBuilder extends JsonSchemaBuilder<String> {
     final validationMessages = buildValidationMessages(validations, loc);
     final patternFormatter = getPatternFormatter(validations);
     final noEmojiFilter = FilteringTextInputFormatter.allow(
-      RegExp(r'[\x00-\x7F]'), // ASCII only (0-127)
+      RegExp(r'[\x00-\xFF]'), // ASCII only (0-127)
     );
     final formatters = [
       noEmojiFilter,
