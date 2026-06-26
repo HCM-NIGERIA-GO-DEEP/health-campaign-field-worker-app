@@ -105,12 +105,16 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         {};
     final transactionType =
         navigationParams['transactionType']?.toString() ?? '';
+    final stockEntryType =
+        navigationParams['stockEntryType']?.toString() ?? '';
+    final primaryRole = navigationParams['primaryRole']?.toString() ?? '';
     final isIssue =
-        transactionType == 'DISPATCHED' || transactionType == 'ISSUED';
-    final isReturn = transactionType == 'RETURNED';
+        stockEntryType == 'ISSUED' ||
+        transactionType == 'DISPATCHED' && stockEntryType != 'RETURNED';
+    final isReturn = stockEntryType == 'RETURNED';
 
-    // For issue, use current user's facility directly
-    if (isIssue || isReturn) {
+    // For issue (sender) and legacy return (sender), use current user's facility
+    if (isIssue || (isReturn && primaryRole == 'SENDER')) {
       final stateData = widget.stateData is CrudStateData
           ? widget.stateData as CrudStateData
           : CrudStateData({}, []);

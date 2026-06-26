@@ -381,7 +381,10 @@ class _FacilityCardContent extends StatelessWidget {
     final transactionType =
         navigationParams['transactionType']?.toString() ?? '';
     final stockEntryType = navigationParams['stockEntryType']?.toString() ?? '';
-    final isReturnFlow = stockEntryType == 'RETURNED' ||
+    final isStockIssueFlow = stockEntryType == 'ISSUED';
+    final isStockReturnFlow = stockEntryType == 'RETURNED';
+    final isStockReceiptFlow = stockEntryType == 'RECEIPT';
+    final isReturnFlow = isStockReturnFlow ||
         stockEntryType == 'LOSS' ||
         stockEntryType == 'DAMAGED';
     final isLessExcessFlow = stockEntryType == 'LESS_EXCESS';
@@ -457,15 +460,13 @@ class _FacilityCardContent extends StatelessWidget {
 
       if (isHfsStandalone) {
         if (isFromField &&
-            (transactionType == 'DISPATCHED' ||
-                transactionType == 'ISSUED' ||
-                isReturnFlow ||
+            (isStockIssueFlow ||
+                stockEntryType == 'LOSS' ||
+                stockEntryType == 'DAMAGED' ||
                 isLessExcessFlow)) {
           return model.facilityId == userFacilityId;
         }
-        if (isToField &&
-            ((transactionType == 'RECEIVED' || transactionType == 'RECEIPT') ||
-                isLessExcessFlow)) {
+        if (isToField && (isLessExcessFlow || isStockReceiptFlow || isStockReturnFlow)) {
           return model.facilityId == userFacilityId;
         }
       }
@@ -484,28 +485,23 @@ class _FacilityCardContent extends StatelessWidget {
               : facilityLevel == 'parent';
         if (isFromField && !isWareHouseMgr) return false;
         if (isFromField) return facilityLevel == 'current';
-      } else if (isReturnFlow) {
-        if (isToField && !isWareHouseMgr) return facilityLevel == 'current';
-        if (isToField)
-          return isHfsStandalone ? false : facilityLevel == 'parent';
-        if (isFromField) return facilityLevel == 'current';
-      } else if (transactionType == 'DISPATCHED' ||
-          transactionType == 'ISSUED') {
+      } else if (isStockReturnFlow || isStockReceiptFlow) {
+        if (isToField) return facilityLevel == 'current';
+        if (isFromField && isStockReturnFlow) return false;
+        if (isFromField) return isHfsStandalone ? false : facilityLevel == 'parent';
+      } else if (isStockIssueFlow) {
         if (isToField) return facilityLevel == 'child';
+        if (isFromField) return facilityLevel == 'current';
+      } else if (isReturnFlow) {
+        if (isToField) return facilityLevel == 'parent';
         if (isFromField) return facilityLevel == 'current';
       } else if (transactionType == 'RECEIVED' ||
           transactionType == 'RECEIPT') {
-        if (isToField)
-          return isHfsStandalone
-              ? facilityLevel == 'current'
-              : facilityLevel == 'parent';
+        if (isToField) return facilityLevel == 'parent';
         if (isFromField)
           return isHfsStandalone ? false : facilityLevel == 'parent';
       } else if (stockEntryType == 'LOSS' || stockEntryType == 'DAMAGED') {
-        // For loss and damaged, to field should show parent facility
-        if (isToField && !isWareHouseMgr) return facilityLevel == 'current';
-        if (isToField)
-          return isHfsStandalone ? false : facilityLevel == 'parent';
+        if (isToField) return facilityLevel == 'parent';
         if (isFromField) return facilityLevel == 'current';
       }
 
@@ -513,23 +509,18 @@ class _FacilityCardContent extends StatelessWidget {
     }).toList();
 
     // Check if there are child facilities (for warehouse managers at lowest level)
-    final hasNoChildFacilities = isToField &&
-        (transactionType == 'DISPATCHED' || transactionType == 'ISSUED') &&
-        filteredFacilities.isEmpty;
+    final hasNoChildFacilities =
+        isToField && isStockIssueFlow && filteredFacilities.isEmpty;
 
     // Build facility dropdown items
     var facilities = <DropdownItem>[];
 
-    final showDeliveryTeam = (hasDeliveryTeamInConfig ||
-            (isToField && (hasDeliveryTeamInValidation || isHfsStandalone))) &&
-        ((isToField &&
-                !isReturnFlow &&
-                (transactionType == 'DISPATCHED' ||
-                    transactionType == 'ISSUED') &&
-                (!isWareHouseMgr || hasNoChildFacilities || isHfsStandalone)) ||
-            (isFromField &&
-                !isWareHouseMgr &&
-                (isReturnFlow || isLessExcessFlow)));
+    final showDeliveryTeam = isToField && isStockIssueFlow &&
+        (hasDeliveryTeamInConfig ||
+            hasDeliveryTeamInValidation ||
+            isHfsStandalone ||
+            hasNoChildFacilities);
+
     if (showDeliveryTeam) {
       facilities.add(DropdownItem(
         code: deliveryTeamCode,
@@ -541,12 +532,16 @@ class _FacilityCardContent extends StatelessWidget {
       transactionType: transactionType,
       currentUserBoundaryType: currentUserBoundaryType,
     );
-    final showCentralFacility = (isFromField &&
-            (transactionType == 'RECEIVED' || transactionType == 'RECEIPT') &&
-            (isHfsStandalone || hasCentralFacilityInValidation)) ||
-        (isToField &&
-            isReturnFlow &&
-            (isHfsStandalone || hasCentralFacilityInValidation));
+    // Central facility on facilityToWhich for loss/damaged only
+    final showCentralFacility = isToField &&
+        !isStockIssueFlow &&
+        !isStockReturnFlow &&
+        !isStockReceiptFlow &&
+        (isHfsStandalone || hasCentralFacilityInValidation);
+    // Central facility on facilityFromWhich for receipt flows
+    final showCentralFacilityOnFrom = isFromField &&
+        isStockReceiptFlow &&
+        (isHfsStandalone || hasCentralFacilityInValidation);
 
     final parentFacility = projectFacilities.where((e) {
       final model = e as ProjectFacilityModel;
@@ -582,9 +577,19 @@ class _FacilityCardContent extends StatelessWidget {
 
     if (showCentralFacility && !hasParentInFiltered) {
       facilities.add(DropdownItem(
-        code: centralFacilityId ?? 'F-2026-06-24-030845',
+        code: centralFacilityId ?? 'F-2026-06-24-030849',
         name: localizations.translate('Central Facility'),
       ));
+    }
+
+    if (showCentralFacilityOnFrom && !hasParentInFiltered) {
+      final alreadyAdded = facilities.any((f) => f.code == centralFacilityId);
+      if (!alreadyAdded) {
+        facilities.add(DropdownItem(
+          code: centralFacilityId ?? 'F-2026-06-24-030849',
+          name: localizations.translate('Central Facility'),
+        ));
+      }
     }
 
     facilities.addAll(filteredFacilities.map((e) {
@@ -608,14 +613,12 @@ class _FacilityCardContent extends StatelessWidget {
         // Read selected value from the form control (source of truth)
         var selectedValue = _getCurrentValue(field.control);
 
-        // For return flow, auto-prefill delivery team if no value yet (distributors only)
-        if (isReturnFlow &&
-            isFromField &&
-            hasDeliveryTeamInConfig &&
-            !isWareHouseMgr &&
+        // Stock issue: auto-prefill receiver (to) with delivery team
+        if (isStockIssueFlow &&
+            isToField &&
+            showDeliveryTeam &&
             (selectedValue == null || selectedValue.isEmpty)) {
           selectedValue = deliveryTeamCode;
-          final loggedInUserId = context.loggedInUserUuid;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             field.control.value = deliveryTeamCode;
             field.control.markAsTouched();
@@ -628,19 +631,97 @@ class _FacilityCardContent extends StatelessWidget {
                     value: deliveryTeamCode,
                   ),
                 );
-            // Auto-fill team code with logged-in user ID
+          });
+        }
+
+        // Stock return: auto-prefill sender (from) with delivery team and copy page-1 scan
+        if (isStockReturnFlow &&
+            isFromField &&
+            (selectedValue == null || selectedValue.isEmpty)) {
+          selectedValue = deliveryTeamCode;
+          final formData = stateData?.formData as Map<String, dynamic>?;
+          final scannedTeamCode = formData?['warehouseDetails.teamCode'] ??
+              formData?['teamCode'] ??
+              (formData?['warehouseDetails'] as Map<String, dynamic>?)?['teamCode'];
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            field.control.value = deliveryTeamCode;
+            field.control.markAsTouched();
+            field.control.markAsDirty();
             context.read<FormsBloc>().add(
                   FormsEvent.updateField(
                     schemaKey: pageSchema,
                     context: context,
-                    key: dependantFormKey,
-                    value: loggedInUserId,
+                    key: formKey,
+                    value: deliveryTeamCode,
+                  ),
+                );
+            if (scannedTeamCode != null &&
+                scannedTeamCode.toString().isNotEmpty) {
+              context.read<FormsBloc>().add(
+                    FormsEvent.updateField(
+                      schemaKey: pageSchema,
+                      context: context,
+                      key: dependantFormKey,
+                      value: scannedTeamCode,
+                    ),
+                  );
+            }
+          });
+        }
+
+        // Stock return / receipt: auto-prefill receiver (to) with current user facility
+        if ((isStockReturnFlow || isStockReceiptFlow) &&
+            isToField &&
+            (selectedValue == null || selectedValue.isEmpty)) {
+          final currentFacility = userFacilityId?.isNotEmpty == true
+              ? userFacilityId!
+              : (facilities.isNotEmpty ? facilities.first.code : null);
+          if (currentFacility != null) {
+            selectedValue = currentFacility;
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              field.control.value = currentFacility;
+              field.control.markAsTouched();
+              field.control.markAsDirty();
+              context.read<FormsBloc>().add(
+                    FormsEvent.updateField(
+                      schemaKey: pageSchema,
+                      context: context,
+                      key: formKey,
+                      value: currentFacility,
+                    ),
+                  );
+            });
+          }
+        }
+
+        // Loss / damaged: auto-prefill facilityToWhich with central facility
+        if (isToField &&
+            !isStockIssueFlow &&
+            !isStockReturnFlow &&
+            !isStockReceiptFlow &&
+            (selectedValue == null || selectedValue.isEmpty) &&
+            facilities.isNotEmpty) {
+          final centralFacility = facilities.firstWhere(
+            (f) => f.code == centralFacilityId,
+            orElse: () => facilities.first,
+          );
+          selectedValue = centralFacility.code;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            field.control.value = centralFacility.code;
+            field.control.markAsTouched();
+            field.control.markAsDirty();
+            context.read<FormsBloc>().add(
+                  FormsEvent.updateField(
+                    schemaKey: pageSchema,
+                    context: context,
+                    key: formKey,
+                    value: centralFacility.code,
                   ),
                 );
           });
         }
 
-        // For LESS_EXCESS, auto-prefill from field with delivery team for distributors
+        // For ISSUED/DISPATCHED, auto-prefill the from field with current facility
         if (isLessExcessFlow &&
             isFromField &&
             hasDeliveryTeamInConfig &&
@@ -671,9 +752,9 @@ class _FacilityCardContent extends StatelessWidget {
           });
         }
 
-        // For ISSUED/DISPATCHED, auto-prefill the from field with current facility
+        // Stock issue: auto-prefill the from field with current facility
         if (isFromField &&
-            (transactionType == 'DISPATCHED' || transactionType == 'ISSUED') &&
+            isStockIssueFlow &&
             (selectedValue == null || selectedValue.isEmpty) &&
             facilities.isNotEmpty) {
           final currentFacility = facilities.first.code;
@@ -693,8 +774,9 @@ class _FacilityCardContent extends StatelessWidget {
           });
         }
 
-        // Auto-prefill single option for both fields (especially for standalone receipt)
+        // Auto-prefill single option when only one facility is available
         if ((isToField || isFromField) &&
+            !isStockIssueFlow &&
             (selectedValue == null || selectedValue.isEmpty) &&
             facilities.length == 1) {
           final singleFacility = facilities.first.code;
@@ -722,8 +804,9 @@ class _FacilityCardContent extends StatelessWidget {
                   )
                 : null;
 
-        // From field is always read-only
-        final isReadOnlyFrom = isFromField;
+        // facilityToWhich: editable only for stock issue; from field read-only for issue/return
+        final isReadOnlyField = (isToField && !isStockIssueFlow) ||
+            (isFromField && (isStockIssueFlow || isStockReturnFlow));
 
         return LabeledField(
           label: labelFromSchema != null
@@ -737,7 +820,7 @@ class _FacilityCardContent extends StatelessWidget {
             emptyItemText: localizations.translate('NOT_FOUND'),
             items: facilities,
             selectedOption: selectedOption,
-            readOnly: isReadOnlyFrom,
+            readOnly: isReadOnlyField,
             onSelect: (value) {
               field.control.value = value.code;
 

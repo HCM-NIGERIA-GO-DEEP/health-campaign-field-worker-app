@@ -885,12 +885,10 @@ final jsonConfig = {
           "transactionReason":
               "__switch:__context:stockEntryType:{RECEIPT:__value:RECEIVED,RETURNED:__value:RETURNED,ISSUED:__value:null,DAMAGED:stockDetails.transactionReason,LOSS:stockDetails.transactionReason}",
           "transactingPartyId": "stockDetails.transactingPartyId",
-          "senderId":
-              "__switch:__context:senderPartyType:{STAFF:__context:loggedInUserUuid,default:stockDetails.facilityFromWhich}",
+          "senderId": "__context:senderId",
           "senderType":
               "__switch:__context:senderPartyType:{STAFF:__value:STAFF,default:__value:WAREHOUSE}",
-          "receiverId":
-              "__switch:__context:receiverPartyType:{STAFF:__context:teamCode,default:warehouseDetails.facilityToWhich}",
+          "receiverId": "__context:receiverId",
           "receiverType":
               "__switch:__context:receiverPartyType:{STAFF:__value:STAFF,default:__value:WAREHOUSE}",
           "nonRecoverableError": "errors.nonRecoverable",
@@ -936,7 +934,7 @@ final jsonConfig = {
           "quantity": "__context:quantity",
           "waybillNumber": "stockReceiptDetails.wayBillNumber",
           "transactionType": "__context:transactionType",
-          "transactionReason": "__value:RECEIVED",
+          "transactionReason": "__switch:__context:stockEntryType:{RETURNED:__value:RETURNED,default:__value:RECEIVED}",
           "campaignNumber": "__context:selectedProject.referenceID",
           "senderId": "__context:senderFacilityId",
           "senderType": "__value:WAREHOUSE",

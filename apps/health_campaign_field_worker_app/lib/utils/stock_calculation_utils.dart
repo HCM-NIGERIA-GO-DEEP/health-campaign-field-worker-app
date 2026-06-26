@@ -43,6 +43,12 @@ class StockCalculationUtils {
     return _getAdditionalFieldValue(stock, 'stockEntryType');
   }
 
+  static bool _isReturnStock(StockModel stock) {
+    if (_getStockEntryType(stock) == 'RETURNED') return true;
+    final reason = stock.transactionReason?.toUpperCase() ?? '';
+    return reason == 'RETURNED';
+  }
+
   static double _getDeliveryTaskValue(
     List<TaskModel> tasks,
     String productVariantId,
@@ -109,6 +115,8 @@ class StockCalculationUtils {
     double stockLess = 0;
     double stockWastage = 0;
     double stockPartialUsed = 0;
+    double inboundReturned = 0;
+    double outboundReturned = 0;
     bool hasDistributorReturns = isDistributor;
 
     for (final stock in filteredStock) {
@@ -117,6 +125,7 @@ class StockCalculationUtils {
       final quantity = double.tryParse(stock.quantity ?? '0') ?? 0.0;
       final status = _getAdditionalFieldValue(stock, 'status');
       final stockEntryType = _getStockEntryType(stock);
+      final isReturnStock = _isReturnStock(stock);
       final wastage =
           double.tryParse(_getAdditionalFieldValue(stock, 'quantityWastage')) ??
               0.0;
@@ -128,12 +137,13 @@ class StockCalculationUtils {
 
       // Auto-detect distributor: if user is sender in a return, treat as distributor
       final isDistributorReturn =
-          isSender && stockEntryType == 'RETURNED' && isDistributor;
+          isSender && isReturnStock && isDistributor;
       if (isDistributorReturn) hasDistributorReturns = true;
 
       if (isDistributor || isDistributorReturn) {
         _processDistributorStock(
           transactionType: transactionType,
+          transactionReason: transactionReason,
           stockEntryType: stockEntryType,
           quantity: quantity,
           wastage: wastage,
@@ -151,13 +161,26 @@ class StockCalculationUtils {
         continue;
       }
 
-      if (isReceiver && transactionType == 'RECEIVED') {
+      if (isReceiver &&
+          isReturnStock &&
+          (transactionType == 'DISPATCHED' || transactionType == 'RECEIVED') &&
+          (transactionType != 'DISPATCHED' ||
+              status == 'ACCEPTED' ||
+              status == 'IN_TRANSIT' ||
+              status.isEmpty)) {
+        // Inbound return: stock coming back to this facility
+        stockReturned += quantity;
+        inboundReturned += quantity;
+      } else if (isReceiver && transactionType == 'RECEIVED') {
         _categorizeReceivedStock(
           transactionReason: transactionReason,
           stockEntryType: stockEntryType,
           quantity: quantity,
           stockReceived: (v) => stockReceived += v,
-          stockReturned: (v) => stockReturned += v,
+          stockReturned: (v) {
+            stockReturned += v;
+            inboundReturned += v;
+          },
           stockExcess: (v) => stockExcess += v,
           stockLess: (v) => stockLess += v,
         );
@@ -168,7 +191,10 @@ class StockCalculationUtils {
           quantity: quantity,
           status: status,
           stockIssued: (v) => stockIssued += v,
-          stockReturned: (v) => stockReturned += v,
+          stockReturned: (v) {
+            stockReturned += v;
+            outboundReturned += v;
+          },
           stockLost: (v) => stockLost += v,
           stockDamaged: (v) => stockDamaged += v,
         );
@@ -178,7 +204,8 @@ class StockCalculationUtils {
         stockDamaged += quantity;
       } else if (isReceiver &&
           transactionType == 'DISPATCHED' &&
-          status == 'ACCEPTED') {
+          status == 'ACCEPTED' &&
+          !isReturnStock) {
         stockReceived += quantity;
       }
     }
@@ -188,8 +215,8 @@ class StockCalculationUtils {
       stockIssued += _getDeliveryTaskValue(tasks, productId);
     }
 
-    // Use distributor calculation if user has distributor role OR if any return was made as sender
-    // For distributor, partial used is also deducted from stock in hand
+    // Inbound returns increase stock in hand; outbound returns decrease it.
+    // stockReturned is the sum shown in reports/reconciliation.
     final double stockInHand = hasDistributorReturns
         ? stockReceived -
             (stockReturned +
@@ -198,8 +225,9 @@ class StockCalculationUtils {
                 stockIssued +
                 stockDamaged +
                 stockLost)
-        : stockReceived -
-            (stockReturned + stockIssued + stockDamaged + stockLost);
+        : stockReceived +
+            inboundReturned -
+            (outboundReturned + stockIssued + stockDamaged + stockLost);
 
     return {
       'stockReceived': stockReceived,
@@ -217,6 +245,7 @@ class StockCalculationUtils {
 
   static void _processDistributorStock({
     required String transactionType,
+    required String transactionReason,
     required String stockEntryType,
     required double quantity,
     required double wastage,
@@ -231,8 +260,11 @@ class StockCalculationUtils {
     required void Function(double) stockLost,
     required void Function(double) stockDamaged,
   }) {
+    final isReturnEntry =
+        stockEntryType == 'RETURNED' || transactionReason == 'RETURNED';
+
     if (transactionType == 'RECEIVED') {
-      if (stockEntryType == 'RETURNED') {
+      if (isReturnEntry) {
         stockReturned(quantity);
         stockWastage(wastage);
         stockPartialUsed(partialUsed);
@@ -244,7 +276,7 @@ class StockCalculationUtils {
         stockReceived(quantity);
       }
     } else if (transactionType == 'DISPATCHED') {
-      if (stockEntryType == 'RETURNED') {
+      if (isReturnEntry) {
         stockReturned(quantity);
         stockWastage(wastage);
         stockPartialUsed(partialUsed);
@@ -267,13 +299,21 @@ class StockCalculationUtils {
     required void Function(double) stockExcess,
     required void Function(double) stockLess,
   }) {
-    if (transactionReason == 'RETURNED' || stockEntryType == 'RETURNED') {
-      stockReturned(quantity);
-    } else if (stockEntryType == 'EXCESS') {
+    if (stockEntryType == 'EXCESS') {
       stockExcess(quantity);
     } else if (stockEntryType == 'LESS') {
       stockLess(quantity);
+    } else if (stockEntryType == 'RETURNED' || transactionReason == 'RETURNED') {
+      // The user's facility is now the RECEIVER in a RETURNED transaction
+      // (distributor is sender, user is receiver). The distributor is
+      // returning stock back to the user, so this increases the user's
+      // stock in hand — but it is categorised as stockReturned, not
+      // stockReceived, so the reconciliation report shows it correctly
+      // and stockInHand = stockReceived - (stockReturned + ...) is still
+      // balanced (the return restores what was issued).
+      stockReturned(quantity);
     } else {
+      // Normal inbound receipt: physically increases stock in hand.
       stockReceived(quantity);
     }
   }
@@ -297,7 +337,7 @@ class StockCalculationUtils {
         transactionReason == 'DAMAGED_IN_STORAGE' ||
         stockEntryType == 'DAMAGED') {
       stockDamaged(quantity);
-    } else if (stockEntryType == 'RETURNED') {
+    } else if (stockEntryType == 'RETURNED' || transactionReason == 'RETURNED') {
       stockReturned(quantity);
     } else {
       stockIssued(quantity);
