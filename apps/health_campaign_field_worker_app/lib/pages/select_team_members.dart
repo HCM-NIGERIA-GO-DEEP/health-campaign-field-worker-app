@@ -100,23 +100,17 @@ class _SelectTeamMembersPageState
       final remoteIndividualRepo = context
           .read<RemoteRepository<IndividualModel, IndividualSearchModel>>();
 
-      // 1. Project staff: local first, remote fallback
-      var staffList = await localStaffRepo.search(
+      // fetaching everytime as local might not have all the staff if multiple users login
+      List<ProjectStaffModel> staffList = [];
+      final remoteStaff = await remoteStaffRepo.search(
         ProjectStaffSearchModel(projectId: [projectId]),
+        limit: 1000,
       );
-      if (staffList
-          .where((s) => s.userId != null && s.userId != loggedInUuid)
-          .isEmpty) {
-        final remoteStaff = await remoteStaffRepo.search(
-          ProjectStaffSearchModel(projectId: [projectId]),
-          limit: 1000,
-        );
-        if (remoteStaff.isNotEmpty) {
-          staffList = remoteStaff;
-          // Cache locally as a read-only copy in the background. The loader
-          // uses the in-memory `remoteStaff`, so it must not wait on disk.
-          unawaited(_cacheStaff(localStaffRepo, remoteStaff));
-        }
+      if (remoteStaff.isNotEmpty) {
+        staffList = remoteStaff;
+        // Cache locally as a read-only copy in the background. The loader
+        // uses the in-memory `remoteStaff`, so it must not wait on disk.
+        unawaited(_cacheStaff(localStaffRepo, remoteStaff));
       }
       if (staffList.isEmpty) return empty;
 
