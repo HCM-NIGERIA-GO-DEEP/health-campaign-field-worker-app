@@ -706,7 +706,7 @@ void initializeFunctionRegistry() {
 
     if (status == TaskStatus.administrationSuccess ||
         status == TaskStatus.delivered) {
-      return '';
+      return 'NONE';
     }
 
     if (status == TaskStatus.notAdministered) {
@@ -894,6 +894,85 @@ void initializeFunctionRegistry() {
       }).toList();
 
       if (deliveryTasks.isEmpty) return false;
+
+      // --- Early-exit: if ANY delivery task in the current cycle was
+      // successfully administered, all doses are considered delivered.
+      // This prevents the re-delivery loop when a beneficiary has an
+      // ADVERSE_EFFECT task recorded AFTER a prior ADMINISTRATION_SUCCESS
+      // (e.g., "Record Adverse Effect" post-administration flow).
+      final hasSuccessfulAdministration = deliveryTasks.any((t) {
+        final status = t['status']?.toString().toUpperCase().trim() ?? '';
+        if (status != TaskStatus.administrationSuccess &&
+            status != TaskStatus.delivered) {
+          return false;
+        }
+        // Verify it belongs to the current cycle (if cycle info is available)
+        if (selectedCycle.id != null && selectedCycle.id != 0) {
+          final af = t['additionalFields'];
+          final fields = af is Map ? af['fields'] as List? : null;
+          if (fields != null) {
+            for (final field in fields) {
+              if (field is Map && field['key'] == 'cycleIndex') {
+                final cycleIdx =
+                    int.tryParse(field['value']?.toString() ?? '');
+                return cycleIdx == selectedCycle.id;
+              }
+            }
+          }
+        }
+        return true;
+      });
+
+      if (hasSuccessfulAdministration) {
+        // Check whether the last *administered* dose satisfies the full cycle
+        // delivery count — reuse normal logic on the last ADMINISTRATION_SUCCESS
+        // task rather than the last task overall (which may be ADVERSE_EFFECT).
+        final lastAdministeredTask = deliveryTasks.lastWhere(
+          (t) {
+            final s = t['status']?.toString().toUpperCase().trim() ?? '';
+            return s == TaskStatus.administrationSuccess ||
+                s == TaskStatus.delivered;
+          },
+          orElse: () => <String, dynamic>{},
+        );
+
+        if (lastAdministeredTask.isEmpty) return true;
+
+        final af = lastAdministeredTask['additionalFields'];
+        final fields = af is Map ? af['fields'] as List? : null;
+        int? lastCycleIdx;
+        int? lastDoseIdx;
+        if (fields != null) {
+          for (final field in fields) {
+            if (field is Map) {
+              if (field['key'] == 'cycleIndex') {
+                lastCycleIdx =
+                    int.tryParse(field['value']?.toString() ?? '');
+              }
+              if (field['key'] == 'doseIndex') {
+                lastDoseIdx =
+                    int.tryParse(field['value']?.toString() ?? '');
+              }
+            }
+          }
+        }
+
+        final directDeliveriesEarly = selectedCycle.deliveries
+                ?.where((d) => d.deliveryStrategy?.toUpperCase() == 'DIRECT')
+                .toList() ??
+            [];
+        final targetLengthEarly = directDeliveriesEarly.isNotEmpty
+            ? directDeliveriesEarly.length
+            : selectedCycle.deliveries?.length;
+
+        if ((lastDoseIdx == null || lastDoseIdx == targetLengthEarly) &&
+            (lastCycleIdx == null || lastCycleIdx == selectedCycle.id)) {
+          return true; // All doses delivered
+        }
+        // Doses remain (multi-dose cycle, not all done yet)
+        return false;
+      }
+
       final lastTask = deliveryTasks.last;
 
       // Extract cycleIndex from additionalFields
@@ -1413,68 +1492,115 @@ void initializeFunctionRegistry() {
     final doseIndex = int.tryParse(args[0]?.toString() ?? '') ?? -1;
     if (doseIndex < 0) return '';
 
-    // Get cycleIndex from second argument (required for accurate check)
     final cycleIndex =
         args.length > 1 ? int.tryParse(args[1]?.toString() ?? '') ?? -1 : -1;
     if (cycleIndex < 0) return '';
 
-    // Get date format from third argument (optional)
     final dateFormat =
         args.length > 2 ? args[2]?.toString() ?? 'dd MMM yyyy' : 'dd MMM yyyy';
 
-    // Get tasks from modelMap
-    final tasks = stateData.modelMap['tasks'] as List? ?? [];
+    final rawTasks = stateData.modelMap['tasks'] as List? ?? [];
 
-    // Find task with matching doseIndex AND cycleIndex in additionalFields
-    for (final task in tasks) {
-      if (task is! Map) continue;
-
-      // Get additionalFields.fields
-      final additionalFields = task['additionalFields'];
-      if (additionalFields == null) continue;
-
-      List? fields;
-      if (additionalFields is Map) {
-        fields = additionalFields['fields'] as List?;
-      } else if (additionalFields is List) {
-        fields = additionalFields;
-      }
-
-      if (fields == null) continue;
-
-      // Find doseIndex and cycleIndex in fields
+    for (final rawTask in rawTasks) {
       int? taskDoseIndex;
       int? taskCycleIndex;
+      int? createdTime;
 
-      for (final field in fields) {
-        if (field is Map) {
-          if (field['key'] == 'doseIndex') {
-            taskDoseIndex = int.tryParse(field['value']?.toString() ?? '');
-          }
-          if (field['key'] == 'cycleIndex') {
-            taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
-          }
-        }
+      // ── Helper: extract key/value from an AdditionalField (Map or model) ──
+      String? _fieldKey(dynamic f) {
+        if (f is Map) return f['key']?.toString();
+        try { return (f as dynamic).key?.toString(); } catch (_) {}
+        return null;
       }
 
-      // Check if BOTH dose AND cycle match
-      if (taskDoseIndex == doseIndex && taskCycleIndex == cycleIndex) {
-        // Found matching task, get createdTime from clientAuditDetails
-        final clientAuditDetails = task['clientAuditDetails'];
-        if (clientAuditDetails is Map) {
-          final createdTime = clientAuditDetails['createdTime'];
-          if (createdTime != null) {
+      String? _fieldValue(dynamic f) {
+        if (f is Map) return f['value']?.toString();
+        try { return (f as dynamic).value?.toString(); } catch (_) {}
+        return null;
+      }
+
+      // ── Get the fields list from additionalFields (Map or AdditionalFields model) ──
+      List? _getFields(dynamic rawTask) {
+        // Try direct model property access first (TaskModel)
+        try {
+          final af = (rawTask as dynamic).additionalFields;
+          if (af != null) {
+            try { return (af as dynamic).fields as List?; } catch (_) {}
+            if (af is Map) return af['fields'] as List?;
+          }
+        } catch (_) {}
+
+        // Try as a plain Map (already serialized)
+        if (rawTask is Map) {
+          final af = rawTask['additionalFields'];
+          if (af is Map) return af['fields'] as List?;
+          if (af is List) return af;
+          if (af != null) {
+            try { return (af as dynamic).fields as List?; } catch (_) {}
+          }
+        }
+        return null;
+      }
+
+      // ── Get createdTime from clientAuditDetails or auditDetails ──
+      int? _getCreatedTime(dynamic rawTask) {
+        // Try direct model property access
+        try {
+          final cad = (rawTask as dynamic).clientAuditDetails;
+          if (cad != null) {
             try {
-              final timestamp = createdTime is int
-                  ? createdTime
-                  : int.tryParse(createdTime.toString()) ?? 0;
-              if (timestamp > 0) {
-                final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
-                return DateFormat(dateFormat).format(date);
-              }
-            } catch (_) {
-              return '';
+              final t = (cad as dynamic).createdTime;
+              if (t is int && t > 0) return t;
+              if (t != null) return int.tryParse(t.toString());
+            } catch (_) {}
+            if (cad is Map) {
+              final t = cad['createdTime'];
+              if (t is int && t > 0) return t;
+              if (t != null) return int.tryParse(t.toString());
             }
+          }
+        } catch (_) {}
+
+        // Try as plain Map
+        if (rawTask is Map) {
+          for (final key in ['clientAuditDetails', 'auditDetails']) {
+            final ad = rawTask[key];
+            if (ad is Map) {
+              final t = ad['createdTime'];
+              if (t is int && t > 0) return t;
+              if (t != null) { final v = int.tryParse(t.toString()); if (v != null && v > 0) return v; }
+            }
+            if (ad != null) {
+              try {
+                final t = (ad as dynamic).createdTime;
+                if (t is int && t > 0) return t;
+                if (t != null) return int.tryParse(t.toString());
+              } catch (_) {}
+            }
+          }
+        }
+        return null;
+      }
+
+      // ── Process fields ──
+      final fields = _getFields(rawTask);
+      if (fields == null) continue;
+
+      for (final field in fields) {
+        final k = _fieldKey(field);
+        final v = _fieldValue(field);
+        if (k == 'doseIndex') taskDoseIndex = int.tryParse(v ?? '');
+        if (k == 'cycleIndex') taskCycleIndex = int.tryParse(v ?? '');
+      }
+
+      if (taskDoseIndex == doseIndex && taskCycleIndex == cycleIndex) {
+        createdTime = _getCreatedTime(rawTask);
+        if (createdTime != null && createdTime > 0) {
+          try {
+            return DateFormat(dateFormat)
+                .format(DateTime.fromMillisecondsSinceEpoch(createdTime));
+          } catch (_) {
+            return '';
           }
         }
       }
@@ -1482,6 +1608,7 @@ void initializeFunctionRegistry() {
 
     return '';
   });
+
 
   /// Registers a function to check if the edit button should be disabled.
   ///
