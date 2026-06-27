@@ -283,11 +283,6 @@ final dynamic sampleFlows = {
                               "{{fn:isDoseCompleted(item.id, contextData.0.currentRunningCycle)}} == true",
                           "value":
                               "REGISTRATION_CURRENT_DOSE_STATUS_ADMINISTERED"
-                        },
-                        {
-                          "when": "{{item.id}} == {{contextData.0.nextDoseId}}",
-                          "value":
-                              "REGISTRATION_CURRENT_DOSE_STATUS_TOBE_ADMINISTERED"
                         }
                       ]
                     }
