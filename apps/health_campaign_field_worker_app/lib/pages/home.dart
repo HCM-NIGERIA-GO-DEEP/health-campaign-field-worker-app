@@ -171,6 +171,20 @@ class _HomePageState extends LocalizedState<HomePage> {
 
     // Register custom components for forms
     _registerCustomComponents();
+
+    // Pre-load project-specific localisation modules eagerly so they are
+    // already cached in SQLite by the time the user navigates into a flow.
+    // triggerLocalization() checks local DB first and only hits the network
+    // for modules that are genuinely missing, so this is safe to call early.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        final projectRefId = context.selectedProject.referenceID;
+        triggerLocalization(
+          module:
+              'hcm-registration-$projectRefId,hcm-inventory-$projectRefId',
+        );
+      }
+    });
   }
 
   /// Register custom components for forms engine

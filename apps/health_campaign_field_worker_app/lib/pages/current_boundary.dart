@@ -59,7 +59,7 @@ class _CurrentBoundaryPageState extends LocalizedState<CurrentBoundaryPage> {
                 .read<LocalizationBloc>()
                 .add(LocalizationEvent.onLoadLocalization(
                   module: module != null && module.isNotEmpty
-                      ? "$module,hcm-common,hcm-login,hcm-scanner,hcm-checklist,hcm-beneficiary"
+                      ? "$module,hcm-beneficiary,hcm-common"
                       : localizationModulesList?.interfaces
                               .where(
                                   (e) => e.type == Modules.localizationModule)
