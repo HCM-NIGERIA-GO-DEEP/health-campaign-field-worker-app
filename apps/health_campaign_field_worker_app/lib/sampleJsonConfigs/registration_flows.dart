@@ -820,35 +820,6 @@ final dynamic sampleFlows = {
               "children": [
                 {
                   "type": "template",
-                  "format": "expanded",
-                  "child": {
-                    "data": [
-                      {
-                        "key": "HOUSEHOLD_HEAD_NAME",
-                        "value":
-                            "{{contextData.0.headIndividual.IndividualModel.name.givenName}}",
-                        "isActive": true
-                      },
-                      {
-                        "key": "HOUSEHOLD_LOCALITY",
-                        "value":
-                            "{{contextData.0.household.HouseholdModel.address.locality.code}}",
-                        "isActive": true
-                      },
-                      {
-                        "key": "MEMBER_COUNT",
-                        "value":
-                            "{{contextData.0.household.HouseholdModel.memberCount}}",
-                        "isActive": true
-                      }
-                    ],
-                    "type": "template",
-                    "format": "labelPairList",
-                    "fieldName": "householdDetails"
-                  }
-                },
-                {
-                  "type": "template",
                   "label": "REGISTRATION_EDIT_INDIVIDUAL_BUTTON_LABEL",
                   "format": "button",
                   "onAction": [
@@ -874,7 +845,12 @@ final dynamic sampleFlows = {
                             "value":
                                 "{{contextData.0.household.HouseholdModel.clientReferenceId}}"
                           },
-                          {"key": "isEdit", "value": "true"}
+                          {"key": "isEdit", "value": "true"},
+                          {
+                            "key": "existingMemberCount",
+                            "value":
+                                "{{contextData.0.household.HouseholdModel.memberCount}}"
+                          }
                         ],
                         "name": "HOUSEHOLD",
                         "type": "FORM"
@@ -891,12 +867,33 @@ final dynamic sampleFlows = {
                   }
                 }
               ],
-              "fieldName": "householdDetailsRow",
-              "properties": {
-                "mainAxisSize": "max",
-                "mainAxisAlignment": "spaceBetween",
-                "crossAxisAlignment": "start"
-              }
+              "fieldName": "editHouseholdRow",
+              "properties": {"mainAxisSize": "max", "mainAxisAlignment": "end"}
+            },
+            {
+              "data": [
+                {
+                  "key": "HOUSEHOLD_HEAD_NAME",
+                  "value":
+                      "{{contextData.0.headIndividual.IndividualModel.name.givenName}}",
+                  "isActive": true
+                },
+                {
+                  "key": "HOUSEHOLD_LOCALITY",
+                  "value":
+                      "{{contextData.0.household.HouseholdModel.address.locality.code}}",
+                  "isActive": true
+                },
+                {
+                  "key": "MEMBER_COUNT",
+                  "value":
+                      "{{contextData.0.household.HouseholdModel.memberCount}}",
+                  "isActive": true
+                }
+              ],
+              "type": "template",
+              "format": "labelPairList",
+              "fieldName": "householdDetails"
             },
             {
               "type": "template",
@@ -4986,10 +4983,7 @@ final dynamic sampleFlows = {
                     "key": "cycleIndex",
                     "value": "{{contextData.0.currentRunningCycle}}"
                   },
-                  {
-                    "key": "doseIndex",
-                    "value": "1"
-                  }
+                  {"key": "doseIndex", "value": "1"}
                 ],
                 "name": "DELIVERY",
                 "type": "FORM",
@@ -6489,7 +6483,7 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "min",
-                  "value": "2",
+                  "value": "navigation.existingMemberCount",
                   "message":
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount_min_message"
                 },
