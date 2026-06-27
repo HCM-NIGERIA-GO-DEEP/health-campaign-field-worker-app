@@ -48,6 +48,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
   List<ProductVariantModel> _selectedProducts = [];
   Map<String, double> _stockInHandMap = {};
   Map<String, double> _stockIssuedMap = {};
+  Map<String, double> _stockReturnedMap = {};
   bool _stockSearchTriggered = false;
 
   List<ProductVariantModel> _localProductVariants = [];
@@ -90,7 +91,8 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         });
       }
     } catch (e) {
-      debugPrint('ProductSelectionCard: Error loading local product variants: $e');
+      debugPrint(
+          'ProductSelectionCard: Error loading local product variants: $e');
     }
   }
 
@@ -99,8 +101,9 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
   String? _getFacilityIdFromFormData(BuildContext context) {
     // For stock-in-hand, we need the source facility (where stock is held)
     // For ISSUED: source = current user's facility (getUserFacilityId)
-    // For RETURNED (CDD→HFS): source = CDD teamCode — so the cap equals
-    //   what was issued to the CDD minus what they already returned.
+    // For RETURNED (CDD→HFS): source = HFS's own facility. The cap is computed
+    //   as stockIssued(HFS→CDD) - stockReturned(CDD→HFS already), both of
+    //   which are reliably read from the HFS facility's stock records.
     // For RECEIPT/others: source = facilityToWhich
     final navigationParams = FlowCrudStateRegistry()
             .getNavigationParams('FORM::${widget.pageSchema}') ??
@@ -108,11 +111,9 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         {};
     final transactionType =
         navigationParams['transactionType']?.toString() ?? '';
-    final stockEntryType =
-        navigationParams['stockEntryType']?.toString() ?? '';
+    final stockEntryType = navigationParams['stockEntryType']?.toString() ?? '';
     final primaryRole = navigationParams['primaryRole']?.toString() ?? '';
-    final isIssue =
-        stockEntryType == 'ISSUED' ||
+    final isIssue = stockEntryType == 'ISSUED' ||
         transactionType == 'DISPATCHED' && stockEntryType != 'RETURNED';
     final isReturn = stockEntryType == 'RETURNED';
 
@@ -139,22 +140,6 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
     if (schema != null) {
       final warehouseDetailsPage = schema.pages['warehouseDetails'];
       if (warehouseDetailsPage?.properties != null) {
-        // For the return flow (CDD→HFS, primaryRole==RECEIVER), use the CDD's
-        // teamCode as the facility ID. Calculating stock-in-hand against the
-        // CDD gives: issued-to-CDD minus already-returned-by-CDD, which is
-        // the correct upper limit for the return quantity.
-        if (isReturn && primaryRole == 'RECEIVER') {
-          // Query from HFS (sender) perspective to get stockIssued to CDD
-          final facilityField =
-              warehouseDetailsPage!.properties!['facilityToWhich'];
-          if (facilityField?.value != null &&
-              facilityField!.value.toString().isNotEmpty) {
-            debugPrint(
-                'ProductSelectionCard: Return flow — using HFS facilityToWhich as facilityId: ${facilityField.value}');
-            return facilityField.value.toString();
-          }
-        }
-
         final facilityField =
             warehouseDetailsPage!.properties!['facilityToWhich'];
         if (facilityField?.value != null) {
@@ -168,18 +153,6 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
     // Fallback: Try stateData.formData
     final formData = widget.stateData?.formData as Map<String, dynamic>?;
     if (formData != null) {
-      // For return flow fallback, try teamCode first
-      if (isReturn && primaryRole == 'RECEIVER') {
-        final teamCode = formData['warehouseDetails.teamCode'] ??
-            (formData['warehouseDetails']
-                as Map<String, dynamic>?)?['teamCode'];
-        if (teamCode != null && teamCode.toString().isNotEmpty) {
-          debugPrint(
-              'ProductSelectionCard: Return flow fallback — using CDD teamCode: $teamCode');
-          return teamCode.toString();
-        }
-      }
-
       final facilityId = formData['warehouseDetails.facilityToWhich'] ??
           formData['facilityToWhich'] ??
           (formData['warehouseDetails']
@@ -198,11 +171,11 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
   Future<void> _triggerStockSearch(BuildContext context) async {
     String? facilityId = _getFacilityIdFromFormData(context);
 
-// teamCode can be stored as "Chad-uat-cdd-8||abb4651f-..." 
-// Stock records only use the UUID part after ||
-if (facilityId != null && facilityId.contains('||')) {
-  facilityId = facilityId.split('||').last.trim();
-}
+    // facilityToWhich can sometimes contain a pipe-separated value (e.g. "label||uuid");
+    // extract only the UUID part after || for stock record matching.
+    if (facilityId != null && facilityId.contains('||')) {
+      facilityId = facilityId.split('||').last.trim();
+    }
     if (facilityId == null || facilityId.isEmpty) {
       debugPrint(
           'ProductSelectionCard: Skipping stock search - no facility selected');
@@ -251,7 +224,8 @@ if (facilityId != null && facilityId.contains('||')) {
       // Extract stock list from results
       final stockList =
           results['stock']?.whereType<StockModel>().toList() ?? <StockModel>[];
-      debugPrint('ProductSelectionCard: Fetched ${stockList.length} stock records');
+      debugPrint(
+          'ProductSelectionCard: Fetched ${stockList.length} stock records');
 
       if (!mounted) return;
 
@@ -270,9 +244,10 @@ if (facilityId != null && facilityId.contains('||')) {
       var _isDistributor = context.loggedInUserRoles
           .any((role) => role.code == RolesType.distributor.toValue());
 
-      // Calculate full metrics per product (not just stockInHand)
+      // Calculate stock metrics per product
       final Map<String, double> stockInHandResult = {};
       final Map<String, double> stockIssuedResult = {};
+      final Map<String, double> stockReturnedResult = {};
 
       for (final productId in productIds) {
         final metrics = StockCalculationUtils.calculateStockMetrics(
@@ -283,19 +258,21 @@ if (facilityId != null && facilityId.contains('||')) {
           isDistributor: _isDistributor,
           tasks: tasks,
         );
-        stockInHandResult[productId] = metrics['stockInHand'] ?? 0.0; // ADD
-        stockIssuedResult[productId] = metrics['stockIssued'] ?? 0.0; // ADD
+        // stockInHand = net balance from this facility's perspective (for issue flow).
+        // For return flow we use stockIssued - stockReturned (both from HFS perspective)
+        // so the cap correctly reflects how much the CDD can still return.
+        stockInHandResult[productId] = metrics['stockInHand'] ?? 0.0;
+        stockIssuedResult[productId] = metrics['stockIssued'] ?? 0.0;
+        stockReturnedResult[productId] = metrics['stockReturned'] ?? 0.0;
         debugPrint('DEBUG RETURN: productId=$productId');
         debugPrint('DEBUG RETURN: stockInHand=${metrics['stockInHand']}');
         debugPrint('DEBUG RETURN: stockIssued=${metrics['stockIssued']}');
-        debugPrint('DEBUG RETURN: stockReceived=${metrics['stockReceived']}');
         debugPrint('DEBUG RETURN: stockReturned=${metrics['stockReturned']}');
       }
 
       _stockInHandMap = stockInHandResult;
       _stockIssuedMap = stockIssuedResult;
-
-
+      _stockReturnedMap = stockReturnedResult;
 
       // Update FormsBloc with stock in hand data
       _updateStockInHandInFormsBloc();
@@ -309,11 +286,8 @@ if (facilityId != null && facilityId.contains('||')) {
     }
   }
 
-  /// Updates FormsBloc with stock in hand data so it's available to the next page
-  // void _updateStockInHandInFormsBloc() {
-  //   if (_stockInHandMap.isEmpty || _selectedProducts.isEmpty) return;
-void _updateStockInHandInFormsBloc() {
-  if (_selectedProducts.isEmpty) return;
+  void _updateStockInHandInFormsBloc() {
+    if (_selectedProducts.isEmpty) return;
     // Update the stockInHandMap
     context.read<FormsBloc>().add(
           FormsEvent.updateField(
@@ -345,7 +319,6 @@ void _updateStockInHandInFormsBloc() {
 
     // Update the schema to add max validations for quantity fields
     _updateQuantityFieldValidations();
-
   }
 
   /// Updates the schema to add max validations for quantity fields based on stockInHand.
@@ -414,27 +387,27 @@ void _updateStockInHandInFormsBloc() {
       }
     }
 
+    // Detect return flow once, outside the per-product loop
+    final navigationParams = FlowCrudStateRegistry()
+            .getNavigationParams('FORM::${widget.pageSchema}') ??
+        FlowCrudStateRegistry().getNavigationParams(widget.pageSchema) ??
+        {};
+    final isReturnFlow =
+        navigationParams['stockEntryType']?.toString() == 'RETURNED';
+
     // For each selected product, create entity-specific field validations
     for (var entityIndex = 0;
         entityIndex < _selectedProducts.length;
         entityIndex++) {
       final product = _selectedProducts[entityIndex];
-      // For return flow, cap by stockIssued (what was sent out), not stockInHand
-      final navigationParams = FlowCrudStateRegistry()
-              .getNavigationParams('FORM::${widget.pageSchema}') ??
-          FlowCrudStateRegistry().getNavigationParams(widget.pageSchema) ??
-          {};
-      final stockEntryType =
-          navigationParams['stockEntryType']?.toString() ?? '';
-      final isReturnFlow = stockEntryType == 'RETURNED';
-
-
-      // For return flow: cap by stockIssued from HFS to CDD, not stockInHand
+      // For return flow: cap = stockIssued(HFS→CDD) - stockReturned(already returned to HFS).
+      // Both metrics come from HFS's perspective, so facility resolution is reliable.
+      // For issue flow: cap = stockInHand (net balance at HFS).
       final stockValue = isReturnFlow
-          ? (_stockIssuedMap[product.id] ?? 0.0)
+          ? ((_stockIssuedMap[product.id] ?? 0.0) -
+              (_stockReturnedMap[product.id] ?? 0.0))
           : (_stockInHandMap[product.id] ?? 0.0);
-      final maxValue = stockValue.toInt();
-
+      final maxValue = stockValue.clamp(0.0, double.infinity).toInt();
 
       for (final fieldName in quantityFields) {
         // Get the base field schema (from our stored map)
@@ -732,7 +705,7 @@ void _updateStockInHandInFormsBloc() {
         productVariants = wrapperData.whereType<ProductVariantModel>().toList();
       }
     }
-    
+
     if (productVariants == null || productVariants.isEmpty) {
       productVariants = _localProductVariants;
     }
@@ -849,7 +822,6 @@ void _updateStockInHandInFormsBloc() {
                     ),
                   );
 
-              
               // Trigger stock search after product selection
               if (selectedModels.isNotEmpty) {
                 _triggerStockSearch(context);
