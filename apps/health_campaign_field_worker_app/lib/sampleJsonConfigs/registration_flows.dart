@@ -3535,14 +3535,21 @@ final dynamic sampleFlows = {
               "tooltip": "",
               "helpText": "",
               "infoText": "",
-              "readOnly": true,
+              "readOnly": false,
               "fieldName": "dateOfRegistration",
               "mandatory": true,
               "deleteFlag": false,
               "innerLabel": "",
               "schemaCode": null,
               "systemDate": true,
-              "validations": [],
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "DELIVERY_DATE_OF_REGISTRATION_REQUIRED"
+                },
+                {"type": "startDate", "value": 1782604800000}
+              ],
               "errorMessage": "",
               "includeInForm": true,
               "isMultiSelect": false,
@@ -3918,14 +3925,21 @@ final dynamic sampleFlows = {
               "tooltip": "",
               "helpText": "",
               "infoText": "",
-              "readOnly": true,
+              "readOnly": false,
               "fieldName": "dateOfRedose",
               "mandatory": true,
               "deleteFlag": false,
               "innerLabel": "",
               "schemaCode": null,
               "systemDate": true,
-              "validations": [],
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "DELIVERY_DATE_OF_REGISTRATION_REQUIRED"
+                },
+                {"type": "startDate", "value": 1782604800000}
+              ],
               "errorMessage": "",
               "includeInForm": true,
               "isMultiSelect": false,

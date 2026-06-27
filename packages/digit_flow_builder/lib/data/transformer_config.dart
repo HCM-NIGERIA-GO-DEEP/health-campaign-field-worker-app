@@ -594,7 +594,8 @@ final jsonConfig = {
             "ageInMonths": "__context:ageInMonths",
             "gender": "__context:gender",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+            "dateOfRegistration": "DeliveryDetails.dateOfRegistration"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -913,7 +914,8 @@ final jsonConfig = {
             "ageInMonths": "__context:ageInMonths",
             "gender": "__context:gender",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+            "dateOfRegistration": "RedoseDetails.dateOfRedose"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"

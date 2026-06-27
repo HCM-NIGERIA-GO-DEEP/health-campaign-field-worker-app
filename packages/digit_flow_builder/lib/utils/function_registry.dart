@@ -1708,15 +1708,35 @@ void initializeFunctionRegistry() {
       final fields = _getFields(rawTask);
       if (fields == null) continue;
 
+      int? dateOfRegistrationMs;
+
       for (final field in fields) {
         final k = _fieldKey(field);
         final v = _fieldValue(field);
         if (k == 'doseIndex') taskDoseIndex = int.tryParse(v ?? '');
         if (k == 'cycleIndex') taskCycleIndex = int.tryParse(v ?? '');
+        // Capture user-entered dateOfRegistration (stored as epoch ms or
+        // DateTime-serialised string from the form)
+        if (k == 'dateOfRegistration' && v != null && v.isNotEmpty) {
+          dateOfRegistrationMs = int.tryParse(v);
+          // Also handle ISO / formatted date strings stored by the transformer
+          if (dateOfRegistrationMs == null) {
+            try {
+              dateOfRegistrationMs =
+                  DateTime.parse(v).millisecondsSinceEpoch;
+            } catch (_) {}
+          }
+        }
       }
 
       if (taskDoseIndex == doseIndex && taskCycleIndex == cycleIndex) {
-        createdTime = _getCreatedTime(rawTask);
+        // Prefer the user-entered date over the system audit timestamp
+        final effectiveMs =
+            (dateOfRegistrationMs != null && dateOfRegistrationMs > 0)
+                ? dateOfRegistrationMs
+                : _getCreatedTime(rawTask);
+
+        createdTime = effectiveMs;
         if (createdTime != null && createdTime > 0) {
           try {
             return DateFormat(dateFormat)
