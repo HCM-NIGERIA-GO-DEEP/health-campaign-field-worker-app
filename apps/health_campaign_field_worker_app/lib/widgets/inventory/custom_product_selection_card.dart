@@ -90,15 +90,13 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         });
       }
     } catch (e) {
-      debugPrint('RIYAZ ProductSelectionCard: Error loading local product variants: $e');
+      debugPrint('ProductSelectionCard: Error loading local product variants: $e');
     }
   }
 
   /// Gets the facility ID from the previous page's form data (warehouseDetails.facilityToWhich)
   /// Reads from FormsBloc state which stores all page data
   String? _getFacilityIdFromFormData(BuildContext context) {
-//     debugPrint('DEBUG RETURN: stockEntryType=$stockEntryType primaryRole=$primaryRole isReturn=$isReturn');
-// debugPrint('DEBUG RETURN: resolved facilityId=$facilityId');
     // For stock-in-hand, we need the source facility (where stock is held)
     // For ISSUED: source = current user's facility (getUserFacilityId)
     // For RETURNED (CDD→HFS): source = CDD teamCode — so the cap equals
@@ -146,16 +144,16 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         // CDD gives: issued-to-CDD minus already-returned-by-CDD, which is
         // the correct upper limit for the return quantity.
         if (isReturn && primaryRole == 'RECEIVER') {
-  // Query from HFS (sender) perspective to get stockIssued to CDD
-  final facilityField =
-      warehouseDetailsPage!.properties!['facilityToWhich'];
-  if (facilityField?.value != null &&
-      facilityField!.value.toString().isNotEmpty) {
-    debugPrint(
-        'ProductSelectionCard: Return flow — using HFS facilityToWhich as facilityId: ${facilityField.value}');
-    return facilityField.value.toString();
-  }
-}
+          // Query from HFS (sender) perspective to get stockIssued to CDD
+          final facilityField =
+              warehouseDetailsPage!.properties!['facilityToWhich'];
+          if (facilityField?.value != null &&
+              facilityField!.value.toString().isNotEmpty) {
+            debugPrint(
+                'ProductSelectionCard: Return flow — using HFS facilityToWhich as facilityId: ${facilityField.value}');
+            return facilityField.value.toString();
+          }
+        }
 
         final facilityField =
             warehouseDetailsPage!.properties!['facilityToWhich'];
@@ -193,9 +191,6 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         return facilityId.toString();
       }
     }
-    debugPrint('RIYAZ DEBUG RETURN: stockEntryType=$stockEntryType primaryRole=$primaryRole isReturn=$isReturn isIssue=$isIssue');
-    debugPrint('RIYAZ DEBUG RETURN: facilityId not found');
-    debugPrint('RIYAZ ProductSelectionCard: facilityId not found');
     return null;
   }
 
@@ -207,7 +202,6 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
 // Stock records only use the UUID part after ||
 if (facilityId != null && facilityId.contains('||')) {
   facilityId = facilityId.split('||').last.trim();
-  debugPrint('RIYAZ DEBUG RETURN: facilityId trimmed to UUID = $facilityId');
 }
     if (facilityId == null || facilityId.isEmpty) {
       debugPrint(
@@ -223,7 +217,7 @@ if (facilityId != null && facilityId.contains('||')) {
 
     final tenantId = FlowBuilderSingleton().selectedProject?.tenantId;
     if (tenantId == null) {
-      debugPrint('RIYAZ ProductSelectionCard: ERROR - TenantId not found');
+      debugPrint('ProductSelectionCard: ERROR - TenantId not found');
       return;
     }
 
@@ -257,13 +251,7 @@ if (facilityId != null && facilityId.contains('||')) {
       // Extract stock list from results
       final stockList =
           results['stock']?.whereType<StockModel>().toList() ?? <StockModel>[];
-      debugPrint('RIYAZ DEBUG RETURN: facilityId used for search = $facilityId');
-debugPrint('RIYAZ DEBUG RETURN: stockList.length = ${stockList.length}');
-for (final s in stockList.take(3)) {
-  debugPrint('RIYAZ DEBUG RETURN: stock record → senderId=${s.senderId} receiverId=${s.receiverId} productVariantId=${s.productVariantId} qty=${s.quantity} transactionType=${s.transactionType}');
-}
-      debugPrint(
-          'RIYAZ ProductSelectionCard: Fetched ${stockList.length} stock records');
+      debugPrint('ProductSelectionCard: Fetched ${stockList.length} stock records');
 
       if (!mounted) return;
 
@@ -283,34 +271,31 @@ for (final s in stockList.take(3)) {
           .any((role) => role.code == RolesType.distributor.toValue());
 
       // Calculate full metrics per product (not just stockInHand)
-final Map<String, double> stockInHandResult = {};
-final Map<String, double> stockIssuedResult = {};
+      final Map<String, double> stockInHandResult = {};
+      final Map<String, double> stockIssuedResult = {};
 
-for (final productId in productIds) {
-  debugPrint('RIYAZ SIDDIQUI DEBUG METRICS CALL: facilityId passed = $facilityId, productId = $productId');
-  final metrics = StockCalculationUtils.calculateStockMetrics(
-    stockList: stockList,
-    facilityId: facilityId,
-    productId: productId,
-    loggedInUserUuid: loggedInUserUuid,
-    isDistributor: _isDistributor,
-    tasks: tasks,
-  );
-  stockInHandResult[productId] = metrics['stockInHand'] ?? 0.0; // ADD
-  stockIssuedResult[productId] = metrics['stockIssued'] ?? 0.0; // ADD
-  debugPrint('DEBUG RETURN: productId=$productId');
-  debugPrint('DEBUG RETURN: stockInHand=${metrics['stockInHand']}');
-  debugPrint('DEBUG RETURN: stockIssued=${metrics['stockIssued']}');
-  debugPrint('DEBUG RETURN: stockReceived=${metrics['stockReceived']}');
-  debugPrint('DEBUG RETURN: stockReturned=${metrics['stockReturned']}');
-}
+      for (final productId in productIds) {
+        final metrics = StockCalculationUtils.calculateStockMetrics(
+          stockList: stockList,
+          facilityId: facilityId,
+          productId: productId,
+          loggedInUserUuid: loggedInUserUuid,
+          isDistributor: _isDistributor,
+          tasks: tasks,
+        );
+        stockInHandResult[productId] = metrics['stockInHand'] ?? 0.0; // ADD
+        stockIssuedResult[productId] = metrics['stockIssued'] ?? 0.0; // ADD
+        debugPrint('DEBUG RETURN: productId=$productId');
+        debugPrint('DEBUG RETURN: stockInHand=${metrics['stockInHand']}');
+        debugPrint('DEBUG RETURN: stockIssued=${metrics['stockIssued']}');
+        debugPrint('DEBUG RETURN: stockReceived=${metrics['stockReceived']}');
+        debugPrint('DEBUG RETURN: stockReturned=${metrics['stockReturned']}');
+      }
 
-_stockInHandMap = stockInHandResult;
-_stockIssuedMap = stockIssuedResult;
+      _stockInHandMap = stockInHandResult;
+      _stockIssuedMap = stockIssuedResult;
 
 
-      debugPrint(
-          'RIYAZ ProductSelectionCard: Calculated stockInHand: $_stockInHandMap');
 
       // Update FormsBloc with stock in hand data
       _updateStockInHandInFormsBloc();
@@ -319,8 +304,8 @@ _stockIssuedMap = stockIssuedResult;
         _stockSearchTriggered = true;
       });
     } catch (e, stackTrace) {
-      debugPrint('RIYAZ ProductSelectionCard: ERROR in stock search: $e');
-      debugPrint('RIYAZ Stack trace: $stackTrace');
+      debugPrint('ProductSelectionCard: ERROR in stock search: $e');
+      debugPrint('Stack trace: $stackTrace');
     }
   }
 
@@ -361,8 +346,6 @@ void _updateStockInHandInFormsBloc() {
     // Update the schema to add max validations for quantity fields
     _updateQuantityFieldValidations();
 
-    debugPrint(
-        'RIYAZ ProductSelectionCard: Updated FormsBloc with stockInHandMap and products with stockInHand');
   }
 
   /// Updates the schema to add max validations for quantity fields based on stockInHand.
@@ -391,14 +374,9 @@ void _updateStockInHandInFormsBloc() {
 
     if (multiEntityPageKey == null || multiEntityPage?.properties == null) {
       debugPrint(
-          'RIYAZ ProductSelectionCard: ERROR - No page with multiEntityConfig found');
+          'ProductSelectionCard: ERROR - No page with multiEntityConfig found');
       return;
     }
-
-    debugPrint(
-        'RIYAZ ProductSelectionCard: Found multiEntityConfig page: $multiEntityPageKey');
-    debugPrint(
-        'RIYAZ ProductSelectionCard: Updating validations for ${_selectedProducts.length} products');
 
     // Quantity fields that need max validation
     // These are all quantity fields that could potentially need stock validation
@@ -442,20 +420,20 @@ void _updateStockInHandInFormsBloc() {
         entityIndex++) {
       final product = _selectedProducts[entityIndex];
       // For return flow, cap by stockIssued (what was sent out), not stockInHand
-final navigationParams = FlowCrudStateRegistry()
-        .getNavigationParams('FORM::${widget.pageSchema}') ??
-    FlowCrudStateRegistry().getNavigationParams(widget.pageSchema) ??
-    {};
-final stockEntryType =
-    navigationParams['stockEntryType']?.toString() ?? '';
-final isReturnFlow = stockEntryType == 'RETURNED';
+      final navigationParams = FlowCrudStateRegistry()
+              .getNavigationParams('FORM::${widget.pageSchema}') ??
+          FlowCrudStateRegistry().getNavigationParams(widget.pageSchema) ??
+          {};
+      final stockEntryType =
+          navigationParams['stockEntryType']?.toString() ?? '';
+      final isReturnFlow = stockEntryType == 'RETURNED';
 
 
-// For return flow: cap by stockIssued from HFS to CDD, not stockInHand
-final stockValue = isReturnFlow
-    ? (_stockIssuedMap[product.id] ?? 0.0)
-    : (_stockInHandMap[product.id] ?? 0.0);
-final maxValue = stockValue.toInt();
+      // For return flow: cap by stockIssued from HFS to CDD, not stockInHand
+      final stockValue = isReturnFlow
+          ? (_stockIssuedMap[product.id] ?? 0.0)
+          : (_stockInHandMap[product.id] ?? 0.0);
+      final maxValue = stockValue.toInt();
 
 
       for (final fieldName in quantityFields) {
@@ -503,7 +481,7 @@ final maxValue = stockValue.toInt();
     for (final fieldName in quantityFields) {
       if (updatedProperties.containsKey(fieldName)) {
         updatedProperties.remove(fieldName);
-        debugPrint('RIYAZ ProductSelectionCard: Removed base field: $fieldName');
+        debugPrint('ProductSelectionCard: Removed base field: $fieldName');
       }
 
       // Also remove any old entity-specific fields that are beyond current selection
@@ -522,14 +500,14 @@ final maxValue = stockValue.toInt();
       }
       for (final key in keysToRemove) {
         updatedProperties.remove(key);
-        debugPrint('RIYAZ ProductSelectionCard: Removed stale field: $key');
+        debugPrint('ProductSelectionCard: Removed stale field: $key');
       }
     }
 
     debugPrint(
-        'RIYAZ ProductSelectionCard: Final quantity field keys: ${updatedProperties.keys.where((k) => k.contains('quantity')).toList()}');
+        'ProductSelectionCard: Final quantity field keys: ${updatedProperties.keys.where((k) => k.contains('quantity')).toList()}');
     debugPrint(
-        'RIYAZ ProductSelectionCard: All property keys: ${updatedProperties.keys.toList()}');
+        'ProductSelectionCard: All property keys: ${updatedProperties.keys.toList()}');
 
     // Update the page schema
     final updatedPage = multiEntityPage.copyWith(properties: updatedProperties);
