@@ -844,7 +844,7 @@ final dynamic sampleFlows = {
                           {
                             "key": "existingMemberCount",
                             "value":
-                                "{{contextData.0.household.HouseholdModel.memberCount}}"
+                                "{{fn:length(contextData.0.members)}}"
                           }
                         ],
                         "name": "HOUSEHOLD",

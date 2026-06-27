@@ -924,17 +924,17 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       return;
     }
 
-    // try {
-    //   // Trigger silent stock downsync after project facilities are loaded
-    //   await _silentStockDownSync(event.model);
-    // } catch (_) {
-    //   emit(state.copyWith(
-    //     selectedProject: event.model,
-    //     loading: false,
-    //     syncError: ProjectSyncErrorType.stockDownsync,
-    //   ));
-    //   return;
-    // }
+    try {
+      // Trigger silent stock downsync after project facilities are loaded
+      await _silentStockDownSync(event.model);
+    } catch (_) {
+      emit(state.copyWith(
+        selectedProject: event.model,
+        loading: false,
+        syncError: ProjectSyncErrorType.stockDownsync,
+      ));
+      return;
+    }
 
     final getSelectedProject = await localSecureStore.selectedProject;
 
