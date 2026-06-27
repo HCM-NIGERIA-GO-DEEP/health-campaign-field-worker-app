@@ -98,6 +98,8 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
   String? _getFacilityIdFromFormData(BuildContext context) {
     // For stock-in-hand, we need the source facility (where stock is held)
     // For ISSUED: source = current user's facility (getUserFacilityId)
+    // For RETURNED (CDD→HFS): source = CDD teamCode — so the cap equals
+    //   what was issued to the CDD minus what they already returned.
     // For RECEIPT/others: source = facilityToWhich
     final navigationParams = FlowCrudStateRegistry()
             .getNavigationParams('FORM::${widget.pageSchema}') ??
@@ -136,6 +138,21 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
     if (schema != null) {
       final warehouseDetailsPage = schema.pages['warehouseDetails'];
       if (warehouseDetailsPage?.properties != null) {
+        // For the return flow (CDD→HFS, primaryRole==RECEIVER), use the CDD's
+        // teamCode as the facility ID. Calculating stock-in-hand against the
+        // CDD gives: issued-to-CDD minus already-returned-by-CDD, which is
+        // the correct upper limit for the return quantity.
+        if (isReturn && primaryRole == 'RECEIVER') {
+          final teamCodeField =
+              warehouseDetailsPage!.properties!['teamCode'];
+          if (teamCodeField?.value != null &&
+              teamCodeField!.value.toString().isNotEmpty) {
+            debugPrint(
+                'ProductSelectionCard: Return flow — using CDD teamCode as facilityId: ${teamCodeField.value}');
+            return teamCodeField.value.toString();
+          }
+        }
+
         final facilityField =
             warehouseDetailsPage!.properties!['facilityToWhich'];
         if (facilityField?.value != null) {
@@ -149,6 +166,18 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
     // Fallback: Try stateData.formData
     final formData = widget.stateData?.formData as Map<String, dynamic>?;
     if (formData != null) {
+      // For return flow fallback, try teamCode first
+      if (isReturn && primaryRole == 'RECEIVER') {
+        final teamCode = formData['warehouseDetails.teamCode'] ??
+            (formData['warehouseDetails']
+                as Map<String, dynamic>?)?['teamCode'];
+        if (teamCode != null && teamCode.toString().isNotEmpty) {
+          debugPrint(
+              'ProductSelectionCard: Return flow fallback — using CDD teamCode: $teamCode');
+          return teamCode.toString();
+        }
+      }
+
       final facilityId = formData['warehouseDetails.facilityToWhich'] ??
           formData['facilityToWhich'] ??
           (formData['warehouseDetails']
