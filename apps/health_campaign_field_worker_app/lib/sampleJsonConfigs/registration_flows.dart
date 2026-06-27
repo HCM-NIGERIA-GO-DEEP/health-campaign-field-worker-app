@@ -1237,7 +1237,7 @@ final dynamic sampleFlows = {
                             },
                             {
                               "key": "cycleIndex",
-                              "value": "{{contextData.0.currentRunningCycle}}"
+                              "value": "{{fn:getCurrentCycleIndex()}}"
                             },
                             {"key": "doseIndex", "value": "1"},
                             {"key": "deliveryStrategy", "value": "DIRECT"}
@@ -4976,7 +4976,7 @@ final dynamic sampleFlows = {
                   },
                   {
                     "key": "cycleIndex",
-                    "value": "{{contextData.0.currentRunningCycle}}"
+                    "value": "{{fn:getCurrentCycleIndex()}}"
                   },
                   {"key": "doseIndex", "value": "1"}
                 ],

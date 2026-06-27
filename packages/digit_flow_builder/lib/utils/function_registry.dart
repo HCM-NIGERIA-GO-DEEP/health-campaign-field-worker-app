@@ -659,27 +659,78 @@ void initializeFunctionRegistry() {
     final projectType = FlowBuilderSingleton().projectType;
     if (projectType == null) return TaskStatus.ineligible;
 
-    // // --- Current active cycle ---
-    // Map<String, dynamic>? currentCycle;
-    // for (final e in projectType.cycles ?? []) {
-    //   if ((e.startDate ?? 0) < DateTime.now().millisecondsSinceEpoch &&
-    //       (e.endDate ?? 0) > DateTime.now().millisecondsSinceEpoch) {
-    //     currentCycle = {
-    //       "startDate": e.startDate,
-    //       "endDate": e.endDate,
-    //     };
-    //     break;
-    //   }
-    // }
-    // if (currentCycle == null) return TaskStatus.ineligible;
-
     final tasks = args.first;
 
     // Must be a non-empty list of tasks
     if (tasks is! List || tasks.isEmpty) return TaskStatus.ineligible;
 
-    // Get the last task and convert to Map if needed
-    final item = tasks.last;
+    // Resolve current active cycle
+    final _cycleId = projectType.cycles
+        ?.firstWhereOrNull(
+          (e) =>
+              (e.startDate ?? 0) < DateTime.now().millisecondsSinceEpoch &&
+              (e.endDate ?? 0) > DateTime.now().millisecondsSinceEpoch,
+        )
+        ?.id;
+
+    // Helper: extract cycleIndex from a task — handles both Map and AdditionalField model
+    int? _getCycleIdx(dynamic t) {
+      List? fields;
+      // Path 1: task is a Map (already serialized)
+      if (t is Map) {
+        final af = t['additionalFields'];
+        if (af is Map) {
+          fields = af['fields'] as List?;
+        } else if (af is List) {
+          fields = af;
+        } else if (af != null) {
+          try { fields = (af as dynamic).fields as List?; } catch (_) {}
+        }
+      } else {
+        // Path 2: task is a TaskModel — use dynamic access
+        try {
+          final af = (t as dynamic).additionalFields;
+          if (af != null) {
+            try { fields = (af as dynamic).fields as List?; } catch (_) {
+              if (af is Map) fields = af['fields'] as List?;
+            }
+          }
+        } catch (_) {}
+      }
+      if (fields == null) return null;
+      for (final f in fields) {
+        // Handle both Map fields and AdditionalField model objects
+        String? key;
+        String? value;
+        if (f is Map) {
+          key = f['key']?.toString();
+          value = f['value']?.toString();
+        } else {
+          try { key = (f as dynamic).key?.toString(); } catch (_) {}
+          try { value = (f as dynamic).value?.toString(); } catch (_) {}
+        }
+        if (key == 'cycleIndex') {
+          return int.tryParse(value ?? '');
+        }
+      }
+      return null;
+    }
+
+    // Filter to current cycle tasks only.
+    // Tasks WITHOUT a cycleIndex are excluded (they come from older code — treat as prior cycle).
+    final filteredTasks = _cycleId != null
+        ? (tasks as List).where((t) {
+            final tCycle = _getCycleIdx(t);
+            return tCycle == _cycleId;
+          }).toList()
+        : tasks;
+
+    if (filteredTasks is List && filteredTasks.isEmpty) {
+      return TaskStatus.ineligible;
+    }
+
+    // Get the last task (of current cycle) and convert to Map if needed
+    final item = (filteredTasks as List).last;
     Map<String, dynamic>? lastTask;
     if (item is Map<String, dynamic>) {
       lastTask = item;
@@ -764,7 +815,70 @@ void initializeFunctionRegistry() {
       return false;
     }
 
-    final item = tasks.last;
+    // Resolve current active cycle
+    final _cycleId = FlowBuilderSingleton().projectType?.cycles
+        ?.firstWhereOrNull(
+          (e) =>
+              (e.startDate ?? 0) < DateTime.now().millisecondsSinceEpoch &&
+              (e.endDate ?? 0) > DateTime.now().millisecondsSinceEpoch,
+        )
+        ?.id;
+
+    // Helper: extract cycleIndex — handles both Map and AdditionalField model objects
+    int? _getCycleIndex(dynamic t) {
+      List? fields;
+      if (t is Map) {
+        final af = t['additionalFields'];
+        if (af is Map) {
+          fields = af['fields'] as List?;
+        } else if (af is List) {
+          fields = af;
+        } else if (af != null) {
+          try { fields = (af as dynamic).fields as List?; } catch (_) {}
+        }
+      } else {
+        try {
+          final af = (t as dynamic).additionalFields;
+          if (af != null) {
+            try { fields = (af as dynamic).fields as List?; } catch (_) {
+              if (af is Map) fields = af['fields'] as List?;
+            }
+          }
+        } catch (_) {}
+      }
+      if (fields == null) return null;
+      for (final f in fields) {
+        String? key;
+        String? value;
+        if (f is Map) {
+          key = f['key']?.toString();
+          value = f['value']?.toString();
+        } else {
+          try { key = (f as dynamic).key?.toString(); } catch (_) {}
+          try { value = (f as dynamic).value?.toString(); } catch (_) {}
+        }
+        if (key == 'cycleIndex') {
+          return int.tryParse(value ?? '');
+        }
+      }
+      return null;
+    }
+
+    // Filter to current cycle tasks only.
+    // Tasks WITHOUT a cycleIndex are excluded — treat as prior cycle.
+    final filteredTasks = _cycleId != null
+        ? tasks.where((t) {
+            final tCycle = _getCycleIndex(t);
+            return tCycle == _cycleId;
+          }).toList()
+        : tasks;
+
+    if (filteredTasks.isEmpty) {
+      print('DEBUG: isDelivered - no tasks for current cycle');
+      return false;
+    }
+
+    final item = filteredTasks.last;
     Map<String, dynamic>? lastTask;
 
     if (item is Map<String, dynamic>) {
@@ -913,8 +1027,7 @@ void initializeFunctionRegistry() {
           if (fields != null) {
             for (final field in fields) {
               if (field is Map && field['key'] == 'cycleIndex') {
-                final cycleIdx =
-                    int.tryParse(field['value']?.toString() ?? '');
+                final cycleIdx = int.tryParse(field['value']?.toString() ?? '');
                 return cycleIdx == selectedCycle.id;
               }
             }
@@ -946,12 +1059,10 @@ void initializeFunctionRegistry() {
           for (final field in fields) {
             if (field is Map) {
               if (field['key'] == 'cycleIndex') {
-                lastCycleIdx =
-                    int.tryParse(field['value']?.toString() ?? '');
+                lastCycleIdx = int.tryParse(field['value']?.toString() ?? '');
               }
               if (field['key'] == 'doseIndex') {
-                lastDoseIdx =
-                    int.tryParse(field['value']?.toString() ?? '');
+                lastDoseIdx = int.tryParse(field['value']?.toString() ?? '');
               }
             }
           }
@@ -1509,13 +1620,17 @@ void initializeFunctionRegistry() {
       // ── Helper: extract key/value from an AdditionalField (Map or model) ──
       String? _fieldKey(dynamic f) {
         if (f is Map) return f['key']?.toString();
-        try { return (f as dynamic).key?.toString(); } catch (_) {}
+        try {
+          return (f as dynamic).key?.toString();
+        } catch (_) {}
         return null;
       }
 
       String? _fieldValue(dynamic f) {
         if (f is Map) return f['value']?.toString();
-        try { return (f as dynamic).value?.toString(); } catch (_) {}
+        try {
+          return (f as dynamic).value?.toString();
+        } catch (_) {}
         return null;
       }
 
@@ -1525,7 +1640,9 @@ void initializeFunctionRegistry() {
         try {
           final af = (rawTask as dynamic).additionalFields;
           if (af != null) {
-            try { return (af as dynamic).fields as List?; } catch (_) {}
+            try {
+              return (af as dynamic).fields as List?;
+            } catch (_) {}
             if (af is Map) return af['fields'] as List?;
           }
         } catch (_) {}
@@ -1536,7 +1653,9 @@ void initializeFunctionRegistry() {
           if (af is Map) return af['fields'] as List?;
           if (af is List) return af;
           if (af != null) {
-            try { return (af as dynamic).fields as List?; } catch (_) {}
+            try {
+              return (af as dynamic).fields as List?;
+            } catch (_) {}
           }
         }
         return null;
@@ -1568,7 +1687,10 @@ void initializeFunctionRegistry() {
             if (ad is Map) {
               final t = ad['createdTime'];
               if (t is int && t > 0) return t;
-              if (t != null) { final v = int.tryParse(t.toString()); if (v != null && v > 0) return v; }
+              if (t != null) {
+                final v = int.tryParse(t.toString());
+                if (v != null && v > 0) return v;
+              }
             }
             if (ad != null) {
               try {
@@ -1608,7 +1730,6 @@ void initializeFunctionRegistry() {
 
     return '';
   });
-
 
   /// Registers a function to check if the edit button should be disabled.
   ///
@@ -1811,8 +1932,37 @@ void initializeFunctionRegistry() {
 
     if (indRefId == null || indRefId.isEmpty) return '';
 
+    // Resolve current active cycle ID (same logic as checkAllDoseDelivered)
+    final _currentCycleId = FlowBuilderSingleton().projectType?.cycles
+        ?.firstWhereOrNull(
+          (e) =>
+              (e.startDate ?? 0) < DateTime.now().millisecondsSinceEpoch &&
+              (e.endDate ?? 0) > DateTime.now().millisecondsSinceEpoch,
+        )
+        ?.id;
+
     // Step 1: Find the task matching the individual
     dynamic matchedTask;
+
+    // Helper: extract cycleIndex from a task's additionalFields
+    int? _getTaskCycleIndex(dynamic t) {
+      final fields = t is TaskModel
+          ? t.additionalFields?.fields
+          : (t is Map && t['additionalFields'] != null
+              ? t['additionalFields']['fields'] as List?
+              : null);
+      if (fields == null) return null;
+      for (final f in fields) {
+        final key =
+            f is AdditionalField ? f.key : (f is Map ? f['key'] : null);
+        if (key == 'cycleIndex') {
+          final val =
+              f is AdditionalField ? f.value : (f is Map ? f['value'] : null);
+          return int.tryParse(val?.toString() ?? '');
+        }
+      }
+      return null;
+    }
 
     if (tasks != null) {
       final matchingTasks = tasks.where((t) {
@@ -1837,25 +1987,40 @@ void initializeFunctionRegistry() {
       }).toList();
 
       if (matchingTasks.isNotEmpty) {
-        matchingTasks.sort((a, b) {
-          final timeA = a is TaskModel
-              ? (a.clientAuditDetails?.createdTime ?? 0)
-              : (a is Map
-                  ? ((a['clientAuditDetails'] ??
-                          a['auditDetails'])?['createdTime'] ??
-                      0)
-                  : 0);
-          final timeB = b is TaskModel
-              ? (b.clientAuditDetails?.createdTime ?? 0)
-              : (b is Map
-                  ? ((b['clientAuditDetails'] ??
-                          b['auditDetails'])?['createdTime'] ??
-                      0)
-                  : 0);
-          if (timeA != timeB) return timeB.compareTo(timeA);
-          return tasks.indexOf(b).compareTo(tasks.indexOf(a));
-        });
-        matchedTask = matchingTasks.first;
+        // Filter to current cycle tasks only
+        final currentCycleTasks = _currentCycleId != null
+            ? matchingTasks
+                .where((t) {
+                  final tCycle = _getTaskCycleIndex(t);
+                  return tCycle == _currentCycleId;
+                })
+                .toList()
+            : matchingTasks;
+
+        final tasksToCheck =
+            currentCycleTasks.isNotEmpty ? currentCycleTasks : <dynamic>[];
+
+        if (tasksToCheck.isNotEmpty) {
+          tasksToCheck.sort((a, b) {
+            final timeA = a is TaskModel
+                ? (a.clientAuditDetails?.createdTime ?? 0)
+                : (a is Map
+                    ? ((a['clientAuditDetails'] ??
+                            a['auditDetails'])?['createdTime'] ??
+                        0)
+                    : 0);
+            final timeB = b is TaskModel
+                ? (b.clientAuditDetails?.createdTime ?? 0)
+                : (b is Map
+                    ? ((b['clientAuditDetails'] ??
+                            b['auditDetails'])?['createdTime'] ??
+                        0)
+                    : 0);
+            if (timeA != timeB) return timeB.compareTo(timeA);
+            return tasks.indexOf(b).compareTo(tasks.indexOf(a));
+          });
+          matchedTask = tasksToCheck.first;
+        }
       }
 
       // If not found, fall back to standard project beneficiary mapping
@@ -1884,25 +2049,41 @@ void initializeFunctionRegistry() {
           }).toList();
 
           if (fallbackTasks.isNotEmpty) {
-            fallbackTasks.sort((a, b) {
-              final timeA = a is TaskModel
-                  ? (a.clientAuditDetails?.createdTime ?? 0)
-                  : (a is Map
-                      ? ((a['clientAuditDetails'] ??
-                              a['auditDetails'])?['createdTime'] ??
-                          0)
-                      : 0);
-              final timeB = b is TaskModel
-                  ? (b.clientAuditDetails?.createdTime ?? 0)
-                  : (b is Map
-                      ? ((b['clientAuditDetails'] ??
-                              b['auditDetails'])?['createdTime'] ??
-                          0)
-                      : 0);
-              if (timeA != timeB) return timeB.compareTo(timeA);
-              return tasks.indexOf(b).compareTo(tasks.indexOf(a));
-            });
-            matchedTask = fallbackTasks.first;
+            // Filter to current cycle tasks only
+            final currentCycleFallback = _currentCycleId != null
+                ? fallbackTasks
+                    .where((t) {
+                      final tCycle = _getTaskCycleIndex(t);
+                      return tCycle == _currentCycleId;
+                    })
+                    .toList()
+                : fallbackTasks;
+
+            final fallbackToCheck = currentCycleFallback.isNotEmpty
+                ? currentCycleFallback
+                : <dynamic>[];
+
+            if (fallbackToCheck.isNotEmpty) {
+              fallbackToCheck.sort((a, b) {
+                final timeA = a is TaskModel
+                    ? (a.clientAuditDetails?.createdTime ?? 0)
+                    : (a is Map
+                        ? ((a['clientAuditDetails'] ??
+                                a['auditDetails'])?['createdTime'] ??
+                            0)
+                        : 0);
+                final timeB = b is TaskModel
+                    ? (b.clientAuditDetails?.createdTime ?? 0)
+                    : (b is Map
+                        ? ((b['clientAuditDetails'] ??
+                                b['auditDetails'])?['createdTime'] ??
+                            0)
+                        : 0);
+                if (timeA != timeB) return timeB.compareTo(timeA);
+                return tasks.indexOf(b).compareTo(tasks.indexOf(a));
+              });
+              matchedTask = fallbackToCheck.first;
+            }
           }
         }
       }
