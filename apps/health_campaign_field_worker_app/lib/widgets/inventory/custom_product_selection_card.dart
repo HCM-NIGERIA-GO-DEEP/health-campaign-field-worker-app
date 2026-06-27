@@ -47,6 +47,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
   // Stock calculation state
   List<ProductVariantModel> _selectedProducts = [];
   Map<String, double> _stockInHandMap = {};
+  Map<String, double> _stockIssuedMap = {};
   bool _stockSearchTriggered = false;
 
   List<ProductVariantModel> _localProductVariants = [];
@@ -89,7 +90,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         });
       }
     } catch (e) {
-      debugPrint('Error loading local product variants: $e');
+      debugPrint('ProductSelectionCard: Error loading local product variants: $e');
     }
   }
 
@@ -143,13 +144,14 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         // CDD gives: issued-to-CDD minus already-returned-by-CDD, which is
         // the correct upper limit for the return quantity.
         if (isReturn && primaryRole == 'RECEIVER') {
-          final teamCodeField =
-              warehouseDetailsPage!.properties!['teamCode'];
-          if (teamCodeField?.value != null &&
-              teamCodeField!.value.toString().isNotEmpty) {
+          // Query from HFS (sender) perspective to get stockIssued to CDD
+          final facilityField =
+              warehouseDetailsPage!.properties!['facilityToWhich'];
+          if (facilityField?.value != null &&
+              facilityField!.value.toString().isNotEmpty) {
             debugPrint(
-                'ProductSelectionCard: Return flow — using CDD teamCode as facilityId: ${teamCodeField.value}');
-            return teamCodeField.value.toString();
+                'ProductSelectionCard: Return flow — using HFS facilityToWhich as facilityId: ${facilityField.value}');
+            return facilityField.value.toString();
           }
         }
 
@@ -189,14 +191,18 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         return facilityId.toString();
       }
     }
-
-    debugPrint('ProductSelectionCard: facilityId not found');
     return null;
   }
 
   /// Triggers stock search for calculating stock in hand
   Future<void> _triggerStockSearch(BuildContext context) async {
-    final facilityId = _getFacilityIdFromFormData(context);
+    String? facilityId = _getFacilityIdFromFormData(context);
+
+// teamCode can be stored as "Chad-uat-cdd-8||abb4651f-..." 
+// Stock records only use the UUID part after ||
+if (facilityId != null && facilityId.contains('||')) {
+  facilityId = facilityId.split('||').last.trim();
+}
     if (facilityId == null || facilityId.isEmpty) {
       debugPrint(
           'ProductSelectionCard: Skipping stock search - no facility selected');
@@ -245,9 +251,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       // Extract stock list from results
       final stockList =
           results['stock']?.whereType<StockModel>().toList() ?? <StockModel>[];
-
-      debugPrint(
-          'ProductSelectionCard: Fetched ${stockList.length} stock records');
+      debugPrint('ProductSelectionCard: Fetched ${stockList.length} stock records');
 
       if (!mounted) return;
 
@@ -266,21 +270,32 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       var _isDistributor = context.loggedInUserRoles
           .any((role) => role.code == RolesType.distributor.toValue());
 
-      final stockTransactionBalance =
-          StockCalculationUtils.calculateStockInHandForProducts(
-        stockList: stockList,
-        facilityId: facilityId,
-        productIds: productIds,
-        loggedInUserUuid: loggedInUserUuid,
-        isDistributor: _isDistributor,
-        tasks: tasks,
-      );
+      // Calculate full metrics per product (not just stockInHand)
+      final Map<String, double> stockInHandResult = {};
+      final Map<String, double> stockIssuedResult = {};
 
-      // Merge: UserAction balances take precedence (they include delivery deductions)
-      _stockInHandMap = stockTransactionBalance;
+      for (final productId in productIds) {
+        final metrics = StockCalculationUtils.calculateStockMetrics(
+          stockList: stockList,
+          facilityId: facilityId,
+          productId: productId,
+          loggedInUserUuid: loggedInUserUuid,
+          isDistributor: _isDistributor,
+          tasks: tasks,
+        );
+        stockInHandResult[productId] = metrics['stockInHand'] ?? 0.0; // ADD
+        stockIssuedResult[productId] = metrics['stockIssued'] ?? 0.0; // ADD
+        debugPrint('DEBUG RETURN: productId=$productId');
+        debugPrint('DEBUG RETURN: stockInHand=${metrics['stockInHand']}');
+        debugPrint('DEBUG RETURN: stockIssued=${metrics['stockIssued']}');
+        debugPrint('DEBUG RETURN: stockReceived=${metrics['stockReceived']}');
+        debugPrint('DEBUG RETURN: stockReturned=${metrics['stockReturned']}');
+      }
 
-      debugPrint(
-          'ProductSelectionCard: Calculated stockInHand: $_stockInHandMap');
+      _stockInHandMap = stockInHandResult;
+      _stockIssuedMap = stockIssuedResult;
+
+
 
       // Update FormsBloc with stock in hand data
       _updateStockInHandInFormsBloc();
@@ -295,9 +310,10 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
   }
 
   /// Updates FormsBloc with stock in hand data so it's available to the next page
-  void _updateStockInHandInFormsBloc() {
-    if (_stockInHandMap.isEmpty || _selectedProducts.isEmpty) return;
-
+  // void _updateStockInHandInFormsBloc() {
+  //   if (_stockInHandMap.isEmpty || _selectedProducts.isEmpty) return;
+void _updateStockInHandInFormsBloc() {
+  if (_selectedProducts.isEmpty) return;
     // Update the stockInHandMap
     context.read<FormsBloc>().add(
           FormsEvent.updateField(
@@ -330,8 +346,6 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
     // Update the schema to add max validations for quantity fields
     _updateQuantityFieldValidations();
 
-    debugPrint(
-        'ProductSelectionCard: Updated FormsBloc with stockInHandMap and products with stockInHand');
   }
 
   /// Updates the schema to add max validations for quantity fields based on stockInHand.
@@ -363,11 +377,6 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
           'ProductSelectionCard: ERROR - No page with multiEntityConfig found');
       return;
     }
-
-    debugPrint(
-        'ProductSelectionCard: Found multiEntityConfig page: $multiEntityPageKey');
-    debugPrint(
-        'ProductSelectionCard: Updating validations for ${_selectedProducts.length} products');
 
     // Quantity fields that need max validation
     // These are all quantity fields that could potentially need stock validation
@@ -410,11 +419,22 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         entityIndex < _selectedProducts.length;
         entityIndex++) {
       final product = _selectedProducts[entityIndex];
-      final stockInHand = _stockInHandMap[product.id] ?? 0.0;
-      final maxValue = stockInHand.toInt();
+      // For return flow, cap by stockIssued (what was sent out), not stockInHand
+      final navigationParams = FlowCrudStateRegistry()
+              .getNavigationParams('FORM::${widget.pageSchema}') ??
+          FlowCrudStateRegistry().getNavigationParams(widget.pageSchema) ??
+          {};
+      final stockEntryType =
+          navigationParams['stockEntryType']?.toString() ?? '';
+      final isReturnFlow = stockEntryType == 'RETURNED';
 
-      debugPrint(
-          'ProductSelectionCard: Entity $entityIndex - product=${product.id}, stockInHand=$stockInHand, maxValue=$maxValue');
+
+      // For return flow: cap by stockIssued from HFS to CDD, not stockInHand
+      final stockValue = isReturnFlow
+          ? (_stockIssuedMap[product.id] ?? 0.0)
+          : (_stockInHandMap[product.id] ?? 0.0);
+      final maxValue = stockValue.toInt();
+
 
       for (final fieldName in quantityFields) {
         // Get the base field schema (from our stored map)
@@ -829,6 +849,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
                     ),
                   );
 
+              
               // Trigger stock search after product selection
               if (selectedModels.isNotEmpty) {
                 _triggerStockSearch(context);
