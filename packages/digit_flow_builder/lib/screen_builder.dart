@@ -324,12 +324,6 @@ class _FormScreenWrapperState extends LocalizedState<_FormScreenWrapper> {
     return null;
   }
 
-  bool _isStateScopedUser(String? tenantId) {
-    final tenantSegments =
-        tenantId?.split('.').where((s) => s.trim().isNotEmpty).toList() ?? [];
-    return tenantSegments.length <= 1;
-  }
-
   @override
   Widget build(BuildContext context) {
     // Use compositeKey passed from ScreenBuilder for consistency
@@ -387,7 +381,8 @@ class _FormScreenWrapperState extends LocalizedState<_FormScreenWrapper> {
                 FlowBuilderSingleton().loggedInUser?.tenantId ??
                     FlowBuilderSingleton().tenantId ??
                     boundary?.tenantId;
-            final isStateScopedUser = _isStateScopedUser(userTenantId);
+            final isManagedStockFlow =
+                widget.schemaKey.toUpperCase() == 'RECORDSTOCK';
             final selectedStateCode =
                 FlowBuilderSingleton().stateBoundary?.code;
             final stateCode = _extractStateCode(
@@ -395,11 +390,9 @@ class _FormScreenWrapperState extends LocalizedState<_FormScreenWrapper> {
               materializedPath: boundary?.materializedPath,
               boundaryCode: boundary?.code,
             );
-            // final administrativeAreaCode = isStateScopedUser
-            //     ? (selectedStateCode ?? stateCode ?? boundary?.code ?? '')
-            //     : (boundary?.code ?? '');
-
-            final administrativeAreaCode = boundary?.code ?? '';
+            final administrativeAreaCode = isManagedStockFlow
+                ? (selectedStateCode ?? stateCode ?? boundary?.code ?? '')
+                : (boundary?.code ?? '');
 
             return ScannerComparisonProvider(
               duplicateCheckFn: (fieldName, scannedValue, formValues) {
