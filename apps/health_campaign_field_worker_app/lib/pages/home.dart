@@ -1886,9 +1886,9 @@ class _HomePageState extends LocalizedState<HomePage> {
     //
     // IMPORTANT: Set all flags to `true` before a production/release build.
     const isRemoteComplaintFlows = true;
-    const isRemoteRegistrationFlows = true;
+    const isRemoteRegistrationFlows = false;
     const isRemoteCloseHouseholdFlows = true;
-    const isRemoteInventoryFlows = true;
+    const isRemoteInventoryFlows = false;
     const isRemoteInventoryReportFlows = true;
     const isRemoteStockReconciliationFlows = true;
 

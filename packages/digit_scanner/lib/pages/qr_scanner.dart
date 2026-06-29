@@ -522,18 +522,7 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
   FormGroup buildForm() {
     if (widget.effectiveIsGS1code) {
       return fb.group(<String, Object>{
-        _manualGtinFormKey: FormControl<String>(
-          validators: [
-            Validators.required,
-            Validators.pattern(r'^\d{14}$'),
-          ],
-        ),
-        _manualCodeFormKey: FormControl<String>(
-          validators: [Validators.required],
-        ),
-        _manualSerialNoFormKey: FormControl<String>(),
-        _manualExpiryDateFormKey: FormControl<DateTime>(
-          value: DateTime.now(),
+        _manualSerialNoFormKey: FormControl<String>(
           validators: [Validators.required],
         ),
       });
@@ -580,28 +569,34 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                             final bloc = context.read<DigitScannerBloc>();
 
                             try {
-                              final gtinValue = form
-                                  .control(_manualGtinFormKey)
-                                  .value
-                                  ?.toString()
-                                  .trim();
                               final serialValue = form
                                   .control(_manualSerialNoFormKey)
                                   .value
                                   ?.toString()
                                   .trim();
+
+                              if (serialValue == null || serialValue.isEmpty) {
+                                Toast.showToast(
+                                  context,
+                                  type: ToastType.error,
+                                  message: localizations
+                                      .translate(i18.scanner.enterManualCode),
+                                  sentenceCaseEnabled: false,
+                                );
+                                return;
+                              }
+
+                              // Keep GS1 payload valid while collecting only serial from UI.
+                              const gtinValue = '00000000000000';
+                              const batchValue = 'MANUAL';
+                              final expiryDate =
+                                  DateTime.now().add(const Duration(days: 365));
                               final barcodeString =
                                   DigitScannerUtils().generateGS1Barcode(
                                 gtin: gtinValue,
                                 serialNumber: serialValue,
-                                expiryDate: _parseExpiryDate(form
-                                    .control(_manualExpiryDateFormKey)
-                                    .value),
-                                batchNumber: form
-                                    .control(_manualCodeFormKey)
-                                    .value
-                                    .toString()
-                                    .trim(),
+                                expiryDate: expiryDate,
+                                batchNumber: batchValue,
                               );
 
                               // Now parse it using your existing model
@@ -839,64 +834,13 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                               ),
                             ),
                           ),
-                          if (widget.effectiveIsGS1code)
-                            ReactiveWrapperField(
-                              formControlName: _manualGtinFormKey,
-                              validationMessages: {
-                                'required': (object) => localizations.translate(
-                                      i18.scanner.gtinRequired,
-                                    ),
-                                'pattern': (object) => localizations.translate(
-                                      i18.scanner.gtinPatternError,
-                                    ),
-                              },
-                              builder: (field) {
-                                return LabeledField(
-                                  label: localizations.translate(
-                                    i18.scanner.barCodeGtin,
-                                  ),
-                                  capitalizedFirstLetter: false,
-                                  child: DigitTextFormInput(
-                                      errorMessage: field.errorText,
-                                      isRequired: true,
-                                      onChange: (value) {
-                                        form.control(_manualGtinFormKey).value =
-                                            value;
-                                      }),
-                                );
-                              },
-                            ),
-                          ReactiveWrapperField(
-                            formControlName: _manualCodeFormKey,
-                            validationMessages: widget.effectiveIsGS1code
-                                ? {
-                                    'required': (object) =>
-                                        localizations.translate(
-                                          i18.scanner.batchNoRequired,
-                                        ),
-                                  }
-                                : null,
-                            builder: (field) {
-                              return LabeledField(
-                                label: localizations.translate(
-                                  widget.effectiveIsGS1code
-                                      ? i18.scanner.barCodeBatch
-                                      : i18.scanner.resourceCode,
-                                ),
-                                capitalizedFirstLetter: false,
-                                child: DigitTextFormInput(
-                                    errorMessage: field.errorText,
-                                    isRequired: true,
-                                    onChange: (value) {
-                                      form.control(_manualCodeFormKey).value =
-                                          value;
-                                    }),
-                              );
-                            },
-                          ),
                           if (widget.effectiveIsGS1code) ...[
                             ReactiveWrapperField(
                               formControlName: _manualSerialNoFormKey,
+                              validationMessages: {
+                                'required': (object) => localizations
+                                    .translate(i18.scanner.enterManualCode),
+                              },
                               builder: (field) {
                                 return LabeledField(
                                   label: localizations.translate(
@@ -914,50 +858,23 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                                 );
                               },
                             ),
+                          ] else
                             ReactiveWrapperField(
-                                formControlName: _manualExpiryDateFormKey,
-                                validationMessages: {
-                                  'required': (object) =>
-                                      localizations.translate(
-                                        i18.scanner.expiryDateRequired,
-                                      ),
-                                },
-                                builder: (field) {
-                                  return LabeledField(
-                                    label: localizations
-                                        .translate(i18.scanner.barCodeExpiry),
-                                    capitalizedFirstLetter: false,
-                                    child: DigitDateFormInput(
-                                      firstDate: DateTime.now(),
-                                      isRequired: true,
-                                      confirmText: localizations.translate(
-                                        i18.common.coreCommonOk,
-                                      ),
-                                      cancelText: localizations.translate(
-                                        i18.common.coreCommonCancel,
-                                      ),
-                                      initialValue: DateFormat('dd/MM/yyyy')
-                                          .format(_parseExpiryDate(
-                                              field.control.value)),
-                                      readOnly: false,
-                                      onChange: (value) {
-                                        try {
-                                          form
-                                              .control(_manualExpiryDateFormKey)
-                                              .value = DateFormat(
-                                                  "dd/MM/yyyy")
-                                              .parse(value);
-                                        } catch (e) {
-                                          debugPrint('Error parsing date: $e');
-                                          form
-                                              .control(_manualExpiryDateFormKey)
-                                              .value = DateTime.now();
-                                        }
-                                      },
+                              formControlName: _manualCodeFormKey,
+                              builder: (field) {
+                                return InputField(
+                                    label: localizations.translate(
+                                      i18.scanner.resourceCode,
                                     ),
-                                  );
-                                }),
-                          ],
+                                    errorMessage: field.errorText,
+                                    isRequired: true,
+                                    type: InputType.text,
+                                    onChange: (value) {
+                                      form.control(_manualCodeFormKey).value =
+                                          value;
+                                    });
+                              },
+                            ),
                         ],
                       ),
                     ],
@@ -1395,6 +1312,12 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                         final gs1Data = DigitScannerUtils()
                             .getGs1CodeFormattedStringAtIndex(
                                 effectiveBarcodes, index);
+                        final serialValue = (gs1Data['21'] ??
+                                gs1Data['SERIAL'] ??
+                                gs1Data['serial'] ??
+                                gs1Data['Serial'])
+                            ?.toString()
+                            .trim();
                         return ListTile(
                           shape: const Border(),
                           title: Container(
@@ -1418,49 +1341,36 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Expanded(
-                                  child: Column(
+                                  child: Row(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.start,
-                                    children: gs1Data.entries.map((entry) {
-                                      final label = localizations
-                                          .translate('GS1_${entry.key}');
-                                      final value = entry.value is DateTime
-                                          ? DateFormat('dd MMM yyyy')
-                                              .format(entry.value)
-                                          : entry.value?.toString() ?? '';
-                                      return Padding(
-                                        padding: const EdgeInsets.only(
-                                            bottom: spacer1),
-                                        child: Row(
-                                          crossAxisAlignment:
-                                              CrossAxisAlignment.start,
-                                          children: [
-                                            SizedBox(
-                                              width: 80,
-                                              child: Text(
-                                                label,
-                                                style: textTheme.bodyS.copyWith(
-                                                  color: theme.colorTheme.text
-                                                      .secondary,
-                                                ),
-                                              ),
-                                            ),
-                                            const SizedBox(width: spacer1),
-                                            Expanded(
-                                              child: Text(
-                                                value,
-                                                style: textTheme.bodyS.copyWith(
-                                                  color: theme
-                                                      .colorTheme.text.primary,
-                                                ),
-                                                maxLines: 2,
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                            ),
-                                          ],
+                                    children: [
+                                      SizedBox(
+                                        width: 110,
+                                        child: Text(
+                                          localizations
+                                              .translate(i18.scanner.barCodeSerial),
+                                          style: textTheme.bodyS.copyWith(
+                                            color:
+                                                theme.colorTheme.text.secondary,
+                                          ),
                                         ),
-                                      );
-                                    }).toList(),
+                                      ),
+                                      const SizedBox(width: spacer1),
+                                      Expanded(
+                                        child: Text(
+                                          serialValue?.isNotEmpty == true
+                                              ? serialValue!
+                                              : '-',
+                                          style: textTheme.bodyS.copyWith(
+                                            color:
+                                                theme.colorTheme.text.primary,
+                                          ),
+                                          maxLines: 2,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                 ),
                                 IconButton(
