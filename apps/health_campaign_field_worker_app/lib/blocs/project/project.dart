@@ -376,6 +376,15 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     );
     LeastLevelBoundarySingleton()
         .setBoundary(boundaries: findLeastLevelBoundaries(boundaries));
+        
+    final rowVersionList = await isar.rowVersionLists
+        .filter()
+        .moduleEqualTo('module-version')
+        .findAll();
+    if (rowVersionList.isNotEmpty) {
+      DigitDataModelSingleton().uniquenumbercount = rowVersionList.first.uniquenumbercount;
+      DigitDataModelSingleton().uniquenumbertype = rowVersionList.first.uniquenumbertype;
+    }
   }
 
   FutureOr<void> _loadProjectFacilities(ProjectModel project) async {
@@ -853,6 +862,10 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
           final rowVersion = RowVersionList();
           rowVersion.module = element.module;
           rowVersion.version = element.version;
+          rowVersion.uniquenumbercount = element.uniquenumbercount;
+          rowVersion.uniquenumbertype = element.uniquenumbertype;
+          DigitDataModelSingleton().uniquenumbercount = element.uniquenumbercount;
+          DigitDataModelSingleton().uniquenumbertype = element.uniquenumbertype;
           rowVersionList.add(rowVersion);
         }
         isar.writeTxnSync(() {

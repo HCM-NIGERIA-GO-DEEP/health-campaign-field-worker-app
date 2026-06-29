@@ -626,12 +626,16 @@ _$RowVersionsImpl _$$RowVersionsImplFromJson(Map<String, dynamic> json) =>
     _$RowVersionsImpl(
       module: json['module'] as String,
       version: json['version'] as String,
+      uniquenumbercount: (json['uniquenumbercount'] as num?)?.toInt(),
+      uniquenumbertype: json['uniquenumbertype'] as String?,
     );
 
 Map<String, dynamic> _$$RowVersionsImplToJson(_$RowVersionsImpl instance) =>
     <String, dynamic>{
       'module': instance.module,
       'version': instance.version,
+      'uniquenumbercount': instance.uniquenumbercount,
+      'uniquenumbertype': instance.uniquenumbertype,
     };
 
 _$FirebaseConfigImpl _$$FirebaseConfigImplFromJson(Map<String, dynamic> json) =>

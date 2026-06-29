@@ -22,8 +22,18 @@ const RowVersionListSchema = CollectionSchema(
       name: r'module',
       type: IsarType.string,
     ),
-    r'version': PropertySchema(
+    r'uniquenumbercount': PropertySchema(
       id: 1,
+      name: r'uniquenumbercount',
+      type: IsarType.long,
+    ),
+    r'uniquenumbertype': PropertySchema(
+      id: 2,
+      name: r'uniquenumbertype',
+      type: IsarType.string,
+    ),
+    r'version': PropertySchema(
+      id: 3,
       name: r'version',
       type: IsarType.string,
     )
@@ -49,6 +59,12 @@ int _rowVersionListEstimateSize(
 ) {
   var bytesCount = offsets.last;
   bytesCount += 3 + object.module.length * 3;
+  {
+    final value = object.uniquenumbertype;
+    if (value != null) {
+      bytesCount += 3 + value.length * 3;
+    }
+  }
   bytesCount += 3 + object.version.length * 3;
   return bytesCount;
 }
@@ -60,7 +76,9 @@ void _rowVersionListSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.module);
-  writer.writeString(offsets[1], object.version);
+  writer.writeLong(offsets[1], object.uniquenumbercount);
+  writer.writeString(offsets[2], object.uniquenumbertype);
+  writer.writeString(offsets[3], object.version);
 }
 
 RowVersionList _rowVersionListDeserialize(
@@ -72,7 +90,9 @@ RowVersionList _rowVersionListDeserialize(
   final object = RowVersionList();
   object.id = id;
   object.module = reader.readString(offsets[0]);
-  object.version = reader.readString(offsets[1]);
+  object.uniquenumbercount = reader.readLongOrNull(offsets[1]);
+  object.uniquenumbertype = reader.readStringOrNull(offsets[2]);
+  object.version = reader.readString(offsets[3]);
   return object;
 }
 
@@ -86,6 +106,10 @@ P _rowVersionListDeserializeProp<P>(
     case 0:
       return (reader.readString(offset)) as P;
     case 1:
+      return (reader.readLongOrNull(offset)) as P;
+    case 2:
+      return (reader.readStringOrNull(offset)) as P;
+    case 3:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -380,6 +404,234 @@ extension RowVersionListQueryFilter
   }
 
   QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbercountIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'uniquenumbercount',
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbercountIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'uniquenumbercount',
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbercountEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'uniquenumbercount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbercountGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'uniquenumbercount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbercountLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'uniquenumbercount',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbercountBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'uniquenumbercount',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbertypeIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'uniquenumbertype',
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbertypeIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'uniquenumbertype',
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbertypeEqualTo(
+    String? value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'uniquenumbertype',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbertypeGreaterThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'uniquenumbertype',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbertypeLessThan(
+    String? value, {
+    bool include = false,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'uniquenumbertype',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbertypeBetween(
+    String? lower,
+    String? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'uniquenumbertype',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbertypeStartsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.startsWith(
+        property: r'uniquenumbertype',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbertypeEndsWith(
+    String value, {
+    bool caseSensitive = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.endsWith(
+        property: r'uniquenumbertype',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbertypeContains(String value, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.contains(
+        property: r'uniquenumbertype',
+        value: value,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbertypeMatches(String pattern, {bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.matches(
+        property: r'uniquenumbertype',
+        wildcard: pattern,
+        caseSensitive: caseSensitive,
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbertypeIsEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'uniquenumbertype',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniquenumbertypeIsNotEmpty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        property: r'uniquenumbertype',
+        value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
       versionEqualTo(
     String value, {
     bool caseSensitive = true,
@@ -537,6 +789,34 @@ extension RowVersionListQuerySortBy
     });
   }
 
+  QueryBuilder<RowVersionList, RowVersionList, QAfterSortBy>
+      sortByUniquenumbercount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'uniquenumbercount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterSortBy>
+      sortByUniquenumbercountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'uniquenumbercount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterSortBy>
+      sortByUniquenumbertype() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'uniquenumbertype', Sort.asc);
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterSortBy>
+      sortByUniquenumbertypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'uniquenumbertype', Sort.desc);
+    });
+  }
+
   QueryBuilder<RowVersionList, RowVersionList, QAfterSortBy> sortByVersion() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'version', Sort.asc);
@@ -578,6 +858,34 @@ extension RowVersionListQuerySortThenBy
     });
   }
 
+  QueryBuilder<RowVersionList, RowVersionList, QAfterSortBy>
+      thenByUniquenumbercount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'uniquenumbercount', Sort.asc);
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterSortBy>
+      thenByUniquenumbercountDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'uniquenumbercount', Sort.desc);
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterSortBy>
+      thenByUniquenumbertype() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'uniquenumbertype', Sort.asc);
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterSortBy>
+      thenByUniquenumbertypeDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'uniquenumbertype', Sort.desc);
+    });
+  }
+
   QueryBuilder<RowVersionList, RowVersionList, QAfterSortBy> thenByVersion() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'version', Sort.asc);
@@ -601,6 +909,21 @@ extension RowVersionListQueryWhereDistinct
     });
   }
 
+  QueryBuilder<RowVersionList, RowVersionList, QDistinct>
+      distinctByUniquenumbercount() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'uniquenumbercount');
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QDistinct>
+      distinctByUniquenumbertype({bool caseSensitive = true}) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'uniquenumbertype',
+          caseSensitive: caseSensitive);
+    });
+  }
+
   QueryBuilder<RowVersionList, RowVersionList, QDistinct> distinctByVersion(
       {bool caseSensitive = true}) {
     return QueryBuilder.apply(this, (query) {
@@ -620,6 +943,20 @@ extension RowVersionListQueryProperty
   QueryBuilder<RowVersionList, String, QQueryOperations> moduleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'module');
+    });
+  }
+
+  QueryBuilder<RowVersionList, int?, QQueryOperations>
+      uniquenumbercountProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'uniquenumbercount');
+    });
+  }
+
+  QueryBuilder<RowVersionList, String?, QQueryOperations>
+      uniquenumbertypeProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'uniquenumbertype');
     });
   }
 

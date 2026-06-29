@@ -110,7 +110,10 @@ class _FacilityCardState extends LocalizedState<FacilityCard> {
           } else if (parentBoundaryCode != null) {
             FacilityModel? parentFacilityModel;
             for (final facility in facilities) {
-              if (facility.address?.locality?.code == parentBoundaryCode) {
+              final isAddressMatch = facility.address?.locality?.code == parentBoundaryCode;
+              final usage = facility.usage?.toLowerCase();
+              final isUsageMatch = usage == 'district facility' || usage == 'central facility';
+              if (isAddressMatch || isUsageMatch) {
                 parentFacilityModel = facility;
                 break;
               }
@@ -330,8 +333,10 @@ class _FacilityCardContent extends StatelessWidget {
         final hasCentralFacility = options
             .map((e) => e?.toString())
             .whereType<String>()
-            .any((entry) =>
-                entry.replaceAll(" ", "").toUpperCase() == 'CENTRALFACILITY');
+            .any((entry) {
+              final val = entry.replaceAll(" ", "").toUpperCase();
+              return val == 'CENTRALFACILITY' || val == 'DISTRICTFACILITY';
+            });
 
         if (hasCentralFacility) {
           return true;
@@ -347,8 +352,9 @@ class _FacilityCardContent extends StatelessWidget {
       return localizations.translate('DELIVERY_TEAM');
     }
     if (facilityId == 'Central Facility' ||
+        facilityId == 'District Facility' ||
         facilityId == 'F-2026-06-24-030849') {
-      return localizations.translate('Central Facility');
+      return localizations.translate('District Facility');
     }
     final parentFacility = localProjectFacilities.where((e) {
       final facilityLevel = e.additionalFields?.fields
@@ -358,7 +364,7 @@ class _FacilityCardContent extends StatelessWidget {
       return facilityLevel == 'parent';
     }).firstOrNull;
     if (parentFacility != null && facilityId == parentFacility.facilityId) {
-      return localizations.translate('Central Facility');
+      return localizations.translate('District Facility');
     }
     final isUuid = facilityId.contains('-') && !facilityId.startsWith('F-');
     return isUuid ? facilityId : localizations.translate('FAC_$facilityId');
@@ -466,7 +472,8 @@ class _FacilityCardContent extends StatelessWidget {
                 isLessExcessFlow)) {
           return model.facilityId == userFacilityId;
         }
-        if (isToField && (isLessExcessFlow || isStockReceiptFlow || isStockReturnFlow)) {
+        if (isToField &&
+            (isLessExcessFlow || isStockReceiptFlow || isStockReturnFlow)) {
           return model.facilityId == userFacilityId;
         }
       }
@@ -488,7 +495,8 @@ class _FacilityCardContent extends StatelessWidget {
       } else if (isStockReturnFlow || isStockReceiptFlow) {
         if (isToField) return facilityLevel == 'current';
         if (isFromField && isStockReturnFlow) return false;
-        if (isFromField) return isHfsStandalone ? false : facilityLevel == 'parent';
+        if (isFromField)
+          return isHfsStandalone ? false : facilityLevel == 'parent';
       } else if (isStockIssueFlow) {
         if (isToField) return facilityLevel == 'child';
         if (isFromField) return facilityLevel == 'current';
@@ -515,7 +523,8 @@ class _FacilityCardContent extends StatelessWidget {
     // Build facility dropdown items
     var facilities = <DropdownItem>[];
 
-    final showDeliveryTeam = isToField && isStockIssueFlow &&
+    final showDeliveryTeam = isToField &&
+        isStockIssueFlow &&
         (hasDeliveryTeamInConfig ||
             hasDeliveryTeamInValidation ||
             isHfsStandalone ||
@@ -562,7 +571,7 @@ class _FacilityCardContent extends StatelessWidget {
         if (facilityModels != null && facilityModels.isNotEmpty) {
           final centralFacility = facilityModels.where((f) {
             final usage = f['usage']?.toString().toLowerCase();
-            return usage == 'central facility';
+            return usage == 'central facility' || usage == 'district facility';
           }).firstOrNull;
           centralFacilityId = centralFacility?['id']?.toString();
         }
@@ -578,7 +587,7 @@ class _FacilityCardContent extends StatelessWidget {
     if (showCentralFacility && !hasParentInFiltered) {
       facilities.add(DropdownItem(
         code: centralFacilityId ?? 'F-2026-06-24-030849',
-        name: localizations.translate('Central Facility'),
+        name: localizations.translate('District Facility'),
       ));
     }
 
@@ -587,7 +596,7 @@ class _FacilityCardContent extends StatelessWidget {
       if (!alreadyAdded) {
         facilities.add(DropdownItem(
           code: centralFacilityId ?? 'F-2026-06-24-030849',
-          name: localizations.translate('Central Facility'),
+          name: localizations.translate('District Facility'),
         ));
       }
     }
@@ -599,7 +608,7 @@ class _FacilityCardContent extends StatelessWidget {
       return DropdownItem(
         code: facilityId,
         name: facilityId == parentFacilityId
-            ? localizations.translate('Central Facility')
+            ? localizations.translate('District Facility')
             : (isUuid
                 ? facilityId
                 : localizations.translate('FAC_$facilityId')),
@@ -642,7 +651,8 @@ class _FacilityCardContent extends StatelessWidget {
           final formData = stateData?.formData as Map<String, dynamic>?;
           final scannedTeamCode = formData?['warehouseDetails.teamCode'] ??
               formData?['teamCode'] ??
-              (formData?['warehouseDetails'] as Map<String, dynamic>?)?['teamCode'];
+              (formData?['warehouseDetails']
+                  as Map<String, dynamic>?)?['teamCode'];
           WidgetsBinding.instance.addPostFrameCallback((_) {
             field.control.value = deliveryTeamCode;
             field.control.markAsTouched();

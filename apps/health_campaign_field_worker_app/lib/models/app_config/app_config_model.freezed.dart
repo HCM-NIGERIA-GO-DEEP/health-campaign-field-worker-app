@@ -6782,6 +6782,8 @@ RowVersions _$RowVersionsFromJson(Map<String, dynamic> json) {
 mixin _$RowVersions {
   String get module => throw _privateConstructorUsedError;
   String get version => throw _privateConstructorUsedError;
+  int? get uniquenumbercount => throw _privateConstructorUsedError;
+  String? get uniquenumbertype => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -6795,7 +6797,11 @@ abstract class $RowVersionsCopyWith<$Res> {
           RowVersions value, $Res Function(RowVersions) then) =
       _$RowVersionsCopyWithImpl<$Res, RowVersions>;
   @useResult
-  $Res call({String module, String version});
+  $Res call(
+      {String module,
+      String version,
+      int? uniquenumbercount,
+      String? uniquenumbertype});
 }
 
 /// @nodoc
@@ -6813,6 +6819,8 @@ class _$RowVersionsCopyWithImpl<$Res, $Val extends RowVersions>
   $Res call({
     Object? module = null,
     Object? version = null,
+    Object? uniquenumbercount = freezed,
+    Object? uniquenumbertype = freezed,
   }) {
     return _then(_value.copyWith(
       module: null == module
@@ -6823,6 +6831,14 @@ class _$RowVersionsCopyWithImpl<$Res, $Val extends RowVersions>
           ? _value.version
           : version // ignore: cast_nullable_to_non_nullable
               as String,
+      uniquenumbercount: freezed == uniquenumbercount
+          ? _value.uniquenumbercount
+          : uniquenumbercount // ignore: cast_nullable_to_non_nullable
+              as int?,
+      uniquenumbertype: freezed == uniquenumbertype
+          ? _value.uniquenumbertype
+          : uniquenumbertype // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -6835,7 +6851,11 @@ abstract class _$$RowVersionsImplCopyWith<$Res>
       __$$RowVersionsImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String module, String version});
+  $Res call(
+      {String module,
+      String version,
+      int? uniquenumbercount,
+      String? uniquenumbertype});
 }
 
 /// @nodoc
@@ -6851,6 +6871,8 @@ class __$$RowVersionsImplCopyWithImpl<$Res>
   $Res call({
     Object? module = null,
     Object? version = null,
+    Object? uniquenumbercount = freezed,
+    Object? uniquenumbertype = freezed,
   }) {
     return _then(_$RowVersionsImpl(
       module: null == module
@@ -6861,6 +6883,14 @@ class __$$RowVersionsImplCopyWithImpl<$Res>
           ? _value.version
           : version // ignore: cast_nullable_to_non_nullable
               as String,
+      uniquenumbercount: freezed == uniquenumbercount
+          ? _value.uniquenumbercount
+          : uniquenumbercount // ignore: cast_nullable_to_non_nullable
+              as int?,
+      uniquenumbertype: freezed == uniquenumbertype
+          ? _value.uniquenumbertype
+          : uniquenumbertype // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -6868,7 +6898,11 @@ class __$$RowVersionsImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$RowVersionsImpl implements _RowVersions {
-  _$RowVersionsImpl({required this.module, required this.version});
+  _$RowVersionsImpl(
+      {required this.module,
+      required this.version,
+      this.uniquenumbercount,
+      this.uniquenumbertype});
 
   factory _$RowVersionsImpl.fromJson(Map<String, dynamic> json) =>
       _$$RowVersionsImplFromJson(json);
@@ -6877,10 +6911,14 @@ class _$RowVersionsImpl implements _RowVersions {
   final String module;
   @override
   final String version;
+  @override
+  final int? uniquenumbercount;
+  @override
+  final String? uniquenumbertype;
 
   @override
   String toString() {
-    return 'RowVersions(module: $module, version: $version)';
+    return 'RowVersions(module: $module, version: $version, uniquenumbercount: $uniquenumbercount, uniquenumbertype: $uniquenumbertype)';
   }
 
   @override
@@ -6889,12 +6927,17 @@ class _$RowVersionsImpl implements _RowVersions {
         (other.runtimeType == runtimeType &&
             other is _$RowVersionsImpl &&
             (identical(other.module, module) || other.module == module) &&
-            (identical(other.version, version) || other.version == version));
+            (identical(other.version, version) || other.version == version) &&
+            (identical(other.uniquenumbercount, uniquenumbercount) ||
+                other.uniquenumbercount == uniquenumbercount) &&
+            (identical(other.uniquenumbertype, uniquenumbertype) ||
+                other.uniquenumbertype == uniquenumbertype));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, module, version);
+  int get hashCode => Object.hash(
+      runtimeType, module, version, uniquenumbercount, uniquenumbertype);
 
   @JsonKey(ignore: true)
   @override
@@ -6913,7 +6956,9 @@ class _$RowVersionsImpl implements _RowVersions {
 abstract class _RowVersions implements RowVersions {
   factory _RowVersions(
       {required final String module,
-      required final String version}) = _$RowVersionsImpl;
+      required final String version,
+      final int? uniquenumbercount,
+      final String? uniquenumbertype}) = _$RowVersionsImpl;
 
   factory _RowVersions.fromJson(Map<String, dynamic> json) =
       _$RowVersionsImpl.fromJson;
@@ -6922,6 +6967,10 @@ abstract class _RowVersions implements RowVersions {
   String get module;
   @override
   String get version;
+  @override
+  int? get uniquenumbercount;
+  @override
+  String? get uniquenumbertype;
   @override
   @JsonKey(ignore: true)
   _$$RowVersionsImplCopyWith<_$RowVersionsImpl> get copyWith =>

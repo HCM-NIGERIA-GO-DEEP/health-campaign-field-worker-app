@@ -9,4 +9,8 @@ class RowVersionList {
   late String module;
 
   late String version;
+
+  int? uniquenumbercount;
+
+  String? uniquenumbertype;
 }
