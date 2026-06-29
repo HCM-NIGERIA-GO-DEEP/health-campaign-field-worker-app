@@ -1724,7 +1724,7 @@ void initializeFunctionRegistry() {
     return '';
   });
 
-  FunctionRegistry.register("individualName", (args, stateData) {
+  FunctionRegistry.register("fullName", (args, stateData) {
     if (args.isEmpty || args.first == null) return "--";
 
     // Get member(s) list - try 'member' first, then 'members'
