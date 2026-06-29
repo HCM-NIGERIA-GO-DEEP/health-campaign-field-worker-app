@@ -2105,7 +2105,7 @@ final dynamic sampleFlows = {
               "order": 5,
               "value": "",
               "format": "scanner",
-              "hidden": true,
+              "hidden": false,
               "isMdms": false,
               "tooltip": "",
               "helpText": "",
@@ -2118,7 +2118,9 @@ final dynamic sampleFlows = {
               "innerLabel": "",
               "schemaCode": null,
               "systemDate": false,
-              "validations": [],
+              "validations": [
+                {"type": "scanLimit", "value": 4}
+              ],
               "errorMessage": "",
               "includeInForm": true,
               "isMultiSelect": false,

@@ -50,6 +50,50 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
     return displayCodes.map((e) => e.toString()).join(', ');
   }
 
+  String _extractSerialFromGs1Map(Map<String, dynamic> data) {
+    final serial =
+        data['21'] ?? data['SERIAL'] ?? data['serial'] ?? data['Serial'];
+    return serial?.toString().trim() ?? '';
+  }
+
+  List<String> _serialsFromFormValue(String data) {
+    final parsed = DigitScannerUtils.deserializeGs1Barcodes(data);
+    return parsed
+        .map((e) => _extractSerialFromGs1Map(e))
+        .where((e) => e.isNotEmpty)
+        .toList();
+  }
+
+  String _mergeBarcodeValues(String? existingValue, String incomingValue) {
+    if (incomingValue.trim().isEmpty) return existingValue ?? '';
+    if (existingValue == null || existingValue.trim().isEmpty) {
+      return incomingValue;
+    }
+
+    final existingMaps = DigitScannerUtils.deserializeGs1Barcodes(existingValue);
+    final incomingMaps = DigitScannerUtils.deserializeGs1Barcodes(incomingValue);
+    final combined = <Map<String, String>>[...existingMaps, ...incomingMaps];
+
+    final seen = <String>{};
+    final unique = <Map<String, String>>[];
+    for (final map in combined) {
+      final sortedKeys = map.keys.toList()..sort();
+      final signature =
+          sortedKeys.map((k) => '$k:${map[k] ?? ''}').join('|');
+      if (signature.isEmpty || seen.contains(signature)) continue;
+      seen.add(signature);
+      unique.add(map);
+    }
+
+    return unique
+        .map((m) => m.entries
+            .where((e) => e.value.trim().isNotEmpty)
+            .map((e) => '${e.key}:${e.value}')
+            .join('|'))
+        .where((e) => e.isNotEmpty)
+        .join(';');
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = FormLocalization.of(context);
@@ -71,8 +115,11 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
           form.control(formControlName).value = state.qrCodes.join(', ');
         } else if (state.barCodes.isNotEmpty) {
           // Serialize barcodes dynamically using only non-empty fields
-          form.control(formControlName).value =
+          final incomingValue =
               DigitScannerUtils().serializeGs1Barcodes(state.barCodes);
+          final existingValue = form.control(formControlName).value as String?;
+          form.control(formControlName).value =
+              _mergeBarcodeValues(existingValue, incomingValue);
         } else {
           // Clear the form value when all scanned data has been deleted
           form.control(formControlName).value = null;
@@ -155,96 +202,59 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
         final showQrSummary =
             !showBarcodeSummary && displayQrCodes.isNotEmpty && summaryData;
 
+        final displaySerials = isThisScanner && state.barCodes.isNotEmpty
+          ? state.barCodes
+            .asMap()
+            .entries
+            .map((barcodeEntry) {
+              final gs1Data = DigitScannerUtils()
+                .getGs1CodeFormattedStringAtIndex(
+                  state.barCodes, barcodeEntry.key);
+              return _extractSerialFromGs1Map(gs1Data);
+            })
+            .where((e) => e.isNotEmpty)
+            .toList()
+          : (hasFormValue ? _serialsFromFormValue(formValue!) : <String>[]);
+
+
         // Show barcode (GS1) summary
         return showBarcodeSummary
             ? Container(
                 padding: EdgeInsets.zero,
                 width: MediaQuery.of(context).size.width,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.start,
+                child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: isThisScanner && state.barCodes.isNotEmpty
-                            // Use bloc state when available - show all barcodes
-                            ? state.barCodes
-                                .asMap()
-                                .entries
-                                .map((barcodeEntry) {
-                                final index = barcodeEntry.key;
-                                final gs1Data = DigitScannerUtils()
-                                    .getGs1CodeFormattedStringAtIndex(
-                                        state.barCodes, index);
-                                return Padding(
-                                  padding: EdgeInsets.only(
-                                    bottom: index < state.barCodes.length - 1
-                                        ? 16.0
-                                        : 0,
-                                  ),
-                                  child: LabelValueSummary(
-                                    padding: EdgeInsets.zero,
-                                    withDivider: false,
-                                    items: gs1Data.entries.map((entry) {
-                                      return LabelValueItem(
-                                        labelFlex: 5,
-                                        label: "GS1_${entry.key}",
-                                        value: entry.value is DateTime
-                                            ? DateFormat('d MMMM yyyy')
-                                                .format(entry.value)
-                                                .toString()
-                                            : entry.value,
-                                        maxLines: 5,
-                                      );
-                                    }).toList(),
-                                  ),
-                                );
-                              }).toList()
-                            // Fall back to parsing form value using deserializer
-                            : () {
-                                final parsedBarcodes = DigitScannerUtils
-                                    .deserializeGs1Barcodes(formValue!);
-                                final widgets = <Widget>[];
-                                for (int i = 0;
-                                    i < parsedBarcodes.length;
-                                    i++) {
-                                  final items = parsedBarcodes[i]
-                                      .entries
-                                      .map((entry) => LabelValueItem(
-                                            labelFlex: 5,
-                                            label: "GS1_${entry.key}",
-                                            value: entry.value,
-                                            maxLines: 5,
-                                          ))
-                                      .toList();
-                                  widgets.add(Padding(
-                                    padding: EdgeInsets.only(
-                                      bottom: i < parsedBarcodes.length - 1
-                                          ? 16.0
-                                          : 0,
-                                    ),
-                                    child: LabelValueSummary(
-                                      padding: EdgeInsets.zero,
-                                      withDivider: false,
-                                      items: items,
-                                    ),
-                                  ));
-                                }
-                                return widgets;
-                              }(),
-                      ),
+                    LabelValueSummary(
+                      padding: EdgeInsets.zero,
+                      withDivider: false,
+                      items: displaySerials
+                          .map(
+                            (serial) => LabelValueItem(
+                              labelFlex: 5,
+                              label: 'Serial Number',
+                              value: serial,
+                              maxLines: 2,
+                            ),
+                          )
+                          .toList(),
                     ),
+                    const SizedBox(height: 12),
                     DigitButton(
-                      label: '',
+                      capitalizeLetters: false,
+                      size: DigitButtonSize.large,
+                      label: label ?? 'scanner',
                       onPressed: () {
                         // Pass form value directly to scanner page via route param
                         // Scanner page will parse and dispatch to bloc in initState
                         final provider = ScannerComparisonProvider.of(context);
                         final registry = ScannerComparisonRegistry();
-                        final dupeFn = provider != null ? provider.duplicateCheckFn : registry.duplicateCheckFn;
-                        final dupeErrFn = provider != null ? provider.duplicateErrorMessage : registry.duplicateErrorMessage;
+                        final dupeFn = provider != null
+                            ? provider.duplicateCheckFn
+                            : registry.duplicateCheckFn;
+                        final dupeErrFn = provider != null
+                            ? provider.duplicateErrorMessage
+                            : registry.duplicateErrorMessage;
                         final duplicateCheckFn = dupeFn != null
                             ? (String scannedValue) => dupeFn(
                                   formControlName, scannedValue, form.value)
@@ -260,10 +270,10 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                           duplicateCheckMessage: duplicateMsg,
                         ));
                       },
-                      type: DigitButtonType.tertiary,
-                      size: DigitButtonSize.medium,
-                      prefixIcon: Icons.edit,
-                    )
+                      type: DigitButtonType.secondary,
+                      prefixIcon: Icons.qr_code,
+                      mainAxisSize: MainAxisSize.max,
+                    ),
                   ],
                 ),
               )
@@ -272,30 +282,28 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                 ? Container(
                     padding: EdgeInsets.zero,
                     width: MediaQuery.of(context).size.width,
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
-                      crossAxisAlignment: CrossAxisAlignment.center,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        SizedBox(
-                          width: MediaQuery.of(context).size.width * .78,
-                          child: LabelValueSummary(
-                            padding: EdgeInsets.zero,
-                            withDivider: false,
-                            items: [
-                              LabelValueItem(
-                                label: label ?? 'Voucher code',
-                                // Show all QR codes comma-separated
-                                value: formatDisplayCodes(displayQrCodes),
-                                labelFlex: 5,
-                                maxLines: 5,
-                                padding: EdgeInsets.zero,
-                              ),
-                            ],
-                          ),
+                        LabelValueSummary(
+                          padding: EdgeInsets.zero,
+                          withDivider: false,
+                          items: [
+                            LabelValueItem(
+                              label: label ?? 'Voucher code',
+                              // Show all QR codes comma-separated
+                              value: formatDisplayCodes(displayQrCodes),
+                              labelFlex: 5,
+                              maxLines: 5,
+                              padding: EdgeInsets.zero,
+                            ),
+                          ],
                         ),
+                        const SizedBox(height: 12),
                         DigitButton(
-                          label: '',
+                          capitalizeLetters: false,
+                          size: DigitButtonSize.large,
+                          label: label ?? 'scanner',
                           onPressed: () {
                             // Clear scanner state before navigating to edit QR codes
                             context.read<DigitScannerBloc>().add(
@@ -308,13 +316,18 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                             // Use displayQrCodes which already has the parsed data
                             final provider2 = ScannerComparisonProvider.of(context);
                             final registry2 = ScannerComparisonRegistry();
-                            final dupeFn2 = provider2 != null ? provider2.duplicateCheckFn : registry2.duplicateCheckFn;
-                            final dupeErrFn2 = provider2 != null ? provider2.duplicateErrorMessage : registry2.duplicateErrorMessage;
+                            final dupeFn2 = provider2 != null
+                                ? provider2.duplicateCheckFn
+                                : registry2.duplicateCheckFn;
+                            final dupeErrFn2 = provider2 != null
+                                ? provider2.duplicateErrorMessage
+                                : registry2.duplicateErrorMessage;
                             final duplicateCheckFn2 = dupeFn2 != null
                                 ? (String scannedValue) => dupeFn2(
                                       formControlName, scannedValue, form.value)
                                 : null;
-                            final duplicateMsg2 = dupeErrFn2?.call(formControlName);
+                            final duplicateMsg2 =
+                                dupeErrFn2?.call(formControlName);
                             context.router.push(DigitScannerRoute(
                               validations: _toScannerValidations(),
                               isGS1code: isGS1code,
@@ -325,10 +338,10 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                               duplicateCheckMessage: duplicateMsg2,
                             ));
                           },
-                          type: DigitButtonType.tertiary,
-                          size: DigitButtonSize.medium,
-                          prefixIcon: Icons.edit,
-                        )
+                          type: DigitButtonType.secondary,
+                          prefixIcon: Icons.qr_code,
+                          mainAxisSize: MainAxisSize.max,
+                        ),
                       ],
                     ),
                   )

@@ -101,10 +101,17 @@ extension ContextUtilityExtensions on BuildContext {
     final boundaryBloc = _get<BoundaryBloc>();
     final boundaryState = boundaryBloc.state;
 
-    final selectedBoundary = boundaryState.selectedBoundaryMap.entries
-        .where((element) => element.value != null)
-        .lastOrNull
-        ?.value;
+    // final selectedBoundary = boundaryState.selectedBoundaryMap.entries
+    //     .where((element) => element.value != null)
+    //     .lastOrNull
+    //     ?.value;
+
+    final selectedBoundary =
+        boundaryState.selectedLastLevelBoundaries.lastOrNull ??
+            boundaryState.selectedBoundaryMap.entries
+                .where((element) => element.value != null)
+                .lastOrNull
+                ?.value;
 
     if (selectedBoundary == null) {
       throw AppException('No boundary is selected');

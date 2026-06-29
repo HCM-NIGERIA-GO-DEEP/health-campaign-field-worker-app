@@ -395,9 +395,11 @@ class _FormScreenWrapperState extends LocalizedState<_FormScreenWrapper> {
               materializedPath: boundary?.materializedPath,
               boundaryCode: boundary?.code,
             );
-            final administrativeAreaCode = isStateScopedUser
-                ? (selectedStateCode ?? stateCode ?? boundary?.code ?? '')
-                : (boundary?.code ?? '');
+            // final administrativeAreaCode = isStateScopedUser
+            //     ? (selectedStateCode ?? stateCode ?? boundary?.code ?? '')
+            //     : (boundary?.code ?? '');
+
+            final administrativeAreaCode = boundary?.code ?? '';
 
             return ScannerComparisonProvider(
               duplicateCheckFn: (fieldName, scannedValue, formValues) {
