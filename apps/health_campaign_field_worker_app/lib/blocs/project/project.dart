@@ -1031,7 +1031,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       ));
 
       final lastSyncedTime = existingDownSyncData.isEmpty
-          ? null
+          ? currentCycleStartDate
           : existingDownSyncData.first.lastSyncedTime;
 
       if (existingDownSyncData.isEmpty) {
