@@ -162,6 +162,23 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
   ) async {
     emit(const StockDownSyncState.loading(true));
     try {
+      final selectedProjectType = await localSecureStore.selectedProjectType;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final currentCycleStartDate = selectedProjectType?.cycles
+              ?.where(
+                (cycle) =>
+                    (cycle.startDate ?? 0) <= now &&
+                    (cycle.endDate ?? 0) >= now,
+              )
+              .firstOrNull
+              ?.startDate ??
+          event.projectModel.additionalDetails?.projectType?.cycles
+              ?.where(
+                (cycle) => cycle.startDate <= now && cycle.endDate >= now,
+              )
+              .firstOrNull
+              ?.startDate;
+
       final stockSearchModel = await _buildStockSearchModel(event.projectModel);
 
       if (stockSearchModel == null) {
@@ -176,7 +193,7 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
       ));
 
       int? lastSyncedTime = existingDownSyncData.isEmpty
-          ? null
+          ? currentCycleStartDate
           : existingDownSyncData.first.lastSyncedTime;
 
       // Always start from offset 0 for total count check since

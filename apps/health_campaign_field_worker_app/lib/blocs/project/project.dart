@@ -1004,20 +1004,6 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
               )
               .firstOrNull
               ?.startDate;
-      final currentCycleEndDate = selectedProjectType?.cycles
-              ?.where(
-                (cycle) =>
-                    (cycle.startDate ?? 0) <= now &&
-                    (cycle.endDate ?? 0) >= now,
-              )
-              .firstOrNull
-              ?.endDate ??
-          project.additionalDetails?.projectType?.cycles
-              ?.where(
-                (cycle) => cycle.startDate <= now && cycle.endDate >= now,
-              )
-              .firstOrNull
-              ?.endDate;
 
       final stockSearchModel = StockSearchModel(
         receiverId: receiverIds.first,
@@ -1070,19 +1056,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
         if (stockEntries.isEmpty) break;
 
-        final cycleFilteredStockEntries =
-            (currentCycleStartDate != null && currentCycleEndDate != null)
-                ? stockEntries.where((stock) {
-                    final dateOfEntry = stock.dateOfEntry;
-                    return dateOfEntry != null &&
-                        dateOfEntry >= currentCycleStartDate &&
-                        dateOfEntry <= currentCycleEndDate;
-                  }).toList()
-                : stockEntries;
-
-        if (cycleFilteredStockEntries.isNotEmpty) {
-          await stockLocalRepository.bulkCreate(cycleFilteredStockEntries);
-        }
+        await stockLocalRepository.bulkCreate(stockEntries);
 
         await downSyncLocalRepository.update(DownsyncModel(
           offset: 0,
