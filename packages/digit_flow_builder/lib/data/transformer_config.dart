@@ -1813,7 +1813,7 @@ final jsonConfig = {
           "referralCode": "__context:selectedIndividualClientReferenceId",
           "name": "__context:selectedIndividualName",
           "symptom":
-              "__switch:__context:sourceFlow:{CHECKLIST:__context:referralReasons,RI_CHECKLIST:__context:referralReasons,VASCHECKLIST:__context:referralReasons,default:referBeneficiary.referralReason}",
+              "__switch:__context:sourceFlow:{CHECKLIST:__context:referralSymptom,RI_CHECKLIST:__context:referralSymptom,VASCHECKLIST:__context:referralSymptom,default:referBeneficiary.referralSymptom}",
           "nonRecoverableError": "referral.nonRecoverable",
           "clientReferenceId": "__generate:uuid",
           "rowVersion": "meta.rowVersion",
@@ -1844,8 +1844,12 @@ final jsonConfig = {
             "partiallyImmunized": "__context:partiallyImmunized",
             "zeroDose": "__context:zeroDose",
             "unimmunized": "__context:unimmunized",
-            // Referral reasons mapped from checklist: SICK for ec1=YES, FEVER for ec2=YES
+            // Referral reasons mapped from checklist, ordered by priority
+            // (ADR/DRUG_SE_PC > SICK > FEVER). `symptom` holds the highest-priority
+            // reason; `referralReasonsExtra` holds the remaining reasons joined by ",".
             "referralReasons": "__context:referralReasons",
+            "referralSymptom": "__context:referralSymptom",
+            "referralReasonsExtra": "__context:referralReasonsExtra",
             "flow":
                 "__switch:__context:sourceFlow:{RI_CHECKLIST:__value:riDone,CHECKLIST:__value:smcDone,VASCHECKLIST:__value:vasDone}"
           }
