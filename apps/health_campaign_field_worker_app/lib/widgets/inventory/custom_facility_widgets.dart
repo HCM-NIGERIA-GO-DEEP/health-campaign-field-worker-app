@@ -12,6 +12,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import '../../models/entities/roles_type.dart';
+import '../../utils/constants.dart';
 import '../../utils/extensions/extensions.dart';
 import '../../utils/least_level_boundary_singleton.dart';
 import '../localized.dart';
@@ -110,10 +111,15 @@ class _FacilityCardState extends LocalizedState<FacilityCard> {
           } else if (parentBoundaryCode != null) {
             FacilityModel? parentFacilityModel;
             for (final facility in facilities) {
-              final isAddressMatch = facility.address?.locality?.code == parentBoundaryCode;
+              final isAddressMatch =
+                  facility.address?.locality?.code == parentBoundaryCode;
               final usage = facility.usage?.toLowerCase();
-              final isUsageMatch = usage == 'district facility' || usage == 'central facility';
-              if (isAddressMatch || isUsageMatch) {
+              final isUsageMatch = usage == Constants.districtFacility ||
+                  usage == Constants.centralFacility;
+              if (isAddressMatch) {
+                parentFacilityModel = facility;
+                break;
+              } else if (isUsageMatch) {
                 parentFacilityModel = facility;
                 break;
               }
@@ -330,13 +336,11 @@ class _FacilityCardContent extends StatelessWidget {
         final options = levelConfig[mode];
         if (options is! List) continue;
 
-        final hasCentralFacility = options
-            .map((e) => e?.toString())
-            .whereType<String>()
-            .any((entry) {
-              final val = entry.replaceAll(" ", "").toUpperCase();
-              return val == 'CENTRALFACILITY' || val == 'DISTRICTFACILITY';
-            });
+        final hasCentralFacility =
+            options.map((e) => e?.toString()).whereType<String>().any((entry) {
+          final val = entry.replaceAll(" ", "").toUpperCase();
+          return val == 'CENTRALFACILITY' || val == 'DISTRICTFACILITY';
+        });
 
         if (hasCentralFacility) {
           return true;

@@ -742,12 +742,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
               sampleFlows as Map<String, dynamic>);
         } else {
           for (final config in formConfigs) {
-            if (config['name'] == 'REGISTRATION') {
-              await enrichFormSchemasWithEnumsForForms(
-                  sampleFlows as Map<String, dynamic>);
-            } else {
-              await enrichFormSchemasWithEnumsForForms(config);
-            }
+            await enrichFormSchemasWithEnumsForForms(config);
           }
         }
       } catch (e) {
