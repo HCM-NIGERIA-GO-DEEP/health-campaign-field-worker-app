@@ -151,14 +151,6 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
       CREATE INDEX IF NOT EXISTS task_search_project_created_status
       ON task (project_id, client_created_by, status);
     ''');
-    await customStatement('''
-      CREATE INDEX IF NOT EXISTS task_search_project_created_status_modifiedtime
-      ON task (project_id, client_created_by, status, client_modified_time);
-    ''');
-    await customStatement('''
-      CREATE INDEX IF NOT EXISTS task_search_project_created_status_plannedstart
-      ON task (project_id, client_created_by, status, planned_start_date);
-    ''');
   }
 
   @override
