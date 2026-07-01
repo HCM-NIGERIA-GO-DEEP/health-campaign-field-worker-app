@@ -5999,7 +5999,7 @@ final dynamic sampleFlows = {
               "label": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_dobPicker",
               "order": 5,
               "value": "01/01/1970",
-              "format": "dob",
+              "format": "text",
               "hidden": true,
               "includeInForm": true,
               "isMdms": false,
@@ -6038,17 +6038,13 @@ final dynamic sampleFlows = {
             },
             {
               "type": "string",
-              "enums": [
-                {"code": "MALE", "name": "MALE"},
-                {"code": "FEMALE", "name": "FEMALE"}
-              ],
               "label": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_gender",
               "order": 6,
               "value": "FEMALE",
-              "format": "select",
+              "format": "text",
               "hidden": true,
               "includeInForm": true,
-              "isMdms": true,
+              "isMdms": false,
               "tooltip": "",
               "helpText": "",
               "infoText": "",
@@ -6058,7 +6054,7 @@ final dynamic sampleFlows = {
               "mandatory": true,
               "deleteFlag": false,
               "innerLabel": "",
-              "schemaCode": "common-masters.GenderType",
+              "schemaCode": null,
               "systemDate": false,
               "validations": [
                 {
