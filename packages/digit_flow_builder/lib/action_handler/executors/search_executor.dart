@@ -241,6 +241,8 @@ class SearchExecutor extends ActionExecutor {
             ? SearchStateManager().getAllFilters(compositeKey)
             : resolvedFilters);
 
+    final config = FlowRegistry.getByName(screenKey ?? '');
+
     // Convert accumulated filters to SearchFilter objects
     // Default root: use search name (e.g., "stock") which matches the primary table
     final defaultRoot = searchName;
@@ -268,6 +270,11 @@ class SearchExecutor extends ActionExecutor {
       ));
     }
 
+    _ensureBoundaryFilterForHouseholdSearch(
+      filters: filters,
+      primaryModel: config?['wrapperConfig']?['searchConfig']?['primary'],
+    );
+
     // Early return if no filters are applicable
     if (filters.isEmpty) {
       debugPrint(
@@ -277,8 +284,6 @@ class SearchExecutor extends ActionExecutor {
 
     debugPrint(
         'SEARCH_EVENT: Executing with ${filters.length} accumulated filters for $searchName');
-
-    final config = FlowRegistry.getByName(screenKey ?? '');
 
     // Get orderBy from action properties or fall back to config or accumulated state
     SearchOrderBy? orderBy;
@@ -434,13 +439,15 @@ class SearchExecutor extends ActionExecutor {
 
     // Get primaryModel and select from config
     final primaryModel = config?['wrapperConfig']?['searchConfig']?['primary'];
-    final select = (config?['wrapperConfig']?['searchConfig']?['select'] as List?)
-            ?.cast<String>() ??
-        [];
+    final select =
+        (config?['wrapperConfig']?['searchConfig']?['select'] as List?)
+                ?.cast<String>() ??
+            [];
 
     // If no config available (e.g., on form pages), skip the search
     if (primaryModel == null || select.isEmpty) {
-      debugPrint('SEARCH_EVENT: No searchConfig in config, skipping search. primaryModel=$primaryModel, select=$select');
+      debugPrint(
+          'SEARCH_EVENT: No searchConfig in config, skipping search. primaryModel=$primaryModel, select=$select');
       return contextData;
     }
 
@@ -537,8 +544,7 @@ class SearchExecutor extends ActionExecutor {
     Map<String, dynamic>? config,
   ) {
     // Use getAllFilters (across all searchNames) — consistent with the main search path
-    final accumulatedFilters =
-        SearchStateManager().getAllFilters(compositeKey);
+    final accumulatedFilters = SearchStateManager().getAllFilters(compositeKey);
     final accumulatedOrderBy =
         SearchStateManager().getOrderBy(compositeKey, searchName);
 
@@ -571,6 +577,11 @@ class SearchExecutor extends ActionExecutor {
       ));
     }
 
+    _ensureBoundaryFilterForHouseholdSearch(
+      filters: filters,
+      primaryModel: config?['wrapperConfig']?['searchConfig']?['primary'],
+    );
+
     // Build orderBy
     SearchOrderBy? orderBy;
     if (accumulatedOrderBy != null) {
@@ -594,5 +605,39 @@ class SearchExecutor extends ActionExecutor {
 
     // Execute search
     crudBloc.add(CrudEventSearch(searchParams));
+  }
+
+  static void _ensureBoundaryFilterForHouseholdSearch({
+    required List<SearchFilter> filters,
+    required dynamic primaryModel,
+  }) {
+    final model = primaryModel?.toString().toLowerCase();
+    final isHouseholdSearch = model == 'household' || model == 'householdmodel';
+    if (!isHouseholdSearch) return;
+
+    final selectedBoundaryCode = FlowBuilderSingleton().boundary?.code?.trim();
+    if (selectedBoundaryCode == null || selectedBoundaryCode.isEmpty) return;
+
+    final alreadyHasBoundary = filters.any(
+      (f) =>
+          f.field.toLowerCase() == 'localityboundarycode' ||
+          (f.root.toLowerCase() == 'address' &&
+              f.field.toLowerCase() == 'localityboundarycode'),
+    );
+
+    if (alreadyHasBoundary) return;
+
+    filters.add(
+      SearchFilter(
+        root: 'address',
+        field: 'localityBoundaryCode',
+        operator: 'equals',
+        value: selectedBoundaryCode,
+      ),
+    );
+
+    debugPrint(
+      'SEARCH_EVENT: Injected boundary filter localityBoundaryCode=$selectedBoundaryCode',
+    );
   }
 }

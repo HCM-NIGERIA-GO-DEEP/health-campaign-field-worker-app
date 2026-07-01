@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../action_handler/action_config.dart';
 import '../../layout_renderer.dart';
+import '../../utils/conditional_evaluator.dart';
 import '../../utils/interpolation.dart';
 import '../../widget_registry.dart';
 import '../resolved_flow_widget.dart';
@@ -42,7 +43,7 @@ class ListViewWidget extends ResolvedFlowWidget {
 
     // Read spacing property (e.g., "spacer4")
     // final properties = json['properties'] as Map<String, dynamic>?;
-  
+
     final rawProperties = json['properties'];
     final properties = rawProperties == null
         ? null
@@ -50,6 +51,7 @@ class ListViewWidget extends ResolvedFlowWidget {
 
     final spacingKey = properties?['spacing']?.toString();
     final double spacing = _mapSpacingValue(context, spacingKey);
+    final itemFilter = json['itemFilter'];
 
     final widgets = <Widget>[];
 
@@ -65,6 +67,28 @@ class ListViewWidget extends ResolvedFlowWidget {
         safeItem = item.toMap();
       } else {
         safeItem = <String, dynamic>{};
+      }
+
+      if (itemFilter != null) {
+        final evalContext = <String, dynamic>{
+          'item': safeItem,
+          'contextData': resolved.state.contextData ?? <dynamic>[],
+          if (stateData != null) ...stateData.modelMap,
+        };
+
+        final stateKey = resolved.compositeKey ?? resolved.screenKey;
+        final shouldInclude = ConditionalEvaluator.evaluate(
+              itemFilter,
+              evalContext,
+              screenKey: stateKey,
+              stateData: stateData,
+              widgetdata: resolved.state.widgetData,
+            ) ==
+            true;
+
+        if (!shouldInclude) {
+          continue;
+        }
       }
 
       final childJson = Map<String, dynamic>.from(json['child'] as Map);
@@ -89,7 +113,11 @@ class ListViewWidget extends ResolvedFlowWidget {
           mappedChild.width == 0.0 &&
           mappedChild.height == 0.0) continue;
 
-      // Add spacing below each item except the last
+      // Add spacing only between included rows.
+      if (widgets.isNotEmpty && spacing > 0) {
+        widgets.add(SizedBox(height: spacing));
+      }
+
       widgets.add(
         CrudItemContext(
           stateData: stateData,
@@ -97,13 +125,7 @@ class ListViewWidget extends ResolvedFlowWidget {
           item: safeItem,
           screenKey: resolved.screenKey,
           compositeKey: resolved.compositeKey,
-          child: Column(
-            children: [
-              mappedChild,
-              if (index < items.length - 1 && spacing > 0)
-                SizedBox(height: spacing),
-            ],
-          ),
+          child: mappedChild,
         ),
       );
     }

@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../flow_builder.dart';
 import '../../utils/interpolation.dart';
+import '../../utils/utils.dart';
 import 'action_executor.dart';
 
 /// Executor for REFRESH_SEARCH action.
@@ -61,7 +62,8 @@ class RefreshSearchExecutor extends ActionExecutor {
 
     // Check if there are any accumulated filters for this screen
     final hasFilters = SearchStateManager().hasFiltersForScreen(compositeKey);
-    debugPrint('REFRESH_SEARCH: hasFilters=$hasFilters for compositeKey=$compositeKey');
+    debugPrint(
+        'REFRESH_SEARCH: hasFilters=$hasFilters for compositeKey=$compositeKey');
 
     if (!hasFilters) {
       debugPrint('REFRESH_SEARCH: No accumulated filters for screen, skipping');
@@ -94,7 +96,8 @@ class RefreshSearchExecutor extends ActionExecutor {
 
     // Get config for default pagination settings
     final screenName = compositeKey.split('::').first;
-    debugPrint('REFRESH_SEARCH: Looking up FlowRegistry with screenName=$screenName');
+    debugPrint(
+        'REFRESH_SEARCH: Looking up FlowRegistry with screenName=$screenName');
     final config = FlowRegistry.getByName(screenName);
     final defaultPaginationConfig =
         config?['wrapperConfig']?['searchConfig']?['pagination'];
@@ -111,7 +114,8 @@ class RefreshSearchExecutor extends ActionExecutor {
             : defaultMaxItems);
 
     // Get or initialize pagination window
-    debugPrint('REFRESH_SEARCH: Looking for pagination window with compositeKey=$compositeKey');
+    debugPrint(
+        'REFRESH_SEARCH: Looking for pagination window with compositeKey=$compositeKey');
     var window = stateManager.getPaginationWindow(compositeKey, paginationKey);
     debugPrint('REFRESH_SEARCH: Found window=$window');
 
@@ -175,6 +179,11 @@ class RefreshSearchExecutor extends ActionExecutor {
       ));
     }
 
+    _ensureBoundaryFilterForHouseholdSearch(
+      filters: filters,
+      primaryModel: config?['wrapperConfig']?['searchConfig']?['primary'],
+    );
+
     if (filters.isEmpty) {
       debugPrint('REFRESH_SEARCH: No filters to apply');
       return contextData;
@@ -207,5 +216,39 @@ class RefreshSearchExecutor extends ActionExecutor {
     crudBloc.add(CrudEventSearch(searchParams));
 
     return contextData;
+  }
+
+  void _ensureBoundaryFilterForHouseholdSearch({
+    required List<SearchFilter> filters,
+    required dynamic primaryModel,
+  }) {
+    final model = primaryModel?.toString().toLowerCase();
+    final isHouseholdSearch = model == 'household' || model == 'householdmodel';
+    if (!isHouseholdSearch) return;
+
+    final selectedBoundaryCode = FlowBuilderSingleton().boundary?.code?.trim();
+    if (selectedBoundaryCode == null || selectedBoundaryCode.isEmpty) return;
+
+    final alreadyHasBoundary = filters.any(
+      (f) =>
+          f.field.toLowerCase() == 'localityboundarycode' ||
+          (f.root.toLowerCase() == 'address' &&
+              f.field.toLowerCase() == 'localityboundarycode'),
+    );
+
+    if (alreadyHasBoundary) return;
+
+    filters.add(
+      SearchFilter(
+        root: 'address',
+        field: 'localityBoundaryCode',
+        operator: 'equals',
+        value: selectedBoundaryCode,
+      ),
+    );
+
+    debugPrint(
+      'REFRESH_SEARCH: Injected boundary filter localityBoundaryCode=$selectedBoundaryCode',
+    );
   }
 }

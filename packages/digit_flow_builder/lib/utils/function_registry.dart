@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendance_log.dart';
@@ -611,10 +613,6 @@ void initializeFunctionRegistry() {
 
     return false;
   });
-
-  
-
-
 
   /// Registers a function to check if all doses have been delivered for a member.
   ///
@@ -2040,5 +2038,118 @@ void initializeFunctionRegistry() {
 
     if (args.isEmpty) return '';
     return coerce(args.first);
+  });
+
+  /// Filters beneficiary wrappers to the currently selected boundary.
+  ///
+  /// Expects boundary data in HouseholdModel.address.locality.code and
+  /// performs strict equality against selected boundary code.
+  FunctionRegistry.register('isSelectedBoundaryBeneficiary', (args, stateData) {
+    final selectedBoundaryCode =
+        FlowBuilderSingleton().boundary?.code?.trim().toLowerCase();
+
+    dynamic toJsonSafe(dynamic value) {
+      if (value == null || value is String || value is num || value is bool) {
+        return value;
+      }
+
+      if (value is EntityModel) {
+        try {
+          return toJsonSafe(value.toMap());
+        } catch (_) {
+          return value.toString();
+        }
+      }
+
+      if (value is Map) {
+        return value.map((k, v) => MapEntry(k.toString(), toJsonSafe(v)));
+      }
+
+      if (value is List) {
+        return value.map(toJsonSafe).toList();
+      }
+
+      return value.toString();
+    }
+
+    void debugPrintLong(String text) {
+      const chunkSize = 800;
+      for (var i = 0; i < text.length; i += chunkSize) {
+        final end = (i + chunkSize < text.length) ? i + chunkSize : text.length;
+        debugPrint(text.substring(i, end));
+      }
+    }
+
+    if (selectedBoundaryCode == null || selectedBoundaryCode.isEmpty) {
+      return true;
+    }
+
+    if (args.isEmpty || args.first == null) {
+      return false;
+    }
+
+    Map<String, dynamic>? asMap(dynamic value) {
+      if (value is Map<String, dynamic>) return value;
+      if (value is Map) {
+        return Map<String, dynamic>.from(
+          value.map((k, v) => MapEntry(k.toString(), v)),
+        );
+      }
+      if (value is EntityModel) {
+        try {
+          return value.toMap();
+        } catch (_) {
+          return null;
+        }
+      }
+      return null;
+    }
+
+    String? localityCode(dynamic householdValue) {
+      final householdMap = asMap(householdValue);
+      final address = asMap(householdMap?['address']);
+      final locality = asMap(address?['locality']);
+      final code = locality?['code']?.toString().trim();
+      if (code == null || code.isEmpty) return null;
+      return code.toLowerCase();
+    }
+
+    String? resolveBoundaryFromPayload(dynamic payload) {
+      final payloadMap = asMap(payload);
+      if (payloadMap == null) return null;
+
+      // 1) Primary shape from logs: arg.HouseholdModel.address.locality.code
+      final fromHouseholdModel = localityCode(payloadMap['HouseholdModel']);
+      if (fromHouseholdModel != null) return fromHouseholdModel;
+
+      // 2) Alternate shape: arg.household[0].address.locality.code
+      final householdList = payloadMap['household'];
+      if (householdList is List && householdList.isNotEmpty) {
+        final firstHousehold = householdList.first;
+        final fromHouseholdList = localityCode(firstHousehold);
+        if (fromHouseholdList != null) return fromHouseholdList;
+      }
+
+      // 3) If payload itself is already a household map.
+      return localityCode(payloadMap);
+    }
+
+    final boundaryInArg = resolveBoundaryFromPayload(args.first);
+
+    try {
+      final debugPayload = {
+        'function': 'isSelectedBoundaryBeneficiary',
+        'selectedBoundaryCode': selectedBoundaryCode,
+        'boundaryInArg': boundaryInArg,
+        'arg': toJsonSafe(args.first),
+      };
+      debugPrint(const JsonEncoder.withIndent('  ').convert(debugPayload));
+    } catch (_) {
+      debugPrint(
+        'isSelectedBoundaryBeneficiary: unable to print arg as JSON',
+      );
+    }
+
+    return true; //boundaryInArg == selectedBoundaryCode;
   });
 }
