@@ -185,6 +185,8 @@ class Constants {
   static const String downloadAnimation =
       'assets/animated_json/download_animation.json';
 
+  static const int fallbackUniqueBeneficiaryIdLimit = 1500;
+
   static const String downloadSuccessAnimation =
       'assets/animated_json/download_success.json';
 

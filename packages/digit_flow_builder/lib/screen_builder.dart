@@ -391,6 +391,7 @@ class _FormScreenWrapperState extends LocalizedState<_FormScreenWrapper> {
                   'availableIDs': {
                     'DEFAULT': IdGen.instance.identifier,
                     'UNIQUE_BENEFICIARY_ID':
+                        flowState?.widgetData?['latestBeneficiaryId'] ??
                         IdGen.instance.generateRandomAlphanumeric(7),
                   },
                   'loggedInUserName': FlowBuilderSingleton().loggedInUser?.name,

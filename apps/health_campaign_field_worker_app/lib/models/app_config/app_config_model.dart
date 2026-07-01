@@ -453,6 +453,7 @@ class RowVersions with _$RowVersions {
     required String version,
     int? uniquenumbercount,
     String? uniquenumbertype,
+    int? uniqueBeneficiaryIdLimit,
   }) = _RowVersions;
 
   factory RowVersions.fromJson(Map<String, dynamic> json) =>

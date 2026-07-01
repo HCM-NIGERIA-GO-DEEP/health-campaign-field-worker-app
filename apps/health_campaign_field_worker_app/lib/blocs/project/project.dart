@@ -384,6 +384,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     if (rowVersionList.isNotEmpty) {
       DigitDataModelSingleton().uniquenumbercount = rowVersionList.first.uniquenumbercount;
       DigitDataModelSingleton().uniquenumbertype = rowVersionList.first.uniquenumbertype;
+      DigitDataModelSingleton().uniqueBeneficiaryIdLimit = rowVersionList.first.uniqueBeneficiaryIdLimit;
     }
   }
 
@@ -859,8 +860,10 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
           rowVersion.version = element.version;
           rowVersion.uniquenumbercount = element.uniquenumbercount;
           rowVersion.uniquenumbertype = element.uniquenumbertype;
+          rowVersion.uniqueBeneficiaryIdLimit = element.uniqueBeneficiaryIdLimit;
           DigitDataModelSingleton().uniquenumbercount = element.uniquenumbercount;
           DigitDataModelSingleton().uniquenumbertype = element.uniquenumbertype;
+          DigitDataModelSingleton().uniqueBeneficiaryIdLimit = element.uniqueBeneficiaryIdLimit;
           rowVersionList.add(rowVersion);
         }
         isar.writeTxnSync(() {

@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:attendance_management/utils/utils.dart';
 import 'package:collection/collection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:digit_data_model/data/repositories/package_repository/remote/unique_id_pool.dart';
+import 'package:digit_data_model/models/entities/id_status.dart';
 import 'package:digit_crud_bloc/digit_crud_bloc.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendance_log.dart';
@@ -148,6 +151,79 @@ class _HomePageState extends LocalizedState<HomePage> {
     }
   }
 
+  Future<void> _silentDownsyncUniqueIds(BuildContext context) async {
+    try {
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (!context.mounted) return;
+      if (connectivityResult.contains(ConnectivityResult.none)) return;
+
+      final userUuid = context.loggedInUserUuid;
+      final repository = context
+          .read<LocalRepository<UniqueIdPoolModel, UniqueIdPoolSearchModel>>();
+
+      final searchResult = await repository.search(UniqueIdPoolSearchModel(
+        status: IdStatus.unAssigned.toValue(),
+        userUuid: userUuid,
+      ));
+      if (!context.mounted) return;
+
+      final localCount = searchResult.length;
+      final limit = DigitDataModelSingleton().uniqueBeneficiaryIdLimit ??
+          Constants.fallbackUniqueBeneficiaryIdLimit;
+
+      if (localCount == 0) {
+        final needed = limit - localCount;
+        final remoteRepository = context.read<UniqueIdPoolRemoteRepository>();
+        final tenantId = envConfig.variables.tenantId;
+        final deviceInfo = DeviceInfoPlugin();
+        final androidInfo = await deviceInfo.androidInfo;
+        final deviceUuid = androidInfo.id;
+
+        int offset = 0;
+        int totalFetched = 0;
+        final batchSize = needed < 100 ? needed : 100;
+
+        while (totalFetched < needed) {
+          final currentBatchSize = (needed - totalFetched) < batchSize
+              ? (needed - totalFetched)
+              : batchSize;
+
+          final searchModel = UniqueIdPoolSearchModel(
+            deviceInfo: androidInfo.toString(),
+            userUuid: userUuid,
+            deviceUuid: deviceUuid,
+            tenantId: tenantId,
+            count: currentBatchSize,
+            fetchAllocatedIds: false,
+          );
+
+          if (!context.mounted) return;
+          final response = await remoteRepository.searchWithMetadata(
+            searchModel,
+            limit: currentBatchSize,
+            offSet: offset,
+          );
+
+          final List<UniqueIdPoolModel> batch = response.models;
+          if (batch.isEmpty) {
+            break;
+          }
+
+          if (!context.mounted) return;
+          await repository.bulkCreate(batch);
+          totalFetched += batch.length;
+          offset += batch.length;
+
+          if (batch.length < currentBatchSize) {
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Silent beneficiary ID downsync on home screen failed: $e');
+    }
+  }
+
   @override
   initState() {
     super.initState();
@@ -192,6 +268,7 @@ class _HomePageState extends LocalizedState<HomePage> {
         triggerLocalization(
           module: 'hcm-registration-$projectRefId,hcm-inventory-$projectRefId',
         );
+        _silentDownsyncUniqueIds(context);
       }
     });
   }
@@ -2734,10 +2811,11 @@ class _HomePageState extends LocalizedState<HomePage> {
         .map((label) => homeItemsShowcaseMap[label]!)
         .toList();
 
-    if (envConfig.variables.envType == EnvType.demo && kReleaseMode) {
+    if ((envConfig.variables.envType == EnvType.demo) ||
+        (envConfig.variables.envType == EnvType.prod) && kReleaseMode) {
       filteredLabels.remove(i18.home.db);
     }
-
+    filteredLabels.remove(i18.home.db);
     final userRoleCodes = state.userModel.roles.map((e) => e.code).toList();
     final isDistributor =
         userRoleCodes.contains(RolesType.distributor.toValue());

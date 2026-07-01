@@ -22,18 +22,23 @@ const RowVersionListSchema = CollectionSchema(
       name: r'module',
       type: IsarType.string,
     ),
-    r'uniquenumbercount': PropertySchema(
+    r'uniqueBeneficiaryIdLimit': PropertySchema(
       id: 1,
+      name: r'uniqueBeneficiaryIdLimit',
+      type: IsarType.long,
+    ),
+    r'uniquenumbercount': PropertySchema(
+      id: 2,
       name: r'uniquenumbercount',
       type: IsarType.long,
     ),
     r'uniquenumbertype': PropertySchema(
-      id: 2,
+      id: 3,
       name: r'uniquenumbertype',
       type: IsarType.string,
     ),
     r'version': PropertySchema(
-      id: 3,
+      id: 4,
       name: r'version',
       type: IsarType.string,
     )
@@ -76,9 +81,10 @@ void _rowVersionListSerialize(
   Map<Type, List<int>> allOffsets,
 ) {
   writer.writeString(offsets[0], object.module);
-  writer.writeLong(offsets[1], object.uniquenumbercount);
-  writer.writeString(offsets[2], object.uniquenumbertype);
-  writer.writeString(offsets[3], object.version);
+  writer.writeLong(offsets[1], object.uniqueBeneficiaryIdLimit);
+  writer.writeLong(offsets[2], object.uniquenumbercount);
+  writer.writeString(offsets[3], object.uniquenumbertype);
+  writer.writeString(offsets[4], object.version);
 }
 
 RowVersionList _rowVersionListDeserialize(
@@ -90,9 +96,10 @@ RowVersionList _rowVersionListDeserialize(
   final object = RowVersionList();
   object.id = id;
   object.module = reader.readString(offsets[0]);
-  object.uniquenumbercount = reader.readLongOrNull(offsets[1]);
-  object.uniquenumbertype = reader.readStringOrNull(offsets[2]);
-  object.version = reader.readString(offsets[3]);
+  object.uniqueBeneficiaryIdLimit = reader.readLongOrNull(offsets[1]);
+  object.uniquenumbercount = reader.readLongOrNull(offsets[2]);
+  object.uniquenumbertype = reader.readStringOrNull(offsets[3]);
+  object.version = reader.readString(offsets[4]);
   return object;
 }
 
@@ -108,8 +115,10 @@ P _rowVersionListDeserializeProp<P>(
     case 1:
       return (reader.readLongOrNull(offset)) as P;
     case 2:
-      return (reader.readStringOrNull(offset)) as P;
+      return (reader.readLongOrNull(offset)) as P;
     case 3:
+      return (reader.readStringOrNull(offset)) as P;
+    case 4:
       return (reader.readString(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -399,6 +408,80 @@ extension RowVersionListQueryFilter
       return query.addFilterCondition(FilterCondition.greaterThan(
         property: r'module',
         value: '',
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniqueBeneficiaryIdLimitIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'uniqueBeneficiaryIdLimit',
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniqueBeneficiaryIdLimitIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'uniqueBeneficiaryIdLimit',
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniqueBeneficiaryIdLimitEqualTo(int? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'uniqueBeneficiaryIdLimit',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniqueBeneficiaryIdLimitGreaterThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.greaterThan(
+        include: include,
+        property: r'uniqueBeneficiaryIdLimit',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniqueBeneficiaryIdLimitLessThan(
+    int? value, {
+    bool include = false,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.lessThan(
+        include: include,
+        property: r'uniqueBeneficiaryIdLimit',
+        value: value,
+      ));
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterFilterCondition>
+      uniqueBeneficiaryIdLimitBetween(
+    int? lower,
+    int? upper, {
+    bool includeLower = true,
+    bool includeUpper = true,
+  }) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.between(
+        property: r'uniqueBeneficiaryIdLimit',
+        lower: lower,
+        includeLower: includeLower,
+        upper: upper,
+        includeUpper: includeUpper,
       ));
     });
   }
@@ -790,6 +873,20 @@ extension RowVersionListQuerySortBy
   }
 
   QueryBuilder<RowVersionList, RowVersionList, QAfterSortBy>
+      sortByUniqueBeneficiaryIdLimit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'uniqueBeneficiaryIdLimit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterSortBy>
+      sortByUniqueBeneficiaryIdLimitDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'uniqueBeneficiaryIdLimit', Sort.desc);
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterSortBy>
       sortByUniquenumbercount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'uniquenumbercount', Sort.asc);
@@ -859,6 +956,20 @@ extension RowVersionListQuerySortThenBy
   }
 
   QueryBuilder<RowVersionList, RowVersionList, QAfterSortBy>
+      thenByUniqueBeneficiaryIdLimit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'uniqueBeneficiaryIdLimit', Sort.asc);
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterSortBy>
+      thenByUniqueBeneficiaryIdLimitDesc() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addSortBy(r'uniqueBeneficiaryIdLimit', Sort.desc);
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QAfterSortBy>
       thenByUniquenumbercount() {
     return QueryBuilder.apply(this, (query) {
       return query.addSortBy(r'uniquenumbercount', Sort.asc);
@@ -910,6 +1021,13 @@ extension RowVersionListQueryWhereDistinct
   }
 
   QueryBuilder<RowVersionList, RowVersionList, QDistinct>
+      distinctByUniqueBeneficiaryIdLimit() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addDistinctBy(r'uniqueBeneficiaryIdLimit');
+    });
+  }
+
+  QueryBuilder<RowVersionList, RowVersionList, QDistinct>
       distinctByUniquenumbercount() {
     return QueryBuilder.apply(this, (query) {
       return query.addDistinctBy(r'uniquenumbercount');
@@ -943,6 +1061,13 @@ extension RowVersionListQueryProperty
   QueryBuilder<RowVersionList, String, QQueryOperations> moduleProperty() {
     return QueryBuilder.apply(this, (query) {
       return query.addPropertyName(r'module');
+    });
+  }
+
+  QueryBuilder<RowVersionList, int?, QQueryOperations>
+      uniqueBeneficiaryIdLimitProperty() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addPropertyName(r'uniqueBeneficiaryIdLimit');
     });
   }
 

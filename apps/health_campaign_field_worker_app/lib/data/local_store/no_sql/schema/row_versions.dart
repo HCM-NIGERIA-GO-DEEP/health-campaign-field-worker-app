@@ -13,4 +13,6 @@ class RowVersionList {
   int? uniquenumbercount;
 
   String? uniquenumbertype;
+
+  int? uniqueBeneficiaryIdLimit;
 }

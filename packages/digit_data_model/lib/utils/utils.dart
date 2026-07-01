@@ -77,6 +77,7 @@ class DigitDataModelSingleton {
   EntityMapperListener? _entityListener;
   int? uniquenumbercount;
   String? uniquenumbertype;
+  int? uniqueBeneficiaryIdLimit;
 
   /// Sets the environment configuration variables.
   void setData({
