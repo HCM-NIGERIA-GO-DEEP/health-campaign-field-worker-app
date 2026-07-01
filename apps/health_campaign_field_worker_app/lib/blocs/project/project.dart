@@ -124,6 +124,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
   final DashboardRemoteRepository dashboardRemoteRepository;
   BuildContext context;
 
+  static const String _rolesFieldKey = 'user_roles';
+
   ProjectBloc({
     LocalSecureStore? localSecureStore,
     required this.bandwidthCheckRepository,
@@ -337,6 +339,11 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         ));
       } catch (_) {}
     }
+
+    // Pre-cache all team members for offline use on SelectTeamMembers screen
+    try {
+      await _loadTeamMembersForProjects(projects);
+    } catch (_) {}
 
     emit(ProjectState(
       projects: projects,
@@ -1406,6 +1413,125 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
     // ✅ Finally, store the full formConfigs (including updated FORM ones)
     await storeSchema(formConfigs);
+  }
+
+  Future<void> _loadTeamMembersForProjects(List<ProjectModel> projects) async {
+    try {
+      final userObject = await localSecureStore.userRequestModel;
+      final loggedInUuid = userObject?.uuid ?? '';
+
+      final allStaff = <ProjectStaffModel>[];
+      for (final project in projects) {
+        try {
+          final staff = await projectStaffRemoteRepository.search(
+            ProjectStaffSearchModel(projectId: [project.id]),
+            limit: 1000,
+          );
+          allStaff.addAll(staff);
+          for (final s in staff) {
+            try {
+              await projectStaffLocalRepository.create(s, createOpLog: false);
+            } catch (_) {}
+          }
+        } catch (_) {}
+      }
+
+      final allUserUuids = allStaff
+          .where((s) => s.userId != null && s.userId != loggedInUuid)
+          .map((s) => s.userId!)
+          .toSet()
+          .toList();
+
+      if (allUserUuids.isEmpty) return;
+
+      final localIndividuals = await individualLocalRepository.search(
+        IndividualSearchModel(userUuid: allUserUuids),
+      );
+
+      final cachedUuids = localIndividuals
+          .where((ind) => ind.userUuid != null)
+          .map((ind) => ind.userUuid!)
+          .toSet();
+
+      final missingUuids =
+          allUserUuids.where((u) => !cachedUuids.contains(u)).toList();
+
+      if (missingUuids.isNotEmpty) {
+        await _fetchAndCacheTeamIndividuals(missingUuids);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _fetchAndCacheTeamIndividuals(List<String> userUuids) async {
+    try {
+      final response = await individualRemoteRepository.dio.post(
+        individualRemoteRepository.searchPath,
+        queryParameters: {
+          'offset': 0,
+          'limit': userUuids.length,
+          'tenantId': envConfig.variables.tenantId,
+        },
+        data: {
+          'Individual': {'userUuid': userUuids},
+        },
+      );
+
+      final responseMap = response.data;
+      if (responseMap is! Map<String, dynamic> ||
+          !responseMap.containsKey('Individual')) return;
+
+      final individualList = responseMap['Individual'];
+      if (individualList is! List) return;
+
+      for (final raw in individualList.whereType<Map<String, dynamic>>()) {
+        final userDetails = raw['userDetails'];
+        if (userDetails is! Map<String, dynamic>) continue;
+        final roles = userDetails['roles'];
+        if (roles is! List) continue;
+
+        final roleCodes = roles
+            .whereType<Map<String, dynamic>>()
+            .map((r) => r['code'] as String? ?? '')
+            .where((c) => c.isNotEmpty)
+            .toSet();
+
+        final nameMap = raw['name'];
+        final givenName = nameMap is Map<String, dynamic>
+            ? nameMap['givenName'] as String? ?? ''
+            : '';
+        final username = userDetails['username'] as String? ?? '';
+        final userUuid = raw['userUuid'] as String? ?? '';
+        final clientReferenceId =
+            raw['clientReferenceId'] as String? ?? userUuid;
+
+        if (username.isEmpty || userUuid.isEmpty) continue;
+
+        final individual = IndividualModel(
+          clientReferenceId: clientReferenceId,
+          id: raw['id'] as String?,
+          userUuid: userUuid,
+          userId: username,
+          tenantId: raw['tenantId'] as String?,
+          name: givenName.isNotEmpty
+              ? NameModel(
+                  individualClientReferenceId: clientReferenceId,
+                  givenName: givenName,
+                )
+              : null,
+          additionalFields: IndividualAdditionalFields(
+            version: 1,
+            fields: [
+              AdditionalField(_rolesFieldKey, roleCodes.join(',')),
+            ],
+          ),
+        );
+
+        try {
+          await individualLocalRepository.create(individual,
+              createOpLog: false);
+        } catch (_) {}
+      }
+    } catch (_) {}
   }
 
   FutureOr<int> _getBatchSize() async {
