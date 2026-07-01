@@ -701,17 +701,22 @@ class FunctionRegistries {
       final stockEntryType = getStockEntryTypeFromFields(args[0]);
       final senderId = args[1]?.toString() ?? '';
       final receiverId = args[2]?.toString() ?? '';
+      String partyId;
       switch (stockEntryType) {
         case 'RECEIPT':
         case 'RETURNED':
-          return senderId;
+          partyId = senderId;
+          break;
         case 'ISSUED':
         case 'DAMAGED':
         case 'LOSS':
-          return receiverId;
+          partyId = receiverId;
+          break;
         default:
-          return senderId;
+          partyId = senderId;
       }
+      if (partyId.isEmpty) return '';
+      return partyId.contains('F') ? 'FAC_$partyId' : partyId;
     });
 
     FunctionRegistry.register('getSecondPagePartyLabel', (args, stateData) {
@@ -735,17 +740,22 @@ class FunctionRegistries {
       final stockEntryType = getStockEntryTypeFromFields(args[0]);
       final senderId = args[1]?.toString() ?? '';
       final receiverId = args[2]?.toString() ?? '';
+      String partyId;
       switch (stockEntryType) {
         case 'RECEIPT':
         case 'RETURNED':
-          return receiverId;
+          partyId = receiverId;
+          break;
         case 'ISSUED':
         case 'DAMAGED':
         case 'LOSS':
-          return senderId;
+          partyId = senderId;
+          break;
         default:
-          return receiverId;
+          partyId = receiverId;
       }
+      if (partyId.isEmpty) return '';
+      return partyId.contains('F') ? 'FAC_$partyId' : partyId;
     });
   }
 }
