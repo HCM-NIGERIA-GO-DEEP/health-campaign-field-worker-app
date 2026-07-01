@@ -6,7 +6,6 @@ import 'package:digit_ui_components/widgets/atoms/digit_loader.dart';
 import 'package:digit_ui_components/widgets/atoms/pop_up_card.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:digit_ui_components/widgets/molecules/show_pop_up.dart';
-import 'package:digit_ui_components/widgets/privacy_notice/privacy_component.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:isar/isar.dart';
@@ -15,6 +14,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 import '../blocs/app_initialization/app_initialization.dart';
 import '../blocs/auth/auth.dart';
 import '../blocs/localization/app_localization.dart';
+import '../data/local_store/app_shared_preferences.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../data/local_store/no_sql/schema/service_registry.dart';
 import '../router/app_router.dart';
@@ -39,7 +39,6 @@ class _LoginPageState extends LocalizedState<LoginPage> {
   bool isPrivacyEnabled = false;
   static const _userId = 'userId';
   static const _password = 'password';
-  static const _privacyCheck = 'privacyCheck';
 
   String? _pendingUserId;
   String? _pendingPassword;
@@ -96,6 +95,9 @@ class _LoginPageState extends LocalizedState<LoginPage> {
         listener: (context, state) {
           state.maybeWhen(
             orElse: () {},
+            authenticated: (_, __, ___, ____, _____) async {
+              await AppSharedPreferences().setShowPrivacyNoticeAfterLogin(true);
+            },
             loading: () {
               DigitLoaders.overlayLoader(context: context);
             },
@@ -210,30 +212,19 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                                 (form.control(_password).value as String)
                                     .trim();
 
-                            final bool singleUserLogin = state.maybeWhen(
-                              initialized: (appConfiguration, _, __) {
-                                final list =
-                                    appConfiguration.singleUserLogin ?? [];
-                                if (list.isEmpty) return false;
-                                final config = list.first;
-                                return config.enabled;
-                              },
-                              orElse: () => false,
-                            );
-
                             context.read<AuthBloc>().add(
-                                    AuthLoginEvent(
-                                      userId: _pendingUserId as String,
-                                      password: _pendingPassword as String,
-                                      tenantId: envConfig.variables.tenantId,
-                                    ),
-                                  );
+                                  AuthLoginEvent(
+                                    userId: _pendingUserId as String,
+                                    password: _pendingPassword as String,
+                                    tenantId: envConfig.variables.tenantId,
+                                  ),
+                                );
 
                             // if (singleUserLogin) {
                             //   _checkOtherDeviceLogin(
                             //       context, _pendingUserId as String);
                             // } else {
-                              
+
                             // }
                           },
                           size: DigitButtonSize.large,

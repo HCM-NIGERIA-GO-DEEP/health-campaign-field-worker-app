@@ -3,6 +3,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AppSharedPreferences {
   static const String isFirstLaunchKey = 'isFirstLaunch';
   static const String userSelectedLocale = 'userSelectedLocale';
+  static const String showPrivacyNoticeAfterLoginKey =
+      'showPrivacyNoticeAfterLogin';
 
   SharedPreferences? _sharedPreferences;
 
@@ -32,6 +34,9 @@ class AppSharedPreferences {
   String? get getSelectedLocale =>
       sharedPreferences.getString(userSelectedLocale);
 
+  bool get shouldShowPrivacyNoticeAfterLogin =>
+      sharedPreferences.getBool(showPrivacyNoticeAfterLoginKey) ?? false;
+
   Future<void> appLaunchedFirstTime() async {
     await sharedPreferences.setBool(
       isFirstLaunchKey,
@@ -44,5 +49,9 @@ class AppSharedPreferences {
       userSelectedLocale,
       localeString,
     );
+  }
+
+  Future<void> setShowPrivacyNoticeAfterLogin(bool value) async {
+    await sharedPreferences.setBool(showPrivacyNoticeAfterLoginKey, value);
   }
 }

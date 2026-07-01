@@ -24,10 +24,16 @@ extension ContextUtilityExtensions on BuildContext {
     return selectedProject;
   }
 
+  ProjectModel? get selectedProjectOrNull {
+    final projectBloc = _get<ProjectBloc>();
+
+    return projectBloc.state.selectedProject;
+  }
+
   String get projectId => selectedProject.id;
 
   String? get projectTypeCode {
-    final projectType = selectedProject.projectType;
+    final projectType = selectedProjectOrNull?.projectType;
 
     if (projectType == null) {
       return "";

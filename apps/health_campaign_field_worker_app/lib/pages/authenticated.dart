@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:digit_data_model/data_model.dart';
@@ -13,6 +14,7 @@ import 'package:digit_ui_components/widgets/atoms/digit_loader.dart';
 import 'package:digit_ui_components/widgets/atoms/pop_up_card.dart';
 import 'package:digit_ui_components/widgets/helper_widget/digit_profile.dart';
 import 'package:digit_ui_components/widgets/molecules/hamburger.dart';
+import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:digit_ui_components/widgets/molecules/show_pop_up.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -20,6 +22,7 @@ import 'package:flutter_portal/flutter_portal.dart';
 import 'package:isar/isar.dart';
 import 'package:location/location.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:survey_form/survey_form.dart';
 import 'package:sync_service/sync_service_lib.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
@@ -45,6 +48,7 @@ import '../models/entities/roles_type.dart';
 import '../notification_handlers/notification_handler.dart';
 import '../router/app_router.dart';
 import '../router/authenticated_route_observer.dart';
+import '../sampleJsonConfigs/privacy_notice.dart';
 import '../utils/environment_config.dart';
 import '../utils/i18_key_constants.dart' as i18;
 import '../utils/utils.dart';
@@ -68,12 +72,16 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
 
   late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   bool _isOfflineDialogShowing = false;
+  bool _isPrivacyNoticeDialogShowing = false;
 
   @override
   void initState() {
     super.initState();
     _connectivitySubscription =
         Connectivity().onConnectivityChanged.listen(_handleConnectivityChange);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showPrivacyNoticeIfRequired();
+    });
   }
 
   @override
@@ -130,6 +138,83 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
       Navigator.of(context, rootNavigator: true).pop();
       _isOfflineDialogShowing = false;
     }
+  }
+
+  Future<void> _showPrivacyNoticeIfRequired() async {
+    if (!mounted || _isPrivacyNoticeDialogShowing) return;
+
+    if (!AppSharedPreferences().shouldShowPrivacyNoticeAfterLogin) {
+      return;
+    }
+
+    final privacyFlow = await _loadPrivacyNoticeFlow();
+
+    if (!mounted) return;
+
+    if (privacyFlow == null) {
+      await AppSharedPreferences().setShowPrivacyNoticeAfterLogin(false);
+      return;
+    }
+
+    _isPrivacyNoticeDialogShowing = true;
+
+    await showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      barrierLabel: AppLocalizations.of(context)
+          .translate(privacyFlow["heading"] ?? "PRIVACY_POLICY"),
+      pageBuilder: (dialogContext, _, __) {
+        return _PrivacyNoticeFullscreenPopup(
+          flow: privacyFlow,
+          onProceed: () async {
+            await AppSharedPreferences().setShowPrivacyNoticeAfterLogin(false);
+            if (mounted) {
+              Navigator.of(dialogContext, rootNavigator: true).pop();
+            }
+          },
+        );
+      },
+    );
+
+    _isPrivacyNoticeDialogShowing = false;
+  }
+
+  Future<Map<String, dynamic>?> _loadPrivacyNoticeFlow() async {
+    final prefs = await SharedPreferences.getInstance();
+    final schemaJsonRaw = prefs.getString('app_config_schemas');
+
+    try {
+      if (schemaJsonRaw != null) {
+        final allSchemas = json.decode(schemaJsonRaw) as Map<String, dynamic>;
+        final data = allSchemas['PRIVACYNOTICE'];
+        final schemaData = data?['data'];
+
+        if (schemaData?['disabled'] == true) {
+          return null;
+        }
+
+        final flows = (schemaData?['flows'] as List<dynamic>?)
+                ?.whereType<Map>()
+                .map((e) => Map<String, dynamic>.from(e))
+                .toList() ??
+            [];
+
+        if (flows.isNotEmpty) {
+          return flows.first;
+        }
+      }
+    } catch (_) {}
+
+    if (privacy_notice_config['disabled'] == true) {
+      return null;
+    }
+
+    final fallbackFlows = privacy_notice_config['flows'] as List<dynamic>?;
+    if (fallbackFlows != null && fallbackFlows.isNotEmpty) {
+      return Map<String, dynamic>.from(fallbackFlows.first as Map);
+    }
+
+    return null;
   }
 
   @override
@@ -568,11 +653,6 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
   }
 
   Widget drawerWidget(BuildContext context) {
-    final appInitializationBloc = context.read<AppInitializationBloc>();
-    final appConfig =
-        (appInitializationBloc.state as AppInitialized).appConfiguration;
-    final languages = appConfig.languages;
-    final localizationModulesList = appConfig.backendInterface;
     final authBloc = context.read<AuthBloc>();
     bool isDistributor = authBloc.state != const AuthState.unauthenticated()
         ? context.loggedInUserRoles
@@ -842,5 +922,183 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
                   )),
             ))
         .toList();
+  }
+}
+
+class _PrivacyNoticeFullscreenPopup extends StatefulWidget {
+  final Map<String, dynamic> flow;
+  final Future<void> Function() onProceed;
+
+  const _PrivacyNoticeFullscreenPopup({
+    required this.flow,
+    required this.onProceed,
+  });
+
+  @override
+  State<_PrivacyNoticeFullscreenPopup> createState() =>
+      _PrivacyNoticeFullscreenPopupState();
+}
+
+class _PrivacyNoticeFullscreenPopupState
+    extends State<_PrivacyNoticeFullscreenPopup> {
+  final ScrollController _scrollController = ScrollController();
+  bool _hasReachedEnd = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      if (_scrollController.position.maxScrollExtent <= 0) {
+        setState(() {
+          _hasReachedEnd = true;
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients || _hasReachedEnd) return;
+    final position = _scrollController.position;
+    if (position.pixels >= (position.maxScrollExtent - 16)) {
+      setState(() {
+        _hasReachedEnd = true;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<LocalizationBloc, LocalizationState>(
+      buildWhen: (previous, current) {
+        // Rebuild only after localization load settles to avoid showing keys.
+        if (previous.loading != current.loading) {
+          return current.loading == false;
+        }
+
+        return previous.index != current.index && current.loading == false;
+      },
+      builder: (context, _) {
+        final theme = Theme.of(context);
+        final textTheme = theme.digitTextTheme(context);
+        final bodyItems = widget.flow['body'] as List<dynamic>? ?? const [];
+
+        return PopScope(
+          canPop: false,
+          child: Material(
+            color: theme.colorTheme.generic.background,
+            child: SafeArea(
+              child: Column(
+                children: [
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(spacer2),
+                      child: DigitCard(
+                        margin: EdgeInsets.zero,
+                        children: [
+                          Text(
+                            AppLocalizations.of(context).translate(
+                                widget.flow['heading'] as String? ??
+                                    'PRIVACY_NOTICE'),
+                            style: textTheme.headingXl.copyWith(
+                              color: theme.colorTheme.primary.primary2,
+                            ),
+                          ),
+                          const SizedBox(height: spacer2),
+                          ...bodyItems.map((item) {
+                            final content = item is Map
+                                ? Map<String, dynamic>.from(item)
+                                : <String, dynamic>{};
+                            final format =
+                                content['format'] as String? ?? 'text';
+                            final value = content['value'] as String? ?? '';
+
+                            if (format == 'heading') {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: spacer2),
+                                child: Text(
+                                  value,
+                                  style: textTheme.headingM.copyWith(
+                                    color: theme.colorTheme.primary.primary2,
+                                  ),
+                                ),
+                              );
+                            }
+
+                            if (format == 'bullet') {
+                              return Padding(
+                                padding: const EdgeInsets.only(bottom: spacer2),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      '• ',
+                                      style: textTheme.bodyS.copyWith(
+                                        color:
+                                            theme.colorTheme.primary.primary2,
+                                      ),
+                                    ),
+                                    Expanded(
+                                      child: Text(
+                                        value,
+                                        style: textTheme.bodyS.copyWith(
+                                          color:
+                                              theme.colorTheme.primary.primary2,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: spacer2),
+                              child: Text(
+                                value,
+                                style: textTheme.bodyS.copyWith(
+                                  color: theme.colorTheme.primary.primary2,
+                                ),
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                    ),
+                  ),
+                  DigitCard(
+                    margin: const EdgeInsets.only(top: spacer2),
+                    children: [
+                      DigitButton(
+                        mainAxisSize: MainAxisSize.max,
+                        isDisabled: !_hasReachedEnd,
+                        label: AppLocalizations.of(context).translate(
+                          widget.flow['proceedLabel'] as String? ?? 'PROCEED',
+                        ),
+                        type: DigitButtonType.primary,
+                        size: DigitButtonSize.large,
+                        onPressed: () {
+                          widget.onProceed();
+                        },
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
   }
 }

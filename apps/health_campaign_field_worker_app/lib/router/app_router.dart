@@ -67,7 +67,8 @@ class AppRouter extends _$AppRouter {
       children: [
         AutoRoute(page: LoginRoute.page, path: 'login', initial: true),
         AutoRoute(page: DigitScannerRoute.page, path: 'scanner'),
-        AutoRoute(page: DeviceChangeReasonRoute.page, path: 'device-change-reason'),
+        AutoRoute(
+            page: DeviceChangeReasonRoute.page, path: 'device-change-reason'),
       ],
     ),
     AutoRoute(
