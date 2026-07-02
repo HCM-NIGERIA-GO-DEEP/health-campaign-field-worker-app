@@ -56,6 +56,67 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
 
   bool get _isReadOnly => (widget.schema.readOnly ?? false) || _autoReadOnly;
 
+  /// Plain-text token embedded in a (server-stored) localization message that
+  /// should be replaced at runtime with the beneficiary id. A plain word is
+  /// used instead of `{{...}}`/markdown because the localization server strips
+  /// those out on save.
+  static const String _beneficiaryIdToken = 'id_placeholder';
+
+  /// Translates [key], then substitutes runtime values that can't be stored in
+  /// the localization message:
+  ///  - the token `id_placeholder` -> the beneficiary id, wrapped in `**...**`
+  ///    so it renders bold (the `**` markers are added here, not stored on the
+  ///    server, which would strip them).
+  ///  - any `{{navigation.*}}` placeholders (for config-driven labels).
+  ///
+  /// If a referenced value is null/missing/empty, the whole label is hidden
+  /// (returns '') so no leftover token or half-sentence is shown.
+  String? _resolveLabelWithNavigation(String? key) {
+    final translated = translateIfPresent(key, localizations);
+    if (translated == null) return null;
+
+    var result = translated;
+
+    // 1) Plain-text beneficiary-id token (survives server sanitization).
+    if (result.contains(_beneficiaryIdToken)) {
+      final id = widget.navigationParams?['beneficiaryId']?.toString() ?? '';
+      if (id.isEmpty) return '';
+      result = result.replaceAll(_beneficiaryIdToken, '**$id**');
+    }
+
+    // 2) Mustache tokens (used by config-driven labels, if any).
+    if (result.contains('{{')) {
+      final resolveContext = <String, dynamic>{
+        if (widget.navigationParams != null)
+          'navigation': widget.navigationParams,
+        if (widget.navigationParams != null) ...widget.navigationParams!,
+      };
+
+      var allResolved = true;
+      result = result.replaceAllMapped(RegExp(r'\{\{([^}]+)\}\}'), (match) {
+        final path = match.group(1)!.trim();
+        dynamic current = resolveContext;
+        for (final part in path.split('.')) {
+          if (current is Map && current.containsKey(part)) {
+            current = current[part];
+          } else {
+            current = null;
+            break;
+          }
+        }
+        final resolved =
+            (current != null && current is! Map && current is! List)
+                ? current.toString()
+                : '';
+        if (resolved.isEmpty) allResolved = false;
+        return resolved;
+      });
+      if (!allResolved) return '';
+    }
+
+    return result;
+  }
+
   void _checkAutoFill(FormGroup form) {
     final autoFillConditions = widget.schema.autoFillCondition;
 
@@ -628,7 +689,7 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
         return JsonSchemaCheckboxBuilder(
           form: form,
           formControlName: widget.formControlName,
-          label: translateIfPresent(widget.schema.label, localizations),
+          label: _resolveLabelWithNavigation(widget.schema.label),
           validations: widget.schema.validations,
           readOnly: widget.schema.readOnly ?? false,
           isRequired: hasRequiredValidation(widget.schema.validations),

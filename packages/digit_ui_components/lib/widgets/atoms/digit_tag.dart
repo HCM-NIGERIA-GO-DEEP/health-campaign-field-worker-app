@@ -126,10 +126,10 @@ class _TagState extends State<Tag> {
                 overflow: TextOverflow.ellipsis,
                 maxLines: widget.themeData?.maxLine ??
                     defaultTagThemeData.maxLine,
-                style: widget.customTextStyle ??
-                    tagThemeData?.textStyle?.copyWith(color: textColor) ??
-                    defaultTagThemeData.textStyle!
-                        .copyWith(color: textColor),
+                style: (tagThemeData?.textStyle ??
+                        defaultTagThemeData.textStyle!)
+                    .copyWith(color: textColor)
+                    .merge(widget.customTextStyle),
               ),
             ),
           ],

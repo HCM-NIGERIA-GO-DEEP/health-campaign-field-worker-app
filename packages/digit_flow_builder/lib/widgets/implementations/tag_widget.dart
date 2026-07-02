@@ -19,12 +19,15 @@ class TagWidget extends ResolvedFlowWidget {
     // Label is already resolved by the base class
     final properties = json['properties'] as Map<String, dynamic>?;
     final resolveValue = resolved.resolveText(json['label']);
+    final bool bold = properties?['bold'] == true;
 
     return WidgetParsers.wrapWithBottomGap(
       Tag(
         isStroke: true,
         label: resolveValue,
         type: WidgetParsers.parseTagType(properties?['tagType']),
+        customTextStyle:
+            bold ? const TextStyle(fontWeight: FontWeight.bold) : null,
       ),
       properties,
     );

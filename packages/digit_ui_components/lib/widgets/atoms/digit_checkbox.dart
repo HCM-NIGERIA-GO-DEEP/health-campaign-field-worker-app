@@ -165,10 +165,10 @@ class _DigitCheckboxState extends State<DigitCheckbox> {
                   widget.isDisabled
                       ? (checkboxThemeData?.disabledLabelTextStyle ??
                               defaultThemeData.disabledLabelTextStyle)
-                          ?.copyWith(fontWeight: FontWeight.bold)
+                          ?.copyWith(fontWeight: FontWeight.w900)
                       : (checkboxThemeData?.labelTextStyle ??
                               defaultThemeData.labelTextStyle)
-                          ?.copyWith(fontWeight: FontWeight.bold),
+                          ?.copyWith(fontWeight: FontWeight.w900),
                   theme.colorTheme.alert.error,
                   widget.isRequired,
                 ),
