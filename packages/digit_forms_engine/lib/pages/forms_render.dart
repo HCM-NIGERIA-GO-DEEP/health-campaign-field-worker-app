@@ -111,6 +111,68 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     return null;
   }
 
+  int? _getResourceCardDistributedQuantity(FormGroup formGroup) {
+    if (!formGroup.contains('resourceCard')) return null;
+
+    final dynamic value = formGroup.control('resourceCard').value;
+    if (value == null) return null;
+
+    int total = 0;
+
+    if (value is List) {
+      for (final item in value) {
+        if (item is Map) {
+          final q = item['quantityDistributed'];
+          if (q is int) {
+            total += q;
+          } else if (q is String) {
+            total += int.tryParse(q) ?? 0;
+          }
+        }
+      }
+    } else if (value is Map) {
+      final q = value['quantityDistributed'];
+      if (q is int) {
+        total += q;
+      } else if (q is String) {
+        total += int.tryParse(q) ?? 0;
+      }
+    }
+
+    return total > 0 ? total : null;
+  }
+
+  bool _isGs1Scanner(PropertySchema schema) {
+    final rules = schema.validations;
+    if (rules == null || rules.isEmpty) return true;
+
+    for (final rule in rules) {
+      if (rule.type != 'isGS1' && rule.type != 'isGS1Code') continue;
+      final value = rule.value;
+      if (value is bool) return value;
+      if (value is String) return value.toLowerCase() == 'true';
+    }
+
+    return true;
+  }
+
+  int? _getEffectiveScannerRequiredCount(
+    PropertySchema schema,
+    FormGroup formGroup,
+  ) {
+    final configuredLimit = _getScannerScanLimit(schema);
+    if (configuredLimit == null) return null;
+
+    if (_isGs1Scanner(schema)) {
+      final distributed = _getResourceCardDistributedQuantity(formGroup);
+      if (distributed != null && distributed > 0) {
+        return distributed;
+      }
+    }
+
+    return configuredLimit;
+  }
+
   int _getScannedValueCount(String value) {
     final trimmed = value.trim();
     if (trimmed.isEmpty) return 0;
@@ -151,7 +213,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
       final property = entry.value;
       if (property.format != PropertySchemaFormat.scanner) continue;
 
-      final limit = _getScannerScanLimit(property);
+      final limit = _getEffectiveScannerRequiredCount(property, formGroup);
       if (limit == null || limit <= 0) continue;
       if (!formGroup.contains(entry.key)) continue;
 

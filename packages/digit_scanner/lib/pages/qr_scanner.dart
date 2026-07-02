@@ -416,6 +416,18 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
   }
 
   Future<void> processImage(InputImage inputImage) async {
+    final state = context.read<DigitScannerBloc>().state;
+    final currentScannedCount = widget.effectiveIsGS1code
+        ? (state.barCodes.isNotEmpty ? state.barCodes.length : result.length)
+        : (state.qrCodes.isNotEmpty ? state.qrCodes.length : codes.length);
+
+    // Stop camera-driven scanning once required quantity is reached.
+    // This prevents repeated duplicate error toasts while user is reviewing
+    // scanned items and trying to submit.
+    if (currentScannedCount >= widget.effectiveQuantity) {
+      return;
+    }
+
     await DigitScannerUtils().processImage(
       context: context,
       inputImage: inputImage,
@@ -1231,6 +1243,10 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
     final remainingSerialCount = (totalSerialTarget - capturedSerialCount) > 0
         ? (totalSerialTarget - capturedSerialCount)
         : 0;
+    final scannedCount = widget.effectiveIsGS1code
+        ? effectiveBarcodes.length
+        : effectiveQrCodes.length;
+    final hasPendingScans = scannedCount < widget.effectiveQuantity;
 
     return Stack(
       children: [
@@ -1247,11 +1263,8 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                 size: DigitButtonSize.large,
                 mainAxisSize: MainAxisSize.max,
                 type: DigitButtonType.primary,
+                isDisabled: hasPendingScans,
                 onPressed: () async {
-                  final scannedCount = widget.effectiveIsGS1code
-                      ? effectiveBarcodes.length
-                      : effectiveQrCodes.length;
-
                   if (scannedCount < widget.effectiveQuantity) {
                     DigitScannerUtils().buildDialog(
                       context,
