@@ -29,15 +29,48 @@ void unregisterNavigationParams(String schemaKey) {
 }
 
 /// Resolves a value that may be a navigation param reference (e.g., "navigation.stockBalance")
-/// Returns the resolved value or null if not found
+/// Supports basic ternary logic: {{ navigation.param == 0 ? 2 : navigation.param }}
 dynamic _resolveNavigationValue(dynamic value, String? schemaKey) {
   if (value is! String || schemaKey == null) return value;
-  if (!value.startsWith('navigation.')) return value;
 
   final navParams = _navigationParamsRegistry[schemaKey];
+
+  if (value.startsWith('{{') && value.endsWith('}}')) {
+    final expr = value.substring(2, value.length - 2).trim();
+    final qIndex = expr.indexOf('?');
+    final colonIndex = expr.lastIndexOf(':');
+
+    if (qIndex > 0 && colonIndex > qIndex) {
+      final condition = expr.substring(0, qIndex).trim();
+      final truePart = expr.substring(qIndex + 1, colonIndex).trim();
+      final falsePart = expr.substring(colonIndex + 1).trim();
+
+      bool conditionResult = false;
+      if (condition.contains('==')) {
+        final parts = condition.split('==');
+        final left = _resolveNavigationValue(parts[0].trim(), schemaKey);
+        final right = parts[1].trim();
+        conditionResult = left.toString() == right.toString();
+      } else {
+        final val = _resolveNavigationValue(condition, schemaKey);
+        conditionResult =
+            val == true || val == 'true' || (val is num && val != 0);
+      }
+
+      final selectedPart = conditionResult ? truePart : falsePart;
+      return _resolveNavigationValue(selectedPart, schemaKey);
+    }
+  }
+
+  if (!value.startsWith('navigation.')) {
+    // If it's a raw number string in a ternary, parse it
+    final numVal = num.tryParse(value);
+    if (numVal != null) return numVal;
+    return value;
+  }
+
   if (navParams == null) return null;
 
-  // Extract the key after "navigation."
   final key = value.substring('navigation.'.length);
   return navParams[key];
 }
@@ -78,14 +111,20 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
 
         case 'min':
         case 'minValue':
-          // Check if value is a navigation param reference
+          // Check if value is a navigation param reference or a templated expression
           if (rule.value is String &&
-              rule.value.startsWith('navigation.') &&
+              (rule.value.startsWith('navigation.') || rule.value.startsWith('{{')) &&
               schemaKey != null) {
             validators.add(Validators.delegate((control) {
               final resolvedValue =
                   _resolveNavigationValue(rule.value, schemaKey);
-              final minVal = parseIntValue(resolvedValue);
+              int? minVal = parseIntValue(resolvedValue);
+              
+              if (rule.value == 'navigation.existingMemberCount') {
+                final existing = minVal ?? 0;
+                minVal = existing > 2 ? existing : 2;
+              }
+              
               if (minVal == null || control.value == null) return null;
               final numValue = num.tryParse(control.value.toString());
               if (numValue == null) return null;
@@ -119,9 +158,9 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
 
         case 'max':
         case 'maxValue':
-          // Check if value is a navigation param reference
+          // Check if value is a navigation param reference or a templated expression
           if (rule.value is String &&
-              rule.value.startsWith('navigation.') &&
+              (rule.value.startsWith('navigation.') || rule.value.startsWith('{{')) &&
               schemaKey != null) {
             validators.add(Validators.delegate((control) {
               final resolvedValue =

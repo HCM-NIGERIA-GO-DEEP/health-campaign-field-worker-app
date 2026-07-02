@@ -180,8 +180,33 @@ class TransformerExecutor extends ActionExecutor {
       }
     }
 
+    // Compute current running cycle from project config — needed when
+    // navigation.cycleIndex is absent (e.g., direct delivery after adding member)
+    int? _computedCycleIndex;
+    try {
+      final cycles = FlowBuilderSingleton()
+          .selectedProject
+          ?.additionalDetails
+          ?.projectType
+          ?.cycles;
+      if (cycles != null) {
+        final now = DateTime.now().millisecondsSinceEpoch;
+        for (final cycle in cycles) {
+          final startMs = cycle.startDate;
+          final endMs = cycle.endDate;
+          if (startMs != null &&
+              endMs != null &&
+              now >= startMs &&
+              now <= endMs) {
+            _computedCycleIndex = cycle.id;
+            break;
+          }
+        }
+      }
+    } catch (_) {}
+    _computedCycleIndex ??= 1;
     debugPrint(
-        'TRANSFORMER: isEdit=$isEdit, forceCreate=$forceCreate, existingModels=${existingModels?.length ?? 0}');
+        'TRANSFORMER: _computedCycleIndex=$_computedCycleIndex, extraContext[cycleIndex]=${extraContext['cycleIndex']}');
 
     final contextMap = {
       "selectedProject": FlowBuilderSingleton().selectedProject,
@@ -193,9 +218,14 @@ class TransformerExecutor extends ActionExecutor {
       'userUUID': FlowBuilderSingleton().loggedInUser?.uuid,
       'loggedInUserUuid': FlowBuilderSingleton().loggedInUserUuid,
       'householdType': HouseholdType.family.toValue(),
+      // Always provide cycleIndex so __context:cycleIndex resolves even when
+      // navigation params are absent (overridden by extraContext if explicitly passed)
+      'cycleIndex': _computedCycleIndex.toString(),
       ...extraContext,
       "beneficiaryType": FlowBuilderSingleton().beneficiaryType?.toValue(),
     };
+    debugPrint(
+        'TRANSFORMER: contextMap[cycleIndex]=${contextMap['cycleIndex']}, contextMap[doseIndex]=${contextMap['doseIndex']}');
 
     List<EntityModel> entities = [];
 
@@ -291,8 +321,9 @@ class TransformerExecutor extends ActionExecutor {
               fallbackFormDataString: fallBackModel,
             );
             entities.addAll(itemEntities);
-          } catch (_) {
-            // Silent fail for entity mapping
+          } catch (e, stack) {
+            debugPrint('TRANSFORMER ERROR (multiEntity): $e');
+            debugPrint(stack.toString());
           }
         }
       } else {
@@ -322,9 +353,9 @@ class TransformerExecutor extends ActionExecutor {
 
     // TEMP DEBUG (latlng): trace where the delivery task's lat/long comes from.
     if (configName == 'delivery') {
-      final deliveryDetails =
-          (formValuesToUse ?? const {})['DeliveryDetails'];
-      final latLngInForm = deliveryDetails is Map ? deliveryDetails['latLng'] : null;
+      final deliveryDetails = (formValuesToUse ?? const {})['DeliveryDetails'];
+      final latLngInForm =
+          deliveryDetails is Map ? deliveryDetails['latLng'] : null;
       debugPrint('LATLNG-DEBUG: configName=$configName, '
           'DeliveryDetails.latLng in formData = "$latLngInForm"');
       for (final e in entities) {

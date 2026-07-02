@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'localization_delegates.dart';
 
-
 // Class responsible for handling attendance localization
 class FormLocalization {
   final Locale locale;
@@ -18,9 +17,8 @@ class FormLocalization {
 
   static final List<dynamic> _localizedStrings = <dynamic>[];
 
-  // Method to get the delegate for localization
   static LocalizationsDelegate<FormLocalization> getDelegate(
-      Future<dynamic> localizedStrings, List<dynamic> languages) =>
+          Future<dynamic> localizedStrings, List<dynamic> languages) =>
       FormLocalizationDelegate(localizedStrings, languages);
 
   // Method to load localized strings
@@ -42,10 +40,14 @@ class FormLocalization {
       return localizedValues;
     } else {
       final index = _localizedStrings.indexWhere(
-            (medium) => medium.code == localizedValues,
+        (medium) => medium.code == localizedValues,
       );
 
-      return index != -1 ? _localizedStrings[index].message : localizedValues;
+      return index != -1 &&
+              _localizedStrings[index].message != null &&
+              _localizedStrings[index].message.toString().isNotEmpty
+          ? _localizedStrings[index].message
+          : localizedValues;
     }
   }
 }

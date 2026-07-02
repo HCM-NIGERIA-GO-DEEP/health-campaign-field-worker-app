@@ -113,6 +113,7 @@ class Constants {
     'hcm-login',
     'hcm-common',
     'hcm-scanner',
+    'hcm-home',
     'hcm-beneficiary',
     'hcm-peer-to-peer',
     'hcm-transit-post',
@@ -125,6 +126,7 @@ class Constants {
     'hcm-common',
     'hcm-login',
     'hcm-scanner',
+    'hcm-home',
     'hcm-beneficiary',
     'hcm-peer-to-peer',
     'hcm-transit-post',
@@ -136,6 +138,7 @@ class Constants {
   static const List<String> homeLocalizationModules = [
     'hcm-login',
     'hcm-common',
+    'hcm-home',
     'hcm-beneficiary',
     'digit-privacy-policy',
     'hcm-scanner',
@@ -163,6 +166,7 @@ class Constants {
   static const String lgaBoundaryLevel = 'LGA';
   static const String provincialBoundaryLevel = 'Provincia';
   static const String centralFacility = 'Central Facility';
+  static const String districtFacility = 'District Facility';
   static const String stateBoundaryLevel = 'State';
   static const String stateFacility = 'State Facility';
   static const String lgaFacility = 'LGA Facility';
@@ -180,6 +184,8 @@ class Constants {
 
   static const String downloadAnimation =
       'assets/animated_json/download_animation.json';
+
+  static const int fallbackUniqueBeneficiaryIdLimit = 1500;
 
   static const String downloadSuccessAnimation =
       'assets/animated_json/download_success.json';

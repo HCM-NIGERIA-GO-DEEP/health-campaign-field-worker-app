@@ -116,20 +116,21 @@ class SyncService {
     debugPrint('SyncService: persistenceConfiguration=$configuration');
 
     const maxIterations = 10;
+    int previousPendingTotal = -1;
     for (var iteration = 0; iteration < maxIterations; iteration++) {
-      final futuresSyncDown = await Future.wait(
-        localRepositories
-            .map((e) => e.getItemsToBeSyncedDown(bandwidthModel.userId)),
-      );
-      final pendingSyncDownEntries =
-          futuresSyncDown.expand((e) => e).toList();
-
       final futuresSyncUp = await Future.wait(
         localRepositories
             .map((e) => e.getItemsToBeSyncedUp(bandwidthModel.userId)),
       );
       final pendingSyncUpEntries =
           futuresSyncUp.expand((e) => e).toList();
+
+      final futuresSyncDown = await Future.wait(
+        localRepositories
+            .map((e) => e.getItemsToBeSyncedDown(bandwidthModel.userId)),
+      );
+      final pendingSyncDownEntries =
+          futuresSyncDown.expand((e) => e).toList();
 
       debugPrint('SyncService: iteration=$iteration, pendingDown=${pendingSyncDownEntries.length}, pendingUp=${pendingSyncUpEntries.length}');
 
@@ -146,7 +147,29 @@ class SyncService {
 
       SyncError? syncError;
 
-      // Perform the sync Down Operation
+      // Perform syncUp FIRST so entities exist on the server before
+      // syncDown searches for their server-generated IDs. This prevents
+      // the null-ID loop (e.g. householdMember id/household_id staying null
+      // because the _search fires before the _create completes).
+      if (pendingSyncUpEntries.isNotEmpty) {
+        SyncServiceSingleton().reportProgress(const SyncProgress(
+          entityType: 'Uploading to server...',
+          operation: 'syncUp',
+        ));
+        try {
+          await PerformSyncUp.syncUp(
+            bandwidthModel: bandwidthModel,
+            localRepositories: localRepositories.toSet().toList(),
+            remoteRepositories: remoteRepositories.toSet().toList(),
+          );
+        } catch (e) {
+          debugPrint('SyncService: syncUp FAILED: $e');
+          syncError = SyncUpError(e);
+        }
+      }
+
+      // Perform syncDown AFTER syncUp so the server already has the
+      // freshly-created records and can return their server-generated IDs.
       if (pendingSyncDownEntries.isNotEmpty) {
         SyncServiceSingleton().reportProgress(const SyncProgress(
           entityType: 'Downloading from server...',
@@ -161,25 +184,7 @@ class SyncService {
           );
         } catch (e) {
           debugPrint('SyncService: syncDown FAILED: $e');
-          syncError = SyncDownError(e);
-        }
-      }
-
-      // Perform the sync up Operation
-      if (pendingSyncUpEntries.isNotEmpty) {
-        SyncServiceSingleton().reportProgress(const SyncProgress(
-          entityType: 'Uploading to server...',
-          operation: 'syncUp',
-        ));
-        try {
-          await PerformSyncUp.syncUp(
-            bandwidthModel: bandwidthModel,
-            localRepositories: localRepositories.toSet().toList(),
-            remoteRepositories: remoteRepositories.toSet().toList(),
-          );
-        } catch (e) {
-          debugPrint('SyncService: syncUp FAILED: $e');
-          syncError ??= SyncUpError(e);
+          syncError ??= SyncDownError(e);
         }
       }
 
@@ -189,8 +194,21 @@ class SyncService {
         throw syncError;
       }
 
-      await Future.delayed(const Duration(seconds: 3));
+      final currentPendingTotal =
+          pendingSyncUpEntries.length + pendingSyncDownEntries.length;
+
+      // Refresh the cross-isolate lock so it doesn't expire during long syncs.
       await SyncLock.refresh();
+
+      // Only pause if no progress was made in this iteration — avoids wasting
+      // time (previously a static 3 s was always paid, adding 15+ s for 5
+      // iterations). When progress IS made we loop immediately.
+      if (currentPendingTotal != 0 &&
+          currentPendingTotal == previousPendingTotal) {
+        debugPrint('SyncService: no progress in iteration $iteration, waiting 500ms before retry');
+        await Future.delayed(const Duration(milliseconds: 500));
+      }
+      previousPendingTotal = currentPendingTotal;
     }
 
     return true;

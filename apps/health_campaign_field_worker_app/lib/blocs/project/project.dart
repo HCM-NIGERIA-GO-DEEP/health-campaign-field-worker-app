@@ -33,6 +33,7 @@ import '../../models/app_config/app_config_model.dart';
 import '../../models/auth/auth_model.dart';
 import '../../models/downsync/downsync.dart';
 import '../../models/entities/roles_type.dart';
+import '../../sampleJsonConfigs/registration_flows.dart';
 import '../../utils/background_service.dart';
 import '../../utils/download_image.dart';
 import '../../utils/environment_config.dart';
@@ -377,6 +378,16 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     );
     LeastLevelBoundarySingleton()
         .setBoundary(boundaries: findLeastLevelBoundaries(boundaries));
+        
+    final rowVersionList = await isar.rowVersionLists
+        .filter()
+        .moduleEqualTo('module-version')
+        .findAll();
+    if (rowVersionList.isNotEmpty) {
+      DigitDataModelSingleton().uniquenumbercount = rowVersionList.first.uniquenumbercount;
+      DigitDataModelSingleton().uniquenumbertype = rowVersionList.first.uniquenumbertype;
+      DigitDataModelSingleton().uniqueBeneficiaryIdLimit = rowVersionList.first.uniqueBeneficiaryIdLimit;
+    }
   }
 
   FutureOr<void> _loadProjectFacilities(ProjectModel project) async {
@@ -731,10 +742,18 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
           ).toJson(),
         );
 
-        final formConfigs = formConfigResult['HCM-ADMIN-CONSOLE']['FormConfig'];
+        final formConfigs = (formConfigResult is Map &&
+                formConfigResult['HCM-ADMIN-CONSOLE'] != null)
+            ? formConfigResult['HCM-ADMIN-CONSOLE']['FormConfig'] ?? []
+            : [];
 
-        for (final config in formConfigs) {
-          await enrichFormSchemasWithEnumsForForms(config);
+        if (formConfigs.isEmpty) {
+          await enrichFormSchemasWithEnumsForForms(
+              sampleFlows as Map<String, dynamic>);
+        } else {
+          for (final config in formConfigs) {
+            await enrichFormSchemasWithEnumsForForms(config);
+          }
         }
       } catch (e) {
         emit(
@@ -848,6 +867,12 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
           final rowVersion = RowVersionList();
           rowVersion.module = element.module;
           rowVersion.version = element.version;
+          rowVersion.uniquenumbercount = element.uniquenumbercount;
+          rowVersion.uniquenumbertype = element.uniquenumbertype;
+          rowVersion.uniqueBeneficiaryIdLimit = element.uniqueBeneficiaryIdLimit;
+          DigitDataModelSingleton().uniquenumbercount = element.uniquenumbercount;
+          DigitDataModelSingleton().uniquenumbertype = element.uniquenumbertype;
+          DigitDataModelSingleton().uniqueBeneficiaryIdLimit = element.uniqueBeneficiaryIdLimit;
           rowVersionList.add(rowVersion);
         }
         isar.writeTxnSync(() {

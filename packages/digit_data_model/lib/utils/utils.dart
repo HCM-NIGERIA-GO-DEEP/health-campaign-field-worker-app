@@ -46,6 +46,18 @@ class IdGen {
 
   /// Generates a version 1 UUID and returns it as a string.
   String get identifier => uuid.v1();
+
+  /// Generates a random alphanumeric string of the specified length.
+  String generateRandomAlphanumeric(int defaultLength) {
+    int length = DigitDataModelSingleton().uniquenumbercount ?? defaultLength;
+    String type = DigitDataModelSingleton().uniquenumbertype ?? 'digit';
+
+    String chars = (type != 'alphaNumeric') ? '0123456789' : 'ABCDEFGHIJKLMNOPQRSTUVWXYZ123456789';
+
+    final random = Random();
+    return String.fromCharCodes(Iterable.generate(
+        length, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
+  }
 }
 
 /// `DigitDataModelSingleton` is a singleton class that holds environment configuration variables.
@@ -63,6 +75,9 @@ class DigitDataModelSingleton {
   int? _retryTimeInterval;
   String? _tenantId, _errorDumpApiPath, _hierarchyType;
   EntityMapperListener? _entityListener;
+  int? uniquenumbercount;
+  String? uniquenumbertype;
+  int? uniqueBeneficiaryIdLimit;
 
   /// Sets the environment configuration variables.
   void setData({

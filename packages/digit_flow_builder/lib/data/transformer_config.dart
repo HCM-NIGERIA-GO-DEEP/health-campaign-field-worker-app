@@ -611,15 +611,7 @@ final jsonConfig = {
             "weight": "__context:weight",
             "headName": "__context:headName",
             "headMobileNumber": "__context:headMobileNumber",
-            // Eligibility checklist answers, threaded via navigation params
-            // from the eligibilityChecklist page through beneficiaryDetails →
-            // DELIVERY. Skipped automatically (null) for direct deliveries that
-            // never went through the checklist.
-            "ec1Value": "__context:ec1",
-            "ec2Value": "__context:ec2",
-            "ec3Value": "__context:ec3",
-            "ec4Value": "__context:ec4",
-            "ec5Value": "__context:ec5"
+            "dateOfRegistration": "DeliveryDetails.dateOfRegistration"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -894,7 +886,7 @@ final jsonConfig = {
           "projectBeneficiaryClientReferenceId":
               "__context:ProjectBeneficiaryClientReferenceId",
           "createdBy": "__context:userId",
-          "status": "unableToDeliver.reason",
+          "status": "__value:NOT_ADMINISTERED",
           "nonRecoverableError": "errors.nonRecoverable",
           "clientReferenceId": "__generate:uuid",
           "tenantId": "__context:tenantId",
@@ -939,6 +931,83 @@ final jsonConfig = {
             "cycleIndex": "__context:cycleIndex",
             "flow": "__value:smcDone",
             "comment": "unableToDeliver.comment",
+            "taskStatus": "unableToDeliver.reason",
+            "additionalReason": "unableToDeliver.additionalReason",
+            "householdClientReferenceId":
+                "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId",
+            "childName": "__context:childName",
+            "ageInMonths": "__context:ageInMonths",
+            "gender": "__context:gender",
+            "headName": "__context:headName",
+            "headMobileNumber": "__context:headMobileNumber"
+          },
+          "clientAuditDetails": "__generate:clientAudit",
+          "auditDetails": "__generate:audit"
+        }
+      }
+    }
+  },
+  "recordAdverseEffectConfig": {
+    "fallbackModel": "TaskModel",
+    "models": {
+      "TaskModel": {
+        "mappings": {
+          "id": "taskDetails.id",
+          "projectId": "__context:projectId",
+          "projectBeneficiaryId": "taskDetails.projectBeneficiaryId",
+          "projectBeneficiaryClientReferenceId":
+              "__context:ProjectBeneficiaryClientReferenceId",
+          "createdBy": "__context:userId",
+          "status": "__value:NOT_ADMINISTERED",
+          "nonRecoverableError": "errors.nonRecoverable",
+          "clientReferenceId": "__generate:uuid",
+          "tenantId": "__context:tenantId",
+          "rowVersion": "meta.rowVersion",
+          "plannedStartDate": "taskDetails.plannedStartDate",
+          "plannedEndDate": "taskDetails.plannedEndDate",
+          "actualStartDate": "taskDetails.actualStartDate",
+          "actualEndDate": "taskDetails.actualEndDate",
+          "createdDate": "__generate:timestamp",
+          "address": {
+            "id": "address.id",
+            "relatedClientReferenceId": "__ref:TaskModel.clientReferenceId",
+            "doorNo": "address.doorNo",
+            "latitude": "adverseEffectDetails.latLng[0]",
+            "longitude": "adverseEffectDetails.latLng[1]",
+            "locationAccuracy": "adverseEffectDetails.latLng[2]",
+            "addressLine1": "address.addressLine1",
+            "addressLine2": "address.addressLine2",
+            "landmark": "address.landmark",
+            "city": "address.city",
+            "type": "__value:PERMANENT",
+            "pincode": "address.pincode",
+            "buildingName": "address.buildingName",
+            "street": "address.street",
+            "boundaryType": "address.boundaryType",
+            "boundary": "address.boundary",
+            "locality": {
+              "code": "__context:selectedBoundaryCode",
+              "name": "__context:boundary.name",
+              "nonRecoverableError": "address.nonRecoverable",
+              "tenantId": "__context:tenantId",
+              "rowVersion": "meta.rowVersion"
+            },
+            "nonRecoverableError": "address.nonRecoverable",
+            "tenantId": "__context:tenantId",
+            "rowVersion": "meta.rowVersion",
+            "clientAuditDetails": "__generate:clientAudit",
+            "auditDetails": "__generate:audit"
+          },
+          "additionalFields": {
+            "doseIndex": "__context:doseIndex",
+            "cycleIndex": "__context:cycleIndex",
+            "taskStatus": "__value:ADVERSE_EFFECT",
+            "additionalReason": "adverseEffectDetails.additionalReason",
+            "isBeneficiaryReferred": "adverseEffectDetails.isBeneficiaryReferred",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
             "memberCount": "__context:memberCount",
@@ -1029,12 +1098,7 @@ final jsonConfig = {
             "weight": "__context:weight",
             "headName": "__context:headName",
             "headMobileNumber": "__context:headMobileNumber",
-            // Eligibility checklist answers (null-skipped for non-checklist paths)
-            "ec1Value": "__context:ec1",
-            "ec2Value": "__context:ec2",
-            "ec3Value": "__context:ec3",
-            "ec4Value": "__context:ec4",
-            "ec5Value": "__context:ec5"
+            "dateOfRegistration": "RedoseDetails.dateOfRedose"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -1272,12 +1336,10 @@ final jsonConfig = {
           "transactionReason":
               "__switch:__context:stockEntryType:{RECEIPT:__value:RECEIVED,RETURNED:__value:RETURNED,ISSUED:__value:null,DAMAGED:stockDetails.transactionReason,LOSS:stockDetails.transactionReason}",
           "transactingPartyId": "stockDetails.transactingPartyId",
-          "senderId":
-              "__switch:__context:senderPartyType:{STAFF:__context:loggedInUserUuid,default:stockDetails.facilityFromWhich}",
+          "senderId": "__context:senderId",
           "senderType":
               "__switch:__context:senderPartyType:{STAFF:__value:STAFF,default:__value:WAREHOUSE}",
-          "receiverId":
-              "__switch:__context:receiverPartyType:{STAFF:__context:teamCode,default:warehouseDetails.facilityToWhich}",
+          "receiverId": "__context:receiverId",
           "receiverType":
               "__switch:__context:receiverPartyType:{STAFF:__value:STAFF,default:__value:WAREHOUSE}",
           "nonRecoverableError": "errors.nonRecoverable",
@@ -1298,7 +1360,7 @@ final jsonConfig = {
             "primaryRole": "__context:primaryRole",
             "secondaryRole": "__context:secondaryRole",
             "status":
-                "__switch:__context:stockEntryType:{ISSUED:__value:IN_TRANSIT,RETURNED:__value:IN_TRANSIT,LOSS:__value:LOST,DAMAGED:__value:DAMAGED}",
+                "__switch:__context:stockEntryType:{RECEIPT:__value:RECEIVED,ISSUED:__value:IN_TRANSIT,RETURNED:__value:IN_TRANSIT,LOSS:__value:LOST,DAMAGED:__value:DAMAGED,default:__value:null}",
             "scanResource": "stockProductDetails.scanResource",
             "quantityWastage":
                 "__switch:__context:stockEntryType:{RETURNED:__context:quantityWastage,default:stockProductDetails.quantityWastage}",
@@ -1327,7 +1389,7 @@ final jsonConfig = {
           "quantity": "__context:quantity",
           "waybillNumber": "stockReceiptDetails.wayBillNumber",
           "transactionType": "__context:transactionType",
-          "transactionReason": "__value:RECEIVED",
+          "transactionReason": "__switch:__context:stockEntryType:{RETURNED:__value:RETURNED,default:__value:RECEIVED}",
           "campaignNumber": "__context:selectedProject.referenceID",
           "senderId": "__context:senderFacilityId",
           "senderType": "__value:WAREHOUSE",

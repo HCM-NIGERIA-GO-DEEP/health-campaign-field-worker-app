@@ -86,9 +86,9 @@ class HCMWrapperModel with _$HCMWrapperModel {
     @JsonKey(name: 'CHECKLIST_TYPES')
     required List<CheckListTypes> checklistTypes,
     @JsonKey(name: 'DEVICE_CHANGE_REASONS')
-    required List<DeviceChangeReasons> deviceChangeReasons,
+    List<DeviceChangeReasons>? deviceChangeReasons,
     @JsonKey(name: 'SINGLE_USER_LOGIN')
-    required List<SingleUserLogin> singleUserLogin,
+    List<SingleUserLogin>? singleUserLogin,
     @JsonKey(name: 'ID_TYPE_OPTIONS_POPULATOR')
     required List<IdTypeOptions> idTypeOptions,
     @JsonKey(name: 'HOUSEHOLD_MEMBER_RELATIONSHIP_TYPES')
@@ -451,6 +451,9 @@ class RowVersions with _$RowVersions {
   factory RowVersions({
     required String module,
     required String version,
+    int? uniquenumbercount,
+    String? uniquenumbertype,
+    int? uniqueBeneficiaryIdLimit,
   }) = _RowVersions;
 
   factory RowVersions.fromJson(Map<String, dynamic> json) =>

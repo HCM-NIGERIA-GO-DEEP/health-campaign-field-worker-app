@@ -18,7 +18,6 @@ class DashboardLocalization {
 
   static final List<dynamic> _localizedStrings = <dynamic>[];
 
-  // Method to get the delegate for localization
   static LocalizationsDelegate<DashboardLocalization> getDelegate(
           Future<dynamic> localizedStrings, List<dynamic> languages) =>
       DashboardLocalizationDelegate(localizedStrings, languages);
@@ -45,7 +44,11 @@ class DashboardLocalization {
         (medium) => medium.code == localizedValues,
       );
 
-      return index != -1 ? _localizedStrings[index].message : localizedValues;
+      return index != -1 &&
+              _localizedStrings[index].message != null &&
+              _localizedStrings[index].message.toString().isNotEmpty
+          ? _localizedStrings[index].message
+          : localizedValues;
     }
   }
 }

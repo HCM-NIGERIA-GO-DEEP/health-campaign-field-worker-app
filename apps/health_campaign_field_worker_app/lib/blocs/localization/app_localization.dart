@@ -41,7 +41,24 @@ class AppLocalizations {
         (medium) => medium.code == localizedValues,
       );
 
-      return index != -1 ? _localizedStrings[index].message : localizedValues;
+      if (index != -1) {
+        final message = _localizedStrings[index].message;
+        if (message != null &&
+            message.toString().isNotEmpty &&
+            message != localizedValues) {
+          return message;
+        }
+      }
+
+      return localizedValues;
     }
+  }
+}
+
+extension AppLocalizationsExt on AppLocalizations {
+  String translateWithDefault(String key, {required String fallback}) {
+    final translated = translate(key);
+    // If translation returns the key (meaning not found), use fallback
+    return translated == key ? fallback : translated;
   }
 }

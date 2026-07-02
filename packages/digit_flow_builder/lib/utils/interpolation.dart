@@ -124,7 +124,8 @@ String? getEffectiveCompositeKey(
 
   final data = contextData;
 
-  final screenKey = data['parentScreenKey'] ?? getEffectiveScreenKey(context, data);
+  final screenKey =
+      data['parentScreenKey'] ?? getEffectiveScreenKey(context, data);
   if (screenKey == null) return null;
 
   final instanceId = getInstanceIdFromArgs(context);
@@ -404,12 +405,17 @@ Map<String, dynamic> preprocessConfigWithState(
             final rawValue = entry["value"]?.toString();
 
             if (k != null && rawValue != null) {
-              final resolved = interpolateWithCrudStates(
-                template: "{{$rawValue}}",
-                stateData: stateData,
-                listIndex: listIndex,
-                item: item,
-              );
+              final String resolved;
+              if (rawValue.contains('{{')) {
+                resolved = interpolateWithCrudStates(
+                  template: rawValue,
+                  stateData: stateData,
+                  listIndex: listIndex,
+                  item: item,
+                );
+              } else {
+                resolved = rawValue;
+              }
               params[k] = resolved;
             }
           }

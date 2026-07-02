@@ -1,7 +1,7 @@
 name: health_campaign_field_worker_app
 description: A new Flutter project.
 publish_to: "none"
-version: 2.2.83+83
+version: 2.2.74+74
 
 environment:
   sdk: ">=3.0.0 <=4.0.0"
@@ -50,7 +50,7 @@ dependencies:
   battery_plus: ^6.0.1
   workmanager: ^0.5.2
   digit_firebase_services: ^0.0.1
-  firebase_messaging: ^14.6.5
+  firebase_messaging: any
   package_info_plus: ^8.0.0
   expandable: ^5.0.1
   flutter_svg: ^2.0.10+1
@@ -82,6 +82,7 @@ dependencies:
   digit_flow_builder:
     path: ../../packages/digit_flow_builder
   jailbreak_root_detection: ^1.1.6
+  change_app_package_name: ^1.4.0
 
 dev_dependencies:
   flutter_test:

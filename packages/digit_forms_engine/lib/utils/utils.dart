@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:digit_formula_parser/digit_formula_parser.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -132,6 +133,14 @@ class IdGen {
 
   /// Generates a version 1 UUID and returns it as a string.
   String get identifier => uuid.v1();
+
+  /// Generates a random alphanumeric string of the specified length.
+  String generateRandomAlphanumeric(int length) {
+    const chars = '0123456789';
+    final random = Random();
+    return String.fromCharCodes(Iterable.generate(
+        length, (_) => chars.codeUnitAt(random.nextInt(chars.length))));
+  }
 }
 
 String? translateIfPresent(String? key, dynamic localizations) {

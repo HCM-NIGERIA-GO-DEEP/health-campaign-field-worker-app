@@ -50,7 +50,7 @@ class JsonSchemaDatePickerBuilder extends JsonSchemaBuilder<String> {
             }
             form.control(formControlName).value = parsedDate;
           },
-          readOnly: readOnly,
+          readOnly: readOnly ?? false,
           errorMessage: field.errorText,
           innerLabel: innerLabel,
           initialDate: parseDateValue(start),

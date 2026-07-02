@@ -48,7 +48,11 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
   // Stock calculation state
   List<ProductVariantModel> _selectedProducts = [];
   Map<String, double> _stockInHandMap = {};
+  Map<String, double> _stockIssuedMap = {};
+  Map<String, double> _stockReturnedMap = {};
   bool _stockSearchTriggered = false;
+
+  List<ProductVariantModel> _localProductVariants = [];
 
   @override
   void initState() {
@@ -57,11 +61,50 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
     // It will be called in build() when localizations is ready
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _loadProductVariants();
+  }
+
+  Future<void> _loadProductVariants() async {
+    try {
+      final projectResourceRepo = context.read<
+          LocalRepository<ProjectResourceModel, ProjectResourceSearchModel>>();
+      final projectResources = await projectResourceRepo.search(
+        ProjectResourceSearchModel(projectId: [context.projectId]),
+      );
+
+      final productVariantIds = projectResources
+          .map((pr) => pr.resource.productVariantId)
+          .whereType<String>()
+          .toSet()
+          .toList();
+
+      final productVariantRepo = context.read<
+          LocalRepository<ProductVariantModel, ProductVariantSearchModel>>();
+      final productVariants = await productVariantRepo.search(
+        ProductVariantSearchModel(id: productVariantIds),
+      );
+      if (mounted) {
+        setState(() {
+          _localProductVariants = productVariants;
+        });
+      }
+    } catch (e) {
+      debugPrint(
+          'ProductSelectionCard: Error loading local product variants: $e');
+    }
+  }
+
   /// Gets the facility ID from the previous page's form data (warehouseDetails.facilityToWhich)
   /// Reads from FormsBloc state which stores all page data
   String? _getFacilityIdFromFormData(BuildContext context) {
     // For stock-in-hand, we need the source facility (where stock is held)
     // For ISSUED: source = current user's facility (getUserFacilityId)
+    // For RETURNED (CDD→HFS): source = HFS's own facility. The cap is computed
+    //   as stockIssued(HFS→CDD) - stockReturned(CDD→HFS already), both of
+    //   which are reliably read from the HFS facility's stock records.
     // For RECEIPT/others: source = facilityToWhich
     final navigationParams = FlowCrudStateRegistry()
             .getNavigationParams('FORM::${widget.pageSchema}') ??
@@ -69,12 +112,14 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         {};
     final transactionType =
         navigationParams['transactionType']?.toString() ?? '';
-    final isIssue =
-        transactionType == 'DISPATCHED' || transactionType == 'ISSUED';
-    final isReturn = transactionType == 'RETURNED';
+    final stockEntryType = navigationParams['stockEntryType']?.toString() ?? '';
+    final primaryRole = navigationParams['primaryRole']?.toString() ?? '';
+    final isIssue = stockEntryType == 'ISSUED' ||
+        transactionType == 'DISPATCHED' && stockEntryType != 'RETURNED';
+    final isReturn = stockEntryType == 'RETURNED';
 
-    // For issue, use current user's facility directly
-    if (isIssue || isReturn) {
+    // For issue (sender) and legacy return (sender), use current user's facility
+    if (isIssue || (isReturn && primaryRole == 'SENDER')) {
       final stateData = widget.stateData is CrudStateData
           ? widget.stateData as CrudStateData
           : CrudStateData({}, []);
@@ -120,14 +165,18 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         return facilityId.toString();
       }
     }
-
-    debugPrint('ProductSelectionCard: facilityId not found');
     return null;
   }
 
   /// Triggers stock search for calculating stock in hand
   Future<void> _triggerStockSearch(BuildContext context) async {
-    final facilityId = _getFacilityIdFromFormData(context);
+    String? facilityId = _getFacilityIdFromFormData(context);
+
+    // facilityToWhich can sometimes contain a pipe-separated value (e.g. "label||uuid");
+    // extract only the UUID part after || for stock record matching.
+    if (facilityId != null && facilityId.contains('||')) {
+      facilityId = facilityId.split('||').last.trim();
+    }
     if (facilityId == null || facilityId.isEmpty) {
       debugPrint(
           'ProductSelectionCard: Skipping stock search - no facility selected');
@@ -176,7 +225,6 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       // Extract stock list from results
       final stockList =
           results['stock']?.whereType<StockModel>().toList() ?? <StockModel>[];
-
       debugPrint(
           'ProductSelectionCard: Fetched ${stockList.length} stock records');
 
@@ -197,21 +245,35 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       var _isDistributor = context.loggedInUserRoles
           .any((role) => role.code == RolesType.distributor.toValue());
 
-      final stockTransactionBalance =
-          StockCalculationUtils.calculateStockInHandForProducts(
-        stockList: stockList,
-        facilityId: facilityId,
-        productIds: productIds,
-        loggedInUserUuid: loggedInUserUuid,
-        isDistributor: _isDistributor,
-        tasks: tasks,
-      );
+      // Calculate stock metrics per product
+      final Map<String, double> stockInHandResult = {};
+      final Map<String, double> stockIssuedResult = {};
+      final Map<String, double> stockReturnedResult = {};
 
-      // Merge: UserAction balances take precedence (they include delivery deductions)
-      _stockInHandMap = stockTransactionBalance;
+      for (final productId in productIds) {
+        final metrics = StockCalculationUtils.calculateStockMetrics(
+          stockList: stockList,
+          facilityId: facilityId,
+          productId: productId,
+          loggedInUserUuid: loggedInUserUuid,
+          isDistributor: _isDistributor,
+          tasks: tasks,
+        );
+        // stockInHand = net balance from this facility's perspective (for issue flow).
+        // For return flow we use stockIssued - stockReturned (both from HFS perspective)
+        // so the cap correctly reflects how much the CDD can still return.
+        stockInHandResult[productId] = metrics['stockInHand'] ?? 0.0;
+        stockIssuedResult[productId] = metrics['stockIssued'] ?? 0.0;
+        stockReturnedResult[productId] = metrics['stockReturned'] ?? 0.0;
+        debugPrint('DEBUG RETURN: productId=$productId');
+        debugPrint('DEBUG RETURN: stockInHand=${metrics['stockInHand']}');
+        debugPrint('DEBUG RETURN: stockIssued=${metrics['stockIssued']}');
+        debugPrint('DEBUG RETURN: stockReturned=${metrics['stockReturned']}');
+      }
 
-      debugPrint(
-          'ProductSelectionCard: Calculated stockInHand: $_stockInHandMap');
+      _stockInHandMap = stockInHandResult;
+      _stockIssuedMap = stockIssuedResult;
+      _stockReturnedMap = stockReturnedResult;
 
       // Update FormsBloc with stock in hand data
       _updateStockInHandInFormsBloc();
@@ -225,10 +287,8 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
     }
   }
 
-  /// Updates FormsBloc with stock in hand data so it's available to the next page
   void _updateStockInHandInFormsBloc() {
-    if (_stockInHandMap.isEmpty || _selectedProducts.isEmpty) return;
-
+    if (_selectedProducts.isEmpty) return;
     // Update the stockInHandMap
     context.read<FormsBloc>().add(
           FormsEvent.updateField(
@@ -260,9 +320,6 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
 
     // Update the schema to add max validations for quantity fields
     _updateQuantityFieldValidations();
-
-    debugPrint(
-        'ProductSelectionCard: Updated FormsBloc with stockInHandMap and products with stockInHand');
   }
 
   /// Updates the schema to add max validations for quantity fields based on stockInHand.
@@ -294,11 +351,6 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
           'ProductSelectionCard: ERROR - No page with multiEntityConfig found');
       return;
     }
-
-    debugPrint(
-        'ProductSelectionCard: Found multiEntityConfig page: $multiEntityPageKey');
-    debugPrint(
-        'ProductSelectionCard: Updating validations for ${_selectedProducts.length} products');
 
     // Quantity fields that need max validation
     // These are all quantity fields that could potentially need stock validation
@@ -336,17 +388,27 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       }
     }
 
+    // Detect return flow once, outside the per-product loop
+    final navigationParams = FlowCrudStateRegistry()
+            .getNavigationParams('FORM::${widget.pageSchema}') ??
+        FlowCrudStateRegistry().getNavigationParams(widget.pageSchema) ??
+        {};
+    final isReturnFlow =
+        navigationParams['stockEntryType']?.toString() == 'RETURNED';
+
     // For each selected product, create entity-specific field validations
     for (var entityIndex = 0;
         entityIndex < _selectedProducts.length;
         entityIndex++) {
       final product = _selectedProducts[entityIndex];
-      final stockInHand = _stockInHandMap[product.id] ?? 0.0;
-      final maxValue = stockInHand
-          .toInt(); // Convert back to bottle count for validation message
-
-      debugPrint(
-          'ProductSelectionCard: Entity $entityIndex - product=${product.id}, stockInHand=$stockInHand, maxValue=$maxValue');
+      // For return flow: cap = stockIssued(HFS→CDD) - stockReturned(already returned to HFS).
+      // Both metrics come from HFS's perspective, so facility resolution is reliable.
+      // For issue flow: cap = stockInHand (net balance at HFS).
+      final stockValue = isReturnFlow
+          ? ((_stockIssuedMap[product.id] ?? 0.0) -
+              (_stockReturnedMap[product.id] ?? 0.0))
+          : (_stockInHandMap[product.id] ?? 0.0);
+      final maxValue = stockValue.clamp(0.0, double.infinity).toInt();
 
       for (final fieldName in quantityFields) {
         // Get the base field schema (from our stored map)
@@ -628,16 +690,26 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       return const SizedBox.shrink();
     }
 
-    // Extract data - add null check
+    // Extract data - fallback to local product variants if empty or null
     final wrapperData = widget.stateData?.stateWrapper;
-    if (wrapperData == null) {
-      return const SizedBox.shrink();
+    List<dynamic>? productVariants;
+    if (wrapperData != null && wrapperData is List && wrapperData.isNotEmpty) {
+      final firstItem = wrapperData.first;
+      if (firstItem is Map) {
+        final wrapperList = wrapperData as List<Map<String, List<dynamic>>>;
+        productVariants = wrapperList.firstWhere(
+            (m) => m.containsKey('ProductVariantModel'),
+            orElse: () => {'ProductVariantModel': []})['ProductVariantModel'];
+      } else if (firstItem is ProductVariantModel) {
+        productVariants = wrapperData;
+      } else {
+        productVariants = wrapperData.whereType<ProductVariantModel>().toList();
+      }
     }
-    final wrapperList = wrapperData as List<Map<String, List<dynamic>>>;
 
-    final productVariants = wrapperList.firstWhere(
-        (m) => m.containsKey('ProductVariantModel'),
-        orElse: () => {'ProductVariantModel': []})['ProductVariantModel'];
+    if (productVariants == null || productVariants.isEmpty) {
+      productVariants = _localProductVariants;
+    }
 
     // Initialize from formData on first build (localizations and productVariants are now available)
     if (!_initialized) {

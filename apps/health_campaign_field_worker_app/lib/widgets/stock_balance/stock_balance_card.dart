@@ -19,6 +19,8 @@ import '../../utils/function_registries.dart';
 import '../../utils/i18_key_constants.dart' as i18;
 import '../../utils/stock_calculation_utils.dart';
 import '../../utils/utils.dart';
+import '../../utils/extensions/extensions.dart';
+import '../../utils/least_level_boundary_singleton.dart';
 import '../localized.dart';
 
 class StockBalanceCard extends LocalizedStatefulWidget {
@@ -75,9 +77,33 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       // Get project facilities
       final projectFacilityRepo = context.read<
           LocalRepository<ProjectFacilityModel, ProjectFacilitySearchModel>>();
-      final projectFacilities = await projectFacilityRepo.search(
+      var projectFacilities = await projectFacilityRepo.search(
         ProjectFacilitySearchModel(projectId: [context.projectId]),
       );
+
+      final isWareHouseMgr = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.warehouseManager.toValue());
+      if (isWareHouseMgr && projectFacilities.isEmpty) {
+        final facilityRepo = context.read<LocalRepository<FacilityModel, FacilitySearchModel>>();
+        final facilities = await facilityRepo.search(FacilitySearchModel(tenantId: context.selectedProject.tenantId));
+        final userBoundary = LeastLevelBoundarySingleton().boundary?.firstOrNull;
+        projectFacilities = facilities.map((facility) {
+          final isCurrent = userBoundary != null && 
+              facility.address?.locality?.code == userBoundary;
+          final facilityLevel = isCurrent ? 'current' : 'child';
+          return ProjectFacilityModel(
+            id: facility.id,
+            facilityId: facility.id,
+            projectId: context.projectId,
+            additionalFields: ProjectFacilityAdditionalFields(
+              version: 1,
+              fields: [
+                AdditionalField('facilityLevel', facilityLevel),
+              ],
+            ),
+          );
+        }).toList();
+      }
 
       // Filter to only show current level facilities
       final currentFacilities = projectFacilities.where((pf) {

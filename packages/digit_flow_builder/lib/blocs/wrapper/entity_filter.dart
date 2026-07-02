@@ -110,7 +110,14 @@ class EntityFilter {
       if (targetField == null) return false;
       final candidateValue =
           _resolver.resolveValue(targetField, e, localContext);
-      if (equalsValue != null) return candidateValue == equalsValue;
+      if (equalsValue != null) {
+        // equalsFrom may resolve to a List when the source path traverses a
+        // one-to-many relation (e.g. a member with multiple projectBeneficiaries
+        // across campaigns). Treat a List result as a set membership check so
+        // the task still matches whichever projectBeneficiary it belongs to.
+        if (equalsValue is List) return equalsValue.contains(candidateValue);
+        return candidateValue == equalsValue;
+      }
       if (inValues != null) return inValues.contains(candidateValue);
       return false;
     }).toList();

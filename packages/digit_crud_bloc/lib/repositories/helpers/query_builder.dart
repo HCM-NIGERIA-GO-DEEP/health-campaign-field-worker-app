@@ -723,6 +723,12 @@ class QueryBuilder {
         continue;
       }
 
+      if (filter.operator == 'containsName') {
+        final expr = _buildContainsAllExpression(dynamicTable, filter);
+        if (expr != null) whereClauses.add(expr);
+        continue;
+      }
+
       final columnName = camelToSnake(filter.field);
       final col = dynamicTable.$columns.firstWhere(
         (c) => c.$name == columnName,

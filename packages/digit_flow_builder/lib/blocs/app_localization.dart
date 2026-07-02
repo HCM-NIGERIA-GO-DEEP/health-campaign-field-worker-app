@@ -36,7 +36,6 @@ class FlowBuilderLocalization {
     return true;
   }
 
-  // Method to translate a given localized value
   String translate(String localizedValues) {
     if (_localizedStrings.isEmpty) {
       return localizedValues;
@@ -45,7 +44,16 @@ class FlowBuilderLocalization {
         (medium) => medium.code == localizedValues,
       );
 
-      return index != -1 ? _localizedStrings[index].message : localizedValues;
+      if (index != -1) {
+        final message = _localizedStrings[index].message;
+        if (message != null &&
+            message.toString().isNotEmpty &&
+            message != localizedValues) {
+          return message;
+        }
+      }
+
+      return localizedValues;
     }
   }
 }

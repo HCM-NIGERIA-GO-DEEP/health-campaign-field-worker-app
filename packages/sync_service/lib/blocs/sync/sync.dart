@@ -46,6 +46,15 @@ class SyncBloc extends Bloc<SyncEvent, SyncState> {
       orElse: () => 0,
     );
 
+    // If a sync is actively running (lock is held), skip the DB queries and
+    // re-emit the last known count. Querying during an active sync causes
+    // redundant DB reads that compete with sync writes and produce oscillating
+    // counts in the UI (e.g. 49 → 22 → 49 → 22).
+    if (await SyncLock.isLocked()) {
+      emit(SyncPendingState(count: event.count ?? previousCount));
+      return;
+    }
+
     int? length = event.count;
     emit(const SyncState.loading());
     try {

@@ -3,6 +3,7 @@ import 'package:digit_data_model/data/repositories/package_repository/local/hous
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
+import 'package:collection/collection.dart';
 import 'package:digit_ui_components/widgets/atoms/table_cell.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_table.dart';
@@ -28,7 +29,7 @@ class SummaryReportPage extends LocalizedStatefulWidget {
 
 class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
   List<_SummaryReportRow> _reportRows = [];
-  List<ProductVariantModel> _productVariants = [];
+  List<ProductVariantModel> _productVariants = []; // ignore: prefer_final_fields
   bool _isLoading = true;
 
   @override
@@ -73,7 +74,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           LocalRepository<ProjectFacilityModel, ProjectFacilitySearchModel>>();
       final facilityRepo =
           context.read<LocalRepository<FacilityModel, FacilitySearchModel>>();
-
       // Determine facility ID (same logic as stock_balance_card)
       final isDistributor = context.loggedInUserRoles
           .any((role) => role.code == RolesType.distributor.toValue());
@@ -145,7 +145,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         if (createdBy != userUuid) continue;
         final epochMs =
             hh.clientAuditDetails?.createdTime ?? hh.auditDetails?.createdTime;
-        if (!isWithinCurrentCycle(epochMs)) continue;
         if (epochMs == null) continue;
         final date = _epochToDateString(epochMs);
         hhByDate[date] = (hhByDate[date] ?? 0) + 1;
@@ -155,8 +154,10 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // (filter by logged-in user AND status == 'ADMINISTRATION_SUCCESS' or 'VISITED')
       final tasksByDate = <String, Set<String>>{};
       for (final task in tasks) {
-        if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
+        if (task.status != 'ADMINISTRATION_SUCCESS' &&
+            task.status != 'VISITED') {
           continue;
+        }
         final createdBy =
             task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
@@ -191,8 +192,10 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // Key: "date|productVariantId" -> sum of quantity
       final consumedByDateProduct = <String, double>{};
       for (final task in tasks) {
-        if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
+        if (task.status != 'ADMINISTRATION_SUCCESS' &&
+            task.status != 'VISITED') {
           continue;
+        }
         final createdBy =
             task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
@@ -213,31 +216,56 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         }
       }
 
-      // ── Collect stock dates (for date rows) ──
-      final stockDates = <String>{};
-      for (final stock in allStocks) {
-        final epochMs = stock.clientAuditDetails?.createdTime ??
-            stock.auditDetails?.createdTime;
-        if (!isWithinCurrentCycle(epochMs)) continue;
-        if (epochMs == null) continue;
-        stockDates.add(_epochToDateString(epochMs));
-      }
-
-      // ── Collect consumed dates ──
-      final consumedDates = <String>{};
-      for (final key in consumedByDateProduct.keys) {
-        consumedDates.add(key.split('|')[0]);
-      }
-
+      // ── Build rows ─────────────────────────────────────────────────────────
       final allDates = <String>{
         ...hhByDate.keys,
-        ...tasksByDate.keys,
-        ...stockDates,
-        ...consumedDates,
+        ...consumedByDateProduct.keys.map((k) => k.split('|')[0]),
       };
 
-      // ── Build rows ──
-      // Sort dates ascending for cumulative consumed calculation
+      final ageBuckets = <String, _DateBucket>{};
+      final processedBeneficiariesForDemographics = <String, Set<String>>{};
+
+      for (final task in tasks) {
+        if (task.status != 'ADMINISTRATION_SUCCESS' &&
+            task.status != 'VISITED') {
+          continue;
+        }
+        final createdBy =
+            task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
+        if (createdBy != userUuid) continue;
+        final epochMs = task.clientAuditDetails?.createdTime ??
+            task.auditDetails?.createdTime;
+        if (epochMs == null) continue;
+
+        final fields = task.additionalFields?.fields ?? [];
+        final ageMonths = int.tryParse(
+                fields.firstWhereOrNull((f) => f.key == 'ageInMonths')
+                        ?.value
+                        ?.toString() ??
+                    '') ??
+            -1;
+        if (ageMonths == -1) {
+          // If age isn't properly retrieved, still count them in totalAll
+        }
+
+        final gender = fields
+            .firstWhereOrNull((f) => f.key == 'gender')
+            ?.value
+            ?.toString();
+
+        final date = _epochToDateString(epochMs);
+        final beneficiaryRef = task.projectBeneficiaryClientReferenceId;
+        
+        if (beneficiaryRef != null && beneficiaryRef.isNotEmpty) {
+          processedBeneficiariesForDemographics.putIfAbsent(date, () => <String>{});
+          if (!processedBeneficiariesForDemographics[date]!.contains(beneficiaryRef)) {
+            processedBeneficiariesForDemographics[date]!.add(beneficiaryRef);
+            allDates.add(date);
+            ageBuckets.putIfAbsent(date, () => _DateBucket()).add(ageMonths, gender);
+          }
+        }
+      }
+
       final sortedDates = allDates.toList()..sort();
 
       // Track cumulative consumed per product variant (for balance)
@@ -250,6 +278,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         final nonHeadCount = nonHeadMembersByDate[date] ?? 0;
         final percentage =
             nonHeadCount > 0 ? (childrenCount / nonHeadCount) * 100 : 0.0;
+        final bucket = ageBuckets[date] ?? _DateBucket();
 
         // End-of-day timestamp for cumulative stock filtering
         final endOfDay = DateTime.parse(date)
@@ -307,6 +336,16 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
 
         rows.add(_SummaryReportRow(
           date: date,
+          // Age/gender breakdown
+          totalAll: bucket.totalAll,
+          total3to11: bucket.total3to11,
+          total12to59: bucket.total12to59,
+          boysAll: bucket.boysAll,
+          boys3to11: bucket.boys3to11,
+          boys12to59: bucket.boys12to59,
+          girlsAll: bucket.girlsAll,
+          girls3to11: bucket.girls3to11,
+          girls12to59: bucket.girls12to59,
           householdsRegistered: hhCount,
           childrenTreated: childrenCount,
           childrenTreatedPercent: percentage,
@@ -320,7 +359,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       if (mounted) {
         setState(() {
           _reportRows = rows;
-          _productVariants = productVariants;
+          // _productVariants = productVariants; // uncomment when re-enabling stock columns
           _isLoading = false;
         });
       }
@@ -348,98 +387,215 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
     final theme = Theme.of(context);
     final textTheme = theme.digitTextTheme(context);
 
-    // Build columns: base columns + per-product stock columns
+    // Active columns — age/gender breakdown
+    // To re-enable stock columns: uncomment the stock section below and add
+    // per-product columns for received/consumed/returned/balance using _productVariants
     final columns = <DigitTableColumn>[
       DigitTableColumn(
         header: localizations.translate(i18.summaryReport.dateColumn),
         cellValue: 'date',
       ),
       DigitTableColumn(
-        header: localizations.translate(i18.summaryReport.householdsRegistered),
-        cellValue: 'hhRegistered',
+        header: localizations.translate(i18.summaryReport.childrenAll),
+        cellValue: 'totalAll',
+        width: 500,
       ),
       DigitTableColumn(
-        header: localizations.translate(i18.summaryReport.childrenTreated),
-        cellValue: 'childrenTreated',
+        header: localizations.translate(i18.summaryReport.children3to11),
+        cellValue: 'total3to11',
+        width: 500,
       ),
       DigitTableColumn(
-        header:
-            localizations.translate(i18.summaryReport.childrenTreatedPercent),
-        cellValue: 'childrenTreatedPercent',
+        header: localizations.translate(i18.summaryReport.children12to59),
+        cellValue: 'total12to59',
+        width: 500,
       ),
-    ];
-
-    // Add stock columns per product variant
-    for (final pv in _productVariants) {
-      final name = localizations.translate(pv.sku ?? pv.id);
-      columns.addAll([
+      DigitTableColumn(
+        header: localizations.translate(i18.summaryReport.boysAll),
+        cellValue: 'boysAll',
+        width: 500,
+      ),
+      DigitTableColumn(
+        header: localizations.translate(i18.summaryReport.boys3to11),
+        cellValue: 'boys3to11',
+        width: 500,
+      ),
+      DigitTableColumn(
+        header: localizations.translate(i18.summaryReport.boys12to59),
+        cellValue: 'boys12to59',
+        width: 500,
+      ),
+      DigitTableColumn(
+        header: localizations.translate(i18.summaryReport.girlsAll),
+        cellValue: 'girlsAll',
+        width: 500,
+      ),
+      DigitTableColumn(
+        header: localizations.translate(i18.summaryReport.girls3to11),
+        cellValue: 'girls3to11',
+        width: 500,
+      ),
+      DigitTableColumn(
+        header: localizations.translate(i18.summaryReport.girls12to59),
+        cellValue: 'girls12to59',
+        width: 500,
+      ),
+      // Stock columns — re-enable by uncommenting _productVariants = productVariants in setState:
+      for (final pv in _productVariants) ...[
         DigitTableColumn(
           header:
-              '${localizations.translate(i18.summaryReport.stockReceived)} ($name)',
+              '${localizations.translate(i18.summaryReport.stockReceived)} (${localizations.translate(pv.sku ?? pv.id)})',
           cellValue: 'received_${pv.id}',
         ),
         DigitTableColumn(
           header:
-              '${localizations.translate(i18.summaryReport.stockConsumed)} ($name)',
+              '${localizations.translate(i18.summaryReport.stockConsumed)} (${localizations.translate(pv.sku ?? pv.id)})',
           cellValue: 'consumed_${pv.id}',
         ),
         DigitTableColumn(
           header:
-              '${localizations.translate(i18.summaryReport.stockReturned)} ($name)',
+              '${localizations.translate(i18.summaryReport.stockReturned)} (${localizations.translate(pv.sku ?? pv.id)})',
           cellValue: 'returned_${pv.id}',
         ),
         DigitTableColumn(
           header:
-              '${localizations.translate(i18.summaryReport.stockBalance)} ($name)',
+              '${localizations.translate(i18.summaryReport.stockBalance)} (${localizations.translate(pv.sku ?? pv.id)})',
           cellValue: 'balance_${pv.id}',
         ),
-      ]);
-    }
+      ],
+    ];
 
-    // Build rows
-    final rows = _reportRows.map((row) {
+    // Totals row
+    final totals = _SummaryReportRow(
+      date: localizations.translate(i18.summaryReport.totalRow),
+      totalAll: _reportRows.fold(0, (s, r) => s + r.totalAll),
+      total3to11: _reportRows.fold(0, (s, r) => s + r.total3to11),
+      total12to59: _reportRows.fold(0, (s, r) => s + r.total12to59),
+      boysAll: _reportRows.fold(0, (s, r) => s + r.boysAll),
+      boys3to11: _reportRows.fold(0, (s, r) => s + r.boys3to11),
+      boys12to59: _reportRows.fold(0, (s, r) => s + r.boys12to59),
+      girlsAll: _reportRows.fold(0, (s, r) => s + r.girlsAll),
+      girls3to11: _reportRows.fold(0, (s, r) => s + r.girls3to11),
+      girls12to59: _reportRows.fold(0, (s, r) => s + r.girls12to59),
+      householdsRegistered:
+          _reportRows.fold(0, (s, r) => s + r.householdsRegistered),
+    );
+
+    final displayRows = [..._reportRows, if (_reportRows.isNotEmpty) totals];
+
+    final rows = displayRows.map((row) {
+      final isTotal = row == totals && _reportRows.isNotEmpty;
       final cells = <DigitTableData>[
         DigitTableData(
-          _formatDisplayDate(row.date),
+          isTotal ? row.date : _formatDisplayDate(row.date),
           cellKey: 'date',
         ),
         DigitTableData(
-          row.householdsRegistered.toString(),
-          cellKey: 'hhRegistered',
+          row.totalAll.toString(), 
+          cellKey: 'totalAll', 
+          widget: Center(
+            child: Text(
+              row.totalAll.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
         ),
         DigitTableData(
-          row.childrenTreated.toString(),
-          cellKey: 'childrenTreated',
+          row.total3to11.toString(), 
+          cellKey: 'total3to11',
+          widget: Center(
+            child: Text(
+              row.total3to11.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
         ),
         DigitTableData(
-          '${row.childrenTreatedPercent.toStringAsFixed(1)}%',
-          cellKey: 'childrenTreatedPercent',
+          row.total12to59.toString(), 
+          cellKey: 'total12to59',
+          widget: Center(
+            child: Text(
+              row.total12to59.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
         ),
+        DigitTableData(
+          row.boysAll.toString(), 
+          cellKey: 'boysAll',
+          widget: Center(
+            child: Text(
+              row.boysAll.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+        DigitTableData(
+          row.boys3to11.toString(), 
+          cellKey: 'boys3to11',
+          widget: Center(
+            child: Text(
+              row.boys3to11.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+        DigitTableData(
+          row.boys12to59.toString(), 
+          cellKey: 'boys12to59',
+          widget: Center(
+            child: Text(
+              row.boys12to59.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+        DigitTableData(
+          row.girlsAll.toString(), 
+          cellKey: 'girlsAll',
+          widget: Center(
+            child: Text(
+              row.girlsAll.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+        DigitTableData(
+          row.girls3to11.toString(), 
+          cellKey: 'girls3to11',
+          widget: Center(
+            child: Text(
+              row.girls3to11.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+        DigitTableData(
+          row.girls12to59.toString(), 
+          cellKey: 'girls12to59',
+          widget: Center(
+            child: Text(
+              row.girls12to59.toString(),
+              textAlign: TextAlign.center,
+            ),
+          ),
+        ),
+        // Stock cells — active when _productVariants is populated:
+        for (final pv in _productVariants) ...[
+          DigitTableData(
+              (row.stockData[pv.id]?.received ?? 0).toStringAsFixed(0),
+              cellKey: 'received_${pv.id}'),
+          DigitTableData(
+              (row.stockData[pv.id]?.consumed ?? 0).toStringAsFixed(0),
+              cellKey: 'consumed_${pv.id}'),
+          DigitTableData(
+              (row.stockData[pv.id]?.returned ?? 0).toStringAsFixed(0),
+              cellKey: 'returned_${pv.id}'),
+          DigitTableData(
+              (row.stockData[pv.id]?.balance ?? 0).toStringAsFixed(0),
+              cellKey: 'balance_${pv.id}'),
+        ],
       ];
-
-      // Add stock cells per product variant
-      for (final pv in _productVariants) {
-        final data = row.stockData[pv.id];
-        cells.addAll([
-          DigitTableData(
-            (data?.received ?? 0).toStringAsFixed(0),
-            cellKey: 'received_${pv.id}',
-          ),
-          DigitTableData(
-            (data?.consumed ?? 0).toStringAsFixed(0),
-            cellKey: 'consumed_${pv.id}',
-          ),
-          DigitTableData(
-            (data?.returned ?? 0).toStringAsFixed(0),
-            cellKey: 'returned_${pv.id}',
-          ),
-          DigitTableData(
-            (data?.balance ?? 0).toStringAsFixed(0),
-            cellKey: 'balance_${pv.id}',
-          ),
-        ]);
-      }
-
       return DigitTableRow(tableRow: cells);
     }).toList();
 
@@ -528,8 +684,42 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
   }
 }
 
+class _DateBucket {
+  int totalAll = 0, total3to11 = 0, total12to59 = 0;
+  int boysAll = 0, boys3to11 = 0, boys12to59 = 0;
+  int girlsAll = 0, girls3to11 = 0, girls12to59 = 0;
+
+  void add(int ageMonths, String? gender) {
+    totalAll++;
+    if (ageMonths >= 3 && ageMonths <= 11) total3to11++;
+    if (ageMonths >= 12 && ageMonths <= 59) total12to59++;
+
+    final g = gender?.toUpperCase();
+    if (g == 'MALE') {
+      boysAll++;
+      if (ageMonths >= 3 && ageMonths <= 11) boys3to11++;
+      if (ageMonths >= 12 && ageMonths <= 59) boys12to59++;
+    } else if (g == 'FEMALE') {
+      girlsAll++;
+      if (ageMonths >= 3 && ageMonths <= 11) girls3to11++;
+      if (ageMonths >= 12 && ageMonths <= 59) girls12to59++;
+    }
+  }
+}
+
 class _SummaryReportRow {
   final String date;
+  // Age/gender columns (active)
+  final int totalAll;
+  final int total3to11;
+  final int total12to59;
+  final int boysAll;
+  final int boys3to11;
+  final int boys12to59;
+  final int girlsAll;
+  final int girls3to11;
+  final int girls12to59;
+  // Retained for future columns
   final int householdsRegistered;
   final int childrenTreated;
   final double childrenTreatedPercent;
@@ -537,9 +727,18 @@ class _SummaryReportRow {
 
   _SummaryReportRow({
     required this.date,
-    required this.householdsRegistered,
-    required this.childrenTreated,
-    required this.childrenTreatedPercent,
+    required this.totalAll,
+    required this.total3to11,
+    required this.total12to59,
+    required this.boysAll,
+    required this.boys3to11,
+    required this.boys12to59,
+    required this.girlsAll,
+    required this.girls3to11,
+    required this.girls12to59,
+    this.householdsRegistered = 0,
+    this.childrenTreated = 0,
+    this.childrenTreatedPercent = 0.0,
     this.stockData = const {},
   });
 }

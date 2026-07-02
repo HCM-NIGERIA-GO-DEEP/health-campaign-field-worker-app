@@ -79,7 +79,8 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
               final projectSelected = state.selectedProject;
 
               if (syncDialogRoute?.isActive ?? false) {
-                Navigator.of(context, rootNavigator: true).removeRoute(syncDialogRoute!);
+                Navigator.of(context, rootNavigator: true)
+                    .removeRoute(syncDialogRoute!);
               }
 
               if (error != null) {
@@ -99,7 +100,8 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
                           ? (cxt) {
                               if (syncDialogRoute != null &&
                                   syncDialogRoute!.isActive) {
-                                Navigator.of(cxt, rootNavigator: true).removeRoute(syncDialogRoute!);
+                                Navigator.of(cxt, rootNavigator: true)
+                                    .removeRoute(syncDialogRoute!);
                               }
                               context
                                   .read<ProjectBloc>()
@@ -108,7 +110,8 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
                           : (cxt) {
                               if (syncDialogRoute != null &&
                                   syncDialogRoute!.isActive) {
-                                Navigator.of(cxt, rootNavigator: true).removeRoute(syncDialogRoute!);
+                                Navigator.of(cxt, rootNavigator: true)
+                                    .removeRoute(syncDialogRoute!);
                               }
                               cxt.read<ProjectBloc>().add(
                                     ProjectSelectProjectEvent(
@@ -123,14 +126,16 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
                       ),
                       action: (context) {
                         if (syncDialogRoute?.isActive ?? false) {
-                          Navigator.of(context, rootNavigator: true).removeRoute(syncDialogRoute!);
+                          Navigator.of(context, rootNavigator: true)
+                              .removeRoute(syncDialogRoute!);
                         }
                       },
                     ),
                   ),
                 );
 
-                Navigator.of(context, rootNavigator: true).push(syncDialogRoute!);
+                Navigator.of(context, rootNavigator: true)
+                    .push(syncDialogRoute!);
 
                 return;
               } else if (state.loading) {
@@ -145,7 +150,8 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
                   ),
                 );
 
-                Navigator.of(context, rootNavigator: true).push(syncDialogRoute!);
+                Navigator.of(context, rootNavigator: true)
+                    .push(syncDialogRoute!);
               }
 
               final selectedProject = state.selectedProject;
@@ -202,7 +208,8 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
                                 context
                                     .read<AuthBloc>()
                                     .add(const AuthLogoutEvent());
-                              },                            ),
+                              },
+                            ),
                           ),
                         ),
                       ],
@@ -245,6 +252,7 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
       locale: AppSharedPreferences().getSelectedLocale!,
       moduleKey:
           'INVENTORY,REGISTRATION,COMPLAINTS,HFREFERRAL,CLOSEHOUSEHOLD,COMPLAINTS,STOCKREPORTS,STOCKRECONCILIATION,PERMISSIONHANDLER,CHECKLIST',
+
       /// TODO: NEED TO MOVE CONSTANT FILE
       projectReferenceId: context.selectedProject.referenceID ?? '',
     );
@@ -254,18 +262,18 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
     try {
       await boundaryBloc.stream
           .firstWhere((element) => element.boundaryList.isNotEmpty);
-      context
-          .read<LocalizationBloc>()
-          .add(LocalizationEvent.onLoadLocalization(
-        module: 'hcm-permissionhandler-${context.selectedProject.referenceID}',
-        tenantId: envConfig.variables.tenantId,
-        locale: AppSharedPreferences()
-            .getSelectedLocale!,
-        path: Constants.localizationApiPath,
-      ));
+      context.read<LocalizationBloc>().add(LocalizationEvent.onLoadLocalization(
+            module:
+                'hcm-permissionhandler-${context.selectedProject.referenceID}',
+            tenantId: envConfig.variables.tenantId,
+            locale: AppSharedPreferences().getSelectedLocale!,
+            path: Constants.localizationApiPath,
+          ));
       if (mounted) {
         context.router.replaceAll([
-          const PermissionsRoute(),
+          // Uncomment this line to go the permission route after selecting the project
+          // const PermissionsRoute(),
+          BoundarySelectionRoute(),
         ]);
       }
     } catch (e) {

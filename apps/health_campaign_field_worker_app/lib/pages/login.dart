@@ -98,84 +98,56 @@ class _LoginPageState extends LocalizedState<LoginPage> {
         foregroundColor: theme.colorTheme.paper.primary,
         backgroundColor: theme.colorTheme.primary.primary2,
       ),
-      body: BlocBuilder<LocalizationBloc, LocalizationState>(
-        builder: (context, localizationState) {
-          if (localizationState.isLocalizationLoadCompleted == false) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          return _buildLoginBody(context);
+      body: BlocListener<AuthBloc, AuthState>(
+        listener: (context, state) {
+          state.maybeWhen(
+            orElse: () {},
+            loading: () {
+              DigitLoaders.overlayLoader(context: context);
+            },
+            allow: () {
+              Navigator.of(context, rootNavigator: true).pop();
+              context.read<AuthBloc>().add(
+                    AuthLoginEvent(
+                      userId: _pendingUserId as String,
+                      password: _pendingPassword as String,
+                      tenantId: envConfig.variables.tenantId,
+                    ),
+                  );
+            },
+            otherDevice: () {
+              Navigator.of(context, rootNavigator: true).pop();
+              _showMultiDeviceLoginPopUp(
+                context,
+                username: _pendingUserId as String,
+                password: _pendingPassword as String,
+              );
+            },
+            error: (message) {
+              Navigator.of(context, rootNavigator: true).pop();
+              Toast.showToast(
+                context,
+                message: message ??
+                    localizations.translateWithDefault(
+                        i18.login.unableToLoginText,
+                        fallback: 'Impossible de se connecter'),
+                type: ToastType.error,
+              );
+            },
+          );
         },
-      ),
-    );
-  }
-
-  Widget _buildLoginBody(BuildContext context) {
-    final theme = Theme.of(context);
-    final textTheme = theme.digitTextTheme(context);
-    return BlocListener<AuthBloc, AuthState>(
-      listener: (context, state) {
-        state.maybeWhen(
-          orElse: () {},
-          loading: () {
-            DigitLoaders.overlayLoader(context: context);
-          },
-          allow: () {
-            Navigator.of(context, rootNavigator: true).pop();
-            context.read<AuthBloc>().add(
-                  AuthLoginEvent(
-                    userId: _pendingUserId as String,
-                    password: _pendingPassword as String,
-                    tenantId: envConfig.variables.tenantId,
-                  ),
-                );
-          },
-          otherDevice: () {
-            Navigator.of(context, rootNavigator: true).pop();
-            _showMultiDeviceLoginPopUp(
-              context,
-              username: _pendingUserId as String,
-              password: _pendingPassword as String,
-            );
-          },
-          error: (message) {
-            Navigator.of(context, rootNavigator: true).pop();
-            Toast.showToast(
-              context,
-              message: message ??
-                  localizations.translate(i18.login.unableToLoginText),
-              type: ToastType.error,
-            );
-          },
-        );
-      },
-      child: ScrollableContent(
-        children: [
-          ReactiveFormBuilder(
-            form: buildForm,
-            builder: (context, form, child) {
-              return DigitCard(
-                margin: const EdgeInsets.all(spacer2),
-                children: [
-                  Text(
-                    localizations.translate(
-                      i18.login.labelText,
-                    ),
-                    style: textTheme.headingXl.copyWith(
-                      color: theme.colorTheme.primary.primary2,
-                    ),
-                  ),
-                  ReactiveWrapperField(
-                    formControlName: _userId,
-                    validationMessages: {
-                      "required": (control) {
-                        return localizations.translate(
-                          '${i18.login.userIdPlaceholder}_IS_REQUIRED',
-                        );
-                      },
-                    },
-                    builder: (field) => LabeledField(
-                      label: localizations.translate(
-                        i18.login.userIdPlaceholder,
+        child: ScrollableContent(
+          children: [
+            ReactiveFormBuilder(
+              form: buildForm,
+              builder: (context, form, child) {
+                return DigitCard(
+                  margin: const EdgeInsets.all(spacer2),
+                  children: [
+                    Text(
+                      localizations.translateWithDefault(
+                        i18.login.labelText,
+                        fallback: 'Connexion',
                       ),
                       capitalizedFirstLetter: false,
                       isRequired: true,
@@ -188,39 +160,70 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                         },
                       ),
                     ),
-                  ),
-                  ReactiveWrapperField(
-                    formControlName: _password,
-                    validationMessages: {
-                      "required": (control) {
-                        return localizations.translate(
-                          '${i18.login.passwordPlaceholder}_IS_REQUIRED',
-                        );
-                      },
-                    },
-                    builder: (field) => LabeledField(
-                      label: localizations.translate(
-                        i18.login.passwordPlaceholder,
-                      ),
-                      isRequired: true,
-                      child: DigitPasswordFormInput(
-                        initialValue: form.control(_password).value,
-                        errorMessage: field.errorText,
-                        onChange: (value) {
-                          form.control(_password).value = value;
+                    ReactiveWrapperField(
+                      formControlName: _userId,
+                      validationMessages: {
+                        "required": (control) {
+                          return localizations.translateWithDefault(
+                            '${i18.login.userIdPlaceholder}_IS_REQUIRED',
+                            fallback:
+                                'Identifiant de l\'utilisateur est obligatoire',
+                          );
                         },
-                        keyboardType: TextInputType.text,
+                      },
+                      builder: (field) => LabeledField(
+                        label: localizations.translateWithDefault(
+                          i18.login.userIdPlaceholder,
+                          fallback: 'Identifiant de l\'utilisateur',
+                        ),
+                        capitalizedFirstLetter: false,
+                        isRequired: true,
+                        child: DigitTextFormInput(
+                          keyboardType: TextInputType.text,
+                          initialValue: form.control(_userId).value,
+                          errorMessage: field.errorText,
+                          onChange: (value) {
+                            form.control(_userId).value = value;
+                          },
+                        ),
                       ),
                     ),
-                  ),
-                  BlocBuilder<AppInitializationBloc, AppInitializationState>(
-                    builder: (context, state) {
-                      return DigitButton(
-                        label: localizations.translate(i18.login.actionLabel),
-                        type: DigitButtonType.primary,
-                        onPressed: () {
-                          form.markAllAsTouched();
-                          if (!form.valid) return;
+                    ReactiveWrapperField(
+                      formControlName: _password,
+                      validationMessages: {
+                        "required": (control) {
+                          return localizations.translateWithDefault(
+                            '${i18.login.passwordPlaceholder}_IS_REQUIRED',
+                            fallback: 'Le mot de passe est obligatoire',
+                          );
+                        },
+                      },
+                      builder: (field) => LabeledField(
+                        label: localizations.translateWithDefault(
+                          i18.login.passwordPlaceholder,
+                          fallback: 'Mot de passe',
+                        ),
+                        isRequired: true,
+                        child: DigitPasswordFormInput(
+                          initialValue: form.control(_password).value,
+                          errorMessage: field.errorText,
+                          onChange: (value) {
+                            form.control(_password).value = value;
+                          },
+                          keyboardType: TextInputType.text,
+                        ),
+                      ),
+                    ),
+                    BlocBuilder<AppInitializationBloc, AppInitializationState>(
+                      builder: (context, state) {
+                        return DigitButton(
+                          label: localizations.translateWithDefault(
+                              i18.login.actionLabel,
+                              fallback: 'Connexion'),
+                          type: DigitButtonType.primary,
+                          onPressed: () {
+                            form.markAllAsTouched();
+                            if (!form.valid) return;
 
                           FocusManager.instance.primaryFocus?.unfocus();
 
@@ -240,10 +243,10 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                             orElse: () => false,
                           );
 
-                          if (singleUserLogin) {
-                            _checkOtherDeviceLogin(
-                                context, _pendingUserId as String);
-                          } else {
+                            // if (singleUserLogin) {
+                            //   _checkOtherDeviceLogin(
+                            //       context, _pendingUserId as String);
+                            // } else {
                             context.read<AuthBloc>().add(
                                   AuthLoginEvent(
                                     userId: _pendingUserId as String,
@@ -251,55 +254,61 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                                     tenantId: envConfig.variables.tenantId,
                                   ),
                                 );
-                          }
-                        },
-                        size: DigitButtonSize.large,
-                        mainAxisSize: MainAxisSize.max,
-                      );
-                    },
-                  ),
-                  DigitButton(
-                    label: localizations.translate(
-                      i18.forgotPassword.actionLabel,
+                            // }
+                          },
+                          size: DigitButtonSize.large,
+                          mainAxisSize: MainAxisSize.max,
+                        );
+                      },
                     ),
-                    capitalizeLetters: false,
-                    mainAxisSize: MainAxisSize.max,
-                    type: DigitButtonType.tertiary,
-                    size: DigitButtonSize.medium,
-                    onPressed: () => showCustomPopup(
-                      context: context,
-                      builder: (ctx) => Popup(
-                        title: localizations.translate(
-                          i18.forgotPassword.labelText,
-                        ),
-                        description: localizations.translate(
-                          i18.forgotPassword.contentText,
-                        ),
-                        onOutsideTap: () {
-                          Navigator.of(ctx).pop();
-                        },
-                        type: PopUpType.simple,
-                        actions: [
-                          DigitButton(
-                            label: localizations.translate(
-                              i18.forgotPassword.primaryActionLabel,
-                            ),
-                            onPressed: () {
-                              Navigator.of(ctx).pop();
-                              context.router.popUntilRoot();
-                            },
-                            type: DigitButtonType.primary,
-                            size: DigitButtonSize.large,
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        ],
+                    // DigitButton(
+                    //   label: localizations.translateWithDefault(
+                    //     i18.forgotPassword.actionLabel,
+                    //     fallback: 'Mot De Passe Oublié ?',
+                    //   ),
+                    //   capitalizeLetters: false,
+                    //   mainAxisSize: MainAxisSize.max,
+                    //   type: DigitButtonType.tertiary,
+                    //   size: DigitButtonSize.medium,
+                    //   onPressed: () => showCustomPopup(
+                    //     context: context,
+                    //     builder: (ctx) => Popup(
+                    //       title: localizations.translateWithDefault(
+                    //         i18.forgotPassword.labelText,
+                    //         fallback: 'Mot de passe oublié',
+                    //       ),
+                    //       description: localizations.translateWithDefault(
+                    //         i18.forgotPassword.contentText,
+                    //         fallback:
+                    //             'Veuillez contacter votre administrateur si vous avez oublié votre mot de passe.',
+                    //       ),
+                    //       onOutsideTap: () {
+                    //         Navigator.of(ctx).pop();
+                    //       },
+                    //       type: PopUpType.simple,
+                    //       actions: [
+                    //         DigitButton(
+                    //           label: localizations.translateWithDefault(
+                    //             i18.forgotPassword.primaryActionLabel,
+                    //             fallback: 'D\'accord',
+                    //           ),
+                    //           onPressed: () {
+                    //             Navigator.of(ctx).pop();
+                    //             context.router.popUntilRoot();
+                    //           },
+                    //           type: DigitButtonType.primary,
+                    //           size: DigitButtonSize.large,
+                    //         )
+                    //       ],
+                    //     ),
+                    //   ),
+                    // ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -24,7 +24,11 @@ class TaskStatus {
   static const String beneficiaryMigrated = 'BENEFICIARY_MIGRATED';
   static const String beneficiaryAbsent = 'BENEFICIARY_ABSENT';
   static const String beneficiaryRefused = 'BENEFICIARY_REFUSED';
+  static const String beneficiaryReferred = 'BENEFICIARY_REFERRED';
+  static const String sideEffect = 'SIDE_EFFECT';
+  static const String adverseEffect = 'ADVERSE_EFFECT';
   static const String visited = 'VISITED';
+  static const String notAdministered = 'NOT_ADMINISTERED';
 }
 
 /// The signature for a function that can be registered in the [FunctionRegistry].
@@ -633,6 +637,7 @@ void initializeFunctionRegistry() {
       case 'age':
         final dob = parseDate(rawValue);
         if (dob == null) return '--';
+        if (dob.year == 1970 && dob.month == 1 && dob.day == 1) return '--';
         final age = DigitDateUtils.calculateAge(dob);
         return "${age.years}y ${age.months}m";
 
@@ -677,6 +682,9 @@ void initializeFunctionRegistry() {
         }
 
         if (birthDate == null) return 0;
+        if (birthDate.year == 1970 &&
+            birthDate.month == 1 &&
+            birthDate.day == 1) return 0;
 
         final now = DateTime.now();
         final months =
@@ -709,34 +717,72 @@ void initializeFunctionRegistry() {
   /// 3. If the `checkStatus` function allows for a new task to be created.
   FunctionRegistry.register('checkEligibilityForAgeAndSideEffect',
       (args, stateData) {
-    if (args.isEmpty) return false;
+    print('DEBUG: checkEligibilityForAgeAndSideEffect - STARTED. args=$args');
+    if (args.isEmpty) {
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - args is empty. returning false.');
+      return false;
+    }
 
-// --- Resolve individual (Map / EntityModel) and its DOB ---
-    final individual = args.first;
-    final dob = _resolveDateOfBirth(individual);
-    if (dob == null) return false;
+    final projectType = FlowBuilderSingleton().projectType;
+    if (projectType == null) {
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - projectType is null. returning false.');
+      return false;
+    }
+
+    // --- Current active cycle ---
+    var currentCycle = projectType.cycles?.firstWhereOrNull(
+      (e) =>
+          (e.startDate ?? 0) < DateTime.now().millisecondsSinceEpoch &&
+          (e.endDate ?? 0) > DateTime.now().millisecondsSinceEpoch,
+    );
+
+    if (currentCycle == null &&
+        projectType.cycles != null &&
+        projectType.cycles!.isNotEmpty) {
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - currentCycle is null, falling back to first cycle');
+      currentCycle = projectType.cycles!.first;
+    }
+
+    if (currentCycle == null) {
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - currentCycle is still null after fallback. returning false.');
+      return false;
+    }
+
+    final tasks = args.length > 1 ? args[1] : [];
+    final dobValue = args.first;
+    if (dobValue == null) {
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - dobValue is null. returning false.');
+      return false;
+    }
+
+    DateTime? dob;
+    if (dobValue is int) {
+      dob = DateTime.fromMillisecondsSinceEpoch(dobValue);
+    } else if (dobValue is String) {
+      final timestamp = int.tryParse(dobValue);
+      if (timestamp != null) {
+        dob = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      } else {
+        dob = DigitDateUtils.getFormattedDateToDateTime(dobValue);
+      }
+    } else if (dobValue is DateTime) {
+      dob = dobValue;
+    }
+
+    if (dob == null) {
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - dob parsed to null. dobValue=$dobValue. returning false.');
+      return false;
+    }
 
     final age = DigitDateUtils.calculateAge(dob);
-    final totalAgeMonths = age.years * 12 + age.months;
-
-// --- ProjectType comes from FlowBuilderSingleton ---
-    final projectType = FlowBuilderSingleton().projectType;
-    if (projectType == null) return false;
-
-// --- Tasks & SideEffects come from stateData ---
-    final rawTasks = args.length > 1 ? args[1] : [];
-    final tasks = rawTasks is List
-        ? _filterByFlow(rawTasks, keepRi: false)
-        : <Map<String, dynamic>>[];
+    final totalAgeMonths = (age.years * 12) + age.months;
     final sideEffects = (stateData.modelMap['sideEffects'] as List?) ?? [];
-
-// --- Current active cycle ---
-    final currentCycle = projectType.cycles?.firstWhereOrNull(
-      (e) =>
-          e.startDate < DateTime.now().millisecondsSinceEpoch &&
-          e.endDate > DateTime.now().millisecondsSinceEpoch,
-    );
-    if (currentCycle == null) return false;
 
 // --- Check eligibility (age, plus weight/height when recorded) ---
     final isWithinAge =
@@ -806,16 +852,90 @@ void initializeFunctionRegistry() {
           if (taskCycleIndex != currentRunningCycle) continue;
         }
 
-        if (task['status'] == TaskStatus.ineligible ||
-            task['status'] == TaskStatus.beneficiaryMigrated ||
-            task['status'] == TaskStatus.beneficiaryAbsent ||
-            task['status'] == TaskStatus.beneficiaryRefused) return false;
+        String taskStatus =
+            task['status']?.toString().toUpperCase().trim() ?? '';
+
+        if (taskStatus == TaskStatus.notAdministered) {
+          final additionalFields = task['additionalFields'];
+          if (additionalFields is Map) {
+            final fields = additionalFields['fields'] as List?;
+            if (fields != null) {
+              final taskStatusField = fields.firstWhereOrNull((f) =>
+                  (f is Map ? f['key'] : null) == 'TaskStatus' ||
+                  (f is Map ? f['key'] : null) == 'taskStatus');
+              if (taskStatusField != null) {
+                taskStatus = (taskStatusField as Map)['value']
+                        ?.toString()
+                        .toUpperCase() ??
+                    taskStatus;
+              }
+            }
+          }
+        }
+
+        if (taskStatus == TaskStatus.beneficiaryRefused ||
+            taskStatus == TaskStatus.beneficiaryAbsent ||
+            taskStatus == TaskStatus.beneficiaryReferred ||
+            taskStatus == TaskStatus.adverseEffect) {
+          return true;
+        }
+
+        if (taskStatus == TaskStatus.ineligible ||
+            taskStatus == TaskStatus.beneficiaryMigrated ||
+            taskStatus == TaskStatus.sideEffect ||
+            taskStatus == TaskStatus.notAdministered) return false;
       }
     }
 
-    if (tasks.isNotEmpty && sideEffects.isNotEmpty) {
-      final lastTask = tasks.last as Map<String, dynamic>;
-      final lastSideEffect = sideEffects.last as Map<String, dynamic>;
+    if (tasks != null &&
+        tasks is List &&
+        tasks.isNotEmpty &&
+        sideEffects.isNotEmpty) {
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - Tasks and SideEffects are NOT empty!');
+      final lastTaskItem = tasks.last;
+      Map<String, dynamic>? lastTask;
+
+      if (lastTaskItem is Map<String, dynamic>) {
+        lastTask = lastTaskItem;
+      } else if (lastTaskItem is Map) {
+        lastTask = Map<String, dynamic>.from(lastTaskItem);
+      } else {
+        try {
+          lastTask = (lastTaskItem as dynamic).toMap() as Map<String, dynamic>;
+        } catch (_) {
+          try {
+            lastTask =
+                (lastTaskItem as dynamic).toJson() as Map<String, dynamic>;
+          } catch (e) {
+            print(
+                'DEBUG: checkEligibilityForAgeAndSideEffect - Failed to parse lastTask: $e');
+            return _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
+          }
+        }
+      }
+
+      final lastSideEffectItem = sideEffects.last;
+      Map<String, dynamic>? lastSideEffect;
+      if (lastSideEffectItem is Map<String, dynamic>) {
+        lastSideEffect = lastSideEffectItem;
+      } else if (lastSideEffectItem is Map) {
+        lastSideEffect = Map<String, dynamic>.from(lastSideEffectItem);
+      } else {
+        try {
+          lastSideEffect =
+              (lastSideEffectItem as dynamic).toMap() as Map<String, dynamic>;
+        } catch (_) {
+          try {
+            lastSideEffect = (lastSideEffectItem as dynamic).toJson()
+                as Map<String, dynamic>;
+          } catch (e) {
+            print(
+                'DEBUG: checkEligibilityForAgeAndSideEffect - Failed to parse lastSideEffect: $e');
+            return _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
+          }
+        }
+      }
 
       final lastTaskTime = (lastTask['clientReferenceId'] ==
               lastSideEffect['taskClientReferenceId'])
@@ -823,21 +943,27 @@ void initializeFunctionRegistry() {
           : null;
 
       recordedSideEffect = lastTaskTime != null &&
-          (lastTaskTime >= currentCycle.startDate &&
-              lastTaskTime <= currentCycle.endDate);
+          (DateTime.now().millisecondsSinceEpoch - lastTaskTime) <= 172800000;
 
       final isWithinAge =
           _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
+
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - isWithinAge=$isWithinAge, recordedSideEffect=$recordedSideEffect');
 
       if (!isWithinAge) return false;
 
       final checkStatusFn = FunctionRegistry.get('checkStatus');
       final statusOk = checkStatusFn?.call([], stateData) as bool? ?? false;
 
+      print('DEBUG: checkEligibilityForAgeAndSideEffect - statusOk=$statusOk');
+
       return recordedSideEffect && !statusOk ? false : true;
     } else {
-      return _isEligibleFromDoseCriteria(
-          currentCycle, totalAgeMonths, individual);
+      final res = _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
+      print(
+          'DEBUG: checkEligibilityForAgeAndSideEffect - No side effects or tasks, returning _isAgeEligibleFromDoseCriteria: $res');
+      return res;
     }
   });
 
@@ -849,24 +975,94 @@ void initializeFunctionRegistry() {
     final projectType = FlowBuilderSingleton().projectType;
     if (projectType == null) return TaskStatus.ineligible;
 
-    // --- Current active cycle ---
-    Map<String, dynamic>? currentCycle;
-    for (final e in projectType.cycles ?? []) {
-      if ((e.startDate ?? 0) < DateTime.now().millisecondsSinceEpoch &&
-          (e.endDate ?? 0) > DateTime.now().millisecondsSinceEpoch) {
-        currentCycle = {
-          "startDate": e.startDate,
-          "endDate": e.endDate,
-        };
-        break;
-      }
-    }
-    if (currentCycle == null) return TaskStatus.ineligible;
-
-    final rawTasks = args.first;
+    final tasks = args.first;
 
     // Must be a non-empty list of tasks
-    if (rawTasks is! List || rawTasks.isEmpty) return TaskStatus.ineligible;
+    if (tasks is! List || tasks.isEmpty) return TaskStatus.ineligible;
+
+    // Resolve current active cycle
+    final _cycleId = projectType.cycles
+        ?.firstWhereOrNull(
+          (e) =>
+              (e.startDate ?? 0) < DateTime.now().millisecondsSinceEpoch &&
+              (e.endDate ?? 0) > DateTime.now().millisecondsSinceEpoch,
+        )
+        ?.id;
+
+    // Helper: extract cycleIndex from a task — handles both Map and AdditionalField model
+    int? _getCycleIdx(dynamic t) {
+      List? fields;
+      // Path 1: task is a Map (already serialized)
+      if (t is Map) {
+        final af = t['additionalFields'];
+        if (af is Map) {
+          fields = af['fields'] as List?;
+        } else if (af is List) {
+          fields = af;
+        } else if (af != null) {
+          try { fields = (af as dynamic).fields as List?; } catch (_) {}
+        }
+      } else {
+        // Path 2: task is a TaskModel — use dynamic access
+        try {
+          final af = (t as dynamic).additionalFields;
+          if (af != null) {
+            try { fields = (af as dynamic).fields as List?; } catch (_) {
+              if (af is Map) fields = af['fields'] as List?;
+            }
+          }
+        } catch (_) {}
+      }
+      if (fields == null) return null;
+      for (final f in fields) {
+        // Handle both Map fields and AdditionalField model objects
+        String? key;
+        String? value;
+        if (f is Map) {
+          key = f['key']?.toString();
+          value = f['value']?.toString();
+        } else {
+          try { key = (f as dynamic).key?.toString(); } catch (_) {}
+          try { value = (f as dynamic).value?.toString(); } catch (_) {}
+        }
+        if (key == 'cycleIndex') {
+          return int.tryParse(value ?? '');
+        }
+      }
+      return null;
+    }
+
+    // Filter to current cycle tasks only.
+    // Tasks WITHOUT a cycleIndex are excluded (they come from older code — treat as prior cycle).
+    final filteredTasks = _cycleId != null
+        ? (tasks as List).where((t) {
+            final tCycle = _getCycleIdx(t);
+            return tCycle == _cycleId;
+          }).toList()
+        : tasks;
+
+    if (filteredTasks is List && filteredTasks.isEmpty) {
+      return TaskStatus.ineligible;
+    }
+
+    // Get the last task (of current cycle) and convert to Map if needed
+    final item = (filteredTasks as List).last;
+    Map<String, dynamic>? lastTask;
+    if (item is Map<String, dynamic>) {
+      lastTask = item;
+    } else if (item is Map) {
+      lastTask = Map<String, dynamic>.from(item);
+    } else {
+      try {
+        lastTask = (item as dynamic).toMap() as Map<String, dynamic>;
+      } catch (_) {
+        try {
+          lastTask = (item as dynamic).toJson() as Map<String, dynamic>;
+        } catch (_) {
+          return '';
+        }
+      }
+    }
 
     // Only consider SMC tasks (exclude RI tasks marked with flow == 'riDone')
     final tasks = _filterByFlow(rawTasks, keepRi: false);
@@ -879,18 +1075,45 @@ void initializeFunctionRegistry() {
 
     if (status.isEmpty) return TaskStatus.ineligible.toString();
 
+    if (status == TaskStatus.administrationSuccess ||
+        status == TaskStatus.delivered) {
+      return 'NONE';
+    }
+
+    if (status == TaskStatus.notAdministered) {
+      final additionalFields = lastTask['additionalFields'];
+      if (additionalFields is Map) {
+        final fields = additionalFields['fields'] as List?;
+        if (fields != null) {
+          final taskStatusField = fields.firstWhereOrNull((f) =>
+              (f is Map ? f['key'] : null) == 'TaskStatus' ||
+              (f is Map ? f['key'] : null) == 'taskStatus');
+          if (taskStatusField != null) {
+            return (taskStatusField as Map)['value']
+                    ?.toString()
+                    .toUpperCase() ??
+                status;
+          }
+        }
+      }
+      return status;
+    }
+
     // Return the status string for ineligible/non-delivered statuses
     if (status == TaskStatus.ineligible ||
         status == TaskStatus.beneficiaryDied ||
         status == TaskStatus.beneficiaryMigrated ||
         status == TaskStatus.beneficiaryAbsent ||
         status == TaskStatus.beneficiaryRefused ||
+        status == TaskStatus.beneficiaryReferred ||
+        status == TaskStatus.sideEffect ||
+        status == TaskStatus.adverseEffect ||
         status == TaskStatus.notDelivered) {
       return status;
     }
 
     // Default to ineligible
-    return TaskStatus.ineligible;
+    return TaskStatus.ineligible.toString();
   });
 
   FunctionRegistry.register("isSMCFlowDone", (args, stateData) {
@@ -965,36 +1188,115 @@ void initializeFunctionRegistry() {
 
   FunctionRegistry.register("isDelivered", (args, stateData) {
     // No arguments passed
-    if (args.isEmpty) return false;
+    if (args.isEmpty) {
+      print('DEBUG: isDelivered - args is empty');
+      return false;
+    }
 
     final tasks = args.first;
 
-    for (var task in tasks ?? []) {
-      final statusValue = task.status;
-      if (statusValue is! String) continue;
-      final status = statusValue.trim().toUpperCase();
-      final List? fields = task.additionalFields?.fields;
-      final flowType = fields
-          ?.firstWhereOrNull((f) => f.key == 'flow')
-          ?.value
-          ?.toString()
-          .trim()
-          .toUpperCase();
+    if (tasks == null) {
+      print('DEBUG: isDelivered - tasks is null');
+      return false;
+    }
 
-      // Match valid delivered statuses
-      if ((status == TaskStatus.administrationSuccess ||
-              status == TaskStatus.delivered) &&
-          flowType == 'SMCDONE') {
-        return true;
+    if (tasks is! List || tasks.isEmpty) {
+      print('DEBUG: isDelivered - tasks is not list or is empty');
+      return false;
+    }
+
+    // Resolve current active cycle
+    final _cycleId = FlowBuilderSingleton().projectType?.cycles
+        ?.firstWhereOrNull(
+          (e) =>
+              (e.startDate ?? 0) < DateTime.now().millisecondsSinceEpoch &&
+              (e.endDate ?? 0) > DateTime.now().millisecondsSinceEpoch,
+        )
+        ?.id;
+
+    // Helper: extract cycleIndex — handles both Map and AdditionalField model objects
+    int? _getCycleIndex(dynamic t) {
+      List? fields;
+      if (t is Map) {
+        final af = t['additionalFields'];
+        if (af is Map) {
+          fields = af['fields'] as List?;
+        } else if (af is List) {
+          fields = af;
+        } else if (af != null) {
+          try { fields = (af as dynamic).fields as List?; } catch (_) {}
+        }
+      } else {
+        try {
+          final af = (t as dynamic).additionalFields;
+          if (af != null) {
+            try { fields = (af as dynamic).fields as List?; } catch (_) {
+              if (af is Map) fields = af['fields'] as List?;
+            }
+          }
+        } catch (_) {}
+      }
+      if (fields == null) return null;
+      for (final f in fields) {
+        String? key;
+        String? value;
+        if (f is Map) {
+          key = f['key']?.toString();
+          value = f['value']?.toString();
+        } else {
+          try { key = (f as dynamic).key?.toString(); } catch (_) {}
+          try { value = (f as dynamic).value?.toString(); } catch (_) {}
+        }
+        if (key == 'cycleIndex') {
+          return int.tryParse(value ?? '');
+        }
+      }
+      return null;
+    }
+
+    // Filter to current cycle tasks only.
+    // Tasks WITHOUT a cycleIndex are excluded — treat as prior cycle.
+    final filteredTasks = _cycleId != null
+        ? tasks.where((t) {
+            final tCycle = _getCycleIndex(t);
+            return tCycle == _cycleId;
+          }).toList()
+        : tasks;
+
+    if (filteredTasks.isEmpty) {
+      print('DEBUG: isDelivered - no tasks for current cycle');
+      return false;
+    }
+
+    final item = filteredTasks.last;
+    Map<String, dynamic>? lastTask;
+
+    if (item is Map<String, dynamic>) {
+      lastTask = item;
+    } else if (item is Map) {
+      lastTask = Map<String, dynamic>.from(item);
+    } else {
+      try {
+        lastTask = (item as dynamic).toMap() as Map<String, dynamic>;
+      } catch (_) {
+        try {
+          lastTask = (item as dynamic).toJson() as Map<String, dynamic>;
+        } catch (e) {
+          print('DEBUG: isDelivered - failed to parse last task: $e');
+          return false;
+        }
       }
     }
-    return false;
-  });
 
-  // Registers a function to check if VAS has been delivered for a member.
-  FunctionRegistry.register("isVASDelivered", (args, stateData) {
-    // No arguments passed
-    if (args.isEmpty) return false;
+    if (lastTask == null) {
+      print('DEBUG: isDelivered - lastTask is null after parse');
+      return false;
+    }
+
+    // Normalize (uppercase + trim)
+    final status = lastTask['status']?.toString().trim().toUpperCase() ?? '';
+
+    print('DEBUG: isDelivered - status evaluated to: $status');
 
     final tasks = args.first;
 
@@ -1161,6 +1463,82 @@ void initializeFunctionRegistry() {
       }).toList();
 
       if (deliveryTasks.isEmpty) return false;
+
+      // --- Early-exit: if ANY delivery task in the current cycle was
+      // successfully administered, all doses are considered delivered.
+      // This prevents the re-delivery loop when a beneficiary has an
+      // ADVERSE_EFFECT task recorded AFTER a prior ADMINISTRATION_SUCCESS
+      // (e.g., "Record Adverse Effect" post-administration flow).
+      final hasSuccessfulAdministration = deliveryTasks.any((t) {
+        final status = t['status']?.toString().toUpperCase().trim() ?? '';
+        if (status != TaskStatus.administrationSuccess &&
+            status != TaskStatus.delivered) {
+          return false;
+        }
+        // Verify it belongs to the current cycle (if cycle info is available)
+        if (selectedCycle.id != null && selectedCycle.id != 0) {
+          final af = t['additionalFields'];
+          final fields = af is Map ? af['fields'] as List? : null;
+          if (fields != null) {
+            for (final field in fields) {
+              if (field is Map && field['key'] == 'cycleIndex') {
+                final cycleIdx = int.tryParse(field['value']?.toString() ?? '');
+                return cycleIdx == selectedCycle.id;
+              }
+            }
+          }
+        }
+        return true;
+      });
+
+      if (hasSuccessfulAdministration) {
+        // Check whether the last *administered* dose satisfies the full cycle
+        // delivery count — reuse normal logic on the last ADMINISTRATION_SUCCESS
+        // task rather than the last task overall (which may be ADVERSE_EFFECT).
+        final lastAdministeredTask = deliveryTasks.lastWhere(
+          (t) {
+            final s = t['status']?.toString().toUpperCase().trim() ?? '';
+            return s == TaskStatus.administrationSuccess ||
+                s == TaskStatus.delivered;
+          },
+          orElse: () => <String, dynamic>{},
+        );
+
+        if (lastAdministeredTask.isEmpty) return true;
+
+        final af = lastAdministeredTask['additionalFields'];
+        final fields = af is Map ? af['fields'] as List? : null;
+        int? lastCycleIdx;
+        int? lastDoseIdx;
+        if (fields != null) {
+          for (final field in fields) {
+            if (field is Map) {
+              if (field['key'] == 'cycleIndex') {
+                lastCycleIdx = int.tryParse(field['value']?.toString() ?? '');
+              }
+              if (field['key'] == 'doseIndex') {
+                lastDoseIdx = int.tryParse(field['value']?.toString() ?? '');
+              }
+            }
+          }
+        }
+
+        final directDeliveriesEarly = selectedCycle.deliveries
+                ?.where((d) => d.deliveryStrategy?.toUpperCase() == 'DIRECT')
+                .toList() ??
+            [];
+        final targetLengthEarly = directDeliveriesEarly.isNotEmpty
+            ? directDeliveriesEarly.length
+            : selectedCycle.deliveries?.length;
+
+        if ((lastDoseIdx == null || lastDoseIdx == targetLengthEarly) &&
+            (lastCycleIdx == null || lastCycleIdx == selectedCycle.id)) {
+          return true; // All doses delivered
+        }
+        // Doses remain (multi-dose cycle, not all done yet)
+        return false;
+      }
+
       final lastTask = deliveryTasks.last;
 
       // Extract cycleIndex from additionalFields
@@ -1187,19 +1565,49 @@ void initializeFunctionRegistry() {
         }
       }
 
-      final lastTaskStatus = lastTask['status']?.toString().toUpperCase();
-      final isDelivered = lastTaskStatus == 'DELIVERED';
-      final isSMC = taskType == "smcDone";
+      String lastTaskStatus =
+          lastTask['status']?.toString().toUpperCase() ?? '';
 
-      // If last dose equals total deliveries in cycle AND cycle matches AND status is NOT delivered
-      // -> return true (last dose attempted but not delivered)
-      if (lastDose != null &&
-          lastDose == selectedCycle.deliveries?.length &&
-          lastCycle != null &&
-          lastCycle == selectedCycle.id &&
-          isSMC &&
-          (lastTaskStatus == 'ADMINISTRATION_SUCCESS' ||
-              lastTaskStatus == 'DELIVERED')) {
+      if (lastTaskStatus == TaskStatus.notAdministered) {
+        final additionalFields = lastTask['additionalFields'];
+        if (additionalFields is Map) {
+          final fields = additionalFields['fields'] as List?;
+          if (fields != null) {
+            final taskStatusField = fields.firstWhereOrNull((f) =>
+                (f is Map ? f['key'] : null) == 'TaskStatus' ||
+                (f is Map ? f['key'] : null) == 'taskStatus');
+            if (taskStatusField != null) {
+              lastTaskStatus =
+                  (taskStatusField as Map)['value']?.toString().toUpperCase() ??
+                      lastTaskStatus;
+            }
+          }
+        }
+      }
+
+      if (lastTaskStatus == TaskStatus.beneficiaryRefused ||
+          lastTaskStatus == TaskStatus.beneficiaryAbsent ||
+          lastTaskStatus == TaskStatus.beneficiaryReferred ||
+          lastTaskStatus == TaskStatus.adverseEffect) {
+        return false;
+      }
+
+      final isDelivered = lastTaskStatus == 'ADMINISTRATION_SUCCESS' ||
+          lastTaskStatus == 'DELIVERED';
+
+      final directDeliveries = selectedCycle.deliveries
+              ?.where((d) => d.deliveryStrategy?.toUpperCase() == 'DIRECT')
+              .toList() ??
+          [];
+      final targetLength = directDeliveries.isNotEmpty
+          ? directDeliveries.length
+          : selectedCycle.deliveries?.length;
+
+      // If last dose equals total direct deliveries in cycle (or is null due to older task) AND cycle matches AND status is delivered
+      // -> return true (all doses delivered)
+      if ((lastDose == null || lastDose == targetLength) &&
+          (lastCycle == null || lastCycle == selectedCycle.id) &&
+          isDelivered) {
         return true;
       }
 
@@ -1654,68 +2062,146 @@ void initializeFunctionRegistry() {
     final doseIndex = int.tryParse(args[0]?.toString() ?? '') ?? -1;
     if (doseIndex < 0) return '';
 
-    // Get cycleIndex from second argument (required for accurate check)
     final cycleIndex =
         args.length > 1 ? int.tryParse(args[1]?.toString() ?? '') ?? -1 : -1;
     if (cycleIndex < 0) return '';
 
-    // Get date format from third argument (optional)
     final dateFormat =
         args.length > 2 ? args[2]?.toString() ?? 'dd MMM yyyy' : 'dd MMM yyyy';
 
-    // Get tasks from modelMap
-    final tasks = stateData.modelMap['tasks'] as List? ?? [];
+    final rawTasks = stateData.modelMap['tasks'] as List? ?? [];
 
-    // Find task with matching doseIndex AND cycleIndex in additionalFields
-    for (final task in tasks) {
-      if (task is! Map) continue;
-
-      // Get additionalFields.fields
-      final additionalFields = task['additionalFields'];
-      if (additionalFields == null) continue;
-
-      List? fields;
-      if (additionalFields is Map) {
-        fields = additionalFields['fields'] as List?;
-      } else if (additionalFields is List) {
-        fields = additionalFields;
-      }
-
-      if (fields == null) continue;
-
-      // Find doseIndex and cycleIndex in fields
+    for (final rawTask in rawTasks) {
       int? taskDoseIndex;
       int? taskCycleIndex;
+      int? createdTime;
+
+      // ── Helper: extract key/value from an AdditionalField (Map or model) ──
+      String? _fieldKey(dynamic f) {
+        if (f is Map) return f['key']?.toString();
+        try {
+          return (f as dynamic).key?.toString();
+        } catch (_) {}
+        return null;
+      }
+
+      String? _fieldValue(dynamic f) {
+        if (f is Map) return f['value']?.toString();
+        try {
+          return (f as dynamic).value?.toString();
+        } catch (_) {}
+        return null;
+      }
+
+      // ── Get the fields list from additionalFields (Map or AdditionalFields model) ──
+      List? _getFields(dynamic rawTask) {
+        // Try direct model property access first (TaskModel)
+        try {
+          final af = (rawTask as dynamic).additionalFields;
+          if (af != null) {
+            try {
+              return (af as dynamic).fields as List?;
+            } catch (_) {}
+            if (af is Map) return af['fields'] as List?;
+          }
+        } catch (_) {}
+
+        // Try as a plain Map (already serialized)
+        if (rawTask is Map) {
+          final af = rawTask['additionalFields'];
+          if (af is Map) return af['fields'] as List?;
+          if (af is List) return af;
+          if (af != null) {
+            try {
+              return (af as dynamic).fields as List?;
+            } catch (_) {}
+          }
+        }
+        return null;
+      }
+
+      // ── Get createdTime from clientAuditDetails or auditDetails ──
+      int? _getCreatedTime(dynamic rawTask) {
+        // Try direct model property access
+        try {
+          final cad = (rawTask as dynamic).clientAuditDetails;
+          if (cad != null) {
+            try {
+              final t = (cad as dynamic).createdTime;
+              if (t is int && t > 0) return t;
+              if (t != null) return int.tryParse(t.toString());
+            } catch (_) {}
+            if (cad is Map) {
+              final t = cad['createdTime'];
+              if (t is int && t > 0) return t;
+              if (t != null) return int.tryParse(t.toString());
+            }
+          }
+        } catch (_) {}
+
+        // Try as plain Map
+        if (rawTask is Map) {
+          for (final key in ['clientAuditDetails', 'auditDetails']) {
+            final ad = rawTask[key];
+            if (ad is Map) {
+              final t = ad['createdTime'];
+              if (t is int && t > 0) return t;
+              if (t != null) {
+                final v = int.tryParse(t.toString());
+                if (v != null && v > 0) return v;
+              }
+            }
+            if (ad != null) {
+              try {
+                final t = (ad as dynamic).createdTime;
+                if (t is int && t > 0) return t;
+                if (t != null) return int.tryParse(t.toString());
+              } catch (_) {}
+            }
+          }
+        }
+        return null;
+      }
+
+      // ── Process fields ──
+      final fields = _getFields(rawTask);
+      if (fields == null) continue;
+
+      int? dateOfRegistrationMs;
 
       for (final field in fields) {
-        if (field is Map) {
-          if (field['key'] == 'doseIndex') {
-            taskDoseIndex = int.tryParse(field['value']?.toString() ?? '');
-          }
-          if (field['key'] == 'cycleIndex') {
-            taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
+        final k = _fieldKey(field);
+        final v = _fieldValue(field);
+        if (k == 'doseIndex') taskDoseIndex = int.tryParse(v ?? '');
+        if (k == 'cycleIndex') taskCycleIndex = int.tryParse(v ?? '');
+        // Capture user-entered dateOfRegistration (stored as epoch ms or
+        // DateTime-serialised string from the form)
+        if (k == 'dateOfRegistration' && v != null && v.isNotEmpty) {
+          dateOfRegistrationMs = int.tryParse(v);
+          // Also handle ISO / formatted date strings stored by the transformer
+          if (dateOfRegistrationMs == null) {
+            try {
+              dateOfRegistrationMs =
+                  DateTime.parse(v).millisecondsSinceEpoch;
+            } catch (_) {}
           }
         }
       }
 
-      // Check if BOTH dose AND cycle match
       if (taskDoseIndex == doseIndex && taskCycleIndex == cycleIndex) {
-        // Found matching task, get createdTime from clientAuditDetails
-        final clientAuditDetails = task['clientAuditDetails'];
-        if (clientAuditDetails is Map) {
-          final createdTime = clientAuditDetails['createdTime'];
-          if (createdTime != null) {
-            try {
-              final timestamp = createdTime is int
-                  ? createdTime
-                  : int.tryParse(createdTime.toString()) ?? 0;
-              if (timestamp > 0) {
-                final date = DateTime.fromMillisecondsSinceEpoch(timestamp);
-                return DateFormat(dateFormat).format(date);
-              }
-            } catch (_) {
-              return '';
-            }
+        // Prefer the user-entered date over the system audit timestamp
+        final effectiveMs =
+            (dateOfRegistrationMs != null && dateOfRegistrationMs > 0)
+                ? dateOfRegistrationMs
+                : _getCreatedTime(rawTask);
+
+        createdTime = effectiveMs;
+        if (createdTime != null && createdTime > 0) {
+          try {
+            return DateFormat(dateFormat)
+                .format(DateTime.fromMillisecondsSinceEpoch(createdTime));
+          } catch (_) {
+            return '';
           }
         }
       }
@@ -1773,7 +2259,26 @@ void initializeFunctionRegistry() {
           }
 
           if (taskMap != null) {
-            final status = taskMap['status']?.toString().toUpperCase().trim();
+            String status =
+                taskMap['status']?.toString().toUpperCase().trim() ?? '';
+
+            if (status == TaskStatus.notAdministered) {
+              final additionalFields = taskMap['additionalFields'];
+              if (additionalFields is Map) {
+                final fields = additionalFields['fields'] as List?;
+                if (fields != null) {
+                  final taskStatusField = fields.firstWhereOrNull((f) =>
+                      (f is Map ? f['key'] : null) == 'TaskStatus' ||
+                      (f is Map ? f['key'] : null) == 'taskStatus');
+                  if (taskStatusField != null) {
+                    status = (taskStatusField as Map)['value']
+                            ?.toString()
+                            .toUpperCase() ??
+                        status;
+                  }
+                }
+              }
+            }
 
             // Disable if any task status is success
             if (status == TaskStatus.administrationSuccess ||
@@ -1781,12 +2286,20 @@ void initializeFunctionRegistry() {
               return true;
             }
 
+            if (status == TaskStatus.beneficiaryRefused ||
+                status == TaskStatus.beneficiaryAbsent ||
+                status == TaskStatus.beneficiaryReferred ||
+                status == TaskStatus.adverseEffect) {
+              // Do not disable edit for unable to deliver statuses, let them be re-administered
+              continue;
+            }
+
             // Disable if any task is not eligible
             if (status == TaskStatus.ineligible ||
                 status == TaskStatus.beneficiaryDied ||
                 status == TaskStatus.beneficiaryMigrated ||
-                status == TaskStatus.beneficiaryAbsent ||
-                status == TaskStatus.beneficiaryRefused) {
+                status == TaskStatus.sideEffect ||
+                status == TaskStatus.notAdministered) {
               return true;
             }
           }
@@ -1882,6 +2395,303 @@ void initializeFunctionRegistry() {
           : isHead is String &&
               (isHead.toLowerCase() == 'true' || isHead == '1');
     });
+  });
+
+  /// Computes the status string for an individual within a household.
+  ///
+  /// - **Function Name**: `'getIndividualStatus'`
+  /// - **Arguments**: First argument is the IndividualModel, second is the list of HouseholdMemberModels.
+  /// - **Returns**: `"IS_HEAD"` if the individual is the head of household, empty string otherwise.
+  FunctionRegistry.register("getIndividualStatus", (args, stateData) {
+    if (args.isEmpty || args[0] == null) return '';
+
+    final individual = args[0];
+    final members = args.length > 1 ? args[1] as List? : null;
+    final tasks = args.length > 2 ? args[2] as List? : null;
+    final pbs = args.length > 3 ? args[3] as List? : null;
+
+    debugPrint('getIndividualStatus called with:');
+    debugPrint(
+        'indRefId: ${individual is IndividualModel ? individual.clientReferenceId : (individual is Map ? individual['clientReferenceId'] : null)}');
+    debugPrint('tasks length: ${tasks?.length}, pbs length: ${pbs?.length}');
+
+    final String? indRefId = individual is IndividualModel
+        ? individual.clientReferenceId
+        : (individual is Map
+            ? individual['clientReferenceId']?.toString()
+            : null);
+
+    if (indRefId == null || indRefId.isEmpty) return '';
+
+    // Resolve current active cycle ID (same logic as checkAllDoseDelivered)
+    final _currentCycleId = FlowBuilderSingleton().projectType?.cycles
+        ?.firstWhereOrNull(
+          (e) =>
+              (e.startDate ?? 0) < DateTime.now().millisecondsSinceEpoch &&
+              (e.endDate ?? 0) > DateTime.now().millisecondsSinceEpoch,
+        )
+        ?.id;
+
+    // Step 1: Find the task matching the individual
+    dynamic matchedTask;
+
+    // Helper: extract cycleIndex from a task's additionalFields
+    int? _getTaskCycleIndex(dynamic t) {
+      final fields = t is TaskModel
+          ? t.additionalFields?.fields
+          : (t is Map && t['additionalFields'] != null
+              ? t['additionalFields']['fields'] as List?
+              : null);
+      if (fields == null) return null;
+      for (final f in fields) {
+        final key =
+            f is AdditionalField ? f.key : (f is Map ? f['key'] : null);
+        if (key == 'cycleIndex') {
+          final val =
+              f is AdditionalField ? f.value : (f is Map ? f['value'] : null);
+          return int.tryParse(val?.toString() ?? '');
+        }
+      }
+      return null;
+    }
+
+    if (tasks != null) {
+      final matchingTasks = tasks.where((t) {
+        if (t == null) return false;
+        final fields = t is TaskModel
+            ? t.additionalFields?.fields
+            : (t is Map && t['additionalFields'] != null
+                ? t['additionalFields']['fields'] as List?
+                : null);
+
+        final indRefField = fields?.firstWhereOrNull((f) =>
+            (f is AdditionalField ? f.key : (f is Map ? f['key'] : null)) ==
+            'individualClientReferenceId');
+
+        if (indRefField != null) {
+          final val = indRefField is AdditionalField
+              ? indRefField.value
+              : (indRefField as Map)['value'];
+          return val?.toString() == indRefId;
+        }
+        return false;
+      }).toList();
+
+      if (matchingTasks.isNotEmpty) {
+        // Filter to current cycle tasks only
+        final currentCycleTasks = _currentCycleId != null
+            ? matchingTasks
+                .where((t) {
+                  final tCycle = _getTaskCycleIndex(t);
+                  return tCycle == _currentCycleId;
+                })
+                .toList()
+            : matchingTasks;
+
+        final tasksToCheck =
+            currentCycleTasks.isNotEmpty ? currentCycleTasks : <dynamic>[];
+
+        if (tasksToCheck.isNotEmpty) {
+          tasksToCheck.sort((a, b) {
+            final timeA = a is TaskModel
+                ? (a.clientAuditDetails?.createdTime ?? 0)
+                : (a is Map
+                    ? ((a['clientAuditDetails'] ??
+                            a['auditDetails'])?['createdTime'] ??
+                        0)
+                    : 0);
+            final timeB = b is TaskModel
+                ? (b.clientAuditDetails?.createdTime ?? 0)
+                : (b is Map
+                    ? ((b['clientAuditDetails'] ??
+                            b['auditDetails'])?['createdTime'] ??
+                        0)
+                    : 0);
+            if (timeA != timeB) return timeB.compareTo(timeA);
+            return tasks.indexOf(b).compareTo(tasks.indexOf(a));
+          });
+          matchedTask = tasksToCheck.first;
+        }
+      }
+
+      // If not found, fall back to standard project beneficiary mapping
+      if (matchedTask == null && pbs != null) {
+        final pb = pbs.firstWhereOrNull((p) {
+          final benRefId = p is ProjectBeneficiaryModel
+              ? p.beneficiaryClientReferenceId
+              : (p is Map
+                  ? p['beneficiaryClientReferenceId']?.toString()
+                  : null);
+          return benRefId == indRefId;
+        });
+
+        final pbRefId = pb is ProjectBeneficiaryModel
+            ? pb.clientReferenceId
+            : (pb is Map ? pb['clientReferenceId']?.toString() : null);
+
+        if (pbRefId != null) {
+          final fallbackTasks = tasks.where((t) {
+            final tRef = t is TaskModel
+                ? t.projectBeneficiaryClientReferenceId
+                : (t is Map
+                    ? t['projectBeneficiaryClientReferenceId']?.toString()
+                    : null);
+            return tRef == pbRefId;
+          }).toList();
+
+          if (fallbackTasks.isNotEmpty) {
+            // Filter to current cycle tasks only
+            final currentCycleFallback = _currentCycleId != null
+                ? fallbackTasks
+                    .where((t) {
+                      final tCycle = _getTaskCycleIndex(t);
+                      return tCycle == _currentCycleId;
+                    })
+                    .toList()
+                : fallbackTasks;
+
+            final fallbackToCheck = currentCycleFallback.isNotEmpty
+                ? currentCycleFallback
+                : <dynamic>[];
+
+            if (fallbackToCheck.isNotEmpty) {
+              fallbackToCheck.sort((a, b) {
+                final timeA = a is TaskModel
+                    ? (a.clientAuditDetails?.createdTime ?? 0)
+                    : (a is Map
+                        ? ((a['clientAuditDetails'] ??
+                                a['auditDetails'])?['createdTime'] ??
+                            0)
+                        : 0);
+                final timeB = b is TaskModel
+                    ? (b.clientAuditDetails?.createdTime ?? 0)
+                    : (b is Map
+                        ? ((b['clientAuditDetails'] ??
+                                b['auditDetails'])?['createdTime'] ??
+                            0)
+                        : 0);
+                if (timeA != timeB) return timeB.compareTo(timeA);
+                return tasks.indexOf(b).compareTo(tasks.indexOf(a));
+              });
+              matchedTask = fallbackToCheck.first;
+            }
+          }
+        }
+      }
+    }
+
+    // Step 2: Extract status from matched task
+    if (matchedTask != null) {
+      final String? topLevelStatus = matchedTask is TaskModel
+          ? matchedTask.status
+          : (matchedTask as Map)['status']?.toString();
+
+      final fields = matchedTask is TaskModel
+          ? matchedTask.additionalFields?.fields
+          : (matchedTask is Map && matchedTask['additionalFields'] != null
+              ? matchedTask['additionalFields']['fields'] as List?
+              : null);
+
+      if (topLevelStatus?.toUpperCase() == TaskStatus.notAdministered) {
+        final statusField = fields?.firstWhereOrNull((f) =>
+            (f is AdditionalField ? f.key : (f is Map ? f['key'] : null)) ==
+                'TaskStatus' ||
+            (f is AdditionalField ? f.key : (f is Map ? f['key'] : null)) ==
+                'taskStatus');
+
+        if (statusField != null) {
+          final val = statusField is AdditionalField
+              ? statusField.value
+              : (statusField as Map)['value'];
+          if (val != null && val.toString().isNotEmpty) return val.toString();
+        }
+      }
+
+      final typeField = fields?.firstWhereOrNull((f) =>
+          (f is AdditionalField ? f.key : (f is Map ? f['key'] : null)) ==
+          'taskType');
+
+      if (typeField != null) {
+        final val = typeField is AdditionalField
+            ? typeField.value
+            : (typeField as Map)['value'];
+        if (val?.toString().toUpperCase() == 'REDOSE') {
+          return 'REDOSE_COMPLETED';
+        }
+      }
+
+      if (topLevelStatus != null && topLevelStatus.isNotEmpty)
+        return topLevelStatus;
+    }
+
+    // Step 3: If no task, check if they are the head
+    if (members != null && members.isNotEmpty) {
+      final member = members.firstWhereOrNull((m) {
+        final mRefId = m is HouseholdMemberModel
+            ? m.individualClientReferenceId
+            : (m is Map ? m['individualClientReferenceId']?.toString() : null);
+        return mRefId == indRefId;
+      });
+
+      if (member != null) {
+        final isHead = member is HouseholdMemberModel
+            ? member.isHeadOfHousehold
+            : (member as Map)['isHeadOfHousehold'];
+
+        final isHeadBool = isHead is bool
+            ? isHead
+            : (isHead?.toString().toLowerCase() == 'true' || isHead == '1');
+        if (isHeadBool) return 'IS_HEAD';
+      }
+    }
+
+    return 'NOT_VISITED';
+  });
+
+  /// Checks if an individual model represents the head of household.
+  ///
+  /// - **Function Name**: `'isIndividualHead'`
+  /// - **Arguments**: First argument is the IndividualModel, second is the list of HouseholdMemberModels.
+  /// - **Returns**: `true` if the individual is the head of household, `false` otherwise.
+  FunctionRegistry.register("isIndividualHead", (args, stateData) {
+    if (args.length < 2) return false;
+
+    final individual = args[0];
+    final membersList = args[1] as List?;
+
+    if (individual != null && membersList != null && membersList.isNotEmpty) {
+      String? individualRefId;
+      if (individual is IndividualModel) {
+        individualRefId = individual.clientReferenceId;
+      } else if (individual is Map) {
+        individualRefId = individual['clientReferenceId']?.toString();
+      }
+
+      if (individualRefId == null || individualRefId.isEmpty) return false;
+
+      for (final member in membersList) {
+        if (member == null) continue;
+
+        String? memberIndRefId;
+        dynamic isHead;
+
+        if (member is HouseholdMemberModel) {
+          memberIndRefId = member.individualClientReferenceId;
+          isHead = member.isHeadOfHousehold;
+        } else if (member is Map) {
+          memberIndRefId = member['individualClientReferenceId']?.toString();
+          isHead = member['isHeadOfHousehold'];
+        }
+
+        if (memberIndRefId == individualRefId) {
+          return isHead is bool
+              ? isHead
+              : isHead is String &&
+                  (isHead.toLowerCase() == 'true' || isHead == '1');
+        }
+      }
+    }
+    return false;
   });
 
   /// Checks if a referral exists for the current running cycle.
@@ -2137,7 +2947,24 @@ void initializeFunctionRegistry() {
 
     if (identifier == null) return false;
 
-    if (identifier["identifierType"] == 'UNIQUE_BENEFICIARY_ID') {
+    Map<String, dynamic> idMap;
+    if (identifier is Map) {
+      idMap = Map<String, dynamic>.from(identifier);
+    } else {
+      try {
+        idMap = (identifier as dynamic).toMap() as Map<String, dynamic>;
+      } catch (_) {
+        try {
+          idMap = (identifier as dynamic).toJson() as Map<String, dynamic>;
+        } catch (_) {
+          return false;
+        }
+      }
+    }
+
+    if (idMap["identifierType"] == 'UNIQUE_BENEFICIARY_ID' &&
+        idMap["identifierId"] != null &&
+        idMap["identifierId"].toString().trim().isNotEmpty) {
       return true;
     }
 
@@ -2464,9 +3291,9 @@ void initializeFunctionRegistry() {
 
     if (deliveryCompletionTime == null) return true;
 
-    // Check if 30 minutes (1800000 ms) have passed since delivery
+    // Check if 1 day (86400000 ms) has passed since delivery
     final now = DateTime.now().millisecondsSinceEpoch;
-    const redoseWindowMs = 30 * 60 * 1000; // 30 minutes in milliseconds
+    const redoseWindowMs = 24 * 60 * 60 * 1000; // 1 day in milliseconds
 
     return (now - deliveryCompletionTime) > redoseWindowMs;
   });
@@ -2530,9 +3357,12 @@ void initializeFunctionRegistry() {
     // Get current running cycle
     final projectType = FlowBuilderSingleton().projectType;
     final now = DateTime.now().millisecondsSinceEpoch;
-    final selectedCycle = projectType?.cycles?.firstWhereOrNull(
+    var selectedCycle = projectType?.cycles?.firstWhereOrNull(
       (e) => (e.startDate ?? 0) < now && (e.endDate ?? 0) > now,
     );
+
+    // If current time is out of bounds, fallback to cycle 1 (matching checkEligibility logic)
+    selectedCycle ??= projectType?.cycles?.firstWhereOrNull((e) => e.id == 1);
 
     if (selectedCycle == null) return false;
 
@@ -2623,19 +3453,9 @@ void initializeFunctionRegistry() {
   });
 
   FunctionRegistry.register('hasMinimumBeneficiaryId', (args, stateData) {
-    final minCountArg = args.isNotEmpty ? args.first : null;
-    final minCount = minCountArg is int
-        ? minCountArg
-        : int.tryParse(minCountArg?.toString() ?? '');
-
-    if (minCount == null) return false;
-
-    final currentCountArg = args.length > 1 ? args[1] : null;
-    final currentCount = currentCountArg is int
-        ? currentCountArg
-        : int.tryParse(currentCountArg?.toString() ?? '');
-
-    return (currentCount ?? 0) >= minCount;
+    // TEMPORARY OVERRIDE: Always return true to disable the beneficiary ID pool check
+    // This removes the "download beneficiary ID" popups from the UI.
+    return true;
   });
 
   FunctionRegistry.register('getLatestBeneficiaryId', (args, stateData) {

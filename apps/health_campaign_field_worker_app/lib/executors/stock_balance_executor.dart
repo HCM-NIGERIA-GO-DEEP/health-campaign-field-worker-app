@@ -121,6 +121,9 @@ class StockBalanceExecutor extends ActionExecutor {
         facilityId = currentFacilities.first.facilityId;
       } else {
         facilityId = stockEntities.first.facilityId;
+        if (facilityId == null || facilityId.isEmpty) {
+          facilityId = StockBalanceCache.instance.hfsFacilityId;
+        }
       }
     }
 
@@ -152,30 +155,33 @@ class StockBalanceExecutor extends ActionExecutor {
                   .stockBottleToMlMultiplier); // Subtract wastage and partial from total quantity
       final transactionType = stock.transactionType?.toUpperCase() ?? '';
       final stockEntryType = _getStockEntryType(stock);
+      final isReturnStock = _isReturnStock(stock);
       final isReceiver = stock.receiverId == facilityId;
       final isSender = stock.senderId == facilityId;
 
       double delta = 0;
 
       // Determine if this is a distributor context
-      final isDistributorReturn = isSender && stockEntryType == 'RETURNED';
+      final isDistributorReturn = isSender && isReturnStock;
       final isDistContext = isDistributor || isDistributorReturn;
 
       if (isDistContext) {
         // For distributors: received adds, everything else (issued, returned, lost, damaged, wastage) subtracts
         if (transactionType == 'RECEIVED' && isReceiver) {
           delta = quantity; // Add received stock
-        } else if (stockEntryType == 'RETURNED' && isReceiver) {
+        } else if (isReturnStock && isReceiver) {
           delta = quantity; // Add returned stock (coming back to distributor)
-        } else if (stockEntryType == 'RETURNED' && isSender) {
+        } else if (isReturnStock && isSender) {
           delta = -quantity; // Sent return (going out)
         } else {
           delta = -quantity; // All other transactions subtract
         }
       } else {
         // For non-distributors (warehouses, facilities)
-        if (isReceiver && transactionType == 'RECEIVED') {
+        if (transactionType == 'RECEIVED' && isReceiver) {
           delta = quantity; // Add received stock
+        } else if (isReturnStock && isReceiver) {
+          delta = quantity; // Stock returned to current facility
         } else if (isReceiver &&
             transactionType == 'DISPATCHED' &&
             stock.additionalFields?.fields
@@ -183,10 +189,10 @@ class StockBalanceExecutor extends ActionExecutor {
                         orElse: () => const AdditionalField('', ''))
                     .value ==
                 'ACCEPTED') {
-          delta = quantity; // Add accepted stock from dispatch
+          delta = quantity; // Add accepted stock from dispatch (non-return)
         } else if (isSender && transactionType == 'DISPATCHED') {
           delta = -quantity; // Subtract issued/dispatched stock
-        } else if (isSender && stockEntryType == 'RETURNED') {
+        } else if (isSender && isReturnStock) {
           delta = quantity; // Add returned stock (coming back)
         } else if (isSender && stockEntryType == 'LOSS') {
           delta = -quantity; // Subtract loss
@@ -221,6 +227,12 @@ class StockBalanceExecutor extends ActionExecutor {
       }
     }
     return '';
+  }
+
+  bool _isReturnStock(StockModel stock) {
+    if (_getStockEntryType(stock) == 'RETURNED') return true;
+    final reason = stock.transactionReason?.toUpperCase() ?? '';
+    return reason == 'RETURNED';
   }
 
   Future<void> _handleTaskEntity(
@@ -280,6 +292,8 @@ class StockBalanceExecutor extends ActionExecutor {
 
       if (currentFacilities.isNotEmpty) {
         facilityId = currentFacilities.first.facilityId;
+      } else {
+        facilityId = StockBalanceCache.instance.hfsFacilityId;
       }
     }
 

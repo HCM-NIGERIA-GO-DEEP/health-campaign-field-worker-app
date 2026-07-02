@@ -2,9 +2,10 @@ import 'dart:async';
 
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/blocs/product_variant/product_variant.dart';
+import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/product_variant.dart';
 import 'package:digit_data_model/models/entities/project_type.dart';
-import 'package:digit_flow_builder/blocs/flow_crud_bloc.dart';
+import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_forms_engine/forms_engine.dart';
 import 'package:digit_forms_engine/helper/validation_message_helper.dart';
 import 'package:digit_ui_components/digit_components.dart';
@@ -200,7 +201,9 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
       }
     }
 
-    walk(pages!, []);
+    if (pages != null) {
+      walk(pages, []);
+    }
 
     return ReactiveWrapperField<dynamic>(
       formControlName: _resourceCardKey,
@@ -241,6 +244,27 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
                   mainAxisAlignment: MainAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // --- Current Cycle read-only display ---
+                    Builder(builder: (context) {
+                      final navParams =
+                          FlowCrudStateRegistry().getNavigationParams('DELIVERY') ??
+                          FlowCrudStateRegistry().getNavigationParams('REDOSE');
+                      final cycleIndex = navParams?['cycleIndex'];
+                      if (cycleIndex == null) return const SizedBox.shrink();
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: spacer3),
+                        child: LabeledField(
+                          label: localizations
+                              .translate('DELIVERY_CURRENT_CYCLE_LABEL'),
+                          child: DigitTextFormInput(
+                            initialValue: cycleIndex.toString(),
+                            readOnly: true,
+                            isDisabled: true,
+                          ),
+                        ),
+                      );
+                    }),
+                    // --- End current cycle display ---
                     if (labelFromSchema != null &&
                         localizations
                             .translate(labelFromSchema!)

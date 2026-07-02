@@ -3,6 +3,9 @@ import 'dart:async';
 import 'package:attendance_management/utils/utils.dart';
 import 'package:collection/collection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:digit_data_model/data/repositories/package_repository/remote/unique_id_pool.dart';
+import 'package:digit_data_model/models/entities/id_status.dart';
 import 'package:digit_crud_bloc/digit_crud_bloc.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendance_log.dart';
@@ -39,6 +42,7 @@ import 'package:transit_post/utils/utils.dart';
 import '../blocs/app_initialization/app_initialization.dart';
 import '../blocs/auth/auth.dart';
 import '../blocs/localization/localization.dart';
+import '../blocs/project/project.dart';
 import '../blocs/stock_downsync/stock_downsync.dart';
 import '../data/local_store/app_shared_preferences.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
@@ -52,6 +56,7 @@ import '../utils/debound.dart';
 import '../utils/environment_config.dart';
 import '../utils/flow_navigation_utils.dart';
 import '../utils/function_registries.dart';
+import '../utils/hf_referral_cdd_singleton.dart';
 import '../utils/i18_key_constants.dart' as i18;
 import '../utils/least_level_boundary_singleton.dart';
 import '../utils/stock_downsync_utils.dart';
@@ -66,6 +71,7 @@ import '../widgets/header/back_navigation_help_header.dart';
 import '../widgets/home/home_item_card.dart';
 import '../widgets/inventory/custom_facility_widgets.dart';
 import '../widgets/inventory/custom_product_selection_card.dart';
+import '../widgets/inventory/delivery_team_field.dart';
 import '../widgets/localized.dart';
 import '../widgets/progress_bar/beneficiary_progress.dart';
 import '../widgets/progress_bar/hf_referral_progress.dart';
@@ -95,6 +101,128 @@ class _HomePageState extends LocalizedState<HomePage> {
   final _syncDebouncer = Debouncer(seconds: 5);
   final StreamController<double> stockDownloadProgress =
       StreamController<double>.broadcast();
+
+  Future<void> _resolveHfsFacilityId() async {
+    try {
+      final userRoles = context.loggedInUserRoles;
+      final isWareHouseMgr = userRoles
+          .any((role) => role.code == RolesType.warehouseManager.toValue());
+      if (isWareHouseMgr) {
+        final projectFacilityRepo = context.read<
+            LocalRepository<ProjectFacilityModel,
+                ProjectFacilitySearchModel>>();
+        final pfList = await projectFacilityRepo.search(
+          ProjectFacilitySearchModel(projectId: [context.projectId]),
+        );
+        if (pfList.isEmpty) {
+          final facilityRepo = context
+              .read<LocalRepository<FacilityModel, FacilitySearchModel>>();
+          final facilities = await facilityRepo.search(
+              FacilitySearchModel(tenantId: envConfig.variables.tenantId));
+          final userBoundary =
+              LeastLevelBoundarySingleton().boundary?.firstOrNull;
+          if (userBoundary != null) {
+            final matchedFacility = facilities.firstWhereOrNull(
+              (facility) => facility.address?.locality?.code == userBoundary,
+            );
+            if (matchedFacility != null) {
+              StockBalanceCache.instance.hfsFacilityId = matchedFacility.id;
+              debugPrint(
+                  'Resolved HFS Standalone Facility ID: ${matchedFacility.id}');
+              return;
+            }
+          }
+        } else {
+          final currentPf = pfList.firstWhereOrNull((pf) {
+                final facilityLevel = pf.additionalFields?.fields
+                    .where((f) => f.key == 'facilityLevel')
+                    .firstOrNull
+                    ?.value;
+                return facilityLevel == null || facilityLevel == 'current';
+              }) ??
+              pfList.first;
+          StockBalanceCache.instance.hfsFacilityId = currentPf.facilityId;
+          debugPrint(
+              'Resolved HFS Project Facility ID from API: ${currentPf.facilityId}');
+        }
+      }
+    } catch (e) {
+      debugPrint('Error resolving HFS facility ID: $e');
+    }
+  }
+
+  Future<void> _silentDownsyncUniqueIds(BuildContext context) async {
+    try {
+      final connectivityResult = await Connectivity().checkConnectivity();
+      if (!context.mounted) return;
+      if (connectivityResult.contains(ConnectivityResult.none)) return;
+
+      final userUuid = context.loggedInUserUuid;
+      final repository = context
+          .read<LocalRepository<UniqueIdPoolModel, UniqueIdPoolSearchModel>>();
+
+      final searchResult = await repository.search(UniqueIdPoolSearchModel(
+        status: IdStatus.unAssigned.toValue(),
+        userUuid: userUuid,
+      ));
+      if (!context.mounted) return;
+
+      final localCount = searchResult.length;
+      final limit = DigitDataModelSingleton().uniqueBeneficiaryIdLimit ??
+          Constants.fallbackUniqueBeneficiaryIdLimit;
+
+      if (localCount == 0) {
+        final needed = limit - localCount;
+        final remoteRepository = context.read<UniqueIdPoolRemoteRepository>();
+        final tenantId = envConfig.variables.tenantId;
+        final deviceInfo = DeviceInfoPlugin();
+        final androidInfo = await deviceInfo.androidInfo;
+        final deviceUuid = androidInfo.id;
+
+        int offset = 0;
+        int totalFetched = 0;
+        final batchSize = needed < 100 ? needed : 100;
+
+        while (totalFetched < needed) {
+          final currentBatchSize = (needed - totalFetched) < batchSize
+              ? (needed - totalFetched)
+              : batchSize;
+
+          final searchModel = UniqueIdPoolSearchModel(
+            deviceInfo: androidInfo.toString(),
+            userUuid: userUuid,
+            deviceUuid: deviceUuid,
+            tenantId: tenantId,
+            count: currentBatchSize,
+            fetchAllocatedIds: false,
+          );
+
+          if (!context.mounted) return;
+          final response = await remoteRepository.searchWithMetadata(
+            searchModel,
+            limit: currentBatchSize,
+            offSet: offset,
+          );
+
+          final List<UniqueIdPoolModel> batch = response.models;
+          if (batch.isEmpty) {
+            break;
+          }
+
+          if (!context.mounted) return;
+          await repository.bulkCreate(batch);
+          totalFetched += batch.length;
+          offset += batch.length;
+
+          if (batch.length < currentBatchSize) {
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Silent beneficiary ID downsync on home screen failed: $e');
+    }
+  }
 
   @override
   initState() {
@@ -129,6 +257,20 @@ class _HomePageState extends LocalizedState<HomePage> {
 
     // Register custom components for forms
     _registerCustomComponents();
+
+    // Pre-load project-specific localisation modules eagerly so they are
+    // already cached in SQLite by the time the user navigates into a flow.
+    // triggerLocalization() checks local DB first and only hits the network
+    // for modules that are genuinely missing, so this is safe to call early.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (context.mounted) {
+        final projectRefId = context.selectedProject.referenceID;
+        triggerLocalization(
+          module: 'hcm-registration-$projectRefId,hcm-inventory-$projectRefId',
+        );
+        _silentDownsyncUniqueIds(context);
+      }
+    });
   }
 
   /// Register custom components for forms engine
@@ -142,81 +284,82 @@ class _HomePageState extends LocalizedState<HomePage> {
     CustomComponentRegistry().registerBuilder(
       'resourceCard',
       (context, stateAccessor) {
-        final beneficiaryDetails =
+        final currentPage = stateAccessor.currentPageName;
+        var beneficiaryDetails =
             stateAccessor.getPageData('beneficiaryDetails');
 
-        if (beneficiaryDetails != null &&
-            stateAccessor.currentPageName == 'DELIVERY') {
-          // Regular DELIVERY flow
+        if (beneficiaryDetails != null && currentPage == 'DELIVERY') {
+          // DELIVERY flow when navigated from beneficiaryDetails
           return ResourceCard(
             stateData: beneficiaryDetails,
             pageSchema: 'DELIVERY',
           );
         }
 
-        // VAS DELIVERY flow - VAS details are stored in a separate page data key
-        final vasDetails = stateAccessor.getPageData('vasDetails');
-        if (vasDetails != null &&
-            stateAccessor.currentPageName == 'VASDELIVERY') {
-          // VAS DELIVERY flow
-          return ResourceCard(
-            stateData: vasDetails,
-            pageSchema: 'VASDELIVERY',
-          );
-        }
+        // REDOSE/DELIVERY flow - compute product variants manually when bypassing wrappers
+        // Use navigation params to filter by age condition
+        final navParams =
+            FlowCrudStateRegistry().getNavigationParams('DELIVERY') ??
+                FlowCrudStateRegistry().getNavigationParams('REDOSE') ??
+                FlowCrudStateRegistry().getNavigationParams(currentPage);
 
-        // ORS DELIVERY flow - ORS details are stored in a separate page data key
-        final orsDetails = stateAccessor.getPageData('orsDetails');
-        if (orsDetails != null &&
-            stateAccessor.currentPageName == 'ORSDELIVERY') {
-          // ORS DELIVERY flow
-          return ResourceCard(
-            stateData: orsDetails,
-            pageSchema: 'ORSDELIVERY',
-          );
-        }
-
-        // REDOSE flow - compute product variants same as DELIVERY.
-        // Use navigation params to filter dose criteria by the member's
-        // age / weight / height, mirroring checkEligibilityForAgeAndSideEffect.
-        final navParams = FlowCrudStateRegistry().getNavigationParams('REDOSE');
         final cycleIndex = navParams?['cycleIndex'];
-        final age = int.tryParse(
-            navParams?['selectedIndividualAgeInMonths']?.toString() ?? '');
-        // weight / height are optional; the helper ignores their clauses when
-        // the measurement is not recorded.
-        final weight = num.tryParse(navParams?['weight']?.toString() ?? '');
-        final height = num.tryParse(navParams?['height']?.toString() ?? '');
+        final ageStr = navParams?['selectedIndividualAgeInMonths'] ??
+            navParams?['ageInMonths'];
+        final age = int.tryParse(ageStr?.toString() ?? '');
 
         final projectType = context.selectedProjectType;
         final cycles = projectType?.cycles;
 
         // Find the cycle matching cycleIndex from nav params
         final currentCycle = cycles?.firstWhereOrNull(
-          (c) => c.id.toString() == cycleIndex?.toString(),
-        );
+              (c) => c.id.toString() == cycleIndex?.toString(),
+            ) ??
+            context.read<ProjectBloc>().state.selectedCycle ??
+            cycles?.firstOrNull;
 
         // Use first delivery's dose criteria (all deliveries have same criteria)
         final firstDelivery = currentCycle?.deliveries?.firstOrNull;
+        final matchingCriteria = <Map<String, dynamic>>[];
 
-        final matchingCriteria = age == null
-            ? <Map<String, dynamic>>[]
-            : filterEligibleDoseCriteria(
-                firstDelivery?.doseCriteria,
-                ageInMonths: age,
-                weight: weight,
-                height: height,
-              );
+        if (firstDelivery?.doseCriteria != null && age != null) {
+          for (final dc in firstDelivery!.doseCriteria!) {
+            if (dc.condition != null && dc.condition!.isNotEmpty) {
+              // Evaluate condition e.g. "3<=ageandage<=11"
+              final sanitized = dc.condition!
+                  .replaceAll(' and ', ' && ')
+                  .replaceAll('and', '&&');
+              try {
+                final parser = FormulaParser(sanitized, {'age': age});
+                final result = parser.parse;
+                if (result['isSuccess'] && result['value'] == true) {
+                  matchingCriteria.add(dc.toMap());
+                }
+              } catch (e) {
+                debugPrint('$currentPage condition eval error: $e');
+              }
+            } else {
+              // No condition - include by default
+              matchingCriteria.add(dc.toMap());
+            }
+          }
+        }
 
-        final redoseState = FlowCrudState(
-          stateWrapper: [
-            {'eligibleProductVariants': matchingCriteria}
-          ],
-        );
+        if (matchingCriteria.isNotEmpty) {
+          // Inject it into the stateWrapper so ResourceCard can read it
+          beneficiaryDetails =
+              (beneficiaryDetails ?? const FlowCrudState()).copyWith(
+            stateWrapper: [
+              {
+                'eligibleProductVariants': matchingCriteria,
+              }
+            ],
+          );
+        }
 
         return ResourceCard(
-          stateData: redoseState,
-          pageSchema: 'REDOSE',
+          stateData: beneficiaryDetails,
+          pageSchema: currentPage,
         );
       },
     );
@@ -279,6 +422,28 @@ class _HomePageState extends LocalizedState<HomePage> {
           schemaName: schemaName,
           formKey: 'facilityFromWhich',
           dependantFormKey: 'deliveryTeam',
+        );
+      },
+    );
+    CustomComponentRegistry().registerBuilder(
+      'deliveryTeam',
+      (context, stateAccessor) {
+        // Combined delivery-team input: CDD dropdown + QR scanner on the active
+        // form's schema (e.g. RECORDSTOCK). Used on the stockDetails page.
+        return DeliveryTeamField(
+          schemaName: stateAccessor.currentPageName,
+          fieldName: 'deliveryTeam',
+        );
+      },
+    );
+    CustomComponentRegistry().registerBuilder(
+      'teamCode',
+      (context, stateAccessor) {
+        // Same combined input for the warehouseDetails page (receiver delivery
+        // team when issuing stock).
+        return DeliveryTeamField(
+          schemaName: stateAccessor.currentPageName,
+          fieldName: 'teamCode',
         );
       },
     );
@@ -2115,6 +2280,7 @@ class _HomePageState extends LocalizedState<HomePage> {
           icon: Icons.store_mall_directory,
           label: i18.home.manageStockLabel,
           onPressed: () async {
+            await _resolveHfsFacilityId();
             FlowBuilderSingleton().setBoundary(
                 boundary: BoundaryModel(
                     code: LeastLevelBoundarySingleton().boundary?.first));
@@ -2175,6 +2341,7 @@ class _HomePageState extends LocalizedState<HomePage> {
           icon: Icons.menu_book,
           label: i18.home.stockReconciliationLabel,
           onPressed: () async {
+            await _resolveHfsFacilityId();
             FlowBuilderSingleton().setBoundary(
                 boundary: BoundaryModel(
                     code: LeastLevelBoundarySingleton().boundary?.first));
@@ -2644,10 +2811,11 @@ class _HomePageState extends LocalizedState<HomePage> {
         .map((label) => homeItemsShowcaseMap[label]!)
         .toList();
 
-    if (envConfig.variables.envType == EnvType.demo && kReleaseMode) {
+    if ((envConfig.variables.envType == EnvType.demo) ||
+        (envConfig.variables.envType == EnvType.prod) && kReleaseMode) {
       filteredLabels.remove(i18.home.db);
     }
-
+    filteredLabels.remove(i18.home.db);
     final userRoleCodes = state.userModel.roles.map((e) => e.code).toList();
     final isDistributor =
         userRoleCodes.contains(RolesType.distributor.toValue());
@@ -2767,6 +2935,10 @@ void setPackagesSingleton(BuildContext context) {
               [],
         );
 
+        if (context.isHealthFacilitySupervisor) {
+          _fetchAndStoreCddUsers(context);
+        }
+
         SurveyFormSingleton().setInitialData(
           projectId: context.projectId,
           projectName: context.selectedProject.name,
@@ -2802,6 +2974,91 @@ void setPackagesSingleton(BuildContext context) {
           loggedInUserUuid: context.loggedInUserUuid,
         );
       });
+}
+
+Future<void> _fetchAndStoreCddUsers(BuildContext context) async {
+  try {
+    // Read both repos before any await to avoid BuildContext across async gaps
+    final staffRepo = context
+        .read<RemoteRepository<ProjectStaffModel, ProjectStaffSearchModel>>();
+    final individualRepo = context
+        .read<RemoteRepository<IndividualModel, IndividualSearchModel>>();
+
+    // Step 1: get all project staff for this project → collect user UUIDs
+    final projectStaffList = await staffRepo.search(
+      ProjectStaffSearchModel(
+        projectId: [context.projectId],
+      ),
+    );
+
+    if (projectStaffList.isEmpty) return;
+
+    final userUuids = projectStaffList
+        .where((s) => s.userId != null)
+        .map((s) => s.userId!)
+        .toList();
+
+    if (userUuids.isEmpty) return;
+
+    // Step 2: fetch individual details by userUuid; parse raw response to get
+    // userDetails.roles which is not part of IndividualModel
+    final response = await individualRepo.dio.post(
+      individualRepo.searchPath,
+      queryParameters: {
+        'offset': 0,
+        'limit': userUuids.length,
+        'tenantId': DigitDataModelSingleton().tenantId,
+      },
+      data: {
+        'Individual': {
+          'userUuid': userUuids,
+        },
+      },
+    );
+
+    final responseMap = response.data;
+    if (responseMap is! Map<String, dynamic> ||
+        !responseMap.containsKey('Individual')) return;
+
+    final individualList = responseMap['Individual'];
+    if (individualList is! List) return;
+
+    const cddRoles = {'COMMUNITY_DISTRIBUTOR', 'DISTRIBUTOR'};
+
+    final users = individualList
+        .whereType<Map<String, dynamic>>()
+        .where((ind) {
+          final userDetails = ind['userDetails'];
+          if (userDetails is! Map<String, dynamic>) return false;
+          final roles = userDetails['roles'];
+          if (roles is! List) return false;
+          return roles.any((role) =>
+              role is Map<String, dynamic> && cddRoles.contains(role['code']));
+        })
+        .map((ind) {
+          final nameMap = ind['name'];
+          final givenName = nameMap is Map<String, dynamic>
+              ? nameMap['givenName'] as String? ?? ''
+              : '';
+          final userDetails = ind['userDetails'] as Map<String, dynamic>?;
+          final username = userDetails?['username'] as String? ?? '';
+          // The user's UUID is used to match the scanned deliveryTeamCode format.
+          final userUuid = (ind['userUuid'] as String?) ??
+              (userDetails?['uuid'] as String?) ??
+              '';
+          return CddUser(
+            name: givenName.isNotEmpty ? givenName : username,
+            username: username,
+            userId: userUuid,
+          );
+        })
+        .where((u) => u.username.isNotEmpty && u.userId.isNotEmpty)
+        .toList();
+
+    HFReferralCddSingleton().setCddUsers(users);
+  } catch (_) {
+    // silently ignore — singleton retains empty list for this session
+  }
 }
 
 void loadLocalization(

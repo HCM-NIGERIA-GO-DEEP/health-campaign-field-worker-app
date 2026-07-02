@@ -388,7 +388,12 @@ class _FormScreenWrapperState extends LocalizedState<_FormScreenWrapper> {
                   // System values always present
                   'administrativeArea': localizations
                       .translate(FlowBuilderSingleton().boundary?.code ?? ''),
-                  'availableIDs': {'DEFAULT': IdGen.instance.identifier},
+                  'availableIDs': {
+                    'DEFAULT': IdGen.instance.identifier,
+                    'UNIQUE_BENEFICIARY_ID':
+                        flowState?.widgetData?['latestBeneficiaryId'] ??
+                        IdGen.instance.generateRandomAlphanumeric(7),
+                  },
                   'loggedInUserName': FlowBuilderSingleton().loggedInUser?.name,
                   'loggedInUserUuid': FlowBuilderSingleton().loggedInUser?.uuid,
                   'loggedInUserMobileNumber':

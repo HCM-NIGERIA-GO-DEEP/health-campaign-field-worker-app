@@ -151,7 +151,7 @@ class FunctionRegistries {
       const types = {
         'receipt': ['RECEIVED'],
         'dispatch': ['DISPATCHED'],
-        'returned': ['RECEIVED'],
+        'returned': ['RECEIVED', 'DISPATCHED'],
         'damage': ['DISPATCHED'],
         'loss': ['DISPATCHED']
       };
@@ -193,7 +193,6 @@ class FunctionRegistries {
         'dispatch',
         'damage',
         'loss',
-        'returned',
         'less',
         'excess'
       };
@@ -221,38 +220,83 @@ class FunctionRegistries {
       return teamCode;
     });
 
-    // Extracts the userName (part before "||") from the scanned team QR
-    // ("userName||userUuid"). Returns '' when no userName is present
-    // (e.g. when the scanned QR only contains the userUuid).
-    FunctionRegistry.register('getTeamName', (args, stateData) {
-      if (args.isEmpty) return '';
-      final teamCode = args.first?.toString() ?? '';
-      if (teamCode.contains("||")) {
-        return teamCode.split("||").first.trim();
+    FunctionRegistry.register('getStockTeamCode', (args, stateData) {
+      if (args.length < 4) return '';
+      final stockEntryType = args[0]?.toString().toUpperCase() ?? '';
+      final primaryRole = args[1]?.toString().toUpperCase() ?? '';
+      final warehouseTeamCode = args[2]?.toString() ?? '';
+      final deliveryTeamCode = args[3]?.toString() ?? '';
+
+      // Return flow (user is receiver): sender is identified via QR scan on warehouse page
+      if (stockEntryType == 'RETURNED' && primaryRole == 'RECEIVER') {
+        final warehouseCode = FunctionRegistry.call(
+                'getTeamCode', [warehouseTeamCode], stateData)
+            ?.toString();
+        if (warehouseCode != null && warehouseCode.isNotEmpty) {
+          return warehouseCode;
+        }
+        return FunctionRegistry.call('getTeamCode', [deliveryTeamCode], stateData)
+                ?.toString() ??
+            '';
       }
-      return '';
+
+      // Issue flow (user is sender): receiver is identified via QR scan on warehouseDetails.teamCode
+      return FunctionRegistry.call('getTeamCode', [warehouseTeamCode], stateData)
+              ?.toString() ??
+          '';
     });
 
-    // Resolves the delivery-team (CDD) name to persist on a stock transaction,
-    // for whichever side the team is on:
-    // - Issue (team is the RECEIVER): the team QR is scanned into teamCode as
-    //   "userName||userUuid" -> use that userName.
-    // - Return (team is the SENDER): senderId is the logged-in user's uuid
-    //   (see the transformer senderId mapping), so the matching name is the
-    //   logged-in user's name, passed in from context.
-    // - Warehouse <-> warehouse: '' (no staff party involved).
-    // args: [teamCode, facilityFromWhich, loggedInUserName]
-    FunctionRegistry.register('getDeliveryTeamName', (args, stateData) {
-      final teamCode = args.isNotEmpty ? (args[0]?.toString() ?? '') : '';
-      if (teamCode.contains("||")) {
-        return teamCode.split("||").first.trim();
+    FunctionRegistry.register('getStockSenderId', (args, stateData) {
+      if (args.length < 6) return '';
+      final stockEntryType = args[0]?.toString().toUpperCase() ?? '';
+      final primaryRole = args[1]?.toString().toUpperCase() ?? '';
+      final facilityFromWhich = args[2]?.toString() ?? '';
+      final warehouseTeamCode = args[3]?.toString() ?? '';
+      final deliveryTeamCode = args[4]?.toString() ?? '';
+      final loggedInUserUuid = args[5]?.toString() ?? '';
+
+      final teamCode = FunctionRegistry.call(
+            'getStockTeamCode',
+            [stockEntryType, primaryRole, warehouseTeamCode, deliveryTeamCode],
+            stateData,
+          )?.toString() ??
+          '';
+
+      final isStaffSender = facilityFromWhich == 'DELIVERY_TEAM';
+
+      // Stock return: current user is receiver; sender is the QR-scanned party
+      if (stockEntryType == 'RETURNED' && primaryRole == 'RECEIVER') {
+        return isStaffSender ? teamCode : facilityFromWhich;
       }
-      final facilityFromWhich =
-          args.length > 1 ? (args[1]?.toString() ?? '') : '';
-      if (facilityFromWhich == 'DELIVERY_TEAM') {
-        return args.length > 2 ? (args[2]?.toString() ?? '') : '';
+
+      // Stock issue and other outbound: current user / their facility is sender
+      if (isStaffSender) return loggedInUserUuid;
+      return facilityFromWhich;
+    });
+
+    FunctionRegistry.register('getStockReceiverId', (args, stateData) {
+      if (args.length < 5) return '';
+      final stockEntryType = args[0]?.toString().toUpperCase() ?? '';
+      final primaryRole = args[1]?.toString().toUpperCase() ?? '';
+      final facilityToWhich = args[2]?.toString() ?? '';
+      final warehouseTeamCode = args[3]?.toString() ?? '';
+      final deliveryTeamCode = args[4]?.toString() ?? '';
+
+      final teamCode = FunctionRegistry.call(
+            'getStockTeamCode',
+            [stockEntryType, primaryRole, warehouseTeamCode, deliveryTeamCode],
+            stateData,
+          )?.toString() ??
+          '';
+
+      // Stock return: current user's facility is the receiver
+      if (stockEntryType == 'RETURNED' && primaryRole == 'RECEIVER') {
+        return facilityToWhich;
       }
-      return '';
+
+      // Stock issue: QR-scanned party is the receiver
+      if (facilityToWhich == 'DELIVERY_TEAM') return teamCode;
+      return facilityToWhich;
     });
 
     FunctionRegistry.register('getTransactionStatusType', (args, stateData) {
@@ -275,6 +319,12 @@ class FunctionRegistries {
   }
 
   void _registerFacilityFunctions() {
+    // TODO: Facility ID should be fetched from backend as part of user profile or project facility data
+    // The backend should provide:
+    // 1. User's assigned facility ID in the user profile response
+    // 2. Central facility ID in the project facilities data (marked with facilityLevel: 'parent')
+    // 3. All facility IDs should follow the format 'F-XXXXX' for sync compatibility
+    // Current implementation uses fallbacks until backend provides this data
     FunctionRegistry.register('getUserFacilityId', (args, stateData) {
       final isDistributor = context.loggedInUserRoles
           .where((role) => role.code == RolesType.distributor.toValue())
@@ -284,6 +334,10 @@ class FunctionRegistries {
           .where((role) => role.code == RolesType.warehouseManager.toValue())
           .toList()
           .isNotEmpty;
+      if (isWareHouseMgr &&
+          StockBalanceCache.instance.hfsFacilityId.isNotEmpty) {
+        return StockBalanceCache.instance.hfsFacilityId;
+      }
       if (isDistributor && !isWareHouseMgr) {
         return context.loggedInUserUuid ?? '';
       }
@@ -292,6 +346,7 @@ class FunctionRegistries {
         if (stateData?.modelMap != null) {
           projectFacilities = stateData!.modelMap['ProjectFacilityModel'];
         }
+
         if (projectFacilities == null || projectFacilities.isEmpty) {
           final manageStockState = FlowCrudStateRegistry().get('manageStock');
           final base = manageStockState?.base;
@@ -308,6 +363,10 @@ class FunctionRegistries {
           }
         }
         if (projectFacilities == null || projectFacilities.isEmpty) {
+          if (isWareHouseMgr &&
+              StockBalanceCache.instance.hfsFacilityId.isNotEmpty) {
+            return StockBalanceCache.instance.hfsFacilityId;
+          }
           return '';
         }
         for (var facility in projectFacilities) {
@@ -316,9 +375,17 @@ class FunctionRegistries {
             return facilityId;
           }
         }
+        if (isWareHouseMgr &&
+            StockBalanceCache.instance.hfsFacilityId.isNotEmpty) {
+          return StockBalanceCache.instance.hfsFacilityId;
+        }
         return '';
       } catch (e) {
         debugPrint('getUserFacilityId error: $e');
+        if (isWareHouseMgr &&
+            StockBalanceCache.instance.hfsFacilityId.isNotEmpty) {
+          return StockBalanceCache.instance.hfsFacilityId;
+        }
         return '';
       }
     });
@@ -515,6 +582,13 @@ class FunctionRegistries {
     });
 
     FunctionRegistry.register('hasStockForRedose', (args, stateData) {
+      // TODO: This has to be changed to calculate it for the users, but for now, we can pass it as true to bypass.
+      bool bypassStockValidation = true;
+      if (bypassStockValidation) {
+        StockBalanceCache.instance.setStockCheckResult(null);
+        return true;
+      }
+
       if (args.isEmpty || args.first == null) return true;
       final cache = StockBalanceCache.instance;
       if (cache.facilityId.isEmpty) return true;
@@ -671,33 +745,24 @@ class FunctionRegistries {
     FunctionRegistry.register('getFirstPageParty', (args, stateData) {
       if (args.length < 3) return '';
       final stockEntryType = getStockEntryTypeFromFields(args[0]);
-      final senderType = args.length > 3 ? (args[3]?.toString() ?? '') : '';
-      final receiverType = args.length > 4 ? (args[4]?.toString() ?? '') : '';
-      final teamName = resolveTeamName(args[0]);
-      // A STAFF party (CDD / delivery team member) is an individual, not a
-      // facility -> show the captured userName (deliveryTeamName), no FAC_
-      // prefix; fall back to the raw id (userUUID) only when no name was
-      // captured. Facility (non-STAFF) parties get the FAC_ prefix.
+      final senderId = args[1]?.toString() ?? '';
+      final receiverId = args[2]?.toString() ?? '';
+      String partyId;
       switch (stockEntryType) {
         case 'RECEIPT':
         case 'RETURNED':
-          if (senderType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
-          }
-          return withFacilityPrefix(args[1]);
+          partyId = senderId;
+          break;
         case 'ISSUED':
         case 'DAMAGED':
         case 'LOSS':
-          if (receiverType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
-          }
-          return withFacilityPrefix(args[2]);
+          partyId = receiverId;
+          break;
         default:
-          if (senderType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
-          }
-          return withFacilityPrefix(args[1]);
+          partyId = senderId;
       }
+      if (partyId.isEmpty) return '';
+      return partyId.contains('F') ? 'FAC_$partyId' : partyId;
     });
 
     FunctionRegistry.register('getSecondPagePartyLabel', (args, stateData) {
@@ -719,32 +784,24 @@ class FunctionRegistries {
     FunctionRegistry.register('getSecondPageParty', (args, stateData) {
       if (args.length < 3) return '';
       final stockEntryType = getStockEntryTypeFromFields(args[0]);
-      final senderType = args.length > 3 ? (args[3]?.toString() ?? '') : '';
-      final receiverType = args.length > 4 ? (args[4]?.toString() ?? '') : '';
-      final teamName = resolveTeamName(args[0]);
-      // STAFF party -> show captured userName (no FAC_ prefix); fall back to the
-      // raw id. Facility parties get the FAC_ prefix so the details page matches
-      // the transaction list (getFirstPageParty).
+      final senderId = args[1]?.toString() ?? '';
+      final receiverId = args[2]?.toString() ?? '';
+      String partyId;
       switch (stockEntryType) {
         case 'RECEIPT':
         case 'RETURNED':
-          if (receiverType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
-          }
-          return withFacilityPrefix(args[2]);
+          partyId = receiverId;
+          break;
         case 'ISSUED':
         case 'DAMAGED':
         case 'LOSS':
-          if (senderType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
-          }
-          return withFacilityPrefix(args[1]);
+          partyId = senderId;
+          break;
         default:
-          if (receiverType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
-          }
-          return withFacilityPrefix(args[2]);
+          partyId = receiverId;
       }
+      if (partyId.isEmpty) return '';
+      return partyId.contains('F') ? 'FAC_$partyId' : partyId;
     });
   }
 
@@ -772,10 +829,13 @@ class StockBalanceCache {
   static StockBalanceCache get instance => _instance;
 
   String _facilityId = '';
+  String _hfsFacilityId = '';
   final Map<String, double> _cache = {};
   dynamic _stockCheckResult;
 
   String get facilityId => _facilityId;
+  String get hfsFacilityId => _hfsFacilityId;
+  set hfsFacilityId(String val) => _hfsFacilityId = val;
   Map<String, double> get cache => _cache;
   dynamic get stockCheckResult => _stockCheckResult;
 
@@ -792,6 +852,7 @@ class StockBalanceCache {
 
   void clear() {
     _facilityId = '';
+    _hfsFacilityId = '';
     _cache.clear();
     _stockCheckResult = null;
   }
