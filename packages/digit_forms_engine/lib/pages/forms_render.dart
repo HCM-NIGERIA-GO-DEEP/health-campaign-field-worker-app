@@ -509,6 +509,12 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                                                     ?.conditions,
                                                                 contextValue) ??
                                                             ""),
+                                                    additionalWidgets:
+                                                        _buildAlertPoints(
+                                                            schema
+                                                                .showAlertPopUp
+                                                                ?.points,
+                                                            localizations),
 
                                                     /// FIXME: need to send null as empty string will take space
                                                     actions: [
@@ -672,6 +678,11 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                                             ?.conditions,
                                                         contextValue) ??
                                                     ""),
+                                            additionalWidgets:
+                                                _buildAlertPoints(
+                                                    schema.showAlertPopUp
+                                                        ?.points,
+                                                    localizations),
 
                                             /// FIXME: need to send null as empty string will take space
                                             actions: [
@@ -902,6 +913,44 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
     // fallback: return template unchanged
     return template;
+  }
+
+  /// Builds a numbered list of points to render in the alert popup's
+  /// `additionalWidgets` slot. Returns null when no points are configured so
+  /// the popup keeps its existing layout.
+  List<Widget>? _buildAlertPoints(
+    List<String>? pointKeys,
+    dynamic localizations,
+  ) {
+    if (pointKeys == null || pointKeys.isEmpty) return null;
+
+    return [
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          for (int i = 0; i < pointKeys.length; i++)
+            Padding(
+              padding: EdgeInsets.only(top: i == 0 ? 0 : spacer2),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '${i + 1}. ',
+                    style: Theme.of(context).digitTextTheme(context).bodyS,
+                  ),
+                  Expanded(
+                    child: Text(
+                      localizations.translate(pointKeys[i]),
+                      style: Theme.of(context).digitTextTheme(context).bodyS,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+        ],
+      ),
+    ];
   }
 
   /// Builds a multi-entity tab page for capturing same fields for multiple entities.

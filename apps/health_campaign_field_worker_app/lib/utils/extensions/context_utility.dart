@@ -62,6 +62,155 @@ extension ContextUtilityExtensions on BuildContext {
     return projectType;
   }
 
+  ProjectTypeModel? get vasProjectType {
+    final projectBloc = _get<ProjectBloc>();
+    final projectState = projectBloc.state;
+
+    ProjectTypeModel? projectType =
+        projectState.selectedProject?.additionalDetails?.projectType;
+    ProjectType? vasProjectType =
+        projectState.allProjectTypes?.firstWhereOrNull((e) => e.code == 'VAS');
+
+    List<ProjectProductVariantModel> productVariants =
+        projectType?.resources ?? [];
+
+    return ProjectTypeModel(
+      id: vasProjectType?.id ?? '',
+      code: vasProjectType?.code ?? '',
+      name: vasProjectType?.name ?? '',
+      group: vasProjectType?.group ?? '',
+      beneficiaryType:
+          BeneficiaryType.individual, // Default to individual if null
+      validMaxAge: vasProjectType?.validMaxAge ?? 0,
+      validMinAge: vasProjectType?.validMinAge ?? 0,
+      cycles: vasProjectType?.cycles
+          ?.map(
+            (cycle) => ProjectCycle(
+              id: cycle.id,
+              startDate: cycle.startDate ?? 0,
+              endDate: cycle.endDate ?? 0,
+              deliveries: cycle.deliveries
+                  ?.map(
+                    (delivery) => ProjectCycleDelivery(
+                      id: delivery.id,
+                      deliveryStrategy: delivery.deliveryStrategy ?? '',
+                      doseCriteria: delivery.doseCriteria
+                          ?.map(
+                            (dose) => DeliveryDoseCriteria(
+                              condition: dose.condition,
+                              productVariants: dose.productVariants
+                                  ?.map(
+                                    (variant) => DeliveryProductVariant(
+                                      name: productVariants
+                                              .firstWhereOrNull(
+                                                (pv) =>
+                                                    pv.productVariantId ==
+                                                    variant.productVariantId,
+                                              )
+                                              ?.name ??
+                                          '',
+                                      quantity: variant.quantity,
+                                      productVariantId:
+                                          variant.productVariantId ?? '',
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  )
+                  .toList(),
+            ),
+          )
+          .toList(),
+      resources: vasProjectType?.resources
+          ?.map(
+            (resource) => ProjectProductVariantModel(
+              productVariantId: resource.productVariantId ?? '',
+              // name: resource.name ?? '',
+              // isBaseUnitVariant: resource.isBaseUnitVariant ?? false,
+            ),
+          )
+          .toList(),
+    );
+  }
+
+  ProjectTypeModel? get orsProjectType {
+    final projectBloc = _get<ProjectBloc>();
+    final projectState = projectBloc.state;
+
+    ProjectTypeModel? projectType =
+        projectState.selectedProject?.additionalDetails?.projectType;
+    ProjectType? orsProjectType = projectState.allProjectTypes
+        ?.firstWhereOrNull((e) => e.code == 'ORS-Zinc');
+
+    List<ProjectProductVariantModel> productVariants =
+        projectType?.resources ?? [];
+
+    return ProjectTypeModel(
+      id: orsProjectType?.id ?? '',
+      code: orsProjectType?.code ?? '',
+      name: orsProjectType?.name ?? '',
+      group: orsProjectType?.group ?? '',
+      beneficiaryType:
+          BeneficiaryType.individual, // Default to individual if null
+      validMaxAge: orsProjectType?.validMaxAge ?? 0,
+      validMinAge: orsProjectType?.validMinAge ?? 0,
+      cycles: orsProjectType?.cycles
+          ?.map(
+            (cycle) => ProjectCycle(
+              id: cycle.id,
+              startDate: cycle.startDate ?? 0,
+              endDate: cycle.endDate ?? 0,
+              deliveries: cycle.deliveries
+                  ?.map(
+                    (delivery) => ProjectCycleDelivery(
+                      id: delivery.id,
+                      deliveryStrategy: delivery.deliveryStrategy ?? '',
+                      doseCriteria: delivery.doseCriteria
+                          ?.map(
+                            (dose) => DeliveryDoseCriteria(
+                              condition: dose.condition
+                                  ?.replaceAll('age', 'ageandage'),
+                              productVariants: dose.productVariants
+                                  ?.map(
+                                    (variant) => DeliveryProductVariant(
+                                      name: productVariants
+                                              .firstWhereOrNull(
+                                                (pv) =>
+                                                    pv.productVariantId ==
+                                                    variant.productVariantId,
+                                              )
+                                              ?.name ??
+                                          'ORS-Zinc',
+                                      quantity: variant.quantity,
+                                      productVariantId:
+                                          variant.productVariantId ?? '',
+                                    ),
+                                  )
+                                  .toList(),
+                            ),
+                          )
+                          .toList(),
+                    ),
+                  )
+                  .toList(),
+            ),
+          )
+          .toList(),
+      resources: orsProjectType?.resources
+          ?.map(
+            (resource) => ProjectProductVariantModel(
+              productVariantId: resource.productVariantId ?? '',
+              // name: resource.name ?? '',
+              // isBaseUnitVariant: resource.isBaseUnitVariant ?? false,
+            ),
+          )
+          .toList(),
+    );
+  }
+
   List<String> get cycles {
     final projectBloc = _get<ProjectBloc>();
 

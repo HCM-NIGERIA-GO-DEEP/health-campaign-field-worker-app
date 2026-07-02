@@ -523,10 +523,16 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
     _controllers.clear();
     final variants = productVariants;
 
+    final navParams =
+        FlowCrudStateRegistry().getNavigationParams(widget.pageSchema) ??
+            const <String, dynamic>{};
+    final sourceFlow = navParams['sourceFlow']?.toString().toUpperCase();
+    final activeProjectType = sourceFlow == 'VASCHECKLIST'
+        ? (context.vasProjectType ?? context.selectedProjectType)
+        : context.selectedProjectType;
+
     final int count =
-        context.selectedProject.additionalDetails?.projectType?.cycles == null
-            ? 1
-            : productVariants?.length ?? 0;
+        activeProjectType?.cycles == null ? 1 : productVariants?.length ?? 0;
 
     _controllers.addAll(List.generate(count, (index) => index));
 
@@ -571,7 +577,13 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
 
   getProductVariants() {
     final data = widget.stateData;
-    final projectType = context.selectedProjectType;
+    final navParams =
+        FlowCrudStateRegistry().getNavigationParams(widget.pageSchema) ??
+            const <String, dynamic>{};
+    final sourceFlow = navParams['sourceFlow']?.toString().toUpperCase();
+    final projectType = sourceFlow == 'VASCHECKLIST'
+        ? (context.vasProjectType ?? context.selectedProjectType)
+        : context.selectedProjectType;
     final cycles = projectType?.cycles;
     final eligible =
         data?.stateWrapper?.first?['eligibleProductVariants'] as List?;

@@ -330,7 +330,7 @@ final dynamic sampleInventoryFlows = {
                     {
                       "key": "additionalFields",
                       "value": "{{scannedMrn}}",
-                      "operation": "contains"
+                      "operation": "matches"
                     }
                   ]
                 }
@@ -397,7 +397,7 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "additionalFields",
                     "value": "680C-E975-B27F",
-                    "operation": "contains"
+                    "operation": "matches"
                   }
                 ]
               }
@@ -2066,7 +2066,7 @@ final dynamic sampleInventoryFlows = {
               {
                 "key": "additionalFields",
                 "value": "{{navigation.selectedStock}}",
-                "operation": "contains"
+                "operation": "matches"
               }
             ]
           }
@@ -2220,7 +2220,7 @@ final dynamic sampleInventoryFlows = {
               {
                 "key": "additionalFields",
                 "value": "IN_TRANSIT",
-                "operation": "contains"
+                "operation": "matches"
               }
             ]
           }

@@ -21,10 +21,10 @@ import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/router/flow_builder_routes.gm.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
 import 'package:digit_flow_builder/widgets/flow_widget_interface.dart';
-import 'package:digit_formula_parser/digit_formula_parser.dart';
 import 'package:digit_location_tracker/utils/utils.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/utils/component_utils.dart';
+import 'package:digit_ui_components/widgets/atoms/digit_loader.dart';
 import 'package:drift_db_viewer/drift_db_viewer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -280,7 +280,7 @@ class _HomePageState extends LocalizedState<HomePage> {
     FlowWidgetFactory.register(CustomRowWidget());
     FlowWidgetFactory.register(SignatureCompareWidget());
 
-    // Register resource card for DELIVERY and REDOSE
+    // Register resource card for DELIVERY, VAS DELIVERY and REDOSE
     CustomComponentRegistry().registerBuilder(
       'resourceCard',
       (context, stateAccessor) {
@@ -1387,7 +1387,7 @@ class _HomePageState extends LocalizedState<HomePage> {
     FunctionRegistry.register("isNotSingleSession", (args, stateData) {
       // If no argument provided, default to single session
       if (args.isEmpty || args.first == null) {
-        return true;
+        return false; // default to single session if no register model provided
       }
 
       final registerModel = args.first;
@@ -2106,7 +2106,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-registration-${context.selectedProject.referenceID},hcm-beneficiary,hcm-inventory-${context.selectedProject.referenceID}';
+                    'hcm-registration-${context.selectedProject.referenceID},hcm-beneficiary,hcm-inventory-${context.selectedProject.referenceID},hcm-common';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
                 FlowBuilderSingleton().setPersistenceConfiguration(
@@ -2286,7 +2286,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-inventory-${context.selectedProject.referenceID}';
+                'hcm-inventory-${context.selectedProject.referenceID},hcm-common';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
@@ -2347,7 +2347,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-stockreconciliation-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
+                'hcm-stockreconciliation-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-common';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
@@ -2489,7 +2489,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-hfreferral-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}';
+                    'hcm-hfreferral-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()},hcm-common';
                 triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
@@ -2514,7 +2514,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
+                'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-common';
             triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
@@ -2837,47 +2837,47 @@ class _HomePageState extends LocalizedState<HomePage> {
   }
 
   void triggerLocalization({String? module, bool? loadOnline}) {
-    context.read<AppInitializationBloc>().state.maybeWhen(
-          orElse: () {},
-          initialized: (
-            AppConfiguration appConfiguration,
-            _,
-            __,
-          ) {
-            final appConfig = appConfiguration;
-            final localizationModulesList = appConfiguration.backendInterface;
-            final selectedLocale = AppSharedPreferences().getSelectedLocale;
-            LocalizationParams()
-                .setCode(LeastLevelBoundarySingleton().boundary);
-            if (loadOnline == true) {
-              context
-                  .read<LocalizationBloc>()
-                  .add(LocalizationEvent.onRemoteLoadLocalization(
-                    module: module ??
-                        "${localizationModulesList?.interfaces.where((element) => element.type == Modules.localizationModule).map((e) => e.name.toString()).join(',')}",
-                    tenantId: envConfig.variables.tenantId,
-                    locale: selectedLocale!,
-                    path: Constants.localizationApiPath,
-                  ));
-            } else {
-              context
-                  .read<LocalizationBloc>()
-                  .add(LocalizationEvent.onLoadLocalization(
-                    module: module != null && module.isNotEmpty
-                        ? "$module,hcm-common,hcm-login,hcm-scanner,hcm-checklist,hcm-beneficiary"
-                        : localizationModulesList?.interfaces
-                                .where(
-                                    (e) => e.type == Modules.localizationModule)
-                                .map((e) => e.name.toString())
-                                .join(',') ??
-                            "",
-                    tenantId: envConfig.variables.tenantId,
-                    locale: selectedLocale!,
-                    path: Constants.localizationApiPath,
-                  ));
-            }
-          },
-        );
+    Future.microtask(() {
+      context.read<AppInitializationBloc>().state.maybeWhen(
+            orElse: () {},
+            loading: () {
+              DigitLoaders.overlayLoader(context: context);
+            },
+            initialized: (
+              AppConfiguration appConfiguration,
+              _,
+              __,
+            ) {
+              final localizationModulesList = appConfiguration.backendInterface;
+              final selectedLocale = AppSharedPreferences().getSelectedLocale;
+              LocalizationParams()
+                  .setCode(LeastLevelBoundarySingleton().boundary);
+
+              if (loadOnline == true) {
+                context
+                    .read<LocalizationBloc>()
+                    .add(LocalizationEvent.onRemoteLoadLocalization(
+                      module: module ??
+                          "${localizationModulesList?.interfaces.where((element) => element.type == Modules.localizationModule).map((e) => e.name.toString()).join(',')},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}",
+                      tenantId: envConfig.variables.tenantId,
+                      locale: selectedLocale!,
+                      path: Constants.localizationApiPath,
+                    ));
+              } else {
+                context
+                    .read<LocalizationBloc>()
+                    .add(LocalizationEvent.onLoadLocalization(
+                      module: module != null && module.isNotEmpty
+                          ? "$module,hcm-common,hcm-login,hcm-scanner,hcm-checklist,hcm-beneficiary,hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}"
+                          : "${localizationModulesList?.interfaces.where((e) => e.type == Modules.localizationModule).map((e) => e.name.toString()).join(',')},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}",
+                      tenantId: envConfig.variables.tenantId,
+                      locale: selectedLocale!,
+                      path: Constants.localizationApiPath,
+                    ));
+              }
+            },
+          );
+    });
   }
 }
 
@@ -2913,6 +2913,8 @@ void setPackagesSingleton(BuildContext context) {
           projectId: context.projectId,
           selectedBeneficiaryType: context.beneficiaryType,
           projectType: context.selectedProjectType,
+          vasProjectType: context.vasProjectType,
+          orsProjectType: context.orsProjectType,
           selectedProject: context.selectedProject,
           userRoles: context.loggedInUserRoles
               .map((role) => {

@@ -15,6 +15,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 import '../blocs/app_initialization/app_initialization.dart';
 import '../blocs/auth/auth.dart';
 import '../blocs/localization/app_localization.dart';
+import '../blocs/localization/localization.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../data/local_store/no_sql/schema/service_registry.dart';
 import '../router/app_router.dart';
@@ -37,6 +38,7 @@ class LoginPage extends LocalizedStatefulWidget {
 class _LoginPageState extends LocalizedState<LoginPage> {
   var passwordVisible = false;
   bool isPrivacyEnabled = false;
+  bool _isLocalizationDialogVisible = false;
   static const _userId = 'userId';
   static const _password = 'password';
   static const _privacyCheck = 'privacyCheck';
@@ -47,6 +49,12 @@ class _LoginPageState extends LocalizedState<LoginPage> {
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _isLocalizationDialogVisible = false;
+    super.dispose();
   }
 
   void _checkOtherDeviceLogin(BuildContext context, String username) async {
@@ -85,8 +93,6 @@ class _LoginPageState extends LocalizedState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final textTheme = theme.digitTextTheme(context);
-
     return Scaffold(
       appBar: AppBar(
         foregroundColor: theme.colorTheme.paper.primary,
@@ -143,8 +149,15 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                         i18.login.labelText,
                         fallback: 'Connexion',
                       ),
-                      style: textTheme.headingXl.copyWith(
-                        color: theme.colorTheme.primary.primary2,
+                      capitalizedFirstLetter: false,
+                      isRequired: true,
+                      child: DigitTextFormInput(
+                        keyboardType: TextInputType.text,
+                        initialValue: form.control(_userId).value,
+                        errorMessage: field.errorText,
+                        onChange: (value) {
+                          form.control(_userId).value = value;
+                        },
                       ),
                     ),
                     ReactiveWrapperField(
@@ -212,24 +225,23 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                             form.markAllAsTouched();
                             if (!form.valid) return;
 
-                            FocusManager.instance.primaryFocus?.unfocus();
+                          FocusManager.instance.primaryFocus?.unfocus();
 
-                            _pendingUserId =
-                                (form.control(_userId).value as String).trim();
-                            _pendingPassword =
-                                (form.control(_password).value as String)
-                                    .trim();
+                          _pendingUserId =
+                              (form.control(_userId).value as String).trim();
+                          _pendingPassword =
+                              (form.control(_password).value as String).trim();
 
-                            final bool singleUserLogin = state.maybeWhen(
-                              initialized: (appConfiguration, _, __) {
-                                final list =
-                                    appConfiguration.singleUserLogin ?? [];
-                                if (list.isEmpty) return false;
-                                final config = list.first;
-                                return config.enabled;
-                              },
-                              orElse: () => false,
-                            );
+                          final bool singleUserLogin = state.maybeWhen(
+                            initialized: (appConfiguration, _, __) {
+                              final list =
+                                  appConfiguration.singleUserLogin ?? [];
+                              if (list.isEmpty) return false;
+                              final config = list.first;
+                              return config.enabled;
+                            },
+                            orElse: () => false,
+                          );
 
                             // if (singleUserLogin) {
                             //   _checkOtherDeviceLogin(

@@ -100,6 +100,7 @@ class StockCalculationUtils {
     String? loggedInUserUuid,
     bool isDistributor = false,
     bool calculatePartial = false,
+    double multiplier = 1.0,
   }) {
     final filteredStock = stockList.where((stock) {
       if (stock.productVariantId != productId) return false;
@@ -210,7 +211,21 @@ class StockCalculationUtils {
       }
     }
 
-    // Add delivery task quantities to issued stock if in current cycle
+    // Use distributor calculation if user has distributor role OR if any return was made as sender
+    // For distributor, partial used is also deducted from stock in hand
+
+    // Apply multiplier for unit conversion (e.g., bottles to ml)
+    stockReceived *= multiplier;
+    stockIssued *= multiplier;
+    stockReturned *= multiplier;
+    stockLost *= multiplier;
+    stockDamaged *= multiplier;
+    stockExcess *= multiplier;
+    stockLess *= multiplier;
+
+    // Add delivery task quantities to issued stock if in current cycle.
+    // These are already recorded in ml, so add them after unit conversion
+    // to avoid scaling them by the bottle-to-ml multiplier.
     if (tasks.isNotEmpty) {
       stockIssued += _getDeliveryTaskValue(tasks, productId);
     }
@@ -398,6 +413,8 @@ class StockCalculationUtils {
     List<TaskModel> tasks = const [],
     String? loggedInUserUuid,
     bool isDistributor = false,
+    double multiplier = 1.0,
+    bool calculatePartial = false,
   }) {
     final result = <String, double>{};
     for (final productId in productIds) {
@@ -408,6 +425,8 @@ class StockCalculationUtils {
         loggedInUserUuid: loggedInUserUuid,
         isDistributor: isDistributor,
         tasks: tasks,
+        multiplier: multiplier,
+        calculatePartial: calculatePartial,
       );
       result[productId] = metrics['stockInHand'] ?? 0.0;
     }

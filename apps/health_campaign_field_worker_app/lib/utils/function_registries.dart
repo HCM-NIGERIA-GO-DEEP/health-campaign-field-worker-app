@@ -6,6 +6,7 @@ import 'package:digit_crud_bloc/digit_crud_bloc.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
+import 'package:digit_forms_engine/forms_engine.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -24,6 +25,15 @@ class FunctionRegistries {
     _registerFacilityFunctions();
     _registerStockFunctions();
     _registerViewTransactionFunctions();
+    _registerFormsEngineHooks();
+  }
+
+  /// Wires app-side data into the forms engine's built-in functions.
+  /// Lets `calculateWastage` read the current product's stock balance from
+  /// the in-memory [StockBalanceCache].
+  void _registerFormsEngineHooks() {
+    FormsFunctionConfig.instance.stockBalanceResolver = (productVariantId) =>
+        StockBalanceCache.instance.cache[productVariantId] ?? 0;
   }
 
   void _registerGenerateFunctions() {
@@ -603,12 +613,15 @@ class FunctionRegistries {
         }
       }
 
-      // Find the last ADMINISTRATION_SUCCESS or DELIVERED task
+      // Find the last ADMINISTRATION_SUCCESS or DELIVERED task.
+      // Redose is SMC-only; skip any task tagged additionalFields.flow == 'riDone'.
       Map<String, dynamic>? lastDeliveryTask;
       for (int i = tasks.length - 1; i >= 0; i--) {
-        final status = tasks[i]['status']?.toString().toUpperCase() ?? '';
+        final task = tasks[i];
+        if (_taskHasRiFlow(task)) continue;
+        final status = task['status']?.toString().toUpperCase() ?? '';
         if (status == 'ADMINISTRATION_SUCCESS') {
-          lastDeliveryTask = tasks[i];
+          lastDeliveryTask = task;
           break;
         }
       }
@@ -677,6 +690,39 @@ class FunctionRegistries {
           }
         }
       }
+      return '';
+    }
+
+    // Reads a single value from the additionalFields key/value list.
+    String getFieldValue(dynamic fields, String key) {
+      if (fields is List) {
+        for (var field in fields) {
+          if (field is Map && field['key'] == key) {
+            return field['value']?.toString() ?? '';
+          }
+        }
+      }
+      return '';
+    }
+
+    // Prefixes a facility id with FAC_ (skips empty ids so we never show a bare
+    // "FAC_"). Used to display facility parties on the transaction screens.
+    String withFacilityPrefix(dynamic id) {
+      final value = id?.toString() ?? '';
+      return value.isEmpty ? '' : 'FAC_$value';
+    }
+
+    // Resolves the delivery-team (CDD) userName for display. Prefers the
+    // captured deliveryTeamName (set when the team is the RECEIVER, e.g. an
+    // issue). When the team is the SENDER (e.g. a return) the name was not
+    // captured into deliveryTeamName, but the raw scanned QR is persisted in
+    // the deliveryTeam field as "userName||userUuid" -> extract the name from
+    // there. Returns '' when no name is available (caller falls back to the id).
+    String resolveTeamName(dynamic fields) {
+      final captured = getFieldValue(fields, 'deliveryTeamName');
+      if (captured.isNotEmpty) return captured;
+      final scanned = getFieldValue(fields, 'deliveryTeam');
+      if (scanned.contains('||')) return scanned.split('||').first.trim();
       return '';
     }
 
@@ -757,6 +803,23 @@ class FunctionRegistries {
       if (partyId.isEmpty) return '';
       return partyId.contains('F') ? 'FAC_$partyId' : partyId;
     });
+  }
+
+  /// Returns true when the task carries `additionalFields.flow == 'riDone'`,
+  /// marking it as an RI flow task. Used by SMC-only logic (e.g. redose stock
+  /// check) to skip RI tasks. Mirrors `_isRiEntity` in
+  /// `digit_flow_builder/utils/function_registry.dart`, which is private.
+  static bool _taskHasRiFlow(Map<String, dynamic> task) {
+    final additionalFields = task['additionalFields'];
+    if (additionalFields is! Map) return false;
+    final fields = additionalFields['fields'];
+    if (fields is! List) return false;
+    for (final field in fields) {
+      if (field is Map && field['key'] == 'flow') {
+        return field['value']?.toString() == 'riDone';
+      }
+    }
+    return false;
   }
 }
 
