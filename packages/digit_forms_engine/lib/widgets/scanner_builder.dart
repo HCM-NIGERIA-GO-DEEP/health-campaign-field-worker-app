@@ -40,6 +40,21 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
     }
   }
 
+  int? get scanLimit {
+    if (validations == null) return null;
+
+    for (final rule in validations!) {
+      if (rule.type != 'scanLimit') continue;
+
+      final value = rule.value;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      if (value is double) return value.toInt();
+    }
+
+    return null;
+  }
+
   String formatDisplayCodes(List displayCodes) {
     if (displayCodes.isEmpty) return '';
     // If it's a single code, display as is
@@ -216,6 +231,12 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
             .toList()
           : (hasFormValue ? _serialsFromFormValue(formValue!) : <String>[]);
 
+        final requiredScanCount = scanLimit;
+        final currentScanCount = isGS1code ? displaySerials.length : displayQrCodes.length;
+        final canOpenScanner = !isGS1code ||
+            requiredScanCount == null ||
+            currentScanCount < requiredScanCount;
+
 
         // Show barcode (GS1) summary
         return showBarcodeSummary
@@ -244,6 +265,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                       capitalizeLetters: false,
                       size: DigitButtonSize.large,
                       label: label ?? 'scanner',
+                      isDisabled: !canOpenScanner,
                       onPressed: () {
                         // Pass form value directly to scanner page via route param
                         // Scanner page will parse and dispatch to bloc in initState
@@ -304,6 +326,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                           capitalizeLetters: false,
                           size: DigitButtonSize.large,
                           label: label ?? 'scanner',
+                          isDisabled: !canOpenScanner,
                           onPressed: () {
                             // Clear scanner state before navigating to edit QR codes
                             context.read<DigitScannerBloc>().add(
@@ -350,6 +373,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                     capitalizeLetters: false,
                     size: DigitButtonSize.large,
                     label: label ?? 'scanner',
+                  isDisabled: !canOpenScanner,
                     onPressed: () async {
                       context.read<DigitScannerBloc>().add(
                             DigitScannerEvent.handleScanner(

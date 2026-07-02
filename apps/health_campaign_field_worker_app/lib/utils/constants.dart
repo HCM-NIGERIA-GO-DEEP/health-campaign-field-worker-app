@@ -260,14 +260,15 @@ class Constants {
     final config = appConfigs.firstOrNull;
 
     // Always initialize Firebase Core (required for FCM, analytics, etc.)
-    await firebase_services.initializeFirebaseCore(
+    await firebase_services.initialize(
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
     final enableCrashlytics =
         config?.firebaseConfig?.enableCrashlytics ?? false;
     if (enableCrashlytics) {
-      await firebase_services.initializeCrashlytics(
+      await firebase_services.initialize(
+        options: DefaultFirebaseOptions.currentPlatform,
         onErrorMessage: (value) {
           AppLogger.instance.error(title: 'CRASHLYTICS', message: value);
         },

@@ -608,6 +608,18 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                                   ? state.barCodes
                                   : result;
 
+                              if (DigitScannerUtils().hasDuplicateSerial(
+                                  existingBarcodes, parsed)) {
+                                Toast.showToast(
+                                  context,
+                                  type: ToastType.error,
+                                  message: localizations.translate(
+                                      i18.scanner.resourceAlreadyScanned),
+                                  sentenceCaseEnabled: false,
+                                );
+                                return;
+                              }
+
                               // Per-scan duplicate check
                               if (widget.duplicateCheckFn != null) {
                                 try {
@@ -1214,6 +1226,12 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
     final effectiveBarcodes =
         state.barCodes.isNotEmpty ? state.barCodes : result;
     final effectiveQrCodes = state.qrCodes.isNotEmpty ? state.qrCodes : codes;
+    final capturedSerialCount = effectiveBarcodes.length;
+    final totalSerialTarget = widget.effectiveQuantity;
+    final remainingSerialCount = (totalSerialTarget - capturedSerialCount) > 0
+        ? (totalSerialTarget - capturedSerialCount)
+        : 0;
+
     return Stack(
       children: [
         Positioned(
@@ -1288,13 +1306,26 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                     bottom: spacer2,
                     top: spacer2,
                     left: spacer3,
+                    right: spacer3,
                   ),
                   width: MediaQuery.of(context).size.width,
                   child: widget.effectiveIsGS1code
-                      ? Text(
-                          '${effectiveBarcodes.length.toString()} ${localizations.translate(i18.scanner.resourcesScanned)}',
-                          style: textTheme.headingM
-                              .copyWith(color: theme.colorTheme.text.primary),
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${effectiveBarcodes.length.toString()} ${localizations.translate(i18.scanner.resourcesScanned)}',
+                              style: textTheme.headingM.copyWith(
+                                  color: theme.colorTheme.text.primary),
+                            ),
+                            const SizedBox(height: spacer1),
+                            Text(
+                              '$capturedSerialCount of $totalSerialTarget bednet serials captured. $remainingSerialCount remaining.',
+                              style: textTheme.bodyS.copyWith(
+                                color: theme.colorTheme.text.secondary,
+                              ),
+                            ),
+                          ],
                         )
                       : Text(
                           '${effectiveQrCodes.length.toString()} ${localizations.translate(i18.scanner.resourcesScanned)}',
