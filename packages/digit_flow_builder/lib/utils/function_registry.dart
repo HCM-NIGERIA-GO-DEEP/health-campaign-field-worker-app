@@ -2327,6 +2327,7 @@ void initializeFunctionRegistry() {
       'SICK': 'sickQ1',
       'DRUG_SE_CC': 'sideEffectQ1',
       'DRUG_SE_PC': 'sideEffectPQ1',
+      'RI': 'riQ1',
     };
 
     final checklistKey = symptomToChecklistKey[symptom];
