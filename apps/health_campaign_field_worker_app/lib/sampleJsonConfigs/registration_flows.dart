@@ -1918,7 +1918,7 @@ final dynamic sampleFlows = {
           "flow": "DELIVERY",
           "page": "DeliveryDetails",
           "type": "object",
-          "label": "APPONE_REGISTRATION_DELIVERYDETAILS_SCREEN_HEADING",
+          "label": "APPONE_REGISTRATION_DELIVERYINTERVENTION_SCREEN_HEADING",
           "order": 1,
           "footer": [
             {
