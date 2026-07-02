@@ -473,8 +473,9 @@ void initializeFunctionRegistry() {
 
 // --- Tasks & SideEffects come from stateData ---
     final rawTasks = args.length > 1 ? args[1] : [];
-    final tasks =
-        rawTasks is List ? _filterByFlow(rawTasks, keepRi: false) : <Map<String, dynamic>>[];
+    final tasks = rawTasks is List
+        ? _filterByFlow(rawTasks, keepRi: false)
+        : <Map<String, dynamic>>[];
     final sideEffects = (stateData.modelMap['sideEffects'] as List?) ?? [];
 
 // --- Current active cycle ---
@@ -1449,9 +1450,8 @@ void initializeFunctionRegistry() {
 
     for (final refMap in smcReferrals) {
       final additionalFields = refMap['additionalFields'];
-      final fields = additionalFields is Map
-          ? additionalFields['fields'] as List?
-          : null;
+      final fields =
+          additionalFields is Map ? additionalFields['fields'] as List? : null;
       if (fields != null) {
         for (final field in fields) {
           if (field is Map && field['key'] == 'referralCycle') {
@@ -1686,6 +1686,7 @@ void initializeFunctionRegistry() {
       'SICK': 'sickQ1',
       'DRUG_SE_CC': 'sideEffectQ1',
       'DRUG_SE_PC': 'sideEffectPQ1',
+      'RI': 'riQ1',
     };
 
     final checklistKey = symptomToChecklistKey[symptom];
@@ -2171,14 +2172,12 @@ void initializeFunctionRegistry() {
 
     for (final refMap in riReferrals) {
       final additionalFields = refMap['additionalFields'];
-      final fields = additionalFields is Map
-          ? additionalFields['fields'] as List?
-          : null;
+      final fields =
+          additionalFields is Map ? additionalFields['fields'] as List? : null;
       if (fields == null) continue;
       for (final field in fields) {
         if (field is Map && field['key'] == 'referralCycle') {
-          final referralCycle =
-              int.tryParse(field['value']?.toString() ?? '');
+          final referralCycle = int.tryParse(field['value']?.toString() ?? '');
           if (referralCycle == selectedCycle.id) return true;
         }
       }
@@ -2220,9 +2219,8 @@ void initializeFunctionRegistry() {
       if (selectedCycle == null || selectedCycle.id == 0) return true;
 
       final additionalFields = task['additionalFields'];
-      final fields = additionalFields is Map
-          ? additionalFields['fields'] as List?
-          : null;
+      final fields =
+          additionalFields is Map ? additionalFields['fields'] as List? : null;
       int? taskCycleIndex;
       if (fields != null) {
         for (final field in fields) {
@@ -2270,9 +2268,8 @@ void initializeFunctionRegistry() {
       if (selectedCycle == null || selectedCycle.id == 0) return true;
 
       final additionalFields = task['additionalFields'];
-      final fields = additionalFields is Map
-          ? additionalFields['fields'] as List?
-          : null;
+      final fields =
+          additionalFields is Map ? additionalFields['fields'] as List? : null;
       int? taskCycleIndex;
       if (fields != null) {
         for (final field in fields) {
