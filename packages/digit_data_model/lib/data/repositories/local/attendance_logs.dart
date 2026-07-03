@@ -80,21 +80,60 @@ class AttendanceLogsLocalRepository
     DataOperation dataOperation = DataOperation.create,
   }) async {
     return retryLocalCallOperation(() async {
+      AttendanceData? existingAttendance;
+      if (entity.clientReferenceId != null) {
+        existingAttendance = await (sql.select(sql.attendance)
+              ..where(
+                (tbl) =>
+                    tbl.clientReferenceId.equals(entity.clientReferenceId!),
+              )
+              ..limit(1))
+            .getSingleOrNull();
+      } else if (entity.id != null) {
+        existingAttendance = await (sql.select(sql.attendance)
+              ..where((tbl) => tbl.id.equals(entity.id!))
+              ..limit(1))
+            .getSingleOrNull();
+      }
+
+      final effectiveOperation = dataOperation == DataOperation.create &&
+              existingAttendance != null &&
+              existingAttendance.id != null
+          ? DataOperation.update
+          : dataOperation;
+
       final logCompanion = entity.companion;
 
-      await sql.batch((batch) async {
-        batch.insert(
-          sql.attendance,
-          logCompanion,
-          mode: InsertMode.insertOrReplace,
+      if (effectiveOperation == DataOperation.update) {
+        final Expression<bool> whereCondition =
+            sql.attendance.id.equals(entity.id!);
+        await sql.batch((batch) async {
+          batch.update(
+            sql.attendance,
+            logCompanion,
+            where: (table) => whereCondition,
+          );
+        });
+        await super.update(
+          entity,
+          createOpLog: createOpLog,
+          dataOperation: effectiveOperation,
         );
-      });
+      } else {
+        await sql.batch((batch) async {
+          batch.insert(
+            sql.attendance,
+            logCompanion,
+            mode: InsertMode.insertOrReplace,
+          );
+        });
 
-      await super.create(
-        entity,
-        createOpLog: createOpLog,
-        dataOperation: dataOperation,
-      );
+        await super.create(
+          entity,
+          createOpLog: createOpLog,
+          dataOperation: dataOperation,
+        );
+      }
     });
   }
 
@@ -155,11 +194,7 @@ class AttendanceLogsLocalRepository
     List<AttendanceLogModel> entities,
   ) async {
     return retryLocalCallOperation(() async {
-      final logsCompanions = entities
-          .map((e) => e.companion.copyWith(
-                uploadToServer: const Value(true),
-              ))
-          .toList();
+      final logsCompanions = entities.map((e) => e.companion).toList();
 
       await sql.batch((batch) async {
         batch.insertAll(

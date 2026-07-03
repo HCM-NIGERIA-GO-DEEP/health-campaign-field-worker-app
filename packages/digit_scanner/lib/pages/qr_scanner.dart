@@ -32,6 +32,7 @@ class DigitScannerPage extends LocalizedStatefulWidget {
   final int quantity;
   final bool isGS1code;
   final bool isEditEnabled;
+  final bool allowManual;
   final String? regex;
 
   // New validations parameter - when provided, takes precedence over legacy params
@@ -60,6 +61,7 @@ class DigitScannerPage extends LocalizedStatefulWidget {
     this.isGS1code = false,
     this.singleValue = false,
     this.isEditEnabled = false,
+    this.allowManual = true,
     this.regex,
     this.validations,
     this.initialQrCodes,
@@ -1013,6 +1015,8 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                                 .trim();
                             final bloc = context.read<DigitScannerBloc>();
 
+                            final regex = widget.effectiveRegex;
+
                             // Per-scan duplicate check
                             if (widget.duplicateCheckFn != null) {
                               try {
@@ -1074,6 +1078,21 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                                 sentenceCaseEnabled: false,
                               );
                               return;
+                            }
+
+                            if (regex != null && regex.trim().isNotEmpty) {
+                              // Validate regex pattern if provided
+                              if (!RegExp(regex).hasMatch(manualValue)) {
+                                // Handle error if barcode doesn't match regex pattern
+                                Toast.showToast(
+                                  context,
+                                  type: ToastType.error,
+                                  message: localizations
+                                      .translate(i18.scanner.invalidQRCode),
+                                  sentenceCaseEnabled: false,
+                                );
+                                return;
+                              }
                             }
 
                             final updatedQRCodes =
@@ -1245,9 +1264,10 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
           ),
         ),
 
-        Center(
-          child: overlayForManualEntry(theme, textTheme),
-        ),
+        if (widget.allowManual)
+          Center(
+            child: overlayForManualEntry(theme, textTheme),
+          ),
 
         renderScannedResource(theme, textTheme, state)
       ],
