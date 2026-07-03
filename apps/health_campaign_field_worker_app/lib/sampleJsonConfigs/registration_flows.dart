@@ -590,6 +590,16 @@ final dynamic sampleFlows = {
                             "{{contextData.0.targetCycle.0.deliveries.0.doseCriteria.0.ProductVariants.0.quantity}}"
                       },
                       {
+                        "key": "nameOfIndividual",
+                        "value":
+                            "{{contextData.0.headIndividual.IndividualModel.name.givenName}}"
+                      },
+                      {
+                        "key": "lastName",
+                        "value":
+                            "{{contextData.0.headIndividual.IndividualModel.name.additionalFields.fields.lastName}}"
+                      },
+                      {
                         "key": "beneficiaryId",
                         "value":
                             "{{contextData.0.headIndividual.IndividualModel.identifiers.0.identifierId}}"

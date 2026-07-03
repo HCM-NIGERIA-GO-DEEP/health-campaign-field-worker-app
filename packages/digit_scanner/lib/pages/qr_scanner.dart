@@ -868,7 +868,7 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                               builder: (field) {
                                 return LabeledField(
                                   label: localizations.translate(
-                                    i18.scanner.barCodeSerial,
+                                    i18.scanner.serialNumber,
                                   ),
                                   capitalizedFirstLetter: false,
                                   child: DigitTextFormInput(
@@ -1393,7 +1393,8 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                                         width: 110,
                                         child: Text(
                                           localizations
-                                              .translate(i18.scanner.barCodeSerial),
+                                              .translate(
+                                              i18.scanner.serialNumber),
                                           style: textTheme.bodyS.copyWith(
                                             color:
                                                 theme.colorTheme.text.secondary,
