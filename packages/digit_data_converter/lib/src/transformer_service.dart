@@ -382,9 +382,12 @@ class FormEntityMapper {
     final updatedFields = <String, dynamic>{};
 
     updateMapping.forEach((customKey, path) {
-      // __concatName: combines multiple form fields into a single value, so it
-      // is not a plain form path. Resolve it through getValueFromMapping instead.
-      if (path is String && path.startsWith('__concatName:')) {
+      // __concatName: / __ageInMonths: are derived values, not plain form
+      // paths, so resolve them through getValueFromMapping instead of treating
+      // the directive string as a form lookup path.
+      if (path is String &&
+          (path.startsWith('__concatName:') ||
+              path.startsWith('__ageInMonths:'))) {
         final value = getValueFromMapping(path, formValues, modelName, context);
         if (value != null && value.toString().trim().isNotEmpty) {
           updatedFields[customKey] = value;
@@ -394,10 +397,13 @@ class FormEntityMapper {
 
       if (containsPathInFormData(path, formValues)) {
         final value = getStrictValueFromFormDataOnly(path, formValues);
-        updatedFields[customKey] = value;
+        // Only add non-null values to additionalFields
+        if (value != null) {
+          updatedFields[customKey] = value;
 
-        // Track the path as used so it's not treated as unmapped
-        usedPaths.add(path.split('.').last.split('[').first);
+          // Track the path as used so it's not treated as unmapped
+          usedPaths.add(path.split('.').last.split('[').first);
+        }
       }
     });
 
@@ -412,12 +418,15 @@ class FormEntityMapper {
       }
     }
 
-    // merge updates into existing
+    // merge updates into existing (filter out null values)
     updatedFields.forEach((key, value) {
-      existingFields[key] = value;
+      if (value != null) {
+        existingFields[key] = value;
+      }
     });
 
     final mergedFields = existingFields.entries
+        .where((e) => e.value != null)
         .map((e) => {'key': e.key, 'value': e.value})
         .toList();
 
@@ -1100,12 +1109,81 @@ class FormEntityMapper {
       return resolvedParts.isEmpty ? null : resolvedParts.join(' ');
     }
 
+    if (instruction.startsWith('__ageInMonths:')) {
+      // Format: __ageInMonths:<dobPath>
+      // Resolves the date-of-birth at the given path (recursively, so it may
+      // itself be a plain form path or another directive like __context:) and
+      // returns the age in whole months. Uses the same day-adjusted formula as
+      // formatDate(dob, 'ageInMonths') so a member's stored ageInMonths stays
+      // consistent with what the delivery TaskModel records.
+      // Example: __ageInMonths:beneficiaryDetails.dobPicker
+      final dobInstruction =
+          instruction.replaceFirst('__ageInMonths:', '').trim();
+
+      final dobValue = getValueFromMapping(
+          dobInstruction, data, currentModel, context,
+          listItemIndex: listItemIndex, listSourcePath: listSourcePath);
+
+      return _calculateAgeInMonths(dobValue);
+    }
+
     if (instruction.startsWith('__context:')) {
       final path = instruction.replaceFirst('__context:', '');
       return _getValueFromPath(context, path);
     }
 
     return _getValueFromPath(data, instruction);
+  }
+
+  /// Computes the age in whole months for a date-of-birth value.
+  ///
+  /// Accepts the dob as a [DateTime], an epoch-millis [int], or a [String]
+  /// (epoch-millis, dd/MM/yyyy, or ISO-8601). Returns the age in months,
+  /// day-adjusted so an incomplete final month is not counted, mirroring the
+  /// 'ageInMonths' branch of the formatDate function used elsewhere in the app.
+  /// Returns null when the value is missing or cannot be parsed, so callers
+  /// skip the field rather than store a bogus value.
+  int? _calculateAgeInMonths(dynamic value) {
+    DateTime? birthDate;
+
+    if (value is DateTime) {
+      birthDate = value;
+    } else if (value is int) {
+      birthDate = DateTime.fromMillisecondsSinceEpoch(value);
+    } else if (value is String && value.trim().isNotEmpty) {
+      final raw = value.trim();
+
+      // Try epoch-millis first.
+      final timestamp = int.tryParse(raw);
+      if (timestamp != null) {
+        birthDate = DateTime.fromMillisecondsSinceEpoch(timestamp);
+      } else if (raw.contains('/')) {
+        // Handle dd/MM/yyyy.
+        final parts = raw.split('/');
+        if (parts.length == 3) {
+          final day = int.tryParse(parts[0]);
+          final month = int.tryParse(parts[1]);
+          final year = int.tryParse(parts[2]);
+          if (day != null && month != null && year != null) {
+            birthDate = DateTime(year, month, day);
+          }
+        }
+      }
+
+      // Fall back to ISO-8601.
+      birthDate ??= DateTime.tryParse(raw);
+    }
+
+    if (birthDate == null) return null;
+
+    final now = DateTime.now();
+    var months =
+        (now.year - birthDate.year) * 12 + (now.month - birthDate.month);
+
+    // Drop the final month if the birth day hasn't occurred yet this month.
+    if (now.day < birthDate.day) months -= 1;
+
+    return months < 0 ? 0 : months;
   }
 
   Map<String, String> _parseSwitchMapping(String raw) {

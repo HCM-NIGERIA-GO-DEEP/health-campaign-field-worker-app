@@ -15,6 +15,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 import '../blocs/app_initialization/app_initialization.dart';
 import '../blocs/auth/auth.dart';
 import '../blocs/localization/app_localization.dart';
+import '../blocs/localization/localization.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../data/local_store/no_sql/schema/service_registry.dart';
 import '../router/app_router.dart';
@@ -34,9 +35,25 @@ class LoginPage extends LocalizedStatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
+PrivacyComponent privacyComponent(
+    BuildContext context, PrivacyNoticeModel? privacyPolicy) {
+  return PrivacyComponent(
+    privacyPolicy: privacyPolicy,
+    onAccept: () {
+      final authBloc = context.read<AuthBloc>();
+      authBloc.add(const AuthEvent.allow());
+    },
+    onDecline: () {
+      final authBloc = context.read<AuthBloc>();
+      authBloc.add(const AuthEvent.decline());
+    },
+  );
+}
+
 class _LoginPageState extends LocalizedState<LoginPage> {
   var passwordVisible = false;
   bool isPrivacyEnabled = false;
+  bool _isLocalizationDialogVisible = false;
   static const _userId = 'userId';
   static const _password = 'password';
   static const _privacyCheck = 'privacyCheck';
@@ -47,6 +64,12 @@ class _LoginPageState extends LocalizedState<LoginPage> {
   @override
   void initState() {
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _isLocalizationDialogVisible = false;
+    super.dispose();
   }
 
   void _checkOtherDeviceLogin(BuildContext context, String username) async {
@@ -85,203 +108,213 @@ class _LoginPageState extends LocalizedState<LoginPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final textTheme = theme.digitTextTheme(context);
-
     return Scaffold(
       appBar: AppBar(
         foregroundColor: theme.colorTheme.paper.primary,
         backgroundColor: theme.colorTheme.primary.primary2,
       ),
-      body: BlocListener<AuthBloc, AuthState>(
-        listener: (context, state) {
-          state.maybeWhen(
-            orElse: () {},
-            loading: () {
-              DigitLoaders.overlayLoader(context: context);
-            },
-            allow: () {
-              Navigator.of(context, rootNavigator: true).pop();
-              context.read<AuthBloc>().add(
-                    AuthLoginEvent(
-                      userId: _pendingUserId as String,
-                      password: _pendingPassword as String,
-                      tenantId: envConfig.variables.tenantId,
-                    ),
-                  );
-            },
-            otherDevice: () {
-              Navigator.of(context, rootNavigator: true).pop();
-              _showMultiDeviceLoginPopUp(
-                context,
-                username: _pendingUserId as String,
-                password: _pendingPassword as String,
-              );
-            },
-            error: (message) {
-              Navigator.of(context, rootNavigator: true).pop();
-              Toast.showToast(
-                context,
-                message: message ??
-                    localizations.translate(i18.login.unableToLoginText),
-                type: ToastType.error,
-              );
-            },
-          );
+      body: BlocBuilder<LocalizationBloc, LocalizationState>(
+        builder: (context, localizationState) {
+          if (localizationState.isLocalizationLoadCompleted == false) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          return _buildLoginBody(context);
         },
-        child: ScrollableContent(
-          children: [
-            ReactiveFormBuilder(
-              form: buildForm,
-              builder: (context, form, child) {
-                return DigitCard(
-                  margin: const EdgeInsets.all(spacer2),
-                  children: [
-                    Text(
-                      localizations.translate(
-                        i18.login.labelText,
-                      ),
-                      style: textTheme.headingXl.copyWith(
-                        color: theme.colorTheme.primary.primary2,
-                      ),
+      ),
+    );
+  }
+
+  Widget _buildLoginBody(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.digitTextTheme(context);
+    return BlocListener<AuthBloc, AuthState>(
+      listener: (context, state) {
+        state.maybeWhen(
+          orElse: () {},
+          loading: () {
+            DigitLoaders.overlayLoader(context: context);
+          },
+          allow: () {
+            Navigator.of(context, rootNavigator: true).pop();
+            context.read<AuthBloc>().add(
+                  AuthLoginEvent(
+                    userId: _pendingUserId as String,
+                    password: _pendingPassword as String,
+                    tenantId: envConfig.variables.tenantId,
+                  ),
+                );
+          },
+          otherDevice: () {
+            Navigator.of(context, rootNavigator: true).pop();
+            _showMultiDeviceLoginPopUp(
+              context,
+              username: _pendingUserId as String,
+              password: _pendingPassword as String,
+            );
+          },
+          error: (message) {
+            Navigator.of(context, rootNavigator: true).pop();
+            Toast.showToast(
+              context,
+              message: message ??
+                  localizations.translate(i18.login.unableToLoginText),
+              type: ToastType.error,
+            );
+          },
+        );
+      },
+      child: ScrollableContent(
+        children: [
+          ReactiveFormBuilder(
+            form: buildForm,
+            builder: (context, form, child) {
+              return DigitCard(
+                margin: const EdgeInsets.all(spacer2),
+                children: [
+                  Text(
+                    localizations.translate(
+                      i18.login.labelText,
                     ),
-                    ReactiveWrapperField(
-                      formControlName: _userId,
-                      validationMessages: {
-                        "required": (control) {
-                          return localizations.translate(
-                            '${i18.login.userIdPlaceholder}_IS_REQUIRED',
-                          );
-                        },
-                      },
-                      builder: (field) => LabeledField(
-                        label: localizations.translate(
-                          i18.login.userIdPlaceholder,
-                        ),
-                        capitalizedFirstLetter: false,
-                        isRequired: true,
-                        child: DigitTextFormInput(
-                          keyboardType: TextInputType.text,
-                          initialValue: form.control(_userId).value,
-                          errorMessage: field.errorText,
-                          onChange: (value) {
-                            form.control(_userId).value = value;
-                          },
-                        ),
-                      ),
+                    style: textTheme.headingXl.copyWith(
+                      color: theme.colorTheme.primary.primary2,
                     ),
-                    ReactiveWrapperField(
-                      formControlName: _password,
-                      validationMessages: {
-                        "required": (control) {
-                          return localizations.translate(
-                            '${i18.login.passwordPlaceholder}_IS_REQUIRED',
-                          );
-                        },
-                      },
-                      builder: (field) => LabeledField(
-                        label: localizations.translate(
-                          i18.login.passwordPlaceholder,
-                        ),
-                        isRequired: true,
-                        child: DigitPasswordFormInput(
-                          initialValue: form.control(_password).value,
-                          errorMessage: field.errorText,
-                          onChange: (value) {
-                            form.control(_password).value = value;
-                          },
-                          keyboardType: TextInputType.text,
-                        ),
-                      ),
-                    ),
-                    BlocBuilder<AppInitializationBloc, AppInitializationState>(
-                      builder: (context, state) {
-                        return DigitButton(
-                          label: localizations.translate(i18.login.actionLabel),
-                          type: DigitButtonType.primary,
-                          onPressed: () {
-                            form.markAllAsTouched();
-                            if (!form.valid) return;
-
-                            FocusManager.instance.primaryFocus?.unfocus();
-
-                            _pendingUserId =
-                                (form.control(_userId).value as String).trim();
-                            _pendingPassword =
-                                (form.control(_password).value as String)
-                                    .trim();
-
-                            final bool singleUserLogin = state.maybeWhen(
-                              initialized: (appConfiguration, _, __) {
-                                final list =
-                                    appConfiguration.singleUserLogin ?? [];
-                                if (list.isEmpty) return false;
-                                final config = list.first;
-                                return config.enabled;
-                              },
-                              orElse: () => false,
-                            );
-
-                            if (singleUserLogin) {
-                              _checkOtherDeviceLogin(
-                                  context, _pendingUserId as String);
-                            } else {
-                              context.read<AuthBloc>().add(
-                                    AuthLoginEvent(
-                                      userId: _pendingUserId as String,
-                                      password: _pendingPassword as String,
-                                      tenantId: envConfig.variables.tenantId,
-                                    ),
-                                  );
-                            }
-                          },
-                          size: DigitButtonSize.large,
-                          mainAxisSize: MainAxisSize.max,
+                  ),
+                  ReactiveWrapperField(
+                    formControlName: _userId,
+                    validationMessages: {
+                      "required": (control) {
+                        return localizations.translate(
+                          '${i18.login.userIdPlaceholder}_IS_REQUIRED',
                         );
                       },
-                    ),
-                    DigitButton(
+                    },
+                    builder: (field) => LabeledField(
                       label: localizations.translate(
-                        i18.forgotPassword.actionLabel,
+                        i18.login.userIdPlaceholder,
                       ),
-                      capitalizeLetters: false,
-                      mainAxisSize: MainAxisSize.max,
-                      type: DigitButtonType.tertiary,
-                      size: DigitButtonSize.medium,
-                      onPressed: () => showCustomPopup(
-                        context: context,
-                        builder: (ctx) => Popup(
-                          title: localizations.translate(
-                            i18.forgotPassword.labelText,
-                          ),
-                          description: localizations.translate(
-                            i18.forgotPassword.contentText,
-                          ),
-                          onOutsideTap: () {
-                            Navigator.of(ctx).pop();
-                          },
-                          type: PopUpType.simple,
-                          actions: [
-                            DigitButton(
-                              label: localizations.translate(
-                                i18.forgotPassword.primaryActionLabel,
-                              ),
-                              onPressed: () {
-                                Navigator.of(ctx).pop();
-                                context.router.popUntilRoot();
-                              },
-                              type: DigitButtonType.primary,
-                              size: DigitButtonSize.large,
-                            )
-                          ],
-                        ),
+                      capitalizedFirstLetter: false,
+                      isRequired: true,
+                      child: DigitTextFormInput(
+                        keyboardType: TextInputType.text,
+                        initialValue: form.control(_userId).value,
+                        errorMessage: field.errorText,
+                        onChange: (value) {
+                          form.control(_userId).value = value;
+                        },
                       ),
                     ),
-                  ],
-                );
-              },
-            ),
-          ],
-        ),
+                  ),
+                  ReactiveWrapperField(
+                    formControlName: _password,
+                    validationMessages: {
+                      "required": (control) {
+                        return localizations.translate(
+                          '${i18.login.passwordPlaceholder}_IS_REQUIRED',
+                        );
+                      },
+                    },
+                    builder: (field) => LabeledField(
+                      label: localizations.translate(
+                        i18.login.passwordPlaceholder,
+                      ),
+                      isRequired: true,
+                      child: DigitPasswordFormInput(
+                        initialValue: form.control(_password).value,
+                        errorMessage: field.errorText,
+                        onChange: (value) {
+                          form.control(_password).value = value;
+                        },
+                        keyboardType: TextInputType.text,
+                      ),
+                    ),
+                  ),
+                  BlocBuilder<AppInitializationBloc, AppInitializationState>(
+                    builder: (context, state) {
+                      return DigitButton(
+                        label: localizations.translate(i18.login.actionLabel),
+                        type: DigitButtonType.primary,
+                        onPressed: () {
+                          form.markAllAsTouched();
+                          if (!form.valid) return;
+
+                          FocusManager.instance.primaryFocus?.unfocus();
+
+                          _pendingUserId =
+                              (form.control(_userId).value as String).trim();
+                          _pendingPassword =
+                              (form.control(_password).value as String).trim();
+
+                          final bool singleUserLogin = state.maybeWhen(
+                            initialized: (appConfiguration, _, __) {
+                              final list =
+                                  appConfiguration.singleUserLogin ?? [];
+                              if (list.isEmpty) return false;
+                              final config = list.first;
+                              return config.enabled;
+                            },
+                            orElse: () => false,
+                          );
+
+                          if (singleUserLogin) {
+                            _checkOtherDeviceLogin(
+                                context, _pendingUserId as String);
+                          } else {
+                            context.read<AuthBloc>().add(
+                                  AuthLoginEvent(
+                                    userId: _pendingUserId as String,
+                                    password: _pendingPassword as String,
+                                    tenantId: envConfig.variables.tenantId,
+                                  ),
+                                );
+                          }
+                        },
+                        size: DigitButtonSize.large,
+                        mainAxisSize: MainAxisSize.max,
+                      );
+                    },
+                  ),
+                  DigitButton(
+                    label: localizations.translate(
+                      i18.forgotPassword.actionLabel,
+                    ),
+                    capitalizeLetters: false,
+                    mainAxisSize: MainAxisSize.max,
+                    type: DigitButtonType.tertiary,
+                    size: DigitButtonSize.medium,
+                    onPressed: () => showCustomPopup(
+                      context: context,
+                      builder: (ctx) => Popup(
+                        title: localizations.translate(
+                          i18.forgotPassword.labelText,
+                        ),
+                        description: localizations.translate(
+                          i18.forgotPassword.contentText,
+                        ),
+                        onOutsideTap: () {
+                          Navigator.of(ctx).pop();
+                        },
+                        type: PopUpType.simple,
+                        actions: [
+                          DigitButton(
+                            label: localizations.translate(
+                              i18.forgotPassword.primaryActionLabel,
+                            ),
+                            onPressed: () {
+                              Navigator.of(ctx).pop();
+                              context.router.popUntilRoot();
+                            },
+                            type: DigitButtonType.primary,
+                            size: DigitButtonSize.large,
+                          )
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
       ),
     );
   }

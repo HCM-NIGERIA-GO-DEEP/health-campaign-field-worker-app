@@ -18,10 +18,10 @@ import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/router/flow_builder_routes.gm.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
 import 'package:digit_flow_builder/widgets/flow_widget_interface.dart';
-import 'package:digit_formula_parser/digit_formula_parser.dart';
 import 'package:digit_location_tracker/utils/utils.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/utils/component_utils.dart';
+import 'package:digit_ui_components/widgets/atoms/digit_loader.dart';
 import 'package:drift_db_viewer/drift_db_viewer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -138,7 +138,7 @@ class _HomePageState extends LocalizedState<HomePage> {
     FlowWidgetFactory.register(CustomRowWidget());
     FlowWidgetFactory.register(SignatureCompareWidget());
 
-    // Register resource card for DELIVERY and REDOSE
+    // Register resource card for DELIVERY, VAS DELIVERY and REDOSE
     CustomComponentRegistry().registerBuilder(
       'resourceCard',
       (context, stateAccessor) {
@@ -147,19 +147,46 @@ class _HomePageState extends LocalizedState<HomePage> {
 
         if (beneficiaryDetails != null &&
             stateAccessor.currentPageName == 'DELIVERY') {
-          // DELIVERY flow
+          // Regular DELIVERY flow
           return ResourceCard(
             stateData: beneficiaryDetails,
             pageSchema: 'DELIVERY',
           );
         }
 
-        // REDOSE flow - compute product variants same as DELIVERY
-        // Use navigation params to filter by age condition
+        // VAS DELIVERY flow - VAS details are stored in a separate page data key
+        final vasDetails = stateAccessor.getPageData('vasDetails');
+        if (vasDetails != null &&
+            stateAccessor.currentPageName == 'VASDELIVERY') {
+          // VAS DELIVERY flow
+          return ResourceCard(
+            stateData: vasDetails,
+            pageSchema: 'VASDELIVERY',
+          );
+        }
+
+        // ORS DELIVERY flow - ORS details are stored in a separate page data key
+        final orsDetails = stateAccessor.getPageData('orsDetails');
+        if (orsDetails != null &&
+            stateAccessor.currentPageName == 'ORSDELIVERY') {
+          // ORS DELIVERY flow
+          return ResourceCard(
+            stateData: orsDetails,
+            pageSchema: 'ORSDELIVERY',
+          );
+        }
+
+        // REDOSE flow - compute product variants same as DELIVERY.
+        // Use navigation params to filter dose criteria by the member's
+        // age / weight / height, mirroring checkEligibilityForAgeAndSideEffect.
         final navParams = FlowCrudStateRegistry().getNavigationParams('REDOSE');
         final cycleIndex = navParams?['cycleIndex'];
-        final ageStr = navParams?['selectedIndividualAgeInMonths'];
-        final age = int.tryParse(ageStr?.toString() ?? '');
+        final age = int.tryParse(
+            navParams?['selectedIndividualAgeInMonths']?.toString() ?? '');
+        // weight / height are optional; the helper ignores their clauses when
+        // the measurement is not recorded.
+        final weight = num.tryParse(navParams?['weight']?.toString() ?? '');
+        final height = num.tryParse(navParams?['height']?.toString() ?? '');
 
         final projectType = context.selectedProjectType;
         final cycles = projectType?.cycles;
@@ -171,30 +198,15 @@ class _HomePageState extends LocalizedState<HomePage> {
 
         // Use first delivery's dose criteria (all deliveries have same criteria)
         final firstDelivery = currentCycle?.deliveries?.firstOrNull;
-        final matchingCriteria = <Map<String, dynamic>>[];
 
-        if (firstDelivery?.doseCriteria != null && age != null) {
-          for (final dc in firstDelivery!.doseCriteria!) {
-            if (dc.condition != null && dc.condition!.isNotEmpty) {
-              // Evaluate condition e.g. "3<=ageandage<=11"
-              final sanitized = dc.condition!
-                  .replaceAll(' and ', ' && ')
-                  .replaceAll('and', '&&');
-              try {
-                final parser = FormulaParser(sanitized, {'age': age});
-                final result = parser.parse;
-                if (result['isSuccess'] && result['value'] == true) {
-                  matchingCriteria.add(dc.toMap());
-                }
-              } catch (e) {
-                debugPrint('REDOSE condition eval error: $e');
-              }
-            } else {
-              // No condition - include by default
-              matchingCriteria.add(dc.toMap());
-            }
-          }
-        }
+        final matchingCriteria = age == null
+            ? <Map<String, dynamic>>[]
+            : filterEligibleDoseCriteria(
+                firstDelivery?.doseCriteria,
+                ageInMonths: age,
+                weight: weight,
+                height: height,
+              );
 
         final redoseState = FlowCrudState(
           stateWrapper: [
@@ -1210,7 +1222,7 @@ class _HomePageState extends LocalizedState<HomePage> {
     FunctionRegistry.register("isNotSingleSession", (args, stateData) {
       // If no argument provided, default to single session
       if (args.isEmpty || args.first == null) {
-        return true;
+        return false; // default to single session if no register model provided
       }
 
       final registerModel = args.first;
@@ -2657,47 +2669,47 @@ class _HomePageState extends LocalizedState<HomePage> {
   }
 
   void triggerLocalization({String? module, bool? loadOnline}) {
-    context.read<AppInitializationBloc>().state.maybeWhen(
-          orElse: () {},
-          initialized: (
-            AppConfiguration appConfiguration,
-            _,
-            __,
-          ) {
-            final appConfig = appConfiguration;
-            final localizationModulesList = appConfiguration.backendInterface;
-            final selectedLocale = AppSharedPreferences().getSelectedLocale;
-            LocalizationParams()
-                .setCode(LeastLevelBoundarySingleton().boundary);
-            if (loadOnline == true) {
-              context
-                  .read<LocalizationBloc>()
-                  .add(LocalizationEvent.onRemoteLoadLocalization(
-                    module: module ??
-                        "${localizationModulesList?.interfaces.where((element) => element.type == Modules.localizationModule).map((e) => e.name.toString()).join(',')}",
-                    tenantId: envConfig.variables.tenantId,
-                    locale: selectedLocale!,
-                    path: Constants.localizationApiPath,
-                  ));
-            } else {
-              context
-                  .read<LocalizationBloc>()
-                  .add(LocalizationEvent.onLoadLocalization(
-                    module: module != null && module.isNotEmpty
-                        ? "$module,hcm-common,hcm-login,hcm-scanner,hcm-checklist,hcm-beneficiary"
-                        : localizationModulesList?.interfaces
-                                .where(
-                                    (e) => e.type == Modules.localizationModule)
-                                .map((e) => e.name.toString())
-                                .join(',') ??
-                            "",
-                    tenantId: envConfig.variables.tenantId,
-                    locale: selectedLocale!,
-                    path: Constants.localizationApiPath,
-                  ));
-            }
-          },
-        );
+    Future.microtask(() {
+      context.read<AppInitializationBloc>().state.maybeWhen(
+            orElse: () {},
+            loading: () {
+              DigitLoaders.overlayLoader(context: context);
+            },
+            initialized: (
+              AppConfiguration appConfiguration,
+              _,
+              __,
+            ) {
+              final localizationModulesList = appConfiguration.backendInterface;
+              final selectedLocale = AppSharedPreferences().getSelectedLocale;
+              LocalizationParams()
+                  .setCode(LeastLevelBoundarySingleton().boundary);
+
+              if (loadOnline == true) {
+                context
+                    .read<LocalizationBloc>()
+                    .add(LocalizationEvent.onRemoteLoadLocalization(
+                      module: module ??
+                          "${localizationModulesList?.interfaces.where((element) => element.type == Modules.localizationModule).map((e) => e.name.toString()).join(',')},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}",
+                      tenantId: envConfig.variables.tenantId,
+                      locale: selectedLocale!,
+                      path: Constants.localizationApiPath,
+                    ));
+              } else {
+                context
+                    .read<LocalizationBloc>()
+                    .add(LocalizationEvent.onLoadLocalization(
+                      module: module != null && module.isNotEmpty
+                          ? "$module,hcm-common,hcm-login,hcm-scanner,hcm-checklist,hcm-beneficiary,hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}"
+                          : "${localizationModulesList?.interfaces.where((e) => e.type == Modules.localizationModule).map((e) => e.name.toString()).join(',')},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}",
+                      tenantId: envConfig.variables.tenantId,
+                      locale: selectedLocale!,
+                      path: Constants.localizationApiPath,
+                    ));
+              }
+            },
+          );
+    });
   }
 }
 
@@ -2733,6 +2745,8 @@ void setPackagesSingleton(BuildContext context) {
           projectId: context.projectId,
           selectedBeneficiaryType: context.beneficiaryType,
           projectType: context.selectedProjectType,
+          vasProjectType: context.vasProjectType,
+          orsProjectType: context.orsProjectType,
           selectedProject: context.selectedProject,
           userRoles: context.loggedInUserRoles
               .map((role) => {

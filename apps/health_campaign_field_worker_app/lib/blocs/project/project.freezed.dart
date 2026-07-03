@@ -319,6 +319,7 @@ abstract class ProjectSelectProjectEvent implements ProjectEvent {
 /// @nodoc
 mixin _$ProjectState {
   List<ProjectModel> get projects => throw _privateConstructorUsedError;
+  List<ProjectType>? get allProjectTypes => throw _privateConstructorUsedError;
   ProjectType? get projectType => throw _privateConstructorUsedError;
   ProjectCycle? get selectedCycle => throw _privateConstructorUsedError;
   ProjectModel? get selectedProject => throw _privateConstructorUsedError;
@@ -338,6 +339,7 @@ abstract class $ProjectStateCopyWith<$Res> {
   @useResult
   $Res call(
       {List<ProjectModel> projects,
+      List<ProjectType>? allProjectTypes,
       ProjectType? projectType,
       ProjectCycle? selectedCycle,
       ProjectModel? selectedProject,
@@ -361,6 +363,7 @@ class _$ProjectStateCopyWithImpl<$Res, $Val extends ProjectState>
   @override
   $Res call({
     Object? projects = null,
+    Object? allProjectTypes = freezed,
     Object? projectType = freezed,
     Object? selectedCycle = freezed,
     Object? selectedProject = freezed,
@@ -372,6 +375,10 @@ class _$ProjectStateCopyWithImpl<$Res, $Val extends ProjectState>
           ? _value.projects
           : projects // ignore: cast_nullable_to_non_nullable
               as List<ProjectModel>,
+      allProjectTypes: freezed == allProjectTypes
+          ? _value.allProjectTypes
+          : allProjectTypes // ignore: cast_nullable_to_non_nullable
+              as List<ProjectType>?,
       projectType: freezed == projectType
           ? _value.projectType
           : projectType // ignore: cast_nullable_to_non_nullable
@@ -418,6 +425,7 @@ abstract class _$$ProjectStateImplCopyWith<$Res>
   @useResult
   $Res call(
       {List<ProjectModel> projects,
+      List<ProjectType>? allProjectTypes,
       ProjectType? projectType,
       ProjectCycle? selectedCycle,
       ProjectModel? selectedProject,
@@ -440,6 +448,7 @@ class __$$ProjectStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? projects = null,
+    Object? allProjectTypes = freezed,
     Object? projectType = freezed,
     Object? selectedCycle = freezed,
     Object? selectedProject = freezed,
@@ -451,6 +460,10 @@ class __$$ProjectStateImplCopyWithImpl<$Res>
           ? _value._projects
           : projects // ignore: cast_nullable_to_non_nullable
               as List<ProjectModel>,
+      allProjectTypes: freezed == allProjectTypes
+          ? _value._allProjectTypes
+          : allProjectTypes // ignore: cast_nullable_to_non_nullable
+              as List<ProjectType>?,
       projectType: freezed == projectType
           ? _value.projectType
           : projectType // ignore: cast_nullable_to_non_nullable
@@ -480,12 +493,14 @@ class __$$ProjectStateImplCopyWithImpl<$Res>
 class _$ProjectStateImpl extends _ProjectState {
   const _$ProjectStateImpl(
       {final List<ProjectModel> projects = const [],
+      final List<ProjectType>? allProjectTypes,
       this.projectType,
       this.selectedCycle,
       this.selectedProject,
       this.loading = false,
       this.syncError})
       : _projects = projects,
+        _allProjectTypes = allProjectTypes,
         super._();
 
   final List<ProjectModel> _projects;
@@ -495,6 +510,16 @@ class _$ProjectStateImpl extends _ProjectState {
     if (_projects is EqualUnmodifiableListView) return _projects;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableListView(_projects);
+  }
+
+  final List<ProjectType>? _allProjectTypes;
+  @override
+  List<ProjectType>? get allProjectTypes {
+    final value = _allProjectTypes;
+    if (value == null) return null;
+    if (_allProjectTypes is EqualUnmodifiableListView) return _allProjectTypes;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
   }
 
   @override
@@ -511,7 +536,7 @@ class _$ProjectStateImpl extends _ProjectState {
 
   @override
   String toString() {
-    return 'ProjectState(projects: $projects, projectType: $projectType, selectedCycle: $selectedCycle, selectedProject: $selectedProject, loading: $loading, syncError: $syncError)';
+    return 'ProjectState(projects: $projects, allProjectTypes: $allProjectTypes, projectType: $projectType, selectedCycle: $selectedCycle, selectedProject: $selectedProject, loading: $loading, syncError: $syncError)';
   }
 
   @override
@@ -520,6 +545,8 @@ class _$ProjectStateImpl extends _ProjectState {
         (other.runtimeType == runtimeType &&
             other is _$ProjectStateImpl &&
             const DeepCollectionEquality().equals(other._projects, _projects) &&
+            const DeepCollectionEquality()
+                .equals(other._allProjectTypes, _allProjectTypes) &&
             (identical(other.projectType, projectType) ||
                 other.projectType == projectType) &&
             (identical(other.selectedCycle, selectedCycle) ||
@@ -535,6 +562,7 @@ class _$ProjectStateImpl extends _ProjectState {
   int get hashCode => Object.hash(
       runtimeType,
       const DeepCollectionEquality().hash(_projects),
+      const DeepCollectionEquality().hash(_allProjectTypes),
       projectType,
       selectedCycle,
       selectedProject,
@@ -551,6 +579,7 @@ class _$ProjectStateImpl extends _ProjectState {
 abstract class _ProjectState extends ProjectState {
   const factory _ProjectState(
       {final List<ProjectModel> projects,
+      final List<ProjectType>? allProjectTypes,
       final ProjectType? projectType,
       final ProjectCycle? selectedCycle,
       final ProjectModel? selectedProject,
@@ -560,6 +589,8 @@ abstract class _ProjectState extends ProjectState {
 
   @override
   List<ProjectModel> get projects;
+  @override
+  List<ProjectType>? get allProjectTypes;
   @override
   ProjectType? get projectType;
   @override

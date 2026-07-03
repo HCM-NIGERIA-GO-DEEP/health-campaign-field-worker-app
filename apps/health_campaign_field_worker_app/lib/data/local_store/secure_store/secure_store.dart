@@ -20,6 +20,7 @@ class LocalSecureStore {
   static const actionsListkey = 'actionsListkey';
   static const isAppInActiveKey = 'isAppInActiveKey';
   static const manualSyncKey = 'manualSyncKey';
+  static const allProjectTypesKey = 'allProjectTypes';
   static const selectedProjectTypeKey = 'selectedProjectType';
   static const dbEncryptionKeyKey = 'dbEncryptionKey';
   static const userVsDeviceTokenMapKey = 'userVsDeviceTokenMapKey';
@@ -99,6 +100,21 @@ class LocalSecureStore {
       final projectType = ProjectType.fromJson(json.decode(projectBody));
 
       return projectType;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<List<ProjectType>?> get getAllProjectTypes async {
+    final projectBody = await storage.read(key: allProjectTypesKey);
+    if (projectBody == null) return null;
+
+    try {
+      final projectTypes = (json.decode(projectBody) as List)
+          .map((e) => ProjectType.fromJson(e))
+          .toList();
+
+      return projectTypes;
     } catch (_) {
       return null;
     }
@@ -243,6 +259,13 @@ class LocalSecureStore {
     await storage.write(
       key: selectedProjectTypeKey,
       value: json.encode(projectType),
+    );
+  }
+
+  Future<void> setAllProjectTypes(List<ProjectType>? projectTypes) async {
+    await storage.write(
+      key: allProjectTypesKey,
+      value: json.encode(projectTypes),
     );
   }
 

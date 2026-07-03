@@ -184,6 +184,9 @@ class Constants {
   static const String downloadSuccessAnimation =
       'assets/animated_json/download_success.json';
 
+  // Conversion factor for stock quantities shown in ml.
+  static const double stockBottleToMlMultiplier = 30.0;
+
   static List<LocalRepository> getLocalRepositories(
     LocalSqlDataStore sql,
     Isar isar,
@@ -394,7 +397,7 @@ class Constants {
         .firstWhereOrNull((element) => element.service == service)
         ?.actions
         .firstWhereOrNull((element) =>
-    element.entityName == entityName && element.action == action)
+            element.entityName == entityName && element.action == action)
         ?.path;
 
     return actionResult ?? '';

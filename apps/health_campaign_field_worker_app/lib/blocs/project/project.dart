@@ -359,11 +359,13 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     projects.removeDuplicates((element) => element.id);
 
     final selectedProject = await localSecureStore.selectedProject;
+    final allProjectTypes = await localSecureStore.getAllProjectTypes;
     emit(
       ProjectState(
         loading: false,
         projects: projects,
         selectedProject: selectedProject,
+        allProjectTypes: allProjectTypes,
       ),
     );
 
@@ -703,8 +705,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       String? campaignID = event.model.referenceID;
       var projectTypeString = event.model.projectType;
 
-      if (projectTypeString == "SMC-RI") {
-        campaignID = "CMP-2026-06-08-000333";
+      if (projectTypeString == "ORS-Zinc") {
+        campaignID = "CMP-2026-06-17-000376";
       }
 
       try {
@@ -883,6 +885,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
             .setBoundary(boundaries: findLeastLevelBoundaries(boundaries));
         await localSecureStore.setSelectedProject(event.model);
         await localSecureStore.setSelectedProjectType(reqProjectType);
+        await localSecureStore
+            .setAllProjectTypes(projectType.projectTypeWrapper?.projectTypes);
       }
       await localSecureStore.setProjectSetUpComplete(event.model.id, true);
     } catch (_) {
@@ -930,9 +934,11 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     }
 
     final getSelectedProject = await localSecureStore.selectedProject;
+    final allProjectTypes = await localSecureStore.getAllProjectTypes;
 
     emit(state.copyWith(
       selectedProject: getSelectedProject,
+      allProjectTypes: allProjectTypes,
       loading: false,
       syncError: null,
     ));
@@ -982,6 +988,23 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
       if (receiverIds.isEmpty) return;
 
+      final selectedProjectType = await localSecureStore.selectedProjectType;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final currentCycleStartDate = selectedProjectType?.cycles
+              ?.where(
+                (cycle) =>
+                    (cycle.startDate ?? 0) <= now &&
+                    (cycle.endDate ?? 0) >= now,
+              )
+              .firstOrNull
+              ?.startDate ??
+          project.additionalDetails?.projectType?.cycles
+              ?.where(
+                (cycle) => cycle.startDate <= now && cycle.endDate >= now,
+              )
+              .firstOrNull
+              ?.startDate;
+
       final stockSearchModel = StockSearchModel(
         receiverId: receiverIds.first,
         senderId: receiverIds.first,
@@ -994,7 +1017,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       ));
 
       final lastSyncedTime = existingDownSyncData.isEmpty
-          ? null
+          ? currentCycleStartDate
           : existingDownSyncData.first.lastSyncedTime;
 
       if (existingDownSyncData.isEmpty) {
@@ -1506,6 +1529,7 @@ class ProjectState with _$ProjectState {
 
   const factory ProjectState({
     @Default([]) List<ProjectModel> projects,
+    List<ProjectType>? allProjectTypes,
     ProjectType? projectType,
     ProjectCycle? selectedCycle,
     ProjectModel? selectedProject,
