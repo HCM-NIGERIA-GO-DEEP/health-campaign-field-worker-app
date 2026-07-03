@@ -40,6 +40,90 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
     }
   }
 
+  int? get scanLimit {
+    if (validations == null) return null;
+
+    for (final rule in validations!) {
+      if (rule.type != 'scanLimit') continue;
+
+      final value = rule.value;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      if (value is double) return value.toInt();
+    }
+
+    return null;
+  }
+
+  int? _distributedQuantityFromResourceCard(FormGroup form) {
+    if (!form.contains('resourceCard')) return null;
+
+    final dynamic value = form.control('resourceCard').value;
+    if (value == null) return null;
+
+    int total = 0;
+
+    if (value is List) {
+      for (final item in value) {
+        if (item is Map) {
+          final q = item['quantityDistributed'];
+          if (q is int) {
+            total += q;
+          } else if (q is String) {
+            total += int.tryParse(q) ?? 0;
+          }
+        }
+      }
+    } else if (value is Map) {
+      final q = value['quantityDistributed'];
+      if (q is int) {
+        total += q;
+      } else if (q is String) {
+        total += int.tryParse(q) ?? 0;
+      }
+    }
+
+    return total > 0 ? total : null;
+  }
+
+  int _effectiveRequiredScanCount(FormGroup form) {
+    final configured = scanLimit ?? 1;
+    if (!isGS1code) return configured;
+
+    final fromResourceCard = _distributedQuantityFromResourceCard(form);
+    return fromResourceCard ?? configured;
+  }
+
+  List<ScannerValidation>? _resolvedScannerValidations(int requiredScanCount) {
+    final source = _toScannerValidations();
+    if (source == null) {
+      return [
+        ScannerValidation(type: 'scanLimit', value: requiredScanCount),
+      ];
+    }
+
+    var replaced = false;
+    final updated = source.map((v) {
+      if (v.type == 'scanLimit') {
+        replaced = true;
+        return ScannerValidation(
+          type: v.type,
+          value: requiredScanCount,
+          message: v.message,
+        );
+      }
+      return v;
+    }).toList();
+
+    if (!replaced) {
+      updated.add(
+        ScannerValidation(type: 'scanLimit', value: requiredScanCount),
+      );
+    }
+
+    return updated;
+  }
+
   String formatDisplayCodes(List displayCodes) {
     if (displayCodes.isEmpty) return '';
     // If it's a single code, display as is
@@ -216,6 +300,12 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
             .toList()
           : (hasFormValue ? _serialsFromFormValue(formValue!) : <String>[]);
 
+        final requiredScanCount = _effectiveRequiredScanCount(form);
+        final currentScanCount = isGS1code ? displaySerials.length : displayQrCodes.length;
+        final canOpenScanner = currentScanCount < requiredScanCount;
+        final resolvedValidations =
+            _resolvedScannerValidations(requiredScanCount);
+
 
         // Show barcode (GS1) summary
         return showBarcodeSummary
@@ -244,6 +334,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                       capitalizeLetters: false,
                       size: DigitButtonSize.large,
                       label: label ?? 'scanner',
+                      isDisabled: !canOpenScanner,
                       onPressed: () {
                         // Pass form value directly to scanner page via route param
                         // Scanner page will parse and dispatch to bloc in initState
@@ -261,7 +352,8 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                             : null;
                         final duplicateMsg = dupeErrFn?.call(formControlName);
                         context.router.push(DigitScannerRoute(
-                          validations: _toScannerValidations(),
+                          quantity: requiredScanCount,
+                          validations: resolvedValidations,
                           isGS1code: isGS1code,
                           isEditEnabled: true,
                           initialBarcodeData: formValue,
@@ -304,6 +396,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                           capitalizeLetters: false,
                           size: DigitButtonSize.large,
                           label: label ?? 'scanner',
+                          isDisabled: !canOpenScanner,
                           onPressed: () {
                             // Clear scanner state before navigating to edit QR codes
                             context.read<DigitScannerBloc>().add(
@@ -329,7 +422,8 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                             final duplicateMsg2 =
                                 dupeErrFn2?.call(formControlName);
                             context.router.push(DigitScannerRoute(
-                              validations: _toScannerValidations(),
+                              quantity: requiredScanCount,
+                              validations: resolvedValidations,
                               isGS1code: isGS1code,
                               isEditEnabled: true,
                               initialQrCodes: displayQrCodes,
@@ -350,6 +444,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                     capitalizeLetters: false,
                     size: DigitButtonSize.large,
                     label: label ?? 'scanner',
+                  isDisabled: !canOpenScanner,
                     onPressed: () async {
                       context.read<DigitScannerBloc>().add(
                             DigitScannerEvent.handleScanner(
@@ -366,8 +461,9 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                           : null;
                       final duplicateMsg3 = dupeErrFn3?.call(formControlName);
                       context.router.push(DigitScannerRoute(
+                        quantity: requiredScanCount,
                         isGS1code: isGS1code,
-                        validations: _toScannerValidations(),
+                        validations: resolvedValidations,
                         scannerId: formControlName,
                         duplicateCheckFn: duplicateCheckFn3,
                         duplicateCheckMessage: duplicateMsg3,

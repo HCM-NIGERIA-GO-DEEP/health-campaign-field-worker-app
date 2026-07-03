@@ -3,6 +3,7 @@ import 'package:digit_forms_engine/blocs/forms/forms.dart';
 import 'package:digit_forms_engine/json_forms.dart';
 import 'package:digit_forms_engine/router/forms_router.gm.dart';
 import 'package:digit_forms_engine/widgets/back_header/back_navigation_help_header.dart';
+import 'package:digit_scanner/utils/scanner_utils.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/atoms/label_value_list.dart';
@@ -95,6 +96,137 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
   bool get _isBackDisabled =>
       _backDisabledSchemas.contains(widget.currentSchemaKey);
 
+  int? _getScannerScanLimit(PropertySchema schema) {
+    final rules = schema.validations;
+    if (rules == null) return null;
+
+    for (final rule in rules) {
+      if (rule.type != 'scanLimit') continue;
+      final value = rule.value;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      if (value is double) return value.toInt();
+    }
+
+    return null;
+  }
+
+  int? _getResourceCardDistributedQuantity(FormGroup formGroup) {
+    if (!formGroup.contains('resourceCard')) return null;
+
+    final dynamic value = formGroup.control('resourceCard').value;
+    if (value == null) return null;
+
+    int total = 0;
+
+    if (value is List) {
+      for (final item in value) {
+        if (item is Map) {
+          final q = item['quantityDistributed'];
+          if (q is int) {
+            total += q;
+          } else if (q is String) {
+            total += int.tryParse(q) ?? 0;
+          }
+        }
+      }
+    } else if (value is Map) {
+      final q = value['quantityDistributed'];
+      if (q is int) {
+        total += q;
+      } else if (q is String) {
+        total += int.tryParse(q) ?? 0;
+      }
+    }
+
+    return total > 0 ? total : null;
+  }
+
+  bool _isGs1Scanner(PropertySchema schema) {
+    final rules = schema.validations;
+    if (rules == null || rules.isEmpty) return true;
+
+    for (final rule in rules) {
+      if (rule.type != 'isGS1' && rule.type != 'isGS1Code') continue;
+      final value = rule.value;
+      if (value is bool) return value;
+      if (value is String) return value.toLowerCase() == 'true';
+    }
+
+    return true;
+  }
+
+  int? _getEffectiveScannerRequiredCount(
+    PropertySchema schema,
+    FormGroup formGroup,
+  ) {
+    final configuredLimit = _getScannerScanLimit(schema);
+    if (configuredLimit == null) return null;
+
+    if (_isGs1Scanner(schema)) {
+      final distributed = _getResourceCardDistributedQuantity(formGroup);
+      if (distributed != null && distributed > 0) {
+        return distributed;
+      }
+    }
+
+    return configuredLimit;
+  }
+
+  int _getScannedValueCount(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return 0;
+
+    final isGs1 = trimmed.contains('|') ||
+        RegExp(r'^\d{2}:').hasMatch(trimmed) ||
+        trimmed.contains(';');
+
+    if (isGs1) {
+      final maps = DigitScannerUtils.deserializeGs1Barcodes(trimmed);
+      if (maps.isEmpty) return 0;
+
+      final serialCount = maps
+          .map((e) => (e['21'] ?? e['SERIAL'] ?? e['serial'] ?? e['Serial'])
+              ?.toString()
+              .trim())
+          .where((s) => s != null && s!.isNotEmpty)
+          .length;
+
+      return serialCount > 0 ? serialCount : maps.length;
+    }
+
+    return trimmed
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .length;
+  }
+
+  bool _hasIncompleteScannerScanLimit(
+    PropertySchema pageSchema,
+    FormGroup formGroup,
+  ) {
+    final properties = pageSchema.properties;
+    if (properties == null || properties.isEmpty) return false;
+
+    for (final entry in properties.entries) {
+      final property = entry.value;
+      if (property.format != PropertySchemaFormat.scanner) continue;
+
+      final limit = _getEffectiveScannerRequiredCount(property, formGroup);
+      if (limit == null || limit <= 0) continue;
+      if (!formGroup.contains(entry.key)) continue;
+
+      final rawValue = formGroup.control(entry.key).value?.toString() ?? '';
+      final scannedCount = _getScannedValueCount(rawValue);
+      if (scannedCount < limit) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -178,6 +310,9 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                       .translate(schema.actionLabel ?? 'Next')
                                   : localizations.translate(
                                       schema.actionLabel ?? 'Submit'),
+                              isDisabled: _isSubmitting ||
+                                _hasIncompleteScannerScanLimit(
+                                  schema, formGroup),
                               onPressed: () async {
                                 // Prevent multiple simultaneous submissions
                                 if (_isSubmitting) return;
@@ -962,6 +1097,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                               .translate(schema.actionLabel ?? 'Next')
                           : localizations
                               .translate(schema.actionLabel ?? 'Submit'),
+                      isDisabled: _isSubmitting ||
+                        _hasIncompleteScannerScanLimit(schema, formGroup),
                       onPressed: () async {
                         // Prevent multiple simultaneous submissions
                         if (_isSubmitting) return;

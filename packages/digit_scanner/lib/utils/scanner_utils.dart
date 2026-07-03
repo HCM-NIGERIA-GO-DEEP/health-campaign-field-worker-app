@@ -17,6 +17,51 @@ import './i18_key_constants.dart' as i18;
 import 'constants.dart';
 
 class DigitScannerUtils {
+  static DateTime? _lastErrorToastTime;
+  static String _lastErrorToastMessage = '';
+
+  String _normalizeSerial(String? value) {
+    return (value ?? '').trim().toLowerCase();
+  }
+
+  String extractSerialFromGs1(GS1Barcode barcode) {
+    final aiData = barcode.getAIsData;
+    final serial = aiData['21'];
+    return serial?.toString() ?? '';
+  }
+
+  bool hasDuplicateSerial(
+    List<GS1Barcode> existing,
+    GS1Barcode candidate,
+  ) {
+    final candidateSerial = _normalizeSerial(extractSerialFromGs1(candidate));
+    if (candidateSerial.isEmpty) return false;
+
+    return existing.any(
+      (item) => _normalizeSerial(extractSerialFromGs1(item)) == candidateSerial,
+    );
+  }
+
+  bool _shouldShowErrorToast(String message) {
+    final now = DateTime.now();
+    if (_lastErrorToastTime == null) {
+      _lastErrorToastTime = now;
+      _lastErrorToastMessage = message;
+      return true;
+    }
+
+    final elapsed = now.difference(_lastErrorToastTime!);
+    final isSameMessage = _lastErrorToastMessage == message;
+
+    if (isSameMessage && elapsed.inMilliseconds < 1500) {
+      return false;
+    }
+
+    _lastErrorToastTime = now;
+    _lastErrorToastMessage = message;
+    return true;
+  }
+
   void buildDialog(
     BuildContext context,
     ScannerLocalization localizations,
@@ -137,6 +182,16 @@ class DigitScannerUtils {
             final parsedResult =
                 parser.parse(barcodes.first.displayValue.toString());
 
+            final existingBarcodes =
+                bloc.state.barCodes.isNotEmpty ? bloc.state.barCodes : result;
+
+            if (hasDuplicateSerial(existingBarcodes, parsedResult)) {
+              await handleError(
+                localizations.translate(i18.scanner.resourceAlreadyScanned),
+              );
+              return;
+            }
+
             // Per-scan duplicate check
             if (duplicateCheckFn != null) {
               try {
@@ -162,7 +217,7 @@ class DigitScannerUtils {
             // positives when serial number is optional and the last AI varies.
             final newSerialized =
                 DigitScannerUtils().serializeGs1Barcodes([parsedResult]);
-            final alreadyScanned = bloc.state.barCodes.any((element) {
+            final alreadyScanned = existingBarcodes.any((element) {
               final existingSerialized =
                   DigitScannerUtils().serializeGs1Barcodes([element]);
               return existingSerialized == newSerialized;
@@ -286,8 +341,7 @@ class DigitScannerUtils {
     // Play the buzzer sound to indicate an error
     player.play(AssetSource(DigitScannerConstants().errorFilePath));
 
-    // Check if the player has completed playing or if the result list is empty
-    if (player.state == PlayerState.completed || result.isEmpty) {
+    if (_shouldShowErrorToast(message)) {
       // Display a toast message with the provided error message
       Toast.showToast(
         context,
@@ -297,8 +351,8 @@ class DigitScannerUtils {
       );
     }
 
-    // Wait for 2 seconds before proceeding
-    await Future.delayed(const Duration(seconds: 2));
+    // Keep the scanner responsive while still preventing immediate re-processing bursts.
+    await Future.delayed(const Duration(milliseconds: 700));
 
     // Update the state to allow processing again and indicate not busy
     setStateCallback();

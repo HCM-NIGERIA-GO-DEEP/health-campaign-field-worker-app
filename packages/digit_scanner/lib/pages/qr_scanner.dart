@@ -416,6 +416,18 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
   }
 
   Future<void> processImage(InputImage inputImage) async {
+    final state = context.read<DigitScannerBloc>().state;
+    final currentScannedCount = widget.effectiveIsGS1code
+        ? (state.barCodes.isNotEmpty ? state.barCodes.length : result.length)
+        : (state.qrCodes.isNotEmpty ? state.qrCodes.length : codes.length);
+
+    // Stop camera-driven scanning once required quantity is reached.
+    // This prevents repeated duplicate error toasts while user is reviewing
+    // scanned items and trying to submit.
+    if (currentScannedCount >= widget.effectiveQuantity) {
+      return;
+    }
+
     await DigitScannerUtils().processImage(
       context: context,
       inputImage: inputImage,
@@ -607,6 +619,18 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                               final existingBarcodes = state.barCodes.isNotEmpty
                                   ? state.barCodes
                                   : result;
+
+                              if (DigitScannerUtils().hasDuplicateSerial(
+                                  existingBarcodes, parsed)) {
+                                Toast.showToast(
+                                  context,
+                                  type: ToastType.error,
+                                  message: localizations.translate(
+                                      i18.scanner.resourceAlreadyScanned),
+                                  sentenceCaseEnabled: false,
+                                );
+                                return;
+                              }
 
                               // Per-scan duplicate check
                               if (widget.duplicateCheckFn != null) {
@@ -1214,6 +1238,16 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
     final effectiveBarcodes =
         state.barCodes.isNotEmpty ? state.barCodes : result;
     final effectiveQrCodes = state.qrCodes.isNotEmpty ? state.qrCodes : codes;
+    final capturedSerialCount = effectiveBarcodes.length;
+    final totalSerialTarget = widget.effectiveQuantity;
+    final remainingSerialCount = (totalSerialTarget - capturedSerialCount) > 0
+        ? (totalSerialTarget - capturedSerialCount)
+        : 0;
+    final scannedCount = widget.effectiveIsGS1code
+        ? effectiveBarcodes.length
+        : effectiveQrCodes.length;
+    final hasPendingScans = scannedCount < widget.effectiveQuantity;
+
     return Stack(
       children: [
         Positioned(
@@ -1229,11 +1263,8 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                 size: DigitButtonSize.large,
                 mainAxisSize: MainAxisSize.max,
                 type: DigitButtonType.primary,
+                isDisabled: hasPendingScans,
                 onPressed: () async {
-                  final scannedCount = widget.effectiveIsGS1code
-                      ? effectiveBarcodes.length
-                      : effectiveQrCodes.length;
-
                   if (scannedCount < widget.effectiveQuantity) {
                     DigitScannerUtils().buildDialog(
                       context,
@@ -1288,13 +1319,26 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                     bottom: spacer2,
                     top: spacer2,
                     left: spacer3,
+                    right: spacer3,
                   ),
                   width: MediaQuery.of(context).size.width,
                   child: widget.effectiveIsGS1code
-                      ? Text(
-                          '${effectiveBarcodes.length.toString()} ${localizations.translate(i18.scanner.resourcesScanned)}',
-                          style: textTheme.headingM
-                              .copyWith(color: theme.colorTheme.text.primary),
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '${effectiveBarcodes.length.toString()} ${localizations.translate(i18.scanner.resourcesScanned)}',
+                              style: textTheme.headingM.copyWith(
+                                  color: theme.colorTheme.text.primary),
+                            ),
+                            const SizedBox(height: spacer1),
+                            Text(
+                              '$capturedSerialCount of $totalSerialTarget bednet serials captured. $remainingSerialCount remaining.',
+                              style: textTheme.bodyS.copyWith(
+                                color: theme.colorTheme.text.secondary,
+                              ),
+                            ),
+                          ],
                         )
                       : Text(
                           '${effectiveQrCodes.length.toString()} ${localizations.translate(i18.scanner.resourcesScanned)}',
