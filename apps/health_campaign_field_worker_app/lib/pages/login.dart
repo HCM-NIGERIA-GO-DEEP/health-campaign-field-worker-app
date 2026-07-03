@@ -35,21 +35,6 @@ class LoginPage extends LocalizedStatefulWidget {
   State<LoginPage> createState() => _LoginPageState();
 }
 
-PrivacyComponent privacyComponent(
-    BuildContext context, PrivacyNoticeModel? privacyPolicy) {
-  return PrivacyComponent(
-    privacyPolicy: privacyPolicy,
-    onAccept: () {
-      final authBloc = context.read<AuthBloc>();
-      authBloc.add(const AuthEvent.allow());
-    },
-    onDecline: () {
-      final authBloc = context.read<AuthBloc>();
-      authBloc.add(const AuthEvent.decline());
-    },
-  );
-}
-
 class _LoginPageState extends LocalizedState<LoginPage> {
   var passwordVisible = false;
   bool isPrivacyEnabled = false;
