@@ -41,6 +41,18 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
     try {
       final userUuid = context.loggedInUserUuid;
       final projectId = context.projectId;
+      final currentCycle = context.selectedCycle;
+      final currentCycleStartDate = currentCycle?.startDate;
+      final currentCycleEndDate = currentCycle?.endDate;
+
+      bool isWithinCurrentCycle(int? epochMs) {
+        if (currentCycleStartDate == null || currentCycleEndDate == null) {
+          return true;
+        }
+        if (epochMs == null) return false;
+        return epochMs >= currentCycleStartDate &&
+            epochMs <= currentCycleEndDate;
+      }
 
       // Repositories
       final householdRepo =
@@ -77,10 +89,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         return facilityLevel == null || facilityLevel == 'current';
       }).toList();
 
-      final facilityIds =
-          currentFacilities.map((pf) => pf.facilityId).toList();
-      final facilities = await facilityRepo
-          .search(FacilitySearchModel(id: facilityIds));
+      final facilityIds = currentFacilities.map((pf) => pf.facilityId).toList();
+      final facilities =
+          await facilityRepo.search(FacilitySearchModel(id: facilityIds));
 
       // Match stock_balance_card: distributors always use userUuid
       final effectiveFacilityId = isDistributor
@@ -132,8 +143,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         final createdBy =
             hh.clientAuditDetails?.createdBy ?? hh.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
-        final epochMs = hh.clientAuditDetails?.createdTime ??
-            hh.auditDetails?.createdTime;
+        final epochMs =
+            hh.clientAuditDetails?.createdTime ?? hh.auditDetails?.createdTime;
+        if (!isWithinCurrentCycle(epochMs)) continue;
         if (epochMs == null) continue;
         final date = _epochToDateString(epochMs);
         hhByDate[date] = (hhByDate[date] ?? 0) + 1;
@@ -143,13 +155,14 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // (filter by logged-in user AND status == 'ADMINISTRATION_SUCCESS' or 'VISITED')
       final tasksByDate = <String, Set<String>>{};
       for (final task in tasks) {
-        if (task.status != 'ADMINISTRATION_SUCCESS' &&
-            task.status != 'VISITED') continue;
-        final createdBy = task.clientAuditDetails?.createdBy ??
-            task.auditDetails?.createdBy;
+        if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
+          continue;
+        final createdBy =
+            task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
         final epochMs = task.clientAuditDetails?.createdTime ??
             task.auditDetails?.createdTime;
+        if (!isWithinCurrentCycle(epochMs)) continue;
         if (epochMs == null) continue;
         final beneficiaryRef = task.projectBeneficiaryClientReferenceId;
         if (beneficiaryRef == null || beneficiaryRef.isEmpty) continue;
@@ -167,6 +180,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         if (createdBy != userUuid) continue;
         final epochMs = member.clientAuditDetails?.createdTime ??
             member.auditDetails?.createdTime;
+        if (!isWithinCurrentCycle(epochMs)) continue;
         if (epochMs == null) continue;
         final date = _epochToDateString(epochMs);
         nonHeadMembersByDate[date] = (nonHeadMembersByDate[date] ?? 0) + 1;
@@ -177,13 +191,14 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // Key: "date|productVariantId" -> sum of quantity
       final consumedByDateProduct = <String, double>{};
       for (final task in tasks) {
-        if (task.status != 'ADMINISTRATION_SUCCESS' &&
-            task.status != 'VISITED') continue;
-        final createdBy = task.clientAuditDetails?.createdBy ??
-            task.auditDetails?.createdBy;
+        if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
+          continue;
+        final createdBy =
+            task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
         final epochMs = task.clientAuditDetails?.createdTime ??
             task.auditDetails?.createdTime;
+        if (!isWithinCurrentCycle(epochMs)) continue;
         if (epochMs == null) continue;
         final date = _epochToDateString(epochMs);
         final resources = task.resources;
@@ -203,6 +218,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       for (final stock in allStocks) {
         final epochMs = stock.clientAuditDetails?.createdTime ??
             stock.auditDetails?.createdTime;
+        if (!isWithinCurrentCycle(epochMs)) continue;
         if (epochMs == null) continue;
         stockDates.add(_epochToDateString(epochMs));
       }
@@ -246,7 +262,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         final cumulativeStocks = allStocks.where((stock) {
           final epochMs = stock.clientAuditDetails?.createdTime ??
               stock.auditDetails?.createdTime;
-          if (epochMs == null) return true;
+          if (!isWithinCurrentCycle(epochMs)) return false;
+          if (epochMs == null) return false;
           return epochMs <= endOfDay;
         }).toList();
 

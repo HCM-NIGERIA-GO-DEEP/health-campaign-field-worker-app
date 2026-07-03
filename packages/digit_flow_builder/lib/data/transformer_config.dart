@@ -188,7 +188,10 @@ final jsonConfig = {
             "name":
                 "__concatName:beneficiaryDetails.nameOfIndividual,beneficiaryDetails.familyname",
             "gender": "beneficiaryDetails.gender",
+            "height": "beneficiaryDetails.height",
+            "weight": "beneficiaryDetails.weight",
             "dateOfBirth": "beneficiaryDetails.dobPicker",
+            "ageInMonths": "__ageInMonths:beneficiaryDetails.dobPicker",
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
             "beneficiaryId": "beneficiaryDetails.beneficiaryId"
@@ -419,6 +422,7 @@ final jsonConfig = {
                 "__concatName:beneficiaryDetails.nameOfIndividual,beneficiaryDetails.familyname",
             "gender": "beneficiaryDetails.gender",
             "dateOfBirth": "beneficiaryDetails.dobPicker",
+            "ageInMonths": "__ageInMonths:beneficiaryDetails.dobPicker",
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
             "beneficiaryId": "beneficiaryDetails.beneficiaryId"
@@ -485,6 +489,7 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__listItem:id",
             "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:smcDone",
             "deliveryStrategy": "__listItem:deliveryStrategy",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
@@ -495,8 +500,16 @@ final jsonConfig = {
             "childName": "__context:childName",
             "ageInMonths": "__context:ageInMonths",
             "gender": "__context:gender",
+            "height": "__context:height",
+            "weight": "__context:weight",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+            // Eligibility checklist answers (null-skipped for non-checklist paths)
+            "ec1Value": "__context:ec1",
+            "ec2Value": "__context:ec2",
+            "ec3Value": "__context:ec3",
+            "ec4Value": "__context:ec4",
+            "ec5Value": "__context:ec5"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -583,6 +596,7 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:smcDone",
             "deliveryStrategy": "__context:deliveryStrategy",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
@@ -593,8 +607,19 @@ final jsonConfig = {
             "childName": "__context:childName",
             "ageInMonths": "__context:ageInMonths",
             "gender": "__context:gender",
+            "height": "__context:height",
+            "weight": "__context:weight",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+            // Eligibility checklist answers, threaded via navigation params
+            // from the eligibilityChecklist page through beneficiaryDetails →
+            // DELIVERY. Skipped automatically (null) for direct deliveries that
+            // never went through the checklist.
+            "ec1Value": "__context:ec1",
+            "ec2Value": "__context:ec2",
+            "ec3Value": "__context:ec3",
+            "ec4Value": "__context:ec4",
+            "ec5Value": "__context:ec5"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -677,6 +702,7 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:smcDone",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
             "memberCount": "__context:memberCount",
@@ -687,7 +713,169 @@ final jsonConfig = {
             "ageInMonths": "__context:ageInMonths",
             "gender": "__context:gender",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+            // Eligibility checklist answers (the ineligibility reason)
+            "ec1Value": "__context:ec1",
+            "ec2Value": "__context:ec2",
+            "ec3Value": "__context:ec3",
+            "ec4Value": "__context:ec4",
+            "ec5Value": "__context:ec5"
+          },
+          "clientAuditDetails": "__generate:clientAudit",
+          "auditDetails": "__generate:audit"
+        }
+      }
+    }
+  },
+  "vasIneligibleConfig": {
+    "fallbackModel": "TaskModel",
+    "models": {
+      "TaskModel": {
+        "mappings": {
+          "id": "taskDetails.id",
+          "projectId": "__context:projectId",
+          "projectBeneficiaryId": "taskDetails.projectBeneficiaryId",
+          "projectBeneficiaryClientReferenceId":
+              "__context:ProjectBeneficiaryClientReferenceId",
+          "createdBy": "__context:userId",
+          "status": "__value:INELIGIBLE",
+          "nonRecoverableError": "errors.nonRecoverable",
+          "clientReferenceId": "__generate:uuid",
+          "tenantId": "__context:tenantId",
+          "rowVersion": "meta.rowVersion",
+          "plannedStartDate": "taskDetails.plannedStartDate",
+          "plannedEndDate": "taskDetails.plannedEndDate",
+          "actualStartDate": "taskDetails.actualStartDate",
+          "actualEndDate": "taskDetails.actualEndDate",
+          "createdDate": "__generate:timestamp",
+          "address": {
+            "id": "address.id",
+            "relatedClientReferenceId": "__ref:TaskModel.clientReferenceId",
+            "doorNo": "address.doorNo",
+            "latitude": "address.latLng[0]",
+            "longitude": "address.latLng[1]",
+            "locationAccuracy": "address.latLng[1]",
+            "addressLine1": "address.addressLine1",
+            "addressLine2": "address.addressLine2",
+            "landmark": "address.landmark",
+            "city": "address.city",
+            "type": "__value:PERMANENT",
+            "pincode": "address.pincode",
+            "buildingName": "address.buildingName",
+            "street": "address.street",
+            "boundaryType": "address.boundaryType",
+            "boundary": "address.boundary",
+            "locality": {
+              "code": "__context:selectedBoundaryCode",
+              "name": "__context:boundary.name",
+              "nonRecoverableError": "address.nonRecoverable",
+              "tenantId": "__context:tenantId",
+              "rowVersion": "meta.rowVersion"
+            },
+            "nonRecoverableError": "address.nonRecoverable",
+            "tenantId": "__context:tenantId",
+            "rowVersion": "meta.rowVersion",
+            "clientAuditDetails": "__generate:clientAudit",
+            "auditDetails": "__generate:audit"
+          },
+          "additionalFields": {
+            "flow": "__value:vasDone",
+            "taskType": "__value:VAS",
+            "householdClientReferenceId":
+                "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId",
+            "childName": "__context:childName",
+            "ageInMonths": "__context:ageInMonths",
+            "gender": "__context:gender",
+            "headName": "__context:headName",
+            "headMobileNumber": "__context:headMobileNumber",
+            // Eligibility checklist answers (the ineligibility reason)
+            "ec1Value": "__context:ec1",
+            "ec2Value": "__context:ec2",
+            "ec3Value": "__context:ec3",
+            "ec4Value": "__context:ec4",
+            "ec5Value": "__context:ec5"
+          },
+          "clientAuditDetails": "__generate:clientAudit",
+          "auditDetails": "__generate:audit"
+        }
+      }
+    }
+  },
+  "riAdministrationConfig": {
+    "fallbackModel": "TaskModel",
+    "models": {
+      "TaskModel": {
+        "mappings": {
+          "id": "taskDetails.id",
+          "projectId": "__context:projectId",
+          "projectBeneficiaryId": "taskDetails.projectBeneficiaryId",
+          "projectBeneficiaryClientReferenceId":
+              "__context:ProjectBeneficiaryClientReferenceId",
+          "createdBy": "__context:userId",
+          "status": "__value:INELIGIBLE",
+          "nonRecoverableError": "errors.nonRecoverable",
+          "clientReferenceId": "__generate:uuid",
+          "tenantId": "__context:tenantId",
+          "rowVersion": "meta.rowVersion",
+          "plannedStartDate": "taskDetails.plannedStartDate",
+          "plannedEndDate": "taskDetails.plannedEndDate",
+          "actualStartDate": "taskDetails.actualStartDate",
+          "actualEndDate": "taskDetails.actualEndDate",
+          "createdDate": "__generate:timestamp",
+          "address": {
+            "id": "address.id",
+            "relatedClientReferenceId": "__ref:TaskModel.clientReferenceId",
+            "doorNo": "address.doorNo",
+            "latitude": "address.latLng[0]",
+            "longitude": "address.latLng[1]",
+            "locationAccuracy": "address.latLng[1]",
+            "addressLine1": "address.addressLine1",
+            "addressLine2": "address.addressLine2",
+            "landmark": "address.landmark",
+            "city": "address.city",
+            "type": "__value:PERMANENT",
+            "pincode": "address.pincode",
+            "buildingName": "address.buildingName",
+            "street": "address.street",
+            "boundaryType": "address.boundaryType",
+            "boundary": "address.boundary",
+            "locality": {
+              "code": "__context:selectedBoundaryCode",
+              "name": "__context:boundary.name",
+              "nonRecoverableError": "address.nonRecoverable",
+              "tenantId": "__context:tenantId",
+              "rowVersion": "meta.rowVersion"
+            },
+            "nonRecoverableError": "address.nonRecoverable",
+            "tenantId": "__context:tenantId",
+            "rowVersion": "meta.rowVersion",
+            "clientAuditDetails": "__generate:clientAudit",
+            "auditDetails": "__generate:audit"
+          },
+          "additionalFields": {
+            "doseIndex": "__context:doseIndex",
+            "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:riDone",
+            "householdClientReferenceId":
+                "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId",
+            "childName": "__context:childName",
+            "ageInMonths": "__context:ageInMonths",
+            "gender": "__context:gender",
+            "headName": "__context:headName",
+            "headMobileNumber": "__context:headMobileNumber",
+            "chcSeen": "riEligibilityChecklist.chcSeen",
+            "fullyImmunized": "riEligibilityChecklist.fullyImmunized",
+            "partiallyImmunized": "riEligibilityChecklist.partiallyImmunized",
+            "zeroDose": "riEligibilityChecklist.zeroDose",
+            "unimmunized": "riEligibilityChecklist.unimmunized"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -749,6 +937,7 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:smcDone",
             "comment": "unableToDeliver.comment",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
@@ -823,6 +1012,7 @@ final jsonConfig = {
           "additionalFields": {
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
+            "flow": "__value:smcDone",
             "reasonForRedose": "RedoseDetails.reasonForRedose",
             "redoseComments": "RedoseDetails.redoseComments",
             "taskType": "__value:REDOSE",
@@ -835,8 +1025,16 @@ final jsonConfig = {
             "childName": "__context:childName",
             "ageInMonths": "__context:ageInMonths",
             "gender": "__context:gender",
+            "height": "__context:height",
+            "weight": "__context:weight",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+            // Eligibility checklist answers (null-skipped for non-checklist paths)
+            "ec1Value": "__context:ec1",
+            "ec2Value": "__context:ec2",
+            "ec3Value": "__context:ec3",
+            "ec4Value": "__context:ec4",
+            "ec5Value": "__context:ec5"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -853,6 +1051,196 @@ final jsonConfig = {
               "quantity": "RedoseDetails.resourceCard.quantityDistributed",
               "isDelivered": "__value:true",
               "deliveryComment": "__value:REDOSE",
+              "nonRecoverableError": "error.nonRecoverable",
+              "taskclientReferenceId": "__ref:TaskModel.clientReferenceId",
+              "tenantId": "__context:tenantId",
+              "rowVersion": "meta.rowVersion",
+              "clientAuditDetails": "__generate:clientAudit",
+              "auditDetails": "__generate:audit",
+            }
+          }
+        }
+      }
+    }
+  },
+  "vasDelivery": {
+    "fallbackModel": "TaskModel",
+    "models": {
+      "TaskModel": {
+        "mappings": {
+          "id": "taskDetails.id",
+          "projectId": "__context:projectId",
+          "projectBeneficiaryId": "taskDetails.projectBeneficiaryId",
+          "projectBeneficiaryClientReferenceId":
+              "__context:ProjectBeneficiaryClientReferenceId",
+          "createdBy": "__context:userId",
+          "status": "__value:ADMINISTRATION_SUCCESS",
+          "nonRecoverableError": "errors.nonRecoverable",
+          "clientReferenceId": "__generate:uuid",
+          "resources": "list:TaskResourceModel",
+          "tenantId": "__context:tenantId",
+          "rowVersion": "meta.rowVersion",
+          "plannedStartDate": "taskDetails.plannedStartDate",
+          "plannedEndDate": "taskDetails.plannedEndDate",
+          "actualStartDate": "taskDetails.actualStartDate",
+          "actualEndDate": "taskDetails.actualEndDate",
+          "createdDate": "__generate:timestamp",
+          "address": {
+            "id": "address.id",
+            "relatedClientReferenceId": "__ref:TaskModel.clientReferenceId",
+            "doorNo": "address.doorNo",
+            "latitude": "__context:latitude",
+            "longitude": "__context:longitude",
+            "locationAccuracy": "__context:locationAccuracy",
+            "addressLine1": "address.addressLine1",
+            "addressLine2": "address.addressLine2",
+            "landmark": "address.landmark",
+            "city": "address.city",
+            "type": "__value:PERMANENT",
+            "pincode": "address.pincode",
+            "buildingName": "address.buildingName",
+            "street": "address.street",
+            "boundaryType": "address.boundaryType",
+            "boundary": "address.boundary",
+            "locality": {
+              "code": "__context:selectedBoundaryCode",
+              "name": "__context:boundary.name",
+              "nonRecoverableError": "address.nonRecoverable",
+              "tenantId": "__context:tenantId",
+              "rowVersion": "meta.rowVersion"
+            },
+            "nonRecoverableError": "address.nonRecoverable",
+            "tenantId": "__context:tenantId",
+            "rowVersion": "meta.rowVersion",
+            "clientAuditDetails": "__generate:clientAudit",
+            "auditDetails": "__generate:audit"
+          },
+          "additionalFields": {
+            "flow": "__value:vasDone",
+            "taskType": "__value:VAS",
+            "householdClientReferenceId":
+                "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId",
+            "childName": "__context:childName",
+            "ageInMonths": "__context:ageInMonths",
+            "gender": "__context:gender",
+            "headName": "__context:headName",
+            "headMobileNumber": "__context:headMobileNumber",
+            "deliveryComment": "VASDeliveryDetails.deliveryComment"
+          },
+          "clientAuditDetails": "__generate:clientAudit",
+          "auditDetails": "__generate:audit"
+        },
+        "listMappings": {
+          "TaskResourceModel": {
+            "listSource": "VASDeliveryDetails.resourceCard",
+            "mappings": {
+              "id": "id",
+              "clientReferenceId": "__generate:uuid",
+              "taskId": "taskId",
+              "productVariantId":
+                  "VASDeliveryDetails.resourceCard.resourceDelivered.productId",
+              "quantity": "VASDeliveryDetails.resourceCard.quantityDistributed",
+              "isDelivered": "__value:true",
+              "deliveryComment": "__value:VAS",
+              "nonRecoverableError": "error.nonRecoverable",
+              "taskclientReferenceId": "__ref:TaskModel.clientReferenceId",
+              "tenantId": "__context:tenantId",
+              "rowVersion": "meta.rowVersion",
+              "clientAuditDetails": "__generate:clientAudit",
+              "auditDetails": "__generate:audit",
+            }
+          }
+        }
+      }
+    }
+  },
+  "orsDelivery": {
+    "fallbackModel": "TaskModel",
+    "models": {
+      "TaskModel": {
+        "mappings": {
+          "id": "taskDetails.id",
+          "projectId": "__context:projectId",
+          "projectBeneficiaryId": "taskDetails.projectBeneficiaryId",
+          "projectBeneficiaryClientReferenceId":
+              "__context:ProjectBeneficiaryClientReferenceId",
+          "createdBy": "__context:userId",
+          "status": "__value:ADMINISTRATION_SUCCESS",
+          "nonRecoverableError": "errors.nonRecoverable",
+          "clientReferenceId": "__generate:uuid",
+          "resources": "list:TaskResourceModel",
+          "tenantId": "__context:tenantId",
+          "rowVersion": "meta.rowVersion",
+          "plannedStartDate": "taskDetails.plannedStartDate",
+          "plannedEndDate": "taskDetails.plannedEndDate",
+          "actualStartDate": "taskDetails.actualStartDate",
+          "actualEndDate": "taskDetails.actualEndDate",
+          "createdDate": "__generate:timestamp",
+          "address": {
+            "id": "address.id",
+            "relatedClientReferenceId": "__ref:TaskModel.clientReferenceId",
+            "doorNo": "address.doorNo",
+            "latitude": "__context:latitude",
+            "longitude": "__context:longitude",
+            "locationAccuracy": "__context:locationAccuracy",
+            "addressLine1": "address.addressLine1",
+            "addressLine2": "address.addressLine2",
+            "landmark": "address.landmark",
+            "city": "address.city",
+            "type": "__value:PERMANENT",
+            "pincode": "address.pincode",
+            "buildingName": "address.buildingName",
+            "street": "address.street",
+            "boundaryType": "address.boundaryType",
+            "boundary": "address.boundary",
+            "locality": {
+              "code": "__context:selectedBoundaryCode",
+              "name": "__context:boundary.name",
+              "nonRecoverableError": "address.nonRecoverable",
+              "tenantId": "__context:tenantId",
+              "rowVersion": "meta.rowVersion"
+            },
+            "nonRecoverableError": "address.nonRecoverable",
+            "tenantId": "__context:tenantId",
+            "rowVersion": "meta.rowVersion",
+            "clientAuditDetails": "__generate:clientAudit",
+            "auditDetails": "__generate:audit"
+          },
+          "additionalFields": {
+            "flow": "__value:orsDone",
+            "taskType": "__value:ORS",
+            "householdClientReferenceId":
+                "__context:HouseholdClientReferenceId",
+            "memberCount": "__context:memberCount",
+            "individualClientReferenceId":
+                "__context:individualClientReferenceId",
+            "beneficiaryId": "__context:beneficiaryId",
+            "childName": "__context:childName",
+            "ageInMonths": "__context:ageInMonths",
+            "gender": "__context:gender",
+            "headName": "__context:headName",
+            "headMobileNumber": "__context:headMobileNumber",
+            "deliveryComment": "ORSDeliveryDetails.deliveryComment"
+          },
+          "clientAuditDetails": "__generate:clientAudit",
+          "auditDetails": "__generate:audit"
+        },
+        "listMappings": {
+          "TaskResourceModel": {
+            "listSource": "ORSDeliveryDetails.resourceCard",
+            "mappings": {
+              "id": "id",
+              "clientReferenceId": "__generate:uuid",
+              "taskId": "taskId",
+              "productVariantId":
+                  "ORSDeliveryDetails.resourceCard.resourceDelivered.productId",
+              "quantity": "ORSDeliveryDetails.resourceCard.quantityDistributed",
+              "isDelivered": "__value:true",
+              "deliveryComment": "__value:ORS",
               "nonRecoverableError": "error.nonRecoverable",
               "taskclientReferenceId": "__ref:TaskModel.clientReferenceId",
               "tenantId": "__context:tenantId",
@@ -904,6 +1292,7 @@ final jsonConfig = {
             "transportType": "stockDetails.transportType",
             "vehicle_number": "stockDetails.vehicleNumber",
             "deliveryTeam": "stockDetails.deliveryTeam",
+            "deliveryTeamName": "__context:deliveryTeamName",
             "mrnNumber": "__context:mrnNumber",
             "stockEntryType": "__context:stockEntryType",
             "primaryRole": "__context:primaryRole",
@@ -911,8 +1300,11 @@ final jsonConfig = {
             "status":
                 "__switch:__context:stockEntryType:{ISSUED:__value:IN_TRANSIT,RETURNED:__value:IN_TRANSIT,LOSS:__value:LOST,DAMAGED:__value:DAMAGED}",
             "scanResource": "stockProductDetails.scanResource",
-            "quantityWastage": "stockProductDetails.quantityWastage",
-            "quantityPartialUsed": "stockProductDetails.quantityPartialUsed"
+            "quantityWastage":
+                "__switch:__context:stockEntryType:{RETURNED:__context:quantityWastage,default:stockProductDetails.quantityWastage}",
+            "emptyBottle": "stockProductDetails.emptyBottle",
+            "quantityPartialUsed": "__context:quantityPartialML",
+            "quantityUnused": "stockProductDetails.quantityUnused",
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
@@ -1391,6 +1783,7 @@ final jsonConfig = {
           "additionalFields": {
             // Static field mappings
             "boundaryCode": "facilityDetails.administrativeUnit",
+            "localityCode": "__context:selectedBoundaryCode",
             "referralCycle": "referralDetails.referralCycle",
             "gender": "referralDetails.gender",
             "ageInMonths": "referralDetails.ageInMonths",
@@ -1420,7 +1813,7 @@ final jsonConfig = {
           "referralCode": "__context:selectedIndividualClientReferenceId",
           "name": "__context:selectedIndividualName",
           "symptom":
-              "__switch:__context:sourceFlow:{CHECKLIST:__context:referralReasons,default:referBeneficiary.referralReason}",
+              "__switch:__context:sourceFlow:{CHECKLIST:__context:referralSymptom,RI_CHECKLIST:__context:referralSymptom,VASCHECKLIST:__context:referralSymptom,default:referBeneficiary.referralSymptom}",
           "nonRecoverableError": "referral.nonRecoverable",
           "clientReferenceId": "__generate:uuid",
           "rowVersion": "meta.rowVersion",
@@ -1430,9 +1823,13 @@ final jsonConfig = {
           "additionalFields": {
             // Explicit field mappings matching ReferralReconEnums/ReferralReconAdditionalFields
             "boundaryCode": "facilityDetails.administrativeArea",
+            "localityCode": "__context:selectedBoundaryCode",
             "referredBy": "__context:userUUID",
             "referralComments": "referBeneficiary.referralComments",
             "nameOfReferral": "__context:selectedIndividualName",
+            "nameOfHouseholdHead": "__context:headName",
+            "latitude": "__context:latitude",
+            "longitude": "__context:longitude",
             "referralCycle": "__context:cycleIndex",
             "gender": "__context:selectedIndividualGender",
             "ageInMonths": "__context:selectedIndividualAgeInMonths",
@@ -1442,8 +1839,19 @@ final jsonConfig = {
             "ec3Value": "__context:ec3",
             "ec4Value": "__context:ec4",
             "ec5Value": "__context:ec5",
-            // Referral reasons mapped from checklist: SICK for ec1=YES, FEVER for ec2=YES
-            "referralReasons": "__context:referralReasons"
+            "chcSeen": "__context:chcSeen",
+            "fullyImmunized": "__context:fullyImmunized",
+            "partiallyImmunized": "__context:partiallyImmunized",
+            "zeroDose": "__context:zeroDose",
+            "unimmunized": "__context:unimmunized",
+            // Referral reasons mapped from checklist, ordered by priority
+            // (ADR/DRUG_SE_PC > SICK > FEVER). `symptom` holds the highest-priority
+            // reason; `referralReasonsExtra` holds the remaining reasons joined by ",".
+            "referralReasons": "__context:referralReasons",
+            "referralSymptom": "__context:referralSymptom",
+            "referralReasonsExtra": "__context:referralReasonsExtra",
+            "flow":
+                "__switch:__context:sourceFlow:{RI_CHECKLIST:__value:riDone,CHECKLIST:__value:smcDone,VASCHECKLIST:__value:vasDone}"
           }
         }
       }

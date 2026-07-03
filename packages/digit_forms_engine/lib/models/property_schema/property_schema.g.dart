@@ -288,6 +288,8 @@ _$ShowAlertPopUpImpl _$$ShowAlertPopUpImplFromJson(Map<String, dynamic> json) =>
       conditions: (json['conditions'] as List<dynamic>?)
           ?.map((e) => AlertCondition.fromJson(e as Map<String, dynamic>))
           .toList(),
+      points:
+          (json['points'] as List<dynamic>?)?.map((e) => e as String).toList(),
     );
 
 Map<String, dynamic> _$$ShowAlertPopUpImplToJson(
@@ -298,6 +300,7 @@ Map<String, dynamic> _$$ShowAlertPopUpImplToJson(
       'primaryActionLabel': instance.primaryActionLabel,
       'secondaryActionLabel': instance.secondaryActionLabel,
       'conditions': instance.conditions,
+      'points': instance.points,
     };
 
 _$ShowSecondaryAlertPopUpImpl _$$ShowSecondaryAlertPopUpImplFromJson(

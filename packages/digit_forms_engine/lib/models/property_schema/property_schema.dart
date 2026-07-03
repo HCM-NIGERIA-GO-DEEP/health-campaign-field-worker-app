@@ -180,6 +180,8 @@ class ShowAlertPopUp with _$ShowAlertPopUp {
     required String primaryActionLabel,
     required String secondaryActionLabel,
     List<AlertCondition>? conditions, // optional
+    // Optional numbered points to render below the description (each entry is a localization key).
+    List<String>? points,
   }) = _ShowAlertPopUp;
 
   factory ShowAlertPopUp.fromJson(Map<String, dynamic> json) =>

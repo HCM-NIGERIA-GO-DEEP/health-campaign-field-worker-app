@@ -6,6 +6,7 @@ import 'package:digit_crud_bloc/digit_crud_bloc.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
+import 'package:digit_forms_engine/forms_engine.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -24,6 +25,15 @@ class FunctionRegistries {
     _registerFacilityFunctions();
     _registerStockFunctions();
     _registerViewTransactionFunctions();
+    _registerFormsEngineHooks();
+  }
+
+  /// Wires app-side data into the forms engine's built-in functions.
+  /// Lets `calculateWastage` read the current product's stock balance from
+  /// the in-memory [StockBalanceCache].
+  void _registerFormsEngineHooks() {
+    FormsFunctionConfig.instance.stockBalanceResolver = (productVariantId) =>
+        StockBalanceCache.instance.cache[productVariantId] ?? 0;
   }
 
   void _registerGenerateFunctions() {
@@ -53,17 +63,15 @@ class FunctionRegistries {
     FunctionRegistry.register('bottlesToMl', (args, stateData) {
       if (args.isEmpty) return 0;
       final raw = args.first;
-      final bottles = (raw is num)
-          ? raw
-          : num.tryParse(raw?.toString() ?? '') ?? 0;
+      final bottles =
+          (raw is num) ? raw : num.tryParse(raw?.toString() ?? '') ?? 0;
       return bottles * 30;
     });
 
     FunctionRegistry.register('mlToBottles', (args, stateData) {
       if (args.isEmpty) return 0;
       final raw = args.first;
-      final ml =
-          (raw is num) ? raw : num.tryParse(raw?.toString() ?? '') ?? 0;
+      final ml = (raw is num) ? raw : num.tryParse(raw?.toString() ?? '') ?? 0;
       final bottles = ml / 30;
       final rounded = bottles.roundToDouble();
       return bottles == rounded ? rounded.toInt() : bottles;
@@ -211,6 +219,40 @@ class FunctionRegistries {
         return teamCode.split("||").last.trim();
       }
       return teamCode;
+    });
+
+    // Extracts the userName (part before "||") from the scanned team QR
+    // ("userName||userUuid"). Returns '' when no userName is present
+    // (e.g. when the scanned QR only contains the userUuid).
+    FunctionRegistry.register('getTeamName', (args, stateData) {
+      if (args.isEmpty) return '';
+      final teamCode = args.first?.toString() ?? '';
+      if (teamCode.contains("||")) {
+        return teamCode.split("||").first.trim();
+      }
+      return '';
+    });
+
+    // Resolves the delivery-team (CDD) name to persist on a stock transaction,
+    // for whichever side the team is on:
+    // - Issue (team is the RECEIVER): the team QR is scanned into teamCode as
+    //   "userName||userUuid" -> use that userName.
+    // - Return (team is the SENDER): senderId is the logged-in user's uuid
+    //   (see the transformer senderId mapping), so the matching name is the
+    //   logged-in user's name, passed in from context.
+    // - Warehouse <-> warehouse: '' (no staff party involved).
+    // args: [teamCode, facilityFromWhich, loggedInUserName]
+    FunctionRegistry.register('getDeliveryTeamName', (args, stateData) {
+      final teamCode = args.isNotEmpty ? (args[0]?.toString() ?? '') : '';
+      if (teamCode.contains("||")) {
+        return teamCode.split("||").first.trim();
+      }
+      final facilityFromWhich =
+          args.length > 1 ? (args[1]?.toString() ?? '') : '';
+      if (facilityFromWhich == 'DELIVERY_TEAM') {
+        return args.length > 2 ? (args[2]?.toString() ?? '') : '';
+      }
+      return '';
     });
 
     FunctionRegistry.register('getTransactionStatusType', (args, stateData) {
@@ -497,12 +539,15 @@ class FunctionRegistries {
         }
       }
 
-      // Find the last ADMINISTRATION_SUCCESS or DELIVERED task
+      // Find the last ADMINISTRATION_SUCCESS or DELIVERED task.
+      // Redose is SMC-only; skip any task tagged additionalFields.flow == 'riDone'.
       Map<String, dynamic>? lastDeliveryTask;
       for (int i = tasks.length - 1; i >= 0; i--) {
-        final status = tasks[i]['status']?.toString().toUpperCase() ?? '';
+        final task = tasks[i];
+        if (_taskHasRiFlow(task)) continue;
+        final status = task['status']?.toString().toUpperCase() ?? '';
         if (status == 'ADMINISTRATION_SUCCESS') {
-          lastDeliveryTask = tasks[i];
+          lastDeliveryTask = task;
           break;
         }
       }
@@ -574,6 +619,39 @@ class FunctionRegistries {
       return '';
     }
 
+    // Reads a single value from the additionalFields key/value list.
+    String getFieldValue(dynamic fields, String key) {
+      if (fields is List) {
+        for (var field in fields) {
+          if (field is Map && field['key'] == key) {
+            return field['value']?.toString() ?? '';
+          }
+        }
+      }
+      return '';
+    }
+
+    // Prefixes a facility id with FAC_ (skips empty ids so we never show a bare
+    // "FAC_"). Used to display facility parties on the transaction screens.
+    String withFacilityPrefix(dynamic id) {
+      final value = id?.toString() ?? '';
+      return value.isEmpty ? '' : 'FAC_$value';
+    }
+
+    // Resolves the delivery-team (CDD) userName for display. Prefers the
+    // captured deliveryTeamName (set when the team is the RECEIVER, e.g. an
+    // issue). When the team is the SENDER (e.g. a return) the name was not
+    // captured into deliveryTeamName, but the raw scanned QR is persisted in
+    // the deliveryTeam field as "userName||userUuid" -> extract the name from
+    // there. Returns '' when no name is available (caller falls back to the id).
+    String resolveTeamName(dynamic fields) {
+      final captured = getFieldValue(fields, 'deliveryTeamName');
+      if (captured.isNotEmpty) return captured;
+      final scanned = getFieldValue(fields, 'deliveryTeam');
+      if (scanned.contains('||')) return scanned.split('||').first.trim();
+      return '';
+    }
+
     FunctionRegistry.register('getFirstPagePartyLabel', (args, stateData) {
       if (args.isEmpty) return 'INVENTORY_TRANSACTING_PARTY_LABEL';
       final stockEntryType = getStockEntryTypeFromFields(args.first);
@@ -593,18 +671,32 @@ class FunctionRegistries {
     FunctionRegistry.register('getFirstPageParty', (args, stateData) {
       if (args.length < 3) return '';
       final stockEntryType = getStockEntryTypeFromFields(args[0]);
-      final senderId = args[1]?.toString() ?? '';
-      final receiverId = args[2]?.toString() ?? '';
+      final senderType = args.length > 3 ? (args[3]?.toString() ?? '') : '';
+      final receiverType = args.length > 4 ? (args[4]?.toString() ?? '') : '';
+      final teamName = resolveTeamName(args[0]);
+      // A STAFF party (CDD / delivery team member) is an individual, not a
+      // facility -> show the captured userName (deliveryTeamName), no FAC_
+      // prefix; fall back to the raw id (userUUID) only when no name was
+      // captured. Facility (non-STAFF) parties get the FAC_ prefix.
       switch (stockEntryType) {
         case 'RECEIPT':
         case 'RETURNED':
-          return senderId;
+          if (senderType == 'STAFF') {
+            return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
+          }
+          return withFacilityPrefix(args[1]);
         case 'ISSUED':
         case 'DAMAGED':
         case 'LOSS':
-          return receiverId;
+          if (receiverType == 'STAFF') {
+            return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
+          }
+          return withFacilityPrefix(args[2]);
         default:
-          return senderId;
+          if (senderType == 'STAFF') {
+            return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
+          }
+          return withFacilityPrefix(args[1]);
       }
     });
 
@@ -627,20 +719,50 @@ class FunctionRegistries {
     FunctionRegistry.register('getSecondPageParty', (args, stateData) {
       if (args.length < 3) return '';
       final stockEntryType = getStockEntryTypeFromFields(args[0]);
-      final senderId = args[1]?.toString() ?? '';
-      final receiverId = args[2]?.toString() ?? '';
+      final senderType = args.length > 3 ? (args[3]?.toString() ?? '') : '';
+      final receiverType = args.length > 4 ? (args[4]?.toString() ?? '') : '';
+      final teamName = resolveTeamName(args[0]);
+      // STAFF party -> show captured userName (no FAC_ prefix); fall back to the
+      // raw id. Facility parties get the FAC_ prefix so the details page matches
+      // the transaction list (getFirstPageParty).
       switch (stockEntryType) {
         case 'RECEIPT':
         case 'RETURNED':
-          return receiverId;
+          if (receiverType == 'STAFF') {
+            return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
+          }
+          return withFacilityPrefix(args[2]);
         case 'ISSUED':
         case 'DAMAGED':
         case 'LOSS':
-          return senderId;
+          if (senderType == 'STAFF') {
+            return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
+          }
+          return withFacilityPrefix(args[1]);
         default:
-          return receiverId;
+          if (receiverType == 'STAFF') {
+            return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
+          }
+          return withFacilityPrefix(args[2]);
       }
     });
+  }
+
+  /// Returns true when the task carries `additionalFields.flow == 'riDone'`,
+  /// marking it as an RI flow task. Used by SMC-only logic (e.g. redose stock
+  /// check) to skip RI tasks. Mirrors `_isRiEntity` in
+  /// `digit_flow_builder/utils/function_registry.dart`, which is private.
+  static bool _taskHasRiFlow(Map<String, dynamic> task) {
+    final additionalFields = task['additionalFields'];
+    if (additionalFields is! Map) return false;
+    final fields = additionalFields['fields'];
+    if (fields is! List) return false;
+    for (final field in fields) {
+      if (field is Map && field['key'] == 'flow') {
+        return field['value']?.toString() == 'riDone';
+      }
+    }
+    return false;
   }
 }
 

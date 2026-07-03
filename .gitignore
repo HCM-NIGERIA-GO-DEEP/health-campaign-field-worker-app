@@ -53,10 +53,16 @@ pubspec_overrides.yaml
 # Related to Mason
 .mason
 
-apps/health_campaign_field_worker_app/.env
 apps/health_campaign_field_worker_app/libisar.dylib
 *.properties
 
 # FVM Version Cache
 .fvm/
 .fvmrc
+
+
+# Ignore the specific environment file
+.env
+
+# Ignore any variations (e.g., .env.name)
+.env.*

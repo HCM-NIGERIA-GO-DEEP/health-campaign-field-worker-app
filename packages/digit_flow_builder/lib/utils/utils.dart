@@ -27,6 +27,8 @@ class FlowBuilderSingleton {
   String? _projectId;
   BeneficiaryType? _beneficiaryType;
   ProjectTypeModel? _projectType;
+  ProjectTypeModel? _vasProjectType;
+  ProjectTypeModel? _orsProjectType;
   ProjectModel? _selectedProject;
   BoundaryModel? _boundaryModel;
   PersistenceConfiguration? _persistenceConfiguration = PersistenceConfiguration
@@ -51,6 +53,8 @@ class FlowBuilderSingleton {
     required String projectId,
     required BeneficiaryType selectedBeneficiaryType,
     required ProjectTypeModel? projectType,
+    ProjectTypeModel? vasProjectType,
+    ProjectTypeModel? orsProjectType,
     required ProjectModel selectedProject,
     required UserModel? loggedInUser,
     List<Map<String, dynamic>>? userRoles,
@@ -61,6 +65,8 @@ class FlowBuilderSingleton {
     _projectId = projectId;
     _beneficiaryType = selectedBeneficiaryType;
     _projectType = projectType;
+    _vasProjectType = vasProjectType;
+    _orsProjectType = orsProjectType;
     _selectedProject = selectedProject;
     _loggedInUser = loggedInUser;
     _userRoles = userRoles;
@@ -90,6 +96,10 @@ class FlowBuilderSingleton {
   BeneficiaryType? get beneficiaryType => _beneficiaryType;
 
   ProjectTypeModel? get projectType => _projectType;
+
+  ProjectTypeModel? get vasProjectType => _vasProjectType;
+
+  ProjectTypeModel? get orsProjectType => _orsProjectType;
 
   ProjectModel? get selectedProject => _selectedProject;
 
@@ -529,6 +539,8 @@ Map<String, dynamic> singletonToMap() {
     "projectId": s.projectId,
     "beneficiaryType": s.beneficiaryType,
     "projectType": s.projectType?.toJson(),
+    "vasProjectType": s.vasProjectType?.toJson(),
+    "orsProjectType": s.orsProjectType?.toJson(),
     "selectedProject": s.selectedProject?.toJson(),
     "boundary": s.boundary?.toJson(),
     "persistenceConfiguration": s.persistenceConfiguration?.toString(),

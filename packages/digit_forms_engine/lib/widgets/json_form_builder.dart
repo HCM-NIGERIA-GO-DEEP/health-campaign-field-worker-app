@@ -178,6 +178,14 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
     // First resolve dynamic variables
     final resolvedPath = _resolveDynamicVariables(path);
 
+    // Function call support: "fn:functionName(arg1, arg2, ...)"
+    // Lets a field derive its auto-fill value from a registered method
+    // (e.g. fn:calculateWastage(quantityPartialUsed_$tabIndex, quantityUnused_$tabIndex)).
+    if (resolvedPath.startsWith('fn:')) {
+      return _resolveFunctionValue(
+          resolvedPath.substring(3), form, defaultValues);
+    }
+
     // Regex to match something like:  abc[0]  or  stockProductDetails_0[2]
     final arrayIndexPattern = RegExp(r'^(.*)\[(\d+)\]$');
     final match = arrayIndexPattern.firstMatch(resolvedPath);
@@ -216,6 +224,61 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
     }
 
     return defaultValues[resolvedPath];
+  }
+
+  /// Evaluate a function-call auto-fill value such as
+  /// `calculateWastage(quantityPartialUsed_item_0, quantityUnused_item_0)`
+  /// using the forms-engine [functionRegistry]. Each argument is resolved from
+  /// form controls first, then defaultValues, then parsed as a string literal
+  /// or number. Returns null if the function isn't registered.
+  dynamic _resolveFunctionValue(
+    String call,
+    FormGroup form,
+    Map<String, dynamic> defaultValues,
+  ) {
+    final match = RegExp(r'^(\w+)\((.*)\)$').firstMatch(call.trim());
+    if (match == null) return null;
+
+    final fn = functionRegistry[match.group(1)];
+    if (fn == null) return null;
+
+    final rawArgs = match.group(2)!.trim();
+    final args = rawArgs.isEmpty
+        ? const <dynamic>[]
+        : rawArgs.split(',').map((arg) {
+            final key = arg.trim();
+            if (form.contains(key)) return form.control(key).value;
+            if (defaultValues.containsKey(key)) return defaultValues[key];
+            // String literal
+            if ((key.startsWith('"') && key.endsWith('"')) ||
+                (key.startsWith("'") && key.endsWith("'"))) {
+              return key.substring(1, key.length - 1);
+            }
+            // Navigation params (supports nested dot paths, e.g. currentEntity.id)
+            final navValue = _resolveFromNavigationParams(key);
+            if (navValue != null) return navValue;
+            // Number literal, else the raw token
+            return num.tryParse(key) ?? key;
+          }).toList();
+
+    return fn(args);
+  }
+
+  /// Resolve a (possibly dotted) key from this field's navigationParams,
+  /// e.g. "stockBalances" or "currentEntity.id". Returns null if not found.
+  dynamic _resolveFromNavigationParams(String key) {
+    final navParams = widget.navigationParams;
+    if (navParams == null) return null;
+
+    dynamic current = navParams;
+    for (final part in key.split('.')) {
+      if (current is Map && current.containsKey(part)) {
+        current = current[part];
+      } else {
+        return null;
+      }
+    }
+    return current;
   }
 
   /// Resolve a nested path from form controls (e.g., "stockProductDetails.scannedData_0")

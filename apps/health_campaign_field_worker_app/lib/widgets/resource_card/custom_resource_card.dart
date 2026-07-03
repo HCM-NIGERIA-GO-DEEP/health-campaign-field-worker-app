@@ -4,6 +4,7 @@ import 'package:collection/collection.dart';
 import 'package:digit_data_model/blocs/product_variant/product_variant.dart';
 import 'package:digit_data_model/models/entities/product_variant.dart';
 import 'package:digit_data_model/models/entities/project_type.dart';
+import 'package:digit_flow_builder/blocs/flow_crud_bloc.dart';
 import 'package:digit_forms_engine/forms_engine.dart';
 import 'package:digit_forms_engine/helper/validation_message_helper.dart';
 import 'package:digit_ui_components/digit_components.dart';
@@ -498,10 +499,16 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
     _controllers.clear();
     final variants = productVariants;
 
+    final navParams =
+        FlowCrudStateRegistry().getNavigationParams(widget.pageSchema) ??
+            const <String, dynamic>{};
+    final sourceFlow = navParams['sourceFlow']?.toString().toUpperCase();
+    final activeProjectType = sourceFlow == 'VASCHECKLIST'
+        ? (context.vasProjectType ?? context.selectedProjectType)
+        : context.selectedProjectType;
+
     final int count =
-        context.selectedProject.additionalDetails?.projectType?.cycles == null
-            ? 1
-            : productVariants?.length ?? 0;
+        activeProjectType?.cycles == null ? 1 : productVariants?.length ?? 0;
 
     _controllers.addAll(List.generate(count, (index) => index));
 
@@ -546,7 +553,13 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
 
   getProductVariants() {
     final data = widget.stateData;
-    final projectType = context.selectedProjectType;
+    final navParams =
+        FlowCrudStateRegistry().getNavigationParams(widget.pageSchema) ??
+            const <String, dynamic>{};
+    final sourceFlow = navParams['sourceFlow']?.toString().toUpperCase();
+    final projectType = sourceFlow == 'VASCHECKLIST'
+        ? (context.vasProjectType ?? context.selectedProjectType)
+        : context.selectedProjectType;
     final cycles = projectType?.cycles;
     final eligible =
         data?.stateWrapper?.first?['eligibleProductVariants'] as List?;

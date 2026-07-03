@@ -16,6 +16,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
 
 import '../../models/entities/roles_type.dart';
+import '../../utils/constants.dart';
 import '../../utils/extensions/extensions.dart';
 import '../../utils/stock_calculation_utils.dart';
 import '../localized.dart';
@@ -341,7 +342,8 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         entityIndex++) {
       final product = _selectedProducts[entityIndex];
       final stockInHand = _stockInHandMap[product.id] ?? 0.0;
-      final maxValue = stockInHand.toInt();
+      final maxValue = stockInHand
+          .toInt(); // Convert back to bottle count for validation message
 
       debugPrint(
           'ProductSelectionCard: Entity $entityIndex - product=${product.id}, stockInHand=$stockInHand, maxValue=$maxValue');
