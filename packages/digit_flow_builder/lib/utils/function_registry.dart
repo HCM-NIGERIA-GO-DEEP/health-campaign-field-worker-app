@@ -1767,6 +1767,13 @@ void initializeFunctionRegistry() {
   /// 2. Any task is not eligible (INELIGIBLE status)
   /// 3. A referral exists (not null/empty)
   FunctionRegistry.register("disableEdit", (args, stateData) {
+    final projectType = FlowBuilderSingleton().projectType;
+    final selectedCycle = projectType?.cycles?.firstWhereOrNull(
+      (e) =>
+          e.startDate < DateTime.now().millisecondsSinceEpoch &&
+          e.endDate > DateTime.now().millisecondsSinceEpoch,
+    );
+
     // Check task statuses - if ANY task is delivered or ineligible, disable
     if (args.isNotEmpty && args.first != null) {
       final tasks = args.first;
@@ -1791,6 +1798,22 @@ void initializeFunctionRegistry() {
           }
 
           if (taskMap != null) {
+            final additionalFields = taskMap['additionalFields'];
+            final fields = additionalFields is Map
+                ? additionalFields['fields'] as List?
+                : null;
+            final taskCycleIndex = int.tryParse(
+                fields
+                        ?.firstWhereOrNull((f) =>
+                            f is Map && f['key'] == 'cycleIndex')
+                        ?['value']
+                        ?.toString() ??
+                    '');
+
+            if (selectedCycle != null && taskCycleIndex != selectedCycle.id) {
+              continue;
+            }
+
             final status = taskMap['status']?.toString().toUpperCase().trim();
 
             // Disable if any task status is success
@@ -1817,14 +1840,6 @@ void initializeFunctionRegistry() {
       final referral = args[1];
 
       if (referral is List && referral.isNotEmpty) {
-        // Check if any referral matches the current running cycle
-        final projectType = FlowBuilderSingleton().projectType;
-        final selectedCycle = projectType?.cycles?.firstWhereOrNull(
-          (e) =>
-              e.startDate < DateTime.now().millisecondsSinceEpoch &&
-              e.endDate > DateTime.now().millisecondsSinceEpoch,
-        );
-
         if (selectedCycle != null) {
           for (final item in referral) {
             Map<String, dynamic>? refMap;
