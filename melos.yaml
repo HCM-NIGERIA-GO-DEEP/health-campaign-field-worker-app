@@ -89,3 +89,4 @@ scripts:
       concurrency: 1
     packageFilters:
       dart: true
+sdkPath: .fvm/flutter_sdk
