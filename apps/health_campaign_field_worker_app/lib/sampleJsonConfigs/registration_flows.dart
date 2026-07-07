@@ -2036,6 +2036,31 @@ final dynamic sampleFlows = {
               "includeInSummary": true
             },
             {
+              "type": "integer",
+              "label": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount",
+              "order": 1,
+              "value": "{{navigation.memberCount}}",
+              "format": "numeric",
+              "hidden": false,
+              "isMdms": false,
+              "disabled": true,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": true,
+              "fieldName": "memberCount",
+              "mandatory": false,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": false,
+              "validations": [],
+              "errorMessage": "",
+              "includeInForm": true,
+              "isMultiSelect": false,
+              "includeInSummary": true
+            },
+            {
               "type": "dynamic",
               "enums": [
                 {"code": "SP1", "name": "SP1"},
