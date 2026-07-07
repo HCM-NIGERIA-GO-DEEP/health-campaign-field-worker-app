@@ -969,11 +969,29 @@ void initializeFunctionRegistry() {
 
     final tasks = args.first;
 
+    final projectType = FlowBuilderSingleton().projectType;
+    final currentCycle = projectType?.cycles?.firstWhereOrNull(
+      (e) =>
+          e.startDate < DateTime.now().millisecondsSinceEpoch &&
+          e.endDate > DateTime.now().millisecondsSinceEpoch,
+    );
+    final currentCycleIndex = currentCycle?.id;
+
+    if (currentCycleIndex == null) return false;
+
     for (var task in tasks ?? []) {
       final statusValue = task.status;
       if (statusValue is! String) continue;
       final status = statusValue.trim().toUpperCase();
       final List? fields = task.additionalFields?.fields;
+      final taskCycleIndex = int.tryParse(
+          fields
+                  ?.firstWhereOrNull((f) => f.key == 'cycleIndex')
+                  ?.value
+                  ?.toString() ??
+              '');
+      if (taskCycleIndex != currentCycleIndex) continue;
+
       final flowType = fields
           ?.firstWhereOrNull((f) => f.key == 'flow')
           ?.value
