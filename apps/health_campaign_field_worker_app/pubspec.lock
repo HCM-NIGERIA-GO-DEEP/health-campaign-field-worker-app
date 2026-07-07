@@ -550,10 +550,9 @@ packages:
   digit_firebase_services:
     dependency: "direct main"
     description:
-      name: digit_firebase_services
-      sha256: ce76521d797e123b6fc95c9dfad7d4a918a93b97f57aecd0e1d517b46190909d
-      url: "https://pub.dev"
-    source: hosted
+      path: "../../packages/digit_firebase_services"
+      relative: true
+    source: path
     version: "0.0.1"
   digit_flow_builder:
     dependency: "direct main"
@@ -758,7 +757,7 @@ packages:
     source: hosted
     version: "0.9.3+3"
   firebase_core:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: firebase_core
       sha256: "06537da27db981947fa535bb91ca120b4e9cb59cb87278dbdde718558cafc9ff"
@@ -782,7 +781,7 @@ packages:
     source: hosted
     version: "2.17.5"
   firebase_crashlytics:
-    dependency: "direct overridden"
+    dependency: transitive
     description:
       name: firebase_crashlytics
       sha256: "4c9872020c0d97a161362ee6af7000cfdb8666234ddc290a15252ad379bb235a"
@@ -2236,7 +2235,7 @@ packages:
     source: hosted
     version: "0.7.0"
   url_launcher:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: url_launcher
       sha256: "9d06212b1362abc2f0f0d78e6f09f726608c74e3b9462e8368bb03314aa8d603"

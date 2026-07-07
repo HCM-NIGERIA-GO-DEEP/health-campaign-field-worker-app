@@ -6,6 +6,7 @@ import 'package:digit_ui_components/widgets/atoms/digit_loader.dart';
 import 'package:digit_ui_components/widgets/atoms/pop_up_card.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:digit_ui_components/widgets/molecules/show_pop_up.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:isar/isar.dart';
@@ -39,6 +40,8 @@ class _LoginPageState extends LocalizedState<LoginPage> {
   bool isPrivacyEnabled = false;
   static const _userId = 'userId';
   static const _password = 'password';
+  static const _debugUserId = 'USR-169210';
+  static const _debugPassword = 'eGov@123';
 
   String? _pendingUserId;
   String? _pendingPassword;
@@ -281,9 +284,11 @@ class _LoginPageState extends LocalizedState<LoginPage> {
 
   FormGroup buildForm() => fb.group(<String, Object>{
         _userId: FormControl<String>(
+          value: kDebugMode ? _debugUserId : null,
           validators: [Validators.required],
         ),
         _password: FormControl<String>(
+          value: kDebugMode ? _debugPassword : null,
           validators: [Validators.required],
         ),
       });

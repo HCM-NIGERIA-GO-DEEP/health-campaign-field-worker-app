@@ -8,6 +8,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../data/local_store/secure_store/secure_store.dart';
+import '../../data/local_store/app_shared_preferences.dart';
 import '../../data/repositories/remote/auth.dart';
 import '../../data/repositories/remote/mdms.dart';
 import '../../models/auth/auth_model.dart';
@@ -122,6 +123,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             .setSelectedIndividual(loggedInIndividual.firstOrNull?.id);
       }
 
+      // Show privacy notice once for each fresh login session.
+      await AppSharedPreferences().setShowPrivacyNoticeAfterLogin(true);
+
       emit(
         AuthAuthenticatedState(
           accessToken: result.accessToken,
@@ -213,6 +217,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await localSecureStore
             .setSelectedIndividual(loggedInIndividual.firstOrNull?.id);
       }
+
+      // Show privacy notice once for each fresh login session.
+      await AppSharedPreferences().setShowPrivacyNoticeAfterLogin(true);
 
       emit(
         AuthAuthenticatedState(
