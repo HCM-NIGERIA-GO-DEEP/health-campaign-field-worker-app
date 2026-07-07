@@ -38,7 +38,7 @@ class HomeItemCard extends StatelessWidget {
         onPressed: onPressed,
         padding: const EdgeInsets.all(spacer1).copyWith(top: spacer1),
         margin: const EdgeInsets.all(spacer2),
-        inline: true,
+        inline: false,
         children: [
           const Padding(padding: EdgeInsets.only(top: spacer1)),
           if (enableCustomIcon)
@@ -74,7 +74,8 @@ class HomeItemCard extends StatelessWidget {
                   ),
                   style: textTheme.bodyS,
                   textAlign: TextAlign.center,
-                  // overflow: TextOverflow.ellipsis,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
