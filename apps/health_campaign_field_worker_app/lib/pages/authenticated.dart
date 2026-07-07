@@ -27,6 +27,7 @@ import 'package:survey_form/survey_form.dart';
 import 'package:sync_service/sync_service_lib.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
 import 'package:transit_post/data/repositories/remote/user_action.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../blocs/app_initialization/app_initialization.dart';
 import '../blocs/auth/auth.dart';
@@ -944,6 +945,52 @@ class _PrivacyNoticeFullscreenPopupState
   final ScrollController _scrollController = ScrollController();
   bool _hasReachedEnd = false;
 
+  Future<void> _openExternalUrl(String value) async {
+    final uri = Uri.tryParse(value);
+    if (uri == null) return;
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
+
+  Widget _buildTextWithOptionalLink({
+    required String value,
+    required TextStyle style,
+  }) {
+    final urlRegex = RegExp(r'https?:\/\/[^\s]+');
+    final match = urlRegex.firstMatch(value);
+
+    if (match == null) {
+      return Text(value, style: style);
+    }
+
+    final before = value.substring(0, match.start);
+    final url = value.substring(match.start, match.end);
+    final after = value.substring(match.end);
+
+    return RichText(
+      text: TextSpan(
+        style: style,
+        children: [
+          TextSpan(text: before),
+          WidgetSpan(
+            alignment: PlaceholderAlignment.baseline,
+            baseline: TextBaseline.alphabetic,
+            child: GestureDetector(
+              onTap: () => _openExternalUrl(url),
+              child: Text(
+                url,
+                style: style.copyWith(
+                  color: Colors.blue,
+                  decoration: TextDecoration.underline,
+                ),
+              ),
+            ),
+          ),
+          TextSpan(text: after),
+        ],
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -1014,7 +1061,6 @@ class _PrivacyNoticeFullscreenPopupState
                               color: theme.colorTheme.primary.primary2,
                             ),
                           ),
-                          const SizedBox(height: spacer2),
                           ...bodyItems.map((item) {
                             final content = item is Map
                                 ? Map<String, dynamic>.from(item)
@@ -1022,22 +1068,34 @@ class _PrivacyNoticeFullscreenPopupState
                             final format =
                                 content['format'] as String? ?? 'text';
                             final value = content['value'] as String? ?? '';
+                            final isBold = content['bold'] as bool? ?? false;
+                            final isCompact =
+                              content['compact'] as bool? ?? false;
 
                             if (format == 'heading') {
                               return Padding(
-                                padding: const EdgeInsets.only(bottom: spacer2),
+                                padding: const EdgeInsets.only(bottom: 0),
                                 child: Text(
                                   value,
-                                  style: textTheme.headingM.copyWith(
-                                    color: theme.colorTheme.primary.primary2,
-                                  ),
+                                  style: isCompact
+                                      ? textTheme.bodyS.copyWith(
+                                          color:
+                                              theme.colorTheme.primary.primary2,
+                                          fontWeight: FontWeight.w700,
+                                          height: 1.0,
+                                        )
+                                      : textTheme.headingM.copyWith(
+                                          color:
+                                              theme.colorTheme.primary.primary2,
+                                          height: 1.0,
+                                        ),
                                 ),
                               );
                             }
 
                             if (format == 'bullet') {
                               return Padding(
-                                padding: const EdgeInsets.only(bottom: spacer2),
+                                padding: const EdgeInsets.only(bottom: 0),
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -1063,11 +1121,12 @@ class _PrivacyNoticeFullscreenPopupState
                             }
 
                             return Padding(
-                              padding: const EdgeInsets.only(bottom: spacer2),
-                              child: Text(
-                                value,
+                              padding: const EdgeInsets.only(bottom: spacer1),
+                              child: _buildTextWithOptionalLink(
+                                value: value,
                                 style: textTheme.bodyS.copyWith(
                                   color: theme.colorTheme.primary.primary2,
+                                  fontWeight: isBold ? FontWeight.w700 : null,
                                 ),
                               ),
                             );
