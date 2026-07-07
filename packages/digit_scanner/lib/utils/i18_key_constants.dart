@@ -170,6 +170,7 @@ class Scanner {
   String get barCodeBatch => 'BARCODE_BATCH_NUMBER';
 
   String get barCodeSerial => 'BARCODE_SERIAL_NUMBER';
+  String get serialNumber => 'SERIAL_NUMBER';
 
   String get barCodeExpiry => 'BARCODE_EXPIRY_DATE';
 

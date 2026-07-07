@@ -4,6 +4,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
   final DateTime? start;
   final DateTime? end;
   final bool summaryData;
+  final Map<String, dynamic>? navigationParams;
 
   const JsonSchemaScannerBuilder({
     required super.formControlName,
@@ -16,6 +17,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
     this.end,
     super.validations,
     this.summaryData = false,
+    this.navigationParams,
   });
 
   /// Converts ValidationRule list to ScannerValidation list
@@ -178,6 +180,126 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
         .join(';');
   }
 
+  dynamic _readPathValue(dynamic root, List<String> pathParts) {
+    dynamic current = root;
+
+    for (final part in pathParts) {
+      if (current == null) return null;
+
+      if (current is Map) {
+        if (current.containsKey(part)) {
+          current = current[part];
+          continue;
+        }
+
+        final asInt = int.tryParse(part);
+        if (asInt != null && current.containsKey(asInt)) {
+          current = current[asInt];
+          continue;
+        }
+
+        return null;
+      }
+
+      if (current is List) {
+        final index = int.tryParse(part);
+        if (index == null || index < 0 || index >= current.length) {
+          return null;
+        }
+        current = current[index];
+        continue;
+      }
+
+      return null;
+    }
+
+    return current;
+  }
+
+  String? _cleanNamePart(dynamic value) {
+    if (value is! String) return null;
+    final trimmed = value.trim();
+    final lower = trimmed.toLowerCase();
+    if (trimmed.isEmpty ||
+        trimmed == '--' ||
+        lower == 'null' ||
+        lower == 'beneficiary' ||
+        lower == 'name') {
+      return null;
+    }
+    return trimmed;
+  }
+
+  String? _composeName(String? first, String? last) {
+    final parts =
+        [first, last].where((e) => e != null && e.isNotEmpty).toList();
+    if (parts.isEmpty) return null;
+    return parts.join(' ');
+  }
+
+  String? _nameFromRoot(dynamic root) {
+    final first =
+        _cleanNamePart(_readPathValue(root, const ['nameOfIndividual'])) ??
+            _cleanNamePart(_readPathValue(root, const ['firstName'])) ??
+            _cleanNamePart(_readPathValue(root, const ['givenName'])) ??
+            _cleanNamePart(_readPathValue(root, const [
+              'contextData',
+              '0',
+              'headIndividual',
+              'IndividualModel',
+              'name',
+              'givenName',
+            ]));
+
+    final last = _cleanNamePart(_readPathValue(root, const ['lastName'])) ??
+        _cleanNamePart(_readPathValue(root, const ['familyName'])) ??
+        _cleanNamePart(_readPathValue(root, const [
+          'contextData',
+          '0',
+          'headIndividual',
+          'IndividualModel',
+          'name',
+          'additionalFields',
+          'fields',
+          'lastName',
+        ]));
+
+    final full = _composeName(first, last);
+    if (full != null) return full;
+    return first;
+  }
+
+  String? _beneficiaryNameFromForm(BuildContext context, FormGroup form) {
+    final fromFormValue = _nameFromRoot(form.value);
+    if (fromFormValue != null) return fromFormValue;
+
+    final fromNavigation = _nameFromRoot(navigationParams);
+    if (fromNavigation != null) return fromNavigation;
+
+    try {
+      final defaults = context.read<Map<String, dynamic>>();
+      final fromDefaults = _nameFromRoot(defaults);
+      if (fromDefaults != null) return fromDefaults;
+    } catch (_) {
+      // No default values provider available.
+    }
+
+    return null;
+  }
+
+  String _deliveryInstructionMessage(
+    BuildContext context,
+    FormGroup form,
+    int requiredScanCount,
+  ) {
+    final beneficiaryName =
+        _beneficiaryNameFromForm(context, form) ?? 'beneficiary';
+    final bednetLabel = requiredScanCount == 1 ? 'Bednet' : 'Bednets';
+
+    return 'Ensure that "$requiredScanCount $bednetLabel" are given to '
+        '"$beneficiaryName" and proper Health Talk is provided!';
+  }
+
   @override
   Widget build(BuildContext context) {
     final loc = FormLocalization.of(context);
@@ -307,8 +429,16 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
             _resolvedScannerValidations(requiredScanCount);
 
 
+        final showDeliveryInstructionBanner =
+            summaryData && isGS1code && form.contains('resourceCard');
+        final deliveryInstructionMessage = _deliveryInstructionMessage(
+          context,
+          form,
+          requiredScanCount,
+        );
+
         // Show barcode (GS1) summary
-        return showBarcodeSummary
+        final scannerContent = showBarcodeSummary
             ? Container(
                 padding: EdgeInsets.zero,
                 width: MediaQuery.of(context).size.width,
@@ -473,7 +603,109 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                     prefixIcon: Icons.qr_code,
                     mainAxisSize: MainAxisSize.max,
                   );
+
+        return _DeliveryInstructionWrapper(
+          showBanner: showDeliveryInstructionBanner,
+          message: deliveryInstructionMessage,
+          child: scannerContent,
+        );
       }),
+    );
+  }
+}
+
+class _DeliveryInstructionWrapper extends StatefulWidget {
+  final bool showBanner;
+  final String message;
+  final Widget child;
+
+  const _DeliveryInstructionWrapper({
+    required this.showBanner,
+    required this.message,
+    required this.child,
+  });
+
+  @override
+  State<_DeliveryInstructionWrapper> createState() =>
+      _DeliveryInstructionWrapperState();
+}
+
+class _DeliveryInstructionWrapperState
+    extends State<_DeliveryInstructionWrapper> {
+  bool _dismissed = false;
+
+  @override
+  void didUpdateWidget(covariant _DeliveryInstructionWrapper oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    // Re-show banner when message context changes.
+    if (oldWidget.message != widget.message && _dismissed) {
+      _dismissed = false;
+    }
+
+    if (!oldWidget.showBanner && widget.showBanner && _dismissed) {
+      _dismissed = false;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.showBanner || _dismissed) {
+      return widget.child;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+          color: const Color(0xFFC4452D),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Padding(
+                padding: EdgeInsets.only(top: 2),
+                child: Icon(
+                  Icons.error_outline,
+                  size: 18,
+                  color: Colors.white,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  widget.message,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    height: 1.35,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              InkWell(
+                onTap: () {
+                  setState(() {
+                    _dismissed = true;
+                  });
+                },
+                child: const Padding(
+                  padding: EdgeInsets.all(2),
+                  child: Icon(
+                    Icons.close,
+                    size: 18,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        widget.child,
+      ],
     );
   }
 }

@@ -590,6 +590,16 @@ final dynamic sampleFlows = {
                             "{{contextData.0.targetCycle.0.deliveries.0.doseCriteria.0.ProductVariants.0.quantity}}"
                       },
                       {
+                        "key": "nameOfIndividual",
+                        "value":
+                            "{{contextData.0.headIndividual.IndividualModel.name.givenName}}"
+                      },
+                      {
+                        "key": "lastName",
+                        "value":
+                            "{{contextData.0.headIndividual.IndividualModel.name.additionalFields.fields.lastName}}"
+                      },
+                      {
                         "key": "beneficiaryId",
                         "value":
                             "{{contextData.0.headIndividual.IndividualModel.identifiers.0.identifierId}}"
@@ -2019,6 +2029,31 @@ final dynamic sampleFlows = {
               "innerLabel": "",
               "schemaCode": null,
               "systemDate": true,
+              "validations": [],
+              "errorMessage": "",
+              "includeInForm": true,
+              "isMultiSelect": false,
+              "includeInSummary": true
+            },
+            {
+              "type": "integer",
+              "label": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount",
+              "order": 1,
+              "value": "{{navigation.memberCount}}",
+              "format": "numeric",
+              "hidden": false,
+              "isMdms": false,
+              "disabled": true,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": true,
+              "fieldName": "memberCount",
+              "mandatory": false,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": false,
               "validations": [],
               "errorMessage": "",
               "includeInForm": true,
