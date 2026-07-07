@@ -2118,6 +2118,8 @@ void initializeFunctionRegistry() {
   List<String> resolveReferralReasons(dynamic navigationData) {
     if (navigationData is! Map) return const [];
 
+    if (navigationData["sourceFlow"] == "RI_CHECKLIST") return const ['RI'];
+
     final String? ec1 = navigationData['ec1']?.toString();
     final String? ec2 = navigationData['ec2']?.toString();
     final String? ec4 = navigationData['ec4']?.toString();
