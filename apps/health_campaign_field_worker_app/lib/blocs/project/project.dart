@@ -1549,6 +1549,25 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
         if (username.isEmpty || userUuid.isEmpty) continue;
 
+        // Preserve any additionalFields already present on the remote record
+        // (e.g. team_mapping_* entries) instead of overwriting them. The
+        // payload may encode additionalFields as an object ({version, fields})
+        // or, in some responses, as a bare list of fields; handle both without
+        // throwing so a single malformed record can't abort the whole batch.
+        // Any stale user_roles entry is dropped so the fresh value below wins.
+        final rawAdditionalFields = raw['additionalFields'];
+        final rawFields = rawAdditionalFields is Map
+            ? rawAdditionalFields['fields']
+            : rawAdditionalFields;
+        final existingFields = (rawFields is List ? rawFields : const [])
+            .whereType<Map>()
+            .where((f) => f['key'] != null && f['key'] != _rolesFieldKey)
+            .map((f) => AdditionalField(f['key'].toString(), f['value']))
+            .toList();
+        final existingVersion = rawAdditionalFields is Map
+            ? (rawAdditionalFields['version'] as num?)?.toInt()
+            : null;
+
         final individual = IndividualModel(
           clientReferenceId: clientReferenceId,
           id: raw['id'] as String?,
@@ -1562,8 +1581,9 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
                 )
               : null,
           additionalFields: IndividualAdditionalFields(
-            version: 1,
+            version: existingVersion ?? 1,
             fields: [
+              ...existingFields,
               AdditionalField(_rolesFieldKey, roleCodes.join(',')),
             ],
           ),
