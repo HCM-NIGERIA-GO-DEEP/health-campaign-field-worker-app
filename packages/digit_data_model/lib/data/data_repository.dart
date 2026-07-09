@@ -36,6 +36,8 @@ abstract class DataRepository<D extends EntityModel,
 /// `RemoteRepository` is an abstract class that extends `DataRepository` and provides additional functionality for remote repositories.
 abstract class RemoteRepository<D extends EntityModel,
     R extends EntitySearchModel> extends DataRepository<D, R> {
+  static const String _stockCommentFallback = 'N/A';
+
   final Dio dio;
   final String entityName;
   final bool isPlural;
@@ -86,7 +88,8 @@ abstract class RemoteRepository<D extends EntityModel,
                 'offset': offSet ?? 0,
                 'limit': limit ?? 100,
                 'tenantId': DigitDataModelSingleton().tenantId,
-                if (includeOnlyUpdatedByOthers != null) 'includeOnlyUpdatedByOthers': includeOnlyUpdatedByOthers,
+                if (includeOnlyUpdatedByOthers != null)
+                  'includeOnlyUpdatedByOthers': includeOnlyUpdatedByOthers,
                 if (lastSyncedTime != null) 'lastSyncedTime': lastSyncedTime,
                 if (query.isDeleted ?? false) 'includeDeleted': query.isDeleted,
               },
@@ -178,20 +181,22 @@ abstract class RemoteRepository<D extends EntityModel,
   }
 
   FutureOr<Response> singleCreate(D entity) async {
+    final sanitizedEntityMap = _sanitizeEntityMap(entity.toMap());
     return await dio.post(
       createPath,
       data: {
-        'Service': entity.toMap(),
+        'Service': sanitizedEntityMap,
         "apiOperation": "CREATE",
       },
     );
   }
 
   FutureOr<Response> singleUpdate(D entity) async {
+    final sanitizedEntityMap = _sanitizeEntityMap(entity.toMap());
     return await dio.post(
       updatePath,
       data: {
-        'Service': entity.toMap(),
+        'Service': sanitizedEntityMap,
       },
     );
   }
@@ -242,12 +247,15 @@ abstract class RemoteRepository<D extends EntityModel,
 
   @override
   FutureOr<Response> create(D entity) async {
+    final sanitizedEntityMap = _sanitizeEntityMap(entity.toMap());
     return executeFuture(
       future: () async {
         return await dio.post(
           createPath,
           data: {
-            EntityPlurals.getPluralForEntityName(entityName): [entity.toMap()],
+            EntityPlurals.getPluralForEntityName(entityName): [
+              sanitizedEntityMap
+            ],
             "apiOperation": "CREATE",
           },
         );
@@ -257,12 +265,15 @@ abstract class RemoteRepository<D extends EntityModel,
 
   @override
   FutureOr<Response> delete(D entity) async {
+    final sanitizedEntityMap = _sanitizeEntityMap(entity.toMap());
     return executeFuture(
       future: () async {
         return await dio.post(
           createPath,
           data: {
-            EntityPlurals.getPluralForEntityName(entityName): [entity.toMap()],
+            EntityPlurals.getPluralForEntityName(entityName): [
+              sanitizedEntityMap
+            ],
             "apiOperation": "DELETE",
           },
         );
@@ -386,14 +397,15 @@ abstract class RemoteRepository<D extends EntityModel,
 
   @override
   FutureOr<Response> update(EntityModel entity) async {
+    final sanitizedEntityMap = _sanitizeEntityMap(entity.toMap());
     return executeFuture(
       future: () async {
         return await dio.post(
           updatePath,
           data: entityName == 'User'
-              ? {entityName: entity.toMap()}
+              ? {entityName: sanitizedEntityMap}
               : {
-                  entityName: [entity.toMap()],
+                  entityName: [sanitizedEntityMap],
                   "apiOperation": "UPDATE",
                 },
         );
@@ -402,7 +414,58 @@ abstract class RemoteRepository<D extends EntityModel,
   }
 
   List<Map<String, dynamic>> _getMap(List<EntityModel> entities) {
-    return entities.map((e) => MapperContainer.globals.toMap(e)).toList();
+    return entities
+        .map((e) => _sanitizeEntityMap(MapperContainer.globals.toMap(e)))
+        .toList();
+  }
+
+  Map<String, dynamic> _sanitizeEntityMap(Map<String, dynamic> entityMap) {
+    if (entityName != 'Stock') {
+      return entityMap;
+    }
+
+    final updatedEntityMap = Map<String, dynamic>.from(entityMap);
+    final additionalFields = updatedEntityMap['additionalFields'];
+
+    if (additionalFields is! Map<String, dynamic>) {
+      return updatedEntityMap;
+    }
+
+    final fields = additionalFields['fields'];
+    if (fields is! List) {
+      return updatedEntityMap;
+    }
+
+    final normalizedFields = <Map<String, dynamic>>[];
+    var hasComments = false;
+
+    for (final field in fields) {
+      if (field is! Map) continue;
+
+      final fieldMap = Map<String, dynamic>.from(field);
+      if (fieldMap['key'] == 'comments') {
+        hasComments = true;
+        final comment = fieldMap['value']?.toString() ?? '';
+        if (comment.trim().isEmpty) {
+          fieldMap['value'] = _stockCommentFallback;
+        }
+      }
+      normalizedFields.add(fieldMap);
+    }
+
+    if (!hasComments) {
+      normalizedFields.add({
+        'key': 'comments',
+        'value': _stockCommentFallback,
+      });
+    }
+
+    updatedEntityMap['additionalFields'] = {
+      ...additionalFields,
+      'fields': normalizedFields,
+    };
+
+    return updatedEntityMap;
   }
 
   FutureOr<T> executeFuture<T>({
@@ -410,7 +473,7 @@ abstract class RemoteRepository<D extends EntityModel,
   }) async {
     try {
       return await future();
-    } on DioException catch (error, stackTrace) {
+    } on DioException catch (error) {
       const encoder = JsonEncoder.withIndent('  ');
 
       String errorResponse;

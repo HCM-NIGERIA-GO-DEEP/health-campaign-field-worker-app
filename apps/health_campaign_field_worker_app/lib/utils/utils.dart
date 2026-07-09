@@ -134,7 +134,8 @@ performBackgroundService({
         );
       }
     } else if (context != null && context.mounted) {
-      debugPrint('Background service not started: isRunning=$isRunning, isOnline=$isOnline');
+      debugPrint(
+          'Background service not started: isRunning=$isRunning, isOnline=$isOnline');
     }
   }
 }
@@ -579,7 +580,8 @@ void attemptSyncUp(BuildContext context) async {
     return;
   }
 
-  if (await SyncLock.isLocked()) {
+  final isSyncLocked = await SyncLock.isLocked();
+  if (isSyncLocked) {
     if (context.mounted) {
       Toast.showToast(
         context,

@@ -15,7 +15,6 @@ import 'package:reactive_forms/reactive_forms.dart';
 import '../blocs/app_initialization/app_initialization.dart';
 import '../blocs/auth/auth.dart';
 import '../blocs/localization/app_localization.dart';
-import '../data/local_store/app_shared_preferences.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../data/local_store/no_sql/schema/service_registry.dart';
 import '../router/app_router.dart';
@@ -98,9 +97,6 @@ class _LoginPageState extends LocalizedState<LoginPage> {
         listener: (context, state) {
           state.maybeWhen(
             orElse: () {},
-            authenticated: (_, __, ___, ____, _____) async {
-              await AppSharedPreferences().setShowPrivacyNoticeAfterLogin(true);
-            },
             loading: () {
               DigitLoaders.overlayLoader(context: context);
             },

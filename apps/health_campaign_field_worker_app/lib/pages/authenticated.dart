@@ -144,7 +144,10 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
   Future<void> _showPrivacyNoticeIfRequired() async {
     if (!mounted || _isPrivacyNoticeDialogShowing) return;
 
-    if (!AppSharedPreferences().shouldShowPrivacyNoticeAfterLogin) {
+    final shouldShow =
+        await AppSharedPreferences().consumeShowPrivacyNoticeAfterLogin();
+
+    if (!shouldShow) {
       return;
     }
 
@@ -153,7 +156,6 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
     if (!mounted) return;
 
     if (privacyFlow == null) {
-      await AppSharedPreferences().setShowPrivacyNoticeAfterLogin(false);
       return;
     }
 
@@ -168,7 +170,6 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
         return _PrivacyNoticeFullscreenPopup(
           flow: privacyFlow,
           onProceed: () async {
-            await AppSharedPreferences().setShowPrivacyNoticeAfterLogin(false);
             if (mounted) {
               Navigator.of(dialogContext, rootNavigator: true).pop();
             }

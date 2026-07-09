@@ -11,6 +11,8 @@ import 'action_executor.dart';
 
 /// Executor for CREATE_EVENT action type
 class CrudExecutor extends ActionExecutor {
+  static const String _stockCommentFallback = 'N/A';
+
   @override
   bool canHandle(String actionType) => actionType == 'CREATE_EVENT';
 
@@ -23,7 +25,6 @@ class CrudExecutor extends ActionExecutor {
     debugPrint('CREATE_EVENT: ========== STARTING ==========');
     debugPrint('CREATE_EVENT: contextData keys: ${contextData.keys.toList()}');
 
-    // Check applyIf condition before executing
     final applyIf = action.properties['applyIf'] as String?;
     debugPrint('CREATE_EVENT: applyIf condition: $applyIf');
 
@@ -48,9 +49,9 @@ class CrudExecutor extends ActionExecutor {
       return contextData;
     }
 
-    var entityList = entities.whereType<EntityModel>().toList();
+    var entityList =
+        entities.whereType<EntityModel>().map(_sanitizeStockComments).toList();
 
-    // Filter by entity type if specified, otherwise send all (backward compatible)
     final entityFilter = action.properties['entity'] as String?;
     if (entityFilter != null && entityFilter.isNotEmpty) {
       final allowedTypes = entityFilter
@@ -77,7 +78,65 @@ class CrudExecutor extends ActionExecutor {
     return contextData;
   }
 
-  /// Evaluate condition like "navigation.isUpdate!=true"
+  EntityModel _sanitizeStockComments(EntityModel entity) {
+    final entityType = getEntityTypeName(entity);
+    if (entityType != 'StockModel') {
+      return entity;
+    }
+
+    final entityMap = Map<String, dynamic>.from(entity.toMap());
+    final additionalFields = entityMap['additionalFields'];
+    if (additionalFields is! Map<String, dynamic>) {
+      return entity;
+    }
+
+    final fieldsRaw = additionalFields['fields'];
+    final updatedFields = <Map<String, dynamic>>[];
+    var hasComments = false;
+    var wasNormalized = false;
+
+    if (fieldsRaw is List) {
+      for (final item in fieldsRaw) {
+        if (item is! Map) continue;
+
+        final field = Map<String, dynamic>.from(item);
+        if (field['key'] == 'comments') {
+          hasComments = true;
+          final oldString = field['value']?.toString() ?? '';
+          final nextValue =
+              oldString.trim().isEmpty ? _stockCommentFallback : oldString;
+          if (nextValue != oldString) {
+            wasNormalized = true;
+          }
+          field['value'] = nextValue;
+        }
+        updatedFields.add(field);
+      }
+    }
+
+    if (!hasComments) {
+      updatedFields.add({'key': 'comments', 'value': _stockCommentFallback});
+      wasNormalized = true;
+    }
+
+    if (!wasNormalized) {
+      return entity;
+    }
+
+    additionalFields['fields'] = updatedFields;
+    entityMap['additionalFields'] = additionalFields;
+
+    final factory = DataConverterSingleton()
+        .dynamicEntityModelListener
+        ?.modelFactoryRegistry[entityType];
+
+    if (factory != null) {
+      return factory(entityMap) as EntityModel;
+    }
+
+    return entity;
+  }
+
   bool _evaluateCondition(String condition, Map<String, dynamic> context) {
     try {
       final isNotEqual = condition.contains('!=');
@@ -93,7 +152,6 @@ class CrudExecutor extends ActionExecutor {
       final leftPath = parts[0].trim();
       final rightValue = parts[1].trim().toLowerCase();
 
-      // Resolve left path
       final pathParts = leftPath.split('.');
       dynamic value = context;
 
@@ -137,6 +195,8 @@ class CrudExecutor extends ActionExecutor {
 ///    ```
 /// 3. Change detection: compares entities with existingModels and only updates changed ones
 class UpdateExecutor extends ActionExecutor {
+  static const String _stockCommentFallback = 'N/A';
+
   @override
   bool canHandle(String actionType) => actionType == 'UPDATE_EVENT';
 
@@ -162,7 +222,8 @@ class UpdateExecutor extends ActionExecutor {
         existingModels?.whereType<EntityModel>().toList() ?? [];
 
     // Cast List<dynamic> to List<EntityModel>
-    var entityList = entities.whereType<EntityModel>().toList();
+    var entityList =
+        entities.whereType<EntityModel>().map(_sanitizeStockComments).toList();
     if (entityList.isEmpty) {
       debugPrint('UPDATE_EVENT: No valid EntityModel instances found');
       return contextData;
@@ -341,14 +402,12 @@ class UpdateExecutor extends ActionExecutor {
           }
 
           // Update clientAuditDetails in map
-          if (updatedClientAudit != null) {
-            entityMap['clientAuditDetails'] = {
-              'createdBy': updatedClientAudit.createdBy,
-              'createdTime': updatedClientAudit.createdTime,
-              'lastModifiedBy': updatedClientAudit.lastModifiedBy,
-              'lastModifiedTime': updatedClientAudit.lastModifiedTime,
-            };
-          }
+          entityMap['clientAuditDetails'] = {
+            'createdBy': updatedClientAudit.createdBy,
+            'createdTime': updatedClientAudit.createdTime,
+            'lastModifiedBy': updatedClientAudit.lastModifiedBy,
+            'lastModifiedTime': updatedClientAudit.lastModifiedTime,
+          };
 
           // Recreate entity using model factory
           final factory = DataConverterSingleton()
@@ -367,6 +426,9 @@ class UpdateExecutor extends ActionExecutor {
         // No field updates, just update audit
         updatedEntity = entity.copyWith(clientAuditDetails: updatedClientAudit);
       }
+
+      // Ensure stock comments satisfy backend min length validation.
+      updatedEntity = _sanitizeStockComments(updatedEntity);
 
       // Find the original entity of the same type for comparison
       final originalEntity = existingModelsList.isEmpty
@@ -398,6 +460,65 @@ class UpdateExecutor extends ActionExecutor {
     // before subsequent actions (e.g., UPDATE_STOCK_BALANCE) query it.
     await CrudBlocSingleton().crudService.updateEntities(processedEntities);
     return contextData;
+  }
+
+  EntityModel _sanitizeStockComments(EntityModel entity) {
+    final entityType = getEntityTypeName(entity);
+    if (entityType != 'StockModel') {
+      return entity;
+    }
+
+    final entityMap = Map<String, dynamic>.from(entity.toMap());
+    final additionalFields = entityMap['additionalFields'];
+    if (additionalFields is! Map<String, dynamic>) {
+      return entity;
+    }
+
+    final fieldsRaw = additionalFields['fields'];
+    final updatedFields = <Map<String, dynamic>>[];
+    var hasComments = false;
+    var wasNormalized = false;
+
+    if (fieldsRaw is List) {
+      for (final item in fieldsRaw) {
+        if (item is! Map) continue;
+
+        final field = Map<String, dynamic>.from(item);
+        if (field['key'] == 'comments') {
+          hasComments = true;
+          final oldString = field['value']?.toString() ?? '';
+          final nextValue =
+              oldString.trim().isEmpty ? _stockCommentFallback : oldString;
+          if (nextValue != oldString) {
+            wasNormalized = true;
+          }
+          field['value'] = nextValue;
+        }
+        updatedFields.add(field);
+      }
+    }
+
+    if (!hasComments) {
+      updatedFields.add({'key': 'comments', 'value': _stockCommentFallback});
+      wasNormalized = true;
+    }
+
+    if (!wasNormalized) {
+      return entity;
+    }
+
+    additionalFields['fields'] = updatedFields;
+    entityMap['additionalFields'] = additionalFields;
+
+    final factory = DataConverterSingleton()
+        .dynamicEntityModelListener
+        ?.modelFactoryRegistry[entityType];
+
+    if (factory != null) {
+      return factory(entityMap) as EntityModel;
+    }
+
+    return entity;
   }
 
   /// Compares two entities to check if actual data has changed.

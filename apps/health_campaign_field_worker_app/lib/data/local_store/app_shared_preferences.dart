@@ -25,6 +25,11 @@ class AppSharedPreferences {
 
   AppSharedPreferences._internal();
 
+  Future<SharedPreferences> _ensureInstance() async {
+    _sharedPreferences ??= await SharedPreferences.getInstance();
+    return _sharedPreferences!;
+  }
+
   Future<void> init() async {
     _sharedPreferences = await SharedPreferences.getInstance();
   }
@@ -36,6 +41,22 @@ class AppSharedPreferences {
 
   bool get shouldShowPrivacyNoticeAfterLogin =>
       sharedPreferences.getBool(showPrivacyNoticeAfterLoginKey) ?? false;
+
+  Future<bool> shouldShowPrivacyNoticeAfterLoginAsync() async {
+    final prefs = await _ensureInstance();
+    return prefs.getBool(showPrivacyNoticeAfterLoginKey) ?? false;
+  }
+
+  Future<bool> consumeShowPrivacyNoticeAfterLogin() async {
+    final prefs = await _ensureInstance();
+    final shouldShow = prefs.getBool(showPrivacyNoticeAfterLoginKey) ?? false;
+
+    if (shouldShow) {
+      await prefs.setBool(showPrivacyNoticeAfterLoginKey, false);
+    }
+
+    return shouldShow;
+  }
 
   Future<void> appLaunchedFirstTime() async {
     await sharedPreferences.setBool(
@@ -52,6 +73,7 @@ class AppSharedPreferences {
   }
 
   Future<void> setShowPrivacyNoticeAfterLogin(bool value) async {
-    await sharedPreferences.setBool(showPrivacyNoticeAfterLoginKey, value);
+    final prefs = await _ensureInstance();
+    await prefs.setBool(showPrivacyNoticeAfterLoginKey, value);
   }
 }
