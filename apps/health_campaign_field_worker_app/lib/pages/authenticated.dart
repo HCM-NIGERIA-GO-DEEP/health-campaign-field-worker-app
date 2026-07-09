@@ -943,7 +943,35 @@ class _PrivacyNoticeFullscreenPopup extends StatefulWidget {
 class _PrivacyNoticeFullscreenPopupState
     extends State<_PrivacyNoticeFullscreenPopup> {
   final ScrollController _scrollController = ScrollController();
+  final Map<String, String> _stableTranslationCache = {};
   bool _hasReachedEnd = false;
+
+  bool _looksLikeLocalizationKey(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return false;
+    return RegExp(r'^[A-Z0-9_]+$').hasMatch(trimmed);
+  }
+
+  String _translateStable(BuildContext context, String? rawValue) {
+    final raw = (rawValue ?? '').trim();
+    if (raw.isEmpty) return '';
+
+    // Keep literal content unchanged and only translate key-like values.
+    if (!_looksLikeLocalizationKey(raw)) {
+      return raw;
+    }
+
+    final translated = AppLocalizations.of(context).translate(raw).trim();
+    final isUnresolved = translated.isEmpty || translated == raw;
+
+    if (!isUnresolved) {
+      _stableTranslationCache[raw] = translated;
+      return translated;
+    }
+
+    // During localization refresh, fallback to last resolved value to avoid UI flicker.
+    return _stableTranslationCache[raw] ?? translated;
+  }
 
   Future<void> _openExternalUrl(String value) async {
     final uri = Uri.tryParse(value);
@@ -1054,9 +1082,11 @@ class _PrivacyNoticeFullscreenPopupState
                         margin: EdgeInsets.zero,
                         children: [
                           Text(
-                            AppLocalizations.of(context).translate(
-                                widget.flow['heading'] as String? ??
-                                    'PRIVACY_NOTICE'),
+                            _translateStable(
+                              context,
+                              widget.flow['heading'] as String? ??
+                                  'PRIVACY_NOTICE',
+                            ),
                             style: textTheme.headingXl.copyWith(
                               color: theme.colorTheme.primary.primary2,
                             ),
@@ -1067,10 +1097,13 @@ class _PrivacyNoticeFullscreenPopupState
                                 : <String, dynamic>{};
                             final format =
                                 content['format'] as String? ?? 'text';
-                            final value = content['value'] as String? ?? '';
+                            final value = _translateStable(
+                              context,
+                              content['value'] as String?,
+                            );
                             final isBold = content['bold'] as bool? ?? false;
                             final isCompact =
-                              content['compact'] as bool? ?? false;
+                                content['compact'] as bool? ?? false;
 
                             if (format == 'heading') {
                               return Padding(
@@ -1141,7 +1174,8 @@ class _PrivacyNoticeFullscreenPopupState
                       DigitButton(
                         mainAxisSize: MainAxisSize.max,
                         isDisabled: !_hasReachedEnd,
-                        label: AppLocalizations.of(context).translate(
+                        label: _translateStable(
+                          context,
                           widget.flow['proceedLabel'] as String? ?? 'PROCEED',
                         ),
                         type: DigitButtonType.primary,

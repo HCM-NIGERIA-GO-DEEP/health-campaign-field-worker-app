@@ -1,7 +1,6 @@
 import 'package:attendance_management/utils/date_util_attendance.dart';
 import 'package:attendance_management/utils/utils.dart';
 import 'package:auto_route/auto_route.dart';
-import 'package:digit_data_model/models/entities/attendance_register.dart';
 import 'package:digit_data_model/models/entities/attendee.dart';
 import 'package:digit_data_model/models/entities/scanned_individual_data.dart';
 import 'package:digit_data_model/utils/utils.dart';

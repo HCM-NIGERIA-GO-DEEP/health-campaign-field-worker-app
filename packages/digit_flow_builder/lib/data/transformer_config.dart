@@ -81,9 +81,7 @@ final jsonConfig = {
             "familyName": "beneficiaryDetails.familyname",
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit",
-            "additionalFields": {
-              "lastName": "householdDetails.lastName"
-            }
+            "additionalFields": {"lastName": "householdDetails.lastName"}
           },
           "additionalFields": {
             "weight": "beneficiaryDetails.weight",
@@ -993,7 +991,7 @@ final jsonConfig = {
             "sku": "__context:sku",
             "batchNumber": "stockReceiptDetails.batchNumber",
             "expiryDate": "stockReceiptDetails.expiryDate",
-            "comments": "stockReceiptDetails.comment",
+            "comments": "rejectComment",
             "mrnNumber": "__context:mrnNumber",
             "stockEntryType": "__context:stockEntryType",
             "primaryRole": "__context:primaryRole",
@@ -1213,9 +1211,7 @@ final jsonConfig = {
             "givenName": "closeHouseholdDetails.headName",
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit",
-            "additionalFields": {
-              "lastName": "closeHouseholdDetails.lastName"
-            },
+            "additionalFields": {"lastName": "closeHouseholdDetails.lastName"},
           },
           "bloodGroup": "health.bloodGroup",
           "gender": "beneficiaryDetails.gender",

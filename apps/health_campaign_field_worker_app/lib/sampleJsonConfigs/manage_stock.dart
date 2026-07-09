@@ -558,9 +558,9 @@ final dynamic sampleInventoryFlows = {
                     "hierarchyMapping": {
                       "State": {
                         "forReceipt": ["National Facility"],
-                        "forIssue": ["Health Facility"]
+                        "forIssue": ["DH"]
                       },
-                      "Health Facility": {
+                      "DH": {
                         "forReceipt": ["State Facility"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
@@ -700,9 +700,9 @@ final dynamic sampleInventoryFlows = {
                       },
                       "LGA": {
                         "forReceipt": ["State Facility"],
-                        "forIssue": ["Health Facility"]
+                        "forIssue": ["DH"]
                       },
-                      "Health Facility": {
+                      "DH": {
                         "forReceipt": ["LGA Facility"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
@@ -1533,9 +1533,9 @@ final dynamic sampleInventoryFlows = {
                       },
                       "LGA": {
                         "forReceipt": ["State Facility"],
-                        "forIssue": ["Health Facility"]
+                        "forIssue": ["DH"]
                       },
-                      "Health Facility": {
+                      "DH": {
                         "forReceipt": ["LGA Facility"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
@@ -1696,9 +1696,9 @@ final dynamic sampleInventoryFlows = {
                       },
                       "LGA": {
                         "forReceipt": ["State Facility"],
-                        "forIssue": ["Health Facility"]
+                        "forIssue": ["DH"]
                       },
-                      "Health Facility": {
+                      "DH": {
                         "forReceipt": ["LGA Facility"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
@@ -2477,6 +2477,10 @@ final dynamic sampleInventoryFlows = {
               {
                 "key": "StockModel.additionalFields.fields.status",
                 "value": "REJECTED"
+              },
+              {
+                "key": "StockModel.additionalFields.fields.comments",
+                "value": "{{fn:safeString(formData.rejectComment)}}"
               }
             ]
           }
