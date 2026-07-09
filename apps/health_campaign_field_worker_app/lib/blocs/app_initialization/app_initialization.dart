@@ -111,7 +111,6 @@ class AppInitializationBloc
                     MasterEnums.searchHouseHoldFilters.toValue(),
                     MasterEnums.transitPostType.toValue(),
                     MasterEnums.searchCLFFilters.toValue(),
-                    MasterEnums.boundaryRelationShip.toValue(),
                     MasterEnums.deviceChangeReasons.toValue(),
                     MasterEnums.singleUserLogin.toValue(),
                     MasterEnums.faceAuthConfig.toValue(),

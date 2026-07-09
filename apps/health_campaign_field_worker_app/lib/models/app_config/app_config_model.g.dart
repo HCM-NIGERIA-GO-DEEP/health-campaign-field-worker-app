@@ -180,12 +180,6 @@ _$HCMWrapperModelImpl _$$HCMWrapperModelImplFromJson(
       transitPostType: (json['TRANSIT_POST_TYPE'] as List<dynamic>?)
           ?.map((e) => TransitPostType.fromJson(e as Map<String, dynamic>))
           .toList(),
-      boundaryRelationship: (json['BOUNDARY_RELATIONSHIP'] as List<dynamic>?)
-          ?.map((e) => BoundaryRelationship.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      faceAuthConfig: (json['FACE_AUTH_CONFIG'] as List<dynamic>?)
-          ?.map((e) => FaceAuthMdmsConfig.fromJson(e as Map<String, dynamic>))
-          .toList(),
     );
 
 Map<String, dynamic> _$$HCMWrapperModelImplToJson(
@@ -218,8 +212,6 @@ Map<String, dynamic> _$$HCMWrapperModelImplToJson(
       'REFUSAL_REASONS': instance.refusalReasons,
       'FIREBASE_CONFIG': instance.firebaseConfig,
       'TRANSIT_POST_TYPE': instance.transitPostType,
-      'BOUNDARY_RELATIONSHIP': instance.boundaryRelationship,
-      'FACE_AUTH_CONFIG': instance.faceAuthConfig,
     };
 
 _$AppConfigSecondaryWrapperModelImpl
@@ -649,67 +641,4 @@ Map<String, dynamic> _$$FirebaseConfigImplToJson(
     <String, dynamic>{
       'enableCrashlytics': instance.enableCrashlytics,
       'enableAnalytics': instance.enableAnalytics,
-    };
-
-_$FaceAuthMdmsConfigImpl _$$FaceAuthMdmsConfigImplFromJson(
-        Map<String, dynamic> json) =>
-    _$FaceAuthMdmsConfigImpl(
-      faceMatchThreshold: (json['FACE_MATCH_THRESHOLD'] as num?)?.toDouble(),
-      maxFaceAttempts: (json['MAX_FACE_ATTEMPTS'] as num?)?.toInt(),
-      startHour: (json['START_HOUR'] as num?)?.toInt(),
-      endHour: (json['END_HOUR'] as num?)?.toInt(),
-      promptCount: (json['PROMPT_COUNT'] as num?)?.toInt(),
-      minGapMinutes: (json['MIN_GAP_MINUTES'] as num?)?.toInt(),
-      countdownDurationMinutes:
-          (json['COUNTDOWN_DURATION_MINUTES'] as num?)?.toInt(),
-    );
-
-Map<String, dynamic> _$$FaceAuthMdmsConfigImplToJson(
-        _$FaceAuthMdmsConfigImpl instance) =>
-    <String, dynamic>{
-      'FACE_MATCH_THRESHOLD': instance.faceMatchThreshold,
-      'MAX_FACE_ATTEMPTS': instance.maxFaceAttempts,
-      'START_HOUR': instance.startHour,
-      'END_HOUR': instance.endHour,
-      'PROMPT_COUNT': instance.promptCount,
-      'MIN_GAP_MINUTES': instance.minGapMinutes,
-      'COUNTDOWN_DURATION_MINUTES': instance.countdownDurationMinutes,
-    };
-
-_$BoundaryRelationshipImpl _$$BoundaryRelationshipImplFromJson(
-        Map<String, dynamic> json) =>
-    _$BoundaryRelationshipImpl(
-      boundaryType: json['boundaryType'] as String,
-      order: (json['order'] as num).toInt(),
-      parent: json['parent'] == null
-          ? null
-          : BoundaryRelationshipRef.fromJson(
-              json['parent'] as Map<String, dynamic>),
-      children: (json['children'] as List<dynamic>?)
-          ?.map((e) =>
-              BoundaryRelationshipRef.fromJson(e as Map<String, dynamic>))
-          .toList(),
-    );
-
-Map<String, dynamic> _$$BoundaryRelationshipImplToJson(
-        _$BoundaryRelationshipImpl instance) =>
-    <String, dynamic>{
-      'boundaryType': instance.boundaryType,
-      'order': instance.order,
-      'parent': instance.parent,
-      'children': instance.children,
-    };
-
-_$BoundaryRelationshipRefImpl _$$BoundaryRelationshipRefImplFromJson(
-        Map<String, dynamic> json) =>
-    _$BoundaryRelationshipRefImpl(
-      boundaryType: json['boundaryType'] as String,
-      order: (json['order'] as num).toInt(),
-    );
-
-Map<String, dynamic> _$$BoundaryRelationshipRefImplToJson(
-        _$BoundaryRelationshipRefImpl instance) =>
-    <String, dynamic>{
-      'boundaryType': instance.boundaryType,
-      'order': instance.order,
     };

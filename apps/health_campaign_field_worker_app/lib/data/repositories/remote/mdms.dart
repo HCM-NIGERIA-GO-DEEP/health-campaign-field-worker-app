@@ -183,8 +183,7 @@ class MdmsRepository {
       ..syncTrigger = appConfig?.syncTrigger
       ..tenantId = appConfig?.tenantId
       ..maxRadius = appConfig?.maxRadius
-      ..boundaryLastLevelMaxSelection =
-           appConfig?.boundaryLastLevelMaxSelection
+      ..boundaryLastLevelMaxSelection = appConfig?.boundaryLastLevelMaxSelection
       // TODO: Populate stockThresholdConfig from MDMS when available
       ..stockThresholdConfig = (StockThresholdConfig()
         ..minThreshold = 0
@@ -319,7 +318,6 @@ class MdmsRepository {
 
       return singleUserLogin;
     }).toList();
-
 
     final List<RelationShipTypeOptions>? relationShipTypes =
         element?.relationShipTypeOptions.map((element) {
@@ -476,34 +474,6 @@ class MdmsRepository {
 
       return reasonTypes;
     }).toList();
-
-    appConfiguration.boundaryRelationship =
-        result.hcmWrapperModel?.boundaryRelationship?.map((e) {
-      final boundaryRelConfig = BoundaryRelationshipConfig()
-        ..boundaryType = e.boundaryType
-        ..order = e.order
-        ..parentBoundaryType = e.parent?.boundaryType ?? ''
-        ..childBoundaryTypes =
-            e.children?.map((c) => c.boundaryType).toList() ?? [];
-
-      return boundaryRelConfig;
-    }).toList();
-
-    // Face-auth MDMS config (FACE_AUTH_CONFIG). Persisted so the face gate /
-    // re-verification thresholds are driven by MDMS.
-    appConfiguration.faceAuthMdmsConfig =
-        (element?.faceAuthConfig != null && element!.faceAuthConfig!.isNotEmpty)
-            ? (FaceAuthMdmsConfig()
-              ..faceMatchThreshold =
-                  element.faceAuthConfig!.first.faceMatchThreshold
-              ..maxFaceAttempts = element.faceAuthConfig!.first.maxFaceAttempts
-              ..startHour = element.faceAuthConfig!.first.startHour
-              ..endHour = element.faceAuthConfig!.first.endHour
-              ..promptCount = element.faceAuthConfig!.first.promptCount
-              ..minGapMinutes = element.faceAuthConfig!.first.minGapMinutes
-              ..countdownDurationMinutes =
-                  element.faceAuthConfig!.first.countdownDurationMinutes)
-            : null;
 
     isar.writeTxnSync(() {
       isar.appConfigurations.putSync(appConfiguration);

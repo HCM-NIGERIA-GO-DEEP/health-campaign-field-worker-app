@@ -1004,12 +1004,6 @@ mixin _$HCMWrapperModel {
   @JsonKey(name: 'TRANSIT_POST_TYPE')
   List<TransitPostType>? get transitPostType =>
       throw _privateConstructorUsedError;
-  @JsonKey(name: 'BOUNDARY_RELATIONSHIP')
-  List<BoundaryRelationship>? get boundaryRelationship =>
-      throw _privateConstructorUsedError;
-  @JsonKey(name: 'FACE_AUTH_CONFIG')
-  List<FaceAuthMdmsConfig>? get faceAuthConfig =>
-      throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -1065,11 +1059,7 @@ abstract class $HCMWrapperModelCopyWith<$Res> {
       @JsonKey(name: 'REFUSAL_REASONS') List<CommonMasterModel>? refusalReasons,
       @JsonKey(name: 'FIREBASE_CONFIG') List<FirebaseConfig>? firebaseConfig,
       @JsonKey(name: 'TRANSIT_POST_TYPE')
-      List<TransitPostType>? transitPostType,
-      @JsonKey(name: 'BOUNDARY_RELATIONSHIP')
-      List<BoundaryRelationship>? boundaryRelationship,
-      @JsonKey(name: 'FACE_AUTH_CONFIG')
-      List<FaceAuthMdmsConfig>? faceAuthConfig});
+      List<TransitPostType>? transitPostType});
 }
 
 /// @nodoc
@@ -1110,8 +1100,6 @@ class _$HCMWrapperModelCopyWithImpl<$Res, $Val extends HCMWrapperModel>
     Object? refusalReasons = freezed,
     Object? firebaseConfig = freezed,
     Object? transitPostType = freezed,
-    Object? boundaryRelationship = freezed,
-    Object? faceAuthConfig = freezed,
   }) {
     return _then(_value.copyWith(
       appConfig: null == appConfig
@@ -1215,14 +1203,6 @@ class _$HCMWrapperModelCopyWithImpl<$Res, $Val extends HCMWrapperModel>
           ? _value.transitPostType
           : transitPostType // ignore: cast_nullable_to_non_nullable
               as List<TransitPostType>?,
-      boundaryRelationship: freezed == boundaryRelationship
-          ? _value.boundaryRelationship
-          : boundaryRelationship // ignore: cast_nullable_to_non_nullable
-              as List<BoundaryRelationship>?,
-      faceAuthConfig: freezed == faceAuthConfig
-          ? _value.faceAuthConfig
-          : faceAuthConfig // ignore: cast_nullable_to_non_nullable
-              as List<FaceAuthMdmsConfig>?,
     ) as $Val);
   }
 }
@@ -1277,11 +1257,7 @@ abstract class _$$HCMWrapperModelImplCopyWith<$Res>
       @JsonKey(name: 'REFUSAL_REASONS') List<CommonMasterModel>? refusalReasons,
       @JsonKey(name: 'FIREBASE_CONFIG') List<FirebaseConfig>? firebaseConfig,
       @JsonKey(name: 'TRANSIT_POST_TYPE')
-      List<TransitPostType>? transitPostType,
-      @JsonKey(name: 'BOUNDARY_RELATIONSHIP')
-      List<BoundaryRelationship>? boundaryRelationship,
-      @JsonKey(name: 'FACE_AUTH_CONFIG')
-      List<FaceAuthMdmsConfig>? faceAuthConfig});
+      List<TransitPostType>? transitPostType});
 }
 
 /// @nodoc
@@ -1320,8 +1296,6 @@ class __$$HCMWrapperModelImplCopyWithImpl<$Res>
     Object? refusalReasons = freezed,
     Object? firebaseConfig = freezed,
     Object? transitPostType = freezed,
-    Object? boundaryRelationship = freezed,
-    Object? faceAuthConfig = freezed,
   }) {
     return _then(_$HCMWrapperModelImpl(
       appConfig: null == appConfig
@@ -1425,14 +1399,6 @@ class __$$HCMWrapperModelImplCopyWithImpl<$Res>
           ? _value._transitPostType
           : transitPostType // ignore: cast_nullable_to_non_nullable
               as List<TransitPostType>?,
-      boundaryRelationship: freezed == boundaryRelationship
-          ? _value._boundaryRelationship
-          : boundaryRelationship // ignore: cast_nullable_to_non_nullable
-              as List<BoundaryRelationship>?,
-      faceAuthConfig: freezed == faceAuthConfig
-          ? _value._faceAuthConfig
-          : faceAuthConfig // ignore: cast_nullable_to_non_nullable
-              as List<FaceAuthMdmsConfig>?,
     ));
   }
 }
@@ -1490,11 +1456,7 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
       @JsonKey(name: 'FIREBASE_CONFIG')
       required final List<FirebaseConfig>? firebaseConfig,
       @JsonKey(name: 'TRANSIT_POST_TYPE')
-      final List<TransitPostType>? transitPostType,
-      @JsonKey(name: 'BOUNDARY_RELATIONSHIP')
-      final List<BoundaryRelationship>? boundaryRelationship,
-      @JsonKey(name: 'FACE_AUTH_CONFIG')
-      final List<FaceAuthMdmsConfig>? faceAuthConfig})
+      final List<TransitPostType>? transitPostType})
       : _appConfig = appConfig,
         _bandWidthBatchSize = bandWidthBatchSize,
         _beneficiaryIdConfig = beneficiaryIdConfig,
@@ -1520,9 +1482,7 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
         _houseStructureTypes = houseStructureTypes,
         _refusalReasons = refusalReasons,
         _firebaseConfig = firebaseConfig,
-        _transitPostType = transitPostType,
-        _boundaryRelationship = boundaryRelationship,
-        _faceAuthConfig = faceAuthConfig;
+        _transitPostType = transitPostType;
 
   factory _$HCMWrapperModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$HCMWrapperModelImplFromJson(json);
@@ -1791,32 +1751,9 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
     return EqualUnmodifiableListView(value);
   }
 
-  final List<BoundaryRelationship>? _boundaryRelationship;
-  @override
-  @JsonKey(name: 'BOUNDARY_RELATIONSHIP')
-  List<BoundaryRelationship>? get boundaryRelationship {
-    final value = _boundaryRelationship;
-    if (value == null) return null;
-    if (_boundaryRelationship is EqualUnmodifiableListView)
-      return _boundaryRelationship;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
-
-  final List<FaceAuthMdmsConfig>? _faceAuthConfig;
-  @override
-  @JsonKey(name: 'FACE_AUTH_CONFIG')
-  List<FaceAuthMdmsConfig>? get faceAuthConfig {
-    final value = _faceAuthConfig;
-    if (value == null) return null;
-    if (_faceAuthConfig is EqualUnmodifiableListView) return _faceAuthConfig;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
-
   @override
   String toString() {
-    return 'HCMWrapperModel(appConfig: $appConfig, bandWidthBatchSize: $bandWidthBatchSize, beneficiaryIdConfig: $beneficiaryIdConfig, downSyncBandWidthBatchSize: $downSyncBandWidthBatchSize, householdDeletionReasonOptions: $householdDeletionReasonOptions, householdMemberDeletionReasonOptions: $householdMemberDeletionReasonOptions, backgroundServiceConfig: $backgroundServiceConfig, checklistTypes: $checklistTypes, deviceChangeReasons: $deviceChangeReasons, singleUserLogin: $singleUserLogin, idTypeOptions: $idTypeOptions, relationShipTypeOptions: $relationShipTypeOptions, deliveryCommentOptions: $deliveryCommentOptions, backendInterface: $backendInterface, callSupportOptions: $callSupportOptions, transportTypes: $transportTypes, symptomsTypeList: $symptomsTypeList, searchHouseHoldFilters: $searchHouseHoldFilters, searchCLFFilters: $searchCLFFilters, referralReasonList: $referralReasonList, manualAttendanceReasonList: $manualAttendanceReasonList, houseStructureTypes: $houseStructureTypes, refusalReasons: $refusalReasons, firebaseConfig: $firebaseConfig, transitPostType: $transitPostType, boundaryRelationship: $boundaryRelationship, faceAuthConfig: $faceAuthConfig)';
+    return 'HCMWrapperModel(appConfig: $appConfig, bandWidthBatchSize: $bandWidthBatchSize, beneficiaryIdConfig: $beneficiaryIdConfig, downSyncBandWidthBatchSize: $downSyncBandWidthBatchSize, householdDeletionReasonOptions: $householdDeletionReasonOptions, householdMemberDeletionReasonOptions: $householdMemberDeletionReasonOptions, backgroundServiceConfig: $backgroundServiceConfig, checklistTypes: $checklistTypes, deviceChangeReasons: $deviceChangeReasons, singleUserLogin: $singleUserLogin, idTypeOptions: $idTypeOptions, relationShipTypeOptions: $relationShipTypeOptions, deliveryCommentOptions: $deliveryCommentOptions, backendInterface: $backendInterface, callSupportOptions: $callSupportOptions, transportTypes: $transportTypes, symptomsTypeList: $symptomsTypeList, searchHouseHoldFilters: $searchHouseHoldFilters, searchCLFFilters: $searchCLFFilters, referralReasonList: $referralReasonList, manualAttendanceReasonList: $manualAttendanceReasonList, houseStructureTypes: $houseStructureTypes, refusalReasons: $refusalReasons, firebaseConfig: $firebaseConfig, transitPostType: $transitPostType)';
   }
 
   @override
@@ -1877,11 +1814,7 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
             const DeepCollectionEquality()
                 .equals(other._firebaseConfig, _firebaseConfig) &&
             const DeepCollectionEquality()
-                .equals(other._transitPostType, _transitPostType) &&
-            const DeepCollectionEquality()
-                .equals(other._boundaryRelationship, _boundaryRelationship) &&
-            const DeepCollectionEquality()
-                .equals(other._faceAuthConfig, _faceAuthConfig));
+                .equals(other._transitPostType, _transitPostType));
   }
 
   @JsonKey(ignore: true)
@@ -1913,9 +1846,7 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
         const DeepCollectionEquality().hash(_houseStructureTypes),
         const DeepCollectionEquality().hash(_refusalReasons),
         const DeepCollectionEquality().hash(_firebaseConfig),
-        const DeepCollectionEquality().hash(_transitPostType),
-        const DeepCollectionEquality().hash(_boundaryRelationship),
-        const DeepCollectionEquality().hash(_faceAuthConfig)
+        const DeepCollectionEquality().hash(_transitPostType)
       ]);
 
   @JsonKey(ignore: true)
@@ -1984,11 +1915,7 @@ abstract class _HCMWrapperModel implements HCMWrapperModel {
       @JsonKey(name: 'FIREBASE_CONFIG')
       required final List<FirebaseConfig>? firebaseConfig,
       @JsonKey(name: 'TRANSIT_POST_TYPE')
-      final List<TransitPostType>? transitPostType,
-      @JsonKey(name: 'BOUNDARY_RELATIONSHIP')
-      final List<BoundaryRelationship>? boundaryRelationship,
-      @JsonKey(name: 'FACE_AUTH_CONFIG')
-      final List<FaceAuthMdmsConfig>? faceAuthConfig}) = _$HCMWrapperModelImpl;
+      final List<TransitPostType>? transitPostType}) = _$HCMWrapperModelImpl;
 
   factory _HCMWrapperModel.fromJson(Map<String, dynamic> json) =
       _$HCMWrapperModelImpl.fromJson;
@@ -2068,12 +1995,6 @@ abstract class _HCMWrapperModel implements HCMWrapperModel {
   @override
   @JsonKey(name: 'TRANSIT_POST_TYPE')
   List<TransitPostType>? get transitPostType;
-  @override
-  @JsonKey(name: 'BOUNDARY_RELATIONSHIP')
-  List<BoundaryRelationship>? get boundaryRelationship;
-  @override
-  @JsonKey(name: 'FACE_AUTH_CONFIG')
-  List<FaceAuthMdmsConfig>? get faceAuthConfig;
   @override
   @JsonKey(ignore: true)
   _$$HCMWrapperModelImplCopyWith<_$HCMWrapperModelImpl> get copyWith =>
@@ -7117,699 +7038,4 @@ abstract class _FirebaseConfig implements FirebaseConfig {
   @JsonKey(ignore: true)
   _$$FirebaseConfigImplCopyWith<_$FirebaseConfigImpl> get copyWith =>
       throw _privateConstructorUsedError;
-}
-
-FaceAuthMdmsConfig _$FaceAuthMdmsConfigFromJson(Map<String, dynamic> json) {
-  return _FaceAuthMdmsConfig.fromJson(json);
-}
-
-/// @nodoc
-mixin _$FaceAuthMdmsConfig {
-  @JsonKey(name: 'FACE_MATCH_THRESHOLD')
-  double? get faceMatchThreshold => throw _privateConstructorUsedError;
-  @JsonKey(name: 'MAX_FACE_ATTEMPTS')
-  int? get maxFaceAttempts => throw _privateConstructorUsedError;
-  @JsonKey(name: 'START_HOUR')
-  int? get startHour => throw _privateConstructorUsedError;
-  @JsonKey(name: 'END_HOUR')
-  int? get endHour => throw _privateConstructorUsedError;
-  @JsonKey(name: 'PROMPT_COUNT')
-  int? get promptCount => throw _privateConstructorUsedError;
-  @JsonKey(name: 'MIN_GAP_MINUTES')
-  int? get minGapMinutes => throw _privateConstructorUsedError;
-  @JsonKey(name: 'COUNTDOWN_DURATION_MINUTES')
-  int? get countdownDurationMinutes => throw _privateConstructorUsedError;
-
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $FaceAuthMdmsConfigCopyWith<FaceAuthMdmsConfig> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $FaceAuthMdmsConfigCopyWith<$Res> {
-  factory $FaceAuthMdmsConfigCopyWith(
-          FaceAuthMdmsConfig value, $Res Function(FaceAuthMdmsConfig) then) =
-      _$FaceAuthMdmsConfigCopyWithImpl<$Res, FaceAuthMdmsConfig>;
-  @useResult
-  $Res call(
-      {@JsonKey(name: 'FACE_MATCH_THRESHOLD') double? faceMatchThreshold,
-      @JsonKey(name: 'MAX_FACE_ATTEMPTS') int? maxFaceAttempts,
-      @JsonKey(name: 'START_HOUR') int? startHour,
-      @JsonKey(name: 'END_HOUR') int? endHour,
-      @JsonKey(name: 'PROMPT_COUNT') int? promptCount,
-      @JsonKey(name: 'MIN_GAP_MINUTES') int? minGapMinutes,
-      @JsonKey(name: 'COUNTDOWN_DURATION_MINUTES')
-      int? countdownDurationMinutes});
-}
-
-/// @nodoc
-class _$FaceAuthMdmsConfigCopyWithImpl<$Res, $Val extends FaceAuthMdmsConfig>
-    implements $FaceAuthMdmsConfigCopyWith<$Res> {
-  _$FaceAuthMdmsConfigCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? faceMatchThreshold = freezed,
-    Object? maxFaceAttempts = freezed,
-    Object? startHour = freezed,
-    Object? endHour = freezed,
-    Object? promptCount = freezed,
-    Object? minGapMinutes = freezed,
-    Object? countdownDurationMinutes = freezed,
-  }) {
-    return _then(_value.copyWith(
-      faceMatchThreshold: freezed == faceMatchThreshold
-          ? _value.faceMatchThreshold
-          : faceMatchThreshold // ignore: cast_nullable_to_non_nullable
-              as double?,
-      maxFaceAttempts: freezed == maxFaceAttempts
-          ? _value.maxFaceAttempts
-          : maxFaceAttempts // ignore: cast_nullable_to_non_nullable
-              as int?,
-      startHour: freezed == startHour
-          ? _value.startHour
-          : startHour // ignore: cast_nullable_to_non_nullable
-              as int?,
-      endHour: freezed == endHour
-          ? _value.endHour
-          : endHour // ignore: cast_nullable_to_non_nullable
-              as int?,
-      promptCount: freezed == promptCount
-          ? _value.promptCount
-          : promptCount // ignore: cast_nullable_to_non_nullable
-              as int?,
-      minGapMinutes: freezed == minGapMinutes
-          ? _value.minGapMinutes
-          : minGapMinutes // ignore: cast_nullable_to_non_nullable
-              as int?,
-      countdownDurationMinutes: freezed == countdownDurationMinutes
-          ? _value.countdownDurationMinutes
-          : countdownDurationMinutes // ignore: cast_nullable_to_non_nullable
-              as int?,
-    ) as $Val);
-  }
-}
-
-/// @nodoc
-abstract class _$$FaceAuthMdmsConfigImplCopyWith<$Res>
-    implements $FaceAuthMdmsConfigCopyWith<$Res> {
-  factory _$$FaceAuthMdmsConfigImplCopyWith(_$FaceAuthMdmsConfigImpl value,
-          $Res Function(_$FaceAuthMdmsConfigImpl) then) =
-      __$$FaceAuthMdmsConfigImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {@JsonKey(name: 'FACE_MATCH_THRESHOLD') double? faceMatchThreshold,
-      @JsonKey(name: 'MAX_FACE_ATTEMPTS') int? maxFaceAttempts,
-      @JsonKey(name: 'START_HOUR') int? startHour,
-      @JsonKey(name: 'END_HOUR') int? endHour,
-      @JsonKey(name: 'PROMPT_COUNT') int? promptCount,
-      @JsonKey(name: 'MIN_GAP_MINUTES') int? minGapMinutes,
-      @JsonKey(name: 'COUNTDOWN_DURATION_MINUTES')
-      int? countdownDurationMinutes});
-}
-
-/// @nodoc
-class __$$FaceAuthMdmsConfigImplCopyWithImpl<$Res>
-    extends _$FaceAuthMdmsConfigCopyWithImpl<$Res, _$FaceAuthMdmsConfigImpl>
-    implements _$$FaceAuthMdmsConfigImplCopyWith<$Res> {
-  __$$FaceAuthMdmsConfigImplCopyWithImpl(_$FaceAuthMdmsConfigImpl _value,
-      $Res Function(_$FaceAuthMdmsConfigImpl) _then)
-      : super(_value, _then);
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? faceMatchThreshold = freezed,
-    Object? maxFaceAttempts = freezed,
-    Object? startHour = freezed,
-    Object? endHour = freezed,
-    Object? promptCount = freezed,
-    Object? minGapMinutes = freezed,
-    Object? countdownDurationMinutes = freezed,
-  }) {
-    return _then(_$FaceAuthMdmsConfigImpl(
-      faceMatchThreshold: freezed == faceMatchThreshold
-          ? _value.faceMatchThreshold
-          : faceMatchThreshold // ignore: cast_nullable_to_non_nullable
-              as double?,
-      maxFaceAttempts: freezed == maxFaceAttempts
-          ? _value.maxFaceAttempts
-          : maxFaceAttempts // ignore: cast_nullable_to_non_nullable
-              as int?,
-      startHour: freezed == startHour
-          ? _value.startHour
-          : startHour // ignore: cast_nullable_to_non_nullable
-              as int?,
-      endHour: freezed == endHour
-          ? _value.endHour
-          : endHour // ignore: cast_nullable_to_non_nullable
-              as int?,
-      promptCount: freezed == promptCount
-          ? _value.promptCount
-          : promptCount // ignore: cast_nullable_to_non_nullable
-              as int?,
-      minGapMinutes: freezed == minGapMinutes
-          ? _value.minGapMinutes
-          : minGapMinutes // ignore: cast_nullable_to_non_nullable
-              as int?,
-      countdownDurationMinutes: freezed == countdownDurationMinutes
-          ? _value.countdownDurationMinutes
-          : countdownDurationMinutes // ignore: cast_nullable_to_non_nullable
-              as int?,
-    ));
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$FaceAuthMdmsConfigImpl implements _FaceAuthMdmsConfig {
-  _$FaceAuthMdmsConfigImpl(
-      {@JsonKey(name: 'FACE_MATCH_THRESHOLD') this.faceMatchThreshold,
-      @JsonKey(name: 'MAX_FACE_ATTEMPTS') this.maxFaceAttempts,
-      @JsonKey(name: 'START_HOUR') this.startHour,
-      @JsonKey(name: 'END_HOUR') this.endHour,
-      @JsonKey(name: 'PROMPT_COUNT') this.promptCount,
-      @JsonKey(name: 'MIN_GAP_MINUTES') this.minGapMinutes,
-      @JsonKey(name: 'COUNTDOWN_DURATION_MINUTES')
-      this.countdownDurationMinutes});
-
-  factory _$FaceAuthMdmsConfigImpl.fromJson(Map<String, dynamic> json) =>
-      _$$FaceAuthMdmsConfigImplFromJson(json);
-
-  @override
-  @JsonKey(name: 'FACE_MATCH_THRESHOLD')
-  final double? faceMatchThreshold;
-  @override
-  @JsonKey(name: 'MAX_FACE_ATTEMPTS')
-  final int? maxFaceAttempts;
-  @override
-  @JsonKey(name: 'START_HOUR')
-  final int? startHour;
-  @override
-  @JsonKey(name: 'END_HOUR')
-  final int? endHour;
-  @override
-  @JsonKey(name: 'PROMPT_COUNT')
-  final int? promptCount;
-  @override
-  @JsonKey(name: 'MIN_GAP_MINUTES')
-  final int? minGapMinutes;
-  @override
-  @JsonKey(name: 'COUNTDOWN_DURATION_MINUTES')
-  final int? countdownDurationMinutes;
-
-  @override
-  String toString() {
-    return 'FaceAuthMdmsConfig(faceMatchThreshold: $faceMatchThreshold, maxFaceAttempts: $maxFaceAttempts, startHour: $startHour, endHour: $endHour, promptCount: $promptCount, minGapMinutes: $minGapMinutes, countdownDurationMinutes: $countdownDurationMinutes)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$FaceAuthMdmsConfigImpl &&
-            (identical(other.faceMatchThreshold, faceMatchThreshold) ||
-                other.faceMatchThreshold == faceMatchThreshold) &&
-            (identical(other.maxFaceAttempts, maxFaceAttempts) ||
-                other.maxFaceAttempts == maxFaceAttempts) &&
-            (identical(other.startHour, startHour) ||
-                other.startHour == startHour) &&
-            (identical(other.endHour, endHour) || other.endHour == endHour) &&
-            (identical(other.promptCount, promptCount) ||
-                other.promptCount == promptCount) &&
-            (identical(other.minGapMinutes, minGapMinutes) ||
-                other.minGapMinutes == minGapMinutes) &&
-            (identical(
-                    other.countdownDurationMinutes, countdownDurationMinutes) ||
-                other.countdownDurationMinutes == countdownDurationMinutes));
-  }
-
-  @JsonKey(ignore: true)
-  @override
-  int get hashCode => Object.hash(
-      runtimeType,
-      faceMatchThreshold,
-      maxFaceAttempts,
-      startHour,
-      endHour,
-      promptCount,
-      minGapMinutes,
-      countdownDurationMinutes);
-
-  @JsonKey(ignore: true)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$FaceAuthMdmsConfigImplCopyWith<_$FaceAuthMdmsConfigImpl> get copyWith =>
-      __$$FaceAuthMdmsConfigImplCopyWithImpl<_$FaceAuthMdmsConfigImpl>(
-          this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$FaceAuthMdmsConfigImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _FaceAuthMdmsConfig implements FaceAuthMdmsConfig {
-  factory _FaceAuthMdmsConfig(
-      {@JsonKey(name: 'FACE_MATCH_THRESHOLD') final double? faceMatchThreshold,
-      @JsonKey(name: 'MAX_FACE_ATTEMPTS') final int? maxFaceAttempts,
-      @JsonKey(name: 'START_HOUR') final int? startHour,
-      @JsonKey(name: 'END_HOUR') final int? endHour,
-      @JsonKey(name: 'PROMPT_COUNT') final int? promptCount,
-      @JsonKey(name: 'MIN_GAP_MINUTES') final int? minGapMinutes,
-      @JsonKey(name: 'COUNTDOWN_DURATION_MINUTES')
-      final int? countdownDurationMinutes}) = _$FaceAuthMdmsConfigImpl;
-
-  factory _FaceAuthMdmsConfig.fromJson(Map<String, dynamic> json) =
-      _$FaceAuthMdmsConfigImpl.fromJson;
-
-  @override
-  @JsonKey(name: 'FACE_MATCH_THRESHOLD')
-  double? get faceMatchThreshold;
-  @override
-  @JsonKey(name: 'MAX_FACE_ATTEMPTS')
-  int? get maxFaceAttempts;
-  @override
-  @JsonKey(name: 'START_HOUR')
-  int? get startHour;
-  @override
-  @JsonKey(name: 'END_HOUR')
-  int? get endHour;
-  @override
-  @JsonKey(name: 'PROMPT_COUNT')
-  int? get promptCount;
-  @override
-  @JsonKey(name: 'MIN_GAP_MINUTES')
-  int? get minGapMinutes;
-  @override
-  @JsonKey(name: 'COUNTDOWN_DURATION_MINUTES')
-  int? get countdownDurationMinutes;
-  @override
-  @JsonKey(ignore: true)
-  _$$FaceAuthMdmsConfigImplCopyWith<_$FaceAuthMdmsConfigImpl> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-BoundaryRelationship _$BoundaryRelationshipFromJson(Map<String, dynamic> json) {
-  return _BoundaryRelationship.fromJson(json);
-}
-
-/// @nodoc
-mixin _$BoundaryRelationship {
-  String get boundaryType => throw _privateConstructorUsedError;
-  int get order => throw _privateConstructorUsedError;
-  BoundaryRelationshipRef? get parent => throw _privateConstructorUsedError;
-  List<BoundaryRelationshipRef>? get children =>
-      throw _privateConstructorUsedError;
-
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $BoundaryRelationshipCopyWith<BoundaryRelationship> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $BoundaryRelationshipCopyWith<$Res> {
-  factory $BoundaryRelationshipCopyWith(BoundaryRelationship value,
-          $Res Function(BoundaryRelationship) then) =
-      _$BoundaryRelationshipCopyWithImpl<$Res, BoundaryRelationship>;
-  @useResult
-  $Res call(
-      {String boundaryType,
-      int order,
-      BoundaryRelationshipRef? parent,
-      List<BoundaryRelationshipRef>? children});
-
-  $BoundaryRelationshipRefCopyWith<$Res>? get parent;
-}
-
-/// @nodoc
-class _$BoundaryRelationshipCopyWithImpl<$Res,
-        $Val extends BoundaryRelationship>
-    implements $BoundaryRelationshipCopyWith<$Res> {
-  _$BoundaryRelationshipCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? boundaryType = null,
-    Object? order = null,
-    Object? parent = freezed,
-    Object? children = freezed,
-  }) {
-    return _then(_value.copyWith(
-      boundaryType: null == boundaryType
-          ? _value.boundaryType
-          : boundaryType // ignore: cast_nullable_to_non_nullable
-              as String,
-      order: null == order
-          ? _value.order
-          : order // ignore: cast_nullable_to_non_nullable
-              as int,
-      parent: freezed == parent
-          ? _value.parent
-          : parent // ignore: cast_nullable_to_non_nullable
-              as BoundaryRelationshipRef?,
-      children: freezed == children
-          ? _value.children
-          : children // ignore: cast_nullable_to_non_nullable
-              as List<BoundaryRelationshipRef>?,
-    ) as $Val);
-  }
-
-  @override
-  @pragma('vm:prefer-inline')
-  $BoundaryRelationshipRefCopyWith<$Res>? get parent {
-    if (_value.parent == null) {
-      return null;
-    }
-
-    return $BoundaryRelationshipRefCopyWith<$Res>(_value.parent!, (value) {
-      return _then(_value.copyWith(parent: value) as $Val);
-    });
-  }
-}
-
-/// @nodoc
-abstract class _$$BoundaryRelationshipImplCopyWith<$Res>
-    implements $BoundaryRelationshipCopyWith<$Res> {
-  factory _$$BoundaryRelationshipImplCopyWith(_$BoundaryRelationshipImpl value,
-          $Res Function(_$BoundaryRelationshipImpl) then) =
-      __$$BoundaryRelationshipImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call(
-      {String boundaryType,
-      int order,
-      BoundaryRelationshipRef? parent,
-      List<BoundaryRelationshipRef>? children});
-
-  @override
-  $BoundaryRelationshipRefCopyWith<$Res>? get parent;
-}
-
-/// @nodoc
-class __$$BoundaryRelationshipImplCopyWithImpl<$Res>
-    extends _$BoundaryRelationshipCopyWithImpl<$Res, _$BoundaryRelationshipImpl>
-    implements _$$BoundaryRelationshipImplCopyWith<$Res> {
-  __$$BoundaryRelationshipImplCopyWithImpl(_$BoundaryRelationshipImpl _value,
-      $Res Function(_$BoundaryRelationshipImpl) _then)
-      : super(_value, _then);
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? boundaryType = null,
-    Object? order = null,
-    Object? parent = freezed,
-    Object? children = freezed,
-  }) {
-    return _then(_$BoundaryRelationshipImpl(
-      boundaryType: null == boundaryType
-          ? _value.boundaryType
-          : boundaryType // ignore: cast_nullable_to_non_nullable
-              as String,
-      order: null == order
-          ? _value.order
-          : order // ignore: cast_nullable_to_non_nullable
-              as int,
-      parent: freezed == parent
-          ? _value.parent
-          : parent // ignore: cast_nullable_to_non_nullable
-              as BoundaryRelationshipRef?,
-      children: freezed == children
-          ? _value._children
-          : children // ignore: cast_nullable_to_non_nullable
-              as List<BoundaryRelationshipRef>?,
-    ));
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$BoundaryRelationshipImpl implements _BoundaryRelationship {
-  _$BoundaryRelationshipImpl(
-      {required this.boundaryType,
-      required this.order,
-      this.parent,
-      final List<BoundaryRelationshipRef>? children})
-      : _children = children;
-
-  factory _$BoundaryRelationshipImpl.fromJson(Map<String, dynamic> json) =>
-      _$$BoundaryRelationshipImplFromJson(json);
-
-  @override
-  final String boundaryType;
-  @override
-  final int order;
-  @override
-  final BoundaryRelationshipRef? parent;
-  final List<BoundaryRelationshipRef>? _children;
-  @override
-  List<BoundaryRelationshipRef>? get children {
-    final value = _children;
-    if (value == null) return null;
-    if (_children is EqualUnmodifiableListView) return _children;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
-
-  @override
-  String toString() {
-    return 'BoundaryRelationship(boundaryType: $boundaryType, order: $order, parent: $parent, children: $children)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$BoundaryRelationshipImpl &&
-            (identical(other.boundaryType, boundaryType) ||
-                other.boundaryType == boundaryType) &&
-            (identical(other.order, order) || other.order == order) &&
-            (identical(other.parent, parent) || other.parent == parent) &&
-            const DeepCollectionEquality().equals(other._children, _children));
-  }
-
-  @JsonKey(ignore: true)
-  @override
-  int get hashCode => Object.hash(runtimeType, boundaryType, order, parent,
-      const DeepCollectionEquality().hash(_children));
-
-  @JsonKey(ignore: true)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$BoundaryRelationshipImplCopyWith<_$BoundaryRelationshipImpl>
-      get copyWith =>
-          __$$BoundaryRelationshipImplCopyWithImpl<_$BoundaryRelationshipImpl>(
-              this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$BoundaryRelationshipImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _BoundaryRelationship implements BoundaryRelationship {
-  factory _BoundaryRelationship(
-          {required final String boundaryType,
-          required final int order,
-          final BoundaryRelationshipRef? parent,
-          final List<BoundaryRelationshipRef>? children}) =
-      _$BoundaryRelationshipImpl;
-
-  factory _BoundaryRelationship.fromJson(Map<String, dynamic> json) =
-      _$BoundaryRelationshipImpl.fromJson;
-
-  @override
-  String get boundaryType;
-  @override
-  int get order;
-  @override
-  BoundaryRelationshipRef? get parent;
-  @override
-  List<BoundaryRelationshipRef>? get children;
-  @override
-  @JsonKey(ignore: true)
-  _$$BoundaryRelationshipImplCopyWith<_$BoundaryRelationshipImpl>
-      get copyWith => throw _privateConstructorUsedError;
-}
-
-BoundaryRelationshipRef _$BoundaryRelationshipRefFromJson(
-    Map<String, dynamic> json) {
-  return _BoundaryRelationshipRef.fromJson(json);
-}
-
-/// @nodoc
-mixin _$BoundaryRelationshipRef {
-  String get boundaryType => throw _privateConstructorUsedError;
-  int get order => throw _privateConstructorUsedError;
-
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $BoundaryRelationshipRefCopyWith<BoundaryRelationshipRef> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $BoundaryRelationshipRefCopyWith<$Res> {
-  factory $BoundaryRelationshipRefCopyWith(BoundaryRelationshipRef value,
-          $Res Function(BoundaryRelationshipRef) then) =
-      _$BoundaryRelationshipRefCopyWithImpl<$Res, BoundaryRelationshipRef>;
-  @useResult
-  $Res call({String boundaryType, int order});
-}
-
-/// @nodoc
-class _$BoundaryRelationshipRefCopyWithImpl<$Res,
-        $Val extends BoundaryRelationshipRef>
-    implements $BoundaryRelationshipRefCopyWith<$Res> {
-  _$BoundaryRelationshipRefCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? boundaryType = null,
-    Object? order = null,
-  }) {
-    return _then(_value.copyWith(
-      boundaryType: null == boundaryType
-          ? _value.boundaryType
-          : boundaryType // ignore: cast_nullable_to_non_nullable
-              as String,
-      order: null == order
-          ? _value.order
-          : order // ignore: cast_nullable_to_non_nullable
-              as int,
-    ) as $Val);
-  }
-}
-
-/// @nodoc
-abstract class _$$BoundaryRelationshipRefImplCopyWith<$Res>
-    implements $BoundaryRelationshipRefCopyWith<$Res> {
-  factory _$$BoundaryRelationshipRefImplCopyWith(
-          _$BoundaryRelationshipRefImpl value,
-          $Res Function(_$BoundaryRelationshipRefImpl) then) =
-      __$$BoundaryRelationshipRefImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({String boundaryType, int order});
-}
-
-/// @nodoc
-class __$$BoundaryRelationshipRefImplCopyWithImpl<$Res>
-    extends _$BoundaryRelationshipRefCopyWithImpl<$Res,
-        _$BoundaryRelationshipRefImpl>
-    implements _$$BoundaryRelationshipRefImplCopyWith<$Res> {
-  __$$BoundaryRelationshipRefImplCopyWithImpl(
-      _$BoundaryRelationshipRefImpl _value,
-      $Res Function(_$BoundaryRelationshipRefImpl) _then)
-      : super(_value, _then);
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? boundaryType = null,
-    Object? order = null,
-  }) {
-    return _then(_$BoundaryRelationshipRefImpl(
-      boundaryType: null == boundaryType
-          ? _value.boundaryType
-          : boundaryType // ignore: cast_nullable_to_non_nullable
-              as String,
-      order: null == order
-          ? _value.order
-          : order // ignore: cast_nullable_to_non_nullable
-              as int,
-    ));
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$BoundaryRelationshipRefImpl implements _BoundaryRelationshipRef {
-  _$BoundaryRelationshipRefImpl(
-      {required this.boundaryType, required this.order});
-
-  factory _$BoundaryRelationshipRefImpl.fromJson(Map<String, dynamic> json) =>
-      _$$BoundaryRelationshipRefImplFromJson(json);
-
-  @override
-  final String boundaryType;
-  @override
-  final int order;
-
-  @override
-  String toString() {
-    return 'BoundaryRelationshipRef(boundaryType: $boundaryType, order: $order)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$BoundaryRelationshipRefImpl &&
-            (identical(other.boundaryType, boundaryType) ||
-                other.boundaryType == boundaryType) &&
-            (identical(other.order, order) || other.order == order));
-  }
-
-  @JsonKey(ignore: true)
-  @override
-  int get hashCode => Object.hash(runtimeType, boundaryType, order);
-
-  @JsonKey(ignore: true)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$BoundaryRelationshipRefImplCopyWith<_$BoundaryRelationshipRefImpl>
-      get copyWith => __$$BoundaryRelationshipRefImplCopyWithImpl<
-          _$BoundaryRelationshipRefImpl>(this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$BoundaryRelationshipRefImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _BoundaryRelationshipRef implements BoundaryRelationshipRef {
-  factory _BoundaryRelationshipRef(
-      {required final String boundaryType,
-      required final int order}) = _$BoundaryRelationshipRefImpl;
-
-  factory _BoundaryRelationshipRef.fromJson(Map<String, dynamic> json) =
-      _$BoundaryRelationshipRefImpl.fromJson;
-
-  @override
-  String get boundaryType;
-  @override
-  int get order;
-  @override
-  @JsonKey(ignore: true)
-  _$$BoundaryRelationshipRefImplCopyWith<_$BoundaryRelationshipRefImpl>
-      get copyWith => throw _privateConstructorUsedError;
 }

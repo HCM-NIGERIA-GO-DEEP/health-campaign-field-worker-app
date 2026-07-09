@@ -1,6 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import '../../data/local_store/no_sql/schema/app_configuration.dart';
 import '../manual_attendance_reasons/manual_attendance_reasons_model.dart';
 import '../privacy_notice/privacy_notice_model.dart';
 import '../referral_reasons/referral_reasons_model.dart';
@@ -45,9 +44,9 @@ class MdmsModuleDetailModel with _$MdmsModuleDetailModel {
 @freezed
 class MdmsMasterDetailModel with _$MdmsMasterDetailModel {
   const factory MdmsMasterDetailModel(
-      String name, {
-        String? filter,
-      }) = _MdmsMasterDetailModel;
+    String name, {
+    String? filter,
+  }) = _MdmsMasterDetailModel;
 
   factory MdmsMasterDetailModel.fromJson(Map<String, dynamic> json) =>
       _$MdmsMasterDetailModelFromJson(json);
@@ -108,7 +107,7 @@ class HCMWrapperModel with _$HCMWrapperModel {
     List<SearchCLFFilters>? searchCLFFilters,
     @JsonKey(name: 'REFERRAL_REASONS')
     List<ReferralReasonType>? referralReasonList,
-    @JsonKey(name:'MANUAL_ATTENDANCE_REASONS')
+    @JsonKey(name: 'MANUAL_ATTENDANCE_REASONS')
     List<ManualAttendanceReasonType>? manualAttendanceReasonList,
     @JsonKey(name: 'HOUSE_STRUCTURE_TYPES')
     List<CommonMasterModel>? houseStructureTypes,
@@ -116,9 +115,6 @@ class HCMWrapperModel with _$HCMWrapperModel {
     @JsonKey(name: 'FIREBASE_CONFIG')
     required List<FirebaseConfig>? firebaseConfig,
     @JsonKey(name: 'TRANSIT_POST_TYPE') List<TransitPostType>? transitPostType,
-    @JsonKey(name: 'BOUNDARY_RELATIONSHIP')
-    List<BoundaryRelationship>? boundaryRelationship,
-    @JsonKey(name: 'FACE_AUTH_CONFIG') List<FaceAuthMdmsConfig>? faceAuthConfig,
   }) = _HCMWrapperModel;
 
   factory HCMWrapperModel.fromJson(
@@ -423,7 +419,6 @@ class DeviceChangeReasons with _$DeviceChangeReasons {
   factory DeviceChangeReasons.fromJson(Map<String, dynamic> json) =>
       _$DeviceChangeReasonsFromJson(json);
 }
-
 
 @freezed
 class SingleUserLogin with _$SingleUserLogin {

@@ -105,9 +105,6 @@ class AppConfiguration {
   @Name('STOCK_THRESHOLD_CONFIG')
   StockThresholdConfig? stockThresholdConfig;
 
-  @Name('BOUNDARY_RELATIONSHIP')
-  List<BoundaryRelationshipConfig>? boundaryRelationship;
-
   @Name('FACE_AUTH_CONFIG')
   FaceAuthMdmsConfig? faceAuthMdmsConfig;
 }
@@ -341,14 +338,6 @@ class StockThresholdConfig {
   @Name('MAX_THRESHOLD')
   late double maxThreshold; // Above this = green
 // Between min and max = blue
-}
-
-@embedded
-class BoundaryRelationshipConfig {
-  late String boundaryType;
-  late int order;
-  late String parentBoundaryType;
-  late List<String> childBoundaryTypes;
 }
 
 @embedded
