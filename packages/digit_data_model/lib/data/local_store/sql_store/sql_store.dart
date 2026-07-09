@@ -2,6 +2,7 @@
 import 'dart:io';
 
 import 'package:digit_data_model/data/local_store/sql_store/tables/localization.dart';
+import 'package:digit_data_model/data/local_store/sql_store/tables/face_auth_event.dart';
 import 'package:digit_data_model/data/local_store/sql_store/tables/user_action.dart';
 import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
@@ -125,7 +126,8 @@ enum DatabaseMigrationResult {
   Referral,
   Localization,
   UserAction,
-  UniqueIdPool
+  UniqueIdPool,
+  FaceAuthEvent
 ])
 class LocalSqlDataStore extends _$LocalSqlDataStore {
   /// The encryption key for the database.
@@ -144,7 +146,7 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
 
   /// The `schemaVersion` getter returns the schema version of the database.
   @override
-  int get schemaVersion => 9; // Increment schema version
+  int get schemaVersion => 12; // Increment schema version
 
   Future<void> _createTaskSearchIndexes() async {
     await customStatement('''
@@ -362,6 +364,18 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
             } catch (e) {
               if (kDebugMode) {
                 print("Failed to create planned start task search index");
+              }
+            }
+          }
+
+          if (from < 12) {
+            // Face-auth: create the faceAuthEvent table (includes faceImage
+            // column). Fresh installs get it via createAll() in onCreate.
+            try {
+              await migrator.createTable(faceAuthEvent);
+            } catch (e) {
+              if (kDebugMode) {
+                print("Failed to create faceAuthEvent table");
               }
             }
           }

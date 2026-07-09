@@ -21,9 +21,12 @@ import '../pages/attendance_qr_scanner.dart';
 import '../pages/authenticated.dart';
 import '../pages/boundary_selection.dart';
 import '../pages/current_boundary.dart';
+import '../pages/face_auth_history.dart';
+import '../pages/face_gate.dart';
 import '../pages/home.dart';
 import '../pages/language_selection.dart';
 import '../pages/login.dart';
+import '../pages/non_mobile_user/non_mobile_face_enroll.dart';
 import '../pages/non_mobile_user/non_mobile_user_list.dart';
 import '../pages/peer_to_peer/data_receiver.dart';
 import '../pages/peer_to_peer/data_share_home.dart';
@@ -31,6 +34,7 @@ import '../pages/peer_to_peer/data_transfer.dart';
 import '../pages/peer_to_peer/devices_list.dart';
 import '../pages/peer_to_peer/peer_to_peer_wrapper.dart';
 import '../pages/permissions_handler.dart';
+import '../pages/pin_fallback.dart';
 import '../pages/profile.dart';
 import '../pages/project_facility_selection.dart';
 import '../pages/project_selection.dart';
@@ -80,6 +84,13 @@ class AppRouter extends _$AppRouter {
           path: 'permissions-page',
         ),
         AutoRoute(page: HomeRoute.page, path: 'home'),
+        AutoRoute(page: FaceGateRoute.page, path: 'face-gate'),
+        AutoRoute(page: FaceAuthHistoryRoute.page, path: 'face-auth-history'),
+        AutoRoute(page: PinFallbackRoute.page, path: 'pin-fallback'),
+        AutoRoute(
+          page: NonMobileFaceEnrollRoute.page,
+          path: 'non-mobile-face-enroll',
+        ),
         AutoRoute(page: ProfileRoute.page, path: 'profile'),
         AutoRoute(page: UserQRDetailsRoute.page, path: 'user-qr-code'),
         AutoRoute(page: DigitScannerRoute.page, path: 'scanner'),

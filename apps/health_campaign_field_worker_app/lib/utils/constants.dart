@@ -40,6 +40,10 @@ import 'package:sync_service/sync_service_lib.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
 import 'package:transit_post/data/repositories/oplog/oplog.dart';
 import 'package:transit_post/data/repositories/remote/user_action.dart';
+import 'package:digit_face_verification/digit_face_verification.dart';
+import 'package:transit_post/data/repositories/local/face_auth_event.dart';
+import 'package:transit_post/data/repositories/oplog/face_auth_event_oplog.dart';
+import 'package:transit_post/data/repositories/remote/face_auth_event.dart';
 import 'package:transit_post/utils/utils.dart';
 
 import '../data/local_store/no_sql/schema/app_configuration.dart';
@@ -96,6 +100,8 @@ class Constants {
           RowVersionListSchema,
           DashboardConfigSchemaListSchema,
           DashboardResponseSchema,
+          FaceEmbeddingSchema,
+          FaceEnrollmentProfileSchema,
         ],
         name: 'HCM',
         inspector: true,
@@ -249,6 +255,7 @@ class Constants {
       LocationTrackerLocalBaseRepository(
           sql, LocationTrackerOpLogManager(isar)),
       UserActionLocalRepository(sql, UserActionOpLogManager(isar)),
+      FaceAuthEventLocalRepository(sql, FaceAuthEventOpLogManager(isar)),
     ];
   }
 
@@ -346,6 +353,8 @@ class Constants {
           LocationTrackerRemoteRepository(dio, actionMap: actions),
         if (value == DataModelType.userAction)
           UserActionRemoteRepository(dio, actionMap: actions),
+        if (value == DataModelType.faceAuthEvent)
+          FaceAuthEventRemoteRepository(dio, actionMap: actions),
       ]);
     }
 

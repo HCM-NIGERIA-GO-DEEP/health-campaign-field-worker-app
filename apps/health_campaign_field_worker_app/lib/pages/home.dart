@@ -69,6 +69,7 @@ import '../widgets/attendance/attendance_qr_scanner_button.dart';
 import '../widgets/attendance/custom_row_widget.dart';
 import '../widgets/attendance/group_list_view_widget.dart';
 import '../widgets/attendance/signature_compare_dialog_widget.dart';
+import '../widgets/face_auth/face_auth_session_card.dart';
 import '../widgets/h_f_referral/evaluation_facility.dart';
 import '../widgets/h_f_referral/project_cycles.dart';
 import '../widgets/header/back_navigation_help_header.dart';
@@ -98,6 +99,7 @@ class HomePage extends LocalizedStatefulWidget {
 
 class _HomePageState extends LocalizedState<HomePage> {
   bool skipProgressBar = false;
+  bool _faceGateActive = false;
   final storage = const FlutterSecureStorage();
   late StreamSubscription<List<ConnectivityResult>> subscription;
   bool isTriggerLocalisation = true;
@@ -138,6 +140,49 @@ class _HomePageState extends LocalizedState<HomePage> {
 
     // Register custom components for forms
     _registerCustomComponents();
+
+    // Face-auth: gate the home screen for distributors who haven't enrolled
+    // or passed the face gate this session.
+    _checkFaceEnrollment();
+  }
+
+  /// Face-auth gate: if the logged-in distributor hasn't enrolled a face (or
+  /// hasn't passed the gate this session), push the FaceGate over Home.
+  /// isFaceGatePassed is set by both enrollment and verification paths and is
+  /// cleared on logout via deleteAll(), so it resets each fresh login but
+  /// persists across app restarts within the same login session.
+  void _checkFaceEnrollment() async {
+    try {
+      if (!context.isDistributorRole) return;
+
+      final individualId = await LocalSecureStore.instance.userIndividualId;
+      if (individualId == null || !mounted) return;
+
+      final isEnrollmentComplete =
+          await LocalSecureStore.instance.isFaceEnrollmentComplete;
+      final hasPassedGate = await LocalSecureStore.instance.isFaceGatePassed;
+      if (isEnrollmentComplete || hasPassedGate || !mounted) return;
+
+      _faceGateActive = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.router.push(
+            FaceGateRoute(
+              onVerified: () {
+                _faceGateActive = false;
+                if (mounted) {
+                  context.router.popUntilRouteWithName(HomeRoute.name);
+                }
+              },
+            ),
+          ).then((_) {
+            _faceGateActive = false;
+          });
+        }
+      });
+    } catch (e) {
+      debugPrint('HomePage: _checkFaceEnrollment error: $e');
+    }
   }
 
   /// Register custom components for forms engine
@@ -1658,6 +1703,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     showcaseFor: showcaseKeys.toSet().toList(),
                   ),
                 ),
+                if (context.isDistributorRole) const FaceAuthSessionCard(),
                 // Show stock balance card for users with stock management access
                 if (state.actionsWrapper.actions
                     .map((e) => e.displayName)

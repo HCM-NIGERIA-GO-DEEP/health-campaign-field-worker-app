@@ -69,6 +69,8 @@ dependencies:
   encrypt: ^5.0.3
   chopper: ^6.1.1
   transit_post: ^1.0.0
+  digit_face_verification: ^0.0.1
+  audioplayers: ^5.2.1
   flutter_nearby_connections:
     git:
       url: https://github.com/naveenr-egov/flutter_nearby_connections

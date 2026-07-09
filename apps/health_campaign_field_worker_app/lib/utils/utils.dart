@@ -12,6 +12,7 @@ import 'package:device_info_plus/device_info_plus.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/data_model.init.dart' as data_model_mappers;
 import 'package:digit_data_model/models/entities/attendance_log.dart';
+import 'package:digit_data_model/models/entities/face_auth_event.dart';
 import 'package:digit_data_model/models/entities/hf_referral.dart';
 import 'package:digit_dss/digit_dss.dart' as dss_mappers;
 import 'package:digit_ui_components/digit_components.dart';
@@ -626,6 +627,9 @@ void attemptSyncUp(BuildContext context) async {
                   LocalRepository<AttendanceLogModel,
                       AttendanceLogSearchModel>>(),
               context.read<UserActionLocalRepository>(),
+              context.read<
+                  LocalRepository<FaceAuthEventModel,
+                      FaceAuthEventSearchModel>>(),
             ],
             remoteRepositories: [
               // INFO : Need to add repo repo of package Here
@@ -658,6 +662,9 @@ void attemptSyncUp(BuildContext context) async {
                   RemoteRepository<AttendanceLogModel,
                       AttendanceLogSearchModel>>(),
               context.read<UserActionRemoteRepository>(),
+              context.read<
+                  RemoteRepository<FaceAuthEventModel,
+                      FaceAuthEventSearchModel>>(),
             ],
           ),
         );

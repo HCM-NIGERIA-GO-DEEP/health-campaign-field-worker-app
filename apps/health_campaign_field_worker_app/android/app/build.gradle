@@ -101,6 +101,24 @@ android {
 // Both share the same Android package (eu.simonbinder.sqlite3_flutter_libs) causing duplicate class errors
 configurations.all {
     exclude module: 'sqlite3_flutter_libs'
+
+    // Face-auth: pin ML/plugin transitive deps to resolve version conflicts
+    // between camera / google_mlkit_face_detection / tflite_flutter and the
+    // rest of the app (matches the working source-fork config).
+    resolutionStrategy {
+        force 'androidx.lifecycle:lifecycle-process:2.6.2'
+        force 'androidx.lifecycle:lifecycle-runtime:2.6.2'
+        force 'androidx.lifecycle:lifecycle-common:2.6.2'
+        force 'androidx.lifecycle:lifecycle-common-java8:2.6.2'
+        force 'androidx.lifecycle:lifecycle-livedata-core:2.6.2'
+        force 'androidx.lifecycle:lifecycle-viewmodel:2.6.2'
+        force 'org.jetbrains.kotlin:kotlin-stdlib:1.8.22'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22'
+        force 'org.jetbrains.kotlin:kotlin-stdlib-common:1.8.22'
+        force 'com.google.android.gms:play-services-location:21.0.1'
+        force 'com.google.android.gms:play-services-base:18.2.0'
+    }
 }
 
 flutter {

@@ -165,6 +165,54 @@ extension ContextUtilityExtensions on BuildContext {
     return userRequestObject;
   }
 
+  /// True when the logged-in user holds the distributor role. Used by the
+  /// face-auth gate (only distributors enrol/verify their face on this device).
+  bool get isDistributorRole {
+    try {
+      return loggedInUserRoles
+          .any((r) => r.code == RolesType.distributor.toValue());
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// True when the logged-in user holds the team-supervisor role (face-auth
+  /// re-verification of non-mobile co-workers).
+  bool get isTeamSupervisorRole {
+    try {
+      return loggedInUserRoles
+          .any((r) => r.code == RolesType.teamSupervisor.toValue());
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// True when the logged-in user holds the district-supervisor role.
+  bool get isDistrictSupervisorRole {
+    try {
+      return loggedInUserRoles
+          .any((r) => r.code == RolesType.districtSupervisor.toValue());
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Null-safe variant of [loggedInIndividualId]: returns null instead of
+  /// throwing when the user isn't authenticated or no AuthBloc is in scope.
+  String? get loggedInIndividualIdOrNull {
+    try {
+      final authBloc = _get<AuthBloc>();
+      return authBloc.state.whenOrNull(
+        authenticated: (accessToken, refreshToken, userModel, actionsWrapper,
+            individualId) {
+          return individualId;
+        },
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
   String? get loggedInIndividualId {
     final authBloc = _get<AuthBloc>();
     final individualUUID = authBloc.state.whenOrNull(

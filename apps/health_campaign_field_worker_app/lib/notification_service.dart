@@ -15,6 +15,51 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   debugPrint('FCM background message: ${message.messageId}');
 }
 
+/// SharedPreferences key that holds a re-verification trigger index whose
+/// notification tap arrived before the in-app scheduler/bloc was ready
+/// (cold-start or main-isolate race). ReVerificationScheduler.start() drains
+/// this key and dispatches the trigger so the very first tap of a session
+/// never gets dropped.
+const String reVerifyPendingTapKey = 'face_reverification_pending_tap';
+
+/// Persist a re-verification trigger index that was tapped but couldn't be
+/// dispatched in-app yet (callback not wired, bloc not built). Safe to call
+/// from any isolate.
+@pragma('vm:entry-point')
+Future<void> _persistPendingReVerifyTap(int index) async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt(reVerifyPendingTapKey, index);
+    debugPrint(
+        'NotificationService: persisted pending re-verify tap #$index for scheduler drain');
+  } catch (e) {
+    debugPrint('NotificationService: _persistPendingReVerifyTap failed: $e');
+  }
+}
+
+/// Top-level handler for local-notification taps when the app is in the
+/// background OR terminated. Must be a top-level function annotated with
+/// @pragma('vm:entry-point') so it survives tree-shaking and can be invoked
+/// by the OS from a fresh isolate. Routes the tap through the singleton so
+/// the foreground scheduler picks it up once the main isolate is ready.
+@pragma('vm:entry-point')
+void onBackgroundNotificationTapped(NotificationResponse response) {
+  final payload = response.payload;
+  if (payload == null || payload.isEmpty) return;
+  debugPrint('NotificationService: background tap, payload=$payload');
+  if (payload.startsWith(NotificationService.reVerifyPayloadPrefix)) {
+    final indexStr =
+        payload.substring(NotificationService.reVerifyPayloadPrefix.length);
+    final index = int.tryParse(indexStr);
+    if (index != null) {
+      // Persist FIRST so a race where the main isolate hasn't yet set
+      // onReVerificationTap still leaves a marker for the scheduler to drain.
+      _persistPendingReVerifyTap(index);
+      NotificationService().onReVerificationTap?.call(index);
+    }
+  }
+}
+
 class NotificationService {
   static final NotificationService _notificationService =
       NotificationService._internal();
@@ -25,7 +70,9 @@ class NotificationService {
   /// Callback invoked when user taps a notification.
   /// The map contains the FCM data payload.
   void Function(Map<String, dynamic>)? onNotificationTap;
+  void Function(int triggerIndex)? onReVerificationTap;
 
+  static const String reVerifyPayloadPrefix = 'reverify:';
   static const String _fcmTokenKey = 'fcm_device_token';
   static const String _fcmTokenMapKey = 'fcm_device_token_map';
   static const String _channelId = 'fcm_default_channel';
@@ -59,6 +106,7 @@ class NotificationService {
     await flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
       onDidReceiveNotificationResponse: _onNotificationTapped,
+      onDidReceiveBackgroundNotificationResponse: onBackgroundNotificationTapped,
     );
 
     // Create the Android notification channel
@@ -126,13 +174,24 @@ class NotificationService {
     return token;
   }
 
+  /// Fixed notification IDs so foreground FCM messages REPLACE each other
+  /// in the tray instead of stacking. Re-verification FCMs share the same
+  /// id as the local scheduler so an FCM-delivered prompt replaces a stale
+  /// scheduled one rather than queuing alongside it.
+  static const int _fcmFaceVerifyNotifId = 9000;
+  static const int _fcmGeneralNotifId = 9001;
+
   /// Show a local notification banner for foreground FCM messages.
   void _handleForegroundMessage(RemoteMessage message) {
     final notification = message.notification;
     if (notification == null) return;
 
+    final isReVerify = message.data['type'] == 'FACE_REVERIFICATION' ||
+        (notification.title?.contains('Face Verification') ?? false);
+    final notifId = isReVerify ? _fcmFaceVerifyNotifId : _fcmGeneralNotifId;
+
     flutterLocalNotificationsPlugin.show(
-      notification.hashCode,
+      notifId,
       notification.title,
       notification.body,
       const NotificationDetails(
@@ -157,10 +216,24 @@ class NotificationService {
   /// Called when user taps on a local notification.
   void _onNotificationTapped(NotificationResponse response) {
     final payload = response.payload;
-    if (payload != null && payload.isNotEmpty) {
-      final data = _decodePayload(payload);
-      onNotificationTap?.call(data);
+    if (payload == null || payload.isEmpty) return;
+    debugPrint('NotificationService: foreground tap, payload=$payload');
+
+    if (payload.startsWith(reVerifyPayloadPrefix)) {
+      final indexStr = payload.substring(reVerifyPayloadPrefix.length);
+      final index = int.tryParse(indexStr);
+      if (index != null) {
+        // Persist first so even if the scheduler/bloc isn't ready yet
+        // (cold-start race where the user taps before init completes), the
+        // scheduler can drain this on start() and surface the popup.
+        _persistPendingReVerifyTap(index);
+        onReVerificationTap?.call(index);
+      }
+      return;
     }
+
+    final data = _decodePayload(payload);
+    onNotificationTap?.call(data);
   }
 
   /// Called when user taps on an FCM notification (background/terminated).

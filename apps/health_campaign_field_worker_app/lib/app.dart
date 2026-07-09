@@ -1,5 +1,6 @@
 import 'package:digit_crud_bloc/repositories/local/search_entity_repository.dart';
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_data_model/models/entities/face_auth_event.dart';
 import 'package:digit_data_model/models/entities/attendance_log.dart';
 import 'package:digit_data_model/models/entities/attendance_register.dart';
 import 'package:digit_dss/digit_dss.dart';
@@ -67,6 +68,7 @@ class MainApplicationState extends State<MainApplication>
   void initState() {
     LocalizationParams().setModule('boundary', true);
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     requestDisableBatteryOptimization();
 
     // Register custom action executors
@@ -86,6 +88,18 @@ class MainApplicationState extends State<MainApplication>
       'LOAD_UNIQUE_ID_POOL',
       LoadUniqueIdPoolExecutor(),
     );
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Face gate check on resume is handled by the authenticated wrapper's
+    // re-verification scheduler and HomePage._checkFaceEnrollment().
   }
 
   @override
@@ -326,6 +340,24 @@ class MainApplicationState extends State<MainApplication>
                                   ctx.read<UserActionLocalRepository>(),
                               userActionRemoteRepository:
                                   ctx.read<UserActionRemoteRepository>(),
+                              faceAuthEventRemoteRepository: (() {
+                                try {
+                                  return ctx.read<
+                                      RemoteRepository<FaceAuthEventModel,
+                                          FaceAuthEventSearchModel>>();
+                                } catch (_) {
+                                  return null;
+                                }
+                              }()),
+                              faceAuthEventLocalRepository: (() {
+                                try {
+                                  return ctx.read<
+                                      LocalRepository<FaceAuthEventModel,
+                                          FaceAuthEventSearchModel>>();
+                                } catch (_) {
+                                  return null;
+                                }
+                              }()),
                               context: context,
                             ),
                           ),
