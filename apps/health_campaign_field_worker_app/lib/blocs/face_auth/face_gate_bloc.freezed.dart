@@ -1372,8 +1372,8 @@ mixin _$FaceGateState {
     required TResult Function() initial,
     required TResult Function() notEnrolled,
     required TResult Function() scanning,
-    required TResult Function(
-            int attemptNumber, int maxAttempts, double confidence)
+    required TResult Function(int attemptNumber, int maxAttempts,
+            double confidence, Uint8List? faceImageBytes)
         rejected,
     required TResult Function(String reason) fallbackRequired,
     required TResult Function() pinEntry,
@@ -1390,7 +1390,8 @@ mixin _$FaceGateState {
     TResult? Function()? initial,
     TResult? Function()? notEnrolled,
     TResult? Function()? scanning,
-    TResult? Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult? Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult? Function(String reason)? fallbackRequired,
     TResult? Function()? pinEntry,
@@ -1407,7 +1408,8 @@ mixin _$FaceGateState {
     TResult Function()? initial,
     TResult Function()? notEnrolled,
     TResult Function()? scanning,
-    TResult Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult Function(String reason)? fallbackRequired,
     TResult Function()? pinEntry,
@@ -1537,8 +1539,8 @@ class _$FaceGateInitialStateImpl
     required TResult Function() initial,
     required TResult Function() notEnrolled,
     required TResult Function() scanning,
-    required TResult Function(
-            int attemptNumber, int maxAttempts, double confidence)
+    required TResult Function(int attemptNumber, int maxAttempts,
+            double confidence, Uint8List? faceImageBytes)
         rejected,
     required TResult Function(String reason) fallbackRequired,
     required TResult Function() pinEntry,
@@ -1558,7 +1560,8 @@ class _$FaceGateInitialStateImpl
     TResult? Function()? initial,
     TResult? Function()? notEnrolled,
     TResult? Function()? scanning,
-    TResult? Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult? Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult? Function(String reason)? fallbackRequired,
     TResult? Function()? pinEntry,
@@ -1578,7 +1581,8 @@ class _$FaceGateInitialStateImpl
     TResult Function()? initial,
     TResult Function()? notEnrolled,
     TResult Function()? scanning,
-    TResult Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult Function(String reason)? fallbackRequired,
     TResult Function()? pinEntry,
@@ -1712,8 +1716,8 @@ class _$FaceGateNotEnrolledStateImpl
     required TResult Function() initial,
     required TResult Function() notEnrolled,
     required TResult Function() scanning,
-    required TResult Function(
-            int attemptNumber, int maxAttempts, double confidence)
+    required TResult Function(int attemptNumber, int maxAttempts,
+            double confidence, Uint8List? faceImageBytes)
         rejected,
     required TResult Function(String reason) fallbackRequired,
     required TResult Function() pinEntry,
@@ -1733,7 +1737,8 @@ class _$FaceGateNotEnrolledStateImpl
     TResult? Function()? initial,
     TResult? Function()? notEnrolled,
     TResult? Function()? scanning,
-    TResult? Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult? Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult? Function(String reason)? fallbackRequired,
     TResult? Function()? pinEntry,
@@ -1753,7 +1758,8 @@ class _$FaceGateNotEnrolledStateImpl
     TResult Function()? initial,
     TResult Function()? notEnrolled,
     TResult Function()? scanning,
-    TResult Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult Function(String reason)? fallbackRequired,
     TResult Function()? pinEntry,
@@ -1886,8 +1892,8 @@ class _$FaceGateScanningStateImpl
     required TResult Function() initial,
     required TResult Function() notEnrolled,
     required TResult Function() scanning,
-    required TResult Function(
-            int attemptNumber, int maxAttempts, double confidence)
+    required TResult Function(int attemptNumber, int maxAttempts,
+            double confidence, Uint8List? faceImageBytes)
         rejected,
     required TResult Function(String reason) fallbackRequired,
     required TResult Function() pinEntry,
@@ -1907,7 +1913,8 @@ class _$FaceGateScanningStateImpl
     TResult? Function()? initial,
     TResult? Function()? notEnrolled,
     TResult? Function()? scanning,
-    TResult? Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult? Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult? Function(String reason)? fallbackRequired,
     TResult? Function()? pinEntry,
@@ -1927,7 +1934,8 @@ class _$FaceGateScanningStateImpl
     TResult Function()? initial,
     TResult Function()? notEnrolled,
     TResult Function()? scanning,
-    TResult Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult Function(String reason)? fallbackRequired,
     TResult Function()? pinEntry,
@@ -2016,7 +2024,11 @@ abstract class _$$FaceGateRejectedStateImplCopyWith<$Res> {
           $Res Function(_$FaceGateRejectedStateImpl) then) =
       __$$FaceGateRejectedStateImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({int attemptNumber, int maxAttempts, double confidence});
+  $Res call(
+      {int attemptNumber,
+      int maxAttempts,
+      double confidence,
+      Uint8List? faceImageBytes});
 }
 
 /// @nodoc
@@ -2033,6 +2045,7 @@ class __$$FaceGateRejectedStateImplCopyWithImpl<$Res>
     Object? attemptNumber = null,
     Object? maxAttempts = null,
     Object? confidence = null,
+    Object? faceImageBytes = freezed,
   }) {
     return _then(_$FaceGateRejectedStateImpl(
       attemptNumber: null == attemptNumber
@@ -2047,6 +2060,10 @@ class __$$FaceGateRejectedStateImplCopyWithImpl<$Res>
           ? _value.confidence
           : confidence // ignore: cast_nullable_to_non_nullable
               as double,
+      faceImageBytes: freezed == faceImageBytes
+          ? _value.faceImageBytes
+          : faceImageBytes // ignore: cast_nullable_to_non_nullable
+              as Uint8List?,
     ));
   }
 }
@@ -2059,7 +2076,8 @@ class _$FaceGateRejectedStateImpl
   const _$FaceGateRejectedStateImpl(
       {required this.attemptNumber,
       required this.maxAttempts,
-      this.confidence = 0.0});
+      this.confidence = 0.0,
+      this.faceImageBytes});
 
   @override
   final int attemptNumber;
@@ -2068,10 +2086,12 @@ class _$FaceGateRejectedStateImpl
   @override
   @JsonKey()
   final double confidence;
+  @override
+  final Uint8List? faceImageBytes;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'FaceGateState.rejected(attemptNumber: $attemptNumber, maxAttempts: $maxAttempts, confidence: $confidence)';
+    return 'FaceGateState.rejected(attemptNumber: $attemptNumber, maxAttempts: $maxAttempts, confidence: $confidence, faceImageBytes: $faceImageBytes)';
   }
 
   @override
@@ -2081,7 +2101,8 @@ class _$FaceGateRejectedStateImpl
       ..add(DiagnosticsProperty('type', 'FaceGateState.rejected'))
       ..add(DiagnosticsProperty('attemptNumber', attemptNumber))
       ..add(DiagnosticsProperty('maxAttempts', maxAttempts))
-      ..add(DiagnosticsProperty('confidence', confidence));
+      ..add(DiagnosticsProperty('confidence', confidence))
+      ..add(DiagnosticsProperty('faceImageBytes', faceImageBytes));
   }
 
   @override
@@ -2094,12 +2115,14 @@ class _$FaceGateRejectedStateImpl
             (identical(other.maxAttempts, maxAttempts) ||
                 other.maxAttempts == maxAttempts) &&
             (identical(other.confidence, confidence) ||
-                other.confidence == confidence));
+                other.confidence == confidence) &&
+            const DeepCollectionEquality()
+                .equals(other.faceImageBytes, faceImageBytes));
   }
 
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, attemptNumber, maxAttempts, confidence);
+  int get hashCode => Object.hash(runtimeType, attemptNumber, maxAttempts,
+      confidence, const DeepCollectionEquality().hash(faceImageBytes));
 
   @JsonKey(ignore: true)
   @override
@@ -2114,8 +2137,8 @@ class _$FaceGateRejectedStateImpl
     required TResult Function() initial,
     required TResult Function() notEnrolled,
     required TResult Function() scanning,
-    required TResult Function(
-            int attemptNumber, int maxAttempts, double confidence)
+    required TResult Function(int attemptNumber, int maxAttempts,
+            double confidence, Uint8List? faceImageBytes)
         rejected,
     required TResult Function(String reason) fallbackRequired,
     required TResult Function() pinEntry,
@@ -2126,7 +2149,7 @@ class _$FaceGateRejectedStateImpl
     required TResult Function() registryCheckFailed,
     required TResult Function() workerNotFound,
   }) {
-    return rejected(attemptNumber, maxAttempts, confidence);
+    return rejected(attemptNumber, maxAttempts, confidence, faceImageBytes);
   }
 
   @override
@@ -2135,7 +2158,8 @@ class _$FaceGateRejectedStateImpl
     TResult? Function()? initial,
     TResult? Function()? notEnrolled,
     TResult? Function()? scanning,
-    TResult? Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult? Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult? Function(String reason)? fallbackRequired,
     TResult? Function()? pinEntry,
@@ -2146,7 +2170,8 @@ class _$FaceGateRejectedStateImpl
     TResult? Function()? registryCheckFailed,
     TResult? Function()? workerNotFound,
   }) {
-    return rejected?.call(attemptNumber, maxAttempts, confidence);
+    return rejected?.call(
+        attemptNumber, maxAttempts, confidence, faceImageBytes);
   }
 
   @override
@@ -2155,7 +2180,8 @@ class _$FaceGateRejectedStateImpl
     TResult Function()? initial,
     TResult Function()? notEnrolled,
     TResult Function()? scanning,
-    TResult Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult Function(String reason)? fallbackRequired,
     TResult Function()? pinEntry,
@@ -2168,7 +2194,7 @@ class _$FaceGateRejectedStateImpl
     required TResult orElse(),
   }) {
     if (rejected != null) {
-      return rejected(attemptNumber, maxAttempts, confidence);
+      return rejected(attemptNumber, maxAttempts, confidence, faceImageBytes);
     }
     return orElse();
   }
@@ -2237,11 +2263,13 @@ abstract class FaceGateRejectedState implements FaceGateState {
   const factory FaceGateRejectedState(
       {required final int attemptNumber,
       required final int maxAttempts,
-      final double confidence}) = _$FaceGateRejectedStateImpl;
+      final double confidence,
+      final Uint8List? faceImageBytes}) = _$FaceGateRejectedStateImpl;
 
   int get attemptNumber;
   int get maxAttempts;
   double get confidence;
+  Uint8List? get faceImageBytes;
   @JsonKey(ignore: true)
   _$$FaceGateRejectedStateImplCopyWith<_$FaceGateRejectedStateImpl>
       get copyWith => throw _privateConstructorUsedError;
@@ -2329,8 +2357,8 @@ class _$FaceGateFallbackRequiredStateImpl
     required TResult Function() initial,
     required TResult Function() notEnrolled,
     required TResult Function() scanning,
-    required TResult Function(
-            int attemptNumber, int maxAttempts, double confidence)
+    required TResult Function(int attemptNumber, int maxAttempts,
+            double confidence, Uint8List? faceImageBytes)
         rejected,
     required TResult Function(String reason) fallbackRequired,
     required TResult Function() pinEntry,
@@ -2350,7 +2378,8 @@ class _$FaceGateFallbackRequiredStateImpl
     TResult? Function()? initial,
     TResult? Function()? notEnrolled,
     TResult? Function()? scanning,
-    TResult? Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult? Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult? Function(String reason)? fallbackRequired,
     TResult? Function()? pinEntry,
@@ -2370,7 +2399,8 @@ class _$FaceGateFallbackRequiredStateImpl
     TResult Function()? initial,
     TResult Function()? notEnrolled,
     TResult Function()? scanning,
-    TResult Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult Function(String reason)? fallbackRequired,
     TResult Function()? pinEntry,
@@ -2510,8 +2540,8 @@ class _$FaceGatePinEntryStateImpl
     required TResult Function() initial,
     required TResult Function() notEnrolled,
     required TResult Function() scanning,
-    required TResult Function(
-            int attemptNumber, int maxAttempts, double confidence)
+    required TResult Function(int attemptNumber, int maxAttempts,
+            double confidence, Uint8List? faceImageBytes)
         rejected,
     required TResult Function(String reason) fallbackRequired,
     required TResult Function() pinEntry,
@@ -2531,7 +2561,8 @@ class _$FaceGatePinEntryStateImpl
     TResult? Function()? initial,
     TResult? Function()? notEnrolled,
     TResult? Function()? scanning,
-    TResult? Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult? Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult? Function(String reason)? fallbackRequired,
     TResult? Function()? pinEntry,
@@ -2551,7 +2582,8 @@ class _$FaceGatePinEntryStateImpl
     TResult Function()? initial,
     TResult Function()? notEnrolled,
     TResult Function()? scanning,
-    TResult Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult Function(String reason)? fallbackRequired,
     TResult Function()? pinEntry,
@@ -2751,8 +2783,8 @@ class _$FaceGatePassedStateImpl
     required TResult Function() initial,
     required TResult Function() notEnrolled,
     required TResult Function() scanning,
-    required TResult Function(
-            int attemptNumber, int maxAttempts, double confidence)
+    required TResult Function(int attemptNumber, int maxAttempts,
+            double confidence, Uint8List? faceImageBytes)
         rejected,
     required TResult Function(String reason) fallbackRequired,
     required TResult Function() pinEntry,
@@ -2772,7 +2804,8 @@ class _$FaceGatePassedStateImpl
     TResult? Function()? initial,
     TResult? Function()? notEnrolled,
     TResult? Function()? scanning,
-    TResult? Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult? Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult? Function(String reason)? fallbackRequired,
     TResult? Function()? pinEntry,
@@ -2792,7 +2825,8 @@ class _$FaceGatePassedStateImpl
     TResult Function()? initial,
     TResult Function()? notEnrolled,
     TResult Function()? scanning,
-    TResult Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult Function(String reason)? fallbackRequired,
     TResult Function()? pinEntry,
@@ -2964,8 +2998,8 @@ class _$FaceGateErrorStateImpl
     required TResult Function() initial,
     required TResult Function() notEnrolled,
     required TResult Function() scanning,
-    required TResult Function(
-            int attemptNumber, int maxAttempts, double confidence)
+    required TResult Function(int attemptNumber, int maxAttempts,
+            double confidence, Uint8List? faceImageBytes)
         rejected,
     required TResult Function(String reason) fallbackRequired,
     required TResult Function() pinEntry,
@@ -2985,7 +3019,8 @@ class _$FaceGateErrorStateImpl
     TResult? Function()? initial,
     TResult? Function()? notEnrolled,
     TResult? Function()? scanning,
-    TResult? Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult? Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult? Function(String reason)? fallbackRequired,
     TResult? Function()? pinEntry,
@@ -3005,7 +3040,8 @@ class _$FaceGateErrorStateImpl
     TResult Function()? initial,
     TResult Function()? notEnrolled,
     TResult Function()? scanning,
-    TResult Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult Function(String reason)? fallbackRequired,
     TResult Function()? pinEntry,
@@ -3147,8 +3183,8 @@ class _$FaceGateRegistryCheckFailedStateImpl
     required TResult Function() initial,
     required TResult Function() notEnrolled,
     required TResult Function() scanning,
-    required TResult Function(
-            int attemptNumber, int maxAttempts, double confidence)
+    required TResult Function(int attemptNumber, int maxAttempts,
+            double confidence, Uint8List? faceImageBytes)
         rejected,
     required TResult Function(String reason) fallbackRequired,
     required TResult Function() pinEntry,
@@ -3168,7 +3204,8 @@ class _$FaceGateRegistryCheckFailedStateImpl
     TResult? Function()? initial,
     TResult? Function()? notEnrolled,
     TResult? Function()? scanning,
-    TResult? Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult? Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult? Function(String reason)? fallbackRequired,
     TResult? Function()? pinEntry,
@@ -3188,7 +3225,8 @@ class _$FaceGateRegistryCheckFailedStateImpl
     TResult Function()? initial,
     TResult Function()? notEnrolled,
     TResult Function()? scanning,
-    TResult Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult Function(String reason)? fallbackRequired,
     TResult Function()? pinEntry,
@@ -3323,8 +3361,8 @@ class _$FaceGateWorkerNotFoundStateImpl
     required TResult Function() initial,
     required TResult Function() notEnrolled,
     required TResult Function() scanning,
-    required TResult Function(
-            int attemptNumber, int maxAttempts, double confidence)
+    required TResult Function(int attemptNumber, int maxAttempts,
+            double confidence, Uint8List? faceImageBytes)
         rejected,
     required TResult Function(String reason) fallbackRequired,
     required TResult Function() pinEntry,
@@ -3344,7 +3382,8 @@ class _$FaceGateWorkerNotFoundStateImpl
     TResult? Function()? initial,
     TResult? Function()? notEnrolled,
     TResult? Function()? scanning,
-    TResult? Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult? Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult? Function(String reason)? fallbackRequired,
     TResult? Function()? pinEntry,
@@ -3364,7 +3403,8 @@ class _$FaceGateWorkerNotFoundStateImpl
     TResult Function()? initial,
     TResult Function()? notEnrolled,
     TResult Function()? scanning,
-    TResult Function(int attemptNumber, int maxAttempts, double confidence)?
+    TResult Function(int attemptNumber, int maxAttempts, double confidence,
+            Uint8List? faceImageBytes)?
         rejected,
     TResult Function(String reason)? fallbackRequired,
     TResult Function()? pinEntry,

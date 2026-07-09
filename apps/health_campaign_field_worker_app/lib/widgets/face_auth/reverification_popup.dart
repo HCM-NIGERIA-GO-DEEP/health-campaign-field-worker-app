@@ -398,6 +398,7 @@ Future<void> _runCoWorkerVerificationSequence(
     final user = pending[i];
     bool verified = false;
     double? rejectedConfidence;
+    Uint8List? rejectedImageBytes;
 
     await Navigator.of(context).push(MaterialPageRoute<void>(
       builder: (_) => MultiBlocProvider(
@@ -414,7 +415,7 @@ Future<void> _runCoWorkerVerificationSequence(
           stepCurrent: i + 1,
           stepTotal: pending.length,
           faceModelService: faceModelService,
-          onVerified: (confidence) async {
+          onVerified: (confidence, {faceImageBytes}) async {
             verified = true;
             markCoWorkerVerifiedThisCycle(user.id);
             await repository.updateLastVerified(user.id);
@@ -431,6 +432,7 @@ Future<void> _runCoWorkerVerificationSequence(
               await logger.logFaceSuccess(
                 eventType: FaceAuthEventType.checkIn,
                 confidence: confidence,
+                faceImageBytes: faceImageBytes,
                 latitude: location?.latitude ?? 0.0,
                 longitude: location?.longitude ?? 0.0,
                 locationAccuracy: location?.accuracy ?? 0.0,
@@ -439,8 +441,9 @@ Future<void> _runCoWorkerVerificationSequence(
               debugPrint('_runCoWorkerVerificationSequence: log CI failed: $e');
             }
           },
-          onFailed: (confidence) {
+          onFailed: (confidence, {faceImageBytes}) {
             rejectedConfidence = confidence;
+            rejectedImageBytes = faceImageBytes;
           },
         ),
       ),
@@ -461,6 +464,7 @@ Future<void> _runCoWorkerVerificationSequence(
           await logger.logFaceRejected(
             eventType: FaceAuthEventType.checkIn,
             confidence: rejectedConfidence!,
+            faceImageBytes: rejectedImageBytes,
             failedAttemptCount: 1,
           );
         } else {
@@ -1298,8 +1302,9 @@ class _CoWorkerScanPage extends StatelessWidget {
   final int stepCurrent;
   final int stepTotal;
   final FaceModelService faceModelService;
-  final Future<void> Function(double confidence) onVerified;
-  final void Function(double confidence)? onFailed;
+  final Future<void> Function(double confidence, {Uint8List? faceImageBytes})
+      onVerified;
+  final void Function(double confidence, {Uint8List? faceImageBytes})? onFailed;
 
   const _CoWorkerScanPage({
     required this.user,
@@ -1320,8 +1325,8 @@ class _CoWorkerScanPage extends StatelessWidget {
       faceModelService: faceModelService,
       title: displayName,
       subtitle: 'Step $stepCurrent of $stepTotal',
-      onVerified: (confidence) async {
-        await onVerified(confidence);
+      onVerified: (confidence, {faceImageBytes}) async {
+        await onVerified(confidence, faceImageBytes: faceImageBytes);
       },
       onFailed: onFailed,
     );

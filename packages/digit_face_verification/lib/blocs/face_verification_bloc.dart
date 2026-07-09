@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:typed_data';
 
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -105,9 +106,15 @@ class FaceVerificationBloc
       }
 
       if (bestSimilarity >= similarityThreshold) {
-        emit(FaceVerificationState.verified(confidence: bestSimilarity));
+        emit(FaceVerificationState.verified(
+          confidence: bestSimilarity,
+          faceImageBytes: event.faceImageBytes,
+        ));
       } else {
-        emit(FaceVerificationState.rejected(confidence: bestSimilarity));
+        emit(FaceVerificationState.rejected(
+          confidence: bestSimilarity,
+          faceImageBytes: event.faceImageBytes,
+        ));
       }
     } catch (e) {
       emit(FaceVerificationState.error(message: 'Verification failed: $e'));
@@ -161,6 +168,7 @@ class FaceVerificationEvent with _$FaceVerificationEvent {
   const factory FaceVerificationEvent.verifyFace({
     required String individualId,
     required List<double> embedding,
+    Uint8List? faceImageBytes,
   }) = FaceVerificationVerifyEvent;
 
   const factory FaceVerificationEvent.deleteRegistration({
@@ -194,10 +202,12 @@ class FaceVerificationState with _$FaceVerificationState {
 
   const factory FaceVerificationState.verified({
     required double confidence,
+    Uint8List? faceImageBytes,
   }) = FaceVerificationVerifiedState;
 
   const factory FaceVerificationState.rejected({
     required double confidence,
+    Uint8List? faceImageBytes,
   }) = FaceVerificationRejectedState;
 
   const factory FaceVerificationState.noFaceDetected() =
