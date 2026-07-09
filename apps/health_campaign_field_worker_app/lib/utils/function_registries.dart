@@ -746,6 +746,27 @@ class FunctionRegistries {
           return withFacilityPrefix(args[2]);
       }
     });
+
+    // Resolves the SENDER party name for the incoming-transactions list and the
+    // stock-receipt (Received from) screens. A STAFF sender (a CDD / delivery
+    // team member returning stock) is an individual, not a facility -> show the
+    // captured delivery-team userName, falling back to the raw sender uuid only
+    // when no name was captured. A facility sender keeps the getFacilityName
+    // behaviour (FAC_ prefix). Without this, getFacilityName(senderId) showed
+    // the CDD's raw uuid on the receiver (HFS) side of a return, because it has
+    // no access to the STAFF userName stored in additionalFields.
+    // args: [additionalFields.fields, senderId, senderType]
+    FunctionRegistry.register('getReceivedFromName', (args, stateData) {
+      final fields = args.isNotEmpty ? args[0] : null;
+      final senderId = args.length > 1 ? (args[1]?.toString() ?? '') : '';
+      final senderType = args.length > 2 ? (args[2]?.toString() ?? '') : '';
+      if (senderType == 'STAFF') {
+        final teamName = resolveTeamName(fields);
+        return teamName.isNotEmpty ? teamName : senderId;
+      }
+      if (senderId.isEmpty) return '';
+      return senderId.contains('F') ? 'FAC_$senderId' : senderId;
+    });
   }
 
   /// Returns true when the task carries `additionalFields.flow == 'riDone'`,
