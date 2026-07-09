@@ -489,6 +489,22 @@ class MdmsRepository {
       return boundaryRelConfig;
     }).toList();
 
+    // Face-auth MDMS config (FACE_AUTH_CONFIG). Persisted so the face gate /
+    // re-verification thresholds are driven by MDMS.
+    appConfiguration.faceAuthMdmsConfig =
+        (element?.faceAuthConfig != null && element!.faceAuthConfig!.isNotEmpty)
+            ? (FaceAuthMdmsConfig()
+              ..faceMatchThreshold =
+                  element.faceAuthConfig!.first.faceMatchThreshold
+              ..maxFaceAttempts = element.faceAuthConfig!.first.maxFaceAttempts
+              ..startHour = element.faceAuthConfig!.first.startHour
+              ..endHour = element.faceAuthConfig!.first.endHour
+              ..promptCount = element.faceAuthConfig!.first.promptCount
+              ..minGapMinutes = element.faceAuthConfig!.first.minGapMinutes
+              ..countdownDurationMinutes =
+                  element.faceAuthConfig!.first.countdownDurationMinutes)
+            : null;
+
     isar.writeTxnSync(() {
       isar.appConfigurations.putSync(appConfiguration);
       isar.rowVersionLists.putAllSync(rowVersionList);

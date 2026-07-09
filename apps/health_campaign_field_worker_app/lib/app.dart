@@ -181,6 +181,7 @@ class MainApplicationState extends State<MainApplication>
                   individualRemoteRepository: ctx.read<
                       RemoteRepository<IndividualModel,
                           IndividualSearchModel>>(),
+                  isar: ctx.read<Isar>(),
                 )..add(
                     AuthAutoLoginEvent(
                       tenantId: envConfig.variables.tenantId,
@@ -216,6 +217,14 @@ class MainApplicationState extends State<MainApplication>
                       );
                     } else if (authState is AuthUnauthenticatedState) {
                       AnalyticsService.instance.logEvent('logout', {});
+                      // Re-fetch MDMS config on login so MDMS changes (e.g.
+                      // FACE_AUTH_CONFIG) reflect after logout->login. On a
+                      // normal cold start the cache is present, so this loads
+                      // instantly; after a logout the cache was cleared, so it
+                      // re-fetches fresh (falls back to cache when offline).
+                      context
+                          .read<AppInitializationBloc>()
+                          .add(const AppInitializationSetupEvent());
                     }
                   },
                   child: BlocBuilder<AuthBloc, AuthState>(
