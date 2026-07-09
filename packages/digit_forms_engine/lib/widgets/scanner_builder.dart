@@ -5,6 +5,12 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
   final DateTime? end;
   final bool summaryData;
 
+  /// When true, the captured value is shown but the edit (pencil) affordance is
+  /// hidden, so the scanned/prefilled code cannot be re-scanned or changed.
+  /// Driven by the field's `readOnly` schema flag; defaults to false so every
+  /// existing scanner field keeps its edit button.
+  final bool readOnly;
+
   const JsonSchemaScannerBuilder({
     required super.formControlName,
     required super.form,
@@ -16,6 +22,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
     this.end,
     super.validations,
     this.summaryData = false,
+    this.readOnly = false,
   });
 
   /// Converts ValidationRule list to ScannerValidation list
@@ -248,39 +255,41 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                               }(),
                       ),
                     ),
-                    DigitButton(
-                      label: '',
-                      onPressed: () {
-                        // Pass form value directly to scanner page via route param
-                        // Scanner page will parse and dispatch to bloc in initState
-                        final provider = ScannerComparisonProvider.of(context);
-                        final registry = ScannerComparisonRegistry();
-                        final dupeFn = provider != null
-                            ? provider.duplicateCheckFn
-                            : registry.duplicateCheckFn;
-                        final dupeErrFn = provider != null
-                            ? provider.duplicateErrorMessage
-                            : registry.duplicateErrorMessage;
-                        final duplicateCheckFn = dupeFn != null
-                            ? (String scannedValue) => dupeFn(
-                                formControlName, scannedValue, form.value)
-                            : null;
-                        final duplicateMsg = dupeErrFn?.call(formControlName);
-                        context.router.push(DigitScannerRoute(
-                          validations: _toScannerValidations(),
-                          isGS1code: isGS1code,
-                          allowManual: allowManual,
-                          isEditEnabled: true,
-                          initialBarcodeData: formValue,
-                          scannerId: formControlName,
-                          duplicateCheckFn: duplicateCheckFn,
-                          duplicateCheckMessage: duplicateMsg,
-                        ));
-                      },
-                      type: DigitButtonType.tertiary,
-                      size: DigitButtonSize.medium,
-                      prefixIcon: Icons.edit,
-                    )
+                    if (!readOnly)
+                      DigitButton(
+                        label: '',
+                        onPressed: () {
+                          // Pass form value directly to scanner page via route param
+                          // Scanner page will parse and dispatch to bloc in initState
+                          final provider =
+                              ScannerComparisonProvider.of(context);
+                          final registry = ScannerComparisonRegistry();
+                          final dupeFn = provider != null
+                              ? provider.duplicateCheckFn
+                              : registry.duplicateCheckFn;
+                          final dupeErrFn = provider != null
+                              ? provider.duplicateErrorMessage
+                              : registry.duplicateErrorMessage;
+                          final duplicateCheckFn = dupeFn != null
+                              ? (String scannedValue) => dupeFn(
+                                  formControlName, scannedValue, form.value)
+                              : null;
+                          final duplicateMsg = dupeErrFn?.call(formControlName);
+                          context.router.push(DigitScannerRoute(
+                            validations: _toScannerValidations(),
+                            isGS1code: isGS1code,
+                            allowManual: allowManual,
+                            isEditEnabled: true,
+                            initialBarcodeData: formValue,
+                            scannerId: formControlName,
+                            duplicateCheckFn: duplicateCheckFn,
+                            duplicateCheckMessage: duplicateMsg,
+                          ));
+                        },
+                        type: DigitButtonType.tertiary,
+                        size: DigitButtonSize.medium,
+                        prefixIcon: Icons.edit,
+                      )
                   ],
                 ),
               )
@@ -311,48 +320,49 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
                             ],
                           ),
                         ),
-                        DigitButton(
-                          label: '',
-                          onPressed: () {
-                            // Clear scanner state before navigating to edit QR codes
-                            context.read<DigitScannerBloc>().add(
-                                  DigitScannerEvent.handleScanner(
-                                    barCode: [],
-                                    qrCode: [],
-                                    scannerId: formControlName,
-                                  ),
-                                );
-                            // Use displayQrCodes which already has the parsed data
-                            final provider2 =
-                                ScannerComparisonProvider.of(context);
-                            final registry2 = ScannerComparisonRegistry();
-                            final dupeFn2 = provider2 != null
-                                ? provider2.duplicateCheckFn
-                                : registry2.duplicateCheckFn;
-                            final dupeErrFn2 = provider2 != null
-                                ? provider2.duplicateErrorMessage
-                                : registry2.duplicateErrorMessage;
-                            final duplicateCheckFn2 = dupeFn2 != null
-                                ? (String scannedValue) => dupeFn2(
-                                    formControlName, scannedValue, form.value)
-                                : null;
-                            final duplicateMsg2 =
-                                dupeErrFn2?.call(formControlName);
-                            context.router.push(DigitScannerRoute(
-                              validations: _toScannerValidations(),
-                              isGS1code: isGS1code,
-                              allowManual: allowManual,
-                              isEditEnabled: true,
-                              initialQrCodes: displayQrCodes,
-                              scannerId: formControlName,
-                              duplicateCheckFn: duplicateCheckFn2,
-                              duplicateCheckMessage: duplicateMsg2,
-                            ));
-                          },
-                          type: DigitButtonType.tertiary,
-                          size: DigitButtonSize.medium,
-                          prefixIcon: Icons.edit,
-                        )
+                        if (!readOnly)
+                          DigitButton(
+                            label: '',
+                            onPressed: () {
+                              // Clear scanner state before navigating to edit QR codes
+                              context.read<DigitScannerBloc>().add(
+                                    DigitScannerEvent.handleScanner(
+                                      barCode: [],
+                                      qrCode: [],
+                                      scannerId: formControlName,
+                                    ),
+                                  );
+                              // Use displayQrCodes which already has the parsed data
+                              final provider2 =
+                                  ScannerComparisonProvider.of(context);
+                              final registry2 = ScannerComparisonRegistry();
+                              final dupeFn2 = provider2 != null
+                                  ? provider2.duplicateCheckFn
+                                  : registry2.duplicateCheckFn;
+                              final dupeErrFn2 = provider2 != null
+                                  ? provider2.duplicateErrorMessage
+                                  : registry2.duplicateErrorMessage;
+                              final duplicateCheckFn2 = dupeFn2 != null
+                                  ? (String scannedValue) => dupeFn2(
+                                      formControlName, scannedValue, form.value)
+                                  : null;
+                              final duplicateMsg2 =
+                                  dupeErrFn2?.call(formControlName);
+                              context.router.push(DigitScannerRoute(
+                                validations: _toScannerValidations(),
+                                isGS1code: isGS1code,
+                                allowManual: allowManual,
+                                isEditEnabled: true,
+                                initialQrCodes: displayQrCodes,
+                                scannerId: formControlName,
+                                duplicateCheckFn: duplicateCheckFn2,
+                                duplicateCheckMessage: duplicateMsg2,
+                              ));
+                            },
+                            type: DigitButtonType.tertiary,
+                            size: DigitButtonSize.medium,
+                            prefixIcon: Icons.edit,
+                          )
                       ],
                     ),
                   )

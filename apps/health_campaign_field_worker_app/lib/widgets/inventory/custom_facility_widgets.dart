@@ -181,6 +181,20 @@ class _FacilityCardContent extends StatelessWidget {
     return isUuid ? facilityId : localizations.translate('FAC_$facilityId');
   }
 
+  /// Builds the value stored in the delivery-team code field (`deliveryTeam`)
+  /// when a return / less-excess flow is auto-prefilled for a distributor
+  /// (CDD). Mirrors the scanned team-QR format ("userName||userUuid") so the
+  /// scanner field shows the CDD name - matching the manually scanned path and
+  /// the transaction list/details screens - instead of the bare uuid. Falls
+  /// back to the bare uuid when no userName is available.
+  String _deliveryTeamCodeValue(BuildContext context) {
+    final uuid = context.loggedInUserUuid;
+    final userName = context.loggedInUser.userName;
+    return (userName != null && userName.isNotEmpty)
+        ? '$userName||$uuid'
+        : uuid;
+  }
+
   @override
   Widget build(BuildContext context) {
     final navigationParams =
@@ -326,7 +340,7 @@ class _FacilityCardContent extends StatelessWidget {
             !isWareHouseMgr &&
             (selectedValue == null || selectedValue.isEmpty)) {
           selectedValue = deliveryTeamCode;
-          final loggedInUserId = context.loggedInUserUuid;
+          final deliveryTeamValue = _deliveryTeamCodeValue(context);
           WidgetsBinding.instance.addPostFrameCallback((_) {
             field.control.value = deliveryTeamCode;
             field.control.markAsTouched();
@@ -345,7 +359,7 @@ class _FacilityCardContent extends StatelessWidget {
                     schemaKey: pageSchema,
                     context: context,
                     key: dependantFormKey,
-                    value: loggedInUserId,
+                    value: deliveryTeamValue,
                   ),
                 );
           });
@@ -358,7 +372,7 @@ class _FacilityCardContent extends StatelessWidget {
             !isWareHouseMgr &&
             (selectedValue == null || selectedValue.isEmpty)) {
           selectedValue = deliveryTeamCode;
-          final loggedInUserId = context.loggedInUserUuid;
+          final deliveryTeamValue = _deliveryTeamCodeValue(context);
           WidgetsBinding.instance.addPostFrameCallback((_) {
             field.control.value = deliveryTeamCode;
             field.control.markAsTouched();
@@ -376,7 +390,7 @@ class _FacilityCardContent extends StatelessWidget {
                     schemaKey: pageSchema,
                     context: context,
                     key: dependantFormKey,
-                    value: loggedInUserId,
+                    value: deliveryTeamValue,
                   ),
                 );
           });
