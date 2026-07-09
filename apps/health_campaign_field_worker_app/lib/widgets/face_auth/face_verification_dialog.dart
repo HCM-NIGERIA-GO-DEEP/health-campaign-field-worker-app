@@ -175,7 +175,7 @@ class _FaceVerificationScreenState extends State<_FaceVerificationScreen> {
                 faceImageBytes: faceImageBytes,
               ),
               scanning: () => _buildCamera(context),
-              rejected: (attempt, max, confidence) => _buildCamera(
+              rejected: (attempt, max, confidence, faceImageBytes) => _buildCamera(
                 context,
                 attemptNumber: attempt,
                 maxAttempts: max,

@@ -215,6 +215,22 @@ class _FaceGatePageState extends State<FaceGatePage> {
     widget.onVerified();
   }
 
+  /// Logs a failed (rejected) login face attempt with the captured image so
+  /// failed attempts are auditable. Fire-and-forget; best-effort.
+  Future<void> _logRejected(
+      double confidence, int attempt, Uint8List? faceImageBytes) async {
+    try {
+      await _logger?.logFaceRejected(
+        eventType: FaceAuthEventType.login,
+        confidence: confidence,
+        faceImageBytes: faceImageBytes,
+        failedAttemptCount: attempt,
+      );
+    } catch (e) {
+      debugPrint('FaceGatePage: rejected event log failed: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -259,6 +275,10 @@ class _FaceGatePageState extends State<FaceGatePage> {
             _pendingFaceImageBytes = faceImageBytes;
             // Don't navigate immediately — let the builder show the success screen
           },
+          rejected: (attempt, max, confidence, faceImageBytes) {
+            // Log each failed face attempt (with the captured image) for audit.
+            _logRejected(confidence, attempt, faceImageBytes);
+          },
           error: (message) {
             if (mounted) setState(() {
               _pinErrorMessage = message;
@@ -302,7 +322,7 @@ class _FaceGatePageState extends State<FaceGatePage> {
                     );
               },
             ),
-            rejected: (attempt, max, confidence) => _ScanningView(
+            rejected: (attempt, max, confidence, faceImageBytes) => _ScanningView(
               key: ValueKey('gate_scan_$attempt'),
               attemptNumber: attempt,
               maxAttempts: max,

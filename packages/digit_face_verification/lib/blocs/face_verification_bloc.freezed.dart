@@ -22,7 +22,8 @@ mixin _$FaceVerificationEvent {
     required TResult Function(
             String individualId, List<double> embedding, double quality)
         registerFace,
-    required TResult Function(String individualId, List<double> embedding)
+    required TResult Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)
         verifyFace,
     required TResult Function(String individualId) deleteRegistration,
     required TResult Function(int faceCount, double quality) faceDetected,
@@ -35,7 +36,9 @@ mixin _$FaceVerificationEvent {
     TResult? Function(
             String individualId, List<double> embedding, double quality)?
         registerFace,
-    TResult? Function(String individualId, List<double> embedding)? verifyFace,
+    TResult? Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)?
+        verifyFace,
     TResult? Function(String individualId)? deleteRegistration,
     TResult? Function(int faceCount, double quality)? faceDetected,
     TResult? Function()? reset,
@@ -47,7 +50,9 @@ mixin _$FaceVerificationEvent {
     TResult Function(
             String individualId, List<double> embedding, double quality)?
         registerFace,
-    TResult Function(String individualId, List<double> embedding)? verifyFace,
+    TResult Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)?
+        verifyFace,
     TResult Function(String individualId)? deleteRegistration,
     TResult Function(int faceCount, double quality)? faceDetected,
     TResult Function()? reset,
@@ -155,7 +160,8 @@ class _$FaceVerificationInitializeEventImpl
     required TResult Function(
             String individualId, List<double> embedding, double quality)
         registerFace,
-    required TResult Function(String individualId, List<double> embedding)
+    required TResult Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)
         verifyFace,
     required TResult Function(String individualId) deleteRegistration,
     required TResult Function(int faceCount, double quality) faceDetected,
@@ -171,7 +177,9 @@ class _$FaceVerificationInitializeEventImpl
     TResult? Function(
             String individualId, List<double> embedding, double quality)?
         registerFace,
-    TResult? Function(String individualId, List<double> embedding)? verifyFace,
+    TResult? Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)?
+        verifyFace,
     TResult? Function(String individualId)? deleteRegistration,
     TResult? Function(int faceCount, double quality)? faceDetected,
     TResult? Function()? reset,
@@ -186,7 +194,9 @@ class _$FaceVerificationInitializeEventImpl
     TResult Function(
             String individualId, List<double> embedding, double quality)?
         registerFace,
-    TResult Function(String individualId, List<double> embedding)? verifyFace,
+    TResult Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)?
+        verifyFace,
     TResult Function(String individualId)? deleteRegistration,
     TResult Function(int faceCount, double quality)? faceDetected,
     TResult Function()? reset,
@@ -354,7 +364,8 @@ class _$FaceVerificationRegisterEventImpl
     required TResult Function(
             String individualId, List<double> embedding, double quality)
         registerFace,
-    required TResult Function(String individualId, List<double> embedding)
+    required TResult Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)
         verifyFace,
     required TResult Function(String individualId) deleteRegistration,
     required TResult Function(int faceCount, double quality) faceDetected,
@@ -370,7 +381,9 @@ class _$FaceVerificationRegisterEventImpl
     TResult? Function(
             String individualId, List<double> embedding, double quality)?
         registerFace,
-    TResult? Function(String individualId, List<double> embedding)? verifyFace,
+    TResult? Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)?
+        verifyFace,
     TResult? Function(String individualId)? deleteRegistration,
     TResult? Function(int faceCount, double quality)? faceDetected,
     TResult? Function()? reset,
@@ -385,7 +398,9 @@ class _$FaceVerificationRegisterEventImpl
     TResult Function(
             String individualId, List<double> embedding, double quality)?
         registerFace,
-    TResult Function(String individualId, List<double> embedding)? verifyFace,
+    TResult Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)?
+        verifyFace,
     TResult Function(String individualId)? deleteRegistration,
     TResult Function(int faceCount, double quality)? faceDetected,
     TResult Function()? reset,
@@ -465,7 +480,8 @@ abstract class _$$FaceVerificationVerifyEventImplCopyWith<$Res> {
           $Res Function(_$FaceVerificationVerifyEventImpl) then) =
       __$$FaceVerificationVerifyEventImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({String individualId, List<double> embedding});
+  $Res call(
+      {String individualId, List<double> embedding, Uint8List? faceImageBytes});
 }
 
 /// @nodoc
@@ -483,6 +499,7 @@ class __$$FaceVerificationVerifyEventImplCopyWithImpl<$Res>
   $Res call({
     Object? individualId = null,
     Object? embedding = null,
+    Object? faceImageBytes = freezed,
   }) {
     return _then(_$FaceVerificationVerifyEventImpl(
       individualId: null == individualId
@@ -493,6 +510,10 @@ class __$$FaceVerificationVerifyEventImplCopyWithImpl<$Res>
           ? _value._embedding
           : embedding // ignore: cast_nullable_to_non_nullable
               as List<double>,
+      faceImageBytes: freezed == faceImageBytes
+          ? _value.faceImageBytes
+          : faceImageBytes // ignore: cast_nullable_to_non_nullable
+              as Uint8List?,
     ));
   }
 }
@@ -501,7 +522,9 @@ class __$$FaceVerificationVerifyEventImplCopyWithImpl<$Res>
 
 class _$FaceVerificationVerifyEventImpl implements FaceVerificationVerifyEvent {
   const _$FaceVerificationVerifyEventImpl(
-      {required this.individualId, required final List<double> embedding})
+      {required this.individualId,
+      required final List<double> embedding,
+      this.faceImageBytes})
       : _embedding = embedding;
 
   @override
@@ -515,8 +538,11 @@ class _$FaceVerificationVerifyEventImpl implements FaceVerificationVerifyEvent {
   }
 
   @override
+  final Uint8List? faceImageBytes;
+
+  @override
   String toString() {
-    return 'FaceVerificationEvent.verifyFace(individualId: $individualId, embedding: $embedding)';
+    return 'FaceVerificationEvent.verifyFace(individualId: $individualId, embedding: $embedding, faceImageBytes: $faceImageBytes)';
   }
 
   @override
@@ -527,12 +553,17 @@ class _$FaceVerificationVerifyEventImpl implements FaceVerificationVerifyEvent {
             (identical(other.individualId, individualId) ||
                 other.individualId == individualId) &&
             const DeepCollectionEquality()
-                .equals(other._embedding, _embedding));
+                .equals(other._embedding, _embedding) &&
+            const DeepCollectionEquality()
+                .equals(other.faceImageBytes, faceImageBytes));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, individualId,
-      const DeepCollectionEquality().hash(_embedding));
+  int get hashCode => Object.hash(
+      runtimeType,
+      individualId,
+      const DeepCollectionEquality().hash(_embedding),
+      const DeepCollectionEquality().hash(faceImageBytes));
 
   @JsonKey(ignore: true)
   @override
@@ -548,13 +579,14 @@ class _$FaceVerificationVerifyEventImpl implements FaceVerificationVerifyEvent {
     required TResult Function(
             String individualId, List<double> embedding, double quality)
         registerFace,
-    required TResult Function(String individualId, List<double> embedding)
+    required TResult Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)
         verifyFace,
     required TResult Function(String individualId) deleteRegistration,
     required TResult Function(int faceCount, double quality) faceDetected,
     required TResult Function() reset,
   }) {
-    return verifyFace(individualId, embedding);
+    return verifyFace(individualId, embedding, faceImageBytes);
   }
 
   @override
@@ -564,12 +596,14 @@ class _$FaceVerificationVerifyEventImpl implements FaceVerificationVerifyEvent {
     TResult? Function(
             String individualId, List<double> embedding, double quality)?
         registerFace,
-    TResult? Function(String individualId, List<double> embedding)? verifyFace,
+    TResult? Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)?
+        verifyFace,
     TResult? Function(String individualId)? deleteRegistration,
     TResult? Function(int faceCount, double quality)? faceDetected,
     TResult? Function()? reset,
   }) {
-    return verifyFace?.call(individualId, embedding);
+    return verifyFace?.call(individualId, embedding, faceImageBytes);
   }
 
   @override
@@ -579,14 +613,16 @@ class _$FaceVerificationVerifyEventImpl implements FaceVerificationVerifyEvent {
     TResult Function(
             String individualId, List<double> embedding, double quality)?
         registerFace,
-    TResult Function(String individualId, List<double> embedding)? verifyFace,
+    TResult Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)?
+        verifyFace,
     TResult Function(String individualId)? deleteRegistration,
     TResult Function(int faceCount, double quality)? faceDetected,
     TResult Function()? reset,
     required TResult orElse(),
   }) {
     if (verifyFace != null) {
-      return verifyFace(individualId, embedding);
+      return verifyFace(individualId, embedding, faceImageBytes);
     }
     return orElse();
   }
@@ -639,12 +675,13 @@ class _$FaceVerificationVerifyEventImpl implements FaceVerificationVerifyEvent {
 
 abstract class FaceVerificationVerifyEvent implements FaceVerificationEvent {
   const factory FaceVerificationVerifyEvent(
-          {required final String individualId,
-          required final List<double> embedding}) =
-      _$FaceVerificationVerifyEventImpl;
+      {required final String individualId,
+      required final List<double> embedding,
+      final Uint8List? faceImageBytes}) = _$FaceVerificationVerifyEventImpl;
 
   String get individualId;
   List<double> get embedding;
+  Uint8List? get faceImageBytes;
   @JsonKey(ignore: true)
   _$$FaceVerificationVerifyEventImplCopyWith<_$FaceVerificationVerifyEventImpl>
       get copyWith => throw _privateConstructorUsedError;
@@ -723,7 +760,8 @@ class _$FaceVerificationDeleteEventImpl implements FaceVerificationDeleteEvent {
     required TResult Function(
             String individualId, List<double> embedding, double quality)
         registerFace,
-    required TResult Function(String individualId, List<double> embedding)
+    required TResult Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)
         verifyFace,
     required TResult Function(String individualId) deleteRegistration,
     required TResult Function(int faceCount, double quality) faceDetected,
@@ -739,7 +777,9 @@ class _$FaceVerificationDeleteEventImpl implements FaceVerificationDeleteEvent {
     TResult? Function(
             String individualId, List<double> embedding, double quality)?
         registerFace,
-    TResult? Function(String individualId, List<double> embedding)? verifyFace,
+    TResult? Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)?
+        verifyFace,
     TResult? Function(String individualId)? deleteRegistration,
     TResult? Function(int faceCount, double quality)? faceDetected,
     TResult? Function()? reset,
@@ -754,7 +794,9 @@ class _$FaceVerificationDeleteEventImpl implements FaceVerificationDeleteEvent {
     TResult Function(
             String individualId, List<double> embedding, double quality)?
         registerFace,
-    TResult Function(String individualId, List<double> embedding)? verifyFace,
+    TResult Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)?
+        verifyFace,
     TResult Function(String individualId)? deleteRegistration,
     TResult Function(int faceCount, double quality)? faceDetected,
     TResult Function()? reset,
@@ -907,7 +949,8 @@ class _$FaceVerificationFaceDetectedEventImpl
     required TResult Function(
             String individualId, List<double> embedding, double quality)
         registerFace,
-    required TResult Function(String individualId, List<double> embedding)
+    required TResult Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)
         verifyFace,
     required TResult Function(String individualId) deleteRegistration,
     required TResult Function(int faceCount, double quality) faceDetected,
@@ -923,7 +966,9 @@ class _$FaceVerificationFaceDetectedEventImpl
     TResult? Function(
             String individualId, List<double> embedding, double quality)?
         registerFace,
-    TResult? Function(String individualId, List<double> embedding)? verifyFace,
+    TResult? Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)?
+        verifyFace,
     TResult? Function(String individualId)? deleteRegistration,
     TResult? Function(int faceCount, double quality)? faceDetected,
     TResult? Function()? reset,
@@ -938,7 +983,9 @@ class _$FaceVerificationFaceDetectedEventImpl
     TResult Function(
             String individualId, List<double> embedding, double quality)?
         registerFace,
-    TResult Function(String individualId, List<double> embedding)? verifyFace,
+    TResult Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)?
+        verifyFace,
     TResult Function(String individualId)? deleteRegistration,
     TResult Function(int faceCount, double quality)? faceDetected,
     TResult Function()? reset,
@@ -1056,7 +1103,8 @@ class _$FaceVerificationResetEventImpl implements FaceVerificationResetEvent {
     required TResult Function(
             String individualId, List<double> embedding, double quality)
         registerFace,
-    required TResult Function(String individualId, List<double> embedding)
+    required TResult Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)
         verifyFace,
     required TResult Function(String individualId) deleteRegistration,
     required TResult Function(int faceCount, double quality) faceDetected,
@@ -1072,7 +1120,9 @@ class _$FaceVerificationResetEventImpl implements FaceVerificationResetEvent {
     TResult? Function(
             String individualId, List<double> embedding, double quality)?
         registerFace,
-    TResult? Function(String individualId, List<double> embedding)? verifyFace,
+    TResult? Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)?
+        verifyFace,
     TResult? Function(String individualId)? deleteRegistration,
     TResult? Function(int faceCount, double quality)? faceDetected,
     TResult? Function()? reset,
@@ -1087,7 +1137,9 @@ class _$FaceVerificationResetEventImpl implements FaceVerificationResetEvent {
     TResult Function(
             String individualId, List<double> embedding, double quality)?
         registerFace,
-    TResult Function(String individualId, List<double> embedding)? verifyFace,
+    TResult Function(String individualId, List<double> embedding,
+            Uint8List? faceImageBytes)?
+        verifyFace,
     TResult Function(String individualId)? deleteRegistration,
     TResult Function(int faceCount, double quality)? faceDetected,
     TResult Function()? reset,
@@ -1158,8 +1210,10 @@ mixin _$FaceVerificationState {
     required TResult Function(String message) processing,
     required TResult Function(String individualId, double confidence)
         registered,
-    required TResult Function(double confidence) verified,
-    required TResult Function(double confidence) rejected,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        verified,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        rejected,
     required TResult Function() noFaceDetected,
     required TResult Function() multipleFacesDetected,
     required TResult Function(String message) error,
@@ -1171,8 +1225,8 @@ mixin _$FaceVerificationState {
     TResult? Function(double quality)? detecting,
     TResult? Function(String message)? processing,
     TResult? Function(String individualId, double confidence)? registered,
-    TResult? Function(double confidence)? verified,
-    TResult? Function(double confidence)? rejected,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult? Function()? noFaceDetected,
     TResult? Function()? multipleFacesDetected,
     TResult? Function(String message)? error,
@@ -1184,8 +1238,8 @@ mixin _$FaceVerificationState {
     TResult Function(double quality)? detecting,
     TResult Function(String message)? processing,
     TResult Function(String individualId, double confidence)? registered,
-    TResult Function(double confidence)? verified,
-    TResult Function(double confidence)? rejected,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult Function()? noFaceDetected,
     TResult Function()? multipleFacesDetected,
     TResult Function(String message)? error,
@@ -1303,8 +1357,10 @@ class _$FaceVerificationIdleStateImpl implements FaceVerificationIdleState {
     required TResult Function(String message) processing,
     required TResult Function(String individualId, double confidence)
         registered,
-    required TResult Function(double confidence) verified,
-    required TResult Function(double confidence) rejected,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        verified,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        rejected,
     required TResult Function() noFaceDetected,
     required TResult Function() multipleFacesDetected,
     required TResult Function(String message) error,
@@ -1319,8 +1375,8 @@ class _$FaceVerificationIdleStateImpl implements FaceVerificationIdleState {
     TResult? Function(double quality)? detecting,
     TResult? Function(String message)? processing,
     TResult? Function(String individualId, double confidence)? registered,
-    TResult? Function(double confidence)? verified,
-    TResult? Function(double confidence)? rejected,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult? Function()? noFaceDetected,
     TResult? Function()? multipleFacesDetected,
     TResult? Function(String message)? error,
@@ -1335,8 +1391,8 @@ class _$FaceVerificationIdleStateImpl implements FaceVerificationIdleState {
     TResult Function(double quality)? detecting,
     TResult Function(String message)? processing,
     TResult Function(String individualId, double confidence)? registered,
-    TResult Function(double confidence)? verified,
-    TResult Function(double confidence)? rejected,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult Function()? noFaceDetected,
     TResult Function()? multipleFacesDetected,
     TResult Function(String message)? error,
@@ -1484,8 +1540,10 @@ class _$FaceVerificationDetectingStateImpl
     required TResult Function(String message) processing,
     required TResult Function(String individualId, double confidence)
         registered,
-    required TResult Function(double confidence) verified,
-    required TResult Function(double confidence) rejected,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        verified,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        rejected,
     required TResult Function() noFaceDetected,
     required TResult Function() multipleFacesDetected,
     required TResult Function(String message) error,
@@ -1500,8 +1558,8 @@ class _$FaceVerificationDetectingStateImpl
     TResult? Function(double quality)? detecting,
     TResult? Function(String message)? processing,
     TResult? Function(String individualId, double confidence)? registered,
-    TResult? Function(double confidence)? verified,
-    TResult? Function(double confidence)? rejected,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult? Function()? noFaceDetected,
     TResult? Function()? multipleFacesDetected,
     TResult? Function(String message)? error,
@@ -1516,8 +1574,8 @@ class _$FaceVerificationDetectingStateImpl
     TResult Function(double quality)? detecting,
     TResult Function(String message)? processing,
     TResult Function(String individualId, double confidence)? registered,
-    TResult Function(double confidence)? verified,
-    TResult Function(double confidence)? rejected,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult Function()? noFaceDetected,
     TResult Function()? multipleFacesDetected,
     TResult Function(String message)? error,
@@ -1672,8 +1730,10 @@ class _$FaceVerificationProcessingStateImpl
     required TResult Function(String message) processing,
     required TResult Function(String individualId, double confidence)
         registered,
-    required TResult Function(double confidence) verified,
-    required TResult Function(double confidence) rejected,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        verified,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        rejected,
     required TResult Function() noFaceDetected,
     required TResult Function() multipleFacesDetected,
     required TResult Function(String message) error,
@@ -1688,8 +1748,8 @@ class _$FaceVerificationProcessingStateImpl
     TResult? Function(double quality)? detecting,
     TResult? Function(String message)? processing,
     TResult? Function(String individualId, double confidence)? registered,
-    TResult? Function(double confidence)? verified,
-    TResult? Function(double confidence)? rejected,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult? Function()? noFaceDetected,
     TResult? Function()? multipleFacesDetected,
     TResult? Function(String message)? error,
@@ -1704,8 +1764,8 @@ class _$FaceVerificationProcessingStateImpl
     TResult Function(double quality)? detecting,
     TResult Function(String message)? processing,
     TResult Function(String individualId, double confidence)? registered,
-    TResult Function(double confidence)? verified,
-    TResult Function(double confidence)? rejected,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult Function()? noFaceDetected,
     TResult Function()? multipleFacesDetected,
     TResult Function(String message)? error,
@@ -1871,8 +1931,10 @@ class _$FaceVerificationRegisteredStateImpl
     required TResult Function(String message) processing,
     required TResult Function(String individualId, double confidence)
         registered,
-    required TResult Function(double confidence) verified,
-    required TResult Function(double confidence) rejected,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        verified,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        rejected,
     required TResult Function() noFaceDetected,
     required TResult Function() multipleFacesDetected,
     required TResult Function(String message) error,
@@ -1887,8 +1949,8 @@ class _$FaceVerificationRegisteredStateImpl
     TResult? Function(double quality)? detecting,
     TResult? Function(String message)? processing,
     TResult? Function(String individualId, double confidence)? registered,
-    TResult? Function(double confidence)? verified,
-    TResult? Function(double confidence)? rejected,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult? Function()? noFaceDetected,
     TResult? Function()? multipleFacesDetected,
     TResult? Function(String message)? error,
@@ -1903,8 +1965,8 @@ class _$FaceVerificationRegisteredStateImpl
     TResult Function(double quality)? detecting,
     TResult Function(String message)? processing,
     TResult Function(String individualId, double confidence)? registered,
-    TResult Function(double confidence)? verified,
-    TResult Function(double confidence)? rejected,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult Function()? noFaceDetected,
     TResult Function()? multipleFacesDetected,
     TResult Function(String message)? error,
@@ -1994,7 +2056,7 @@ abstract class _$$FaceVerificationVerifiedStateImplCopyWith<$Res> {
           $Res Function(_$FaceVerificationVerifiedStateImpl) then) =
       __$$FaceVerificationVerifiedStateImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({double confidence});
+  $Res call({double confidence, Uint8List? faceImageBytes});
 }
 
 /// @nodoc
@@ -2011,12 +2073,17 @@ class __$$FaceVerificationVerifiedStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? confidence = null,
+    Object? faceImageBytes = freezed,
   }) {
     return _then(_$FaceVerificationVerifiedStateImpl(
       confidence: null == confidence
           ? _value.confidence
           : confidence // ignore: cast_nullable_to_non_nullable
               as double,
+      faceImageBytes: freezed == faceImageBytes
+          ? _value.faceImageBytes
+          : faceImageBytes // ignore: cast_nullable_to_non_nullable
+              as Uint8List?,
     ));
   }
 }
@@ -2025,14 +2092,17 @@ class __$$FaceVerificationVerifiedStateImplCopyWithImpl<$Res>
 
 class _$FaceVerificationVerifiedStateImpl
     implements FaceVerificationVerifiedState {
-  const _$FaceVerificationVerifiedStateImpl({required this.confidence});
+  const _$FaceVerificationVerifiedStateImpl(
+      {required this.confidence, this.faceImageBytes});
 
   @override
   final double confidence;
+  @override
+  final Uint8List? faceImageBytes;
 
   @override
   String toString() {
-    return 'FaceVerificationState.verified(confidence: $confidence)';
+    return 'FaceVerificationState.verified(confidence: $confidence, faceImageBytes: $faceImageBytes)';
   }
 
   @override
@@ -2041,11 +2111,14 @@ class _$FaceVerificationVerifiedStateImpl
         (other.runtimeType == runtimeType &&
             other is _$FaceVerificationVerifiedStateImpl &&
             (identical(other.confidence, confidence) ||
-                other.confidence == confidence));
+                other.confidence == confidence) &&
+            const DeepCollectionEquality()
+                .equals(other.faceImageBytes, faceImageBytes));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, confidence);
+  int get hashCode => Object.hash(runtimeType, confidence,
+      const DeepCollectionEquality().hash(faceImageBytes));
 
   @JsonKey(ignore: true)
   @override
@@ -2063,13 +2136,15 @@ class _$FaceVerificationVerifiedStateImpl
     required TResult Function(String message) processing,
     required TResult Function(String individualId, double confidence)
         registered,
-    required TResult Function(double confidence) verified,
-    required TResult Function(double confidence) rejected,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        verified,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        rejected,
     required TResult Function() noFaceDetected,
     required TResult Function() multipleFacesDetected,
     required TResult Function(String message) error,
   }) {
-    return verified(confidence);
+    return verified(confidence, faceImageBytes);
   }
 
   @override
@@ -2079,13 +2154,13 @@ class _$FaceVerificationVerifiedStateImpl
     TResult? Function(double quality)? detecting,
     TResult? Function(String message)? processing,
     TResult? Function(String individualId, double confidence)? registered,
-    TResult? Function(double confidence)? verified,
-    TResult? Function(double confidence)? rejected,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult? Function()? noFaceDetected,
     TResult? Function()? multipleFacesDetected,
     TResult? Function(String message)? error,
   }) {
-    return verified?.call(confidence);
+    return verified?.call(confidence, faceImageBytes);
   }
 
   @override
@@ -2095,15 +2170,15 @@ class _$FaceVerificationVerifiedStateImpl
     TResult Function(double quality)? detecting,
     TResult Function(String message)? processing,
     TResult Function(String individualId, double confidence)? registered,
-    TResult Function(double confidence)? verified,
-    TResult Function(double confidence)? rejected,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult Function()? noFaceDetected,
     TResult Function()? multipleFacesDetected,
     TResult Function(String message)? error,
     required TResult orElse(),
   }) {
     if (verified != null) {
-      return verified(confidence);
+      return verified(confidence, faceImageBytes);
     }
     return orElse();
   }
@@ -2166,9 +2241,11 @@ class _$FaceVerificationVerifiedStateImpl
 
 abstract class FaceVerificationVerifiedState implements FaceVerificationState {
   const factory FaceVerificationVerifiedState(
-      {required final double confidence}) = _$FaceVerificationVerifiedStateImpl;
+      {required final double confidence,
+      final Uint8List? faceImageBytes}) = _$FaceVerificationVerifiedStateImpl;
 
   double get confidence;
+  Uint8List? get faceImageBytes;
   @JsonKey(ignore: true)
   _$$FaceVerificationVerifiedStateImplCopyWith<
           _$FaceVerificationVerifiedStateImpl>
@@ -2182,7 +2259,7 @@ abstract class _$$FaceVerificationRejectedStateImplCopyWith<$Res> {
           $Res Function(_$FaceVerificationRejectedStateImpl) then) =
       __$$FaceVerificationRejectedStateImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({double confidence});
+  $Res call({double confidence, Uint8List? faceImageBytes});
 }
 
 /// @nodoc
@@ -2199,12 +2276,17 @@ class __$$FaceVerificationRejectedStateImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? confidence = null,
+    Object? faceImageBytes = freezed,
   }) {
     return _then(_$FaceVerificationRejectedStateImpl(
       confidence: null == confidence
           ? _value.confidence
           : confidence // ignore: cast_nullable_to_non_nullable
               as double,
+      faceImageBytes: freezed == faceImageBytes
+          ? _value.faceImageBytes
+          : faceImageBytes // ignore: cast_nullable_to_non_nullable
+              as Uint8List?,
     ));
   }
 }
@@ -2213,14 +2295,17 @@ class __$$FaceVerificationRejectedStateImplCopyWithImpl<$Res>
 
 class _$FaceVerificationRejectedStateImpl
     implements FaceVerificationRejectedState {
-  const _$FaceVerificationRejectedStateImpl({required this.confidence});
+  const _$FaceVerificationRejectedStateImpl(
+      {required this.confidence, this.faceImageBytes});
 
   @override
   final double confidence;
+  @override
+  final Uint8List? faceImageBytes;
 
   @override
   String toString() {
-    return 'FaceVerificationState.rejected(confidence: $confidence)';
+    return 'FaceVerificationState.rejected(confidence: $confidence, faceImageBytes: $faceImageBytes)';
   }
 
   @override
@@ -2229,11 +2314,14 @@ class _$FaceVerificationRejectedStateImpl
         (other.runtimeType == runtimeType &&
             other is _$FaceVerificationRejectedStateImpl &&
             (identical(other.confidence, confidence) ||
-                other.confidence == confidence));
+                other.confidence == confidence) &&
+            const DeepCollectionEquality()
+                .equals(other.faceImageBytes, faceImageBytes));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, confidence);
+  int get hashCode => Object.hash(runtimeType, confidence,
+      const DeepCollectionEquality().hash(faceImageBytes));
 
   @JsonKey(ignore: true)
   @override
@@ -2251,13 +2339,15 @@ class _$FaceVerificationRejectedStateImpl
     required TResult Function(String message) processing,
     required TResult Function(String individualId, double confidence)
         registered,
-    required TResult Function(double confidence) verified,
-    required TResult Function(double confidence) rejected,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        verified,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        rejected,
     required TResult Function() noFaceDetected,
     required TResult Function() multipleFacesDetected,
     required TResult Function(String message) error,
   }) {
-    return rejected(confidence);
+    return rejected(confidence, faceImageBytes);
   }
 
   @override
@@ -2267,13 +2357,13 @@ class _$FaceVerificationRejectedStateImpl
     TResult? Function(double quality)? detecting,
     TResult? Function(String message)? processing,
     TResult? Function(String individualId, double confidence)? registered,
-    TResult? Function(double confidence)? verified,
-    TResult? Function(double confidence)? rejected,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult? Function()? noFaceDetected,
     TResult? Function()? multipleFacesDetected,
     TResult? Function(String message)? error,
   }) {
-    return rejected?.call(confidence);
+    return rejected?.call(confidence, faceImageBytes);
   }
 
   @override
@@ -2283,15 +2373,15 @@ class _$FaceVerificationRejectedStateImpl
     TResult Function(double quality)? detecting,
     TResult Function(String message)? processing,
     TResult Function(String individualId, double confidence)? registered,
-    TResult Function(double confidence)? verified,
-    TResult Function(double confidence)? rejected,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult Function()? noFaceDetected,
     TResult Function()? multipleFacesDetected,
     TResult Function(String message)? error,
     required TResult orElse(),
   }) {
     if (rejected != null) {
-      return rejected(confidence);
+      return rejected(confidence, faceImageBytes);
     }
     return orElse();
   }
@@ -2354,9 +2444,11 @@ class _$FaceVerificationRejectedStateImpl
 
 abstract class FaceVerificationRejectedState implements FaceVerificationState {
   const factory FaceVerificationRejectedState(
-      {required final double confidence}) = _$FaceVerificationRejectedStateImpl;
+      {required final double confidence,
+      final Uint8List? faceImageBytes}) = _$FaceVerificationRejectedStateImpl;
 
   double get confidence;
+  Uint8List? get faceImageBytes;
   @JsonKey(ignore: true)
   _$$FaceVerificationRejectedStateImplCopyWith<
           _$FaceVerificationRejectedStateImpl>
@@ -2410,8 +2502,10 @@ class _$FaceVerificationNoFaceStateImpl implements FaceVerificationNoFaceState {
     required TResult Function(String message) processing,
     required TResult Function(String individualId, double confidence)
         registered,
-    required TResult Function(double confidence) verified,
-    required TResult Function(double confidence) rejected,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        verified,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        rejected,
     required TResult Function() noFaceDetected,
     required TResult Function() multipleFacesDetected,
     required TResult Function(String message) error,
@@ -2426,8 +2520,8 @@ class _$FaceVerificationNoFaceStateImpl implements FaceVerificationNoFaceState {
     TResult? Function(double quality)? detecting,
     TResult? Function(String message)? processing,
     TResult? Function(String individualId, double confidence)? registered,
-    TResult? Function(double confidence)? verified,
-    TResult? Function(double confidence)? rejected,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult? Function()? noFaceDetected,
     TResult? Function()? multipleFacesDetected,
     TResult? Function(String message)? error,
@@ -2442,8 +2536,8 @@ class _$FaceVerificationNoFaceStateImpl implements FaceVerificationNoFaceState {
     TResult Function(double quality)? detecting,
     TResult Function(String message)? processing,
     TResult Function(String individualId, double confidence)? registered,
-    TResult Function(double confidence)? verified,
-    TResult Function(double confidence)? rejected,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult Function()? noFaceDetected,
     TResult Function()? multipleFacesDetected,
     TResult Function(String message)? error,
@@ -2564,8 +2658,10 @@ class _$FaceVerificationMultipleFacesStateImpl
     required TResult Function(String message) processing,
     required TResult Function(String individualId, double confidence)
         registered,
-    required TResult Function(double confidence) verified,
-    required TResult Function(double confidence) rejected,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        verified,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        rejected,
     required TResult Function() noFaceDetected,
     required TResult Function() multipleFacesDetected,
     required TResult Function(String message) error,
@@ -2580,8 +2676,8 @@ class _$FaceVerificationMultipleFacesStateImpl
     TResult? Function(double quality)? detecting,
     TResult? Function(String message)? processing,
     TResult? Function(String individualId, double confidence)? registered,
-    TResult? Function(double confidence)? verified,
-    TResult? Function(double confidence)? rejected,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult? Function()? noFaceDetected,
     TResult? Function()? multipleFacesDetected,
     TResult? Function(String message)? error,
@@ -2596,8 +2692,8 @@ class _$FaceVerificationMultipleFacesStateImpl
     TResult Function(double quality)? detecting,
     TResult Function(String message)? processing,
     TResult Function(String individualId, double confidence)? registered,
-    TResult Function(double confidence)? verified,
-    TResult Function(double confidence)? rejected,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult Function()? noFaceDetected,
     TResult Function()? multipleFacesDetected,
     TResult Function(String message)? error,
@@ -2744,8 +2840,10 @@ class _$FaceVerificationErrorStateImpl implements FaceVerificationErrorState {
     required TResult Function(String message) processing,
     required TResult Function(String individualId, double confidence)
         registered,
-    required TResult Function(double confidence) verified,
-    required TResult Function(double confidence) rejected,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        verified,
+    required TResult Function(double confidence, Uint8List? faceImageBytes)
+        rejected,
     required TResult Function() noFaceDetected,
     required TResult Function() multipleFacesDetected,
     required TResult Function(String message) error,
@@ -2760,8 +2858,8 @@ class _$FaceVerificationErrorStateImpl implements FaceVerificationErrorState {
     TResult? Function(double quality)? detecting,
     TResult? Function(String message)? processing,
     TResult? Function(String individualId, double confidence)? registered,
-    TResult? Function(double confidence)? verified,
-    TResult? Function(double confidence)? rejected,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult? Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult? Function()? noFaceDetected,
     TResult? Function()? multipleFacesDetected,
     TResult? Function(String message)? error,
@@ -2776,8 +2874,8 @@ class _$FaceVerificationErrorStateImpl implements FaceVerificationErrorState {
     TResult Function(double quality)? detecting,
     TResult Function(String message)? processing,
     TResult Function(String individualId, double confidence)? registered,
-    TResult Function(double confidence)? verified,
-    TResult Function(double confidence)? rejected,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? verified,
+    TResult Function(double confidence, Uint8List? faceImageBytes)? rejected,
     TResult Function()? noFaceDetected,
     TResult Function()? multipleFacesDetected,
     TResult Function(String message)? error,

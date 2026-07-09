@@ -205,6 +205,7 @@ class FaceGateBloc extends Bloc<FaceGateEvent, FaceGateState> {
           attemptNumber: _currentAttempt,
           maxAttempts: maxAttempts,
           confidence: bestSimilarity,
+          faceImageBytes: event.faceImageBytes,
         ));
       }
     } catch (e) {
@@ -338,6 +339,7 @@ class FaceGateState with _$FaceGateState {
     required int attemptNumber,
     required int maxAttempts,
     @Default(0.0) double confidence,
+    Uint8List? faceImageBytes,
   }) = FaceGateRejectedState;
 
   const factory FaceGateState.fallbackRequired({

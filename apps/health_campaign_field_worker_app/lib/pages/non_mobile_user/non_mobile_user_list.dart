@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:attendance_management/attendance_management.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendance_log.dart';
@@ -149,6 +151,7 @@ class _NonMobileUserListPageState
       final boundaryCode = context.boundaryOrNull?.code ?? '';
 
       double? rejectedConfidence;
+      Uint8List? rejectedImageBytes;
 
       await Navigator.of(context).push(
         MaterialPageRoute(
@@ -167,7 +170,7 @@ class _NonMobileUserListPageState
               title: name,
               subtitle:
                   localizations.translate(i18.nonMobileUser.nonMobileUserLabel),
-              onVerified: (confidence) async {
+              onVerified: (confidence, {faceImageBytes}) async {
                 await repository.updateLastVerified(individualId);
                 markCoWorkerVerifiedThisCycle(individualId);
                 // notifier update triggers _onVerifiedCycleChanged → setState
@@ -184,6 +187,7 @@ class _NonMobileUserListPageState
                   await logger.logFaceSuccess(
                     eventType: FaceAuthEventType.checkIn,
                     confidence: confidence,
+                    faceImageBytes: faceImageBytes,
                     latitude: location?.latitude ?? 0.0,
                     longitude: location?.longitude ?? 0.0,
                     locationAccuracy: location?.accuracy ?? 0.0,
@@ -193,8 +197,9 @@ class _NonMobileUserListPageState
                 }
                 _loadEnrollmentStatus();
               },
-              onFailed: (confidence) {
+              onFailed: (confidence, {faceImageBytes}) {
                 rejectedConfidence = confidence;
+                rejectedImageBytes = faceImageBytes;
               },
             ),
           ),
@@ -214,6 +219,7 @@ class _NonMobileUserListPageState
           ).logFaceRejected(
             eventType: FaceAuthEventType.checkIn,
             confidence: rejectedConfidence!,
+            faceImageBytes: rejectedImageBytes,
             failedAttemptCount: 1,
           );
         } catch (e) {

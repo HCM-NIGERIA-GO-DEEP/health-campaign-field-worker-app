@@ -114,7 +114,7 @@ class _FaceVerificationViewState extends State<FaceVerificationView> {
                 message: 'Face Enrolled successfully.',
               );
             },
-            verified: (confidence) {
+            verified: (confidence, faceImageBytes) {
               _playSuccess();
               widget.onResult(true, confidence);
               _showResultDialog(
@@ -125,7 +125,7 @@ class _FaceVerificationViewState extends State<FaceVerificationView> {
                     'Face verified (${(confidence * 100).toStringAsFixed(1)}% match).',
               );
             },
-            rejected: (confidence) {
+            rejected: (confidence, faceImageBytes) {
               _playError();
               widget.onResult(false, confidence);
               _showResultDialog(

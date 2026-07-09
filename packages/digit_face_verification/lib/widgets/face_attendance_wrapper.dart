@@ -31,8 +31,8 @@ import 'face_capture_view.dart';
 class FaceAttendanceWrapper extends StatefulWidget {
   final String individualId;
   final FaceModelService faceModelService;
-  final void Function(double confidence) onVerified;
-  final void Function(double confidence)? onFailed;
+  final void Function(double confidence, {Uint8List? faceImageBytes}) onVerified;
+  final void Function(double confidence, {Uint8List? faceImageBytes})? onFailed;
   final VoidCallback? onCancel;
 
   /// Optional title shown in the AppBar. Defaults to 'Verify Identity'.
@@ -63,6 +63,9 @@ class _FaceAttendanceWrapperState extends State<FaceAttendanceWrapper> {
   // Tracks the last rejection confidence so X-button dismissal after any
   // failed attempt is reported as onFailed (not silently dropped as MISSED).
   double? _lastRejectedConfidence;
+  // Cropped face image of the last rejected attempt, so failed events can
+  // store the captured face (for audit / fraud review).
+  Uint8List? _lastRejectedImageBytes;
 
   @override
   void initState() {
@@ -128,7 +131,8 @@ class _FaceAttendanceWrapperState extends State<FaceAttendanceWrapper> {
           icon: const Icon(Icons.close),
           onPressed: () {
             if (_lastRejectedConfidence != null) {
-              widget.onFailed?.call(_lastRejectedConfidence!);
+              widget.onFailed?.call(_lastRejectedConfidence!,
+                  faceImageBytes: _lastRejectedImageBytes);
             } else {
               widget.onCancel?.call();
             }
@@ -139,18 +143,19 @@ class _FaceAttendanceWrapperState extends State<FaceAttendanceWrapper> {
       body: BlocListener<FaceVerificationBloc, FaceVerificationState>(
         listener: (context, state) {
           state.maybeWhen(
-            verified: (confidence) {
+            verified: (confidence, faceImageBytes) {
               _playSuccess();
               if (mounted) setState(() => _verifiedConfidence = confidence);
               Future.delayed(const Duration(milliseconds: 2000), () {
                 if (mounted) {
                   Navigator.of(context).pop();
-                  widget.onVerified(confidence);
+                  widget.onVerified(confidence, faceImageBytes: faceImageBytes);
                 }
               });
             },
-            rejected: (confidence) {
+            rejected: (confidence, faceImageBytes) {
               _lastRejectedConfidence = confidence;
+              _lastRejectedImageBytes = faceImageBytes;
               _playError();
               _showRejectedDialog(context, confidence);
             },
@@ -186,6 +191,7 @@ class _FaceAttendanceWrapperState extends State<FaceAttendanceWrapper> {
                       FaceVerificationEvent.verifyFace(
                         individualId: widget.individualId,
                         embedding: embedding,
+                        faceImageBytes: faceImageBytes,
                       ),
                     );
               },
@@ -226,7 +232,8 @@ class _FaceAttendanceWrapperState extends State<FaceAttendanceWrapper> {
             onPressed: () {
               Navigator.of(dialogContext).pop();
               Navigator.of(context).pop();
-              widget.onFailed?.call(confidence);
+              widget.onFailed?.call(confidence,
+                  faceImageBytes: _lastRejectedImageBytes);
             },
             child: const Text('Cancel'),
           ),
