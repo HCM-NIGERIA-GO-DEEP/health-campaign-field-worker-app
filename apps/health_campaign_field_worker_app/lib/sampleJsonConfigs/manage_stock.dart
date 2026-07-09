@@ -1332,7 +1332,12 @@ final dynamic sampleInventoryFlows = {
                 "value":
                     "{{fn:getTeamName(formData.warehouseDetails.teamCode)}}"
               },
-              {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"}
+              {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
+              {
+                "key": "comment",
+                "value":
+                    "{{fn:getCommentValue(formData.stockProductDetails.comment)}}"
+              },
             ],
             "onError": [
               {
