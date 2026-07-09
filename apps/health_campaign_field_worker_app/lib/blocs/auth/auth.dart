@@ -6,7 +6,9 @@ import 'package:digit_ui_components/utils/app_logger.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:isar/isar.dart';
 
+import '../../data/local_store/no_sql/schema/app_configuration.dart';
 import '../../data/local_store/secure_store/secure_store.dart';
 import '../../data/local_store/app_shared_preferences.dart';
 import '../../data/repositories/remote/auth.dart';
@@ -28,11 +30,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final MdmsRepository mdmsRepository;
   final RemoteRepository<IndividualModel, IndividualSearchModel>
       individualRemoteRepository;
+  final Isar isar;
 
   AuthBloc({
     required this.authRepository,
     required this.mdmsRepository,
     required this.individualRemoteRepository,
+    required this.isar,
     LocalSecureStore? localSecureStore,
   })  : localSecureStore = LocalSecureStore.instance,
         super(const AuthUnauthenticatedState()) {
@@ -154,12 +158,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   FutureOr<void> _onLogout(AuthLogoutEvent event, AuthEmitter emit) async {
     await localSecureStore.deleteAll();
     await localSecureStore.setBoundaryRefetch(true);
+    // Clear the cached MDMS app configuration so the next login re-fetches it
+    // fresh (picks up FACE_AUTH_CONFIG and other MDMS changes). Best-effort;
+    // not fatal to logout.
+    try {
+      await isar.writeTxn(() async => isar.appConfigurations.clear());
+    } catch (_) {}
     emit(const AuthUnauthenticatedState());
   }
 
   FutureOr<void> _onReset(AuthResetEvent event, AuthEmitter emit) async {
     await localSecureStore.deleteAll();
     await localSecureStore.setBoundaryRefetch(true);
+    // Clear the cached MDMS app configuration so the next login re-fetches it
+    // fresh (picks up FACE_AUTH_CONFIG and other MDMS changes). Best-effort;
+    // not fatal to logout.
+    try {
+      await isar.writeTxn(() async => isar.appConfigurations.clear());
+    } catch (_) {}
     emit(const AuthUnauthenticatedState());
   }
 
