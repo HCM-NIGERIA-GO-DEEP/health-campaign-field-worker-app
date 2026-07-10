@@ -129,6 +129,10 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                 type: ToastType.error,
               );
             },
+            authenticated: (_, __, ___, ____, _____) {
+              Navigator.of(context, rootNavigator: true)
+                  .popUntil((route) => route is! PopupRoute);
+            },
           );
         },
         child: BlocBuilder<LocalizationBloc, LocalizationState>(
@@ -249,8 +253,7 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                                         },
                                         child: Text(
                                           localizations.translate(
-                                            i18.privacyPolicy
-                                                .privacyPolicyLinkText,
+                                            "PRIVACY_NOTICE",
                                           ),
                                           style: textTheme.bodyS.copyWith(
                                             color: theme

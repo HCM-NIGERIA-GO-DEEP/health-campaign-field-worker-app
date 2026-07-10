@@ -10,7 +10,6 @@ import 'package:isar/isar.dart';
 
 import '../../data/local_store/no_sql/schema/app_configuration.dart';
 import '../../data/local_store/secure_store/secure_store.dart';
-import '../../data/local_store/app_shared_preferences.dart';
 import '../../data/repositories/remote/auth.dart';
 import '../../data/repositories/remote/mdms.dart';
 import '../../models/auth/auth_model.dart';
@@ -127,9 +126,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
             .setSelectedIndividual(loggedInIndividual.firstOrNull?.id);
       }
 
-      // Show privacy notice once for each fresh login session.
-      await AppSharedPreferences().setShowPrivacyNoticeAfterLogin(true);
-
       emit(
         AuthAuthenticatedState(
           accessToken: result.accessToken,
@@ -164,7 +160,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       await isar.writeTxn(() async => isar.appConfigurations.clear());
     } catch (_) {}
-    await AppSharedPreferences().setShowPrivacyNoticeAfterLogin(false);
     emit(const AuthUnauthenticatedState());
   }
 
@@ -177,7 +172,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       await isar.writeTxn(() async => isar.appConfigurations.clear());
     } catch (_) {}
-    await AppSharedPreferences().setShowPrivacyNoticeAfterLogin(false);
     emit(const AuthUnauthenticatedState());
   }
 
@@ -235,9 +229,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         await localSecureStore
             .setSelectedIndividual(loggedInIndividual.firstOrNull?.id);
       }
-
-      // Show privacy notice once for each fresh login session.
-      await AppSharedPreferences().setShowPrivacyNoticeAfterLogin(true);
 
       emit(
         AuthAuthenticatedState(
