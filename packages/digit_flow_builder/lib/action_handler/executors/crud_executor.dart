@@ -11,8 +11,6 @@ import 'action_executor.dart';
 
 /// Executor for CREATE_EVENT action type
 class CrudExecutor extends ActionExecutor {
-  static const String _stockCommentFallback = ' ';
-
   @override
   bool canHandle(String actionType) => actionType == 'CREATE_EVENT';
 
@@ -92,7 +90,6 @@ class CrudExecutor extends ActionExecutor {
 
     final fieldsRaw = additionalFields['fields'];
     final updatedFields = <Map<String, dynamic>>[];
-    var hasComments = false;
     var wasNormalized = false;
 
     if (fieldsRaw is List) {
@@ -101,22 +98,15 @@ class CrudExecutor extends ActionExecutor {
 
         final field = Map<String, dynamic>.from(item);
         if (field['key'] == 'comments') {
-          hasComments = true;
           final oldString = field['value']?.toString() ?? '';
-          final nextValue =
-              oldString.trim().isEmpty ? _stockCommentFallback : oldString;
-          if (nextValue != oldString) {
+          if (oldString.trim().isEmpty) {
             wasNormalized = true;
+            // Omit empty comments from payload.
+            continue;
           }
-          field['value'] = nextValue;
         }
         updatedFields.add(field);
       }
-    }
-
-    if (!hasComments) {
-      updatedFields.add({'key': 'comments', 'value': _stockCommentFallback});
-      wasNormalized = true;
     }
 
     if (!wasNormalized) {
@@ -195,8 +185,6 @@ class CrudExecutor extends ActionExecutor {
 ///    ```
 /// 3. Change detection: compares entities with existingModels and only updates changed ones
 class UpdateExecutor extends ActionExecutor {
-  static const String _stockCommentFallback = ' ';
-
   @override
   bool canHandle(String actionType) => actionType == 'UPDATE_EVENT';
 
@@ -476,7 +464,6 @@ class UpdateExecutor extends ActionExecutor {
 
     final fieldsRaw = additionalFields['fields'];
     final updatedFields = <Map<String, dynamic>>[];
-    var hasComments = false;
     var wasNormalized = false;
 
     if (fieldsRaw is List) {
@@ -485,22 +472,15 @@ class UpdateExecutor extends ActionExecutor {
 
         final field = Map<String, dynamic>.from(item);
         if (field['key'] == 'comments') {
-          hasComments = true;
           final oldString = field['value']?.toString() ?? '';
-          final nextValue =
-              oldString.trim().isEmpty ? _stockCommentFallback : oldString;
-          if (nextValue != oldString) {
+          if (oldString.trim().isEmpty) {
             wasNormalized = true;
+            // Omit empty comments from payload.
+            continue;
           }
-          field['value'] = nextValue;
         }
         updatedFields.add(field);
       }
-    }
-
-    if (!hasComments) {
-      updatedFields.add({'key': 'comments', 'value': _stockCommentFallback});
-      wasNormalized = true;
     }
 
     if (!wasNormalized) {

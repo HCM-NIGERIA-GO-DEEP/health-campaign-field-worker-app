@@ -36,8 +36,6 @@ abstract class DataRepository<D extends EntityModel,
 /// `RemoteRepository` is an abstract class that extends `DataRepository` and provides additional functionality for remote repositories.
 abstract class RemoteRepository<D extends EntityModel,
     R extends EntitySearchModel> extends DataRepository<D, R> {
-  static const String _stockCommentFallback = ' ';
-
   final Dio dio;
   final String entityName;
   final bool isPlural;
@@ -437,27 +435,18 @@ abstract class RemoteRepository<D extends EntityModel,
     }
 
     final normalizedFields = <Map<String, dynamic>>[];
-    var hasComments = false;
-
     for (final field in fields) {
       if (field is! Map) continue;
 
       final fieldMap = Map<String, dynamic>.from(field);
       if (fieldMap['key'] == 'comments') {
-        hasComments = true;
         final comment = fieldMap['value']?.toString() ?? '';
         if (comment.trim().isEmpty) {
-          fieldMap['value'] = _stockCommentFallback;
+          // Omit empty comments from payload entirely.
+          continue;
         }
       }
       normalizedFields.add(fieldMap);
-    }
-
-    if (!hasComments) {
-      normalizedFields.add({
-        'key': 'comments',
-        'value': _stockCommentFallback,
-      });
     }
 
     updatedEntityMap['additionalFields'] = {
