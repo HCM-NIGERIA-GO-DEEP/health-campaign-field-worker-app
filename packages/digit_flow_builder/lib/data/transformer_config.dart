@@ -81,9 +81,7 @@ final jsonConfig = {
             "familyName": "beneficiaryDetails.familyname",
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit",
-            "additionalFields": {
-              "lastName": "householdDetails.lastName"
-            }
+            "additionalFields": {"lastName": "householdDetails.lastName"}
           },
           "additionalFields": {
             "weight": "beneficiaryDetails.weight",
@@ -904,7 +902,7 @@ final jsonConfig = {
             "sku": "stockDetails.productdetail.sku",
             "batchNumber": "stockProductDetails.batchNumber",
             "expiryDate": "stockProductDetails.expiryDate",
-            "comments": "stockProductDetails.comment",
+            "comments": "__context.comment",
             "transportType": "stockDetails.transportType",
             "vehicle_number": "stockDetails.vehicleNumber",
             "deliveryTeam": "stockDetails.deliveryTeam",
@@ -953,7 +951,7 @@ final jsonConfig = {
             "sku": "__context:sku",
             "batchNumber": "stockReceiptDetails.batchNumber",
             "expiryDate": "stockReceiptDetails.expiryDate",
-            "comments": "stockReceiptDetails.comment",
+            "comments": "__context.comment",
             "mrnNumber": "__context:mrnNumber",
             "wayBillNumber": "stockReceiptDetails.wayBillNumber",
             "stockEntryType": "__context:stockEntryType",
@@ -993,7 +991,7 @@ final jsonConfig = {
             "sku": "__context:sku",
             "batchNumber": "stockReceiptDetails.batchNumber",
             "expiryDate": "stockReceiptDetails.expiryDate",
-            "comments": "stockReceiptDetails.comment",
+            "comments": "__context:comment",
             "mrnNumber": "__context:mrnNumber",
             "stockEntryType": "__context:stockEntryType",
             "primaryRole": "__context:primaryRole",
@@ -1213,9 +1211,7 @@ final jsonConfig = {
             "givenName": "closeHouseholdDetails.headName",
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit",
-            "additionalFields": {
-              "lastName": "closeHouseholdDetails.lastName"
-            },
+            "additionalFields": {"lastName": "closeHouseholdDetails.lastName"},
           },
           "bloodGroup": "health.bloodGroup",
           "gender": "beneficiaryDetails.gender",

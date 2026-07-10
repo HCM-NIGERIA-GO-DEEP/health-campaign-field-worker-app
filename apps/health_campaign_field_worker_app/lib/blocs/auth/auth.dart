@@ -164,6 +164,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       await isar.writeTxn(() async => isar.appConfigurations.clear());
     } catch (_) {}
+    await AppSharedPreferences().setShowPrivacyNoticeAfterLogin(false);
     emit(const AuthUnauthenticatedState());
   }
 
@@ -176,6 +177,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       await isar.writeTxn(() async => isar.appConfigurations.clear());
     } catch (_) {}
+    await AppSharedPreferences().setShowPrivacyNoticeAfterLogin(false);
     emit(const AuthUnauthenticatedState());
   }
 

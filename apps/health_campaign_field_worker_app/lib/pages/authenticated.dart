@@ -58,6 +58,7 @@ import '../services/reverification_scheduler.dart';
 import '../services/worker_registry_service.dart';
 import '../widgets/face_auth/face_verification_dialog.dart';
 import '../widgets/face_auth/reverification_popup.dart';
+import '../widgets/privacy_notice/privacy_notice.dart';
 import '../utils/environment_config.dart';
 import '../utils/i18_key_constants.dart' as i18;
 import '../utils/utils.dart';
@@ -102,6 +103,7 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
       ValueNotifier(null);
   bool _lastEnrollmentActive = false;
   bool _lastConnectivityOnline = true;
+  bool _isPrivacyNoticeDialogShowing = false;
 
   @override
   void initState() {
@@ -210,7 +212,26 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
   }
 
   void _checkFaceEnrollment() {
-    // Scheduler is started in initState; nothing to do here.
+    // Scheduler is started in initState; only run post-login privacy notice.
+    _checkAndShowPrivacyNoticeAfterLogin();
+  }
+
+  Future<void> _checkAndShowPrivacyNoticeAfterLogin() async {
+    if (!mounted || _isPrivacyNoticeDialogShowing) return;
+
+    final shouldShow =
+        await AppSharedPreferences().consumeShowPrivacyNoticeAfterLogin();
+
+    if (!shouldShow || !mounted) return;
+
+    _isPrivacyNoticeDialogShowing = true;
+    try {
+      await showPrivacyNotice(context);
+    } catch (e) {
+      debugPrint('AuthenticatedPage: privacy notice flow failed: $e');
+    } finally {
+      _isPrivacyNoticeDialogShowing = false;
+    }
   }
 
   Future<void> _initConfigFromRegister() async {

@@ -42,6 +42,17 @@ class FunctionRegistries {
       return value;
     });
 
+    FunctionRegistry.register('getCommentValue', (args, stateData) {
+      if (args.isEmpty || args.first == null) return null;
+
+      final value = args.first.toString();
+      final trimmed = value.trim();
+
+      if (trimmed.isEmpty) return null;
+
+      return value;
+    });
+
     FunctionRegistry.register('generateUniqueMaterialNoteNumber',
         (args, stateData) {
       int timestamp = DateTime.now().millisecondsSinceEpoch;
