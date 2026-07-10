@@ -39,6 +39,7 @@ class LoginPage extends LocalizedStatefulWidget {
 class _LoginPageState extends LocalizedState<LoginPage> {
   var passwordVisible = false;
   bool isPrivacyEnabled = false;
+  bool _localizationReady = false;
   static const _userId = 'userId';
   static const _password = 'password';
   static const _debugUserId = 'USR-169210';
@@ -136,12 +137,20 @@ class _LoginPageState extends LocalizedState<LoginPage> {
           );
         },
         child: BlocBuilder<LocalizationBloc, LocalizationState>(
+          // Only rebuild for the initial localization load. Once the form is
+          // shown, ignore later loading toggles (triggered by the login/home
+          // localization fetch) so the ReactiveForm isn't recreated — which
+          // reset the privacy checkbox / disabled Login and flashed the
+          // screen (the login flicker).
+          buildWhen: (previous, current) => !_localizationReady,
           builder: (context, localizationState) {
             // Show a loader until localization strings finish loading so the
             // login form never flashes raw translation keys.
             if (localizationState.loading) {
               return DigitLoaders.showFullPageLoader(context: context);
             }
+
+            _localizationReady = true;
 
             return ScrollableContent(
               children: [
