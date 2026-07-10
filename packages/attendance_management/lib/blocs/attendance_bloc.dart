@@ -1,9 +1,7 @@
 import 'dart:async';
 
 import 'package:attendance_management/attendance_management.dart';
-import 'package:digit_data_model/models/entities/attendance_log.dart';
-import 'package:digit_data_model/models/entities/attendance_register.dart';
-import 'package:digit_data_model/models/entities/attendee.dart';
+import 'package:flutter/foundation.dart';
 import 'package:digit_data_model/models/entities/individual.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -45,7 +43,20 @@ class AttendanceBloc extends Bloc<AttendanceEvents, AttendanceStates> {
     Emitter<AttendanceStates> emit,
   ) async {
     emit(const RegisterLoading());
-    // Getting attendance registers using a singleton instance
+
+    // DEBUG: dump all registers in DB with no filter
+    final allRegisters = await attendanceDataRepository?.search(
+      AttendanceRegisterSearchModel(limit: 100, offSet: 0),
+    ) ?? [];
+    debugPrint('[AttendanceBloc] total registers in DB (no filter): ${allRegisters.length}');
+    for (final r in allRegisters) {
+      debugPrint('[AttendanceBloc] register: id=${r.id}, referenceId=${r.referenceId}, '
+          'staffCount=${r.staff?.length}, attendeeCount=${r.attendees?.length}, '
+          'startDate=${r.startDate}, endDate=${r.endDate}');
+    }
+    debugPrint('[AttendanceBloc] fetchRegisters filter: staffId=${AttendanceSingleton().loggedInIndividualId}, '
+        'projectId=${AttendanceSingleton().project?.id}');
+
     final registers = await fetchRegisters(offSet: 0, limit: 10);
     add(AttendanceEvents.loadAttendanceRegisters(
         registers: registers!, limit: 10, offset: 0));
@@ -132,12 +143,12 @@ class AttendanceBloc extends Bloc<AttendanceEvents, AttendanceStates> {
 
   // Method to fetch attendance registers
   fetchRegisters({required int offSet, required int limit}) async {
-    var staffId = AttendanceSingleton().loggedInIndividualId;
+    final staffId = AttendanceSingleton().loggedInIndividualId;
     final registers = await attendanceDataRepository?.search(
       AttendanceRegisterSearchModel(
         limit: limit,
         offSet: offSet,
-        staffId: staffId,
+        staffId: staffId.isNotEmpty ? staffId : null,
         referenceId: AttendanceSingleton().project!.id,
       ),
     );
@@ -204,6 +215,7 @@ class AttendanceBloc extends Bloc<AttendanceEvents, AttendanceStates> {
     return register.copyWith(
       individualList: individualList,
       attendees: attendeeList,
+      attendanceLog: list,
       completedDays: completedDaysCount,
     );
   }

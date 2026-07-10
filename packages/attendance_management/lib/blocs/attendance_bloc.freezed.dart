@@ -131,12 +131,20 @@ class __$$InitialAttendanceImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$InitialAttendanceImpl implements InitialAttendance {
+class _$InitialAttendanceImpl
+    with DiagnosticableTreeMixin
+    implements InitialAttendance {
   const _$InitialAttendanceImpl();
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'AttendanceEvents.initial()';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties.add(DiagnosticsProperty('type', 'AttendanceEvents.initial'));
   }
 
   @override
@@ -287,15 +295,25 @@ class __$$FetchNonMobileUsersImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$FetchNonMobileUsersImpl implements FetchNonMobileUsers {
+class _$FetchNonMobileUsersImpl
+    with DiagnosticableTreeMixin
+    implements FetchNonMobileUsers {
   const _$FetchNonMobileUsersImpl({this.fetchOnlyMobileUser});
 
   @override
   final bool? fetchOnlyMobileUser;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'AttendanceEvents.fetchNonMobileUsers(fetchOnlyMobileUser: $fetchOnlyMobileUser)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'AttendanceEvents.fetchNonMobileUsers'))
+      ..add(DiagnosticsProperty('fetchOnlyMobileUser', fetchOnlyMobileUser));
   }
 
   @override
@@ -475,7 +493,9 @@ class __$$LoadAttendanceRegisterDataImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$LoadAttendanceRegisterDataImpl implements LoadAttendanceRegisterData {
+class _$LoadAttendanceRegisterDataImpl
+    with DiagnosticableTreeMixin
+    implements LoadAttendanceRegisterData {
   const _$LoadAttendanceRegisterDataImpl(
       {required final List<AttendanceRegisterModel> registers,
       required this.limit,
@@ -496,8 +516,19 @@ class _$LoadAttendanceRegisterDataImpl implements LoadAttendanceRegisterData {
   final int offset;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'AttendanceEvents.loadAttendanceRegisters(registers: $registers, limit: $limit, offset: $offset)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty(
+          'type', 'AttendanceEvents.loadAttendanceRegisters'))
+      ..add(DiagnosticsProperty('registers', registers))
+      ..add(DiagnosticsProperty('limit', limit))
+      ..add(DiagnosticsProperty('offset', offset));
   }
 
   @override
@@ -680,6 +711,7 @@ class __$$LoadSelectedAttendanceRegisterDataImplCopyWithImpl<$Res>
 /// @nodoc
 
 class _$LoadSelectedAttendanceRegisterDataImpl
+    with DiagnosticableTreeMixin
     implements LoadSelectedAttendanceRegisterData {
   const _$LoadSelectedAttendanceRegisterDataImpl(
       {required final List<AttendanceRegisterModel> registers,
@@ -698,8 +730,18 @@ class _$LoadSelectedAttendanceRegisterDataImpl
   final String registerID;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'AttendanceEvents.loadSelectedRegister(registers: $registers, registerID: $registerID)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(
+          DiagnosticsProperty('type', 'AttendanceEvents.loadSelectedRegister'))
+      ..add(DiagnosticsProperty('registers', registers))
+      ..add(DiagnosticsProperty('registerID', registerID));
   }
 
   @override
@@ -883,6 +925,7 @@ class __$$LoadMoreAttendanceRegisterDataImplCopyWithImpl<$Res>
 /// @nodoc
 
 class _$LoadMoreAttendanceRegisterDataImpl
+    with DiagnosticableTreeMixin
     implements LoadMoreAttendanceRegisterData {
   const _$LoadMoreAttendanceRegisterDataImpl({this.limit, this.offset});
 
@@ -892,8 +935,18 @@ class _$LoadMoreAttendanceRegisterDataImpl
   final int? offset;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'AttendanceEvents.loadMoreAttendanceRegisters(limit: $limit, offset: $offset)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty(
+          'type', 'AttendanceEvents.loadMoreAttendanceRegisters'))
+      ..add(DiagnosticsProperty('limit', limit))
+      ..add(DiagnosticsProperty('offset', offset));
   }
 
   @override
@@ -1131,12 +1184,21 @@ class __$$RegisterLoadingImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$RegisterLoadingImpl implements RegisterLoading {
+class _$RegisterLoadingImpl
+    with DiagnosticableTreeMixin
+    implements RegisterLoading {
   const _$RegisterLoadingImpl();
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'AttendanceStates.registerLoading()';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+        .add(DiagnosticsProperty('type', 'AttendanceStates.registerLoading'));
   }
 
   @override
@@ -1280,7 +1342,9 @@ class __$$RegisterLoadedImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$RegisterLoadedImpl implements RegisterLoaded {
+class _$RegisterLoadedImpl
+    with DiagnosticableTreeMixin
+    implements RegisterLoaded {
   const _$RegisterLoadedImpl(
       {required final List<AttendanceRegisterModel> registers,
       this.offset = 0,
@@ -1303,8 +1367,18 @@ class _$RegisterLoadedImpl implements RegisterLoaded {
   final int limit;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'AttendanceStates.registerLoaded(registers: $registers, offset: $offset, limit: $limit)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'AttendanceStates.registerLoaded'))
+      ..add(DiagnosticsProperty('registers', registers))
+      ..add(DiagnosticsProperty('offset', offset))
+      ..add(DiagnosticsProperty('limit', limit));
   }
 
   @override
@@ -1463,15 +1537,26 @@ class __$$SelectedRegisterLoadedImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$SelectedRegisterLoadedImpl implements SelectedRegisterLoaded {
+class _$SelectedRegisterLoadedImpl
+    with DiagnosticableTreeMixin
+    implements SelectedRegisterLoaded {
   const _$SelectedRegisterLoadedImpl({this.selectedRegister});
 
   @override
   final AttendanceRegisterModel? selectedRegister;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'AttendanceStates.selectedRegisterLoaded(selectedRegister: $selectedRegister)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty(
+          'type', 'AttendanceStates.selectedRegisterLoaded'))
+      ..add(DiagnosticsProperty('selectedRegister', selectedRegister));
   }
 
   @override
@@ -1622,15 +1707,25 @@ class __$$RegisterErrorImplCopyWithImpl<$Res>
 
 /// @nodoc
 
-class _$RegisterErrorImpl implements RegisterError {
+class _$RegisterErrorImpl
+    with DiagnosticableTreeMixin
+    implements RegisterError {
   const _$RegisterErrorImpl(this.message);
 
   @override
   final String message;
 
   @override
-  String toString() {
+  String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
     return 'AttendanceStates.registerError(message: $message)';
+  }
+
+  @override
+  void debugFillProperties(DiagnosticPropertiesBuilder properties) {
+    super.debugFillProperties(properties);
+    properties
+      ..add(DiagnosticsProperty('type', 'AttendanceStates.registerError'))
+      ..add(DiagnosticsProperty('message', message));
   }
 
   @override
