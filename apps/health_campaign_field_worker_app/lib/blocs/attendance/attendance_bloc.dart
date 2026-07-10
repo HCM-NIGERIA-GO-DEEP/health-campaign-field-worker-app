@@ -1,6 +1,13 @@
 import 'dart:async';
 
-import 'package:attendance_management/attendance_management.dart';
+import 'package:attendance_management/attendance_management.dart'
+    hide
+        AttendanceRegisterModel,
+        AttendanceRegisterSearchModel,
+        AttendanceLogModel,
+        AttendanceLogSearchModel,
+        AttendeeModel,
+        AttendeeSearchModel;
 import 'package:digit_data_model/models/entities/attendance_log.dart';
 import 'package:digit_data_model/models/entities/attendance_register.dart';
 import 'package:digit_data_model/models/entities/attendee.dart';

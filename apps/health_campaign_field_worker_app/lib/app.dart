@@ -64,6 +64,12 @@ class MainApplication extends StatefulWidget {
 
 class MainApplicationState extends State<MainApplication>
     with WidgetsBindingObserver {
+  // Holds the last successful app config so a background refresh of MDMS
+  // (e.g. the re-fetch triggered on login) does not tear the whole widget
+  // tree down to a bare loading screen, which caused a
+  // blank -> white -> login -> privacy-notice flicker on every login.
+  AppInitialized? _lastInitializedState;
+
   @override
   void initState() {
     LocalizationParams().setModule('boundary', true);
@@ -189,7 +195,17 @@ class MainApplicationState extends State<MainApplication>
               ),
             ],
             child: BlocBuilder<AppInitializationBloc, AppInitializationState>(
-              builder: (context, appConfigState) {
+              builder: (context, rawConfigState) {
+                // Remember the latest good config and keep using it while a
+                // subsequent setup (e.g. the login refresh) is still loading,
+                // so the app is not replaced by the loading screen mid-session.
+                if (rawConfigState is AppInitialized) {
+                  _lastInitializedState = rawConfigState;
+                }
+                final appConfigState = rawConfigState is AppInitialized
+                    ? rawConfigState
+                    : (_lastInitializedState ?? rawConfigState);
+
                 return BlocListener<AuthBloc, AuthState>(
                   listener: (context, authState) {
                     if (authState is AuthAuthenticatedState) {
@@ -245,8 +261,24 @@ class MainApplicationState extends State<MainApplication>
                                     widget.sql)
                                   ..add(
                                     LocalizationEvent.onLoadLocalization(
-                                      module:
-                                          "hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()},${localizationModulesList.interfaces.where((element) => element.type == Modules.localizationModule && Constants.initialLocalizationModules.contains(element.name.toString())).map((e) => e.name.toString()).join(',')}",
+                                      // Boundary localizations (hcm-boundary-*)
+                                      // are a very large dataset and loading
+                                      // them here blocks startup/login (black
+                                      // screen). They are loaded on demand by
+                                      // the screens that need them (home,
+                                      // current boundary, language selection),
+                                      // so they are intentionally excluded from
+                                      // the initial load.
+                                      module: localizationModulesList.interfaces
+                                          .where((element) =>
+                                              element.type ==
+                                                  Modules.localizationModule &&
+                                              Constants
+                                                  .initialLocalizationModules
+                                                  .contains(
+                                                      element.name.toString()))
+                                          .map((e) => e.name.toString())
+                                          .join(','),
                                       tenantId: envConfig.variables.tenantId,
                                       locale: selectedLocale,
                                       path: Constants.localizationApiPath,
@@ -260,6 +292,7 @@ class MainApplicationState extends State<MainApplication>
                           ),
                           BlocProvider(
                             create: (ctx) => ProjectBloc(
+                              sql: widget.sql,
                               bandwidthCheckRepository:
                                   BandwidthCheckRepository(
                                 DioClient().dio,

@@ -1,6 +1,13 @@
 import 'dart:async';
 
-import 'package:attendance_management/attendance_management.dart';
+import 'package:attendance_management/attendance_management.dart'
+    hide
+        AttendanceRegisterModel,
+        AttendanceRegisterSearchModel,
+        AttendanceLogModel,
+        AttendanceLogSearchModel,
+        AttendeeModel,
+        AttendeeSearchModel;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:digit_data_model/data_model.dart';

@@ -120,6 +120,42 @@ class LocalizationLocalRepository {
     });
   }
 
+  /// Fetches cached localizations for a specific set of [codes] and [locale],
+  /// regardless of module. Used by the boundary-by-codes flow to determine
+  /// which codes still need to be fetched from the server.
+  FutureOr<List<Localization>> fetchLocalizationByCodes(
+      {required LocalSqlDataStore sql,
+      required String locale,
+      required List<String> codes}) async {
+    if (codes.isEmpty) return <Localization>[];
+
+    return retryLocalCallOperation(() async {
+      final query = sql.select(sql.localization).join([])
+        ..where(
+          buildAnd([
+            sql.localization.locale.equals(locale),
+            sql.localization.code.isIn(codes),
+          ]),
+        );
+
+      final results = await query.get();
+
+      return results.map((e) {
+        final data = e.readTableOrNull(sql.localization);
+
+        if (data == null) {
+          throw StateError('No data found for localization');
+        }
+
+        return Localization()
+          ..code = data.code
+          ..locale = data.locale
+          ..module = data.module
+          ..message = data.message;
+      }).toList();
+    });
+  }
+
   FutureOr create(
       List<LocalizationCompanion> result, LocalSqlDataStore sql) async {
     if (result.isEmpty) return;

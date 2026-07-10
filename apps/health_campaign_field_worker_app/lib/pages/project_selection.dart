@@ -254,15 +254,42 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
     try {
       await boundaryBloc.stream
           .firstWhere((element) => element.boundaryList.isNotEmpty);
-      context
-          .read<LocalizationBloc>()
-          .add(LocalizationEvent.onLoadLocalization(
+
+      final localizationBloc = context.read<LocalizationBloc>();
+      final selectedLocale = AppSharedPreferences().getSelectedLocale!;
+
+      localizationBloc.add(LocalizationEvent.onLoadLocalization(
         module: 'hcm-permissionhandler-${context.selectedProject.referenceID}',
         tenantId: envConfig.variables.tenantId,
-        locale: AppSharedPreferences()
-            .getSelectedLocale!,
+        locale: selectedLocale,
         path: Constants.localizationApiPath,
       ));
+
+      // Scope the boundary localization fetch to the codes assigned to this
+      // user (the descendants under the project's root boundary that the
+      // BoundaryBloc just resolved). Include both the boundary code
+      // (e.g. IN_KA_BLR) and the hierarchy-level label (e.g. "District") —
+      // both live in the boundary localization module and both need
+      // translations. This avoids pulling the entire (very large) boundary
+      // localization module.
+      final boundaryCodes = boundaryBloc.state.boundaryList
+          .expand((b) => [b.code, b.label])
+          .whereType<String>()
+          .where((s) => s.isNotEmpty)
+          .toSet()
+          .toList();
+      if (boundaryCodes.isNotEmpty) {
+        LocalizationParams().setCode(boundaryCodes);
+        localizationBloc.add(LocalizationEvent.onLoadLocalizationByCodes(
+          codes: boundaryCodes.join(','),
+          module:
+              'hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}',
+          tenantId: envConfig.variables.tenantId,
+          locale: selectedLocale,
+          path: Constants.localizationApiPath,
+        ));
+      }
+
       if (mounted) {
         context.router.replaceAll([
           const PermissionsRoute(),

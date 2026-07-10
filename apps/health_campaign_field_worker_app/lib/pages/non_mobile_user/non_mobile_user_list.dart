@@ -2,8 +2,10 @@ import 'dart:typed_data';
 
 import 'package:attendance_management/attendance_management.dart';
 import 'package:digit_data_model/data_model.dart';
-import 'package:digit_data_model/models/entities/attendance_log.dart';
-import 'package:digit_data_model/models/entities/attendance_register.dart';
+// Attendance models come from the attendance_management package barrel here
+// (this page drives the package's AttendanceBloc); digit_data_model's
+// attendance models are intentionally not imported to avoid the same-name
+// class clash.
 import 'package:digit_data_model/models/entities/face_auth_event.dart';
 import 'package:digit_data_model/models/entities/individual.dart';
 import 'package:digit_data_model/models/entities/scanned_individual_data.dart';

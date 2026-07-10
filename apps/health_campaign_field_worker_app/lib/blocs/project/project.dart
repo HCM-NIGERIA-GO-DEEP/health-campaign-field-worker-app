@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'dart:core';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:digit_data_model/data/local_store/sql_store/sql_store.dart';
 import 'package:digit_data_model/data/repositories/package_repository/remote/stock.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendance_log.dart';
@@ -50,6 +51,7 @@ typedef ProjectEmitter = Emitter<ProjectState>;
 class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
   final LocalSecureStore localSecureStore;
   final Isar isar;
+  final LocalSqlDataStore sql;
   final MdmsRepository mdmsRepository;
 
   final BandwidthCheckRepository bandwidthCheckRepository;
@@ -149,6 +151,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     required this.boundaryRemoteRepository,
     required this.boundaryLocalRepository,
     required this.isar,
+    required this.sql,
     required this.serviceDefinitionLocalRepository,
     required this.projectResourceLocalRepository,
     required this.projectResourceRemoteRepository,

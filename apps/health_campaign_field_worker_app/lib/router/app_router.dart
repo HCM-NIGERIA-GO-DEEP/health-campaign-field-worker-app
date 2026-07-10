@@ -2,6 +2,8 @@ import 'package:auto_route/auto_route.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendee.dart';
 import 'package:digit_data_model/models/entities/scanned_individual_data.dart';
+import 'package:attendance_management/router/attendance_router.dart';
+import 'package:attendance_management/router/attendance_router.gm.dart';
 import 'package:digit_dss/router/dashboard_router.dart';
 import 'package:digit_dss/router/dashboard_router.gm.dart';
 import 'package:digit_flow_builder/router/flow_builder_routes.dart';
@@ -51,6 +53,7 @@ part 'app_router.gr.dart';
 
 @AutoRouterConfig(
   modules: [
+    AttendanceRoute,
     DigitScannerPackageRoute,
     DashboardRoute,
     SurveyFormRoute,
@@ -157,6 +160,9 @@ class AppRouter extends _$AppRouter {
           page: CurrentBoundaryRoute.page,
           path: 'current-boundary',
         ),
+
+        // Attendance (package-based UI)
+        ...AttendanceRoute().routes,
 
         // Forms Route
         ...FormsRoute().routes,

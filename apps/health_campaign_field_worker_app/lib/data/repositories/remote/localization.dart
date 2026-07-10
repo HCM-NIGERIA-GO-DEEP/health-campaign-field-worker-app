@@ -42,6 +42,7 @@ class LocalizationRepository {
     required String locale,
     required String module,
     required String tenantId,
+    String? codes,
   }) async {
     var results = await search(
       url: path,
@@ -49,6 +50,10 @@ class LocalizationRepository {
         "module": module,
         "locale": locale,
         "tenantId": tenantId,
+        // When codes are supplied, the localization search returns only those
+        // specific messages instead of the whole module (used for boundary
+        // localizations, which are otherwise a very large module).
+        if (codes != null && codes.isNotEmpty) "codes": codes,
       },
     );
 

@@ -1,5 +1,19 @@
 import 'dart:io';
 
+import 'package:attendance_management/data/repositories/local/attendance_register.dart'
+    as am_local;
+import 'package:attendance_management/data/repositories/local/attendance_logs.dart'
+    as am_local_logs;
+import 'package:attendance_management/data/repositories/oplog/oplog.dart'
+    as am_oplog;
+import 'package:attendance_management/data/repositories/remote/attendance_register.dart'
+    as am_remote;
+import 'package:attendance_management/data/repositories/remote/attendance_logs.dart'
+    as am_remote_logs;
+import 'package:attendance_management/models/entities/attendance_log.dart'
+    as am_log;
+import 'package:attendance_management/models/entities/attendance_register.dart'
+    as am_model;
 import 'package:digit_data_model/data/repositories/local/attendance_logs.dart';
 import 'package:digit_data_model/data/repositories/local/attendance_register.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/hf_referral.dart';
@@ -287,6 +301,27 @@ class NetworkManagerProviderWrapper extends StatelessWidget {
         create: (_) =>
             AttendanceLogsLocalRepository(sql, AttendanceLogOpLogManager(isar)),
       ),
+      // The attendance_management package uses its OWN AttendanceRegisterModel /
+      // AttendanceLogModel (separate Dart classes from digit_data_model's).
+      // ManageAttendancePage/MarkAttendancePage resolve providers by THOSE
+      // types, so register parallel providers for the package-flavored models.
+      // Both flavors read/write the same shared drift tables.
+      RepositoryProvider<
+          LocalRepository<am_model.AttendanceRegisterModel,
+              am_model.AttendanceRegisterSearchModel>>(
+        create: (_) => am_local.AttendanceLocalRepository(
+          sql,
+          am_oplog.AttendanceOpLogManager(isar),
+        ),
+      ),
+      RepositoryProvider<
+          LocalRepository<am_log.AttendanceLogModel,
+              am_log.AttendanceLogSearchModel>>(
+        create: (_) => am_local_logs.AttendanceLogsLocalRepository(
+          sql,
+          am_oplog.AttendanceLogOpLogManager(isar),
+        ),
+      ),
       RepositoryProvider<LocalRepository<StockModel, StockSearchModel>>(
         create: (_) => StockLocalRepository(
           sql,
@@ -535,6 +570,26 @@ class NetworkManagerProviderWrapper extends StatelessWidget {
               RemoteRepository<AttendanceLogModel, AttendanceLogSearchModel>>(
             create: (_) =>
                 AttendanceLogRemoteRepository(dio, actionMap: actions),
+          ),
+        // Parallel remote providers for the attendance_management package's
+        // own AttendanceRegisterModel / AttendanceLogModel types.
+        if (value == DataModelType.attendanceRegister)
+          RepositoryProvider<
+              RemoteRepository<am_model.AttendanceRegisterModel,
+                  am_model.AttendanceRegisterSearchModel>>(
+            create: (_) => am_remote.AttendanceRemoteRepository(
+              dio,
+              actionMap: actions,
+            ),
+          ),
+        if (value == DataModelType.attendance)
+          RepositoryProvider<
+              RemoteRepository<am_log.AttendanceLogModel,
+                  am_log.AttendanceLogSearchModel>>(
+            create: (_) => am_remote_logs.AttendanceLogRemoteRepository(
+              dio,
+              actionMap: actions,
+            ),
           ),
         if (value == DataModelType.stock)
           RepositoryProvider<RemoteRepository<StockModel, StockSearchModel>>(

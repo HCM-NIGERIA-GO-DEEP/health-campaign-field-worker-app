@@ -15,6 +15,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 import '../blocs/app_initialization/app_initialization.dart';
 import '../blocs/auth/auth.dart';
 import '../blocs/localization/app_localization.dart';
+import '../blocs/localization/localization.dart';
 import '../data/local_store/app_shared_preferences.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../data/local_store/no_sql/schema/service_registry.dart';
@@ -23,6 +24,7 @@ import '../utils/constants.dart';
 import '../utils/environment_config.dart';
 import '../utils/i18_key_constants.dart' as i18;
 import '../widgets/localized.dart';
+import '../widgets/privacy_notice/privacy_notice.dart';
 
 @RoutePage()
 class LoginPage extends LocalizedStatefulWidget {
@@ -133,7 +135,15 @@ class _LoginPageState extends LocalizedState<LoginPage> {
             },
           );
         },
-        child: ScrollableContent(
+        child: BlocBuilder<LocalizationBloc, LocalizationState>(
+          builder: (context, localizationState) {
+            // Show a loader until localization strings finish loading so the
+            // login form never flashes raw translation keys.
+            if (localizationState.loading) {
+              return DigitLoaders.showFullPageLoader(context: context);
+            }
+
+            return ScrollableContent(
           children: [
             ReactiveFormBuilder(
               form: buildForm,
@@ -198,12 +208,84 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                         ),
                       ),
                     ),
+                    // Privacy policy consent: the user must open the notice
+                    // (via the link) and tick the checkbox before the login
+                    // button is enabled.
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Padding(
+                          padding: const EdgeInsets.only(right: spacer2),
+                          child: DigitCheckbox(
+                            value: isPrivacyEnabled,
+                            onChanged: (val) {
+                              setState(() {
+                                isPrivacyEnabled = val;
+                              });
+                            },
+                          ),
+                        ),
+                        Expanded(
+                          child: RichText(
+                            text: TextSpan(
+                              style: textTheme.bodyS.copyWith(
+                                color: theme.colorTheme.primary.primary2,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text:
+                                      '${localizations.translate(i18.privacyPolicy.privacyNoticeText)} ',
+                                ),
+                                WidgetSpan(
+                                  alignment: PlaceholderAlignment.middle,
+                                  child: GestureDetector(
+                                    onTap: () async {
+                                      // Reading the notice and tapping
+                                      // "Proceed" auto-selects the consent
+                                      // checkbox.
+                                      final proceeded =
+                                          await showPrivacyNotice(context);
+                                      if (proceeded && mounted) {
+                                        setState(() {
+                                          isPrivacyEnabled = true;
+                                        });
+                                      }
+                                    },
+                                    child: Text(
+                                      localizations.translate(
+                                        i18.privacyPolicy.privacyPolicyLinkText,
+                                      ),
+                                      style: textTheme.bodyS.copyWith(
+                                        color: theme.colorTheme.primary.primary1,
+                                        decoration: TextDecoration.underline,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     BlocBuilder<AppInitializationBloc, AppInitializationState>(
                       builder: (context, state) {
                         return DigitButton(
                           label: localizations.translate(i18.login.actionLabel),
                           type: DigitButtonType.primary,
+                          isDisabled: !isPrivacyEnabled,
                           onPressed: () {
+                            if (!isPrivacyEnabled) {
+                              Toast.showToast(
+                                context,
+                                message: localizations.translate(
+                                  i18.privacyPolicy.privacyPolicyValidationText,
+                                ),
+                                type: ToastType.error,
+                              );
+                              return;
+                            }
                             form.markAllAsTouched();
                             if (!form.valid) return;
 
@@ -277,6 +359,8 @@ class _LoginPageState extends LocalizedState<LoginPage> {
               },
             ),
           ],
+            );
+          },
         ),
       ),
     );

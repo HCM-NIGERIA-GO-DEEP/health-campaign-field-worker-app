@@ -49,17 +49,37 @@ class _CurrentBoundaryPageState extends LocalizedState<CurrentBoundaryPage> {
             _,
             __,
           ) {
-            final appConfig = appConfiguration;
             final localizationModulesList = appConfiguration.backendInterface;
             final selectedLocale = AppSharedPreferences().getSelectedLocale;
-            LocalizationParams()
-                .setCode(LeastLevelBoundarySingleton().boundary);
+            // Scope the boundary localization to the codes assigned to this
+            // user (the project's boundary subtree). Include both the boundary
+            // code (e.g. IN_KA_BLR) and the hierarchy-level label
+            // (e.g. "District"). Fall back to the least-level codes only if
+            // the BoundaryBloc list isn't populated yet (e.g. cold start).
+            final fromBoundaryList = context
+                .read<BoundaryBloc>()
+                .state
+                .boundaryList
+                .expand((b) => [b.code, b.label])
+                .whereType<String>()
+                .where((s) => s.isNotEmpty)
+                .toSet()
+                .toList();
+            final boundaryCodes = fromBoundaryList.isNotEmpty
+                ? fromBoundaryList
+                : (LeastLevelBoundarySingleton().boundary ?? []);
+            LocalizationParams().setCode(boundaryCodes);
 
+            final boundaryModule = module != null && module.isNotEmpty
+                ? module
+                : "hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}";
+
+            // Load the regular (non-boundary) modules by module name.
             context
                 .read<LocalizationBloc>()
                 .add(LocalizationEvent.onLoadLocalization(
                   module: module != null && module.isNotEmpty
-                      ? "$module,hcm-common,hcm-login,hcm-scanner,hcm-checklist,hcm-beneficiary"
+                      ? "hcm-common,hcm-login,hcm-scanner,hcm-checklist,hcm-beneficiary"
                       : localizationModulesList?.interfaces
                               .where(
                                   (e) => e.type == Modules.localizationModule)
@@ -70,6 +90,20 @@ class _CurrentBoundaryPageState extends LocalizedState<CurrentBoundaryPage> {
                   locale: selectedLocale!,
                   path: Constants.localizationApiPath,
                 ));
+
+            // Fetch boundary localizations by their codes instead of the whole
+            // boundary module, which avoids loading a very large dataset.
+            if (boundaryCodes.isNotEmpty) {
+              context
+                  .read<LocalizationBloc>()
+                  .add(LocalizationEvent.onLoadLocalizationByCodes(
+                    codes: boundaryCodes.join(','),
+                    module: boundaryModule,
+                    tenantId: envConfig.variables.tenantId,
+                    locale: selectedLocale,
+                    path: Constants.localizationApiPath,
+                  ));
+            }
           },
         );
   }

@@ -25,6 +25,7 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
     this.sql,
   ) {
     on(_onLoadLocalization);
+    on(_onLoadLocalizationByCodes);
     on(_onUpdateLocalizationIndex);
     on(_onRemoteLoadLocalization);
   }
@@ -103,6 +104,57 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
     }
   }
 
+  /// Loads boundary localizations by their [codes] instead of pulling the
+  /// entire boundary module (which is very large). Only the codes not already
+  /// cached locally are requested from the server.
+  FutureOr<void> _onLoadLocalizationByCodes(
+    OnLoadLocalizationByCodesEvent event,
+    LocalizationEmitter emit,
+  ) async {
+    emit(state.copyWith(loading: true));
+
+    try {
+      final codeList = event.codes
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toSet()
+          .toList();
+
+      if (codeList.isNotEmpty) {
+        // Skip codes already present in the local cache.
+        final cached = await LocalizationLocalRepository()
+            .fetchLocalizationByCodes(
+                sql: sql, locale: event.locale, codes: codeList);
+        final cachedCodes = cached.map((e) => e.code).toSet();
+        final missing =
+            codeList.where((c) => !cachedCodes.contains(c)).toList();
+
+        if (missing.isNotEmpty) {
+          try {
+            final results = await localizationRepository.loadLocalization(
+              path: event.path,
+              locale: event.locale,
+              module: event.module,
+              tenantId: event.tenantId,
+              codes: missing.join(','),
+            );
+            await LocalizationLocalRepository().create(results, sql);
+          } catch (error) {
+            debugPrint('error loading boundary localization by codes: $error');
+            emit(state.copyWith(loading: false, retryModule: event.module));
+          }
+        }
+      }
+    } catch (error) {
+      rethrow;
+    } finally {
+      final List codes = event.locale.split('_');
+      await _loadLocale(codes);
+      emit(state.copyWith(loading: false, retryModule: null));
+    }
+  }
+
   FutureOr<void> _onRemoteLoadLocalization(
     OnRemoteLoadLocalizationEvent event,
     LocalizationEmitter emit,
@@ -162,6 +214,14 @@ class LocalizationEvent with _$LocalizationEvent {
     required String locale,
     required String path,
   }) = OnLoadLocalizationEvent;
+
+  const factory LocalizationEvent.onLoadLocalizationByCodes({
+    required String codes,
+    required String module,
+    required String tenantId,
+    required String locale,
+    required String path,
+  }) = OnLoadLocalizationByCodesEvent;
 
   const factory LocalizationEvent.onRemoteLoadLocalization({
     required String module,

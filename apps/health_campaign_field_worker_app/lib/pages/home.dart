@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:attendance_management/router/attendance_router.gm.dart';
 import 'package:attendance_management/utils/utils.dart';
 import 'package:collection/collection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
@@ -3661,25 +3662,13 @@ class _HomePageState extends LocalizedState<HomePage> {
               context.router
                   .push(CurrentBoundaryRoute(onBoundarySelected: (ctx) async {
                 if (isTriggerLocalisation) {
-                  final moduleName =
-                      'hcm-complaints-${context.selectedProject.referenceID}';
                   const module = "hcm-attendance";
                   triggerLocalization(module: module);
                   isTriggerLocalisation = false;
                 }
-                // triggerLocalization(module: moduleName);
-                Map<String, dynamic> attendanceData =
-                    attendanceFlows; // Adding custom attendance flows as the flows are not coming from the server for attendance module
-                List<Map<String, dynamic>> flowsData =
-                    (attendanceData['flows'] as List<dynamic>?)
-                            ?.map((e) => Map<String, dynamic>.from(e as Map))
-                            .toList() ??
-                        [];
-                FlowRegistry.setConfig(flowsData);
-                NavigationRegistry.setupNavigation(context);
-                context.router.push(
-                  FlowBuilderHomeRoute(pageName: attendanceData["initialPage"]),
-                );
+                // Use the attendance_management package's own UI
+                // (ManageAttendanceRoute) instead of the JSON flow-builder.
+                ctx.router.push(ManageAttendanceRoute());
               }));
 
               // if (false) {
