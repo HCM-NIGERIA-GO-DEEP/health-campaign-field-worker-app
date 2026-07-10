@@ -232,14 +232,11 @@ class MainApplicationState extends State<MainApplication>
                               userId: authState.userModel.uuid,
                             ),
                           );
-                      // Re-fetch MDMS config on login so MDMS changes (e.g.
-                      // FACE_AUTH_CONFIG) reflect after logout->login. On a
-                      // normal cold start the cache is present, so this loads
-                      // instantly; after a logout the cache was cleared, so it
-                      // re-fetches fresh (falls back to cache when offline).
-                      context
-                          .read<AppInitializationBloc>()
-                          .add(const AppInitializationSetupEvent());
+                      // NOTE: the login-time MDMS re-fetch
+                      // (AppInitializationSetupEvent) was removed — it
+                      // re-initialized the app config during the login
+                      // transition (clearing/refetching MDMS incl.
+                      // FACE_AUTH_CONFIG) and flashed/reset the login screen.
                     }
                   },
                   child: BlocBuilder<AuthBloc, AuthState>(
