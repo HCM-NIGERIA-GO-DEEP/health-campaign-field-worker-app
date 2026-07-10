@@ -195,6 +195,24 @@ class MainApplicationState extends State<MainApplication>
               ),
             ],
             child: BlocBuilder<AppInitializationBloc, AppInitializationState>(
+              // On login the MDMS config is re-fetched
+              // (AppInitializationSetupEvent), which emits AppInitializing ->
+              // AppInitialized. Rebuilding the whole app for those flashes the
+              // screen twice. Once the app has been initialized once
+              // (_lastInitializedState != null) we skip both: the refreshed
+              // config still lives in the AppInitializationBloc state (screens
+              // read it via context.read / their own BlocBuilders) and
+              // FACE_AUTH_CONFIG is persisted to the DB by the MDMS refresh, so
+              // a top-level rebuild here only causes login flicker. Cold start
+              // (_lastInitializedState == null) still rebuilds so the loading
+              // screen and initial app build happen normally.
+              buildWhen: (previous, current) {
+                if (_lastInitializedState != null &&
+                    (current is AppInitializing || current is AppInitialized)) {
+                  return false;
+                }
+                return true;
+              },
               builder: (context, rawConfigState) {
                 // Remember the latest good config and keep using it while a
                 // subsequent setup (e.g. the login refresh) is still loading,
@@ -452,6 +470,17 @@ class MainApplicationState extends State<MainApplication>
                             builder: (context, errorState) {
                           return BlocBuilder<LocalizationBloc,
                               LocalizationState>(
+                            // Only rebuild the whole MaterialApp when the
+                            // selected language actually changes. Rebuilding on
+                            // every LocalizationBloc emission (e.g. loading
+                            // true/false toggles while modules and boundary
+                            // localizations load) rebuilt the entire app and
+                            // caused heavy screen flicker on login. Individual
+                            // screens rebuild via their own blocs and read
+                            // translations from AppLocalizations directly, so
+                            // gating on the language index is sufficient.
+                            buildWhen: (previous, current) =>
+                                previous.index != current.index,
                             builder: (context, langState) {
                               final selectedLocale =
                                   AppSharedPreferences().getSelectedLocale ??

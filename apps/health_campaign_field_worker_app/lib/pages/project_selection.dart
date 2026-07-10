@@ -265,15 +265,25 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
         path: Constants.localizationApiPath,
       ));
 
-      // Scope the boundary localization fetch to the codes assigned to this
-      // user (the descendants under the project's root boundary that the
-      // BoundaryBloc just resolved). Include both the boundary code
-      // (e.g. IN_KA_BLR) and the hierarchy-level label (e.g. "District") —
-      // both live in the boundary localization module and both need
-      // translations. This avoids pulling the entire (very large) boundary
-      // localization module.
-      final boundaryCodes = boundaryBloc.state.boundaryList
-          .expand((b) => [b.code, b.label])
+      // Fetch localizations for EVERY boundary the user can select, not just
+      // the initial top level. BoundaryFindEvent only loads the first level
+      // into boundaryList; deeper levels are loaded lazily in the boundary
+      // picker (BoundarySearchEvent) and would otherwise never be localized —
+      // previously only the top-level code ended up translated. Query the full
+      // project boundary subtree from the local store up-front so every
+      // selectable code — and each hierarchy-level label (e.g. ADMIN_District,
+      // which is what the picker actually translates) — is fetched in one go.
+      final hierarchyType = envConfig.variables.hierarchyType;
+      final allBoundaries = await boundaryBloc.boundaryRepository
+          .search(BoundarySearchModel(isSingle: false));
+      final boundaryCodes = allBoundaries
+          .expand((b) => [
+                b.code,
+                b.label,
+                b.label != null && b.label!.isNotEmpty
+                    ? '${hierarchyType}_${b.label}'
+                    : null,
+              ])
           .whereType<String>()
           .where((s) => s.isNotEmpty)
           .toSet()

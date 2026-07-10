@@ -132,14 +132,25 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
 
         if (missing.isNotEmpty) {
           try {
-            final results = await localizationRepository.loadLocalization(
-              path: event.path,
-              locale: event.locale,
-              module: event.module,
-              tenantId: event.tenantId,
-              codes: missing.join(','),
-            );
-            await LocalizationLocalRepository().create(results, sql);
+            // Fetch in chunks: an entire boundary subtree can be hundreds of
+            // codes, and passing them all in a single `codes` query param can
+            // exceed the server/proxy URL length limit and fail the request
+            // (which previously left most boundaries untranslated).
+            const chunkSize = 100;
+            for (var i = 0; i < missing.length; i += chunkSize) {
+              final end = (i + chunkSize) < missing.length
+                  ? i + chunkSize
+                  : missing.length;
+              final chunk = missing.sublist(i, end);
+              final results = await localizationRepository.loadLocalization(
+                path: event.path,
+                locale: event.locale,
+                module: event.module,
+                tenantId: event.tenantId,
+                codes: chunk.join(','),
+              );
+              await LocalizationLocalRepository().create(results, sql);
+            }
           } catch (error) {
             debugPrint('error loading boundary localization by codes: $error');
             emit(state.copyWith(loading: false, retryModule: event.module));

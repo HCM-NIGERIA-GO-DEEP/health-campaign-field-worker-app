@@ -931,9 +931,13 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
           isar.rowVersionLists.putAllSync(rowVersionList);
         });
       } else {
+        // Read the full boundary subtree from the local store (all levels).
+        // Passing boundaryType here makes the local query filter to a single
+        // hierarchy level (label == boundaryType), which caused the boundary
+        // dropdown to drop to one level on re-login. `codes` (materializedPath
+        // match) already scopes the read to the project's subtree.
         boundaries = await boundaryLocalRepository.search(
           BoundarySearchModel(
-            boundaryType: event.model.address?.boundaryType,
             codes: event.model.address?.boundary,
           ),
         );
