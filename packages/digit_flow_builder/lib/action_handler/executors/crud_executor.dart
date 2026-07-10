@@ -11,7 +11,7 @@ import 'action_executor.dart';
 
 /// Executor for CREATE_EVENT action type
 class CrudExecutor extends ActionExecutor {
-  static const String _stockCommentFallback = 'N/A';
+  static const String _stockCommentFallback = ' ';
 
   @override
   bool canHandle(String actionType) => actionType == 'CREATE_EVENT';
@@ -195,7 +195,7 @@ class CrudExecutor extends ActionExecutor {
 ///    ```
 /// 3. Change detection: compares entities with existingModels and only updates changed ones
 class UpdateExecutor extends ActionExecutor {
-  static const String _stockCommentFallback = 'N/A';
+  static const String _stockCommentFallback = ' ';
 
   @override
   bool canHandle(String actionType) => actionType == 'UPDATE_EVENT';

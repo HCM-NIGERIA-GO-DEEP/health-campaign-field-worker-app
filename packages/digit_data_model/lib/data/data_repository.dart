@@ -36,7 +36,7 @@ abstract class DataRepository<D extends EntityModel,
 /// `RemoteRepository` is an abstract class that extends `DataRepository` and provides additional functionality for remote repositories.
 abstract class RemoteRepository<D extends EntityModel,
     R extends EntitySearchModel> extends DataRepository<D, R> {
-  static const String _stockCommentFallback = 'N/A';
+  static const String _stockCommentFallback = ' ';
 
   final Dio dio;
   final String entityName;
