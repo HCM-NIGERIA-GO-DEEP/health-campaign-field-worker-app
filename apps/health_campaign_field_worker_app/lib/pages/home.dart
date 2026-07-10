@@ -3584,121 +3584,12 @@ class _HomePageState extends LocalizedState<HomePage> {
         child: HomeItemCard(
           icon: Icons.fingerprint_outlined,
           label: i18.home.manageAttendanceLabel,
-          onPressed: () async {
-            // Set up CRUD service
-            CrudBlocSingleton().setData(
-              crudService: DigitCrudService(
-                context: context,
-                relationshipMap: const [
-                  RelationshipMapping(
-                    from: 'attendanceRegister',
-                    to: 'attendee',
-                    localKey: 'id',
-                    foreignKey: 'registerId',
-                  ),
-                  RelationshipMapping(
-                    from: 'attendanceRegister',
-                    to: 'attendance',
-                    localKey: 'id',
-                    foreignKey: 'registerId',
-                  ),
-                  RelationshipMapping(
-                    from: 'individual',
-                    to: 'name',
-                    localKey: 'clientReferenceId',
-                    foreignKey: 'individualClientReferenceId',
-                  ),
-                  RelationshipMapping(
-                    from: 'attendee',
-                    to: 'individual',
-                    localKey: 'individualId',
-                    foreignKey: 'id',
-                  ),
-                ],
-                nestedModelMappings: const [
-                  NestedModelMapping(
-                    rootModel: 'attendanceRegister',
-                    fields: {
-                      'attendees': NestedFieldMapping(
-                        table: 'attendee',
-                        localKey: 'id',
-                        foreignKey: 'registerId',
-                        type: NestedMappingType.many,
-                      ),
-                      'attendanceLog': NestedFieldMapping(
-                        table: 'attendance',
-                        localKey: 'id',
-                        foreignKey: 'registerId',
-                        type: NestedMappingType.many,
-                      ),
-                    },
-                  ),
-                  NestedModelMapping(
-                    rootModel: 'individual',
-                    fields: {
-                      'name': NestedFieldMapping(
-                        table: 'name',
-                        localKey: 'clientReferenceId',
-                        foreignKey: 'individualClientReferenceId',
-                        type: NestedMappingType.one,
-                      ),
-                    },
-                  ),
-                ],
-                searchEntityRepository: context.read<SearchEntityRepository>(),
-              ),
-              dynamicEntityModelListener: EntityModelMapMapper(),
-            );
-
-            final prefs = await SharedPreferences.getInstance();
-            final schemaJsonRaw = prefs.getString('app_config_schemas');
-
-            FlowBuilderSingleton().setPersistenceConfiguration(
-                persistenceConfiguration:
-                    PersistenceConfiguration.offlineFirst);
-            WidgetRegistry.initialize();
-            try {
-              NavigationRegistry.setupNavigation(context);
-              context.router
-                  .push(CurrentBoundaryRoute(onBoundarySelected: (ctx) async {
-                if (isTriggerLocalisation) {
-                  const module = "hcm-attendance";
-                  triggerLocalization(module: module);
-                  isTriggerLocalisation = false;
-                }
-                // Use the attendance_management package's own UI
-                // (ManageAttendanceRoute) instead of the JSON flow-builder.
-                ctx.router.push(ManageAttendanceRoute());
-              }));
-
-              // if (false) {
-              //   final allSchemas =
-              //       json.decode(schemaJsonRaw!) as Map<String, dynamic>;
-              //   final data = allSchemas['ATTENDANCE'];
-
-              //   final attendenceData = data?['data'];
-              //   final flowsData = (attendenceData['flows'] as List<dynamic>?)
-              //           ?.map((e) => Map<String, dynamic>.from(e as Map))
-              //           .toList() ??
-              //       [];
-              //   FlowRegistry.setConfig(flowsData);
-              //   NavigationRegistry.setupNavigation(context);
-
-              //   context.router.push(
-              //     FlowBuilderHomeRoute(pageName: attendenceData["initialPage"]),
-              //   );
-              // } else {
-              //   FlowRegistry.setConfig(attendanceFlows["flows"]
-              //       as List<Map<String, dynamic>>);
-              //   NavigationRegistry.setupNavigation(context);
-              //   context.router.push(
-              //     FlowBuilderHomeRoute(
-              //         pageName: attendanceFlows["initialPage"]),
-              //   );
-              // }
-            } catch (e) {
-              debugPrint('error $e');
+          onPressed: () {
+            if (isTriggerLocalisation) {
+              triggerLocalization();
+              isTriggerLocalisation = false;
             }
+            context.router.push(ManageAttendanceRoute());
           },
         ),
       ),
