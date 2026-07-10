@@ -764,12 +764,10 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
     final boundaryModule =
         'hcm-boundary-${runtimeHierarchyType().toLowerCase()}';
     try {
-      final localResults = await LocalizationLocalRepository().fetchLocalization(
-        sql: locBloc.sql,
-        locale: locale,
-        module: boundaryModule,
-      );
-      if (localResults.isNotEmpty) return;
+      // Always fetch — a local "module has any rows" check is coarse, so a
+      // partially-populated cache from a previously failed seed would
+      // silently skip the fetch even when the codes we need are missing.
+      // `insertAllOnConflictUpdate` is idempotent.
       final results = await locBloc.localizationRepository.loadLocalization(
         path: Constants.localizationApiPath,
         locale: locale,
