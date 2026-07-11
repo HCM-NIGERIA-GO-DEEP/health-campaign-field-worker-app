@@ -1,7 +1,7 @@
 [
   {
     "code": "CORE_COMMON_CONTINUE",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Continue",
     "module": "hcm-common"
   },
@@ -13,7 +13,7 @@
   },
   {
     "code": "CORE_COMMON_AGE",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Age",
     "module": "hcm-common"
   },
@@ -25,7 +25,7 @@
   },
   {
     "code": "CORE_COMMON_GENDER",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Gender",
     "module": "hcm-common"
   },
@@ -37,7 +37,7 @@
   },
   {
     "code": "CORE_COMMON_MOBILE_NUMBER",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Mobile Number",
     "module": "hcm-common"
   },
@@ -49,7 +49,7 @@
   },
   {
     "code": "CORE_COMMON_SUBMIT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Submit",
     "module": "hcm-common"
   },
@@ -61,7 +61,7 @@
   },
   {
     "code": "CORE_COMMON_CANCEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Cancel",
     "module": "hcm-common"
   },
@@ -73,7 +73,7 @@
   },
   {
     "code": "LOGIN_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Login",
     "module": "hcm-login"
   },
@@ -85,7 +85,7 @@
   },
   {
     "code": "USER_ID_PLACEHOLDER",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "User ID",
     "module": "hcm-login"
   },
@@ -97,7 +97,7 @@
   },
   {
     "code": "PASSWORD_PLACEHOLDER",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Password",
     "module": "hcm-login"
   },
@@ -109,7 +109,7 @@
   },
   {
     "code": "LOGIN_ACTION_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Login",
     "module": "hcm-login"
   },
@@ -121,7 +121,7 @@
   },
   {
     "code": "FORGOT_PASSWORD_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Forgot Password",
     "module": "hcm-forgot-password"
   },
@@ -133,7 +133,7 @@
   },
   {
     "code": "FORGOT_PASSWORD_CONTENT_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Please contact your administrator if you have forgotten your password",
     "module": "hcm-forgot-password"
   },
@@ -145,7 +145,7 @@
   },
   {
     "code": "PRIMARY_ACTION_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "OK",
     "module": "hcm-forgot-password"
   },
@@ -157,7 +157,7 @@
   },
   {
     "code": "FORGOT_PASSWORD_ACTION_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Forgot Password?",
     "module": "hcm-forgot-password"
   },
@@ -169,7 +169,7 @@
   },
   {
     "code": "HOME_BENEFICIARY_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Beneficiaries",
     "module": "hcm-home"
   },
@@ -181,7 +181,7 @@
   },
   {
     "code": "HOME_VIEW_REPORTS_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "View Reports",
     "module": "hcm-home"
   },
@@ -193,7 +193,7 @@
   },
   {
     "code": "HOME_SYNC_DATA_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Sync Data",
     "module": "hcm-home"
   },
@@ -205,7 +205,7 @@
   },
   {
     "code": "HOME_CALL_BACK_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Call Supervisor",
     "module": "hcm-home"
   },
@@ -217,7 +217,7 @@
   },
   {
     "code": "HOME_FILE_COMPLAINT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "File Complaint",
     "module": "hcm-home"
   },
@@ -229,7 +229,7 @@
   },
   {
     "code": "PROGRESS_INDICATOR_TITLE",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "more to reach target",
     "module": "hcm-home"
   },
@@ -241,7 +241,7 @@
   },
   {
     "code": "PROGRESS_INDICATOR_PREFIX_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "completed",
     "module": "hcm-home"
   },
@@ -253,7 +253,7 @@
   },
   {
     "code": "BENEFICIARY_STATISTICS_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Search Households",
     "module": "hcm-beneficiary"
   },
@@ -265,7 +265,7 @@
   },
   {
     "code": "NO_OF_HOUSEHOLDS_REGISTERED",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "No. of Households\nRegistered",
     "module": "hcm-beneficiary"
   },
@@ -277,7 +277,7 @@
   },
   {
     "code": "NO_OF_RESOURCES_DELIVERED",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "No. of Bednets\nDelivered",
     "module": "hcm-beneficiary"
   },
@@ -289,7 +289,7 @@
   },
   {
     "code": "BENEFICIARY_SEARCH_HINT_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Enter the name of household head",
     "module": "hcm-beneficiary"
   },
@@ -301,7 +301,7 @@
   },
   {
     "code": "BENEFICIARY_INFO_DESCRIPTION",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Click on Register New Household button to add details.",
     "module": "hcm-beneficiary"
   },
@@ -313,7 +313,7 @@
   },
   {
     "code": "BENEFICIARY_INFO_TITLE",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Match not found!",
     "module": "hcm-beneficiary"
   },
@@ -325,7 +325,7 @@
   },
   {
     "code": "BENEFICIARY_ADD_ACTION_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Register New Household",
     "module": "hcm-beneficiary"
   },
@@ -337,7 +337,7 @@
   },
   {
     "code": "ICON_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Open",
     "module": "hcm-beneficiary"
   },
@@ -349,7 +349,7 @@
   },
   {
     "code": "INDIVIDUAL_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Individual Details",
     "module": "hcm-beneficiary"
   },
@@ -361,7 +361,7 @@
   },
   {
     "code": "INDIVIDUAL_NAME_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Name of the Individual*",
     "module": "hcm-beneficiary"
   },
@@ -373,7 +373,7 @@
   },
   {
     "code": "HEAD_OF_HOUSEHOLD_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Head of household",
     "module": "hcm-beneficiary"
   },
@@ -385,7 +385,7 @@
   },
   {
     "code": "ID_TYPE_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "ID Type",
     "module": "hcm-beneficiary"
   },
@@ -397,7 +397,7 @@
   },
   {
     "code": "ID_NUMBER_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "ID Number*",
     "module": "hcm-beneficiary"
   },
@@ -409,7 +409,7 @@
   },
   {
     "code": "ID_NUMBER_SUGGESTION_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Enter 10 digit ID number",
     "module": "hcm-beneficiary"
   },
@@ -421,7 +421,7 @@
   },
   {
     "code": "DOB_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Date of Birth",
     "module": "hcm-beneficiary"
   },
@@ -433,7 +433,7 @@
   },
   {
     "code": "AGE_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Age",
     "module": "hcm-common"
   },
@@ -445,7 +445,7 @@
   },
   {
     "code": "SEPARATOR_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "(or)",
     "module": "hcm-common"
   },
@@ -457,7 +457,7 @@
   },
   {
     "code": "GENDER_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Gender",
     "module": "hcm-common"
   },
@@ -469,7 +469,7 @@
   },
   {
     "code": "MOBILE_NUMBER_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Mobile Number",
     "module": "hcm-common"
   },
@@ -481,7 +481,7 @@
   },
   {
     "code": "SUBMIT_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Submit",
     "module": "hcm-common"
   },
@@ -493,7 +493,7 @@
   },
   {
     "code": "HOUSEHOLD_LOCATION_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Household Location",
     "module": "hcm-household"
   },
@@ -505,7 +505,7 @@
   },
   {
     "code": "ADMINISTRATION_AREA_FORM_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Administrative Area",
     "module": "hcm-household"
   },
@@ -517,7 +517,7 @@
   },
   {
     "code": "HOUSEHOLD_ADDRESS_LINE_1_FORM_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Address Line 1",
     "module": "hcm-household"
   },
@@ -529,7 +529,7 @@
   },
   {
     "code": "LANDMARK_FORM_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Landmark",
     "module": "hcm-household"
   },
@@ -541,7 +541,7 @@
   },
   {
     "code": "HOUSEHOLD_ADDRESS_LINE_2_FORM_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Address Line 2",
     "module": "hcm-household"
   },
@@ -553,7 +553,7 @@
   },
   {
     "code": "POSTAL_CODE_FORM_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Postal Code",
     "module": "hcm-household"
   },
@@ -565,7 +565,7 @@
   },
   {
     "code": "HOUSEHOLD_LOCATION_ACTION_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Next",
     "module": "hcm-household"
   },
@@ -577,7 +577,7 @@
   },
   {
     "code": "ACKNOWLEDGEMENT_SUCCESS_ACTION_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Data recorded successfully",
     "module": "hcm-acknowledgement"
   },
@@ -589,7 +589,7 @@
   },
   {
     "code": "ACKNOWLEDGEMENT_SUCCESS_DESCRIPTION_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "The data has been recorded successfully.",
     "module": "hcm-acknowledgement"
   },
@@ -601,7 +601,7 @@
   },
   {
     "code": "ACKNOWLEDGEMENT_SUCCESS_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Back to Search",
     "module": "hcm-acknowledgement"
   },
@@ -613,7 +613,7 @@
   },
   {
     "code": "HOUSEHOLD_DETAILS_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Household Details",
     "module": "hcm-household"
   },
@@ -625,7 +625,7 @@
   },
   {
     "code": "HOUSEHOLD_ACTION_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Next",
     "module": "hcm-household"
   },
@@ -637,7 +637,7 @@
   },
   {
     "code": "HOUSEHOLD_DETAILS_DATE_OF_REGISTRATION_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Date of Registration",
     "module": "hcm-household"
   },
@@ -649,7 +649,7 @@
   },
   {
     "code": "NO_OF_MEMBERS_COUNT_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Number of members living in the household*",
     "module": "hcm-household"
   },
@@ -661,7 +661,7 @@
   },
   {
     "code": "HOUSEHOLD_OVER_VIEW_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Household",
     "module": "hcm-household"
   },
@@ -673,7 +673,7 @@
   },
   {
     "code": "HOUSEHOLD_OVER_VIEW_EDIT_ICON_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Edit household",
     "module": "hcm-household"
   },
@@ -685,7 +685,7 @@
   },
   {
     "code": "HOUSEHOLD_OVER_VIEW_DELETE_ICON_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Delete Household",
     "module": "hcm-household"
   },
@@ -697,7 +697,7 @@
   },
   {
     "code": "HOUSEHOLD_OVER_VIEW_EDIT_ICON_LABEL_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Edit",
     "module": "hcm-household"
   },
@@ -709,7 +709,7 @@
   },
   {
     "code": "HOUSEHOLD_OVER_VIEW_ACTION_CARD_TITLE",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Do you want to delete this\nbeneficiary?",
     "module": "hcm-household"
   },
@@ -721,7 +721,7 @@
   },
   {
     "code": "HOUSEHOLD_OVER_VIEW_PRIMARY_ACTION_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Delete",
     "module": "hcm-household"
   },
@@ -733,7 +733,7 @@
   },
   {
     "code": "HOUSEHOLD_OVER_VIEW_SECONDARY_ACTION_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Cancel",
     "module": "hcm-household"
   },
@@ -745,7 +745,7 @@
   },
   {
     "code": "HOUSEHOLD_OVER_VIEW_DELIVERED_ICON_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Delivered",
     "module": "hcm-household"
   },
@@ -757,7 +757,7 @@
   },
   {
     "code": "HOUSEHOLD_OVER_VIEW_NOT_DELIVERED_ICON_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Not Delivered",
     "module": "hcm-household"
   },
@@ -769,7 +769,7 @@
   },
   {
     "code": "HOUSEHOLD_OVER_VIEW_HOUSEHOLD_HEAD_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Household\nHead",
     "module": "hcm-household"
   },
@@ -781,7 +781,7 @@
   },
   {
     "code": "HOUSEHOLD_OVER_VIEW_HOUSEHOLD_HEAD_NAME_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Household Head Name:",
     "module": "hcm-household"
   },
@@ -793,7 +793,7 @@
   },
   {
     "code": "HOUSEHOLD_OVER_VIEW_ACTION_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Deliver Intervention",
     "module": "hcm-household"
   },
@@ -805,7 +805,7 @@
   },
   {
     "code": "HOUSEHOLD_OVER_VIEW__ADD_ACTION_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Add Member",
     "module": "hcm-household"
   },
@@ -817,7 +817,7 @@
   },
   {
     "code": "MEMBER_CARD_ASSIGN_AS_HEAD",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Assign as household head",
     "module": "hcm-member"
   },
@@ -829,7 +829,7 @@
   },
   {
     "code": "MEMBER_CARD_EDIT_INDIVIDUALDETAILS",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Edit",
     "module": "hcm-member"
   },
@@ -841,7 +841,7 @@
   },
   {
     "code": "MEMBER_CARD_EDIT_INDIVIDUAL_ACTION_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Edit  Individual Details",
     "module": "hcm-member"
   },
@@ -853,7 +853,7 @@
   },
   {
     "code": "MEMBER_CARD_DELIVER_INTERVENTION_SUBMIT_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Submit",
     "module": "hcm-member"
   },
@@ -865,7 +865,7 @@
   },
   {
     "code": "MEMBER_CARD_DELIVER_DETAILS_UPDATE_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Update Delivery Details",
     "module": "hcm-member"
   },
@@ -877,7 +877,7 @@
   },
   {
     "code": "MEMBER_CARD_DELIVER_DETAILS_YEAR_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "years",
     "module": "hcm-member"
   },
@@ -889,7 +889,7 @@
   },
   {
     "code": "DELIVER_INTERVENTION_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Deliver Intervention",
     "module": "hcm-delivery"
   },
@@ -901,7 +901,7 @@
   },
   {
     "code": "DELIVER_INTERVENTION_DATE_OF_REGISTRATION_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Date of Registration:",
     "module": "hcm-delivery"
   },
@@ -913,7 +913,7 @@
   },
   {
     "code": "DELIVER_INTERVENTION_RESOURCE_DELIVERED_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Resource Delivered*",
     "module": "hcm-delivery"
   },
@@ -925,7 +925,7 @@
   },
   {
     "code": "DELIVER_INTERVENTION_QUANTITY_DISTRIBUTED_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Quantity Distributed*",
     "module": "hcm-delivery"
   },
@@ -937,7 +937,7 @@
   },
   {
     "code": "DELIVER_INTERVENTION_DELIVERY_COMMENT_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Delivery Comment",
     "module": "hcm-delivery"
   },
@@ -949,7 +949,7 @@
   },
   {
     "code": "DELIVER_INTERVENTION_ID_TYPE_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "ID Type:",
     "module": "hcm-delivery"
   },
@@ -961,7 +961,7 @@
   },
   {
     "code": "DELIVER_INTERVENTION_ID_NUMBER_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "ID Number:",
     "module": "hcm-delivery"
   },
@@ -973,7 +973,7 @@
   },
   {
     "code": "DELIVER_INTERVENTION_MEMBER_COUNT_TEXT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Member Count:",
     "module": "hcm-delivery"
   },
@@ -985,7 +985,7 @@
   },
   {
     "code": "DELIVER_INTERVENTION_NO_OF_RESOURCES_FOR_DELIVERY",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Number Of Resources For Delivery:",
     "module": "hcm-delivery"
   },
@@ -997,7 +997,7 @@
   },
   {
     "code": "DELIVER_INTERVENTION_DIALOG_TITLE",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Ready to Submit?",
     "module": "hcm-delivery"
   },
@@ -1009,7 +1009,7 @@
   },
   {
     "code": "DELIVER_INTERVENTION_DIALOG_CONTENT",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Make sure you review all details before clicking on the Submit button. Click on the Cancel button to go back to the previous page.",
     "module": "hcm-delivery"
   },
@@ -1021,7 +1021,7 @@
   },
   {
     "code": "REDOSE_ADMINISTRATION",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Redose Administration",
     "module": "hcm-delivery"
   },
@@ -1033,7 +1033,7 @@
   },
   {
     "code": "REDOSE_DETAILS_SCREEN_HEADING",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Redose Details",
     "module": "hcm-delivery"
   },
@@ -1045,7 +1045,7 @@
   },
   {
     "code": "REDOSE_DETAILS_SCREEN_DESCRIPTION",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Record the redose administration details",
     "module": "hcm-delivery"
   },
@@ -1057,7 +1057,7 @@
   },
   {
     "code": "REDOSE_SUBMIT_BUTTON_LABEL",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Submit",
     "module": "hcm-delivery"
   },
@@ -1069,7 +1069,7 @@
   },
   {
     "code": "REDOSE_DATE_OF_ADMINISTRATION",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Date of Redose Administration",
     "module": "hcm-delivery"
   },
@@ -1081,7 +1081,7 @@
   },
   {
     "code": "REDOSE_RESOURCE_DELIVERED",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Select the Resource Delivered",
     "module": "hcm-delivery"
   },
@@ -1093,7 +1093,7 @@
   },
   {
     "code": "REDOSE_QUANTITY",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Redose Quantity",
     "module": "hcm-delivery"
   },
@@ -1105,7 +1105,7 @@
   },
   {
     "code": "REDOSE_QUANTITY_REQUIRED",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Redose quantity is required",
     "module": "hcm-delivery"
   },
@@ -1117,7 +1117,7 @@
   },
   {
     "code": "REDOSE_QUANTITY_MIN_ERROR",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Redose quantity must be at least 1",
     "module": "hcm-delivery"
   },
@@ -1129,7 +1129,7 @@
   },
   {
     "code": "REDOSE_QUANTITY_MAX_ERROR",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Redose quantity exceeds the allowed limit",
     "module": "hcm-delivery"
   },
@@ -1141,7 +1141,7 @@
   },
   {
     "code": "REDOSE_REASON",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Reason for Redose",
     "module": "hcm-delivery"
   },
@@ -1153,7 +1153,7 @@
   },
   {
     "code": "REDOSE_REASON_REQUIRED",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Reason for redose is required",
     "module": "hcm-delivery"
   },
@@ -1165,7 +1165,7 @@
   },
   {
     "code": "REDOSE_REASON_VOMITTING",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Vomiting",
     "module": "hcm-delivery"
   },
@@ -1177,7 +1177,7 @@
   },
   {
     "code": "REDOSE_REASON_OTHERS",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Others",
     "module": "hcm-delivery"
   },
@@ -1189,7 +1189,7 @@
   },
   {
     "code": "REDOSE_SUCCESSFUL_PANEL_CARD_HEADING",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Redose Recorded Successfully",
     "module": "hcm-delivery"
   },
@@ -1201,7 +1201,7 @@
   },
   {
     "code": "REDOSE_SUCCESSFUL_PANEL_CARD_DESC",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Redose administration has been recorded successfully",
     "module": "hcm-delivery"
   },
@@ -1213,7 +1213,7 @@
   },
   {
     "code": "REDOSE_BACK",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Back",
     "module": "hcm-delivery"
   },
@@ -1225,7 +1225,7 @@
   },
   {
     "code": "REDOSE_COMPLETED",
-    "locale": "en_MZ",
+    "locale": "en_BEDNET",
     "message": "Redose Completed",
     "module": "hcm-delivery"
   },
