@@ -3,6 +3,7 @@ import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendance_log.dart';
 import 'package:digit_data_model/models/entities/hf_referral.dart';
 import 'package:digit_data_model/models/entities/user_action.dart';
+import 'package:digit_data_model/models/entities/face_auth_event.dart';
 import 'package:survey_form/survey_form.dart';
 
 /// The `EntityMapper` class extends `EntityMapperListener` and provides a concrete implementation
@@ -80,6 +81,10 @@ class EntityMapper extends EntityMapperListener {
 
       case "userAction":
         final entity = UserActionModelMapper.fromJson(entityString);
+        return entity;
+
+      case "faceAuthEvent":
+        final entity = FaceAuthEventModelMapper.fromJson(entityString);
         return entity;
 
       default:
