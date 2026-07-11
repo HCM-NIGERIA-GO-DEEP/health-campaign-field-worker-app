@@ -257,10 +257,24 @@ class MainApplicationState extends State<MainApplication>
                           appConfig.backendInterface;
                       var firstLanguage;
                       firstLanguage = appConfig.languages?.lastOrNull?.value;
-                      final selectedLocale =
+                      // stored locale -> tenant default (firstLanguage).
+                      dynamic selectedLocale =
                           AppSharedPreferences().getSelectedLocale ??
                               firstLanguage;
-                      AppSharedPreferences().setSelectedLocale(selectedLocale);
+                      // eGov localization stores locales with an UPPERCASE
+                      // region (e.g. en_BEDNET); some config values arrive with
+                      // a lowercase region (en_bednet). Locale is case-sensitive
+                      // in _search, so normalize the region to uppercase.
+                      if (selectedLocale != null &&
+                          selectedLocale.toString().contains('_')) {
+                        final parts = selectedLocale.toString().split('_');
+                        selectedLocale =
+                            '${parts.first}_${parts.sublist(1).join('_').toUpperCase()}';
+                      }
+                      if (selectedLocale != null) {
+                        AppSharedPreferences()
+                            .setSelectedLocale(selectedLocale);
+                      }
                       LocalizationParams().setLocale(Locale(selectedLocale));
                       final languages = appConfig.languages;
 
