@@ -11,7 +11,6 @@ import '../data/local_store/app_shared_preferences.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../router/app_router.dart';
 import '../utils/environment_config.dart';
-import '../utils/extensions/extensions.dart';
 import '../utils/i18_key_constants.dart' as i18;
 import '../utils/least_level_boundary_singleton.dart';
 import '../utils/utils.dart';

@@ -32,7 +32,6 @@ class AcknowledgementPage extends LocalizedStatefulWidget {
 class _AcknowledgementPageState extends LocalizedState<AcknowledgementPage> {
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
 
     return Scaffold(
       body: PanelCard(

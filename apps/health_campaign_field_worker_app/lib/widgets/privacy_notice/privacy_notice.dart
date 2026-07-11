@@ -221,7 +221,8 @@ class _PrivacyNoticeFullscreenPopupState
                                 : <String, dynamic>{};
                             final format =
                                 content['format'] as String? ?? 'text';
-                            final value = content['value'] as String? ?? '';
+                            final value = AppLocalizations.of(context)
+                                .translate(content['value'] as String? ?? '');
                             final isBold = content['bold'] as bool? ?? false;
                             final isCompact =
                                 content['compact'] as bool? ?? false;
