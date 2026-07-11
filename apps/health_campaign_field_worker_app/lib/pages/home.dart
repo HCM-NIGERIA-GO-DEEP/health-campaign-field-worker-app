@@ -44,6 +44,7 @@ import '../blocs/auth/auth.dart';
 import '../blocs/localization/localization.dart';
 import '../blocs/stock_downsync/stock_downsync.dart';
 import '../data/local_store/app_shared_preferences.dart';
+import '../data/repositories/local/localization.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../data/local_store/no_sql/schema/service_registry.dart';
 import '../data/local_store/secure_store/secure_store.dart';
@@ -1932,19 +1933,19 @@ class _HomePageState extends LocalizedState<HomePage> {
     // `false` = use local JSON (development/testing only)
     //
     // IMPORTANT: Set all flags to `true` before a production/release build.
-    // const isRemoteComplaintFlows = true;
-    // const isRemoteRegistrationFlows = true;
-    // const isRemoteCloseHouseholdFlows = true;
-    // const isRemoteInventoryFlows = true;
-    // const isRemoteInventoryReportFlows = true;
-    // const isRemoteStockReconciliationFlows = true;
+    const isRemoteComplaintFlows = true;
+    const isRemoteRegistrationFlows = true;
+    const isRemoteCloseHouseholdFlows = true;
+    const isRemoteInventoryFlows = true;
+    const isRemoteInventoryReportFlows = true;
+    const isRemoteStockReconciliationFlows = true;
 
-    const isRemoteComplaintFlows = false;
-    const isRemoteRegistrationFlows = false;
-    const isRemoteCloseHouseholdFlows = false;
-    const isRemoteInventoryFlows = false;
-    const isRemoteInventoryReportFlows = false;
-    const isRemoteStockReconciliationFlows = false;
+    // const isRemoteComplaintFlows = false;
+    // const isRemoteRegistrationFlows = false;
+    // const isRemoteCloseHouseholdFlows = false;
+    // const isRemoteInventoryFlows = false;
+    // const isRemoteInventoryReportFlows = false;
+    // const isRemoteStockReconciliationFlows = false;
     //////
     ///
 
@@ -1960,7 +1961,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       //         onBoundarySelected: (ctx) async {
       //           final moduleName =
       //               'hcm-complaints-${context.selectedProject.referenceID}';
-      //           triggerLocalization(module: moduleName);
+      //           await triggerLocalization(module: moduleName);
       //           isTriggerLocalisation = false;
 
       //           await FlowNavigationUtils.navigateToFlowModule(
@@ -2017,7 +2018,7 @@ class _HomePageState extends LocalizedState<HomePage> {
               onBoundarySelected: (ctx) async {
                 final moduleName =
                     'hcm-complaints-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}';
-                triggerLocalization(module: moduleName);
+                await triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
                 final prefs = await SharedPreferences.getInstance();
@@ -2108,10 +2109,10 @@ class _HomePageState extends LocalizedState<HomePage> {
         child: HomeItemCard(
           icon: Icons.bar_chart_sharp,
           label: i18.home.dashboard,
-          onPressed: () {
+          onPressed: () async {
             if (isTriggerLocalisation) {
               const module = "hcm-dashboard";
-              triggerLocalization(module: module);
+              await triggerLocalization(module: module);
               isTriggerLocalisation = false;
             }
             context.router.push(const UserDashboardRoute());
@@ -2129,7 +2130,7 @@ class _HomePageState extends LocalizedState<HomePage> {
               onBoundarySelected: (ctx) async {
                 final moduleName =
                     'hcm-registration-${context.selectedProject.referenceID},hcm-beneficiary';
-                triggerLocalization(module: moduleName);
+                await triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
                 final prefs = await SharedPreferences.getInstance();
@@ -2294,7 +2295,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       //         onBoundarySelected: (ctx) async {
       //           final moduleName =
       //               'hcm-registration-${context.selectedProject.referenceID},hcm-beneficiary,hcm-inventory-${context.selectedProject.referenceID}';
-      //           triggerLocalization(module: moduleName);
+      //           await triggerLocalization(module: moduleName);
       //           isTriggerLocalisation = false;
       //           FlowBuilderSingleton().setPersistenceConfiguration(
       //               persistenceConfiguration:
@@ -2427,7 +2428,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       //       RegistrationDeliverySingleton()
       //           .setHouseholdType(HouseholdType.community);
       //       if (isTriggerLocalisation) {
-      //         triggerLocalization();
+      //         await triggerLocalization();
       //         isTriggerLocalisation = false;
       //       }
       //       await context.router.push(const RegistrationDeliveryWrapperRoute());
@@ -2447,7 +2448,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       //         onBoundarySelected: (ctx) async {
       //           final moduleName =
       //               'hcm-closehousehold-${context.selectedProject.referenceID}';
-      //           triggerLocalization(module: moduleName);
+      //           await triggerLocalization(module: moduleName);
       //           isTriggerLocalisation = false;
 
       //           await FlowNavigationUtils.navigateToFlowModule(
@@ -2475,7 +2476,7 @@ class _HomePageState extends LocalizedState<HomePage> {
               onBoundarySelected: (ctx) async {
                 final moduleName =
                     'hcm-closehousehold-${context.selectedProject.referenceID}';
-                triggerLocalization(module: moduleName);
+                await triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
                 final prefs = await SharedPreferences.getInstance();
@@ -2639,7 +2640,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       //           .push(CurrentBoundaryRoute(onBoundarySelected: (ctx) async {
       //         final moduleName =
       //             'hcm-inventory-${context.selectedProject.referenceID}';
-      //         triggerLocalization(module: moduleName);
+      //         await triggerLocalization(module: moduleName);
       //         isTriggerLocalisation = false;
 
       //         final prefs = await SharedPreferences.getInstance();
@@ -2733,7 +2734,7 @@ class _HomePageState extends LocalizedState<HomePage> {
 
       //       // final moduleName =
       //       //     'hcm-inventory-${context.selectedProject.referenceID}';
-      //       // triggerLocalization(module: moduleName);
+      //       // await triggerLocalization(module: moduleName);
       //       // isTriggerLocalisation = false;
 
       //       // await FlowNavigationUtils.navigateToFlowModule(
@@ -2795,7 +2796,7 @@ class _HomePageState extends LocalizedState<HomePage> {
 
             final moduleName =
                 'hcm-inventory-${context.selectedProject.referenceID}';
-            triggerLocalization(module: moduleName);
+            await triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
             final prefs = await SharedPreferences.getInstance();
@@ -2894,7 +2895,7 @@ class _HomePageState extends LocalizedState<HomePage> {
 
       //       final moduleName =
       //           'hcm-inventory-${context.selectedProject.referenceID}';
-      //       triggerLocalization(module: moduleName);
+      //       await triggerLocalization(module: moduleName);
       //       isTriggerLocalisation = false;
 
       //       await FlowNavigationUtils.navigateToFlowModule(
@@ -2987,7 +2988,7 @@ class _HomePageState extends LocalizedState<HomePage> {
 
       //       final moduleName =
       //           'hcm-inventory-${context.selectedProject.referenceID}';
-      //       triggerLocalization(module: moduleName);
+      //       await triggerLocalization(module: moduleName);
       //       isTriggerLocalisation = false;
 
       //       await FlowNavigationUtils.navigateToFlowModule(
@@ -3049,7 +3050,7 @@ class _HomePageState extends LocalizedState<HomePage> {
 
       //       final moduleName =
       //           'hcm-stockreconciliation-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
-      //       triggerLocalization(module: moduleName);
+      //       await triggerLocalization(module: moduleName);
       //       isTriggerLocalisation = false;
 
       //       await FlowNavigationUtils.navigateToFlowModule(
@@ -3117,7 +3118,7 @@ class _HomePageState extends LocalizedState<HomePage> {
 
             final moduleName =
                 'hcm-stockreconciliation-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
-            triggerLocalization(module: moduleName);
+            await triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
             final prefs = await SharedPreferences.getInstance();
@@ -3222,11 +3223,11 @@ class _HomePageState extends LocalizedState<HomePage> {
           icon: Icons.checklist,
           customIconSize: spacer8,
           label: i18.home.mySurveyForm,
-          onPressed: () {
+          onPressed: () async {
             // if (isTriggerLocalisation) {
             final moduleName =
                 'hcm-checklist-${context.selectedProject.referenceID}';
-            triggerLocalization(module: moduleName);
+            await triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
             // }
             context.router.push(SurveyFormWrapperRoute());
@@ -3303,7 +3304,7 @@ class _HomePageState extends LocalizedState<HomePage> {
               onBoundarySelected: (ctx) async {
                 final moduleName =
                     'hcm-hfreferral-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}';
-                triggerLocalization(module: moduleName);
+                await triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
                 await FlowNavigationUtils.navigateToFlowModule(
@@ -3329,7 +3330,7 @@ class _HomePageState extends LocalizedState<HomePage> {
 
       //       final moduleName =
       //           'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
-      //       triggerLocalization(module: moduleName);
+      //       await triggerLocalization(module: moduleName);
       //       isTriggerLocalisation = false;
 
       //       await FlowNavigationUtils.navigateToFlowModule(
@@ -3399,7 +3400,7 @@ class _HomePageState extends LocalizedState<HomePage> {
 
             final moduleName =
                 'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
-            triggerLocalization(module: moduleName);
+            await triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
             final prefs = await SharedPreferences.getInstance();
@@ -3510,7 +3511,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       //           .push(CurrentBoundaryRoute(onBoundarySelected: (ctx) async {
       //         final moduleName =
       //             "hcm-attendance,hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}";
-      //         triggerLocalization(module: moduleName);
+      //         await triggerLocalization(module: moduleName);
 
       //         await FlowNavigationUtils.navigateToFlowModule(
       //           context: ctx,
@@ -3584,9 +3585,9 @@ class _HomePageState extends LocalizedState<HomePage> {
         child: HomeItemCard(
           icon: Icons.fingerprint_outlined,
           label: i18.home.manageAttendanceLabel,
-          onPressed: () {
+          onPressed: () async {
             if (isTriggerLocalisation) {
-              triggerLocalization();
+              await triggerLocalization();
               isTriggerLocalisation = false;
             }
             context.router.push(ManageAttendanceRoute());
@@ -3616,7 +3617,7 @@ class _HomePageState extends LocalizedState<HomePage> {
           onPressed: () async {
             const module = "hcm-peer-to-peer";
             // if (isTriggerLocalisation) {
-            triggerLocalization(module: module);
+            await triggerLocalization(module: module);
             isTriggerLocalisation = false;
             // }
             context.router.push(const DataShareHomeRoute());
@@ -3627,10 +3628,10 @@ class _HomePageState extends LocalizedState<HomePage> {
         child: HomeItemCard(
           icon: Icons.bar_chart_sharp,
           label: i18.home.dashboard,
-          onPressed: () {
+          onPressed: () async {
             const module = "hcm-dashboard";
             // if (isTriggerLocalisation) {
-            triggerLocalization(module: module);
+            await triggerLocalization(module: module);
             isTriggerLocalisation = false;
             // };
             context.router.push(const UserDashboardRoute());
@@ -3642,10 +3643,10 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.beneficiaryIdLabel: homeShowcaseData.beneficiaryId.buildWith(
         child: HomeItemCard(
           label: i18.home.beneficiaryIdLabel,
-          onPressed: () {
+          onPressed: () async {
             // if (isTriggerLocalisation) {
             const module = "hcm-beneficiary";
-            triggerLocalization(module: module);
+            await triggerLocalization(module: module);
             isTriggerLocalisation = false;
             // }
             context.router.push(BeneficiaryIdDownSyncRoute());
@@ -3661,10 +3662,10 @@ class _HomePageState extends LocalizedState<HomePage> {
           child: HomeItemCard(
         icon: Icons.vaccines_outlined,
         label: i18.home.transitPostLabel,
-        onPressed: () {
+        onPressed: () async {
           const module = "hcm-transit-post";
           // if (isTriggerLocalisation) {
-          triggerLocalization(module: module);
+          await triggerLocalization(module: module);
           context.router.push(const TransitPostWrapperRoute());
         },
       )),
@@ -3774,7 +3775,26 @@ class _HomePageState extends LocalizedState<HomePage> {
     );
   }
 
-  void triggerLocalization({String? module, bool? loadOnline}) {
+  Future<void> triggerLocalization({String? module, bool? loadOnline}) async {
+    // Localization is loaded post project selection (all flow modules) and at
+    // startup (base modules), and the flow/forms caches are refreshed then. So
+    // if the requested flow module is already cached, skip everything -- no
+    // re-fetch, no cache rebuild -- so the tile navigates instantly. Real work
+    // only happens in the rare case a module is genuinely missing.
+    if (loadOnline != true && module != null && module.trim().isNotEmpty) {
+      final firstModule = module.split(',').first.trim();
+      final localeStr = AppSharedPreferences().getSelectedLocale ??
+          'en_${envConfig.variables.tenantId.toUpperCase()}';
+      final sqlStore = context.read<LocalSqlDataStore>();
+      try {
+        final cached = await LocalizationLocalRepository().fetchLocalization(
+            sql: sqlStore, locale: localeStr, module: firstModule);
+        if (!mounted) return;
+        if (cached.isNotEmpty) return;
+      } catch (_) {}
+    }
+    if (!mounted) return;
+    var loadDispatched = false;
     context.read<AppInitializationBloc>().state.maybeWhen(
           orElse: () {},
           initialized: (
@@ -3787,6 +3807,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             final selectedLocale = AppSharedPreferences().getSelectedLocale;
             LocalizationParams()
                 .setCode(LeastLevelBoundarySingleton().boundary);
+            loadDispatched = true;
             if (loadOnline == true) {
               context
                   .read<LocalizationBloc>()
@@ -3816,6 +3837,24 @@ class _HomePageState extends LocalizedState<HomePage> {
             }
           },
         );
+    // Wait for the just-dispatched localization load to settle so its data is
+    // persisted (and the flow-builder cache synced by the load's own
+    // _loadLocale) BEFORE the flow paints. Without this the first entry showed
+    // raw codes and only the second entry was localized. The timeout guards
+    // against hanging (e.g. offline / no emission).
+    if (loadDispatched && mounted) {
+      try {
+        await context
+            .read<LocalizationBloc>()
+            .stream
+            .firstWhere((s) => !s.loading)
+            .timeout(const Duration(seconds: 3));
+      } catch (_) {}
+    }
+    // The load above (onLoadLocalization) already refreshes the flow-builder /
+    // forms-engine localization caches in its own completion path, and the
+    // await on `!loading` guarantees that finished before we return -- so the
+    // caches are current before the tile navigates. No second refresh needed.
   }
 }
 
