@@ -23,6 +23,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:isar/isar.dart';
 import 'package:location/location.dart';
+import '../services/location_service.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:survey_form/survey_form.dart';
@@ -760,8 +761,17 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
                           },
                         ),
                         BlocProvider(
-                          create: (_) => LocationBloc(location: Location())
-                            ..add(const LoadLocationEvent()),
+                          create: (_) {
+                            final bloc = LocationBloc(
+                                location: LocationService.instance.location)
+                              ..add(const LoadLocationEvent());
+                            bloc.stream
+                                .firstWhere((s) => s.hasPermissions)
+                                .then((_) =>
+                                    LocationService.instance.ensureTracking())
+                                .catchError((_) {});
+                            return bloc;
+                          },
                         ),
                         BlocProvider(
                           create: (ctx) => BeneficiaryDownSyncBloc(

@@ -38,7 +38,19 @@ class SurveyFormWrapperPage extends StatelessWidget {
             serviceDataRepository: service,
           ),
         ),
-        BlocProvider(create: (_) => LocationBloc(location: Location()))
+        BlocProvider(create: (_) {
+          final loc = Location();
+          final bloc = LocationBloc(location: loc);
+          bloc.stream.firstWhere((s) => s.hasPermissions).then((_) async {
+            if (await loc.hasPermission() == PermissionStatus.granted) {
+              await loc.changeSettings(
+                accuracy: LocationAccuracy.high,
+                distanceFilter: 0,
+              );
+            }
+          }).catchError((_) {});
+          return bloc;
+        })
       ],
       child: const AutoRouter(),
     );
