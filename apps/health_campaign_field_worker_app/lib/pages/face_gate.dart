@@ -2,6 +2,7 @@ import 'dart:typed_data';
 
 import 'package:camera/camera.dart';
 import 'package:location/location.dart';
+import '../services/location_service.dart';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:digit_data_model/data_model.dart';
@@ -131,23 +132,11 @@ class _FaceGatePageState extends State<FaceGatePage> {
   /// Returns null only if location service/permission is unavailable.
   static Future<LocationData?> _fetchLocation() async {
     try {
-      final loc = Location();
-      if (!await loc.serviceEnabled()) {
-        if (!await loc.requestService()) return null;
-      }
-      var perm = await loc.hasPermission();
-      if (perm == PermissionStatus.denied) {
-        perm = await loc.requestPermission();
-      }
-      if (perm != PermissionStatus.granted &&
-          perm != PermissionStatus.grantedLimited) {
-        return null;
-      }
-      await loc.changeSettings(
-        accuracy: LocationAccuracy.balanced,
-        distanceFilter: 0,
-      );
-      return await loc.getLocation().timeout(const Duration(seconds: 15));
+      // Read the current fix from the shared, continuously-tracking client so
+      // we get an up-to-date location instantly (as the worker moves) without
+      // starting a competing getLocation() that churns the GPS.
+      return await LocationService.instance
+          .currentOrNext(timeout: const Duration(seconds: 4));
     } catch (e) {
       debugPrint('FaceGatePage: location fetch failed: $e');
       return null;

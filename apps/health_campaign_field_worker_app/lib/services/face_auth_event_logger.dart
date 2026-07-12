@@ -6,6 +6,7 @@ import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/face_auth_event.dart';
 import 'package:flutter/foundation.dart';
 import 'package:location/location.dart';
+import 'location_service.dart';
 import 'package:uuid/uuid.dart';
 
 import 'package:flutter/foundation.dart';
@@ -233,21 +234,8 @@ class FaceAuthEventLogger {
   /// not trigger native dialogs that could disrupt the active UI flow.
   static Future<LocationData?> _getLocation() async {
     try {
-      final location = Location();
-      if (!await location.serviceEnabled()) return null;
-      final perm = await location.hasPermission();
-      if (perm != PermissionStatus.granted &&
-          perm != PermissionStatus.grantedLimited) {
-        return null;
-      }
-      await location.changeSettings(
-        accuracy: LocationAccuracy.balanced,
-        distanceFilter: 0,
-      );
-      return await location.getLocation().timeout(
-            const Duration(seconds: 10),
-            onTimeout: () => throw TimeoutException('Location timeout'),
-          );
+      return await LocationService.instance
+          .currentOrNext(timeout: const Duration(seconds: 4));
     } catch (e) {
       debugPrint('FaceAuthEventLogger: location error: $e');
       return null;

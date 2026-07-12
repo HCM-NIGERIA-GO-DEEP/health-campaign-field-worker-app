@@ -65,7 +65,7 @@ class _NonMobileFaceEnrollPageState extends State<NonMobileFaceEnrollPage> {
         accuracy: LocationAccuracy.balanced,
         distanceFilter: 0,
       );
-      return await loc.getLocation().timeout(const Duration(seconds: 15));
+      return await loc.getLocation().timeout(const Duration(seconds: 4));
     } catch (e) {
       debugPrint('NonMobileFaceEnrollPage: location fetch failed: $e');
       return null;
