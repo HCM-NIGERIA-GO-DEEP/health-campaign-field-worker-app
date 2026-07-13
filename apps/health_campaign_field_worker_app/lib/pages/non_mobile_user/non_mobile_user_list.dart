@@ -344,7 +344,7 @@ class _NonMobileUserListPageState
                                         mobileNumber:
                                             individual.mobileNumber.toString(),
                                         userName: givenName,
-                                        age: getAge(individual.dateOfBirth),
+                                  
                                         isFaceEnrolled: enrollmentId.isNotEmpty &&
                                             _enrolledIds.contains(enrollmentId),
                                         isTimerRunning: _isTimerRunning,
