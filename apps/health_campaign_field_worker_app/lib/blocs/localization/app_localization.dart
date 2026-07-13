@@ -25,8 +25,15 @@ class AppLocalizations {
       AppLocalizationsDelegate(config, sql);
 
   Future<bool> load() async {
-    final listOfLocalizations =
-        await LocalizationLocalRepository().returnLocalizationFromSQL(sql);
+    // Load ALL rows for the locale (not the LocalizationParams-filtered
+    // subset). Custom flow components (e.g. ResourceCard) resolve labels via
+    // AppLocalizations, so it must hold every module's codes just like the
+    // flow-builder/forms caches -- otherwise on-demand modules (registration,
+    // inventory, ...) render as raw codes in those components.
+    final listOfLocalizations = await LocalizationLocalRepository()
+        .fetchAllForLocale(
+            sql: sql,
+            locale: '${locale.languageCode}_${locale.countryCode}');
 
     _localizedStrings.clear();
     _localizedStrings.addAll(listOfLocalizations);
