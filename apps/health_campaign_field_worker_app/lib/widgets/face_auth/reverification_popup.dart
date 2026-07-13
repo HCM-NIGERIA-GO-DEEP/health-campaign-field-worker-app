@@ -20,6 +20,7 @@ import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:location/location.dart';
+import '../../services/location_service.dart';
 
 import '../../blocs/face_auth/reverification_bloc.dart';
 import '../../router/app_router.dart';
@@ -1344,14 +1345,8 @@ class _CoWorkerScanPage extends StatelessWidget {
 /// service — returns null immediately if not already granted/enabled.
 Future<LocationData?> _fetchLocationForLog() async {
   try {
-    final loc = Location();
-    if (!await loc.serviceEnabled()) return null;
-    final perm = await loc.hasPermission();
-    if (perm != PermissionStatus.granted &&
-        perm != PermissionStatus.grantedLimited) return null;
-    await loc.changeSettings(
-        accuracy: LocationAccuracy.balanced, distanceFilter: 0);
-    return await loc.getLocation().timeout(const Duration(seconds: 10));
+    return await LocationService.instance
+        .currentOrNext(timeout: const Duration(seconds: 4));
   } catch (e) {
     debugPrint('_fetchLocationForLog: $e');
     return null;

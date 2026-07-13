@@ -276,18 +276,48 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
       final hierarchyType = envConfig.variables.hierarchyType;
       final allBoundaries = await boundaryBloc.boundaryRepository
           .search(BoundarySearchModel(isSingle: false));
-      final boundaryCodes = allBoundaries
-          .expand((b) => [
-                b.code,
-                b.label,
-                b.label != null && b.label!.isNotEmpty
-                    ? '${hierarchyType}_${b.label}'
-                    : null,
-              ])
-          .whereType<String>()
-          .where((s) => s.isNotEmpty)
-          .toSet()
-          .toList();
+
+      // The stock flow's "Administrative Area" is the logged-in user's own
+      // locality (individual.address.locality.code). That code lives on the
+      // user's individual record, not in the downloaded boundary subtree, so
+      // localize it explicitly here.
+      final localityCodes = <String>[];
+      try {
+        final individualId = context.loggedInIndividualId;
+        if (individualId != null && individualId.isNotEmpty) {
+          final individuals = await context
+              .repository<IndividualModel, IndividualSearchModel>()
+              .search(IndividualSearchModel(id: [individualId]));
+          for (final ind in individuals) {
+            for (final addr in ind.address ?? const <AddressModel>[]) {
+              final code = addr.locality?.code;
+              if (code != null && code.trim().isNotEmpty) {
+                localityCodes.add(code);
+              }
+            }
+          }
+        }
+      } catch (e) {
+        debugPrint('project_selection: locality localization fetch skipped: $e');
+      }
+
+      final boundaryCodes = <String>{
+        ...allBoundaries
+            .expand((b) => [
+                  b.code,
+                  b.label,
+                  b.label != null && b.label!.isNotEmpty
+                      ? '${hierarchyType}_${b.label}'
+                      : null,
+                  // materializedPath ancestor codes (dot-separated). The stock
+                  // flow's "Administrative Area" is an ancestor code that lives
+                  // in the boundaries' paths but isn't itself a downloaded node,
+                  // so it must be pulled from the path to be localized.
+                  ...?b.materializedPath?.split('.'),
+                ])
+            .whereType<String>(),
+        ...localityCodes,
+      }.where((s) => s.trim().isNotEmpty).toList();
       if (boundaryCodes.isNotEmpty) {
         LocalizationParams().setCode(boundaryCodes);
         localizationBloc.add(LocalizationEvent.onLoadLocalizationByCodes(

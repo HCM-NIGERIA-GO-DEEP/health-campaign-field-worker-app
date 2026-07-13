@@ -8,6 +8,8 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../data/local_store/app_shared_preferences.dart';
 import '../../data/repositories/local/localization.dart';
 import '../../data/repositories/remote/localization.dart';
+import 'package:digit_flow_builder/blocs/app_localization.dart' as flow_builder;
+import 'package:digit_forms_engine/blocs/app_localization.dart' as forms_engine;
 import '../../utils/utils.dart';
 import 'app_localization.dart';
 
@@ -37,62 +39,74 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
     emit(state.copyWith(loading: true));
 
     try {
-      final boundaryModuleCheck =
-          event.module.contains(Constants.boundaryLocalizationPath);
-      final allModules = event.module.split(',');
-      var boundaryModule;
+      final allModules = event.module
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
 
-      if (boundaryModuleCheck) {
-        final boundaryModuleIndex =
-            allModules.indexOf(Constants.boundaryLocalizationPath);
-        boundaryModule = allModules[boundaryModuleIndex];
-        allModules.removeAt(boundaryModuleIndex);
+      // Boundary localizations live under a per-hierarchy module (e.g.
+      // hcm-boundary-admin) and must be loaded INDEPENDENTLY of the other
+      // modules' cache state. The other modules are already cached from app
+      // startup, so previously the boundary fetch (nested inside their
+      // empty-check) never ran -- leaving boundary codes untranslated
+      // (the stock flow's "Administrative Area" showed the raw code).
+      // Match by the "boundary" substring so this is hierarchy-agnostic and
+      // not tied to a hard-coded module name.
+      final boundaryModules =
+          allModules.where((m) => m.contains('boundary')).toList();
+      final otherModules =
+          allModules.where((m) => !m.contains('boundary')).toList();
+
+      // Non-boundary modules, fetched ONE MODULE PER REQUEST (never combined).
+      // A single combined request pulls thousands of codes in one response; on
+      // a flaky connection that large download is interrupted (see the
+      // connection-abort errors in logs) and only part of it persists -- e.g.
+      // an inventory module stored 62 of 484 codes, so field helptexts were
+      // missing. Small per-module responses complete reliably, and each fetch
+      // retries so a transient abort does not silently drop a module.
+      //
+      // Every module is cache-checked and fetched only when missing, so
+      // repeat flow entries do no network work. Force-refresh of per-project
+      // modules happens once per login via onRemoteLoadLocalization (project
+      // selection), not on every card tap.
+      for (final m in otherModules) {
+        // Fetch only modules not already cached, so repeat flow entries hit no
+        // network. Per-module + retry (see _fetchAndStoreModule) makes the
+        // initial load complete, so a module is either fully present or fetched
+        // fresh -- no forced re-download on every entry.
+        final cached = await LocalizationLocalRepository().fetchLocalization(
+            sql: sql, locale: event.locale, module: m);
+        if (cached.isEmpty) {
+          final ok = await _fetchAndStoreModule(
+            module: m,
+            locale: event.locale,
+            tenantId: event.tenantId,
+            path: event.path,
+          );
+          if (!ok) emit(state.copyWith(loading: false, retryModule: m));
+        }
       }
 
-      try {
-        var localizationList;
-
-        var localResults = await LocalizationLocalRepository()
-            .fetchLocalization(
-                sql: sql, locale: event.locale, module: allModules.join(','));
-        if (localResults.isEmpty) {
-          var results = await localizationRepository.loadLocalization(
-            path: event.path,
-            locale: event.locale,
-            module: allModules.join(','),
-            tenantId: event.tenantId,
-          );
-          localizationList = LocalizationLocalRepository().create(results, sql);
-          if (boundaryModule != null) {
-            try {
-              var localizationList;
-              var localResults = await LocalizationLocalRepository()
-                  .fetchLocalization(
-                      sql: sql, locale: event.locale, module: boundaryModule);
-              if (localResults.isEmpty) {
-                var results = await localizationRepository.loadLocalization(
-                  path: event.path,
-                  locale: event.locale,
-                  module: boundaryModule,
-                  tenantId: event.tenantId,
-                );
-
-                localizationList =
-                    LocalizationLocalRepository().create(results, sql);
-              } else {
-                localizationList = localResults;
-              }
-            } catch (error) {
-              debugPrint('error in boundary module localization $error');
-              emit(state.copyWith(loading: false, retryModule: boundaryModule));
-            }
+      // Boundary modules: each keyed off its OWN local cache, always checked.
+      for (final boundaryModule in boundaryModules) {
+        try {
+          final localResults = await LocalizationLocalRepository()
+              .fetchLocalization(
+                  sql: sql, locale: event.locale, module: boundaryModule);
+          if (localResults.isEmpty) {
+            final results = await localizationRepository.loadLocalization(
+              path: event.path,
+              locale: event.locale,
+              module: boundaryModule,
+              tenantId: event.tenantId,
+            );
+            await LocalizationLocalRepository().create(results, sql);
           }
-        } else {
-          localizationList = localResults;
+        } catch (error) {
+          debugPrint('error in boundary module localization $error');
+          emit(state.copyWith(loading: false, retryModule: boundaryModule));
         }
-      } catch (error) {
-        debugPrint('error in other modules localization $error');
-        emit(state.copyWith(loading: false, retryModule: allModules.join(',')));
       }
     } catch (error) {
       rethrow;
@@ -173,22 +187,21 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
     emit(state.copyWith(loading: true));
 
     try {
-      final allModules = event.module.split(',');
-
-      try {
-        var localizationList;
-
-        var results = await localizationRepository.loadLocalization(
-          path: event.path,
+      // Force-refresh, ONE MODULE PER REQUEST with retry, so large combined
+      // responses can't truncate and leave a module partially stored.
+      final allModules = event.module
+          .split(',')
+          .map((e) => e.trim())
+          .where((e) => e.isNotEmpty)
+          .toList();
+      for (final m in allModules) {
+        final ok = await _fetchAndStoreModule(
+          module: m,
           locale: event.locale,
-          module: allModules.join(','),
           tenantId: event.tenantId,
+          path: event.path,
         );
-        localizationList =
-            await LocalizationLocalRepository().create(results, sql);
-      } catch (error) {
-        debugPrint('error in fetching modules localization $error');
-        emit(state.copyWith(loading: false, retryModule: allModules.join(',')));
+        if (!ok) emit(state.copyWith(loading: false, retryModule: m));
       }
 
       final List codes = event.locale.split('_');
@@ -211,9 +224,79 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
     emit(state.copyWith(loading: false));
   }
 
+  /// Refreshes the flow-builder's (JSON-driven flows) localization cache from
+  /// the current SQL snapshot, without any MaterialApp rebuild. Awaitable so a
+  /// screen can guarantee on-demand codes (e.g. boundary "Administrative Area")
+  /// are localized before a JSON flow renders.
+  Future<void> refreshFlowBuilderLocalization(String locale) async {
+    await _loadLocale(locale.split('_'));
+  }
+
+  /// Fetches a SINGLE localization module and stores it, retrying a few times
+  /// so a transient network abort does not silently drop the module. Returns
+  /// true when stored (or the server returned nothing), false if all attempts
+  /// failed. A module that still fails is re-attempted on the next entry.
+  Future<bool> _fetchAndStoreModule({
+    required String module,
+    required String locale,
+    required String tenantId,
+    required String path,
+    int attempts = 3,
+  }) async {
+    for (var i = 0; i < attempts; i++) {
+      try {
+        final results = await localizationRepository.loadLocalization(
+          path: path,
+          locale: locale,
+          module: module,
+          tenantId: tenantId,
+        );
+        await LocalizationLocalRepository().create(results, sql);
+        return true;
+      } catch (error) {
+        debugPrint(
+            'module "$module" localization load failed '
+            '(attempt ${i + 1}/$attempts): $error');
+      }
+    }
+    return false;
+  }
+
   FutureOr<void> _loadLocale(List codes) async {
     LocalizationParams().setLocale(Locale(codes.first, codes.last));
     await AppLocalizations(Locale(codes.first, codes.last), sql).load();
+    // Keep the flow-builder's (JSON-driven flows) localization cache in sync.
+    // FlowBuilderLocalization reads a static snapshot captured once when the
+    // MaterialApp delegates are first built (at login), and only refreshes on a
+    // full MaterialApp rebuild -- which is intentionally gated to language
+    // changes to avoid login flicker. So on-demand localizations loaded later
+    // (e.g. hcm-boundary-admin for the stock flow's "Administrative Area")
+    // never reached the flow builder and rendered as the raw code. Re-load its
+    // cache here from the same fresh SQL source the app's own AppLocalizations
+    // uses, so both stay consistent without any MaterialApp rebuild.
+    try {
+      final fbRows = await LocalizationLocalRepository().fetchAllForLocale(
+          sql: sql, locale: '${codes.first}_${codes.last}');
+      // TEMP diagnostic: confirm whether inventory helptext codes are in SQL.
+      final loc = Locale(codes.first, codes.last);
+      // Flow-builder renders screen chrome; the forms engine renders the actual
+      // field labels AND helptexts. Each keeps its own static localization
+      // snapshot that only refreshes on a full MaterialApp rebuild, so refresh
+      // BOTH from the current SQL -- otherwise field helptexts stayed raw even
+      // though the flow-builder chrome (e.g. Administrative Area) localized.
+      await flow_builder.FlowBuilderLocalization(
+        loc,
+        Future.value(fbRows),
+        const [],
+      ).load();
+      await forms_engine.FormLocalization(
+        loc,
+        Future.value(fbRows),
+        const [],
+      ).load();
+    } catch (e) {
+      debugPrint('flow/forms localization refresh skipped: $e');
+    }
   }
 }
 

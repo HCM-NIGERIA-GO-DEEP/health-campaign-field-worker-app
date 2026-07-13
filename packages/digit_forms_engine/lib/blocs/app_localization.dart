@@ -17,6 +17,9 @@ class FormLocalization {
   }
 
   static final List<dynamic> _localizedStrings = <dynamic>[];
+  // O(1) lookup index (code -> message), rebuilt on each load(); avoids an
+  // O(n) linear scan per translate over a large localization set.
+  static final Map<String, String> _localizedMap = <String, String>{};
 
   // Method to get the delegate for localization
   static LocalizationsDelegate<FormLocalization> getDelegate(
@@ -26,10 +29,12 @@ class FormLocalization {
   // Method to load localized strings
   Future<bool> load() async {
     _localizedStrings.clear();
+    _localizedMap.clear();
     // Iterate over localized strings and filter based on locale
     for (var element in await localizedStrings) {
       if (element.locale == '${locale.languageCode}_${locale.countryCode}') {
         _localizedStrings.add(element);
+        _localizedMap[element.code as String] = element.message as String;
       }
     }
 
@@ -38,14 +43,6 @@ class FormLocalization {
 
   // Method to translate a given localized value
   String translate(String localizedValues) {
-    if (_localizedStrings.isEmpty) {
-      return localizedValues;
-    } else {
-      final index = _localizedStrings.indexWhere(
-            (medium) => medium.code == localizedValues,
-      );
-
-      return index != -1 ? _localizedStrings[index].message : localizedValues;
-    }
+    return _localizedMap[localizedValues] ?? localizedValues;
   }
 }

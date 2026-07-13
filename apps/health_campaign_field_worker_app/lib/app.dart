@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:isar/isar.dart';
 import 'package:location/location.dart';
+import 'services/location_service.dart';
 import 'package:survey_form/survey_form.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
 import 'package:transit_post/data/repositories/remote/user_action.dart';
@@ -149,8 +150,17 @@ class MainApplicationState extends State<MainApplication>
 
               BlocProvider(
                 create: (_) {
-                  return LocationBloc(location: Location())
+                  // Use the single shared Location client so all consumers
+                  // stream from one native request (no GPS churn); start
+                  // continuous balanced tracking once permission is granted.
+                  final bloc = LocationBloc(
+                      location: LocationService.instance.location)
                     ..add(const LoadLocationEvent());
+                  bloc.stream
+                      .firstWhere((s) => s.hasPermissions)
+                      .then((_) => LocationService.instance.ensureTracking())
+                      .catchError((_) {});
+                  return bloc;
                 },
                 lazy: false,
               ),

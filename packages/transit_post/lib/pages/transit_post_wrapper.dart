@@ -19,8 +19,18 @@ class TransitPostWrapperPage extends StatelessWidget {
         providers: [
           BlocProvider(
             create: (_) {
-              return LocationBloc(location: Location())
+              final loc = Location();
+              final bloc = LocationBloc(location: loc)
                 ..add(const LoadLocationEvent());
+              bloc.stream.firstWhere((s) => s.hasPermissions).then((_) async {
+                if (await loc.hasPermission() == PermissionStatus.granted) {
+                  await loc.changeSettings(
+                    accuracy: LocationAccuracy.high,
+                    distanceFilter: 0,
+                  );
+                }
+              }).catchError((_) {});
+              return bloc;
             },
             lazy: false,
           ),

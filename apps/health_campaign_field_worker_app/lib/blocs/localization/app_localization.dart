@@ -17,6 +17,8 @@ class AppLocalizations {
   }
 
   static final List<Localization> _localizedStrings = <Localization>[];
+  // O(1) lookup index (code -> message), rebuilt on each load().
+  static final Map<String, String> _localizedMap = <String, String>{};
 
   static LocalizationsDelegate<AppLocalizations> getDelegate(
           AppConfiguration config, LocalSqlDataStore sql) =>
@@ -27,21 +29,17 @@ class AppLocalizations {
         await LocalizationLocalRepository().returnLocalizationFromSQL(sql);
 
     _localizedStrings.clear();
-
     _localizedStrings.addAll(listOfLocalizations);
+
+    _localizedMap.clear();
+    for (final l in listOfLocalizations) {
+      _localizedMap[l.code] = l.message;
+    }
 
     return _localizedStrings.isNotEmpty ? true : false;
   }
 
   String translate(String localizedValues) {
-    if (_localizedStrings.isEmpty) {
-      return localizedValues;
-    } else {
-      final index = _localizedStrings.indexWhere(
-        (medium) => medium.code == localizedValues,
-      );
-
-      return index != -1 ? _localizedStrings[index].message : localizedValues;
-    }
+    return _localizedMap[localizedValues] ?? localizedValues;
   }
 }

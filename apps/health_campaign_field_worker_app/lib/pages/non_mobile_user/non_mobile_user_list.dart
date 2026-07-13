@@ -438,7 +438,7 @@ class _NonMobileUserListPageState
         await loc.changeSettings(
             accuracy: LocationAccuracy.balanced, distanceFilter: 0);
         final data =
-            await loc.getLocation().timeout(const Duration(seconds: 15));
+            await loc.getLocation().timeout(const Duration(seconds: 4));
         debugPrint('NonMobileUserList: location fetched on attempt $attempt');
         return data;
       } catch (e) {

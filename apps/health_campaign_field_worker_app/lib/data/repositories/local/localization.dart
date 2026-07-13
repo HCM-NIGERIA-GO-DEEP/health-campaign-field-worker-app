@@ -156,6 +156,32 @@ class LocalizationLocalRepository {
     });
   }
 
+  /// Returns EVERY cached localization for the given [locale], regardless of
+  /// module or code, ignoring the global [LocalizationParams] filters. The
+  /// flow-builder localization cache must hold ALL modules at once; using the
+  /// filtered query rebuilt that cache from only the last load's module/code
+  /// subset, so a later load (e.g. boundary codes) clobbered earlier modules
+  /// (e.g. inventory helptexts) and they rendered as raw codes.
+  FutureOr<List<Localization>> fetchAllForLocale(
+      {required LocalSqlDataStore sql, required String locale}) async {
+    return retryLocalCallOperation(() async {
+      final query = sql.select(sql.localization).join([])
+        ..where(sql.localization.locale.equals(locale));
+      final results = await query.get();
+      return results.map((e) {
+        final data = e.readTableOrNull(sql.localization);
+        if (data == null) {
+          throw StateError('No data found for localization');
+        }
+        return Localization()
+          ..code = data.code
+          ..locale = data.locale
+          ..module = data.module
+          ..message = data.message;
+      }).toList();
+    });
+  }
+
   FutureOr create(
       List<LocalizationCompanion> result, LocalSqlDataStore sql) async {
     if (result.isEmpty) return;
