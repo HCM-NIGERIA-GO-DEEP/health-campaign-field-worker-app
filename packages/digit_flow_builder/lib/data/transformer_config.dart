@@ -78,7 +78,7 @@ final jsonConfig = {
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
             "givenName": "householdDetails.nameOfIndividual",
-            "familyName": "beneficiaryDetails.familyname",
+            "familyName": "householdDetails.familyname",
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit",
             "additionalFields": {"lastName": "householdDetails.lastName"}
@@ -1209,6 +1209,7 @@ final jsonConfig = {
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
             "givenName": "closeHouseholdDetails.headName",
+            "familyName": "closeHouseholdDetails.familyname",
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit",
             "additionalFields": {"lastName": "closeHouseholdDetails.lastName"},

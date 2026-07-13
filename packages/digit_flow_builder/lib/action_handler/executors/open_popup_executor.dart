@@ -173,40 +173,32 @@ class OpenPopupExecutor extends ActionExecutor {
               ? null
               : footerActions
                   .whereType<Map<String, dynamic>>()
-                  .map(
-                    (actionJson) => _wrapPopupWidget(
-                      child: Builder(
-                        builder: (innerCtx) => FlowWidgetFactory.build(
-                          actionJson,
-                          innerCtx,
-                          (popupAction) {
-                            final enrichedAction = _withParentScreenKey(
-                              popupAction,
-                              parentScreenKey,
-                            );
+                  .map((actionJson) {
+                    return FlowWidgetFactory.build(
+                      actionJson,
+                      popupContext,
+                      (popupAction) {
+                        final enrichedAction = _withParentScreenKey(
+                          popupAction,
+                          parentScreenKey,
+                        );
 
-                            unawaited(
-                              ActionHandler.execute(
-                                enrichedAction,
-                                innerCtx,
-                                {
-                                  ...contextData,
-                                  if (parentScreenKey != null)
-                                    'parentScreenKey': parentScreenKey,
-                                  if (parentCompositeKey != null)
-                                    '_compositeKey': parentCompositeKey,
-                                },
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      localization: localization,
-                      crudCtx: crudCtx,
-                      parentScreenKey: parentScreenKey,
-                      parentCompositeKey: parentCompositeKey,
-                    ),
-                  )
+                        unawaited(
+                          ActionHandler.execute(
+                            enrichedAction,
+                            popupContext,
+                            {
+                              ...contextData,
+                              if (parentScreenKey != null)
+                                'parentScreenKey': parentScreenKey,
+                              if (parentCompositeKey != null)
+                                '_compositeKey': parentCompositeKey,
+                            },
+                          ),
+                        );
+                      },
+                    );
+                  })
                   .whereType<DigitButton>()
                   .toList(),
           inlineActions: true,

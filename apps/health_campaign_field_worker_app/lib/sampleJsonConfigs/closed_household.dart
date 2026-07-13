@@ -145,7 +145,7 @@ final dynamic sampleCloseHouseholdFlows = {
               "helpText": "",
               "infoText": "",
               "readOnly": false,
-              "fieldName": "lastName",
+              "fieldName": "familyname",
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
@@ -439,7 +439,7 @@ final dynamic sampleCloseHouseholdFlows = {
                   "key":
                       "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_LAST_NAME_LABEL",
                   "value":
-                      "{{contextData.0.headIndividual.IndividualModel.name.additionalFields.fields.lastName}}",
+                      "{{contextData.0.headIndividual.IndividualModel.name.familyName}}",
                   "isActive": true
                 },
                 {
@@ -670,7 +670,7 @@ final dynamic sampleCloseHouseholdFlows = {
                   "key":
                       "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_HOUSEHOLD_HEAD_LAST_NAME_LABEL",
                   "value":
-                      "{{contextData.0.headIndividual.IndividualModel.name.additionalFields.fields.lastName}}",
+                      "{{contextData.0.headIndividual.IndividualModel.name.familyName}}",
                   "isActive": true
                 },
                 {

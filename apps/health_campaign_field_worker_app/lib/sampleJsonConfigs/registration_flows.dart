@@ -425,7 +425,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "HOUSEHOLD_LAST_NAME",
                   "value":
-                      "{{contextData.0.headIndividual.IndividualModel.name.additionalFields.fields.lastName}}",
+                      "{{contextData.0.headIndividual.IndividualModel.name.familyName}}",
                   "isActive": true
                 },
                 {
@@ -597,7 +597,7 @@ final dynamic sampleFlows = {
                       {
                         "key": "lastName",
                         "value":
-                            "{{contextData.0.headIndividual.IndividualModel.name.additionalFields.fields.lastName}}"
+                            "{{contextData.0.headIndividual.IndividualModel.name.familyName}}"
                       },
                       {
                         "key": "beneficiaryId",
@@ -930,7 +930,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "HOUSEHOLD_LAST_NAME",
                   "value":
-                      "{{contextData.0.headIndividual.IndividualModel.name.additionalFields.fields.lastName}}",
+                      "{{contextData.0.headIndividual.IndividualModel.name.familyName}}",
                   "isActive": true
                 },
                 {
@@ -1650,7 +1650,7 @@ final dynamic sampleFlows = {
               {
                 "type": "template",
                 "value":
-                    "{{ item.headIndividual.0.name.givenName }} {{ item.headIndividual.0.name.additionalFields.fields.lastName }}",
+                    "{{ item.headIndividual.0.name.givenName }} {{ item.headIndividual.0.name.familyName }}",
                 "format": "textTemplate",
                 "fieldName": "householdName",
                 "properties": {"style": "headingS"}
@@ -1687,6 +1687,93 @@ final dynamic sampleFlows = {
       "name": "searchBeneficiary",
       "order": 1,
       "footer": [
+        {
+          "icon": "FilterAlt",
+          "type": "template",
+          "label": "DOWNLOAD_BENEFICIARY_IDS",
+          "format": "actionPopup",
+          "visible":
+              "{{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==false",
+          "disabled": "false",
+          "fieldName": "beneficiaryIdMinCheck",
+          "properties": {
+            "icon": "FilterAlt",
+            "size": "large",
+            "type": "primary",
+            "popupConfig": {
+              "body": [],
+              "type": "alert",
+              "title":
+                  "REGISTRATION_SEARCH_BENEFICIARY_MIN_BENEFICIARY_ID_LEFT_TITLE",
+              "description":
+                  "REGISTRATION_SEARCH_BENEFICIARY_MIN_BENEFICIARY_ID_LEFT_DESCRIPTION",
+              "footerActions": [
+                {
+                  "type": "template",
+                  "label":
+                      "REGISTRATION_SEARCH_BENEFICIARY_SKIP_CONTINUE_LABEL",
+                  "format": "button",
+                  "onAction": [
+                    {
+                      "actionType": "CLOSE_POPUP",
+                      "properties": {"parentScreenKey": "searchBeneficiary"}
+                    },
+                    {
+                      "actionType": "NAVIGATION",
+                      "properties": {
+                        "data": [
+                          {"key": "nameOfIndividual", "value": "{{searchBar}}"},
+                          {
+                            "key": "UNIQUE_BENEFICIARY_ID",
+                            "value": "{{latestBeneficiaryId}}"
+                          },
+                          {
+                            "key": "uniqueBeneficiaryIdModel",
+                            "value": "{{latestBeneficiaryIdModel}}"
+                          }
+                        ],
+                        "name": "HOUSEHOLD",
+                        "type": "FORM"
+                      }
+                    }
+                  ],
+                  "fieldName": "skip",
+                  "properties": {
+                    "size": "large",
+                    "type": "secondary",
+                    "mainAxisSize": "max"
+                  }
+                },
+                {
+                  "type": "template",
+                  "label": "REGISTRATION_SEARCH_BENEFICIARY_DOWNLOAD_ID",
+                  "format": "button",
+                  "onAction": [
+                    {
+                      "actionType": "CLOSE_POPUP",
+                      "properties": {"parentScreenKey": "searchBeneficiary"}
+                    },
+                    {
+                      "actionType": "NAVIGATE_TO_BENEFICIARY_ID_DOWN_SYNC",
+                      "properties": {}
+                    }
+                  ],
+                  "fieldName": "downloadID",
+                  "properties": {
+                    "size": "large",
+                    "type": "primary",
+                    "mainAxisSize": "max"
+                  }
+                }
+              ],
+              "showCloseButton": true,
+              "barrierDismissible": true
+            },
+            "mainAxisSize": "max",
+            "mainAxisAlignment": "center"
+          },
+          "schemaCode": null
+        },
         {
           "type": "template",
           "label": "REGISTER_NEW_BENEFICIARY",
@@ -3021,7 +3108,7 @@ final dynamic sampleFlows = {
               "infoText": "",
               "readOnly": false,
               "required": true,
-              "fieldName": "lastName",
+              "fieldName": "familyname",
               "mandatory": true,
               "deleteFlag": false,
               "innerLabel": "",
