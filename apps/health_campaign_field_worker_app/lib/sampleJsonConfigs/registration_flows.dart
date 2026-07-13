@@ -25,7 +25,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "E_TOKEN",
                   "value":
-                      "{{contextData.0.headIndividual.IndividualModel.identifiers.0.identifierId}}",
+                      "{{contextData.0.headIndividual.IndividualModel.identifiers.0.identifierId}}"
                 }
               ]
             }
@@ -1307,7 +1307,6 @@ final dynamic sampleFlows = {
           "label": "SEARCH_LABEL_BY_BENEFICIARY_NAME_OR_ID",
           "format": "searchBar",
           "disabled": false,
-          // "minSearchChars": 2,
           "onAction": [
             {
               "actions": [
@@ -1410,7 +1409,6 @@ final dynamic sampleFlows = {
           "format": "switch",
           "onAction": [
             {
-              // "actionType": "CLEAR_STATE",
               "actionType": "field.value==true ? SEARCH_EVENT : CLEAR_STATE",
               "properties": {
                 "widgetKeys": ["searchBar"],
@@ -1431,7 +1429,6 @@ final dynamic sampleFlows = {
           "child": {
             "type": "template",
             "format": "card",
-            // "visible": "{{fn:length(item.projectBeneficiaries)}} > 0",
             "visible": true,
             "children": [
               {
@@ -1662,7 +1659,6 @@ final dynamic sampleFlows = {
                 "type": "template",
                 "value": "SEARCH_HOUSEHOLD_STATUS_ITN_DELIVERED",
                 "format": "textTemplate",
-                // "visible": "{{fn:isDelivered(item.tasks.0.status)}} == true",
                 "visible": "{{fn:isClosedHousehold(item.tasks)}} == true",
                 "fieldName": "statusDelivered",
                 "properties": {}
@@ -1671,7 +1667,6 @@ final dynamic sampleFlows = {
                 "type": "template",
                 "value": "SEARCH_HOUSEHOLD_STATUS_NOT_VISITED",
                 "format": "textTemplate",
-                // "visible": "{{fn:isDelivered(item.tasks.0.status)}} == false",
                 "visible": "{{fn:isClosedHousehold(item.tasks)}} == false",
                 "fieldName": "statusNotVisited",
                 "properties": {}
@@ -2610,18 +2605,6 @@ final dynamic sampleFlows = {
                 "key": "ProjectBeneficiaryClientReferenceId",
                 "value": "{{navigation.ProjectBeneficiaryClientReferenceId}}"
               },
-              // {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
-              // {"key": "doseIndex", "value": "{{navigation.doseIndex}}"},
-              // {
-              //   "key": "deliveryStrategy",
-              //   "value": "{{navigation.deliveryStrategy}}"
-              // },
-              // {"key": "latLng", "value": "{{navigation.latLng}}"},
-              // {"key": "productId", "value": "{{navigation.productId}}"},
-              // {
-              //   "key": "quantityDistributed",
-              //   "value": "{{navigation.quantityDistributed}}"
-              // },
               {
                 "key": "deliveryComment",
                 "value": "{{navigation.deliveryComment}}"
@@ -2670,12 +2653,6 @@ final dynamic sampleFlows = {
                     "value":
                         "{{navigation.ProjectBeneficiaryClientReferenceId}}"
                   }
-                  // {"key": "cycleIndex", "value": "{{navigation.cycleIndex}}"},
-                  // {
-                  //   "key": "deliveryStrategy",
-                  //   "value": "{{navigation.deliveryStrategy}}"
-                  // },
-                  // {"key": "futureDoses", "value": "{{navigation.futureDoses}}"}
                 ],
                 "onError": [
                   {
@@ -3051,10 +3028,29 @@ final dynamic sampleFlows = {
               "schemaCode": null,
               "systemDate": false,
               "validations": [
-                {"type": "required", "value": false}
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_mandatory_message"
+                },
+                {
+                  "type": "minLength",
+                  "value": "2",
+                  "message":
+                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_max_message"
+                },
+                {
+                  "type": "maxLength",
+                  "value": "200",
+                  "message":
+                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_max_message"
+                }
               ],
               "errorMessage": "",
-              "isMultiSelect": false
+              "isMultiSelect": false,
+              "required.message":
+                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_mandatory_message"
             },
             {
               "type": "string",
@@ -3071,8 +3067,9 @@ final dynamic sampleFlows = {
                   "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_phone_helpText",
               "infoText": "",
               "readOnly": false,
+              "required": true,
               "fieldName": "phone",
-              "mandatory": false,
+              "mandatory": true,
               "deleteFlag": false,
               "innerLabel": "",
               "schemaCode": null,
@@ -3083,6 +3080,11 @@ final dynamic sampleFlows = {
                 "errorMessage": "MOBILE_LENGTH_11_DIGIT_ERROR"
               },
               "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "MOBILE_LENGTH_11_DIGIT_ERROR"
+                },
                 {
                   "type": "pattern",
                   "value": "^\\d+",
@@ -3101,6 +3103,7 @@ final dynamic sampleFlows = {
               ],
               "errorMessage": "",
               "isMultiSelect": false,
+              "required.message": "MOBILE_LENGTH_11_DIGIT_ERROR",
               "pattern.message": "MB_ONLY_NUMBER"
             },
             {
