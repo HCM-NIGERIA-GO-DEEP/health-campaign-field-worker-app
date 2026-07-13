@@ -154,24 +154,26 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   FutureOr<void> _onLogout(AuthLogoutEvent event, AuthEmitter emit) async {
     await localSecureStore.deleteAll();
     await localSecureStore.setBoundaryRefetch(true);
-    // Clear the cached MDMS app configuration so the next login re-fetches it
-    // fresh (picks up FACE_AUTH_CONFIG and other MDMS changes). Best-effort;
-    // not fatal to logout.
-    try {
-      await isar.writeTxn(() async => isar.appConfigurations.clear());
-    } catch (_) {}
+    // NOTE: do NOT clear isar.appConfigurations here. Its partner — the
+    // login-time MDMS re-fetch (AppInitializationSetupEvent on re-auth) — was
+    // removed to stop login-screen flicker, so clearing on logout left the
+    // config empty on re-login. That made project.dart's `configs.first` throw
+    // (surfacing as "Failed to fetch checklist") and caused the batch-size
+    // crash. The app config is re-fetched fresh on every app start, so we keep
+    // the cached copy across logout instead of wiping it.
     emit(const AuthUnauthenticatedState());
   }
 
   FutureOr<void> _onReset(AuthResetEvent event, AuthEmitter emit) async {
     await localSecureStore.deleteAll();
     await localSecureStore.setBoundaryRefetch(true);
-    // Clear the cached MDMS app configuration so the next login re-fetches it
-    // fresh (picks up FACE_AUTH_CONFIG and other MDMS changes). Best-effort;
-    // not fatal to logout.
-    try {
-      await isar.writeTxn(() async => isar.appConfigurations.clear());
-    } catch (_) {}
+    // NOTE: do NOT clear isar.appConfigurations here. Its partner — the
+    // login-time MDMS re-fetch (AppInitializationSetupEvent on re-auth) — was
+    // removed to stop login-screen flicker, so clearing on logout left the
+    // config empty on re-login. That made project.dart's `configs.first` throw
+    // (surfacing as "Failed to fetch checklist") and caused the batch-size
+    // crash. The app config is re-fetched fresh on every app start, so we keep
+    // the cached copy across logout instead of wiping it.
     emit(const AuthUnauthenticatedState());
   }
 
