@@ -982,6 +982,37 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
       if (receiverIds.isEmpty) return;
 
+      final selectedProjectType = await localSecureStore.selectedProjectType;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final currentCycleStartDate = selectedProjectType?.cycles
+              ?.where(
+                (cycle) =>
+                    (cycle.startDate ?? 0) <= now &&
+                    (cycle.endDate ?? 0) >= now,
+              )
+              .firstOrNull
+              ?.startDate ??
+          project.additionalDetails?.projectType?.cycles
+              ?.where(
+                (cycle) => cycle.startDate <= now && cycle.endDate >= now,
+              )
+              .firstOrNull
+              ?.startDate;
+      final currentCycleEndDate = selectedProjectType?.cycles
+              ?.where(
+                (cycle) =>
+                    (cycle.startDate ?? 0) <= now &&
+                    (cycle.endDate ?? 0) >= now,
+              )
+              .firstOrNull
+              ?.endDate ??
+          project.additionalDetails?.projectType?.cycles
+              ?.where(
+                (cycle) => cycle.startDate <= now && cycle.endDate >= now,
+              )
+              .firstOrNull
+              ?.endDate;
+
       final stockSearchModel = StockSearchModel(
         receiverId: receiverIds.first,
         senderId: receiverIds.first,
@@ -994,7 +1025,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       ));
 
       final lastSyncedTime = existingDownSyncData.isEmpty
-          ? null
+          ? currentCycleStartDate
           : existingDownSyncData.first.lastSyncedTime;
 
       if (existingDownSyncData.isEmpty) {
@@ -1033,7 +1064,19 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
         if (stockEntries.isEmpty) break;
 
-        await stockLocalRepository.bulkCreate(stockEntries);
+        final cycleFilteredStockEntries =
+            (currentCycleStartDate != null && currentCycleEndDate != null)
+                ? stockEntries.where((stock) {
+                    final dateOfEntry = stock.dateOfEntry;
+                    return dateOfEntry != null &&
+                        dateOfEntry >= currentCycleStartDate &&
+                        dateOfEntry <= currentCycleEndDate;
+                  }).toList()
+                : stockEntries;
+
+        if (cycleFilteredStockEntries.isNotEmpty) {
+          await stockLocalRepository.bulkCreate(cycleFilteredStockEntries);
+        }
 
         await downSyncLocalRepository.update(DownsyncModel(
           offset: 0,
@@ -1506,6 +1549,25 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
         if (username.isEmpty || userUuid.isEmpty) continue;
 
+        // Preserve any additionalFields already present on the remote record
+        // (e.g. team_mapping_* entries) instead of overwriting them. The
+        // payload may encode additionalFields as an object ({version, fields})
+        // or, in some responses, as a bare list of fields; handle both without
+        // throwing so a single malformed record can't abort the whole batch.
+        // Any stale user_roles entry is dropped so the fresh value below wins.
+        final rawAdditionalFields = raw['additionalFields'];
+        final rawFields = rawAdditionalFields is Map
+            ? rawAdditionalFields['fields']
+            : rawAdditionalFields;
+        final existingFields = (rawFields is List ? rawFields : const [])
+            .whereType<Map>()
+            .where((f) => f['key'] != null && f['key'] != _rolesFieldKey)
+            .map((f) => AdditionalField(f['key'].toString(), f['value']))
+            .toList();
+        final existingVersion = rawAdditionalFields is Map
+            ? (rawAdditionalFields['version'] as num?)?.toInt()
+            : null;
+
         final individual = IndividualModel(
           clientReferenceId: clientReferenceId,
           id: raw['id'] as String?,
@@ -1519,8 +1581,9 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
                 )
               : null,
           additionalFields: IndividualAdditionalFields(
-            version: 1,
+            version: existingVersion ?? 1,
             fields: [
+              ...existingFields,
               AdditionalField(_rolesFieldKey, roleCodes.join(',')),
             ],
           ),

@@ -1210,7 +1210,7 @@ class _HomePageState extends LocalizedState<HomePage> {
     FunctionRegistry.register("isNotSingleSession", (args, stateData) {
       // If no argument provided, default to single session
       if (args.isEmpty || args.first == null) {
-        return true;
+        return false; // default to single session if no register model provided
       }
 
       final registerModel = args.first;

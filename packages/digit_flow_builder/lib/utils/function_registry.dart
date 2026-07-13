@@ -1312,6 +1312,18 @@ void initializeFunctionRegistry() {
     return '';
   });
 
+  FunctionRegistry.register("fullName", (args, stateData) {
+    if (args.isEmpty || args.first == null) return "--";
+
+    // Get member(s) list - try 'member' first, then 'members'
+    final name = args.first;
+
+    final firstName = name["givenName"] ?? "";
+    final lastName = name["familyName"] ?? "";
+
+    return "$firstName $lastName".trim();
+  });
+
   /// Registers a function to check if the edit button should be disabled.
   ///
   /// - **Function Name**: `'disableEdit'`
@@ -1520,21 +1532,24 @@ void initializeFunctionRegistry() {
   //  - getReferralReasonsExtra -> the remaining reasons joined by "," (referralReasonsExtra)
 
   FunctionRegistry.register("getSymptomsReferral", (args, stateData) {
-    final reasons = _resolveReferralReasons(args.isNotEmpty ? args.first : null);
+    final reasons =
+        _resolveReferralReasons(args.isNotEmpty ? args.first : null);
     if (reasons.isEmpty) return null;
 
     return reasons.join(',');
   });
 
   FunctionRegistry.register("getReferralSymptom", (args, stateData) {
-    final reasons = _resolveReferralReasons(args.isNotEmpty ? args.first : null);
+    final reasons =
+        _resolveReferralReasons(args.isNotEmpty ? args.first : null);
     if (reasons.isEmpty) return null;
 
     return reasons.first;
   });
 
   FunctionRegistry.register("getReferralReasonsExtra", (args, stateData) {
-    final reasons = _resolveReferralReasons(args.isNotEmpty ? args.first : null);
+    final reasons =
+        _resolveReferralReasons(args.isNotEmpty ? args.first : null);
     if (reasons.length <= 1) return null;
 
     return reasons.skip(1).join(',');
