@@ -1653,7 +1653,7 @@ final dynamic sampleFlows = {
               {
                 "type": "template",
                 "value":
-                    "{{ item.headIndividual.0.name.givenName }} {{ item.headIndividual.0.name.familyName }}",
+                    "{{ item.headIndividual.0.name.givenName }} {{ item.headIndividual.0.name.additionalFields.fields.lastName }}",
                 "format": "textTemplate",
                 "fieldName": "householdName",
                 "properties": {"style": "headingS"}
