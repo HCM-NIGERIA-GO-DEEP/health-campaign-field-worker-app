@@ -1724,6 +1724,18 @@ void initializeFunctionRegistry() {
     return '';
   });
 
+  FunctionRegistry.register("fullName", (args, stateData) {
+    if (args.isEmpty || args.first == null) return "--";
+
+    // Get member(s) list - try 'member' first, then 'members'
+    final name = args.first;
+
+    final firstName = name["givenName"] ?? "";
+    final lastName = name["familyName"] ?? "";
+
+    return "$firstName $lastName".trim();
+  });
+
   /// Registers a function to check if the edit button should be disabled.
   ///
   /// - **Function Name**: `'disableEdit'`

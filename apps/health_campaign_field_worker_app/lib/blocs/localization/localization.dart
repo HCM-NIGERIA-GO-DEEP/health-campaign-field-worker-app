@@ -99,7 +99,10 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
       LocalizationParams().setModule(event.module, false);
       final List codes = event.locale.split('_');
       await _loadLocale(codes);
-      emit(state.copyWith(loading: false, retryModule: null));
+      emit(state.copyWith(
+          loading: false,
+          retryModule: null,
+          isLocalizationLoadCompleted: true));
     }
   }
 
@@ -130,6 +133,10 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
 
       final List codes = event.locale.split('_');
       await _loadLocale(codes);
+      emit(state.copyWith(
+          loading: false,
+          retryModule: null,
+          isLocalizationLoadCompleted: true));
     } catch (error) {
       rethrow;
     } finally {
