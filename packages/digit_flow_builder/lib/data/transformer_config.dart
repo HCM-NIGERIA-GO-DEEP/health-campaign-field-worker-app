@@ -1224,6 +1224,7 @@ final jsonConfig = {
             "gender": "__context:gender",
             "headName": "__context:headName",
             "headMobileNumber": "__context:headMobileNumber",
+            "isSMCDelivered": "__context:isSMCDelivered",
             "deliveryComment": "ORSDeliveryDetails.deliveryComment"
           },
           "clientAuditDetails": "__generate:clientAudit",
