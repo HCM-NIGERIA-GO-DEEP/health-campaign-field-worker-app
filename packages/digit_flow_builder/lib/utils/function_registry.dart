@@ -530,6 +530,7 @@ bool _hasLogWithType(attendanceLog, DateTime date, String type) {
 }
 
 const String _riFlowValue = 'riDone';
+const String _smcFlowValue = 'smcDone';
 
 /// Returns true when the given entity (task or referral) has
 /// `additionalFields.flow == 'riDone'`, marking it as belonging to the RI flow.
@@ -542,6 +543,24 @@ bool _isRiEntity(Map entity) {
   for (final field in fields) {
     if (field is Map && field['key'] == 'flow') {
       return field['value']?.toString() == _riFlowValue;
+    }
+  }
+  return false;
+}
+
+/// Returns true when the given entity (task or referral) belongs to the SMC
+/// delivery flow (`additionalFields.flow == 'smcDone'`). Used to isolate the
+/// SMC delivery record from ORS (`orsDone`) / VAS (`vasDone`) / RI (`riDone`)
+/// tasks — those are non-RI too, so a plain `_filterByFlow(keepRi: false)`
+/// would wrongly include them.
+bool _isSmcEntity(Map entity) {
+  final additionalFields = entity['additionalFields'];
+  if (additionalFields is! Map) return false;
+  final fields = additionalFields['fields'];
+  if (fields is! List) return false;
+  for (final field in fields) {
+    if (field is Map && field['key'] == 'flow') {
+      return field['value']?.toString() == _smcFlowValue;
     }
   }
   return false;
@@ -574,6 +593,18 @@ List<Map<String, dynamic>> _filterByFlow(List source, {required bool keepRi}) {
     if (map == null) continue;
     final isRi = _isRiEntity(map);
     if (keepRi == isRi) result.add(map);
+  }
+  return result;
+}
+
+/// Returns SMC entities only (`additionalFields.flow == 'smcDone'`), excluding
+/// ORS / VAS / RI tasks.
+List<Map<String, dynamic>> _filterSmcEntities(List source) {
+  final result = <Map<String, dynamic>>[];
+  for (final item in source) {
+    final map = _asMap(item);
+    if (map == null) continue;
+    if (_isSmcEntity(map)) result.add(map);
   }
   return result;
 }
@@ -868,8 +899,13 @@ void initializeFunctionRegistry() {
     // Must be a non-empty list of tasks
     if (rawTasks is! List || rawTasks.isEmpty) return TaskStatus.ineligible;
 
-    // Only consider SMC tasks (exclude RI tasks marked with flow == 'riDone')
-    final tasks = _filterByFlow(rawTasks, keepRi: false);
+    // Only consider SMC tasks (flow == 'smcDone'). ORS/VAS/RI tasks must be
+    // excluded here: they are all non-RI, so `_filterByFlow(keepRi: false)`
+    // would keep an ORS/VAS task and — being created after the SMC task — it
+    // becomes `tasks.last`. Its ADMINISTRATION_SUCCESS status isn't a recognised
+    // ineligible reason, so the label would fall through to INELIGIBLE, flipping
+    // a BENEFICIARY_DIED / MIGRATED / ABSENT status after an ORS is generated.
+    final tasks = _filterSmcEntities(rawTasks);
     if (tasks.isEmpty) return TaskStatus.ineligible;
 
     final lastTask = tasks.last;
@@ -970,13 +1006,35 @@ void initializeFunctionRegistry() {
     final tasks = args.first;
 
     for (var task in tasks ?? []) {
-      final statusValue = task.status;
-      if (statusValue is! String) continue;
-      final status = statusValue.trim().toUpperCase();
-      final List? fields = task.additionalFields?.fields;
+      // Normalize each task to a Map so this works whether `item.task` resolves
+      // to TaskModel objects (visible conditions) or to serialized Maps
+      // (navigation `data` value resolution, e.g. the isSMCDelivered flag).
+      // Reading `.status`/`.additionalFields` as object properties throws on a
+      // Map, which silently resolved the flag to empty. Mirrors disableEdit and
+      // the other task functions in this file.
+      Map? taskMap;
+      if (task is Map) {
+        taskMap = task;
+      } else {
+        try {
+          taskMap = (task as dynamic).toMap() as Map?;
+        } catch (_) {
+          try {
+            taskMap = (task as dynamic).toJson() as Map?;
+          } catch (_) {
+            taskMap = null;
+          }
+        }
+      }
+      if (taskMap == null) continue;
+
+      final status = taskMap['status']?.toString().trim().toUpperCase();
+
+      final additionalFields = taskMap['additionalFields'];
+      final List? fields =
+          additionalFields is Map ? additionalFields['fields'] as List? : null;
       final flowType = fields
-          ?.firstWhereOrNull((f) => f.key == 'flow')
-          ?.value
+          ?.firstWhereOrNull((f) => f is Map && f['key'] == 'flow')?['value']
           ?.toString()
           .trim()
           .toUpperCase();
