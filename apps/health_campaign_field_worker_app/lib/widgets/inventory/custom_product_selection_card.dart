@@ -185,6 +185,25 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       // Calculate stock in hand for selected products
       final loggedInUserUuid = FlowBuilderSingleton().loggedInUserUuid;
       final productIds = _selectedProducts.map((p) => p.id).toList();
+      final selectedCycle = context.selectedCycle;
+
+      final filteredStockList = stockList.where((stock) {
+        final cycleStartDate = selectedCycle?.startDate;
+        final cycleEndDate = selectedCycle?.endDate;
+
+        if (cycleStartDate == null || cycleEndDate == null) {
+          return true;
+        }
+
+        final stockEntryDate = stock.dateOfEntryTime?.millisecondsSinceEpoch ??
+            stock.auditDetails?.createdTime ??
+            stock.clientAuditDetails?.createdTime;
+
+        if (stockEntryDate == null) return false;
+
+        return stockEntryDate >= cycleStartDate &&
+            stockEntryDate <= cycleEndDate;
+      }).toList();
 
       final taskRepo =
           context.read<LocalRepository<TaskModel, TaskSearchModel>>()
@@ -199,7 +218,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
 
       final stockTransactionBalance =
           StockCalculationUtils.calculateStockInHandForProducts(
-        stockList: stockList,
+        stockList: filteredStockList,
         facilityId: facilityId,
         productIds: productIds,
         loggedInUserUuid: loggedInUserUuid,
