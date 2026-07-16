@@ -748,6 +748,7 @@ void initializeFunctionRegistry() {
     // Each cycle's tasks are stored in a list to check if the current cycle has enough tasks
     List eachCycleData = [];
 
+    // If the beneficiary is not within age and this is the first cycle, return false.
     if (isWithinAge == false && isFirstCycle == true) return false;
 
 // --- Eligibility logic ---
@@ -786,7 +787,7 @@ void initializeFunctionRegistry() {
               flowType = field['value']?.toString();
             }
           }
-          if (flowType != "smcDone") {
+          if (flowType == "smcDone") {
             eachCycleData.add(task);
           } else {
             continue; // Skip non-SMC tasks
@@ -819,7 +820,10 @@ void initializeFunctionRegistry() {
             task['status'] == TaskStatus.beneficiaryRefused) return false;
       }
 
-      if (eachCycleData.length < currentCycle.id) return false;
+      // If the beneficiary is not within age and the number of completed SMC tasks is less than the current cycle's ID, return false.
+      if (isWithinAge == false && eachCycleData.length < currentCycle.id) {
+        return false;
+      }
     }
 
     if (tasks.isNotEmpty && sideEffects.isNotEmpty) {
