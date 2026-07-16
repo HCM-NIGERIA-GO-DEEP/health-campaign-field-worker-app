@@ -731,7 +731,7 @@ void initializeFunctionRegistry() {
     final sideEffects = (stateData.modelMap['sideEffects'] as List?) ?? [];
 
 // --- Current active cycle ---
-    final currentCycle = projectType.cycles?.firstWhereOrNull(
+    ProjectCycle? currentCycle = projectType.cycles?.firstWhereOrNull(
       (e) =>
           e.startDate < DateTime.now().millisecondsSinceEpoch &&
           e.endDate > DateTime.now().millisecondsSinceEpoch,
@@ -742,12 +742,17 @@ void initializeFunctionRegistry() {
     final isWithinAge =
         _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
 
-    if (!isWithinAge) return false;
+    // Determine isFirstCycle based on whether there are any tasks recorded for the beneficiary.
+    bool isFirstCycle = tasks.isEmpty;
+
+    // Each cycle's tasks are stored in a list to check if the current cycle has enough tasks
+    List eachCycleData = [];
+
+    if (isWithinAge == false && isFirstCycle == true) return false;
 
 // --- Eligibility logic ---
     bool recordedSideEffect = false;
-
-    if (tasks.isNotEmpty) {
+    if (isFirstCycle == false) {
       // Get currentRunningCycle from third argument if provided
       final currentRunningCycle =
           args.length > 2 ? int.tryParse(args[2]?.toString() ?? '') : null;
@@ -782,6 +787,8 @@ void initializeFunctionRegistry() {
             }
           }
           if (flowType != "smcDone") {
+            eachCycleData.add(task);
+          } else {
             continue; // Skip non-SMC tasks
           }
         }
@@ -811,6 +818,8 @@ void initializeFunctionRegistry() {
             task['status'] == TaskStatus.beneficiaryAbsent ||
             task['status'] == TaskStatus.beneficiaryRefused) return false;
       }
+
+      if (eachCycleData.length < currentCycle.id) return false;
     }
 
     if (tasks.isNotEmpty && sideEffects.isNotEmpty) {
@@ -984,12 +993,11 @@ void initializeFunctionRegistry() {
       if (statusValue is! String) continue;
       final status = statusValue.trim().toUpperCase();
       final List? fields = task.additionalFields?.fields;
-      final taskCycleIndex = int.tryParse(
-          fields
-                  ?.firstWhereOrNull((f) => f.key == 'cycleIndex')
-                  ?.value
-                  ?.toString() ??
-              '');
+      final taskCycleIndex = int.tryParse(fields
+              ?.firstWhereOrNull((f) => f.key == 'cycleIndex')
+              ?.value
+              ?.toString() ??
+          '');
       if (taskCycleIndex != currentCycleIndex) continue;
 
       final flowType = fields
@@ -1802,13 +1810,11 @@ void initializeFunctionRegistry() {
             final fields = additionalFields is Map
                 ? additionalFields['fields'] as List?
                 : null;
-            final taskCycleIndex = int.tryParse(
-                fields
-                        ?.firstWhereOrNull((f) =>
-                            f is Map && f['key'] == 'cycleIndex')
-                        ?['value']
-                        ?.toString() ??
-                    '');
+            final taskCycleIndex = int.tryParse(fields
+                    ?.firstWhereOrNull(
+                        (f) => f is Map && f['key'] == 'cycleIndex')?['value']
+                    ?.toString() ??
+                '');
 
             if (selectedCycle != null && taskCycleIndex != selectedCycle.id) {
               continue;
