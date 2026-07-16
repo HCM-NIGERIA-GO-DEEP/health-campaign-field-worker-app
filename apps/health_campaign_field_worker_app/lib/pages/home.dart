@@ -838,6 +838,54 @@ class _HomePageState extends LocalizedState<HomePage> {
       return deDate >= DateTime.now().millisecondsSinceEpoch;
     });
 
+    FunctionRegistry.register('showAttendanceCard', (args, stateData) {
+      if (args.length < 2) return false;
+
+      final widgetData = args[0];
+      final item = args[1];
+
+      final selectedDateRaw =
+          widgetData is Map ? widgetData['selectedDate'] : null;
+      final selectedDateMs = selectedDateRaw is int
+          ? selectedDateRaw
+          : int.tryParse(selectedDateRaw?.toString() ?? '');
+      final targetDateMs =
+          selectedDateMs ?? DateTime.now().millisecondsSinceEpoch;
+
+      dynamic attendee = item;
+      if (item is Map && item['entity'] != null) {
+        attendee = item['entity'];
+      }
+
+      int? enrollmentDate;
+      int? denrollmentDate;
+
+      try {
+        if (attendee is Map) {
+          final enrollmentRaw = attendee['enrollmentDate'];
+          final denrollmentRaw = attendee['denrollmentDate'];
+          enrollmentDate = enrollmentRaw is int
+              ? enrollmentRaw
+              : int.tryParse(enrollmentRaw?.toString() ?? '');
+          denrollmentDate = denrollmentRaw is int
+              ? denrollmentRaw
+              : int.tryParse(denrollmentRaw?.toString() ?? '');
+        } else {
+          enrollmentDate = attendee?.enrollmentDate;
+          denrollmentDate = attendee?.denrollmentDate;
+        }
+      } catch (_) {
+        return true;
+      }
+
+      final isAfterEnrollment =
+          enrollmentDate == null || targetDateMs >= enrollmentDate;
+      final isBeforeDenrollment =
+          denrollmentDate == null || targetDateMs <= denrollmentDate;
+
+      return isAfterEnrollment && isBeforeDenrollment;
+    });
+
     FunctionRegistry.register('isLogNotMarked', (args, stateData) {
       String? individualId = args.isNotEmpty ? args[0] : null;
       int? selectedDateRaw =

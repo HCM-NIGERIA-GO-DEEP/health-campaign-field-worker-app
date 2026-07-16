@@ -42495,12 +42495,6 @@ abstract class _$LocalSqlDataStore extends GeneratedDatabase {
   late final Index taskSearchProjectCreatedStatus = Index(
       'task_search_project_created_status',
       'CREATE INDEX task_search_project_created_status ON task (project_id, client_created_by, status)');
-  late final Index taskSearchProjectCreatedStatusModifiedtime = Index(
-      'task_search_project_created_status_modifiedtime',
-      'CREATE INDEX task_search_project_created_status_modifiedtime ON task (project_id, client_created_by, status, client_modified_time)');
-  late final Index taskSearchProjectCreatedStatusPlannedstart = Index(
-      'task_search_project_created_status_plannedstart',
-      'CREATE INDEX task_search_project_created_status_plannedstart ON task (project_id, client_created_by, status, planned_start_date)');
   late final Index taskresourceclinetref = Index('taskresourceclinetref',
       'CREATE INDEX taskresourceclinetref ON task_resource (client_reference_id)');
   late final Index taskresourceTaskclientref = Index(
@@ -42606,8 +42600,6 @@ abstract class _$LocalSqlDataStore extends GeneratedDatabase {
         taskProjectStatus,
         taskClientmodifiedtime,
         taskSearchProjectCreatedStatus,
-        taskSearchProjectCreatedStatusModifiedtime,
-        taskSearchProjectCreatedStatusPlannedstart,
         taskresourceclinetref,
         taskresourceTaskclientref,
         taskresourceProductvariantid,

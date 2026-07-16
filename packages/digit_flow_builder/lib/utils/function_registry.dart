@@ -1005,6 +1005,16 @@ void initializeFunctionRegistry() {
 
     final tasks = args.first;
 
+    final projectType = FlowBuilderSingleton().projectType;
+    final currentCycle = projectType?.cycles?.firstWhereOrNull(
+      (e) =>
+          e.startDate < DateTime.now().millisecondsSinceEpoch &&
+          e.endDate > DateTime.now().millisecondsSinceEpoch,
+    );
+    final currentCycleIndex = currentCycle?.id;
+
+    if (currentCycleIndex == null) return false;
+
     for (var task in tasks ?? []) {
       // Normalize each task to a Map so this works whether `item.task` resolves
       // to TaskModel objects (visible conditions) or to serialized Maps
@@ -1033,6 +1043,13 @@ void initializeFunctionRegistry() {
       final additionalFields = taskMap['additionalFields'];
       final List? fields =
           additionalFields is Map ? additionalFields['fields'] as List? : null;
+      final taskCycleIndex = int.tryParse(fields
+              ?.firstWhereOrNull((f) => f.key == 'cycleIndex')
+              ?.value
+              ?.toString() ??
+          '');
+      if (taskCycleIndex != currentCycleIndex) continue;
+
       final flowType = fields
           ?.firstWhereOrNull((f) => f is Map && f['key'] == 'flow')?['value']
           ?.toString()
@@ -1807,6 +1824,13 @@ void initializeFunctionRegistry() {
   /// 2. Any task is not eligible (INELIGIBLE status)
   /// 3. A referral exists (not null/empty)
   FunctionRegistry.register("disableEdit", (args, stateData) {
+    final projectType = FlowBuilderSingleton().projectType;
+    final selectedCycle = projectType?.cycles?.firstWhereOrNull(
+      (e) =>
+          e.startDate < DateTime.now().millisecondsSinceEpoch &&
+          e.endDate > DateTime.now().millisecondsSinceEpoch,
+    );
+
     // Check task statuses - if ANY task is delivered or ineligible, disable
     if (args.isNotEmpty && args.first != null) {
       final tasks = args.first;
@@ -1831,6 +1855,20 @@ void initializeFunctionRegistry() {
           }
 
           if (taskMap != null) {
+            final additionalFields = taskMap['additionalFields'];
+            final fields = additionalFields is Map
+                ? additionalFields['fields'] as List?
+                : null;
+            final taskCycleIndex = int.tryParse(fields
+                    ?.firstWhereOrNull(
+                        (f) => f is Map && f['key'] == 'cycleIndex')?['value']
+                    ?.toString() ??
+                '');
+
+            if (selectedCycle != null && taskCycleIndex != selectedCycle.id) {
+              continue;
+            }
+
             final status = taskMap['status']?.toString().toUpperCase().trim();
 
             // Disable if any task status is success
@@ -1857,14 +1895,6 @@ void initializeFunctionRegistry() {
       final referral = args[1];
 
       if (referral is List && referral.isNotEmpty) {
-        // Check if any referral matches the current running cycle
-        final projectType = FlowBuilderSingleton().projectType;
-        final selectedCycle = projectType?.cycles?.firstWhereOrNull(
-          (e) =>
-              e.startDate < DateTime.now().millisecondsSinceEpoch &&
-              e.endDate > DateTime.now().millisecondsSinceEpoch,
-        );
-
         if (selectedCycle != null) {
           for (final item in referral) {
             Map<String, dynamic>? refMap;
@@ -2131,48 +2161,65 @@ void initializeFunctionRegistry() {
     return isWithinAge;
   });
 
-  // GET symptoms for referral - this is a placeholder function to demonstrate how to register a function that processes data and returns a result based on certain conditions. In a real implementation, the symptom values would likely come from the stateData or arguments rather than being hardcoded.
+  /// Resolves the eligibility-checklist answers carried in [navigationData] into
+  /// referral reason codes, ordered by descending priority:
+  /// ADR (DRUG_SE_PC) > SICK > FEVER.
+  ///
+  /// Mapping: `ec4==YES` -> ADR (DRUG_SE_PC), `ec1==YES` -> SICK,
+  /// `ec2==YES` -> FEVER. Reasons are appended in priority order, so the first
+  /// element is always the highest-priority reason. Returns an empty list when the
+  /// navigation carries no checklist answers (e.g. a manual referral that is not
+  /// sourced from the CHECKLIST flow).
+  List<String> resolveReferralReasons(dynamic navigationData) {
+    if (navigationData is! Map) return const [];
+
+    if (navigationData["sourceFlow"] == "RI_CHECKLIST") return const ['RI'];
+
+    final String? ec1 = navigationData['ec1']?.toString();
+    final String? ec2 = navigationData['ec2']?.toString();
+    final String? ec4 = navigationData['ec4']?.toString();
+
+    // No checklist answers present -> not a checklist-sourced referral.
+    if (ec1 == null && ec2 == null && ec4 == null) return const [];
+
+    final List<String> reasons = [];
+    if (ec4 == 'YES') reasons.add('DRUG_SE_PC'); // ADR - adverse drug reaction
+    if (ec1 == 'YES') reasons.add('SICK');
+    if (ec2 == 'YES') reasons.add('FEVER');
+
+    // Referral reached without an explicit symptom -> default to ADR.
+    if (reasons.isEmpty) reasons.add('DRUG_SE_PC');
+
+    return reasons;
+  }
+
+  // Referral reasons are resolved from the eligibility-checklist answers and
+  // ordered by priority (ADR/DRUG_SE_PC > SICK > FEVER) via
+  // [resolveReferralReasons]. They are exposed through three functions so the
+  // config can split a single highest-priority reason from the rest:
+  //  - getSymptomsReferral     -> full ordered list joined by "," (referralReasons)
+  //  - getReferralSymptom      -> the single highest-priority reason (symptom)
+  //  - getReferralReasonsExtra -> the remaining reasons joined by "," (referralReasonsExtra)
 
   FunctionRegistry.register("getSymptomsReferral", (args, stateData) {
-    Map? navigationData = args.isNotEmpty ? args.first : null;
+    final reasons = resolveReferralReasons(args.isNotEmpty ? args.first : null);
+    if (reasons.isEmpty) return null;
 
-    if (navigationData == null) return null;
+    return reasons.join(',');
+  });
 
-    String defaultSymptom = 'SICK';
+  FunctionRegistry.register("getReferralSymptom", (args, stateData) {
+    final reasons = resolveReferralReasons(args.isNotEmpty ? args.first : null);
+    if (reasons.isEmpty) return null;
 
-    final String? sourceFlow = navigationData['sourceFlow'];
-    final List<String> symptoms = [];
+    return reasons.first;
+  });
 
-    if (sourceFlow == 'CHECKLIST' || sourceFlow == 'VASCHECKLIST') {
-      String? ec1 = navigationData['ec1'];
-      String? ec2 = navigationData['ec2'];
+  FunctionRegistry.register("getReferralReasonsExtra", (args, stateData) {
+    final reasons = resolveReferralReasons(args.isNotEmpty ? args.first : null);
+    if (reasons.length <= 1) return null;
 
-      if (ec1 == null && ec2 == null) return defaultSymptom;
-
-      if (ec1 == 'YES') symptoms.add('SICK');
-      if (ec2 == 'YES') symptoms.add('FEVER');
-      if (symptoms.isEmpty) symptoms.add('DRUG_SE_PC');
-    } else if (sourceFlow == 'RI_CHECKLIST') {
-      String? zeroDose = navigationData['zeroDose'];
-      String? partiallyImmunized = navigationData['partiallyImmunized'];
-      String? unimmunized = navigationData['unimmunized'];
-
-      if (zeroDose == null &&
-          partiallyImmunized == null &&
-          unimmunized == null) {
-        return defaultSymptom;
-      }
-
-      if (zeroDose == 'YES') symptoms.add('ZERO_DOSE');
-      if (partiallyImmunized == 'YES') symptoms.add('PARTIALLY_IMMUNIZED');
-      if (unimmunized == 'YES') symptoms.add('UNIMMUNIZED');
-    } else {
-      return defaultSymptom;
-    }
-
-    if (symptoms.isEmpty) return defaultSymptom;
-
-    return symptoms.join(',');
+    return reasons.skip(1).join(',');
   });
 
   FunctionRegistry.register("hasBeneficiaryId", (args, stateData) {
@@ -2370,6 +2417,7 @@ void initializeFunctionRegistry() {
       'SICK': 'sickQ1',
       'DRUG_SE_CC': 'sideEffectQ1',
       'DRUG_SE_PC': 'sideEffectPQ1',
+      'RI': 'riQ1',
     };
 
     final checklistKey = symptomToChecklistKey[symptom];

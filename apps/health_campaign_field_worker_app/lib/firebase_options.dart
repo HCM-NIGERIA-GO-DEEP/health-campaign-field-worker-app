@@ -54,7 +54,11 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBzE5f156_ia7HumLb1fDg8A-88uhmQ68Y',
+<<<<<<< HEAD
     appId: '1:397617237644:android:dbaa4be19cc65e8bf6b5a9',
+=======
+    appId: '1:397617237644:android:0d59b2d002f5b097f6b5a9',
+>>>>>>> feat/nigeria-go-deep-borno
     messagingSenderId: '397617237644',
     projectId: 'digit-health-75ed0',
     storageBucket: 'digit-health-75ed0.appspot.com',
