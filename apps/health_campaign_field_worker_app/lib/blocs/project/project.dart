@@ -988,22 +988,17 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
       if (receiverIds.isEmpty) return;
 
-      final selectedProjectType = await localSecureStore.selectedProjectType;
       final now = DateTime.now().millisecondsSinceEpoch;
-      final currentCycleStartDate = selectedProjectType?.cycles
-              ?.where(
-                (cycle) =>
-                    (cycle.startDate ?? 0) <= now &&
-                    (cycle.endDate ?? 0) >= now,
-              )
-              .firstOrNull
-              ?.startDate ??
+      int? currentCycleStartDate =
           project.additionalDetails?.projectType?.cycles
               ?.where(
                 (cycle) => cycle.startDate <= now && cycle.endDate >= now,
               )
               .firstOrNull
               ?.startDate;
+
+      currentCycleStartDate ??= project
+          .additionalDetails?.projectType?.cycles?.firstOrNull?.startDate;
 
       final stockSearchModel = StockSearchModel(
         receiverId: receiverIds.first,
