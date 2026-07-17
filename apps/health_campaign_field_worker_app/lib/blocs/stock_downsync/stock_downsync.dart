@@ -156,28 +156,40 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
 
   String _getLocalityKey(String projectId) => 'stock_$projectId';
 
+  /// Resolves the start date (in millis) of the currently active cycle for the
+  /// given [project], falling back to the project's embedded project type when
+  /// the selected project type has no matching cycle.
+  ///
+  /// Used to scope stock downsync via `lastChangedSince` so only records changed
+  /// since the current cycle started are pulled. Both the count check and the
+  /// actual download must use this so the download does not fetch pre-cycle data.
+  Future<int?> _getCurrentCycleStartDate(ProjectModel project) async {
+    final selectedProjectType = await localSecureStore.selectedProjectType;
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    return selectedProjectType?.cycles
+            ?.where(
+              (cycle) =>
+                  (cycle.startDate ?? 0) <= now && (cycle.endDate ?? 0) >= now,
+            )
+            .firstOrNull
+            ?.startDate ??
+        project.additionalDetails?.projectType?.cycles
+            ?.where(
+              (cycle) => cycle.startDate <= now && cycle.endDate >= now,
+            )
+            .firstOrNull
+            ?.startDate;
+  }
+
   FutureOr<void> _handleCheckTotalCount(
     StockDownSyncCheckTotalCountEvent event,
     StockDownSyncEmitter emit,
   ) async {
     emit(const StockDownSyncState.loading(true));
     try {
-      final selectedProjectType = await localSecureStore.selectedProjectType;
-      final now = DateTime.now().millisecondsSinceEpoch;
-      final currentCycleStartDate = selectedProjectType?.cycles
-              ?.where(
-                (cycle) =>
-                    (cycle.startDate ?? 0) <= now &&
-                    (cycle.endDate ?? 0) >= now,
-              )
-              .firstOrNull
-              ?.startDate ??
-          event.projectModel.additionalDetails?.projectType?.cycles
-              ?.where(
-                (cycle) => cycle.startDate <= now && cycle.endDate >= now,
-              )
-              .firstOrNull
-              ?.startDate;
+      final currentCycleStartDate =
+          await _getCurrentCycleStartDate(event.projectModel);
 
       final stockSearchModel = await _buildStockSearchModel(event.projectModel);
 
@@ -246,8 +258,15 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
           locality: localityKey,
         ));
 
+        // On the first download (no existing downsync record) scope the query
+        // to the current cycle start so pre-cycle stock is not pulled. Must
+        // match _handleCheckTotalCount, otherwise the count preview and the
+        // actual download disagree and older records get downloaded.
+        final currentCycleStartDate =
+            await _getCurrentCycleStartDate(event.projectModel);
+
         int? lastSyncedTime = existingDownSyncData.isEmpty
-            ? null
+            ? currentCycleStartDate
             : existingDownSyncData.first.lastSyncedTime;
 
         // Create initial downsync record if not exists
