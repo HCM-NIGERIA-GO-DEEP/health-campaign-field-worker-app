@@ -356,6 +356,63 @@ num? _readAdditionalFieldNumber(dynamic individual, String key) {
   return null;
 }
 
+/// Reads the raw value for [key] from an `additionalFields` container without
+/// ever throwing, regardless of how the owning entity was serialized.
+///
+/// The container may be an [AdditionalFields] object, a `Map` holding a
+/// `fields` list, or any object exposing a `fields` getter. Each field entry
+/// may in turn be an [AdditionalField] object, a `Map` (`{'key':..,'value':..}`)
+/// or any object exposing `key`/`value`. Returns `null` when the key is absent
+/// or the shape is unreadable.
+///
+/// This exists because tasks reaching the registry functions are sometimes
+/// fully-typed models (visible-condition evaluation) and sometimes serialized
+/// maps (navigation `data` resolution); reading `.key`/`.value` on a `Map` —
+/// or `['key']` on an [AdditionalField] — throws `NoSuchMethodError` and blanks
+/// the whole screen. Callers should prefer this over shape-specific access.
+dynamic _additionalFieldValue(dynamic additionalFields, String key) {
+  if (additionalFields == null) return null;
+
+  // Normalize the container to a list of field entries.
+  List? fields;
+  if (additionalFields is AdditionalFields) {
+    fields = additionalFields.fields;
+  } else if (additionalFields is Map) {
+    final raw = additionalFields['fields'];
+    fields = raw is List ? raw : null;
+  } else {
+    try {
+      final raw = (additionalFields as dynamic).fields;
+      fields = raw is List ? raw : null;
+    } catch (_) {
+      return null;
+    }
+  }
+  if (fields == null) return null;
+
+  for (final field in fields) {
+    if (field == null) continue;
+    String? fieldKey;
+    dynamic fieldValue;
+    if (field is AdditionalField) {
+      fieldKey = field.key;
+      fieldValue = field.value;
+    } else if (field is Map) {
+      fieldKey = field['key']?.toString();
+      fieldValue = field['value'];
+    } else {
+      try {
+        fieldKey = (field as dynamic).key?.toString();
+        fieldValue = (field as dynamic).value;
+      } catch (_) {
+        continue;
+      }
+    }
+    if (fieldKey == key) return fieldValue;
+  }
+  return null;
+}
+
 /// Resolves a [DateTime] date of birth from an individual (Map / EntityModel /
 /// dynamic). Supports both epoch-millisecond and formatted-string values.
 DateTime? _resolveDateOfBirth(dynamic individual) {
@@ -1041,17 +1098,15 @@ void initializeFunctionRegistry() {
       final status = taskMap['status']?.toString().trim().toUpperCase();
 
       final additionalFields = taskMap['additionalFields'];
-      final List? fields =
-          additionalFields is Map ? additionalFields['fields'] as List? : null;
-      final taskCycleIndex = int.tryParse(fields
-              ?.firstWhereOrNull((f) => f.key == 'cycleIndex')
-              ?.value
-              ?.toString() ??
-          '');
+
+      // Read fields defensively: entries may be AdditionalField objects or
+      // Maps depending on how the task was serialized. Never throw.
+      final taskCycleIndex = int.tryParse(
+          _additionalFieldValue(additionalFields, 'cycleIndex')?.toString() ??
+              '');
       if (taskCycleIndex != currentCycleIndex) continue;
 
-      final flowType = fields
-          ?.firstWhereOrNull((f) => f is Map && f['key'] == 'flow')?['value']
+      final flowType = _additionalFieldValue(additionalFields, 'flow')
           ?.toString()
           .trim()
           .toUpperCase();
