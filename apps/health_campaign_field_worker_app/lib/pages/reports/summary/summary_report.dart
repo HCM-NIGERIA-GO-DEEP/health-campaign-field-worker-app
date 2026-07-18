@@ -1,5 +1,3 @@
-import 'package:digit_data_model/data/repositories/package_repository/local/household.dart';
-import 'package:digit_data_model/data/repositories/package_repository/local/household_member.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
@@ -7,14 +5,11 @@ import 'package:digit_ui_components/widgets/atoms/table_cell.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_table.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
-import '../../../models/entities/roles_type.dart';
+import '../../../data/backup/summary_report_data.dart';
 import '../../../router/app_router.dart';
 import '../../../utils/i18_key_constants.dart' as i18;
-import '../../../utils/stock_calculation_utils.dart';
-import '../../../utils/utils.dart';
 import '../../../widgets/header/back_navigation_help_header.dart';
 import '../../../widgets/localized.dart';
 
@@ -27,7 +22,7 @@ class SummaryReportPage extends LocalizedStatefulWidget {
 }
 
 class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
-  List<_SummaryReportRow> _reportRows = [];
+  List<SummaryReportRow> _reportRows = [];
   List<ProductVariantModel> _productVariants = [];
   bool _isLoading = true;
 
@@ -39,288 +34,12 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
 
   Future<void> _loadData() async {
     try {
-      final userUuid = context.loggedInUserUuid;
-      final projectId = context.projectId;
-      final currentCycle = context.selectedCycle;
-      final currentCycleStartDate = currentCycle?.startDate;
-      final currentCycleEndDate = currentCycle?.endDate;
-
-      bool isWithinCurrentCycle(int? epochMs) {
-        if (currentCycleStartDate == null || currentCycleEndDate == null) {
-          return true;
-        }
-        if (epochMs == null) return false;
-        return epochMs >= currentCycleStartDate &&
-            epochMs <= currentCycleEndDate;
-      }
-
-      // Repositories
-      final householdRepo =
-          context.read<LocalRepository<HouseholdModel, HouseholdSearchModel>>()
-              as HouseholdLocalRepository;
-      final taskRepo =
-          context.read<LocalRepository<TaskModel, TaskSearchModel>>();
-      final householdMemberRepo = context.read<
-          LocalRepository<HouseholdMemberModel,
-              HouseholdMemberSearchModel>>() as HouseholdMemberLocalRepository;
-      final stockRepo =
-          context.read<LocalRepository<StockModel, StockSearchModel>>();
-      final projectResourceRepo = context.read<
-          LocalRepository<ProjectResourceModel, ProjectResourceSearchModel>>();
-      final productVariantRepo = context.read<
-          LocalRepository<ProductVariantModel, ProductVariantSearchModel>>();
-      final projectFacilityRepo = context.read<
-          LocalRepository<ProjectFacilityModel, ProjectFacilitySearchModel>>();
-      final facilityRepo =
-          context.read<LocalRepository<FacilityModel, FacilitySearchModel>>();
-
-      // Determine facility ID (same logic as stock_balance_card)
-      final isDistributor = context.loggedInUserRoles
-          .any((role) => role.code == RolesType.distributor.toValue());
-
-      final projectFacilities = await projectFacilityRepo
-          .search(ProjectFacilitySearchModel(projectId: [projectId]));
-
-      final currentFacilities = projectFacilities.where((pf) {
-        final facilityLevel = pf.additionalFields?.fields
-            .where((f) => f.key == 'facilityLevel')
-            .firstOrNull
-            ?.value;
-        return facilityLevel == null || facilityLevel == 'current';
-      }).toList();
-
-      final facilityIds = currentFacilities.map((pf) => pf.facilityId).toList();
-      final facilities =
-          await facilityRepo.search(FacilitySearchModel(id: facilityIds));
-
-      // Match stock_balance_card: distributors always use userUuid
-      final effectiveFacilityId = isDistributor
-          ? userUuid
-          : (facilities.isNotEmpty ? facilities.first.id : userUuid);
-
-      // Fetch product variants
-      final projectResources = await projectResourceRepo
-          .search(ProjectResourceSearchModel(projectId: [projectId]));
-      final productVariantIds = projectResources
-          .map((pr) => pr.resource.productVariantId)
-          .whereType<String>()
-          .toSet()
-          .toList();
-      final productVariants = productVariantIds.isNotEmpty
-          ? await productVariantRepo
-              .search(ProductVariantSearchModel(id: productVariantIds))
-          : <ProductVariantModel>[];
-
-      // Fetch all data
-      final households =
-          await householdRepo.search(HouseholdSearchModel(), userUuid);
-      final tasks = await taskRepo.search(TaskSearchModel(
-        createdBy: userUuid,
-        projectId: projectId,
-      ));
-      final householdMembers = await householdMemberRepo.search(
-          HouseholdMemberSearchModel(), userUuid);
-
-      // Fetch stock records (received + sent for facility)
-      final receivedStocks = await stockRepo
-          .search(StockSearchModel(receiverId: effectiveFacilityId));
-      final sentStocks = await stockRepo
-          .search(StockSearchModel(senderId: effectiveFacilityId));
-
-      // Deduplicate stock records by clientReferenceId
-      final allStocksMap = <String, StockModel>{};
-      for (final stock in receivedStocks) {
-        allStocksMap[stock.clientReferenceId] = stock;
-      }
-      for (final stock in sentStocks) {
-        allStocksMap[stock.clientReferenceId] = stock;
-      }
-      final allStocks = allStocksMap.values.toList();
-
-      // ── Group households by date (filter by logged-in user) ──
-      final hhByDate = <String, int>{};
-      for (final hh in households) {
-        final createdBy =
-            hh.clientAuditDetails?.createdBy ?? hh.auditDetails?.createdBy;
-        if (createdBy != userUuid) continue;
-        final epochMs =
-            hh.clientAuditDetails?.createdTime ?? hh.auditDetails?.createdTime;
-        if (!isWithinCurrentCycle(epochMs)) continue;
-        if (epochMs == null) continue;
-        final date = _epochToDateString(epochMs);
-        hhByDate[date] = (hhByDate[date] ?? 0) + 1;
-      }
-
-      // ── Group tasks by date for children treated ──
-      // (filter by logged-in user AND status == 'ADMINISTRATION_SUCCESS' or 'VISITED')
-      final tasksByDate = <String, Set<String>>{};
-      for (final task in tasks) {
-        if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
-          continue;
-        final createdBy =
-            task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
-        if (createdBy != userUuid) continue;
-        final epochMs = task.clientAuditDetails?.createdTime ??
-            task.auditDetails?.createdTime;
-        if (!isWithinCurrentCycle(epochMs)) continue;
-        if (epochMs == null) continue;
-        final beneficiaryRef = task.projectBeneficiaryClientReferenceId;
-        if (beneficiaryRef == null || beneficiaryRef.isEmpty) continue;
-        final date = _epochToDateString(epochMs);
-        tasksByDate.putIfAbsent(date, () => <String>{});
-        tasksByDate[date]!.add(beneficiaryRef);
-      }
-
-      // ── Group non-head household members by date ──
-      final nonHeadMembersByDate = <String, int>{};
-      for (final member in householdMembers) {
-        if (member.isHeadOfHousehold) continue;
-        final createdBy = member.clientAuditDetails?.createdBy ??
-            member.auditDetails?.createdBy;
-        if (createdBy != userUuid) continue;
-        final epochMs = member.clientAuditDetails?.createdTime ??
-            member.auditDetails?.createdTime;
-        if (!isWithinCurrentCycle(epochMs)) continue;
-        if (epochMs == null) continue;
-        final date = _epochToDateString(epochMs);
-        nonHeadMembersByDate[date] = (nonHeadMembersByDate[date] ?? 0) + 1;
-      }
-
-      // ── Group stock consumed from task resources by date + productVariant ──
-      // Only count tasks with status 'ADMINISTRATION_SUCCESS' or 'VISITED'
-      // Key: "date|productVariantId" -> sum of quantity
-      final consumedByDateProduct = <String, double>{};
-      for (final task in tasks) {
-        if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
-          continue;
-        final createdBy =
-            task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
-        if (createdBy != userUuid) continue;
-        final epochMs = task.clientAuditDetails?.createdTime ??
-            task.auditDetails?.createdTime;
-        if (!isWithinCurrentCycle(epochMs)) continue;
-        if (epochMs == null) continue;
-        final date = _epochToDateString(epochMs);
-        final resources = task.resources;
-        if (resources == null) continue;
-        for (final res in resources) {
-          final pvId = res.productVariantId;
-          if (pvId == null || pvId.isEmpty) continue;
-          final qty = double.tryParse(res.quantity ?? '0') ?? 0.0;
-          final key = '$date|$pvId';
-          consumedByDateProduct[key] =
-              (consumedByDateProduct[key] ?? 0.0) + qty;
-        }
-      }
-
-      // ── Collect stock dates (for date rows) ──
-      final stockDates = <String>{};
-      for (final stock in allStocks) {
-        final epochMs = stock.clientAuditDetails?.createdTime ??
-            stock.auditDetails?.createdTime;
-        if (!isWithinCurrentCycle(epochMs)) continue;
-        if (epochMs == null) continue;
-        stockDates.add(_epochToDateString(epochMs));
-      }
-
-      // ── Collect consumed dates ──
-      final consumedDates = <String>{};
-      for (final key in consumedByDateProduct.keys) {
-        consumedDates.add(key.split('|')[0]);
-      }
-
-      final allDates = <String>{
-        ...hhByDate.keys,
-        ...tasksByDate.keys,
-        ...stockDates,
-        ...consumedDates,
-      };
-
-      // ── Build rows ──
-      // Sort dates ascending for cumulative consumed calculation
-      final sortedDates = allDates.toList()..sort();
-
-      // Track cumulative consumed per product variant (for balance)
-      final cumulativeConsumed = <String, double>{};
-
-      final rows = <_SummaryReportRow>[];
-      for (final date in sortedDates) {
-        final hhCount = hhByDate[date] ?? 0;
-        final childrenCount = tasksByDate[date]?.length ?? 0;
-        final nonHeadCount = nonHeadMembersByDate[date] ?? 0;
-        final percentage =
-            nonHeadCount > 0 ? (childrenCount / nonHeadCount) * 100 : 0.0;
-
-        // End-of-day timestamp for cumulative stock filtering
-        final endOfDay = DateTime.parse(date)
-            .add(const Duration(days: 1))
-            .subtract(const Duration(milliseconds: 1))
-            .millisecondsSinceEpoch;
-
-        // Filter all stocks up to and including this day
-        // Stocks without timestamps are included (assumed historical)
-        final cumulativeStocks = allStocks.where((stock) {
-          final epochMs = stock.clientAuditDetails?.createdTime ??
-              stock.auditDetails?.createdTime;
-          if (!isWithinCurrentCycle(epochMs)) return false;
-          if (epochMs == null) return false;
-          return epochMs <= endOfDay;
-        }).toList();
-
-        // Per-product stock data
-        final stockData = <String, _ProductStockData>{};
-        for (final pv in productVariants) {
-          // Cumulative received & returned using same logic as stock_balance_card
-          final metrics = cumulativeStocks.isNotEmpty
-              ? StockCalculationUtils.calculateStockMetrics(
-                  stockList: cumulativeStocks,
-                  facilityId: effectiveFacilityId,
-                  productId: pv.id,
-                  loggedInUserUuid: userUuid,
-                  isDistributor: isDistributor,
-                )
-              : StockCalculationUtils.emptyMetrics;
-
-          final totalReceived = metrics['stockReceived'] ?? 0.0;
-          final totalReturned = metrics['stockReturned'] ?? 0.0;
-          final totalWastage = metrics['stockWastage'] ?? 0.0;
-
-          // Daily consumed (for this day only)
-          final key = '$date|${pv.id}';
-          final dailyConsumed = consumedByDateProduct[key] ?? 0.0;
-
-          // Accumulate consumed for balance calculation
-          cumulativeConsumed[pv.id] =
-              (cumulativeConsumed[pv.id] ?? 0.0) + dailyConsumed;
-          final totalConsumed = cumulativeConsumed[pv.id]!;
-
-          final balance =
-              totalReceived - totalConsumed - totalReturned - totalWastage;
-
-          stockData[pv.id] = _ProductStockData(
-            received: totalReceived,
-            consumed: dailyConsumed,
-            returned: totalReturned,
-            balance: balance,
-          );
-        }
-
-        rows.add(_SummaryReportRow(
-          date: date,
-          householdsRegistered: hhCount,
-          childrenTreated: childrenCount,
-          childrenTreatedPercent: percentage,
-          stockData: stockData,
-        ));
-      }
-
-      // Sort descending by date for display
-      rows.sort((a, b) => b.date.compareTo(a.date));
+      final result = await SummaryReportData.loadMergedRows(context);
 
       if (mounted) {
         setState(() {
-          _reportRows = rows;
-          _productVariants = productVariants;
+          _reportRows = result.rows;
+          _productVariants = result.productVariants;
           _isLoading = false;
         });
       }
@@ -331,11 +50,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         });
       }
     }
-  }
-
-  String _epochToDateString(int epochMs) {
-    final dt = DateTime.fromMillisecondsSinceEpoch(epochMs);
-    return DateFormat('yyyy-MM-dd').format(dt);
   }
 
   String _formatDisplayDate(String dateStr) {
@@ -526,34 +240,4 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       ),
     );
   }
-}
-
-class _SummaryReportRow {
-  final String date;
-  final int householdsRegistered;
-  final int childrenTreated;
-  final double childrenTreatedPercent;
-  final Map<String, _ProductStockData> stockData;
-
-  _SummaryReportRow({
-    required this.date,
-    required this.householdsRegistered,
-    required this.childrenTreated,
-    required this.childrenTreatedPercent,
-    this.stockData = const {},
-  });
-}
-
-class _ProductStockData {
-  final double received;
-  final double consumed;
-  final double returned;
-  final double balance;
-
-  _ProductStockData({
-    required this.received,
-    required this.consumed,
-    required this.returned,
-    required this.balance,
-  });
 }

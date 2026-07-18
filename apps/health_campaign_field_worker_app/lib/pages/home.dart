@@ -4,6 +4,7 @@ import 'package:attendance_management/utils/utils.dart';
 import 'package:collection/collection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:digit_crud_bloc/digit_crud_bloc.dart';
+import 'package:digit_ui_components/utils/app_logger.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendance_log.dart';
 import 'package:digit_data_model/models/entities/attendance_register.dart';
@@ -67,6 +68,7 @@ import '../widgets/home/home_item_card.dart';
 import '../widgets/inventory/custom_facility_widgets.dart';
 import '../widgets/inventory/custom_product_selection_card.dart';
 import '../widgets/localized.dart';
+import '../data/backup/summary_report_data.dart';
 import '../widgets/progress_bar/beneficiary_progress.dart';
 import '../widgets/progress_bar/hf_referral_progress.dart';
 import '../widgets/resource_card/custom_resource_card.dart';
@@ -129,6 +131,20 @@ class _HomePageState extends LocalizedState<HomePage> {
 
     // Register custom components for forms
     _registerCustomComponents();
+
+    // Roll the summary report's shared-storage snapshot forward on every
+    // home visit so it stays current (and survives a storage clear) without
+    // requiring the report page to be opened.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      SummaryReportData.loadMergedRows(context).catchError((Object error) {
+        AppLogger.instance.error(
+          title: 'HomePage',
+          message: 'Summary report snapshot failed: $error',
+        );
+        return SummaryReportResult(rows: const [], productVariants: const []);
+      });
+    });
   }
 
   /// Register custom components for forms engine
