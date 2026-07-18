@@ -100,6 +100,17 @@ class LastLoginServerDataService {
         <String, dynamic>{};
   }
 
+  int getTimestamp({
+    required String userIdCycleIndex,
+    required String date,
+  }) {
+    final userCycleData = (lastLoginServerData[userIdCycleIndex] as Map?)
+            ?.cast<String, dynamic>() ??
+        <String, dynamic>{};
+
+    return (userCycleData['timeStamp'] as num?)?.toInt() ?? 0;
+  }
+
   int getHouseholdsRegistered({
     required String userIdCycleIndex,
     required String date,
