@@ -2,7 +2,6 @@ import 'package:digit_data_model/data/local_store/sql_store/sql_store.dart';
 import 'package:flutter/material.dart';
 
 import '../../data/local_store/no_sql/schema/app_configuration.dart';
-import '../../data/local_store/no_sql/schema/localization.dart';
 import '../../data/repositories/local/localization.dart';
 import 'app_localizations_delegate.dart';
 
@@ -16,7 +15,7 @@ class AppLocalizations {
     return Localizations.of<AppLocalizations>(context, AppLocalizations)!;
   }
 
-  static final List<Localization> _localizedStrings = <Localization>[];
+  static final Map<String, String> _localizedStrings = <String, String>{};
 
   static LocalizationsDelegate<AppLocalizations> getDelegate(
           AppConfiguration config, LocalSqlDataStore sql) =>
@@ -28,20 +27,19 @@ class AppLocalizations {
 
     _localizedStrings.clear();
 
-    _localizedStrings.addAll(listOfLocalizations);
+    for (final localization in listOfLocalizations) {
+      // putIfAbsent keeps the first entry per code, matching the previous
+      // indexWhere (first-match) behavior when duplicates exist.
+      _localizedStrings.putIfAbsent(
+        localization.code,
+        () => localization.message,
+      );
+    }
 
     return _localizedStrings.isNotEmpty ? true : false;
   }
 
   String translate(String localizedValues) {
-    if (_localizedStrings.isEmpty) {
-      return localizedValues;
-    } else {
-      final index = _localizedStrings.indexWhere(
-        (medium) => medium.code == localizedValues,
-      );
-
-      return index != -1 ? _localizedStrings[index].message : localizedValues;
-    }
+    return _localizedStrings[localizedValues] ?? localizedValues;
   }
 }
