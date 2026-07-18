@@ -8,6 +8,7 @@ import 'package:digit_ui_components/theme/spacers.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../utils/local_data_date_filter.dart';
 import '../../utils/utils.dart';
 import '../progress_indicator/progress_indicator.dart';
 
@@ -37,6 +38,7 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
     final projectId = context.projectId;
     final loggedInUserUuid = context.loggedInUserUuid;
 
+    final cutoffMs = LocalDataDateFilter.cutoffMs(context);
     final now = DateTime.now();
     final gte = DateTime(
       now.year,
@@ -52,6 +54,9 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
       59,
       999,
     );
+    // Cutoff 0 means no snapshot and no cycle — keep the legacy daily window.
+    final plannedStartMs =
+        cutoffMs > 0 ? cutoffMs : gte.millisecondsSinceEpoch;
 
     taskRepository.listenToChanges(
       query: TaskSearchModel(
@@ -59,10 +64,11 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
         projectId: projectId,
         createdBy: loggedInUserUuid,
         plannedEndDate: lte.millisecondsSinceEpoch,
-        plannedStartDate: gte.millisecondsSinceEpoch,
+        plannedStartDate: plannedStartMs,
       ),
       listener: (taskData) async {
         if (mounted) {
+          final cutoffMs = LocalDataDateFilter.cutoffMs(context);
           final now = DateTime.now();
           final gte = DateTime(
             now.year,
@@ -78,11 +84,15 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
             59,
             999,
           );
+          // Cutoff 0 means no snapshot and no cycle — keep the legacy daily
+          // window.
+          final plannedStartMs =
+              cutoffMs > 0 ? cutoffMs : gte.millisecondsSinceEpoch;
           TaskSearchModel taskSearchQuery = TaskSearchModel(
             status: 'ADMINISTRATION_SUCCESS',
             createdBy: loggedInUserUuid,
             plannedEndDate: lte.millisecondsSinceEpoch,
-            plannedStartDate: gte.millisecondsSinceEpoch,
+            plannedStartDate: plannedStartMs,
             projectId: projectId,
           );
 

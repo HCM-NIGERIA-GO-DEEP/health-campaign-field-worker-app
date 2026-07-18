@@ -18,6 +18,7 @@ import 'package:transit_post/data/repositories/local/user_action.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/constants.dart';
 import '../../utils/extensions/extensions.dart';
+import '../../utils/local_data_date_filter.dart';
 import '../../utils/stock_calculation_utils.dart';
 import '../localized.dart';
 
@@ -186,18 +187,25 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       final loggedInUserUuid = FlowBuilderSingleton().loggedInUserUuid;
       final productIds = _selectedProducts.map((p) => p.id).toList();
       final selectedCycle = context.selectedCycle;
+      final cutoffMs = LocalDataDateFilter.cutoffMs(context);
 
       final filteredStockList = stockList.where((stock) {
         final cycleStartDate = selectedCycle?.startDate;
         final cycleEndDate = selectedCycle?.endDate;
 
-        if (cycleStartDate == null || cycleEndDate == null) {
-          return true;
-        }
-
         final stockEntryDate = stock.dateOfEntryTime?.millisecondsSinceEpoch ??
             stock.auditDetails?.createdTime ??
             stock.clientAuditDetails?.createdTime;
+
+        // Last-login cutoff: the server snapshot covers records before it.
+        if (cutoffMs > 0 &&
+            !LocalDataDateFilter.isCountedWith(cutoffMs, stockEntryDate)) {
+          return false;
+        }
+
+        if (cycleStartDate == null || cycleEndDate == null) {
+          return true;
+        }
 
         if (stockEntryDate == null) return false;
 
@@ -210,8 +218,11 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
               as TaskLocalRepository;
 
       // Get relevant tasks for the facility and products
-      final tasks =
-          await StockCalculationUtils.loadDeliveryTasks(context, taskRepo);
+      final tasks = await StockCalculationUtils.loadDeliveryTasks(
+        context,
+        taskRepo,
+        startTimestampMs: cutoffMs,
+      );
 
       var _isDistributor = context.loggedInUserRoles
           .any((role) => role.code == RolesType.distributor.toValue());

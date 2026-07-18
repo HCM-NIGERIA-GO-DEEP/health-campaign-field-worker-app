@@ -13,6 +13,7 @@ import 'package:intl/intl.dart';
 import '../../../models/entities/roles_type.dart';
 import '../../../router/app_router.dart';
 import '../../../utils/i18_key_constants.dart' as i18;
+import '../../../utils/local_data_date_filter.dart';
 import '../../../utils/stock_calculation_utils.dart';
 import '../../../utils/utils.dart';
 import '../../../widgets/header/back_navigation_help_header.dart';
@@ -44,6 +45,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       final currentCycle = context.selectedCycle;
       final currentCycleStartDate = currentCycle?.startDate;
       final currentCycleEndDate = currentCycle?.endDate;
+      final cutoffMs = LocalDataDateFilter.cutoffMs(context);
 
       bool isWithinCurrentCycle(int? epochMs) {
         if (currentCycleStartDate == null || currentCycleEndDate == null) {
@@ -53,6 +55,10 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         return epochMs >= currentCycleStartDate &&
             epochMs <= currentCycleEndDate;
       }
+
+      // Last-login cutoff: the server snapshot covers records before it.
+      bool isCounted(int? epochMs) =>
+          cutoffMs <= 0 || LocalDataDateFilter.isCountedWith(cutoffMs, epochMs);
 
       // Repositories
       final householdRepo =
@@ -146,6 +152,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         final epochMs =
             hh.clientAuditDetails?.createdTime ?? hh.auditDetails?.createdTime;
         if (!isWithinCurrentCycle(epochMs)) continue;
+        if (!isCounted(epochMs)) continue;
         if (epochMs == null) continue;
         final date = _epochToDateString(epochMs);
         hhByDate[date] = (hhByDate[date] ?? 0) + 1;
@@ -163,6 +170,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         final epochMs = task.clientAuditDetails?.createdTime ??
             task.auditDetails?.createdTime;
         if (!isWithinCurrentCycle(epochMs)) continue;
+        if (!isCounted(epochMs)) continue;
         if (epochMs == null) continue;
         final beneficiaryRef = task.projectBeneficiaryClientReferenceId;
         if (beneficiaryRef == null || beneficiaryRef.isEmpty) continue;
@@ -181,6 +189,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         final epochMs = member.clientAuditDetails?.createdTime ??
             member.auditDetails?.createdTime;
         if (!isWithinCurrentCycle(epochMs)) continue;
+        if (!isCounted(epochMs)) continue;
         if (epochMs == null) continue;
         final date = _epochToDateString(epochMs);
         nonHeadMembersByDate[date] = (nonHeadMembersByDate[date] ?? 0) + 1;
@@ -199,6 +208,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         final epochMs = task.clientAuditDetails?.createdTime ??
             task.auditDetails?.createdTime;
         if (!isWithinCurrentCycle(epochMs)) continue;
+        if (!isCounted(epochMs)) continue;
         if (epochMs == null) continue;
         final date = _epochToDateString(epochMs);
         final resources = task.resources;
@@ -219,6 +229,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         final epochMs = stock.clientAuditDetails?.createdTime ??
             stock.auditDetails?.createdTime;
         if (!isWithinCurrentCycle(epochMs)) continue;
+        if (!isCounted(epochMs)) continue;
         if (epochMs == null) continue;
         stockDates.add(_epochToDateString(epochMs));
       }
@@ -263,6 +274,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           final epochMs = stock.clientAuditDetails?.createdTime ??
               stock.auditDetails?.createdTime;
           if (!isWithinCurrentCycle(epochMs)) return false;
+          if (!isCounted(epochMs)) return false;
           if (epochMs == null) return false;
           return epochMs <= endOfDay;
         }).toList();

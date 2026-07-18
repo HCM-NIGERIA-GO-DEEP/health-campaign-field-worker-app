@@ -17,6 +17,7 @@ import '../../models/entities/roles_type.dart';
 import '../../utils/constants.dart';
 import '../../utils/function_registries.dart';
 import '../../utils/i18_key_constants.dart' as i18;
+import '../../utils/local_data_date_filter.dart';
 import '../../utils/stock_calculation_utils.dart';
 import '../../utils/utils.dart';
 import '../localized.dart';
@@ -234,8 +235,12 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
   ) async {
     if (!mounted) return;
 
-    final tasks =
-        await StockCalculationUtils.loadDeliveryTasks(context, taskRepo);
+    final cutoffMs = LocalDataDateFilter.cutoffMs(context);
+    final tasks = await StockCalculationUtils.loadDeliveryTasks(
+      context,
+      taskRepo,
+      startTimestampMs: cutoffMs,
+    );
 
     // Fetch all stocks for this facility
     final receivedStocks = await stockRepo.search(
@@ -260,13 +265,19 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       final cycleStartDate = selectedCycle?.startDate;
       final cycleEndDate = selectedCycle?.endDate;
 
-      if (cycleStartDate == null || cycleEndDate == null) {
-        return true;
-      }
-
       final stockEntryDate = stock.dateOfEntryTime?.millisecondsSinceEpoch ??
           stock.auditDetails?.createdTime ??
           stock.clientAuditDetails?.createdTime;
+
+      // Last-login cutoff: the server snapshot covers records before it.
+      if (cutoffMs > 0 &&
+          !LocalDataDateFilter.isCountedWith(cutoffMs, stockEntryDate)) {
+        return false;
+      }
+
+      if (cycleStartDate == null || cycleEndDate == null) {
+        return true;
+      }
 
       if (stockEntryDate == null) return false;
 

@@ -60,17 +60,21 @@ class StockCalculationUtils {
 
   static Future<List<TaskModel>> loadDeliveryTasks(
     BuildContext context,
-    TaskLocalRepository taskRepo,
-  ) async {
+    TaskLocalRepository taskRepo, {
+    int? startTimestampMs,
+  }) async {
     final projectId = context.projectId;
     final createdBy = context.loggedInUserUuid;
     final selectedCycle = context.selectedCycle;
+    // Last-login cutoff (when provided) narrows the window; the cycle start
+    // remains the default lower bound.
+    final plannedStartDate = startTimestampMs ?? selectedCycle?.startDate;
     final administerSuccessTasks = await taskRepo.search(
       TaskSearchModel(
         projectId: projectId,
         status: "ADMINISTRATION_SUCCESS",
         createdBy: createdBy,
-        plannedStartDate: selectedCycle?.startDate,
+        plannedStartDate: plannedStartDate,
         plannedEndDate: selectedCycle?.endDate,
       ),
     );
@@ -79,7 +83,7 @@ class StockCalculationUtils {
         projectId: projectId,
         status: "VISITED",
         createdBy: createdBy,
-        plannedStartDate: selectedCycle?.startDate,
+        plannedStartDate: plannedStartDate,
         plannedEndDate: selectedCycle?.endDate,
       ),
     );
