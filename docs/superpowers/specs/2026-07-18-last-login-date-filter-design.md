@@ -93,19 +93,24 @@ construction lives here so Step 3/4 can reuse it — **open point for teammate:*
 ### Wire-up per surface
 
 1. **Progress bar card** — `lib/widgets/progress_bar/beneficiary_progress.dart`
-   Both inline `gte` computations (initial `listenToChanges` query and the query inside
-   the listener) use `LocalDataDateFilter.cutoffMs(context)` as `plannedStartDate`. The
-   `lte` (end of day) stays.
+   Both queries (initial `listenToChanges` query and the query inside the listener) use
+   `LocalDataDateFilter.cutoffMs(context)` as `plannedStartDate`. The `lte` (end of day)
+   stays. When the cutoff is 0 (no snapshot **and** no cycle) the legacy start-of-day
+   lower bound is kept so the daily bar cannot regress to counting all-time tasks.
 
 2. **Stock card + stock validation** — `lib/widgets/stock_balance/stock_balance_card.dart`
    In `_refreshBalances`:
    - stock filter additionally requires `stockEntryDate >= cutoffMs` (kept alongside the
-     existing cycle-window check);
-   - `StockCalculationUtils.loadDeliveryTasks` gains an optional `int? startTimestamp`
+     existing cycle-window check); applied only when `cutoffMs > 0` so the legacy
+     no-cycle/no-snapshot behavior (include all) is preserved;
+   - `StockCalculationUtils.loadDeliveryTasks` gains an optional `int? startTimestampMs`
      (defaults to `selectedCycle?.startDate`); the card passes the cutoff.
    Stock validation (`hasStockForDelivery` / `hasStockForRedose` in
    `lib/utils/function_registries.dart`) reads `StockBalanceCache`, which this method
    populates — no change needed there.
+   `lib/widgets/inventory/custom_product_selection_card.dart` (delivery quantity max
+   validations via FormsBloc) uses the identical stock-in-hand computation and gets the
+   same wiring, so both validation paths stay consistent.
 
 3. **Summary report** — `lib/pages/reports/summary/summary_report.dart`
    Add `LocalDataDateFilter.isCounted(epochMs, ...)` beside the existing
