@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
@@ -6,6 +7,7 @@ import 'package:digit_data_model/data/repositories/package_repository/local/task
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/user_action.dart';
 import 'package:digit_ui_components/digit_components.dart';
+import 'package:digit_ui_components/utils/app_logger.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
@@ -13,6 +15,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
 
 import '../../blocs/app_initialization/app_initialization.dart';
+import '../../data/backup/stock_balance_backup_service.dart';
+import '../../data/backup/summary_report_data.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/constants.dart';
 import '../../utils/function_registries.dart';
@@ -234,6 +238,21 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
   ) async {
     if (!mounted) return;
 
+    // Captured before any DB reads so records created while this method runs
+    // are not skipped by the next run's post-snapshot filter.
+    final snapshotTime = DateTime.now().millisecondsSinceEpoch;
+    final projectId = context.projectId;
+    final userUuid = context.loggedInUserUuid;
+    final cycleIndex = (context.selectedCycle?.id ?? 0).toString();
+
+    final backup = await StockBalanceBackupService.instance.readBackup(
+      projectId: projectId,
+      userUuid: userUuid,
+      facilityId: effectiveFacilityId,
+      cycleIndex: cycleIndex,
+    );
+    final backupTime = backup?.timeStamp ?? 0;
+
     final tasks =
         await StockCalculationUtils.loadDeliveryTasks(context, taskRepo);
 
@@ -273,15 +292,64 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       return stockEntryDate >= cycleStartDate && stockEntryDate <= cycleEndDate;
     }).toList();
 
+    // Records created up to the backup snapshot are already baked into the
+    // backed-up balances; only ones in (backupTime, snapshotTime] contribute
+    // here. This keeps the balance correct after a storage clear, where the
+    // server restores received stock but not user-created consumption
+    // records. Records newer than snapshotTime are deferred to the next
+    // refresh so the written snapshot stays consistent with its timestamp.
+    final newStocks = filteredStocks.where((stock) {
+      final createdTime = stock.clientAuditDetails?.createdTime ??
+          stock.auditDetails?.createdTime ??
+          0;
+      return createdTime > backupTime && createdTime <= snapshotTime;
+    }).toList();
+    final newTasks = tasks.where((task) {
+      final createdTime = task.clientAuditDetails?.createdTime ??
+          task.auditDetails?.createdTime ??
+          0;
+      return createdTime > backupTime && createdTime <= snapshotTime;
+    }).toList();
+
     final productIds = _productVariants.map((pv) => pv.id).toList();
-    final balances = StockCalculationUtils.calculateStockInHandForProducts(
-      stockList: filteredStocks,
+    final deltas = StockCalculationUtils.calculateStockInHandForProducts(
+      stockList: newStocks,
       facilityId: effectiveFacilityId,
       productIds: productIds,
       loggedInUserUuid: context.loggedInUserUuid,
       isDistributor: _isDistributor,
-      tasks: tasks,
+      tasks: newTasks,
     );
+
+    final balances = <String, double>{
+      for (final productId in productIds)
+        productId:
+            (backup?.balances[productId] ?? 0.0) + (deltas[productId] ?? 0.0),
+    };
+
+    // Roll the snapshot forward so it stays current for the next run and
+    // survives the user clearing the app's storage.
+    unawaited(StockBalanceBackupService.instance.writeBackup(
+      projectId: projectId,
+      userUuid: userUuid,
+      facilityId: effectiveFacilityId,
+      cycleIndex: cycleIndex,
+      timeStamp: snapshotTime,
+      balances: balances,
+    ));
+
+    // Keep the summary report snapshot in lockstep with the stock snapshot
+    // so both survive a storage clear even if the report page is never
+    // opened.
+    unawaited(SummaryReportData.loadMergedRows(context).catchError(
+      (Object error) {
+        AppLogger.instance.error(
+          title: 'StockBalanceCard',
+          message: 'Summary report snapshot failed: $error',
+        );
+        return SummaryReportResult(rows: const [], productVariants: const []);
+      },
+    ));
 
     StockBalanceCache.instance.setCache(effectiveFacilityId, balances);
     if (mounted) {
