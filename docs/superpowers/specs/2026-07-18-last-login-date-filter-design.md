@@ -31,9 +31,11 @@ purely from local data under-count. The team plan:
   ```
 
 - **Step 1 (this spec):** every local query feeding the three KPI surfaces gains a
-  timestamp lower bound. Placeholder cutoff for now: **start of the current day**.
-- **Step 3 (teammate):** swaps the placeholder for the stored `timeStamp` of the current
-  `{userId}_{cycleIndex}` and adds the stored aggregates onto the filtered local numbers.
+  timestamp lower bound. The service already exposes `getTimestamp(...)`, so Step 1 wires
+  the real cutoff resolution directly (no placeholder): stored `timeStamp`, falling back
+  to the cycle start date when nothing is stored.
+- **Step 3 (teammate):** adds the stored aggregates onto the filtered local numbers
+  (merge only — the cutoff itself is already resolved by Step 1's seam).
 - **Step 4 (teammate):** fetches the snapshot API after login in `ProjectBloc`, persists it
   via the service; error dialog on failure.
 
@@ -45,6 +47,10 @@ Base flow: `Current Data > filter by timestamp > filteredCurrentData + LastLogin
   calendar date. Local records are counted only when created **at/after** the cutoff
   (`epochMs >= cutoff`; server aggregates are treated as covering everything before it —
   the 1 ms inclusive edge is acceptable).
+- **Fallback (confirmed):** when no timestamp is stored for the key —
+  `getTimestamp(...)` returns `0` / object is empty — the cutoff is the **cycle start
+  date** (`selectedCycle?.startDate ?? 0`). Correct because the server then holds no
+  aggregates for this user+cycle, so all local cycle data should count.
 - The filter applies to all five entities: `stock`, `household`, `household_member`,
   `project_beneficiary`, `task`.
 - Each surface keeps the timestamp field it already uses (no behavior drift):
@@ -59,34 +65,37 @@ Base flow: `Current Data > filter by timestamp > filteredCurrentData + LastLogin
 
 ```dart
 /// Epoch-ms lower bound for "current data" KPI calculations.
-/// Step 1 placeholder: start of the current day.
-/// Step 3 replaces the body of [cutoffMs] with the LastLoginServerDataService
-/// timeStamp for [userCycleKey] (fallback: this placeholder).
+/// Resolution: LastLoginServerDataService timeStamp for the current
+/// {userUuid}_{cycleIndex} key; falls back to the cycle start date when no
+/// snapshot is stored (getTimestamp returns 0).
 class LocalDataDateFilter {
   static String userCycleKey(BuildContext context) =>
       '${context.loggedInUserUuid}_${context.currentCycleIndex ?? 0}';
 
-  static int cutoffMs({String? userCycleKey}) {
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day).millisecondsSinceEpoch;
+  static int cutoffMs(BuildContext context) {
+    final ts = LastLoginServerDataService().getTimestamp(
+      userIdCycleIndex: userCycleKey(context),
+      date: DateFormat('yyyy-MM-dd').format(DateTime.now()),
+    );
+    if (ts > 0) return ts;
+    return context.selectedCycle?.startDate ?? 0;
   }
 
-  static bool isCounted(int? epochMs, {String? userCycleKey}) =>
-      epochMs != null && epochMs >= cutoffMs(userCycleKey: userCycleKey);
+  static bool isCounted(BuildContext context, int? epochMs) =>
+      epochMs != null && epochMs >= cutoffMs(context);
 }
 ```
 
-`userCycleKey` is threaded through now (even though the placeholder ignores it) so the
-Step 3 swap is a one-function change. Key construction lives here so Step 3/4 can reuse it
-— **open point for teammate:** confirm `{userId}` is the user *uuid* (not numeric id).
+Call sites resolve the cutoff once per computation (not per record) and reuse it. Key
+construction lives here so Step 3/4 can reuse it — **open point for teammate:** confirm
+`{userId}` is the user *uuid* (not numeric id).
 
 ### Wire-up per surface
 
 1. **Progress bar card** — `lib/widgets/progress_bar/beneficiary_progress.dart`
    Both inline `gte` computations (initial `listenToChanges` query and the query inside
-   the listener) use `LocalDataDateFilter.cutoffMs(...)` as `plannedStartDate`. The `lte`
-   (end of day) stays. With the placeholder this is behavior-neutral (it already filters
-   to today).
+   the listener) use `LocalDataDateFilter.cutoffMs(context)` as `plannedStartDate`. The
+   `lte` (end of day) stays.
 
 2. **Stock card + stock validation** — `lib/widgets/stock_balance/stock_balance_card.dart`
    In `_refreshBalances`:
@@ -120,9 +129,10 @@ Step 3 swap is a one-function change. Key construction lives here so Step 3/4 ca
 
 ## Interim behavior (accepted by team)
 
-Until Step 3 merges the stored aggregates, all three surfaces show only activity since the
-placeholder cutoff (today). In particular the stock balance ignores earlier receipts —
-temporary and expected.
+Until Step 4 stores a snapshot, `getTimestamp` returns 0, so every surface filters from
+**cycle start**. Stock card and summary report already work on the cycle window, so they
+are behavior-neutral. The progress bar widens from "today" to "since cycle start" until a
+snapshot exists — expected under the agreed fallback rule.
 
 ## Risks / notes for Step 3–4 owners
 
@@ -131,16 +141,17 @@ temporary and expected.
   reconstructable only if received/returned stock comes back another way (stock downsync
   or an extended payload). Flagged to the team; Step 1 still applies the filter to stock
   per the agreed plan.
-- When the cutoff becomes a days-old login timestamp, the progress-bar window widens from
-  "today" to "since last login"; Step 3's merge (adding the stored current-date
-  `childrenTreated`) defines the final meaning.
-- `LastLoginServerDataService` currently exposes no getter for `timeStamp` — Step 3 will
-  need one (or read via `lastLoginServerData`).
+- Once a snapshot exists, the progress bar counts local tasks since the login timestamp
+  (can span multiple days) inside a "today" progress bar; Step 3's merge (adding the
+  stored current-date `childrenTreated`) defines the final meaning.
+- `getTimestamp` requires a `date` argument but never reads it — suggest the Step 2 owner
+  makes it optional; Step 1 passes the current date string in the meantime.
 
 ## Testing
 
 - Unit tests for `LocalDataDateFilter` (`test/utils/local_data_date_filter_test.dart`):
-  cutoff = start of today, `isCounted` boundary values (null, cutoff−1, cutoff, now),
-  `userCycleKey` format.
+  stored timestamp wins; 0/empty snapshot falls back to cycle start; no cycle → 0;
+  `isCounted` boundary values (null, cutoff−1, cutoff, now); `userCycleKey` format.
 - Manual verification: home screen progress bar and stock card, delivery flow stock
-  validation, summary report — with records created today vs. seeded yesterday.
+  validation, summary report — with and without a stored snapshot, records created
+  before vs. after the stored timestamp.
