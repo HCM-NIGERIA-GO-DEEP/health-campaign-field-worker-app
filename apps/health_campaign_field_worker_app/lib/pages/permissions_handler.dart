@@ -34,6 +34,9 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
     'ignorebatteryoptimizations': Permission.ignoreBatteryOptimizations,
     'nearbywifidevices': Permission.nearbyWifiDevices,
     'bluetoothscan': Permission.bluetoothScan,
+    // "All files access" — required by the shared-storage backup that
+    // preserves stock balance / summary report data across storage clears.
+    'manageexternalstorage': Permission.manageExternalStorage,
   };
 
   // Declare this as late to initialize it in initState
@@ -45,6 +48,7 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
   // Platform-specific visibility flags
   bool showNearbyWifiDevices = false;
   bool showBluetoothScan = false;
+  bool showManageExternalStorage = false;
 
   // Config from permission_handler_config
   Map<String, dynamic>? screenConfig;
@@ -149,6 +153,14 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
     // Handle platform-specific permissions
     if (Platform.isAndroid) {
       final androidInfo = await DeviceInfoPlugin().androidInfo;
+
+      // "All files access" only exists on Android 11+ (SDK 30); older
+      // versions cover shared storage via the regular storage permission.
+      showManageExternalStorage = androidInfo.version.sdkInt >= 30;
+      if (!showManageExternalStorage) {
+        requiredPermissions.remove(Permission.manageExternalStorage);
+      }
+
       if (androidInfo.version.sdkInt >= 33) {
         showNearbyWifiDevices = true;
         showBluetoothScan = false;
@@ -170,8 +182,10 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
       // Non-Android: remove both wifi/bluetooth permissions
       showNearbyWifiDevices = false;
       showBluetoothScan = false;
+      showManageExternalStorage = false;
       requiredPermissions.remove(Permission.nearbyWifiDevices);
       requiredPermissions.remove(Permission.bluetoothScan);
+      requiredPermissions.remove(Permission.manageExternalStorage);
     }
 
     setState(() {});
@@ -402,6 +416,8 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
             result = showNearbyWifiDevices;
           } else if (key == 'showBluetoothScan') {
             result = showBluetoothScan;
+          } else if (key == 'showManageExternalStorage') {
+            result = showManageExternalStorage;
           }
           // Apply negation if present
           return isNegated ? !result : result;
