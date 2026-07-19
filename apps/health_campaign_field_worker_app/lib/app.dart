@@ -24,12 +24,14 @@ import 'blocs/push_notification/push_notification.dart';
 import 'blocs/localization/localization.dart';
 import 'blocs/project/project.dart';
 import 'data/local_store/app_shared_preferences.dart';
+import 'data/local_store/server_summary_report_storage.dart';
 import 'data/network_manager.dart';
 import 'data/remote_client.dart';
 import 'data/repositories/remote/bandwidth_check.dart';
 import 'data/repositories/remote/localization.dart';
 import 'data/repositories/remote/mdms.dart';
 import 'data/repositories/remote/notification_token.dart';
+import 'data/services/server_summary_report_service.dart';
 import 'executors/stock_balance_executor.dart';
 import 'executors/update_identifier_status_executor.dart';
 import 'executors/navigate_to_downsync_executor.dart';
@@ -95,6 +97,11 @@ class MainApplicationState extends State<MainApplication>
       providers: [
         RepositoryProvider<LocalSqlDataStore>.value(value: widget.sql),
         RepositoryProvider<Isar>.value(value: widget.isar),
+        RepositoryProvider<ServerSummaryReportService>(
+          create: (_) => ServerSummaryReportService(
+            storage: ServerSummaryReportStorage.instance,
+          ),
+        ),
         RepositoryProvider<SearchEntityRepository>(
           create: (context) => SearchEntityRepository(
             widget.sql,
@@ -271,6 +278,8 @@ class MainApplicationState extends State<MainApplication>
                               projectRemoteRepository: ctx.read<
                                   RemoteRepository<ProjectModel,
                                       ProjectSearchModel>>(),
+                              serverSummaryReportService:
+                                  ctx.read<ServerSummaryReportService>(),
                               serviceDefinitionRemoteRepository: ctx.read<
                                   RemoteRepository<ServiceDefinitionModel,
                                       ServiceDefinitionSearchModel>>(),

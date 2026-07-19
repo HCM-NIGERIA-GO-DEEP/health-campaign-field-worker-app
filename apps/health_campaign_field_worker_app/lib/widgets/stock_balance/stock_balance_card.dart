@@ -13,6 +13,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
 
 import '../../blocs/app_initialization/app_initialization.dart';
+import '../../data/services/server_summary_report_service.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/function_registries.dart';
 import '../../utils/i18_key_constants.dart' as i18;
@@ -253,6 +254,39 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       allStocksMap[stock.clientReferenceId] = stock;
     }
     final allStocks = allStocksMap.values.toList();
+    final selectedCycle = context.selectedCycle;
+
+    final summaryReportService = context.read<ServerSummaryReportService>();
+
+    int? serverReportTimestamp = await summaryReportService.timestamp();
+    final serverReportStockConsumedMap =
+        await summaryReportService.stockConsumedMap();
+
+    final filteredStocks = allStocks.where((stock) {
+      final cycleStartDate = selectedCycle?.startDate;
+      final cycleEndDate = selectedCycle?.endDate;
+
+      if (cycleStartDate == null || cycleEndDate == null) {
+        return true;
+      }
+
+      final stockEntryDate = stock.dateOfEntryTime?.millisecondsSinceEpoch ??
+          stock.auditDetails?.createdTime ??
+          stock.clientAuditDetails?.createdTime;
+
+      if (stockEntryDate == null) return false;
+
+      return stockEntryDate >= cycleStartDate && stockEntryDate <= cycleEndDate;
+    }).toList();
+
+    List<TaskModel> filteredTasks = tasks;
+    if (serverReportTimestamp != null) {
+      filteredTasks = filteredTasks
+          .where((e) =>
+              e.auditDetails != null &&
+              e.auditDetails!.lastModifiedTime >= serverReportTimestamp)
+          .toList();
+    }
 
     final productIds = _productVariants.map((pv) => pv.id).toList();
     final balances = StockCalculationUtils.calculateStockInHandForProducts(
@@ -261,13 +295,23 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       productIds: productIds,
       loggedInUserUuid: context.loggedInUserUuid,
       isDistributor: _isDistributor,
-      tasks: tasks,
+      tasks: filteredTasks,
     );
 
     StockBalanceCache.instance.setCache(effectiveFacilityId, balances);
     if (mounted) {
       setState(() {
         _stockBalances = balances;
+        // Apply server report stock consumption adjustments
+        for (final entry in serverReportStockConsumedMap.entries) {
+          final productVariantId = entry.key;
+          final consumedQuantity = entry.value;
+
+          // Deduct the consumed quantity from the calculated balance
+          final currentBalance = _stockBalances[productVariantId] ?? 0.0;
+          _stockBalances[productVariantId] =
+              max(currentBalance - consumedQuantity, 0.0);
+        }
       });
     }
   }
