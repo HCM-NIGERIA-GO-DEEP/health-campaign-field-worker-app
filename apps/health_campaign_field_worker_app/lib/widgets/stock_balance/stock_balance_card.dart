@@ -258,7 +258,6 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
     final selectedCycle = context.selectedCycle;
 
     final summaryReportService = context.read<ServerSummaryReportService>();
-
     int? serverReportTimestamp = await summaryReportService.timestamp();
     final serverReportStockConsumedMap =
         await summaryReportService.stockConsumedMap();
