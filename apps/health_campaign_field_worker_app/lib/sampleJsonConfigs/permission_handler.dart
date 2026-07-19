@@ -399,6 +399,68 @@ final dynamic permission_handler_config = {
                 },
                 {"format": "tag", "label": "{{context.cameraPermissionStatus}}"}
               ]
+            },
+            {
+              "format": "card",
+              "visible": "{{ context.showManageExternalStorage }}",
+              "children": [
+                {
+                  "format": "row",
+                  "properties": {
+                    "mainAxisAlignment": "spaceBetween",
+                    "mainAxisSize": "max"
+                  },
+                  "children": [
+                    {
+                      "format": "row",
+                      "properties": {
+                        "mainAxisAlignment": "start",
+                        "mainAxisSize": "min"
+                      },
+                      "children": [
+                        {"format": "icon", "value": "Folder"},
+                        {
+                          "format": "column",
+                          "properties": {
+                            "mainAxisAlignment": "start",
+                            "mainAxisSize": "min"
+                          },
+                          "children": [
+                            {
+                              "format": "textTemplate",
+                              "value": "CORE_COMMON_PERMISSION_FILE_STORAGE",
+                              "required": true
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "format": "button",
+                      "label": "GRANT_PERMISSION",
+                      "hidden": false,
+                      "visible":
+                          "{{ !context.manageExternalStoragePermissionGranted }}",
+                      "properties": {
+                        "type": "primary",
+                        "size": "small",
+                        "mainAxisSize": "min",
+                        "mainAxisAlignment": "center"
+                      },
+                      "onAction": [
+                        {
+                          "actionType": "REQUEST_PERMISSION",
+                          "properties": {"permission": "manageExternalStorage"}
+                        }
+                      ]
+                    }
+                  ]
+                },
+                {
+                  "format": "tag",
+                  "label": "{{context.manageExternalStoragePermissionStatus}}"
+                }
+              ]
             }
           ]
         }
