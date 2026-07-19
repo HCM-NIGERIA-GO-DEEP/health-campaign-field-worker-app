@@ -13,6 +13,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
 
 import '../../blocs/app_initialization/app_initialization.dart';
+import '../../data/services/server_summary_report_service.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/constants.dart';
 import '../../utils/function_registries.dart';
@@ -256,6 +257,12 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
     final allStocks = allStocksMap.values.toList();
     final selectedCycle = context.selectedCycle;
 
+    final summaryReportService = context.read<ServerSummaryReportService>();
+
+    int? serverReportTimestamp = await summaryReportService.timestamp();
+    final serverReportStockConsumedMap =
+        await summaryReportService.stockConsumedMap();
+
     final filteredStocks = allStocks.where((stock) {
       final cycleStartDate = selectedCycle?.startDate;
       final cycleEndDate = selectedCycle?.endDate;
@@ -273,6 +280,15 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       return stockEntryDate >= cycleStartDate && stockEntryDate <= cycleEndDate;
     }).toList();
 
+    List<TaskModel> filteredTasks = tasks;
+    if (serverReportTimestamp != null) {
+      filteredTasks = filteredTasks
+          .where((e) =>
+              e.auditDetails != null &&
+              e.auditDetails!.lastModifiedTime >= serverReportTimestamp)
+          .toList();
+    }
+
     final productIds = _productVariants.map((pv) => pv.id).toList();
     final balances = StockCalculationUtils.calculateStockInHandForProducts(
       stockList: filteredStocks,
@@ -280,13 +296,23 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       productIds: productIds,
       loggedInUserUuid: context.loggedInUserUuid,
       isDistributor: _isDistributor,
-      tasks: tasks,
+      tasks: filteredTasks,
     );
 
     StockBalanceCache.instance.setCache(effectiveFacilityId, balances);
     if (mounted) {
       setState(() {
         _stockBalances = balances;
+        // Apply server report stock consumption adjustments
+        for (final entry in serverReportStockConsumedMap.entries) {
+          final productVariantId = entry.key;
+          final consumedQuantity = entry.value;
+
+          // Deduct the consumed quantity from the calculated balance
+          final currentBalance = _stockBalances[productVariantId] ?? 0.0;
+          _stockBalances[productVariantId] =
+              max(currentBalance - consumedQuantity, 0.0);
+        }
       });
     }
   }
