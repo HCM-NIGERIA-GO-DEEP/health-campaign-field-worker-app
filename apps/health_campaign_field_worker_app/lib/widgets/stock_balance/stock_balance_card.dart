@@ -292,17 +292,20 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       return stockEntryDate >= cycleStartDate && stockEntryDate <= cycleEndDate;
     }).toList();
 
-    // Records created up to the backup snapshot are already baked into the
-    // backed-up balances; only ones in (backupTime, snapshotTime] contribute
-    // here. This keeps the balance correct after a storage clear, where the
-    // server restores received stock but not user-created consumption
-    // records. Records newer than snapshotTime are deferred to the next
-    // refresh so the written snapshot stays consistent with its timestamp.
+    // Records that became balance-relevant up to the backup snapshot are
+    // already baked into the backed-up balances; only ones in
+    // (backupTime, snapshotTime] contribute here. This keeps the balance
+    // correct after a storage clear, where the server restores received
+    // stock but not user-created consumption records. Records newer than
+    // snapshotTime are deferred to the next refresh so the written snapshot
+    // stays consistent with its timestamp. The effective time is the accept
+    // time for incoming dispatches (accepting updates the sender-created
+    // record, whose creation predates the snapshot) and the creation time
+    // for everything else.
     final newStocks = filteredStocks.where((stock) {
-      final createdTime = stock.clientAuditDetails?.createdTime ??
-          stock.auditDetails?.createdTime ??
-          0;
-      return createdTime > backupTime && createdTime <= snapshotTime;
+      final effectiveTime = StockCalculationUtils.effectiveStockTime(
+          stock, effectiveFacilityId);
+      return effectiveTime > backupTime && effectiveTime <= snapshotTime;
     }).toList();
     final newTasks = tasks.where((task) {
       final createdTime = task.clientAuditDetails?.createdTime ??

@@ -560,12 +560,15 @@ class SummaryReportData {
     }
 
     // ── Collect stock dates (for date rows) ──
+    // Windowed on the effective time: incoming dispatches become
+    // balance-relevant when accepted (an update to the sender-created
+    // record), everything else at creation — matching stock_balance_card.
     final stockDates = <String>{};
     for (final stock in allStocks) {
-      final epochMs = stock.clientAuditDetails?.createdTime ??
-          stock.auditDetails?.createdTime;
+      final epochMs = StockCalculationUtils.effectiveStockTime(
+          stock, effectiveFacilityId);
+      if (epochMs == 0) continue;
       if (!isWithinCurrentCycle(epochMs)) continue;
-      if (epochMs == null) continue;
       if (epochMs <= backupTime || epochMs > snapshotTime) continue;
       stockDates.add(epochToDateString(epochMs));
     }
@@ -617,12 +620,13 @@ class SummaryReportData {
           .millisecondsSinceEpoch;
 
       // Post-snapshot stocks up to and including this day; older records
-      // are already baked into the backed-up rows.
+      // are already baked into the backed-up rows. Same effective-time
+      // window as the stock dates above.
       final cumulativeStocks = allStocks.where((stock) {
-        final epochMs = stock.clientAuditDetails?.createdTime ??
-            stock.auditDetails?.createdTime;
+        final epochMs = StockCalculationUtils.effectiveStockTime(
+            stock, effectiveFacilityId);
+        if (epochMs == 0) return false;
         if (!isWithinCurrentCycle(epochMs)) return false;
-        if (epochMs == null) return false;
         if (epochMs <= backupTime || epochMs > snapshotTime) return false;
         return epochMs <= endOfDay;
       }).toList();
