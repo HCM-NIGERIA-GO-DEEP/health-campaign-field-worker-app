@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../data/services/server_summary_report_service.dart';
 import '../../../models/entities/roles_type.dart';
 import '../../../router/app_router.dart';
 import '../../../utils/i18_key_constants.dart' as i18;
@@ -73,6 +74,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           LocalRepository<ProjectFacilityModel, ProjectFacilitySearchModel>>();
       final facilityRepo =
           context.read<LocalRepository<FacilityModel, FacilitySearchModel>>();
+      final summaryReportService = context.read<ServerSummaryReportService>();
+
+      int? serverReportTimestamp = await summaryReportService.timestamp();
 
       // Determine facility ID (same logic as stock_balance_card)
       final isDistributor = context.loggedInUserRoles
@@ -137,9 +141,19 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       }
       final allStocks = allStocksMap.values.toList();
 
+      // Filter households by server report timestamp (if available)
+      List<HouseholdModel> filteredHouseholds = households;
+      if (serverReportTimestamp != null) {
+        filteredHouseholds = filteredHouseholds
+            .where((e) =>
+                e.auditDetails != null &&
+                e.auditDetails!.lastModifiedTime >= serverReportTimestamp)
+            .toList();
+      }
+
       // ── Group households by date (filter by logged-in user) ──
       final hhByDate = <String, int>{};
-      for (final hh in households) {
+      for (final hh in filteredHouseholds) {
         final createdBy =
             hh.clientAuditDetails?.createdBy ?? hh.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
@@ -151,10 +165,20 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         hhByDate[date] = (hhByDate[date] ?? 0) + 1;
       }
 
+      // Filter tasks by server report timestamp (if available)
+      List<TaskModel> filteredTasks = tasks;
+      if (serverReportTimestamp != null) {
+        filteredTasks = filteredTasks
+            .where((e) =>
+                e.auditDetails != null &&
+                e.auditDetails!.lastModifiedTime >= serverReportTimestamp)
+            .toList();
+      }
+
       // ── Group tasks by date for children treated ──
       // (filter by logged-in user AND status == 'ADMINISTRATION_SUCCESS' or 'VISITED')
       final tasksByDate = <String, Set<String>>{};
-      for (final task in tasks) {
+      for (final task in filteredTasks) {
         if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
           continue;
         final createdBy =
@@ -171,9 +195,19 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         tasksByDate[date]!.add(beneficiaryRef);
       }
 
+      // Filter household members by server report timestamp (if available)
+      List<HouseholdMemberModel> filteredHouseholdMembers = householdMembers;
+      if (serverReportTimestamp != null) {
+        filteredHouseholdMembers = filteredHouseholdMembers
+            .where((e) =>
+                e.auditDetails != null &&
+                e.auditDetails!.lastModifiedTime >= serverReportTimestamp)
+            .toList();
+      }
+
       // ── Group non-head household members by date ──
       final nonHeadMembersByDate = <String, int>{};
-      for (final member in householdMembers) {
+      for (final member in filteredHouseholdMembers) {
         if (member.isHeadOfHousehold) continue;
         final createdBy = member.clientAuditDetails?.createdBy ??
             member.auditDetails?.createdBy;
@@ -190,7 +224,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // Only count tasks with status 'ADMINISTRATION_SUCCESS' or 'VISITED'
       // Key: "date|productVariantId" -> sum of quantity
       final consumedByDateProduct = <String, double>{};
-      for (final task in tasks) {
+      for (final task in filteredTasks) {
         if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
           continue;
         final createdBy =
@@ -245,9 +279,21 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
 
       final rows = <_SummaryReportRow>[];
       for (final date in sortedDates) {
-        final hhCount = hhByDate[date] ?? 0;
-        final childrenCount = tasksByDate[date]?.length ?? 0;
-        final nonHeadCount = nonHeadMembersByDate[date] ?? 0;
+        int? serverReportHouseholdRegistration =
+            await summaryReportService.householdRegistration(date: date);
+        int? serverReportChildrenRegistered =
+            await summaryReportService.childrenRegistered(date: date);
+        int? serverReportChildrenTreated =
+            await summaryReportService.childrenTreated(date: date);
+        final serverReportStockConsumedMap =
+            await summaryReportService.stockConsumedMap(date: date);
+
+        final hhCount =
+            serverReportHouseholdRegistration + (hhByDate[date] ?? 0);
+        final childrenCount =
+            serverReportChildrenTreated + (tasksByDate[date]?.length ?? 0);
+        final nonHeadCount =
+            serverReportChildrenRegistered + (nonHeadMembersByDate[date] ?? 0);
         final percentage =
             nonHeadCount > 0 ? (childrenCount / nonHeadCount) * 100 : 0.0;
 
@@ -287,7 +333,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
 
           // Daily consumed (for this day only)
           final key = '$date|${pv.id}';
-          final dailyConsumed = consumedByDateProduct[key] ?? 0.0;
+          final dailyConsumed = (serverReportStockConsumedMap[pv.id] ?? 0.0) +
+              (consumedByDateProduct[key] ?? 0.0);
 
           // Accumulate consumed for balance calculation
           cumulativeConsumed[pv.id] =
