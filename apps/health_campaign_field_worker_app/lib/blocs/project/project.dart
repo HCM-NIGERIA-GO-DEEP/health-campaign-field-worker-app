@@ -27,8 +27,11 @@ import '../../data/local_store/no_sql/schema/app_configuration.dart';
 import '../../data/local_store/no_sql/schema/row_versions.dart';
 import '../../data/local_store/no_sql/schema/service_registry.dart';
 import '../../data/local_store/secure_store/secure_store.dart';
+import '../../data/remote_client.dart';
 import '../../data/repositories/remote/bandwidth_check.dart';
 import '../../data/repositories/remote/mdms.dart';
+import '../../data/repositories/summary_report_remote_repository.dart';
+import '../../data/services/server_summary_report_service.dart';
 import '../../models/app_config/app_config_model.dart';
 import '../../models/auth/auth_model.dart';
 import '../../models/downsync/downsync.dart';
@@ -64,6 +67,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       projectRemoteRepository;
   final LocalRepository<ProjectModel, ProjectSearchModel>
       projectLocalRepository;
+  final ServerSummaryReportService serverSummaryReportService;
 
   final RemoteRepository<AttendanceRegisterModel, AttendanceRegisterSearchModel>
       attendanceRemoteRepository;
@@ -131,6 +135,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     required this.projectRemoteRepository,
     required this.projectStaffLocalRepository,
     required this.projectLocalRepository,
+    required this.serverSummaryReportService,
     required this.projectFacilityRemoteRepository,
     required this.projectFacilityLocalRepository,
     required this.facilityRemoteRepository,
@@ -377,6 +382,74 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     );
     LeastLevelBoundarySingleton()
         .setBoundary(boundaries: findLeastLevelBoundaries(boundaries));
+  }
+
+  ProjectCycle? _getCurrentCycle(List<ProjectCycle> allCycles) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    return allCycles
+        .where((cycle) => cycle.startDate <= now && cycle.endDate >= now)
+        .firstOrNull;
+  }
+
+  FutureOr<void> _loadSummaryReportData({
+    required ProjectModel project,
+    required ProjectType? selectedProjectType,
+  }) async {
+    final userObject = await localSecureStore.userRequestModel;
+    if (userObject == null) {
+      return;
+    }
+
+    final projectFacilities = await projectFacilityLocalRepository.search(
+      ProjectFacilitySearchModel(projectId: [project.id]),
+    );
+
+    List<ProjectCycle> allCycles =
+        project.additionalDetails?.projectType?.cycles ?? [];
+
+    ProjectCycle? currentCycle = _getCurrentCycle(allCycles);
+
+    final currentFacilities = projectFacilities.where((pf) {
+      final facilityLevel = pf.additionalFields?.fields
+          .where((f) => f.key == 'facilityLevel')
+          .firstOrNull
+          ?.value;
+      return facilityLevel == null || facilityLevel == 'current';
+    }).toList();
+
+    final isDistributor = context.loggedInUserRoles.any(
+      (role) => role.code == RolesType.distributor.toValue(),
+    );
+
+    final facilityId = isDistributor
+        ? userObject.uuid
+        : (currentFacilities.firstOrNull?.facilityId ?? userObject.uuid);
+
+    if (facilityId.isEmpty) {
+      return;
+    }
+
+    if (currentCycle == null) {
+      return;
+    }
+
+    final reports = await SummaryReportRemoteRepository(
+      DioClient().dio,
+      searchPath: envConfig.variables.summaryReportApiPath,
+    ).search(
+      tenantId: envConfig.variables.tenantId,
+      startDate: currentCycle.startDate,
+      endDate: DateTime.now().millisecondsSinceEpoch,
+    );
+
+    await serverSummaryReportService.syncSummaryReports(
+      userUuid: userObject.uuid,
+      projectId: project.id,
+      facilityId: facilityId,
+      currentCycle: currentCycle,
+      reports: reports,
+    );
   }
 
   FutureOr<void> _loadProjectFacilities(ProjectModel project) async {
@@ -811,6 +884,11 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         selectedProjectType?.cycles ?? [],
       );
       cycles.sort((a, b) => a.id.compareTo(b.id));
+
+      await _loadSummaryReportData(
+        project: event.model,
+        selectedProjectType: selectedProjectType,
+      );
 
       final reqProjectType = selectedProjectType?.copyWith(cycles: cycles);
 

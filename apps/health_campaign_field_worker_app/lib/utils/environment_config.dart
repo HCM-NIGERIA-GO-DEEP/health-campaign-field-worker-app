@@ -100,6 +100,11 @@ class Variables {
     '/health-project/check/bandwidth',
   );
 
+  static const _summaryReportApi = EnvEntry(
+    'SUMMARY_REPORT_API_PATH',
+    'product/summary/v1/_search',
+  );
+
   static const _mdmsApi = EnvEntry(
     'MDMS_API_PATH', //override mdms path to 'egov-mdms-service/v1/_search' for unified-uat in .env
     'mdms-v2/v1/_search',
@@ -137,6 +142,10 @@ class Variables {
   String get checkBandwidthApiPath => useFallbackValues
       ? _checkBandwidthApi.value
       : _dotEnv.get(_checkBandwidthApi.key, fallback: _checkBandwidthApi.value);
+
+  String get summaryReportApiPath => useFallbackValues
+      ? _summaryReportApi.value
+      : _dotEnv.get(_summaryReportApi.key, fallback: _summaryReportApi.value);
 
   String get mdmsApiPath => useFallbackValues
       ? _mdmsApi.value
