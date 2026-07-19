@@ -836,6 +836,13 @@ void initializeFunctionRegistry() {
     // Each cycle's tasks are stored in a list to check if the current cycle has enough tasks
     List eachCycleData = [];
 
+    // Whether an out-of-age beneficiary keeps eligibility because at least one
+    // earlier cycle has a successful SMC delivery (computed below). Any prior
+    // successful cycle qualifies — late joiners (first delivered mid-campaign)
+    // and beneficiaries who missed an intermediate cycle both stay in the
+    // program once they were successfully reached.
+    bool hasDeliveredEarlierCycle = false;
+
     // If the beneficiary is not within age and this is the first cycle, return false.
     if (isWithinAge == false && isFirstCycle == true) return false;
 
@@ -908,9 +915,32 @@ void initializeFunctionRegistry() {
             task['status'] == TaskStatus.beneficiaryRefused) return false;
       }
 
-      // If the beneficiary is not within age and the number of completed SMC tasks is less than the current cycle's ID, return false.
-      if (isWithinAge == false && eachCycleData.length < currentCycle.id) {
-        return false;
+      // Continued eligibility for beneficiaries who have aged out of the dose
+      // criteria: from cycle 2 onwards they stay eligible only when some
+      // earlier cycle has a successful SMC delivery. Check delivered cycle ids
+      // rather than task counts — one successful cycle can produce several
+      // smcDone tasks (direct dose + indirect doses) or just one depending on
+      // the campaign's delivery config, and unable-to-deliver tasks also carry
+      // flow == 'smcDone' but must not count as a completed cycle.
+      if (isWithinAge == false) {
+        final deliveredCycles = <int>{};
+        for (final task in eachCycleData) {
+          final status = task['status']?.toString().trim().toUpperCase();
+          if (status != TaskStatus.administrationSuccess &&
+              status != TaskStatus.delivered) {
+            continue;
+          }
+          final cycleIndex = int.tryParse(
+              _additionalFieldValue(task['additionalFields'], 'cycleIndex')
+                      ?.toString() ??
+                  '');
+          if (cycleIndex != null && cycleIndex < currentCycle.id) {
+            deliveredCycles.add(cycleIndex);
+          }
+        }
+        hasDeliveredEarlierCycle =
+            currentCycle.id > 1 && deliveredCycles.isNotEmpty;
+        if (!hasDeliveredEarlierCycle) return false;
       }
     }
 
@@ -927,18 +957,19 @@ void initializeFunctionRegistry() {
           (lastTaskTime >= currentCycle.startDate &&
               lastTaskTime <= currentCycle.endDate);
 
-      final isWithinAge =
-          _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
-
-      if (!isWithinAge) return false;
+      // An aged-out beneficiary who delivered in an earlier cycle stays
+      // eligible even though the dose criteria no longer match their age.
+      if (!isWithinAge && !hasDeliveredEarlierCycle) return false;
 
       final checkStatusFn = FunctionRegistry.get('checkStatus');
       final statusOk = checkStatusFn?.call([], stateData) as bool? ?? false;
 
       return recordedSideEffect && !statusOk ? false : true;
     } else {
-      return _isEligibleFromDoseCriteria(
-          currentCycle, totalAgeMonths, individual);
+      // Same continued-eligibility exception on the no-side-effects path.
+      return hasDeliveredEarlierCycle ||
+          _isEligibleFromDoseCriteria(
+              currentCycle, totalAgeMonths, individual);
     }
   });
 
