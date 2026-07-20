@@ -8,6 +8,8 @@ import 'package:digit_ui_components/theme/spacers.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
+import '../../data/services/server_summary_report_service.dart';
 import '../../utils/utils.dart';
 import '../progress_indicator/progress_indicator.dart';
 
@@ -85,10 +87,26 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
             plannedStartDate: gte.millisecondsSinceEpoch,
             projectId: projectId,
           );
+          final summaryReportService =
+              context.read<ServerSummaryReportService>();
+          int? serverReportTimestamp = await summaryReportService.timestamp();
+          int? serverReportChildrenTreated =
+              await summaryReportService.childrenTreated(
+            date: DateFormat('yyyy-MM-dd').format(now),
+          );
 
           List<TaskModel> allTasks =
               await taskRepository.search(taskSearchQuery);
-          List<TaskModel> results = allTasks.where((task) {
+
+          List<TaskModel> filteredTasks = allTasks;
+          if (serverReportTimestamp != null) {
+            filteredTasks = filteredTasks
+                .where((e) =>
+                    e.auditDetails != null &&
+                    e.auditDetails!.lastModifiedTime >= serverReportTimestamp)
+                .toList();
+          }
+          List<TaskModel> results = filteredTasks.where((task) {
             final additionalFields = task?.additionalFields?.fields;
             if (additionalFields == null || additionalFields.isEmpty) {
               return false;
@@ -101,7 +119,8 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
           if (mounted) {
             setState(() {
               if (mounted) {
-                current = groupedEntries.entries.length;
+                current =
+                    serverReportChildrenTreated + groupedEntries.entries.length;
               }
             });
           }
