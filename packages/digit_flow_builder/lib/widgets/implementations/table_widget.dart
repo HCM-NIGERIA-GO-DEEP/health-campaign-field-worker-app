@@ -216,7 +216,7 @@ class TableWidget extends ResolvedFlowWidget {
     }
 
     final double rowHeight = (json['rowHeight'] as num?)?.toDouble() ?? 52.0;
-    final double fixedHeight = rows.length * rowHeight + headerHeight;
+    final double fixedHeight = rows.length * rowHeight + headerHeight + 50;
 
     // Opt-in (per-config) path: when "fitToContent" is true on the table JSON,
     // make DigitTable actually FILL the fixed-height box with all its rows and
