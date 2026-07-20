@@ -215,7 +215,40 @@ class TableWidget extends ResolvedFlowWidget {
       );
     }
 
-    final double rowHeight = (json['rowHeight'] as num?)?.toDouble() ?? 52.0;
+    final double rowHeight = (json['rowHeight'] as num?)?.toDouble() ?? 70.0;
+    final double fixedHeight = rows.length * rowHeight + headerHeight;
+
+    // Opt-in (per-config) path: when "fitToContent" is true on the table JSON,
+    // make DigitTable actually FILL the fixed-height box with all its rows and
+    // let the surrounding page own the scrolling — instead of the default
+    // behaviour below, where DigitTable (tableHeight == null) caps its own body
+    // at `MediaQuery.height - ~168` and scrolls the overflow in its own
+    // ListView. That internal cap is what left the box taller than the drawn
+    // table, producing the empty region the page could scroll into (the "blank
+    // screen past the table end"). Passing tableHeight lifts the cap so all
+    // rows render, and NeverScrollableScrollPhysics stops the inner ListView
+    // from intercepting the page's scroll gesture.
+    //
+    // Gated behind a flag so existing flows keep the default behaviour exactly;
+    // only configs that set "fitToContent": true (e.g. STOCKREPORTS) opt in.
+    final fitToContent = json['fitToContent'] == true;
+    if (fitToContent) {
+      return SizedBox(
+        height: fixedHeight,
+        child: DigitTable(
+          enableBorder: true,
+          withRowDividers: false,
+          withColumnDividers: false,
+          showSelectedState: false,
+          showPagination: false,
+          tableHeight: fixedHeight,
+          scrollPhysicsForPagination: const NeverScrollableScrollPhysics(),
+          columns: columns,
+          rows: rows,
+        ),
+      );
+    }
+
     return SizedBox(
       height: rows.length * rowHeight + headerHeight,
       child: SingleChildScrollView(
