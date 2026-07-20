@@ -23,6 +23,7 @@ import 'package:transit_post/data/repositories/local/user_action.dart';
 import 'package:transit_post/data/repositories/remote/user_action.dart';
 
 import '../../../models/app_config/app_config_model.dart' as app_configuration;
+import '../../data/local_store/app_shared_preferences.dart';
 import '../../data/local_store/no_sql/schema/app_configuration.dart';
 import '../../data/local_store/no_sql/schema/row_versions.dart';
 import '../../data/local_store/no_sql/schema/service_registry.dart';
@@ -38,6 +39,7 @@ import '../../utils/download_image.dart';
 import '../../utils/environment_config.dart';
 import '../../utils/least_level_boundary_singleton.dart';
 import '../../utils/stock_calculation_utils.dart';
+import '../../utils/stock_downsync_cursor.dart';
 import '../../utils/utils.dart';
 import '../auth/auth.dart';
 import '../push_notification/push_notification.dart';
@@ -984,34 +986,14 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
       final selectedProjectType = await localSecureStore.selectedProjectType;
       final now = DateTime.now().millisecondsSinceEpoch;
-      final currentCycleStartDate = selectedProjectType?.cycles
-              ?.where(
-                (cycle) =>
-                    (cycle.startDate ?? 0) <= now &&
-                    (cycle.endDate ?? 0) >= now,
-              )
-              .firstOrNull
-              ?.startDate ??
-          project.additionalDetails?.projectType?.cycles
+      final cycles = project.additionalDetails?.projectType?.cycles;
+      final currentCycle = cycles
               ?.where(
                 (cycle) => cycle.startDate <= now && cycle.endDate >= now,
               )
-              .firstOrNull
-              ?.startDate;
-      final currentCycleEndDate = selectedProjectType?.cycles
-              ?.where(
-                (cycle) =>
-                    (cycle.startDate ?? 0) <= now &&
-                    (cycle.endDate ?? 0) >= now,
-              )
-              .firstOrNull
-              ?.endDate ??
-          project.additionalDetails?.projectType?.cycles
-              ?.where(
-                (cycle) => cycle.startDate <= now && cycle.endDate >= now,
-              )
-              .firstOrNull
-              ?.endDate;
+              .firstOrNull ??
+          cycles?.firstOrNull;
+      final currentCycleStartDate = currentCycle?.startDate;
 
       final stockSearchModel = StockSearchModel(
         receiverId: receiverIds.first,
@@ -1019,14 +1001,22 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         campaignNumber: project.referenceID,
       );
 
+      // Cursor is per user + cycle so a second user on the same device
+      // still downloads their own stock from cycle start.
+      final cursorKey = StockDownsyncCursor.key(
+        project.id,
+        userObject.uuid,
+        currentCycle?.id ?? 0,
+      );
+      final lastSyncedTime = StockDownsyncCursor.resolveCutoff(
+        storedTime: AppSharedPreferences().getStockDownsyncTime(cursorKey),
+        cycleStartDate: currentCycleStartDate,
+      );
+
       final existingDownSyncData =
           await downSyncLocalRepository.search(DownsyncSearchModel(
         locality: localityKey,
       ));
-
-      final lastSyncedTime = existingDownSyncData.isEmpty
-          ? currentCycleStartDate
-          : existingDownSyncData.first.lastSyncedTime;
 
       if (existingDownSyncData.isEmpty) {
         await downSyncLocalRepository.create(DownsyncModel(
@@ -1089,6 +1079,12 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         offset += stockEntries.length;
         syncedCount += stockEntries.length;
       }
+
+      // Advance the per-user cursor only after all pages downloaded, using
+      // the time captured before the first fetch so records modified during
+      // the download are picked up next time.
+      await AppSharedPreferences()
+          .setStockDownsyncTime(cursorKey, currentSyncTime);
 
       await downSyncStockBalances(project);
 
