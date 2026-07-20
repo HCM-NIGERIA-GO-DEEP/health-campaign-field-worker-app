@@ -892,10 +892,15 @@ void initializeFunctionRegistry() {
         // BENEFICIARY_DIED returns false immediately regardless of cycle
         if (task['status'] == TaskStatus.beneficiaryDied) return false;
 
-        // INELIGIBLE status returns false immediately if no cycle filtering is needed
-        if (task['status'] == TaskStatus.ineligible) return false;
-
-        // For other ineligible statuses, only check tasks matching the current cycle
+        // INELIGIBLE and the other blocking statuses only hold for the cycle
+        // they were recorded in — a child found ineligible in cycle 1 (sick,
+        // failed checklist, etc.) must be re-evaluated in cycle 2. Tasks from
+        // other cycles are skipped. A task with NO cycleIndex field is never
+        // skipped — its blocking status applies to every cycle — so the
+        // ineligibleConfig actions in the REGISTRATION config must stamp
+        // cycleIndex ({{fn:getCurrentCycleIndex()}}) for per-cycle
+        // re-eligibility to work. When no currentRunningCycle argument is
+        // provided the filter is bypassed entirely.
         if (currentRunningCycle != null) {
           int? taskCycleIndex;
           if (fields != null) {
@@ -906,7 +911,9 @@ void initializeFunctionRegistry() {
               }
             }
           }
-          if (taskCycleIndex != currentRunningCycle) continue;
+          if (taskCycleIndex != null && taskCycleIndex != currentRunningCycle) {
+            continue;
+          }
         }
 
         if (task['status'] == TaskStatus.ineligible ||
@@ -968,8 +975,7 @@ void initializeFunctionRegistry() {
     } else {
       // Same continued-eligibility exception on the no-side-effects path.
       return hasDeliveredEarlierCycle ||
-          _isEligibleFromDoseCriteria(
-              currentCycle, totalAgeMonths, individual);
+          _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
     }
   });
 
