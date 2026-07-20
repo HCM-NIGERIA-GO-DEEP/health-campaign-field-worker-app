@@ -498,10 +498,15 @@ void initializeFunctionRegistry() {
         // BENEFICIARY_DIED returns false immediately regardless of cycle
         if (task['status'] == TaskStatus.beneficiaryDied) return false;
 
-        // INELIGIBLE status returns false immediately if no cycle filtering is needed
-        if (task['status'] == TaskStatus.ineligible) return false;
-
-        // For other ineligible statuses, only check tasks matching the current cycle
+        // INELIGIBLE and the other blocking statuses only hold for the cycle
+        // they were recorded in — a child found ineligible in cycle 1 (sick,
+        // failed checklist, etc.) must be re-evaluated in cycle 2. Tasks from
+        // other cycles are skipped. A task with NO cycleIndex field is never
+        // skipped — its blocking status applies to every cycle — so the
+        // ineligibleConfig actions in the REGISTRATION config must stamp
+        // cycleIndex ({{fn:getCurrentCycleIndex()}}) for per-cycle
+        // re-eligibility to work. When no currentRunningCycle argument is
+        // provided the filter is bypassed entirely.
         if (currentRunningCycle != null) {
           final additionalFields = task['additionalFields'];
           final fields = additionalFields is Map
@@ -516,7 +521,9 @@ void initializeFunctionRegistry() {
               }
             }
           }
-          if (taskCycleIndex != currentRunningCycle) continue;
+          if (taskCycleIndex != null && taskCycleIndex != currentRunningCycle) {
+            continue;
+          }
         }
 
         if (task['status'] == TaskStatus.ineligible ||
@@ -549,31 +556,10 @@ void initializeFunctionRegistry() {
 
       return recordedSideEffect && !statusOk ? false : true;
     } else {
-      return _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
+      // Same continued-eligibility exception on the no-side-effects path.
+      return hasDeliveredEarlierCycle ||
+          _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
     }
-  });
-
-  /// Returns a widgetData map flagging whether a just-registered member is
-  /// age-eligible for delivery. Used by a CUSTOM_DATA action right after the
-  /// add-member create, so the post-submit navigation can branch the member
-  /// straight into the delivery CHECKLIST (eligible) or back to the household
-  /// overview (ineligible).
-  ///
-  /// - **Function Name**: `'deliveryEligibilityFlag'`
-  /// - **Arguments**: A list whose first element is the member's date of birth.
-  /// - **Returns**: `{'isDeliveryEligible': true|false}`.
-  ///
-  /// Delegates to [checkEligibilityForAgeAndSideEffect] with a single DOB
-  /// argument (no tasks), which reduces to the pure age-in-dose-criteria check
-  /// for the current cycle — keeping this gate consistent with the delivery
-  /// button's own eligibility logic on the household overview.
-  FunctionRegistry.register('deliveryEligibilityFlag', (args, stateData) {
-    final dob = args.isNotEmpty ? args.first : null;
-    final eligibilityFn =
-        FunctionRegistry.get('checkEligibilityForAgeAndSideEffect');
-    final eligible = (eligibilityFn?.call([dob], stateData) as bool?) ?? false;
-
-    return {'isDeliveryEligible': eligible};
   });
 
   FunctionRegistry.register("getInEligibleStatus", (args, stateData) {
