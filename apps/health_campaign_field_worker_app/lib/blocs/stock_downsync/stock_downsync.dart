@@ -12,10 +12,12 @@ import 'package:path/path.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
 import 'package:transit_post/data/repositories/remote/user_action.dart';
 
+import '../../data/local_store/app_shared_preferences.dart';
 import '../../data/local_store/no_sql/schema/app_configuration.dart';
 import '../../data/local_store/secure_store/secure_store.dart';
 import '../../data/repositories/remote/bandwidth_check.dart';
 import '../../utils/stock_calculation_utils.dart';
+import '../../utils/stock_downsync_cursor.dart';
 import '../../models/downsync/downsync.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/background_service.dart';
@@ -182,12 +184,40 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
             ?.startDate;
   }
 
+  /// Resolves the current cycle's startDate and index (id) from the stored
+  /// project type, falling back to the project model's cycles. Both may be
+  /// absent (date outside campaign, fresh config) — returns nulls/0 then.
+  Future<MapEntry<int?, int>> _getCurrentCycleInfo(
+      ProjectModel projectModel) async {
+    final selectedProjectType = await localSecureStore.selectedProjectType;
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    final storedCycle = selectedProjectType?.cycles
+        ?.where(
+          (cycle) =>
+              (cycle.startDate ?? 0) <= now && (cycle.endDate ?? 0) >= now,
+        )
+        .firstOrNull;
+    if (storedCycle != null) {
+      return MapEntry(storedCycle.startDate, storedCycle.id);
+    }
+
+    final projectCycle = projectModel.additionalDetails?.projectType?.cycles
+        ?.where(
+          (cycle) => cycle.startDate <= now && cycle.endDate >= now,
+        )
+        .firstOrNull;
+
+    return MapEntry(projectCycle?.startDate, projectCycle?.id ?? 0);
+  }
+
   FutureOr<void> _handleCheckTotalCount(
     StockDownSyncCheckTotalCountEvent event,
     StockDownSyncEmitter emit,
   ) async {
     emit(const StockDownSyncState.loading(true));
     try {
+      final cycleInfo = await _getCurrentCycleInfo(event.projectModel);
       final currentCycleStartDate =
           await _getCurrentCycleStartDate(event.projectModel);
 
@@ -198,15 +228,19 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
         return;
       }
 
-      // Check existing downsync data for stock
-      final existingDownSyncData =
-          await downSyncLocalRepository.search(DownsyncSearchModel(
-        locality: _getLocalityKey(event.projectModel.id),
-      ));
+      // Cursor is per user + cycle so a second user on the same device
+      // still downloads their own stock from cycle start.
+      final userObject = await localSecureStore.userRequestModel;
+      final cursorKey = StockDownsyncCursor.key(
+        event.projectModel.id,
+        userObject?.uuid ?? '',
+        cycleInfo.value,
+      );
 
-      int? lastSyncedTime = existingDownSyncData.isEmpty
-          ? currentCycleStartDate
-          : existingDownSyncData.first.lastSyncedTime;
+      int? lastSyncedTime = StockDownsyncCursor.resolveCutoff(
+        storedTime: AppSharedPreferences().getStockDownsyncTime(cursorKey),
+        cycleStartDate: cycleInfo.key,
+      );
 
       // Always start from offset 0 for total count check since
       // lastChangedSince already scopes the query to new/modified records
@@ -252,6 +286,21 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
 
         final localityKey = _getLocalityKey(event.projectModel.id);
 
+        // Per-user + per-cycle cursor; falls back to the current cycle's
+        // startDate for a user who has never downsynced on this device.
+        final cycleInfo = await _getCurrentCycleInfo(event.projectModel);
+        final userObject = await localSecureStore.userRequestModel;
+        final cursorKey = StockDownsyncCursor.key(
+          event.projectModel.id,
+          userObject?.uuid ?? '',
+          cycleInfo.value,
+        );
+
+        int? lastSyncedTime = StockDownsyncCursor.resolveCutoff(
+          storedTime: AppSharedPreferences().getStockDownsyncTime(cursorKey),
+          cycleStartDate: cycleInfo.key,
+        );
+
         // Check existing downsync data for stock
         final existingDownSyncData =
             await downSyncLocalRepository.search(DownsyncSearchModel(
@@ -283,6 +332,7 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
         int totalCount = event.initialServerCount;
         int syncedCount = 0;
         final downsyncedStocks = <String, StockModel>{};
+        final syncStartTime = DateTime.now().millisecondsSinceEpoch;
 
         emit(StockDownSyncState.inProgress(syncedCount, totalCount));
 
@@ -316,6 +366,12 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
 
           emit(StockDownSyncState.inProgress(syncedCount, totalCount));
         }
+
+        // Advance the per-user cursor only after all pages downloaded, using
+        // the time captured before the first fetch so records modified during
+        // the download are picked up next time.
+        await AppSharedPreferences()
+            .setStockDownsyncTime(cursorKey, syncStartTime);
 
         // After stock download, downsync stock balance user actions
         await downSyncStockBalances(event.projectModel.id);
