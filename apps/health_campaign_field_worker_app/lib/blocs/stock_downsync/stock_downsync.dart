@@ -218,8 +218,6 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
     emit(const StockDownSyncState.loading(true));
     try {
       final cycleInfo = await _getCurrentCycleInfo(event.projectModel);
-      final currentCycleStartDate =
-          await _getCurrentCycleStartDate(event.projectModel);
 
       final stockSearchModel = await _buildStockSearchModel(event.projectModel);
 
@@ -311,12 +309,6 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
         // to the current cycle start so pre-cycle stock is not pulled. Must
         // match _handleCheckTotalCount, otherwise the count preview and the
         // actual download disagree and older records get downloaded.
-        final currentCycleStartDate =
-            await _getCurrentCycleStartDate(event.projectModel);
-
-        int? lastSyncedTime = existingDownSyncData.isEmpty
-            ? currentCycleStartDate
-            : existingDownSyncData.first.lastSyncedTime;
 
         // Create initial downsync record if not exists
         if (existingDownSyncData.isEmpty) {
