@@ -787,18 +787,14 @@ void initializeFunctionRegistry() {
               flowType = field['value']?.toString();
             }
           }
-          if (flowType == "smcDone") {
+          if (flowType != "smcDone") continue; // Skip non-SMC tasks
+          if (task['status'] == TaskStatus.administrationSuccess) {
             eachCycleData.add(task);
-          } else {
-            continue; // Skip non-SMC tasks
           }
         }
 
         // BENEFICIARY_DIED returns false immediately regardless of cycle
         if (task['status'] == TaskStatus.beneficiaryDied) return false;
-
-        // INELIGIBLE status returns false immediately if no cycle filtering is needed
-        if (task['status'] == TaskStatus.ineligible) return false;
 
         // For other ineligible statuses, only check tasks matching the current cycle
         if (currentRunningCycle != null) {
@@ -821,7 +817,7 @@ void initializeFunctionRegistry() {
       }
 
       // If the beneficiary is not within age and the number of completed SMC tasks is less than the current cycle's ID, return false.
-      if (isWithinAge == false && eachCycleData.length < currentCycle.id) {
+      if (isWithinAge == false && eachCycleData.isNotEmpty) {
         return false;
       }
     }
