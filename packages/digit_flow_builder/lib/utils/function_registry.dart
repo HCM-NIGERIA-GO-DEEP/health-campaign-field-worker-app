@@ -817,7 +817,7 @@ void initializeFunctionRegistry() {
       }
 
       // If the beneficiary is not within age and the number of completed SMC tasks is less than the current cycle's ID, return false.
-      if (isWithinAge == false && eachCycleData.isNotEmpty) {
+      if (isWithinAge == false && eachCycleData.isEmpty) {
         return false;
       }
     }
