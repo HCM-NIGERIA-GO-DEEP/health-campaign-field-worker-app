@@ -742,18 +742,9 @@ void initializeFunctionRegistry() {
     final isWithinAge =
         _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
 
-    // Determine isFirstCycle based on whether there are any tasks recorded for the beneficiary.
-    bool isFirstCycle = tasks.isEmpty;
-
-    // Each cycle's tasks are stored in a list to check if the current cycle has enough tasks
-    List eachCycleData = [];
-
-    // If the beneficiary is not within age and this is the first cycle, return false.
-    if (isWithinAge == false && isFirstCycle == true) return false;
-
 // --- Eligibility logic ---
     bool recordedSideEffect = false;
-    if (isFirstCycle == false) {
+    if (tasks.isEmpty == false) {
       // Get currentRunningCycle from third argument if provided
       final currentRunningCycle =
           args.length > 2 ? int.tryParse(args[2]?.toString() ?? '') : null;
@@ -788,9 +779,6 @@ void initializeFunctionRegistry() {
             }
           }
           if (flowType != "smcDone") continue; // Skip non-SMC tasks
-          if (task['status'] == TaskStatus.administrationSuccess) {
-            eachCycleData.add(task);
-          }
         }
 
         // BENEFICIARY_DIED returns false immediately regardless of cycle
@@ -807,18 +795,19 @@ void initializeFunctionRegistry() {
               }
             }
           }
-          if (taskCycleIndex != currentRunningCycle) continue;
+          if (taskCycleIndex != currentRunningCycle) {
+            if (isWithinAge == false &&
+                task['status'] == TaskStatus.administrationSuccess) {
+              return true;
+            }
+            continue;
+          }
         }
 
         if (task['status'] == TaskStatus.ineligible ||
             task['status'] == TaskStatus.beneficiaryMigrated ||
             task['status'] == TaskStatus.beneficiaryAbsent ||
             task['status'] == TaskStatus.beneficiaryRefused) return false;
-      }
-
-      // If the beneficiary is not within age and the number of completed SMC tasks is less than the current cycle's ID, return false.
-      if (isWithinAge == false && eachCycleData.isEmpty) {
-        return false;
       }
     }
 
