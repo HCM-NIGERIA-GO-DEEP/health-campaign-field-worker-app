@@ -1213,6 +1213,13 @@ final jsonConfig = {
           "additionalFields": {
             "flow": "__value:orsDone",
             "taskType": "__value:ORS",
+            // Which cycle this ORS was delivered in — isORSDelivered scopes
+            // the "delivered" state per cycle on it. Sourced from the action's
+            // data (navigation.cycleIndex ← orsDetails nextCycleId); without
+            // this mapping the value reached the transformer but was never
+            // written, so tasks were unstamped and counted as delivered in
+            // every cycle.
+            "cycleIndex": "__context:cycleIndex",
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
             "memberCount": "__context:memberCount",

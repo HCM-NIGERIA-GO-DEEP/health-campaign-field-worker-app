@@ -1199,12 +1199,28 @@ void initializeFunctionRegistry() {
     return false;
   });
 
-  // Registers a function to check if ORS has been delivered for a member.
+  // Registers a function to check if ORS has been delivered for a member in
+  // the CURRENT cycle. ORS-Zinc is deliverable once per cycle: a delivery
+  // recorded in an earlier cycle must not mark the member as delivered in the
+  // current one (an ORS given in cycle 1 blocked the cycle-2 button forever).
+  // The current cycle is resolved from the campaign projectType with the same
+  // date-window logic as the SMC eligibility checks (SMC and ORS-Zinc cycles
+  // are aligned, and projectType is always present in the singleton).
+  // Conservative fallbacks keep the original any-cycle behavior: a delivered
+  // task without cycleIndex, or no resolvable cycle, still counts as
+  // delivered so nothing is silently re-enabled.
   FunctionRegistry.register("isORSDelivered", (args, stateData) {
     // No arguments passed
     if (args.isEmpty) return false;
 
     final tasks = args.first;
+
+    final currentOrsCycle =
+        FlowBuilderSingleton().projectType?.cycles?.firstWhereOrNull(
+              (e) =>
+                  e.startDate < DateTime.now().millisecondsSinceEpoch &&
+                  e.endDate > DateTime.now().millisecondsSinceEpoch,
+            );
 
     for (var task in tasks) {
       final statusValue = task.status;
@@ -1220,7 +1236,21 @@ void initializeFunctionRegistry() {
 
       // Match valid delivered statuses
       if (status == TaskStatus.administrationSuccess && flowType == 'ORSDONE') {
-        return true;
+        if (currentOrsCycle == null) return true;
+        final taskCycleIndex = int.tryParse(fields
+                ?.firstWhereOrNull((f) => f.key == 'cycleIndex')
+                ?.value
+                ?.toString() ??
+            '');
+        // Only a strictly EARLIER cycle stamp means "not delivered now".
+        // Missing stamps count as delivered (legacy data), and so do
+        // current/future stamps — a future cycleIndex can only be a bad
+        // stamp (nothing can legitimately be delivered in a cycle that
+        // hasn't started), and it must never re-enable delivery in the
+        // cycle where the ORS was actually given.
+        if (taskCycleIndex == null || taskCycleIndex >= currentOrsCycle.id) {
+          return true;
+        }
       }
     }
 
