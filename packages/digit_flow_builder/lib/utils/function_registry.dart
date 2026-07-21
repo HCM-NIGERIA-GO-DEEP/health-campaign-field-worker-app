@@ -1055,6 +1055,9 @@ void initializeFunctionRegistry() {
     if (args.isEmpty) return false;
 
     final tasks = args.first;
+    // Get currentRunningCycle from third argument if provided
+    final currentRunningCycle =
+        args.length > 1 ? int.tryParse(args[1]?.toString() ?? '') : null;
 
     for (var task in tasks) {
       final statusValue = task.status;
@@ -1067,6 +1070,23 @@ void initializeFunctionRegistry() {
           ?.toString()
           .trim()
           .toUpperCase();
+
+      if (currentRunningCycle != null) {
+        final additionalFields = task['additionalFields'];
+        final fields = additionalFields is Map
+            ? additionalFields['fields'] as List?
+            : null;
+        int? taskCycleIndex;
+        if (fields != null) {
+          for (final field in fields) {
+            if (field is Map && field['key'] == 'cycleIndex') {
+              taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
+              break;
+            }
+          }
+        }
+        if (taskCycleIndex != currentRunningCycle) continue;
+      }
 
       // Match valid delivered statuses
       if (status == TaskStatus.administrationSuccess && flowType == 'ORSDONE') {
