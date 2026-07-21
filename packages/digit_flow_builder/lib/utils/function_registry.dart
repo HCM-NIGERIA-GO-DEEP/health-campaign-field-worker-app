@@ -795,6 +795,31 @@ void initializeFunctionRegistry() {
               }
             }
           }
+
+          // Fall back to deriving the cycle from the task's last modified
+          // time when no cycleIndex was recorded on the task.
+          if (taskCycleIndex == null) {
+            final clientAuditDetails = task['clientAuditDetails'];
+            final taskAuditDetails = task['auditDetails'];
+            final lastModifiedTime = (clientAuditDetails is Map
+                    ? clientAuditDetails['lastModifiedTime']
+                    : null) ??
+                (taskAuditDetails is Map
+                    ? taskAuditDetails['lastModifiedTime']
+                    : null);
+            final lastModifiedTimeMs =
+                int.tryParse(lastModifiedTime?.toString() ?? '');
+
+            if (lastModifiedTimeMs != null) {
+              final matchingCycle = projectType.cycles?.firstWhereOrNull(
+                (cycle) =>
+                    lastModifiedTimeMs >= cycle.startDate &&
+                    lastModifiedTimeMs <= cycle.endDate,
+              );
+              taskCycleIndex = matchingCycle?.id;
+            }
+          }
+
           if (taskCycleIndex != currentRunningCycle) {
             if (isWithinAge == false &&
                 task['status'] == TaskStatus.administrationSuccess) {
