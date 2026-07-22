@@ -1037,37 +1037,12 @@ void initializeFunctionRegistry() {
     if (args.isEmpty) return false;
 
     final tasks = args.first;
-
-    for (var task in tasks) {
-      final statusValue = task.status;
-      if (statusValue is! String) continue;
-      final status = statusValue.trim().toUpperCase();
-      final List? fields = task.additionalFields?.fields;
-      final flowType = fields
-          ?.firstWhereOrNull((f) => f.key == 'flow')
-          ?.value
-          ?.toString()
-          .trim()
-          .toUpperCase();
-
-      // Match valid delivered statuses
-      if (status == TaskStatus.administrationSuccess && flowType == 'VASDONE') {
-        return true;
-      }
-    }
-
-    return false;
-  });
-
-  // Registers a function to check if ORS has been delivered for a member.
-  FunctionRegistry.register("isORSDelivered", (args, stateData) {
-    // No arguments passed
-    if (args.isEmpty) return false;
-
-    final tasks = args.first;
-    // Get currentRunningCycle from third argument if provided
     final currentRunningCycle =
         args.length > 1 ? int.tryParse(args[1]?.toString() ?? '') : null;
+
+    // --- ProjectType comes from FlowBuilderSingleton ---
+    final projectType = FlowBuilderSingleton().projectType;
+    if (projectType == null) return false;
 
     for (var task in tasks) {
       final statusValue = task.status;
@@ -1095,6 +1070,107 @@ void initializeFunctionRegistry() {
             }
           }
         }
+
+        // Fall back to deriving the cycle from the task's last modified
+        // time when no cycleIndex was recorded on the task.
+        if (taskCycleIndex == null) {
+          final clientAuditDetails = task['clientAuditDetails'];
+          final taskAuditDetails = task['auditDetails'];
+          final lastModifiedTime = (clientAuditDetails is Map
+                  ? clientAuditDetails['lastModifiedTime']
+                  : null) ??
+              (taskAuditDetails is Map
+                  ? taskAuditDetails['lastModifiedTime']
+                  : null);
+          final lastModifiedTimeMs =
+              int.tryParse(lastModifiedTime?.toString() ?? '');
+
+          if (lastModifiedTimeMs != null) {
+            final matchingCycle = projectType.cycles?.firstWhereOrNull(
+              (cycle) =>
+                  lastModifiedTimeMs >= cycle.startDate &&
+                  lastModifiedTimeMs <= cycle.endDate,
+            );
+            taskCycleIndex = matchingCycle?.id;
+          }
+        }
+
+        if (taskCycleIndex != currentRunningCycle) continue;
+      }
+
+      // Match valid delivered statuses
+      if (status == TaskStatus.administrationSuccess && flowType == 'VASDONE') {
+        return true;
+      }
+    }
+
+    return false;
+  });
+
+  // Registers a function to check if ORS has been delivered for a member.
+  FunctionRegistry.register("isORSDelivered", (args, stateData) {
+    // No arguments passed
+    if (args.isEmpty) return false;
+
+    final tasks = args.first;
+    final currentRunningCycle =
+        args.length > 1 ? int.tryParse(args[1]?.toString() ?? '') : null;
+
+    // --- ProjectType comes from FlowBuilderSingleton ---
+    final projectType = FlowBuilderSingleton().projectType;
+    if (projectType == null) return false;
+
+    for (var task in tasks) {
+      final statusValue = task.status;
+      if (statusValue is! String) continue;
+      final status = statusValue.trim().toUpperCase();
+      final List? fields = task.additionalFields?.fields;
+      final flowType = fields
+          ?.firstWhereOrNull((f) => f.key == 'flow')
+          ?.value
+          ?.toString()
+          .trim()
+          .toUpperCase();
+
+      if (currentRunningCycle != null) {
+        final additionalFields = task['additionalFields'];
+        final fields = additionalFields is Map
+            ? additionalFields['fields'] as List?
+            : null;
+        int? taskCycleIndex;
+        if (fields != null) {
+          for (final field in fields) {
+            if (field is Map && field['key'] == 'cycleIndex') {
+              taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
+              break;
+            }
+          }
+        }
+
+        // Fall back to deriving the cycle from the task's last modified
+        // time when no cycleIndex was recorded on the task.
+        if (taskCycleIndex == null) {
+          final clientAuditDetails = task['clientAuditDetails'];
+          final taskAuditDetails = task['auditDetails'];
+          final lastModifiedTime = (clientAuditDetails is Map
+                  ? clientAuditDetails['lastModifiedTime']
+                  : null) ??
+              (taskAuditDetails is Map
+                  ? taskAuditDetails['lastModifiedTime']
+                  : null);
+          final lastModifiedTimeMs =
+              int.tryParse(lastModifiedTime?.toString() ?? '');
+
+          if (lastModifiedTimeMs != null) {
+            final matchingCycle = projectType.cycles?.firstWhereOrNull(
+              (cycle) =>
+                  lastModifiedTimeMs >= cycle.startDate &&
+                  lastModifiedTimeMs <= cycle.endDate,
+            );
+            taskCycleIndex = matchingCycle?.id;
+          }
+        }
+
         if (taskCycleIndex != currentRunningCycle) continue;
       }
 
