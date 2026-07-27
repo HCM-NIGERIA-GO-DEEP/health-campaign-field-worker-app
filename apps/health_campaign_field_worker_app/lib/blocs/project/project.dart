@@ -1151,6 +1151,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       const batchSize = 50;
       int offset = 0;
       int syncedCount = 0;
+      final downloadedStocks = <String, StockModel>{};
       final currentSyncTime = DateTime.now().millisecondsSinceEpoch;
 
       while (syncedCount < totalCount) {
@@ -1164,18 +1165,9 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
         if (stockEntries.isEmpty) break;
 
-        final cycleFilteredStockEntries =
-            (currentCycleStartDate != null && currentCycleEndDate != null)
-                ? stockEntries.where((stock) {
-                    final dateOfEntry = stock.dateOfEntry;
-                    return dateOfEntry != null &&
-                        dateOfEntry >= currentCycleStartDate &&
-                        dateOfEntry <= currentCycleEndDate;
-                  }).toList()
-                : stockEntries;
-
-        if (cycleFilteredStockEntries.isNotEmpty) {
-          await stockLocalRepository.bulkCreate(cycleFilteredStockEntries);
+        await stockLocalRepository.bulkCreate(stockEntries);
+        for (final stock in stockEntries) {
+          downloadedStocks[stock.clientReferenceId] = stock;
         }
 
         await downSyncLocalRepository.update(DownsyncModel(
@@ -1190,11 +1182,20 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         syncedCount += stockEntries.length;
       }
 
-      // Advance the per-user cursor only after all pages downloaded, using
-      // the time captured before the first fetch so records modified during
-      // the download are picked up next time.
-      await AppSharedPreferences()
-          .setStockDownsyncTime(cursorKey, currentSyncTime);
+      // Advance the per-user cursor to the latest server lastModifiedTime
+      // among the downloaded records — the clock domain the server's
+      // lastChangedSince filter compares against. When nothing usable came
+      // back (e.g. an empty page despite a non-zero count) keep the stored
+      // cursor so the window is retried next sync instead of skipping the
+      // records forever.
+      final nextCursorTime = StockDownsyncCursor.nextCursor(
+        stored: AppSharedPreferences().getStockDownsyncTime(cursorKey),
+        stocks: downloadedStocks.values,
+      );
+      if (nextCursorTime != null) {
+        await AppSharedPreferences()
+            .setStockDownsyncTime(cursorKey, nextCursorTime);
+      }
 
       await downSyncStockBalances(project);
 
