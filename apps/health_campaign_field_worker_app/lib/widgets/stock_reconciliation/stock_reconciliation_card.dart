@@ -460,10 +460,28 @@ class _StockReconciliationCardState
     final facilityId = _selectedFacility!.id;
     final productId = _selectedProduct!.id;
     final loggedInUserUuid = FlowBuilderSingleton().loggedInUserUuid;
+    final selectedCycle = context.selectedCycle;
+
+    final filteredStocks = stockList.where((stock) {
+      final cycleStartDate = selectedCycle?.startDate;
+      final cycleEndDate = selectedCycle?.endDate;
+
+      if (cycleStartDate == null || cycleEndDate == null) {
+        return true;
+      }
+
+      final stockEntryDate = stock.dateOfEntryTime?.millisecondsSinceEpoch ??
+          stock.auditDetails?.lastModifiedTime ??
+          stock.clientAuditDetails?.lastModifiedTime;
+
+      if (stockEntryDate == null) return false;
+
+      return stockEntryDate >= cycleStartDate && stockEntryDate <= cycleEndDate;
+    }).toList();
 
     // Calculate metrics using common utility
     final calculatedMetrics = StockCalculationUtils.calculateStockMetrics(
-      stockList: stockList,
+      stockList: filteredStocks,
       facilityId: facilityId,
       productId: productId,
       loggedInUserUuid: loggedInUserUuid,
