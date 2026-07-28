@@ -813,7 +813,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       var projectTypeString = event.model.projectType;
 
       if (projectTypeString == "SMC-RI") {
-        campaignID = "CMP-2026-06-08-000333";
+        campaignID = "CMP-2026-06-29-000423";
       }
       if (projectTypeString == "ORS-Zinc") {
         campaignID = "CMP-2026-07-03-000424";
