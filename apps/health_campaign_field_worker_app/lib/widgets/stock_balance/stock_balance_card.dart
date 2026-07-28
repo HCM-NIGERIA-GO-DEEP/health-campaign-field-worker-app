@@ -270,8 +270,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       }
 
       final stockEntryDate = stock.dateOfEntryTime?.millisecondsSinceEpoch ??
-          stock.auditDetails?.createdTime ??
-          stock.clientAuditDetails?.createdTime;
+          stock.auditDetails?.lastModifiedTime ??
+          stock.clientAuditDetails?.lastModifiedTime;
 
       if (stockEntryDate == null) return false;
 
