@@ -1,4 +1,4 @@
-package com.digit.hcm
+package org.egov.borno
 
 import android.content.BroadcastReceiver
 import android.content.Context
