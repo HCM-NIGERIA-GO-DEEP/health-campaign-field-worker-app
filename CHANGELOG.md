@@ -1,5 +1,32 @@
 # Changelog
 
+## 2.2.101 — 2026-08-05
+
+_(includes 2.2.99, 2.2.100 — bumped independently and in parallel on the `feat/smc-mc-borno` and `feat/smc-mc-plateau-ri` branches before being merged together into `smc-mc-base`)_
+
+**Eligibility / cycle logic in `function_registry.dart`**
+
+- A new age-only eligibility gate, `_isEligibleAge(projectType, totalAgeMonths)`, replaced the dose-criteria-based `_isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual)` as the age check inside `checkEligibilityForAgeAndSideEffect` (3 call sites), `isORSEligible`, `vasWithinTheAge`, and `orsWithinTheAge`. This is a real simplification, not just a new check: the new function only compares `totalAgeMonths` against `projectType.validMinAge`/`validMaxAge`, dropping the per-cycle dose-criteria condition strings and weight/height clauses `_isEligibleFromDoseCriteria` supported. `_isEligibleFromDoseCriteria` is now dead code — still defined, no longer called.
+- That new function initially used strict bounds (`totalAgeMonths > minAge && totalAgeMonths < maxAge`), wrongly excluding a beneficiary exactly at the min or max age boundary. A same-day follow-up changed both comparisons to inclusive (`>=`/`<=`).
+- `checkRIEligibility` was reworked: it no longer returns false outright for a task with status `beneficiaryDied`/`ineligible` (regardless of cycle) or, for the current cycle, `beneficiaryMigrated`/`beneficiaryAbsent`/`beneficiaryRefused` — all of that status-based logic was removed. It now only checks whether the beneficiary has *any* RI task recorded in the current running cycle (via `cycleIndex`, falling back to deriving the cycle from the task's `lastModifiedTime` against the project's cycle dates when `cycleIndex` is missing); if so, ineligible, regardless of that task's status. Net effect: a `beneficiaryDied` task from a past cycle no longer disqualifies a beneficiary going forward, which the old code did unconditionally.
+- The RI full-immunization check got the same `lastModifiedTime`-derived cycle fallback, but also flips two defaults: with no active cycle (`currentRunningCycle == null || .id == 0`) it now returns `false` where it used to return `true`, and when a task's cycle can't be determined at all it now falls through to `false` instead of `true`. Both changes make the function default to "not fully immunized" instead of "fully immunized" when cycle data is ambiguous — a real behavioral inversion the "refine checks" commit message undersells.
+
+**Stock**
+
+- `StockBalanceCard` cached computed stock balances via `StockBalanceCache.instance.setCache(...)` *before* applying the server-report stock-consumption deduction to `_stockBalances`, so the cache permanently held pre-deduction figures while the card displayed post-deduction ones. The fix moves the `setCache` call after the deduction, caching the final `_stockBalances` — a real cache/UI mismatch bug fix, not a vague "caching logic update."
+- The stock-downsync cursor's "+1 ms past the latest downloaded record" fix (to avoid re-fetching that same record next sync) was applied independently in two separate cursor-writing code paths — `StockDownSyncBloc` and `ProjectBloc`'s own inline stock-download routine — the same off-by-one bug present in, and fixed in, both places rather than one fix duplicated.
+- `getFacilityName` was changed to accept a second `deliveryTeamName` argument and return it instead of the raw `facilityId` for non-facility (STAFF/delivery-team) senders. No call site — not `INVENTORY.json` nor `manage_stock.dart` — was updated to pass that second argument, so it always defaults to `""`. The practical effect is that non-facility sender names now render blank instead of the previously-shown raw id/QR string, not "including the delivery team name" as the message implies.
+
+**Summary report**
+
+- The summary report's household-download step in `ProjectBloc` now returns immediately for any role other than distributor/CDD, and keys off `userObject.uuid` for the facility id instead of falling back through `currentFacilities`. This fix was committed separately but byte-identically on both `feat/smc-mc-borno` and `feat/smc-mc-plateau-ri` (same author, same timestamp) — a genuine duplicate landing that the merge reconciles into one.
+
+**Per-tenant Android identity and campaign ID (mostly moot on this branch)**
+
+- `feat/smc-mc-plateau-ri` renamed the Android package to `org.egov.pl` (label "Plateau") and rotated the Firebase Android app id; `feat/smc-mc-borno` did the equivalent for `org.egov.borno`/"Borno SMC" with its own Firebase app id. The Plateau rename initially missed `android/app/build.gradle`'s `applicationId` (left at the old `org.egov.kg`); a later commit ("update applicationId to match new project requirements") caught it up to `org.egov.pl`.
+- **None of this survives the merge into `smc-mc-base`.** The merge commit's conflict resolution for `build.gradle` kept neither side's `applicationId` — not `smc-mc-base`'s own `org.egov.bauchi` nor `feat/smc-mc-plateau-ri`'s `org.egov.pl` — but hand-resolved it to a third value, `com.digit.hcm`, and `AndroidManifest.xml`'s label was likewise merged down to plain "HCM". Firebase's Android app id at HEAD also matches neither tenant branch. Verify this was the intended resolution before shipping — as merged, this branch's Android identity is `com.digit.hcm`/"HCM", not Plateau's or Borno's.
+- The hardcoded SMC-RI campaign ID in `ProjectBloc` was swapped to `CMP-2026-06-08-000333` for the Plateau tenant — the same value 2.2.98 had deliberately moved *away* from for a different tenant. Not a regression of that fix; it's a separate per-tenant override, but worth confirming the right campaign ID is active for whichever tenant actually ships from `smc-mc-base`.
+
 ## 2.2.98 — 2026-07-28
 
 - The SMC-RI campaign ID hardcoded in `ProjectBloc` was corrected from `CMP-2026-06-08-000333` to `CMP-2026-06-29-000423`. The two commits that make this change look like duplicates going by their messages, but the second one is fixing a wrong value the first one shipped — it isn't a no-op.
