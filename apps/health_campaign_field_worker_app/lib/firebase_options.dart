@@ -54,7 +54,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyBzE5f156_ia7HumLb1fDg8A-88uhmQ68Y',
-    appId: '1:397617237644:android:f88dc37ea312cf5ff6b5a9',
+    appId: '1:397617237644:android:3d603a9b0c0bc6adf6b5a9',
     messagingSenderId: '397617237644',
     projectId: 'digit-health-75ed0',
     storageBucket: 'digit-health-75ed0.appspot.com',
