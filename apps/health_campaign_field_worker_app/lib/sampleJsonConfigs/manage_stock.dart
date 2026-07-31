@@ -558,9 +558,9 @@ final dynamic sampleInventoryFlows = {
                     "hierarchyMapping": {
                       "State": {
                         "forReceipt": ["National Facility"],
-                        "forIssue": ["DH"]
+                        "forIssue": ["Distribution Hub"]
                       },
-                      "DH": {
+                      "Distribution Hub": {
                         "forReceipt": ["State Facility"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
@@ -700,9 +700,9 @@ final dynamic sampleInventoryFlows = {
                       },
                       "LGA": {
                         "forReceipt": ["State Facility"],
-                        "forIssue": ["DH"]
+                        "forIssue": ["Distribution Hub"]
                       },
-                      "DH": {
+                      "Distribution Hub": {
                         "forReceipt": ["LGA Facility"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
@@ -1538,9 +1538,9 @@ final dynamic sampleInventoryFlows = {
                       },
                       "LGA": {
                         "forReceipt": ["State Facility"],
-                        "forIssue": ["DH"]
+                        "forIssue": ["Distribution Hub"]
                       },
-                      "DH": {
+                      "Distribution Hub": {
                         "forReceipt": ["LGA Facility"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
@@ -1701,9 +1701,9 @@ final dynamic sampleInventoryFlows = {
                       },
                       "LGA": {
                         "forReceipt": ["State Facility"],
-                        "forIssue": ["DH"]
+                        "forIssue": ["Distribution Hub"]
                       },
-                      "DH": {
+                      "Distribution Hub": {
                         "forReceipt": ["LGA Facility"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
