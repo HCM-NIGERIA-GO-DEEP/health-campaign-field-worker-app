@@ -294,7 +294,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
   ) {
     final beneficiaryName =
         _beneficiaryNameFromForm(context, form) ?? 'beneficiary';
-    final bednetLabel = requiredScanCount == 1 ? 'Bednet' : 'Bednets';
+    final bednetLabel = requiredScanCount == 1 ? 'ITN' : 'ITNs';
 
     return 'Ensure that "$requiredScanCount $bednetLabel" are given to '
         '"$beneficiaryName" and proper Health Talk is provided!';
