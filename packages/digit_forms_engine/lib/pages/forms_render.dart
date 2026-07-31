@@ -202,16 +202,50 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
         .length;
   }
 
+  Map<String, dynamic> _buildPageVisibilityContext(FormGroup formGroup) {
+    final formState = context.read<FormsBloc>().state;
+    final pages = formState.cachedSchemas[widget.currentSchemaKey]?.pages;
+    if (pages == null) {
+      return <String, dynamic>{};
+    }
+
+    return buildVisibilityEvaluationContext(
+      currentPageKey: widget.pageName,
+      currentForm: formGroup,
+      pages: pages,
+      navigationParams: widget.navigationParams,
+    );
+  }
+
+  bool _isVisibleForScannerValidation(
+    PropertySchema schema,
+    Map<String, dynamic> visibilityContext,
+  ) {
+    if (isHidden(schema)) return false;
+
+    final visibility = schema.visibilityCondition;
+    if (visibility == null || visibility.expression.isEmpty) return true;
+
+    return evaluateVisibilityExpression(
+      visibility.expression,
+      visibilityContext,
+    );
+  }
+
   bool _hasIncompleteScannerScanLimit(
     PropertySchema pageSchema,
     FormGroup formGroup,
   ) {
     final properties = pageSchema.properties;
     if (properties == null || properties.isEmpty) return false;
+    final visibilityContext = _buildPageVisibilityContext(formGroup);
 
     for (final entry in properties.entries) {
       final property = entry.value;
       if (property.format != PropertySchemaFormat.scanner) continue;
+      if (!_isVisibleForScannerValidation(property, visibilityContext)) {
+        continue;
+      }
 
       final limit = _getEffectiveScannerRequiredCount(property, formGroup);
       if (limit == null || limit <= 0) continue;
