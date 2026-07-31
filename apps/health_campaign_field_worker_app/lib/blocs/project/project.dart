@@ -425,17 +425,11 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       (role) => role.code == RolesType.distributor.toValue(),
     );
 
-    final facilityId = isDistributor
-        ? userObject.uuid
-        : (currentFacilities.firstOrNull?.facilityId ?? userObject.uuid);
+    if (isDistributor == false) return;
+    final facilityId = userObject.uuid;
 
-    if (facilityId.isEmpty) {
-      return;
-    }
-
-    if (currentCycle == null) {
-      return;
-    }
+    if (facilityId.isEmpty) return;
+    if (currentCycle == null) return;
 
     // Search for household repo
     // if household data present return else fetch from server and store in local storage
