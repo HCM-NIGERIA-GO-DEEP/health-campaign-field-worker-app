@@ -9,6 +9,7 @@ import 'package:digit_ui_components/utils/date_utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:digit_formula_parser/digit_formula_parser.dart';
 
 import 'interpolation.dart';
 
@@ -263,6 +264,250 @@ bool _isAgeEligibleFromDoseCriteria(
   return false;
 }
 
+/// Evaluates a single normalized clause (e.g. `age<=4`, `2<=age`,
+/// `4<=weight`, `weight<=12`, `49<=height`) against the supplied [variables]
+/// using [FormulaParser] — the same evaluator the rest of the flow builder
+/// uses. The member's value is substituted in for the variable name and the
+/// resulting numeric comparison is parsed. Decimal thresholds are supported.
+bool _evaluateClause(String clause, Map<String, num> variables) {
+  final result = FormulaParser(clause, variables).parse;
+  return result['isSuccess'] == true && result['value'] == true;
+}
+
+/// Reads a numeric value for [key] (`weight` / `height`) from an individual's
+/// additional fields. The individual may be a `Map`, an [EntityModel] or any
+/// object exposing `additionalFields`. Returns `null` when the value is not
+/// recorded or not numeric.
+num? _readAdditionalFieldNumber(dynamic individual, String key) {
+  if (individual == null) return null;
+
+  dynamic additional;
+  if (individual is Map) {
+    additional = individual['additionalFields'];
+  } else if (individual is EntityModel) {
+    additional = individual.toMap()['additionalFields'];
+  } else {
+    try {
+      additional = (individual as dynamic).additionalFields;
+    } catch (_) {
+      return null;
+    }
+  }
+  if (additional == null) return null;
+
+  // Normalize to a list of field entries.
+  List? fields;
+  if (additional is AdditionalFields) {
+    fields = additional.fields;
+  } else if (additional is Map) {
+    fields = additional['fields'] as List?;
+  } else {
+    try {
+      fields = (additional as dynamic).fields as List?;
+    } catch (_) {
+      return null;
+    }
+  }
+  if (fields == null) return null;
+
+  for (final field in fields) {
+    String? fieldKey;
+    dynamic fieldValue;
+    if (field is AdditionalField) {
+      fieldKey = field.key;
+      fieldValue = field.value;
+    } else if (field is Map) {
+      fieldKey = field['key']?.toString();
+      fieldValue = field['value'];
+    } else {
+      try {
+        fieldKey = (field as dynamic).key?.toString();
+        fieldValue = (field as dynamic).value;
+      } catch (_) {
+        continue;
+      }
+    }
+
+    if (fieldKey?.toLowerCase() == key) {
+      return num.tryParse(fieldValue?.toString() ?? '');
+    }
+  }
+  return null;
+}
+
+/// Resolves a [DateTime] date of birth from an individual (Map / EntityModel /
+/// dynamic). Supports both epoch-millisecond and formatted-string values.
+DateTime? _resolveDateOfBirth(dynamic individual) {
+  if (individual == null) return null;
+
+  dynamic dob;
+  if (individual is Map) {
+    dob = individual['dateOfBirth'];
+  } else if (individual is EntityModel) {
+    dob = individual.toMap()['dateOfBirth'];
+  } else {
+    try {
+      dob = (individual as dynamic).dateOfBirth;
+    } catch (_) {
+      return null;
+    }
+  }
+  if (dob == null) return null;
+
+  if (dob is DateTime) return dob;
+  if (dob is int) return DateTime.fromMillisecondsSinceEpoch(dob);
+  if (dob is String) {
+    final timestamp = int.tryParse(dob);
+    if (timestamp != null) {
+      return DateTime.fromMillisecondsSinceEpoch(timestamp);
+    }
+    return DigitDateUtils.getFormattedDateToDateTime(dob);
+  }
+  return null;
+}
+
+/// Checks whether a member is eligible based on the cycle's dose criteria.
+///
+/// Each condition string (e.g. `2<=age && age<=4 && 4<=weight && weight<=8`) is
+/// split into clauses, and a member matches a condition when **all** of its
+/// clauses are satisfied:
+///   * `age` clauses are always enforced (age is always known).
+///   * `weight` / `height` clauses are enforced only when the member has that
+///     value recorded; if the measurement is missing, the clause is ignored so
+///     eligibility falls back to the age check.
+///
+/// The member is eligible if they match at least one condition. Cycles without
+/// any condition keep eligibility open.
+bool _isEligibleFromDoseCriteria(
+  ProjectCycle? currentCycle,
+  int totalAgeMonths,
+  dynamic individual,
+) {
+  if (currentCycle == null) return false;
+
+  final conditions = (currentCycle.deliveries ?? <ProjectCycleDelivery>[])
+      .expand((delivery) => delivery.doseCriteria ?? <DeliveryDoseCriteria>[])
+      .map((criteria) => criteria.condition?.toLowerCase().trim() ?? '')
+      .where((condition) => condition.isNotEmpty)
+      .toList();
+
+  // If cycle has no condition-based filters, keep eligibility open.
+  if (conditions.isEmpty) return true;
+
+  // Measurements available for this member. Age is always present; weight and
+  // height are added only when recorded on the individual.
+  final variables = <String, num>{'age': totalAgeMonths};
+  final weight = _readAdditionalFieldNumber(individual, 'weight');
+  if (weight != null) variables['weight'] = weight;
+  final height = _readAdditionalFieldNumber(individual, 'height');
+  if (height != null) variables['height'] = height;
+
+  for (final condition in conditions) {
+    final normalized = condition.replaceAll(' ', '').replaceAll('&&', 'and');
+    if (!normalized.contains('age')) continue;
+
+    final clauses = normalized.split('and').where((e) => e.isNotEmpty).toList();
+    if (clauses.isEmpty) continue;
+
+    final matchesAllClauses = clauses.every((clause) {
+      // Find which measurement this clause references.
+      final variable =
+          variables.keys.firstWhereOrNull((k) => clause.contains(k));
+
+      // A weight/height clause for a member without that reading (or any other
+      // unrecognised clause) is ignored so eligibility falls back to age.
+      if (variable == null) return true;
+
+      return _evaluateClause(clause, variables);
+    });
+
+    if (matchesAllClauses) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+bool _isEligibleAge(ProjectTypeModel? projectType, int totalAgeMonths) {
+  if (projectType == null) return false;
+
+  int? minAge = projectType.validMinAge;
+  int? maxAge = projectType.validMaxAge;
+
+  if (minAge == null || maxAge == null) return false;
+
+  if (totalAgeMonths > minAge && totalAgeMonths < maxAge) {
+    return true;
+  }
+  return false;
+}
+
+/// Returns the [doseCriteria] entries that the member matches, as raw maps
+/// (each including its `ProductVariants`) suitable for populating the resource
+/// card.
+///
+/// Uses the same age / weight / height clause semantics as
+/// [_isEligibleFromDoseCriteria]:
+///   * `age` clauses are always enforced (age is always known).
+///   * `weight` / `height` clauses are enforced only when that measurement is
+///     provided; when it is missing the clause is ignored so eligibility falls
+///     back to the age check.
+///   * A criteria with no condition is always included.
+///
+/// This is shared with the REDOSE / DELIVERY resource card so the products
+/// shown there stay consistent with the eligibility checks elsewhere.
+List<Map<String, dynamic>> filterEligibleDoseCriteria(
+  List<DeliveryDoseCriteria>? doseCriteria, {
+  required int ageInMonths,
+  num? weight,
+  num? height,
+}) {
+  if (doseCriteria == null || doseCriteria.isEmpty) {
+    return const <Map<String, dynamic>>[];
+  }
+
+  // Measurements available for this member. Age is always present; weight and
+  // height are added only when recorded.
+  final variables = <String, num>{'age': ageInMonths};
+  if (weight != null) variables['weight'] = weight;
+  if (height != null) variables['height'] = height;
+
+  final result = <Map<String, dynamic>>[];
+
+  for (final criteria in doseCriteria) {
+    final raw = criteria.condition?.toLowerCase().trim() ?? '';
+
+    // No condition-based filter → always eligible.
+    if (raw.isEmpty) {
+      result.add(criteria.toMap());
+      continue;
+    }
+
+    final normalized = raw.replaceAll(' ', '').replaceAll('&&', 'and');
+    if (!normalized.contains('age')) continue;
+
+    final clauses = normalized.split('and').where((e) => e.isNotEmpty).toList();
+    if (clauses.isEmpty) continue;
+
+    final matchesAllClauses = clauses.every((clause) {
+      // Find which measurement this clause references.
+      final variable =
+          variables.keys.firstWhereOrNull((k) => clause.contains(k));
+
+      // A weight/height clause for a member without that reading (or any other
+      // unrecognised clause) is ignored so eligibility falls back to age.
+      if (variable == null) return true;
+
+      return _evaluateClause(clause, variables);
+    });
+
+    if (matchesAllClauses) result.add(criteria.toMap());
+  }
+
+  return result;
+}
+
 // Helper function matching hasLogWithType logic
 bool _hasLogWithType(attendanceLog, DateTime date, String type) {
   final logTime = type == 'ENTRY'
@@ -464,11 +709,8 @@ void initializeFunctionRegistry() {
     );
     if (currentCycle == null) return false;
 
-// --- Check age eligibility ---
-    final isWithinAge =
-        _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
-
-    if (!isWithinAge) return false;
+// --- Check eligibility (age, plus weight/height when recorded) ---
+    final isWithinAge = _isEligibleAge(projectType, totalAgeMonths);
 
 // --- Eligibility logic ---
     bool recordedSideEffect = false;
@@ -546,8 +788,7 @@ void initializeFunctionRegistry() {
           (lastTaskTime >= currentCycle.startDate &&
               lastTaskTime <= currentCycle.endDate);
 
-      final isWithinAge =
-          _isAgeEligibleFromDoseCriteria(currentCycle, totalAgeMonths);
+      final isWithinAge = _isEligibleAge(projectType, totalAgeMonths);
 
       if (!isWithinAge) return false;
 
@@ -556,9 +797,7 @@ void initializeFunctionRegistry() {
 
       return recordedSideEffect && !statusOk ? false : true;
     } else {
-      // Same continued-eligibility exception on the no-side-effects path.
-      return hasDeliveredEarlierCycle ||
-          _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
+      return _isEligibleAge(projectType, totalAgeMonths);
     }
   });
 
@@ -645,6 +884,82 @@ void initializeFunctionRegistry() {
     if (status == TaskStatus.administrationSuccess ||
         status == TaskStatus.delivered) {
       return true;
+    }
+
+    return false;
+  });
+
+  // Registers a function to check if ORS has been delivered for a member.
+  FunctionRegistry.register("isORSDelivered", (args, stateData) {
+    // No arguments passed
+    if (args.isEmpty) return false;
+
+    final tasks = args.first;
+    final currentRunningCycle =
+        args.length > 1 ? int.tryParse(args[1]?.toString() ?? '') : null;
+
+    // --- ProjectType comes from FlowBuilderSingleton ---
+    final projectType = FlowBuilderSingleton().projectType;
+    if (projectType == null) return false;
+
+    for (var task in tasks) {
+      final statusValue = task.status;
+      if (statusValue is! String) continue;
+      final status = statusValue.trim().toUpperCase();
+      final List? fields = task.additionalFields?.fields;
+      final flowType = fields
+          ?.firstWhereOrNull((f) => f.key == 'flow')
+          ?.value
+          ?.toString()
+          .trim()
+          .toUpperCase();
+
+      if (currentRunningCycle != null) {
+        final additionalFields = task['additionalFields'];
+        final fields = additionalFields is Map
+            ? additionalFields['fields'] as List?
+            : null;
+        int? taskCycleIndex;
+        if (fields != null) {
+          for (final field in fields) {
+            if (field is Map && field['key'] == 'cycleIndex') {
+              taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
+              break;
+            }
+          }
+        }
+
+        // Fall back to deriving the cycle from the task's last modified
+        // time when no cycleIndex was recorded on the task.
+        if (taskCycleIndex == null) {
+          final clientAuditDetails = task['clientAuditDetails'];
+          final taskAuditDetails = task['auditDetails'];
+          final lastModifiedTime = (clientAuditDetails is Map
+                  ? clientAuditDetails['lastModifiedTime']
+                  : null) ??
+              (taskAuditDetails is Map
+                  ? taskAuditDetails['lastModifiedTime']
+                  : null);
+          final lastModifiedTimeMs =
+              int.tryParse(lastModifiedTime?.toString() ?? '');
+
+          if (lastModifiedTimeMs != null) {
+            final matchingCycle = projectType.cycles?.firstWhereOrNull(
+              (cycle) =>
+                  lastModifiedTimeMs >= cycle.startDate &&
+                  lastModifiedTimeMs <= cycle.endDate,
+            );
+            taskCycleIndex = matchingCycle?.id;
+          }
+        }
+
+        if (taskCycleIndex != currentRunningCycle) continue;
+      }
+
+      // Match valid delivered statuses
+      if (status == TaskStatus.administrationSuccess && flowType == 'ORSDONE') {
+        return true;
+      }
     }
 
     return false;
@@ -1508,6 +1823,65 @@ void initializeFunctionRegistry() {
 
     return false;
   });
+
+  FunctionRegistry.register("hasVASIneligible", (args, stateData) {
+    // No arguments passed
+    if (args.isEmpty) return false;
+
+    final tasks = args.first;
+
+    for (var task in tasks) {
+      final statusValue = task.status;
+      if (statusValue is! String) continue;
+      final status = statusValue.trim().toUpperCase();
+      final List? fields = task.additionalFields?.fields;
+      final flowType = fields
+          ?.firstWhereOrNull((f) => f.key == 'flow')
+          ?.value
+          ?.toString()
+          .trim()
+          .toUpperCase();
+
+      // Match valid delivered statuses
+      if (status == TaskStatus.ineligible && flowType == 'VASDONE') {
+        return true;
+      }
+    }
+
+    return false;
+  });
+
+  /// Resolves the eligibility-checklist answers carried in [navigationData] into
+  /// referral reason codes, ordered by descending priority:
+  /// ADR (DRUG_SE_PC) > SICK > FEVER.
+  ///
+  /// Mapping: `ec4==YES` -> ADR (DRUG_SE_PC), `ec1==YES` -> SICK,
+  /// `ec2==YES` -> FEVER. Reasons are appended in priority order, so the first
+  /// element is always the highest-priority reason. Returns an empty list when the
+  /// navigation carries no checklist answers (e.g. a manual referral that is not
+  /// sourced from the CHECKLIST flow).
+  List<String> resolveReferralReasons(dynamic navigationData) {
+    if (navigationData is! Map) return const [];
+
+    if (navigationData["sourceFlow"] == "RI_CHECKLIST") return const ['RI'];
+
+    final String? ec1 = navigationData['ec1']?.toString();
+    final String? ec2 = navigationData['ec2']?.toString();
+    final String? ec4 = navigationData['ec4']?.toString();
+
+    // No checklist answers present -> not a checklist-sourced referral.
+    if (ec1 == null && ec2 == null && ec4 == null) return const [];
+
+    final List<String> reasons = [];
+    if (ec4 == 'YES') reasons.add('DRUG_SE_PC'); // ADR - adverse drug reaction
+    if (ec1 == 'YES') reasons.add('SICK');
+    if (ec2 == 'YES') reasons.add('FEVER');
+
+    // Referral reached without an explicit symptom -> default to ADR.
+    if (reasons.isEmpty) reasons.add('DRUG_SE_PC');
+
+    return reasons;
+  }
 
   // Referral reasons are resolved from the eligibility-checklist answers and
   // ordered by priority (ADR/DRUG_SE_PC > SICK > FEVER) via
