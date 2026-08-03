@@ -1,6 +1,7 @@
 import 'package:digit_crud_bloc/bloc/crud_bloc.dart';
 import 'package:digit_data_model/utils/utils.dart';
 import 'package:digit_flow_builder/utils/scanner_comparison_utils.dart';
+import 'package:digit_flow_builder/utils/team_qr_scope_registry.dart';
 import 'package:digit_flow_builder/widgets/localized.dart';
 import 'package:digit_forms_engine/forms_engine.dart';
 import 'package:digit_forms_engine/pages/forms_render.dart';
@@ -346,13 +347,24 @@ class _FormScreenWrapperState extends LocalizedState<_FormScreenWrapper> {
             final registryFormData = flowState?.formData ?? {};
 
             return ScannerComparisonProvider(
-              duplicateCheckFn: (fieldName, scannedValue, formValues) {
+              duplicateCheckFn: (fieldName, scannedValue, formValues) async {
                 // Read the latest cached schema at call time (not build time)
-                // to ensure cross-page field values are up to date.
+                // to ensure cross-page field values are up to date. Read
+                // before any await so the BuildContext is not used across an
+                // async gap.
                 final latestSchema = context
                     .read<FormsBloc>()
                     .state
                     .cachedSchemas[widget.schemaKey];
+                // App-registered scope check for delivery-team QR fields:
+                // the scanned payload's boundary/tenant must match the
+                // scanning user. Runs before the duplicate check and fails
+                // closed (out-of-scope or unparseable => scan rejected).
+                final scopeRegistry = TeamQrScopeRegistry();
+                if (scopeRegistry.appliesTo(fieldName)) {
+                  final inScope = await scopeRegistry.isInScope(scannedValue);
+                  if (!inScope) return true;
+                }
                 return ScannerComparisonUtils.executeDuplicateCheck(
                   latestSchema ?? schemaObject,
                   widget.compositeKey,
@@ -363,6 +375,7 @@ class _FormScreenWrapperState extends LocalizedState<_FormScreenWrapper> {
                 );
               },
               duplicateErrorMessage: (fieldName) =>
+                  TeamQrScopeRegistry().errorMessageFor(fieldName) ??
                   ScannerComparisonUtils.getDuplicateErrorMessage(
                       schemaObject, fieldName),
               child: FormsRenderPage(

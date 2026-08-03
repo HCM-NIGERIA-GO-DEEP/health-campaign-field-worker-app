@@ -17,6 +17,7 @@ import 'package:digit_flow_builder/data/digit_crud_service.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/router/flow_builder_routes.gm.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
+import 'package:digit_flow_builder/utils/team_qr_scope_registry.dart';
 import 'package:digit_flow_builder/widgets/flow_widget_interface.dart';
 import 'package:digit_formula_parser/digit_formula_parser.dart';
 import 'package:digit_location_tracker/utils/utils.dart';
@@ -180,6 +181,31 @@ class _HomePageState extends LocalizedState<HomePage> {
 
   /// Register custom components for forms engine
   void _registerCustomComponents() {
+    // Scan-time scope validation for delivery-team QR fields (teamCode /
+    // deliveryTeam): the scanned CDD QR must carry a boundary code within the
+    // scanning user's boundary set (selected-boundary chain + covered
+    // least-level boundaries) and the deployment tenant. Legacy QRs without
+    // the "#boundaryCode||tenantId" extension are rejected. Fails closed —
+    // see TeamQrScopeRegistry.
+    final boundaryBloc = context.read<BoundaryBloc>();
+    TeamQrScopeRegistry().register(
+      fieldNames: const {'teamCode', 'deliveryTeam'},
+      errorMessageKey: i18.common.teamQrOutOfScope,
+      validator: (scannedValue) async {
+        final chainCodes = boundaryBloc.state.selectedBoundaryMap.values
+            .map((boundary) => boundary?.code)
+            .whereType<String>()
+            .toSet();
+        final leafCodes =
+            LeastLevelBoundarySingleton().boundary ?? const <String>[];
+        return isTeamQrInScope(
+          scannedValue,
+          scannerBoundaryCodes: {...chainCodes, ...leafCodes},
+          scannerTenantId: envConfig.variables.tenantId,
+        );
+      },
+    );
+
     FlowWidgetFactory.register(AttendanceQrScannerButton());
     FlowWidgetFactory.register(GroupListViewWidget());
     FlowWidgetFactory.register(CustomRowWidget());

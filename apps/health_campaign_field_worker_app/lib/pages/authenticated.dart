@@ -596,8 +596,11 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
             child: SideBar(
               profile: state.maybeMap(
                 authenticated: (value) {
-                  String qrData =
-                      "${value.userModel.userName}||${context.loggedInUserUuid}";
+                  String qrData = buildTeamQrPayload(
+                    context,
+                    userName: value.userModel.userName,
+                    userUuid: context.loggedInUserUuid,
+                  );
                   return ProfileWidget(
                     leading: GestureDetector(
                       onTap: () {

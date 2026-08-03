@@ -50,10 +50,12 @@ import 'constants.dart';
 import 'environment_config.dart';
 import 'extensions/extensions.dart';
 import 'i18_key_constants.dart' as i18;
+import 'team_qr_codec.dart';
 
 export 'app_exception.dart';
 export 'constants.dart';
 export 'extensions/extensions.dart';
+export 'team_qr_codec.dart';
 
 class CustomValidator {
   /// Validates that control's value must be `true`
@@ -870,4 +872,33 @@ Future<Set<String>> generateUniqueMaterialNoteNumber({
   return returnCombinedIds
       ? {formattedUniqueId, combinedId}
       : {formattedUniqueId};
+}
+
+/// Builds the team QR payload for the logged-in user: boundary from the
+/// selected boundary (BoundaryBloc via `context.boundaryOrNull`), tenant from
+/// [envConfig]. Never throws — a missing boundary or an uninitialized
+/// environment degrades the payload per [TeamQrCodec.buildPayload] instead of
+/// blanking the caller's build.
+///
+/// The format logic itself lives in `team_qr_codec.dart`, which is kept
+/// import-free so it stays unit-testable without the widget/bloc graph.
+String buildTeamQrPayload(
+  BuildContext context, {
+  required String? userName,
+  required String userUuid,
+}) {
+  final boundaryCode = context.boundaryOrNull?.code ?? '';
+  String tenantId = '';
+  try {
+    tenantId = envConfig.variables.tenantId;
+  } catch (_) {
+    // EnvironmentConfiguration not initialized — unreachable after app
+    // bootstrap, but a throw inside a widget build is never acceptable here.
+  }
+  return TeamQrCodec.buildPayload(
+    userName: userName,
+    userUuid: userUuid,
+    boundaryCode: boundaryCode,
+    tenantId: tenantId,
+  );
 }

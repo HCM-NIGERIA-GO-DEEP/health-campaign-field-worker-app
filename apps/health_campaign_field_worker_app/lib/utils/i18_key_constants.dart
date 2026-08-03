@@ -396,6 +396,8 @@ class Common {
 
   String get qrAttendance => 'QR_ATTENDANCE';
 
+  String get teamQrOutOfScope => 'INVENTORY_TEAM_QR_SCOPE_INVALID_MESSAGE';
+
   String get progressIndicatorPrefixLabelHFReferral =>
       'PROGRESS_INDICATOR_PREFIX_LABEL_HFREFERRAL';
 

@@ -148,8 +148,11 @@ class _UserQRDetailsPageState extends LocalizedState<UserQRDetailsPage> {
 
     return state.maybeMap(
       authenticated: (value) {
-        String qrData =
-            "${value.userModel.userName}||${context.loggedInUserUuid}";
+        String qrData = buildTeamQrPayload(
+          context,
+          userName: value.userModel.userName,
+          userUuid: context.loggedInUserUuid,
+        );
         return Column(
           children: [
             SizedBox(

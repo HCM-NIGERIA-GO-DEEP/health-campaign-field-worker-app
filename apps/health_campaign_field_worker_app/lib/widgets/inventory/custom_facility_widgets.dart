@@ -9,7 +9,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import '../../models/entities/roles_type.dart';
-import '../../utils/extensions/extensions.dart';
+import '../../utils/utils.dart';
 import '../localized.dart';
 
 class FacilityCard extends LocalizedStatefulWidget {
@@ -183,16 +183,16 @@ class _FacilityCardContent extends StatelessWidget {
 
   /// Builds the value stored in the delivery-team code field (`deliveryTeam`)
   /// when a return / less-excess flow is auto-prefilled for a distributor
-  /// (CDD). Mirrors the scanned team-QR format ("userName||userUuid") so the
+  /// (CDD). Mirrors the scanned team-QR payload (see [TeamQrCodec]) so the
   /// scanner field shows the CDD name - matching the manually scanned path and
   /// the transaction list/details screens - instead of the bare uuid. Falls
   /// back to the bare uuid when no userName is available.
   String _deliveryTeamCodeValue(BuildContext context) {
-    final uuid = context.loggedInUserUuid;
-    final userName = context.loggedInUser.userName;
-    return (userName != null && userName.isNotEmpty)
-        ? '$userName||$uuid'
-        : uuid;
+    return buildTeamQrPayload(
+      context,
+      userName: context.loggedInUser.userName,
+      userUuid: context.loggedInUserUuid,
+    );
   }
 
   @override

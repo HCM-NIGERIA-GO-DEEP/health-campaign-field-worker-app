@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 
 import '../models/entities/roles_type.dart';
 import 'extensions/extensions.dart';
+import 'team_qr_codec.dart';
 
 class FunctionRegistries {
   final BuildContext context;
@@ -202,18 +203,21 @@ class FunctionRegistries {
       return facilityFromWhich == 'DELIVERY_TEAM' ? 'STAFF' : 'WAREHOUSE';
     });
 
+    // Extracts the bare user uuid from the scanned team QR — legacy
+    // "userName||userUuid" and current "userName||userUuid#boundaryCode||tenantId"
+    // payloads; non-QR strings pass through unchanged. The result is persisted
+    // as StockModel.receiverId, which MUST stay the bare uuid: stock downsync,
+    // the incoming-transactions filter and the stock balance math all match it
+    // with exact equality against the logged-in user's uuid.
     FunctionRegistry.register('getTeamCode', (args, stateData) {
       if (args.isEmpty) return '';
-      final teamCode = args.first?.toString() ?? '';
-      if (teamCode.contains("||")) {
-        return teamCode.split("||").last.trim();
-      }
-      return teamCode;
+      return TeamQrCodec.extractUserUuid(args.first);
     });
 
     // Extracts the userName (part before "||") from the scanned team QR
-    // ("userName||userUuid"). Returns '' when no userName is present
-    // (e.g. when the scanned QR only contains the userUuid).
+    // ("userName||userUuid", optionally suffixed with "#boundaryCode||tenantId").
+    // Returns '' when no userName is present (e.g. when the scanned QR only
+    // contains the userUuid).
     FunctionRegistry.register('getTeamName', (args, stateData) {
       if (args.isEmpty) return '';
       final teamCode = args.first?.toString() ?? '';
@@ -629,8 +633,9 @@ class FunctionRegistries {
     // captured deliveryTeamName (set when the team is the RECEIVER, e.g. an
     // issue). When the team is the SENDER (e.g. a return) the name was not
     // captured into deliveryTeamName, but the raw scanned QR is persisted in
-    // the deliveryTeam field as "userName||userUuid" -> extract the name from
-    // there. Returns '' when no name is available (caller falls back to the id).
+    // the deliveryTeam field as "userName||userUuid" (optionally suffixed with
+    // "#boundaryCode||tenantId") -> split('||').first still yields the name.
+    // Returns '' when no name is available (caller falls back to the id).
     String resolveTeamName(dynamic fields) {
       final captured = getFieldValue(fields, 'deliveryTeamName');
       if (captured.isNotEmpty) return captured;
