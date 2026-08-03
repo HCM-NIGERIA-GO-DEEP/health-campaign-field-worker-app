@@ -297,7 +297,6 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       tasks: filteredTasks,
     );
 
-    StockBalanceCache.instance.setCache(effectiveFacilityId, balances);
     if (mounted) {
       setState(() {
         _stockBalances = balances;
@@ -313,6 +312,7 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
         }
       });
     }
+    StockBalanceCache.instance.setCache(effectiveFacilityId, _stockBalances);
   }
 
   Future<Map<String, double>> _loadUserActionBalances(
