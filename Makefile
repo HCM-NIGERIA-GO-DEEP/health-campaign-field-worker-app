@@ -1,8 +1,10 @@
 APP_DIR := apps/health_campaign_field_worker_app
+APK_OUTPUT_DIR := $(APP_DIR)/build/app/outputs/flutter-apk
+APK_SOURCE := $(APK_OUTPUT_DIR)/app-release.apk
 ifeq ($(OS),Windows_NT)
 FLUTTER ?= flutter.bat
 else
-FLUTTER ?= flutter
+FLUTTER ?= fvm flutter
 endif
 
 .PHONY: help run-dev run-uat run-prod build-apk-dev build-apk-uat build-apk-prod
@@ -27,9 +29,18 @@ run-prod:
 
 build-apk-dev:
 	cd $(APP_DIR) && $(FLUTTER) build apk --release --dart-define=ENV_FILE=.env.dev
+	@mkdir -p $(APK_OUTPUT_DIR)
+	@cp $(APK_SOURCE) $(APK_OUTPUT_DIR)/ITN_DEV.apk
+	@echo "Generated: $(APK_OUTPUT_DIR)/ITN_DEV.apk"
 
 build-apk-uat:
 	cd $(APP_DIR) && $(FLUTTER) build apk --release --dart-define=ENV_FILE=.env.uat
+	@mkdir -p $(APK_OUTPUT_DIR)
+	@cp $(APK_SOURCE) $(APK_OUTPUT_DIR)/ITN_UAT.apk
+	@echo "Generated: $(APK_OUTPUT_DIR)/ITN_UAT.apk"
 
 build-apk-prod:
 	cd $(APP_DIR) && $(FLUTTER) build apk --release --dart-define=ENV_FILE=.env.prod
+	@mkdir -p $(APK_OUTPUT_DIR)
+	@cp $(APK_SOURCE) $(APK_OUTPUT_DIR)/ITN_PROD.apk
+	@echo "Generated: $(APK_OUTPUT_DIR)/ITN_PROD.apk"
