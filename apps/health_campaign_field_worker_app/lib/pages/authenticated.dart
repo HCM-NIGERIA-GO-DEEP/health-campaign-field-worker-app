@@ -596,23 +596,24 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
             child: SideBar(
               profile: state.maybeMap(
                 authenticated: (value) {
-                  String qrData = buildTeamQrPayload(
-                    context,
-                    userName: value.userModel.userName,
-                    userUuid: context.loggedInUserUuid,
-                  );
                   return ProfileWidget(
-                    leading: GestureDetector(
-                      onTap: () {
-                        Navigator.of(context, rootNavigator: true).pop();
-                        context.router.push(UserQRDetailsRoute());
-                      },
-                      child: QrImageView(
-                        data: qrData,
-                        version: QrVersions.auto,
-                        size: 150.0,
-                      ),
-                    ),
+                    leading: isDistributor
+                        ? GestureDetector(
+                            onTap: () {
+                              Navigator.of(context, rootNavigator: true).pop();
+                              context.router.push(UserQRDetailsRoute());
+                            },
+                            child: QrImageView(
+                              data: buildTeamQrPayload(
+                                context,
+                                userName: value.userModel.userName,
+                                userUuid: context.loggedInUserUuid,
+                              ),
+                              version: QrVersions.auto,
+                              size: 150.0,
+                            ),
+                          )
+                        : null,
                     title: value.userModel.name.toString(),
                     description: value.userModel.mobileNumber.toString(),
                   );
