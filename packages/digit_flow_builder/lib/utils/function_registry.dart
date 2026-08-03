@@ -450,6 +450,20 @@ bool _isEligibleFromDoseCriteria(
   return false;
 }
 
+bool _isEligibleAge(ProjectTypeModel? projectType, int totalAgeMonths) {
+  if (projectType == null) return false;
+
+  int? minAge = projectType.validMinAge;
+  int? maxAge = projectType.validMaxAge;
+
+  if (minAge == null || maxAge == null) return false;
+
+  if (totalAgeMonths > minAge && totalAgeMonths < maxAge) {
+    return true;
+  }
+  return false;
+}
+
 /// Returns the [doseCriteria] entries that the member matches, as raw maps
 /// (each including its `ProductVariants`) suitable for populating the resource
 /// card.
@@ -739,8 +753,7 @@ void initializeFunctionRegistry() {
     if (currentCycle == null) return false;
 
 // --- Check eligibility (age, plus weight/height when recorded) ---
-    final isWithinAge =
-        _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
+    final isWithinAge = _isEligibleAge(projectType, totalAgeMonths);
 
 // --- Eligibility logic ---
     bool recordedSideEffect = false;
@@ -849,8 +862,7 @@ void initializeFunctionRegistry() {
           (lastTaskTime >= currentCycle.startDate &&
               lastTaskTime <= currentCycle.endDate);
 
-      final isWithinAge =
-          _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
+      final isWithinAge = _isEligibleAge(projectType, totalAgeMonths);
 
       if (!isWithinAge) return false;
 
@@ -859,8 +871,7 @@ void initializeFunctionRegistry() {
 
       return recordedSideEffect && !statusOk ? false : true;
     } else {
-      return _isEligibleFromDoseCriteria(
-          currentCycle, totalAgeMonths, individual);
+      return _isEligibleAge(projectType, totalAgeMonths);
     }
   });
 
@@ -1210,8 +1221,7 @@ void initializeFunctionRegistry() {
     if (currentCycle == null) return false;
 
     // --- Check eligibility (age, plus weight/height when recorded) ---
-    final isWithinAge =
-        _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
+    final isWithinAge = _isEligibleAge(projectType, totalAgeMonths);
 
     return isWithinAge;
   });
@@ -2184,8 +2194,7 @@ void initializeFunctionRegistry() {
     if (currentCycle == null) return false;
 
     // --- Check eligibility (age, plus weight/height when recorded) ---
-    final isWithinAge =
-        _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
+    final isWithinAge = _isEligibleAge(projectType, totalAgeMonths);
 
     return isWithinAge;
   });
@@ -2216,8 +2225,7 @@ void initializeFunctionRegistry() {
     if (currentCycle == null) return false;
 
     // --- Check eligibility (age, plus weight/height when recorded) ---
-    final isWithinAge =
-        _isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual);
+    final isWithinAge = _isEligibleAge(projectType, totalAgeMonths);
 
     return isWithinAge;
   });
