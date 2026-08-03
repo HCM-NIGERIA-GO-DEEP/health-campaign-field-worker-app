@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import '../../data/services/server_summary_report_service.dart';
+import '../../utils/daily_delivery_limit.dart';
 import '../../utils/utils.dart';
 import '../progress_indicator/progress_indicator.dart';
 
@@ -116,11 +117,15 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
           final groupedEntries = results.groupListsBy(
             (element) => element.projectBeneficiaryClientReferenceId,
           );
+          final todayCount =
+              serverReportChildrenTreated + groupedEntries.entries.length;
+          // Published for fn:isDailyDeliveryLimitReached (delivery cap gate) —
+          // the gate must always agree with what this bar displays.
+          DailyDeliveryLimit.count = todayCount;
           if (mounted) {
             setState(() {
               if (mounted) {
-                current =
-                    serverReportChildrenTreated + groupedEntries.entries.length;
+                current = todayCount;
               }
             });
           }
@@ -139,7 +144,7 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
       (element) => element.beneficiaryType == beneficiaryType.toValue(),
     );
 
-    final target = 70;
+    const target = DailyDeliveryLimit.defaultTarget;
     //  targetModel?.targetNo ?? 0.0;
 
     return DigitCard(margin: const EdgeInsets.all(spacer2), children: [

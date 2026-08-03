@@ -10,6 +10,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models/entities/roles_type.dart';
+import 'daily_delivery_limit.dart';
 import 'extensions/extensions.dart';
 import 'team_qr_codec.dart';
 import 'working_hours.dart';
@@ -27,6 +28,29 @@ class FunctionRegistries {
     _registerStockFunctions();
     _registerViewTransactionFunctions();
     _registerWorkingHoursFunctions();
+    _registerDailyDeliveryLimitFunctions();
+  }
+
+  void _registerDailyDeliveryLimitFunctions() {
+    // Gates the DELIVERY button once the CDD reaches the daily cap. The
+    // target arrives from the flow JSON as a quoted literal:
+    //   {{fn:isDailyDeliveryLimitReached('100')}} == false
+    // The count is published by BeneficiaryProgressBar (kept mounted for all
+    // roles via Offstage on Home) so the gate always matches what the
+    // progress bar displays. Missing/malformed target falls back to
+    // DailyDeliveryLimit.defaultTarget.
+    FunctionRegistry.register('isDailyDeliveryLimitReached', (args, stateData) {
+      try {
+        return DailyDeliveryLimit.isLimitReached(
+          DailyDeliveryLimit.count,
+          args.isNotEmpty ? args[0] : null,
+        );
+      } catch (_) {
+        // Safety net: treat the limit as not reached so a code bug can never
+        // blank the TEMPLATE screen or block fieldwork.
+        return false;
+      }
+    });
   }
 
   void _registerWorkingHoursFunctions() {
