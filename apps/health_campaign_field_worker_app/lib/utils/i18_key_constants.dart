@@ -1561,6 +1561,8 @@ class SummaryReport {
   String get stockReturned => 'SUMMARY_REPORT_STOCK_RETURNED';
 
   String get stockBalance => 'SUMMARY_REPORT_STOCK_BALANCE';
+
+  String get kpiColumn => 'SUMMARY_REPORT_KPI';
 }
 
 class NonMobileUser {

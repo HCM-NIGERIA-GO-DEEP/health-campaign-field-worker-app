@@ -1,11 +1,12 @@
+import 'dart:math' as math;
+import 'dart:ui' as ui;
+
 import 'package:digit_data_model/data/repositories/package_repository/local/household.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/household_member.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
-import 'package:digit_ui_components/widgets/atoms/table_cell.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
-import 'package:digit_ui_components/widgets/molecules/digit_table.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
@@ -15,6 +16,7 @@ import '../../../models/entities/roles_type.dart';
 import '../../../router/app_router.dart';
 import '../../../utils/i18_key_constants.dart' as i18;
 import '../../../utils/stock_calculation_utils.dart';
+import '../../../utils/summary_report_utils.dart';
 import '../../../utils/utils.dart';
 import '../../../widgets/header/back_navigation_help_header.dart';
 import '../../../widgets/localized.dart';
@@ -31,11 +33,18 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
   List<_SummaryReportRow> _reportRows = [];
   List<ProductVariantModel> _productVariants = [];
   bool _isLoading = true;
+  final ScrollController _horizontalScrollController = ScrollController();
 
   @override
   void initState() {
     super.initState();
     _loadData();
+  }
+
+  @override
+  void dispose() {
+    _horizontalScrollController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadData() async {
@@ -387,110 +396,225 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
     return DateFormat('yyyy-MM-dd').format(dt);
   }
 
-  String _formatDisplayDate(String dateStr) {
-    final dt = DateTime.parse(dateStr);
-    return DateFormat('dd/MM/yyyy').format(dt);
+  /// KPI label -> one formatted cell per date, dates in `_reportRows` order
+  /// (already sorted newest first in `_loadData`).
+  List<MapEntry<String, List<String>>> _transposedRows() {
+    final rows = <MapEntry<String, List<String>>>[
+      MapEntry(
+        localizations.translate(i18.summaryReport.householdsRegistered),
+        _reportRows.map((r) => r.householdsRegistered.toString()).toList(),
+      ),
+      MapEntry(
+        localizations.translate(i18.summaryReport.childrenTreated),
+        _reportRows.map((r) => r.childrenTreated.toString()).toList(),
+      ),
+      MapEntry(
+        localizations.translate(i18.summaryReport.childrenTreatedPercent),
+        _reportRows
+            .map((r) => formatSummaryPercent(r.childrenTreatedPercent))
+            .toList(),
+      ),
+    ];
+
+    for (final pv in _productVariants) {
+      final name = localizations.translate(pv.sku ?? pv.id);
+      rows.addAll([
+        MapEntry(
+          '${localizations.translate(i18.summaryReport.stockReceived)} ($name)',
+          _reportRows
+              .map((r) => formatSummaryStock(r.stockData[pv.id]?.received))
+              .toList(),
+        ),
+        MapEntry(
+          '${localizations.translate(i18.summaryReport.stockConsumed)} ($name)',
+          _reportRows
+              .map((r) => formatSummaryStock(r.stockData[pv.id]?.consumed))
+              .toList(),
+        ),
+        MapEntry(
+          '${localizations.translate(i18.summaryReport.stockReturned)} ($name)',
+          _reportRows
+              .map((r) => formatSummaryStock(r.stockData[pv.id]?.returned))
+              .toList(),
+        ),
+        MapEntry(
+          '${localizations.translate(i18.summaryReport.stockBalance)} ($name)',
+          _reportRows
+              .map((r) => formatSummaryStock(r.stockData[pv.id]?.balance))
+              .toList(),
+        ),
+      ]);
+    }
+
+    return rows;
+  }
+
+  /// Renders the transposed table: pinned KPI column on the left (bold,
+  /// wrapped labels), date columns scrolling horizontally on the right.
+  /// Per-row heights are measured from the KPI labels with TextPainter so
+  /// the pinned column and the scrolling grid stay pixel-aligned.
+  Widget _buildTransposedTable(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.digitTextTheme(context);
+    final dividerColor = theme.colorTheme.generic.divider;
+    final headerBackground = theme.colorTheme.generic.background;
+    final bodyBackground = theme.colorTheme.paper.primary;
+
+    const pinnedWidth = 140.0;
+    const dataColumnWidth = 110.0;
+    const cellPadding = 16.0;
+    const minRowHeight = 52.0;
+    const innerWidth = pinnedWidth - 2 * cellPadding;
+
+    final headerStyle = textTheme.headingS.copyWith(
+      color: theme.colorTheme.primary.primary2,
+    );
+    final labelStyle = textTheme.bodyS.copyWith(
+      fontWeight: FontWeight.w700,
+      color: theme.colorTheme.text.primary,
+    );
+    final cellStyle = textTheme.bodyS.copyWith(
+      color: theme.colorTheme.text.primary,
+    );
+
+    final textScaler = MediaQuery.textScalerOf(context);
+
+    // Must use the same style/width/scaler as the rendered pinned cells,
+    // otherwise the two sides of the table drift out of alignment.
+    double measuredCellHeight(String text, TextStyle style) {
+      final painter = TextPainter(
+        text: TextSpan(text: text, style: style),
+        textDirection: ui.TextDirection.ltr,
+        textScaler: textScaler,
+      )..layout(maxWidth: innerWidth);
+      final height = painter.height;
+      painter.dispose();
+      return math.max(minRowHeight, height.ceilToDouble() + 2 * cellPadding);
+    }
+
+    final kpiHeader = localizations.translate(i18.summaryReport.kpiColumn);
+    final kpiRows = _transposedRows();
+    final dateHeaders =
+        _reportRows.map((r) => formatSummaryDisplayDate(r.date)).toList();
+
+    final headerHeight = measuredCellHeight(kpiHeader, headerStyle);
+    final rowHeights = [
+      for (final row in kpiRows) measuredCellHeight(row.key, labelStyle),
+    ];
+
+    Widget cell(
+      Widget child, {
+      required double width,
+      required double height,
+      required Color background,
+      bool rightDivider = false,
+    }) {
+      return Container(
+        width: width,
+        height: height,
+        padding: const EdgeInsets.all(cellPadding),
+        alignment: Alignment.topLeft,
+        decoration: BoxDecoration(
+          color: background,
+          border: Border(
+            bottom: BorderSide(color: dividerColor),
+            right: rightDivider
+                ? BorderSide(color: dividerColor)
+                : BorderSide.none,
+          ),
+        ),
+        child: child,
+      );
+    }
+
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: dividerColor),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Pinned KPI column
+          SizedBox(
+            width: pinnedWidth,
+            child: Column(
+              children: [
+                cell(
+                  Text(kpiHeader, style: headerStyle),
+                  width: pinnedWidth,
+                  height: headerHeight,
+                  background: headerBackground,
+                  rightDivider: true,
+                ),
+                for (var i = 0; i < kpiRows.length; i++)
+                  cell(
+                    Text(kpiRows[i].key, style: labelStyle, softWrap: true),
+                    width: pinnedWidth,
+                    height: rowHeights[i],
+                    background: bodyBackground,
+                    rightDivider: true,
+                  ),
+              ],
+            ),
+          ),
+          // Horizontally scrolling date columns
+          Expanded(
+            child: Scrollbar(
+              controller: _horizontalScrollController,
+              thumbVisibility: true,
+              child: SingleChildScrollView(
+                controller: _horizontalScrollController,
+                scrollDirection: Axis.horizontal,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        for (final date in dateHeaders)
+                          cell(
+                            Text(
+                              date,
+                              style: headerStyle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            width: dataColumnWidth,
+                            height: headerHeight,
+                            background: headerBackground,
+                          ),
+                      ],
+                    ),
+                    for (var i = 0; i < kpiRows.length; i++)
+                      Row(
+                        children: [
+                          for (final value in kpiRows[i].value)
+                            cell(
+                              Text(
+                                value,
+                                style: cellStyle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              width: dataColumnWidth,
+                              height: rowHeights[i],
+                              background: bodyBackground,
+                            ),
+                        ],
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final textTheme = theme.digitTextTheme(context);
-
-    // Build columns: base columns + per-product stock columns
-    final columns = <DigitTableColumn>[
-      DigitTableColumn(
-        header: localizations.translate(i18.summaryReport.dateColumn),
-        cellValue: 'date',
-      ),
-      DigitTableColumn(
-        header: localizations.translate(i18.summaryReport.householdsRegistered),
-        cellValue: 'hhRegistered',
-      ),
-      DigitTableColumn(
-        header: localizations.translate(i18.summaryReport.childrenTreated),
-        cellValue: 'childrenTreated',
-      ),
-      DigitTableColumn(
-        header:
-            localizations.translate(i18.summaryReport.childrenTreatedPercent),
-        cellValue: 'childrenTreatedPercent',
-      ),
-    ];
-
-    // Add stock columns per product variant
-    for (final pv in _productVariants) {
-      final name = localizations.translate(pv.sku ?? pv.id);
-      columns.addAll([
-        DigitTableColumn(
-          header:
-              '${localizations.translate(i18.summaryReport.stockReceived)} ($name)',
-          cellValue: 'received_${pv.id}',
-        ),
-        DigitTableColumn(
-          header:
-              '${localizations.translate(i18.summaryReport.stockConsumed)} ($name)',
-          cellValue: 'consumed_${pv.id}',
-        ),
-        DigitTableColumn(
-          header:
-              '${localizations.translate(i18.summaryReport.stockReturned)} ($name)',
-          cellValue: 'returned_${pv.id}',
-        ),
-        DigitTableColumn(
-          header:
-              '${localizations.translate(i18.summaryReport.stockBalance)} ($name)',
-          cellValue: 'balance_${pv.id}',
-        ),
-      ]);
-    }
-
-    // Build rows
-    final rows = _reportRows.map((row) {
-      final cells = <DigitTableData>[
-        DigitTableData(
-          _formatDisplayDate(row.date),
-          cellKey: 'date',
-        ),
-        DigitTableData(
-          row.householdsRegistered.toString(),
-          cellKey: 'hhRegistered',
-        ),
-        DigitTableData(
-          row.childrenTreated.toString(),
-          cellKey: 'childrenTreated',
-        ),
-        DigitTableData(
-          '${row.childrenTreatedPercent.toStringAsFixed(1)}%',
-          cellKey: 'childrenTreatedPercent',
-        ),
-      ];
-
-      // Add stock cells per product variant
-      for (final pv in _productVariants) {
-        final data = row.stockData[pv.id];
-        cells.addAll([
-          DigitTableData(
-            (data?.received ?? 0).toStringAsFixed(0),
-            cellKey: 'received_${pv.id}',
-          ),
-          DigitTableData(
-            (data?.consumed ?? 0).toStringAsFixed(0),
-            cellKey: 'consumed_${pv.id}',
-          ),
-          DigitTableData(
-            (data?.returned ?? 0).toStringAsFixed(0),
-            cellKey: 'returned_${pv.id}',
-          ),
-          DigitTableData(
-            (data?.balance ?? 0).toStringAsFixed(0),
-            cellKey: 'balance_${pv.id}',
-          ),
-        ]);
-      }
-
-      return DigitTableRow(tableRow: cells);
-    }).toList();
 
     return Scaffold(
       body: ScrollableContent(
@@ -561,14 +685,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           else
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: spacer2),
-              child: DigitTable(
-                enableBorder: true,
-                showPagination: false,
-                showSelectedState: false,
-                columns: columns,
-                rows: rows,
-                tableHeight: 1000,
-              ),
+              child: _buildTransposedTable(context),
             ),
           const SizedBox(height: spacer2),
         ],
