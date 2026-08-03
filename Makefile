@@ -1,5 +1,9 @@
 APP_DIR := apps/health_campaign_field_worker_app
-FLUTTER ?= fvm flutter
+ifeq ($(OS),Windows_NT)
+FLUTTER ?= flutter.bat
+else
+FLUTTER ?= flutter
+endif
 
 .PHONY: help run-dev run-uat run-prod build-apk-dev build-apk-uat build-apk-prod
 
