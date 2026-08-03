@@ -47,7 +47,7 @@
         android:fullBackupContent="false"
         android:fullBackupOnly="false"
         android:icon="@mipmap/ic_launcher"
-        android:label="Bednet">
+        android:label="ITN">
         <service
             android:name=".LocationService"
             android:exported="false"
