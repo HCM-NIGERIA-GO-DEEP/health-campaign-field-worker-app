@@ -1933,19 +1933,30 @@ class _HomePageState extends LocalizedState<HomePage> {
     // `false` = use local JSON (development/testing only)
     //
     // IMPORTANT: Set all flags to `true` before a production/release build.
-    const isRemoteComplaintFlows = true;
-    const isRemoteRegistrationFlows = true;
-    const isRemoteCloseHouseholdFlows = true;
-    const isRemoteInventoryFlows = true;
-    const isRemoteInventoryReportFlows = true;
-    const isRemoteStockReconciliationFlows = true;
+    bool isRemoteComplaintFlows = true;
+    bool isRemoteRegistrationFlows = true;
+    bool isRemoteCloseHouseholdFlows = true;
+    bool isRemoteInventoryFlows = true;
+    bool isRemoteInventoryReportFlows = true;
+    bool isRemoteStockReconciliationFlows = true;
 
-    // const isRemoteComplaintFlows = false;
-    // const isRemoteRegistrationFlows = false;
-    // const isRemoteCloseHouseholdFlows = false;
-    // const isRemoteInventoryFlows = false;
-    // const isRemoteInventoryReportFlows = false;
-    // const isRemoteStockReconciliationFlows = false;
+    // bool isRemoteComplaintFlows = false;
+    // bool isRemoteRegistrationFlows = false;
+    // bool isRemoteCloseHouseholdFlows = false;
+    // bool isRemoteInventoryFlows = false;
+    // bool isRemoteInventoryReportFlows = false;
+    // bool isRemoteStockReconciliationFlows = false;
+
+    if (kReleaseMode) {
+      // In release mode, force all features to use remote JSON
+      isRemoteComplaintFlows = true;
+      isRemoteRegistrationFlows = true;
+      isRemoteCloseHouseholdFlows = true;
+      isRemoteInventoryFlows = true;
+      isRemoteInventoryReportFlows = true;
+      isRemoteStockReconciliationFlows = true;
+    }
+
     //////
     ///
 
