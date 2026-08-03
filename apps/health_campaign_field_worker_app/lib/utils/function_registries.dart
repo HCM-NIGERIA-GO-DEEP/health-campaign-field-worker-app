@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import '../models/entities/roles_type.dart';
 import 'extensions/extensions.dart';
 import 'team_qr_codec.dart';
+import 'working_hours.dart';
 
 class FunctionRegistries {
   final BuildContext context;
@@ -25,6 +26,27 @@ class FunctionRegistries {
     _registerFacilityFunctions();
     _registerStockFunctions();
     _registerViewTransactionFunctions();
+    _registerWorkingHoursFunctions();
+  }
+
+  void _registerWorkingHoursFunctions() {
+    // Gates entry into registration / delivery / edit during campaign
+    // working hours. Args arrive from the flow JSON as quoted literals:
+    //   {{fn:isWithinWorkingHours('07:00','17:00')}} == true
+    // Missing/malformed args fall back to the hardcoded defaults inside
+    // WorkingHours (07:00-17:00); disabling the gate is done by removing
+    // the condition from FormConfig, not by blanking the args.
+    FunctionRegistry.register('isWithinWorkingHours', (args, stateData) {
+      try {
+        final start = args.isNotEmpty ? args[0] : null;
+        final end = args.length > 1 ? args[1] : null;
+        return WorkingHours.isWithinWindowAt(start, end, DateTime.now());
+      } catch (_) {
+        // Safety net: behave as the 00:00-24:00 full-day window (allowed)
+        // so a code bug can never blank the TEMPLATE screen or block work.
+        return true;
+      }
+    });
   }
 
   void _registerGenerateFunctions() {
