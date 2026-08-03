@@ -307,10 +307,6 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
           locality: localityKey,
         ));
 
-        int? lastSyncedTime = existingDownSyncData.isEmpty
-            ? null
-            : existingDownSyncData.first.lastSyncedTime;
-
         // Create initial downsync record if not exists
         if (existingDownSyncData.isEmpty) {
           await downSyncLocalRepository.create(DownsyncModel(
