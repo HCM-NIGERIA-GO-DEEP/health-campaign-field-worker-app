@@ -669,26 +669,80 @@ void initializeFunctionRegistry() {
     }
   });
 
+  /// Converts a raw entity (Map, EntityModel, etc.) into a `Map<String, dynamic>`
+  /// so it can be inspected by the eligibility/delivery checks. Returns `null`
+  /// when the conversion is not possible.
+  Map<String, dynamic>? _asMap(dynamic item) {
+    if (item is Map<String, dynamic>) return item;
+    if (item is Map) return Map<String, dynamic>.from(item);
+    try {
+      return (item as dynamic).toMap() as Map<String, dynamic>;
+    } catch (_) {
+      try {
+        return (item as dynamic).toJson() as Map<String, dynamic>;
+      } catch (_) {
+        return null;
+      }
+    }
+  }
+
+  const String _riFlowValue = 'riDone';
+
+  /// Returns true when the given entity (task or referral) has
+  /// `additionalFields.flow == 'riDone'`, marking it as belonging to the RI flow.
+  /// SMC entities are written without this key.
+  bool _isRiEntity(Map entity) {
+    final additionalFields = entity['additionalFields'];
+    if (additionalFields is! Map) return false;
+    final fields = additionalFields['fields'];
+    if (fields is! List) return false;
+    for (final field in fields) {
+      if (field is Map && field['key'] == 'flow') {
+        return field['value']?.toString() == _riFlowValue;
+      }
+    }
+    return false;
+  }
+
+  /// Returns entities (tasks or referrals) filtered by flow.
+  /// When `keepRi` is true, only entities with `flow == 'riDone'` are kept;
+  /// when false, only entities without that flow are kept (i.e., SMC entities).
+  List<Map<String, dynamic>> _filterByFlow(List source,
+      {required bool keepRi}) {
+    final result = <Map<String, dynamic>>[];
+    for (final item in source) {
+      final map = _asMap(item);
+      if (map == null) continue;
+      final isRi = _isRiEntity(map);
+      if (keepRi == isRi) result.add(map);
+    }
+    return result;
+  }
+
   /// Registers a function to check eligibility for a task based on age and
   /// recorded side effects.
   ///
   /// - **Function Name**: `'checkEligibilityForAgeAndSideEffect'`
-  /// - **Arguments**: A list where the first element is the date of birth string.
+  /// - **Arguments**: A list where the first element is the individual (Map /
+  ///   EntityModel). Date of birth, weight and height are read from it.
   /// - **Returns**: `true` if the beneficiary is eligible, otherwise `false`.
   ///
   /// The function checks:
-  /// 1. If the beneficiary's age matches any dose criteria condition in the current cycle.
+  /// 1. If the beneficiary matches any dose criteria condition (age, plus
+  ///    weight/height when recorded) in the current cycle.
   /// 2. If a side effect was recorded for the last completed task within the current cycle.
   /// 3. If the `checkStatus` function allows for a new task to be created.
   FunctionRegistry.register('checkEligibilityForAgeAndSideEffect',
       (args, stateData) {
     if (args.isEmpty) return false;
 
-// --- Resolve DOB ---
-    final dobString = args.first?.toString() ?? '';
-    if (dobString.isEmpty) return false;
+// --- Resolve individual (Map / EntityModel) and its DOB ---
+    final dobString = args.first;
+    if (dobString == null) return false;
 
     final dob = DigitDateUtils.getFormattedDateToDateTime(dobString);
+
+    // final dob = _resolveDateOfBirth(dobString);
     if (dob == null) return false;
 
     final age = DigitDateUtils.calculateAge(dob);
@@ -699,11 +753,14 @@ void initializeFunctionRegistry() {
     if (projectType == null) return false;
 
 // --- Tasks & SideEffects come from stateData ---
-    final tasks = args.length > 1 ? args[1] : [];
+    final rawTasks = args.length > 1 ? args[1] : [];
+    final tasks = rawTasks is List
+        ? _filterByFlow(rawTasks, keepRi: false)
+        : <Map<String, dynamic>>[];
     final sideEffects = (stateData.modelMap['sideEffects'] as List?) ?? [];
 
 // --- Current active cycle ---
-    final currentCycle = projectType.cycles?.firstWhereOrNull(
+    ProjectCycle? currentCycle = projectType.cycles?.firstWhereOrNull(
       (e) =>
           e.startDate < DateTime.now().millisecondsSinceEpoch &&
           e.endDate > DateTime.now().millisecondsSinceEpoch,
@@ -715,8 +772,7 @@ void initializeFunctionRegistry() {
 
 // --- Eligibility logic ---
     bool recordedSideEffect = false;
-
-    if (tasks.isNotEmpty) {
+    if (tasks.isEmpty == false) {
       // Get currentRunningCycle from third argument if provided
       final currentRunningCycle =
           args.length > 2 ? int.tryParse(args[2]?.toString() ?? '') : null;
@@ -738,23 +794,26 @@ void initializeFunctionRegistry() {
           }
         }
 
+        final additionalFields = task['additionalFields'];
+        final fields = additionalFields is Map
+            ? additionalFields['fields'] as List?
+            : null;
+
+        // if (fields != null) {
+        //   String? flowType;
+        //   for (final field in fields) {
+        //     if (field is Map && field['key'] == 'flow') {
+        //       flowType = field['value']?.toString();
+        //     }
+        //   }
+        //   if (flowType != "smcDone") continue; // Skip non-SMC tasks
+        // }
+
         // BENEFICIARY_DIED returns false immediately regardless of cycle
         if (task['status'] == TaskStatus.beneficiaryDied) return false;
 
-        // INELIGIBLE and the other blocking statuses only hold for the cycle
-        // they were recorded in — a child found ineligible in cycle 1 (sick,
-        // failed checklist, etc.) must be re-evaluated in cycle 2. Tasks from
-        // other cycles are skipped. A task with NO cycleIndex field is never
-        // skipped — its blocking status applies to every cycle — so the
-        // ineligibleConfig actions in the REGISTRATION config must stamp
-        // cycleIndex ({{fn:getCurrentCycleIndex()}}) for per-cycle
-        // re-eligibility to work. When no currentRunningCycle argument is
-        // provided the filter is bypassed entirely.
+        // For other ineligible statuses, only check tasks matching the current cycle
         if (currentRunningCycle != null) {
-          final additionalFields = task['additionalFields'];
-          final fields = additionalFields is Map
-              ? additionalFields['fields'] as List?
-              : null;
           int? taskCycleIndex;
           if (fields != null) {
             for (final field in fields) {
@@ -764,7 +823,36 @@ void initializeFunctionRegistry() {
               }
             }
           }
-          if (taskCycleIndex != null && taskCycleIndex != currentRunningCycle) {
+
+          // Fall back to deriving the cycle from the task's last modified
+          // time when no cycleIndex was recorded on the task.
+          if (taskCycleIndex == null) {
+            final clientAuditDetails = task['clientAuditDetails'];
+            final taskAuditDetails = task['auditDetails'];
+            final lastModifiedTime = (clientAuditDetails is Map
+                    ? clientAuditDetails['lastModifiedTime']
+                    : null) ??
+                (taskAuditDetails is Map
+                    ? taskAuditDetails['lastModifiedTime']
+                    : null);
+            final lastModifiedTimeMs =
+                int.tryParse(lastModifiedTime?.toString() ?? '');
+
+            if (lastModifiedTimeMs != null) {
+              final matchingCycle = projectType.cycles?.firstWhereOrNull(
+                (cycle) =>
+                    lastModifiedTimeMs >= cycle.startDate &&
+                    lastModifiedTimeMs <= cycle.endDate,
+              );
+              taskCycleIndex = matchingCycle?.id;
+            }
+          }
+
+          if (taskCycleIndex != currentRunningCycle) {
+            if (isWithinAge == false &&
+                task['status'] == TaskStatus.administrationSuccess) {
+              return true;
+            }
             continue;
           }
         }
@@ -2506,5 +2594,49 @@ void initializeFunctionRegistry() {
 
     if (args.isEmpty) return '';
     return coerce(args.first);
+  });
+
+  /// Returns true when at least one SMC task (no `flow` field or
+  /// `additionalFields.flow == 'smcDone'`) for the current cycle has been
+  /// administered/delivered. Scans the full task list instead of looking at
+  /// `item.task.last`, so that subsequent RI administration tasks do not
+  /// displace the SMC-administered signal.
+  FunctionRegistry.register('hasSMCAdministered', (args, stateData) {
+    if (args.isEmpty || args.first is! List) return false;
+
+    final smcTasks = _filterByFlow(args.first as List, keepRi: false);
+    if (smcTasks.isEmpty) return false;
+
+    final projectType = FlowBuilderSingleton().projectType;
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final selectedCycle = projectType?.cycles?.firstWhereOrNull(
+      (e) => e.startDate < now && e.endDate > now,
+    );
+
+    for (final task in smcTasks) {
+      final status = task['status']?.toString().trim().toUpperCase();
+      final isAdministered = status == TaskStatus.administrationSuccess ||
+          status == TaskStatus.delivered;
+      if (!isAdministered) continue;
+
+      if (selectedCycle == null || selectedCycle.id == 0) return true;
+
+      final additionalFields = task['additionalFields'];
+      final fields =
+          additionalFields is Map ? additionalFields['fields'] as List? : null;
+      int? taskCycleIndex;
+      if (fields != null) {
+        for (final field in fields) {
+          if (field is Map && field['key'] == 'cycleIndex') {
+            taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
+            break;
+          }
+        }
+      }
+      if (taskCycleIndex == null || taskCycleIndex == selectedCycle.id) {
+        return true;
+      }
+    }
+    return false;
   });
 }

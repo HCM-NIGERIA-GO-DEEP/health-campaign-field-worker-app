@@ -485,6 +485,7 @@ final jsonConfig = {
             "auditDetails": "__generate:audit"
           },
           "additionalFields": {
+            "flow": "__value:smcDone",
             "doseIndex": "__listItem:id",
             "cycleIndex": "__context:cycleIndex",
             "deliveryStrategy": "__listItem:deliveryStrategy",
@@ -589,6 +590,7 @@ final jsonConfig = {
             "auditDetails": "__generate:audit"
           },
           "additionalFields": {
+            "flow": "__value:smcDone",
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
             "deliveryStrategy": "__context:deliveryStrategy",
@@ -692,6 +694,7 @@ final jsonConfig = {
             "auditDetails": "__generate:audit"
           },
           "additionalFields": {
+            "flow": "__value:smcDone",
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
             "householdClientReferenceId":
@@ -770,6 +773,7 @@ final jsonConfig = {
             "auditDetails": "__generate:audit"
           },
           "additionalFields": {
+            "flow": "__value:smcDone",
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
             "comment": "unableToDeliver.comment",
@@ -844,6 +848,7 @@ final jsonConfig = {
             "auditDetails": "__generate:audit"
           },
           "additionalFields": {
+            "flow": "__value:smcDone",
             "doseIndex": "__context:doseIndex",
             "cycleIndex": "__context:cycleIndex",
             "reasonForRedose": "RedoseDetails.reasonForRedose",
@@ -1481,7 +1486,8 @@ final jsonConfig = {
             // (ADR/DRUG_SE_PC > SICK > FEVER). `symptom` holds the highest-priority
             // reason; `referralReasonsExtra` holds the remaining reasons joined by ",".
             "referralReasons": "__context:referralReasons",
-            "referralReasonsExtra": "__context:referralReasonsExtra"
+            "referralReasonsExtra": "__context:referralReasonsExtra",
+            "flow": "__value:smcDone",
           }
         }
       }
