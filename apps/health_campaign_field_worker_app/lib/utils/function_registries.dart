@@ -531,13 +531,14 @@ class FunctionRegistries {
         if (products != null && products.isNotEmpty) {
           final p = products.first as Map<String, dynamic>;
           final available = (p['available'] as num?)?.toDouble() ?? 0.0;
+          final displayAvailable = available < 0 ? 0.0 : available;
           final required = (p['required'] as num?)?.toDouble() ?? 0.0;
-          return '$message\n$balanceLabel = ${available.toStringAsFixed(0)}\n$requiredLabel = ${required.toStringAsFixed(0)}';
+          return '$message\n$balanceLabel = ${displayAvailable.toStringAsFixed(0)}\n$requiredLabel = ${required.toStringAsFixed(0)}';
         }
       }
       // Fallback: use total balance from cache
       final totalBalance = StockBalanceCache.instance.cache.values
-          .fold<double>(0, (sum, v) => sum + v);
+          .fold<double>(0, (sum, v) => sum + (v < 0 ? 0.0 : v));
       return '$message\n$balanceLabel = ${totalBalance.toStringAsFixed(0)}';
     });
 

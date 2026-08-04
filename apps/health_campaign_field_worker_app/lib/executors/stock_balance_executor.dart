@@ -161,7 +161,7 @@ class StockBalanceExecutor extends ActionExecutor {
         } else if (isReceiver &&
             transactionType == 'DISPATCHED' &&
             stock.additionalFields?.fields
-                    ?.firstWhere((f) => f.key == 'status',
+                    .firstWhere((f) => f.key == 'status',
                         orElse: () => const AdditionalField('', ''))
                     .value ==
                 'ACCEPTED') {
