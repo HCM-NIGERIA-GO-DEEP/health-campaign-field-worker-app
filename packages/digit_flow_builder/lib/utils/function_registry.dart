@@ -458,7 +458,7 @@ bool _isEligibleAge(ProjectTypeModel? projectType, int totalAgeMonths) {
 
   if (minAge == null || maxAge == null) return false;
 
-  if (totalAgeMonths > minAge && totalAgeMonths < maxAge) {
+  if (totalAgeMonths >= minAge && totalAgeMonths <= maxAge) {
     return true;
   }
   return false;
