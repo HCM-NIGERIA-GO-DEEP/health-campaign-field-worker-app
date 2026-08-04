@@ -1198,8 +1198,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         stocks: downloadedStocks.values,
       );
       if (nextCursorTime != null) {
-        await AppSharedPreferences()
-            .setStockDownsyncTime(cursorKey, nextCursorTime);
+        await AppSharedPreferences().setStockDownsyncTime(cursorKey,
+            nextCursorTime + 1); // +1 to avoid re-downloading the same record
       }
 
       await downSyncStockBalances(project);
