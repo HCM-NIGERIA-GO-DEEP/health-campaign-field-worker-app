@@ -492,8 +492,9 @@ class FunctionRegistries {
     FunctionRegistry.register('getFacilityName', (args, stateData) {
       if (args.isEmpty) return '';
       final facilityId = args.first?.toString() ?? '';
+      final deliveryTeamName = args.length > 1 ? args[1] : "";
       if (facilityId.isEmpty) return '';
-      return facilityId.contains('F') ? 'FAC_$facilityId' : facilityId;
+      return facilityId.contains('F') ? 'FAC_$facilityId' : deliveryTeamName;
     });
 
     FunctionRegistry.register('hasResults', (args, stateData) {
