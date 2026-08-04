@@ -338,8 +338,8 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
           stocks: downsyncedStocks.values,
         );
         if (nextCursorTime != null) {
-          await AppSharedPreferences()
-              .setStockDownsyncTime(cursorKey, nextCursorTime);
+          await AppSharedPreferences().setStockDownsyncTime(cursorKey,
+              nextCursorTime + 1); // +1 to avoid re-downloading the same record
         }
 
         // After stock download, downsync stock balance user actions
