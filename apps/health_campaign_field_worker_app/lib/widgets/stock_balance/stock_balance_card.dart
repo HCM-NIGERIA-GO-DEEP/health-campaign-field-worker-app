@@ -289,7 +289,7 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
 
     final productIds = _productVariants.map((pv) => pv.id).toList();
     final balances = StockCalculationUtils.calculateStockInHandForProducts(
-      stockList: allStocks,
+      stockList: filteredStocks,
       facilityId: effectiveFacilityId,
       productIds: productIds,
       loggedInUserUuid: context.loggedInUserUuid,
