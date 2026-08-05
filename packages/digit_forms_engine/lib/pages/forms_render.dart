@@ -95,6 +95,171 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
   bool get _isBackDisabled =>
       _backDisabledSchemas.contains(widget.currentSchemaKey);
 
+  int? _getScannerScanLimit(PropertySchema schema) {
+    final rules = schema.validations;
+    if (rules == null) return null;
+
+    for (final rule in rules) {
+      if (rule.type != 'scanLimit') continue;
+      final value = rule.value;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value);
+      if (value is double) return value.toInt();
+    }
+
+    return null;
+  }
+
+  int? _getResourceCardDistributedQuantity(FormGroup formGroup) {
+    if (!formGroup.contains('resourceCard')) return null;
+
+    final dynamic value = formGroup.control('resourceCard').value;
+    if (value == null) return null;
+
+    int total = 0;
+
+    if (value is List) {
+      for (final item in value) {
+        if (item is Map) {
+          final q = item['quantityDistributed'];
+          if (q is int) {
+            total += q;
+          } else if (q is String) {
+            total += int.tryParse(q) ?? 0;
+          }
+        }
+      }
+    } else if (value is Map) {
+      final q = value['quantityDistributed'];
+      if (q is int) {
+        total += q;
+      } else if (q is String) {
+        total += int.tryParse(q) ?? 0;
+      }
+    }
+
+    return total > 0 ? total : null;
+  }
+
+  bool _isGs1Scanner(PropertySchema schema) {
+    final rules = schema.validations;
+    if (rules == null || rules.isEmpty) return true;
+
+    for (final rule in rules) {
+      if (rule.type != 'isGS1' && rule.type != 'isGS1Code') continue;
+      final value = rule.value;
+      if (value is bool) return value;
+      if (value is String) return value.toLowerCase() == 'true';
+    }
+
+    return true;
+  }
+
+  int? _getEffectiveScannerRequiredCount(
+    PropertySchema schema,
+    FormGroup formGroup,
+  ) {
+    final configuredLimit = _getScannerScanLimit(schema);
+    if (configuredLimit == null) return null;
+
+    if (_isGs1Scanner(schema)) {
+      final distributed = _getResourceCardDistributedQuantity(formGroup);
+      if (distributed != null && distributed > 0) {
+        return distributed;
+      }
+    }
+
+    return configuredLimit;
+  }
+
+  int _getScannedValueCount(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty) return 0;
+
+    final isGs1 = trimmed.contains('|') ||
+        RegExp(r'^\d{2}:').hasMatch(trimmed) ||
+        trimmed.contains(';');
+
+    if (isGs1) {
+      final maps = DigitScannerUtils.deserializeGs1Barcodes(trimmed);
+      if (maps.isEmpty) return 0;
+
+      final serialCount = maps
+          .map((e) => (e['21'] ?? e['SERIAL'] ?? e['serial'] ?? e['Serial'])
+              ?.toString()
+              .trim())
+          .where((s) => (s ?? '').isNotEmpty)
+          .length;
+
+      return serialCount > 0 ? serialCount : maps.length;
+    }
+
+    return trimmed
+        .split(',')
+        .map((e) => e.trim())
+        .where((e) => e.isNotEmpty)
+        .length;
+  }
+
+  Map<String, dynamic> _buildPageVisibilityContext(FormGroup formGroup) {
+    final formState = context.read<FormsBloc>().state;
+    final pages = formState.cachedSchemas[widget.currentSchemaKey]?.pages;
+    if (pages == null) {
+      return <String, dynamic>{};
+    }
+
+    return buildVisibilityEvaluationContext(
+      currentPageKey: widget.pageName,
+      currentForm: formGroup,
+      pages: pages,
+      navigationParams: widget.navigationParams,
+    );
+  }
+
+  bool _isVisibleForScannerValidation(
+    PropertySchema schema,
+    Map<String, dynamic> visibilityContext,
+  ) {
+    if (isHidden(schema)) return false;
+
+    final visibility = schema.visibilityCondition;
+    if (visibility == null || visibility.expression.isEmpty) return true;
+
+    return evaluateVisibilityExpression(
+      visibility.expression,
+      visibilityContext,
+    );
+  }
+
+  bool _hasIncompleteScannerScanLimit(
+    PropertySchema pageSchema,
+    FormGroup formGroup,
+  ) {
+    final properties = pageSchema.properties;
+    if (properties == null || properties.isEmpty) return false;
+    final visibilityContext = _buildPageVisibilityContext(formGroup);
+
+    for (final entry in properties.entries) {
+      final property = entry.value;
+      if (property.format != PropertySchemaFormat.scanner) continue;
+      if (!_isVisibleForScannerValidation(property, visibilityContext)) {
+        continue;
+      }
+
+      final limit = _getEffectiveScannerRequiredCount(property, formGroup);
+      if (limit == null || limit <= 0) continue;
+      if (!formGroup.contains(entry.key)) continue;
+
+      final rawValue = formGroup.control(entry.key).value?.toString() ?? '';
+      final scannedCount = _getScannedValueCount(rawValue);
+      if (scannedCount < limit) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
   @override
   Widget build(BuildContext context) {
     return PopScope(
@@ -126,7 +291,6 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
             final index =
                 schemaObject.pages.keys.toList().indexOf(widget.pageName);
-            final showcaseKeys = <GlobalKey>[];
 
             // Register pages for cross-page validation
             registerPagesForValidation(
@@ -178,6 +342,9 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                       .translate(schema.actionLabel ?? 'Next')
                                   : localizations.translate(
                                       schema.actionLabel ?? 'Submit'),
+                              isDisabled: _isSubmitting ||
+                                  _hasIncompleteScannerScanLimit(
+                                      schema, formGroup),
                               onPressed: () async {
                                 // Prevent multiple simultaneous submissions
                                 if (_isSubmitting) return;
@@ -497,24 +664,16 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                                                 .showAlertPopUp
                                                                 ?.conditions,
                                                             contextValue)!),
-                                                    description: localizations
-                                                        .translate(_resolveTemplate(
-                                                                translateIfPresent(
-                                                                    schema
-                                                                        .showAlertPopUp
-                                                                        ?.description,
-                                                                    localizations),
+                                                    description: localizations.translate(_resolveTemplate(
+                                                            translateIfPresent(
                                                                 schema
                                                                     .showAlertPopUp
-                                                                    ?.conditions,
-                                                                contextValue) ??
-                                                            ""),
-                                                    additionalWidgets:
-                                                        _buildAlertPoints(
-                                                            schema
-                                                                .showAlertPopUp
-                                                                ?.points,
-                                                            localizations),
+                                                                    ?.description,
+                                                                localizations),
+                                                            schema.showAlertPopUp?.conditions,
+                                                            contextValue) ??
+                                                        ""),
+                                                    additionalWidgets: _buildAlertPoints(schema.showAlertPopUp?.points, localizations),
 
                                                     /// FIXME: need to send null as empty string will take space
                                                     actions: [
@@ -680,8 +839,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                                     ""),
                                             additionalWidgets:
                                                 _buildAlertPoints(
-                                                    schema.showAlertPopUp
-                                                        ?.points,
+                                                    schema
+                                                        .showAlertPopUp?.points,
                                                     localizations),
 
                                             /// FIXME: need to send null as empty string will take space
@@ -1011,6 +1170,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                               .translate(schema.actionLabel ?? 'Next')
                           : localizations
                               .translate(schema.actionLabel ?? 'Submit'),
+                      isDisabled: _isSubmitting ||
+                          _hasIncompleteScannerScanLimit(schema, formGroup),
                       onPressed: () async {
                         // Prevent multiple simultaneous submissions
                         if (_isSubmitting) return;
@@ -1556,7 +1717,6 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     final popUpConfig = schema.showSecondaryAlertPopUp!;
     final commentController = TextEditingController();
     final bodyFields = popUpConfig.body ?? [];
-    final hasMandatoryFields = bodyFields.any((field) => field.mandatory);
 
     bool showValidationError = false;
 

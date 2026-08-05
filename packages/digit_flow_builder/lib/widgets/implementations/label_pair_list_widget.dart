@@ -51,8 +51,7 @@ class LabelPairListWidget extends ResolvedFlowWidget {
       );
 
       // Check if value is null or empty
-      final isValueEmpty =
-          valueText == null || valueText.isEmpty || valueText == 'null';
+      final isValueEmpty = valueText.isEmpty || valueText == 'null';
 
       // If hideIfNull is true and value is empty, skip this item
       if (hideIfNull && isValueEmpty) {
@@ -73,7 +72,9 @@ class LabelPairListWidget extends ResolvedFlowWidget {
         LabelValueItem(
           maxLines: 5,
           label: keyText,
-          value: valueText != "null" ? localization?.translate(valueText)  : "--",
+          value: valueText != "null"
+              ? _safeTranslateValue(valueText, localization)
+              : "--",
           labelFlex: 7,
         ),
       );
@@ -103,7 +104,8 @@ class LabelPairListWidget extends ResolvedFlowWidget {
     final hideIfNull = config['hideIfNull'] == true;
 
     // Resolve the iterate path to get the list using evalContext
-    final resolvedList = resolveValue(iteratePath, contextData as Map<String, dynamic>);
+    final resolvedList =
+        resolveValue(iteratePath, contextData as Map<String, dynamic>);
 
     if (resolvedList == null || resolvedList is! List) {
       return items;
@@ -128,7 +130,7 @@ class LabelPairListWidget extends ResolvedFlowWidget {
       }
 
       final localizedKey = localization?.translate(fieldKey) ?? fieldKey;
-      final localizedValue = localization?.translate(valueStr) ?? valueStr;
+      final localizedValue = _safeTranslateValue(valueStr, localization);
 
       items.add(
         LabelValueItem(
@@ -141,5 +143,10 @@ class LabelPairListWidget extends ResolvedFlowWidget {
     }
 
     return items;
+  }
+
+  String _safeTranslateValue(String value, dynamic localization) {
+    final translated = localization?.translate(value) ?? value;
+    return translated.toString().trim().isEmpty ? value : translated;
   }
 }

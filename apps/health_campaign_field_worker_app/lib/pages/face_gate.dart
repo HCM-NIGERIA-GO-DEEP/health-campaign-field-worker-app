@@ -20,6 +20,7 @@ import '../blocs/project/project.dart';
 import '../data/local_store/secure_store/secure_store.dart';
 import '../data/remote_client.dart';
 import '../services/face_auth_event_logger.dart';
+import '../services/face_auth_feature_flag.dart';
 import '../services/worker_registry_service.dart';
 import '../utils/environment_config.dart';
 import '../utils/extensions/extensions.dart';
@@ -57,9 +58,19 @@ class _FaceGatePageState extends State<FaceGatePage> {
   @override
   void initState() {
     super.initState();
+    if (!FaceAuthFeatureFlag.enabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          Navigator.of(context).pop();
+          widget.onVerified();
+        }
+      });
+      return;
+    }
     faceEnrollmentActiveNotifier.value = true;
     final individualId = context.loggedInIndividualIdOrNull;
-    debugPrint('FaceGatePage: checking enrollment for individualId=$individualId');
+    debugPrint(
+        'FaceGatePage: checking enrollment for individualId=$individualId');
     if (individualId == null) {
       debugPrint('FaceGatePage: no individual ID, closing gate');
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -87,7 +98,8 @@ class _FaceGatePageState extends State<FaceGatePage> {
       final projectId =
           context.read<ProjectBloc>().state.selectedProject?.id ?? '';
       _logger = FaceAuthEventLogger(
-        repository: context.read<LocalRepository<FaceAuthEventModel, FaceAuthEventSearchModel>>(),
+        repository: context.read<
+            LocalRepository<FaceAuthEventModel, FaceAuthEventSearchModel>>(),
         userId: context.loggedInIndividualIdOrNull ?? '',
         userUuid: context.loggedInUserUuid,
         projectId: projectId,
@@ -107,7 +119,8 @@ class _FaceGatePageState extends State<FaceGatePage> {
   bool _isDismissing = false;
 
   Future<void> _onEnrollmentComplete(bool success, String? pin) async {
-    debugPrint('FaceGatePage: _onEnrollmentComplete called success=$success mounted=$mounted');
+    debugPrint(
+        'FaceGatePage: _onEnrollmentComplete called success=$success mounted=$mounted');
     if (!success || !mounted || _isDismissing) return;
     _isDismissing = true;
     // Replace the enrollment screen with a location-fetching screen so the
@@ -157,10 +170,12 @@ class _FaceGatePageState extends State<FaceGatePage> {
     // updateWorkerWithFaceEnrollment now returns bool — true only on a
     // confirmed server response. Only clear the pending key on true so an
     // offline call doesn't lose its retry marker.
-    service.updateWorkerWithFaceEnrollment(
+    service
+        .updateWorkerWithFaceEnrollment(
       individualId: individualId,
       repository: repository,
-    ).then((ok) {
+    )
+        .then((ok) {
       if (ok) {
         SharedPreferences.getInstance().then(
           (prefs) => prefs.remove('face_registry_sync_pending'),
@@ -269,10 +284,11 @@ class _FaceGatePageState extends State<FaceGatePage> {
             _logRejected(confidence, attempt, faceImageBytes);
           },
           error: (message) {
-            if (mounted) setState(() {
-              _pinErrorMessage = message;
-              _pinAttemptCount++;
-            });
+            if (mounted)
+              setState(() {
+                _pinErrorMessage = message;
+                _pinAttemptCount++;
+              });
           },
           // pinEntry is emitted right after error to keep the form visible.
           // Handling it here (no-op) prevents orElse from clearing the error.
@@ -311,7 +327,8 @@ class _FaceGatePageState extends State<FaceGatePage> {
                     );
               },
             ),
-            rejected: (attempt, max, confidence, faceImageBytes) => _ScanningView(
+            rejected: (attempt, max, confidence, faceImageBytes) =>
+                _ScanningView(
               key: ValueKey('gate_scan_$attempt'),
               attemptNumber: attempt,
               maxAttempts: max,
@@ -347,13 +364,17 @@ class _FaceGatePageState extends State<FaceGatePage> {
               },
             ),
             workerNotFound: () => _WorkerNotFoundView(
-              onRetry: () => context.read<FaceGateBloc>().add(FaceGateEvent.checkEnrollment(
+              onRetry: () => context
+                  .read<FaceGateBloc>()
+                  .add(FaceGateEvent.checkEnrollment(
                     individualId: context.loggedInIndividualIdOrNull ?? "",
                   )),
             ),
             error: (message) => _ErrorView(
               message: message,
-              onRetry: () => context.read<FaceGateBloc>().add(FaceGateEvent.checkEnrollment(
+              onRetry: () => context
+                  .read<FaceGateBloc>()
+                  .add(FaceGateEvent.checkEnrollment(
                     individualId: context.loggedInIndividualIdOrNull ?? "",
                   )),
             ),
@@ -428,7 +449,8 @@ class _EnrollmentWrapper extends StatelessWidget {
           listener: (context, state) {
             // Catch completed state at app level — handles PIN confirm navigation
             if (state is FaceEnrollmentCompletedState) {
-              debugPrint('_EnrollmentWrapper: FaceEnrollmentBloc completed, calling onResult');
+              debugPrint(
+                  '_EnrollmentWrapper: FaceEnrollmentBloc completed, calling onResult');
               onResult(true, null);
             }
           },
@@ -450,7 +472,8 @@ class _EnrollmentWrapper extends StatelessWidget {
 // ── Scanning View ──
 
 class _ScanningView extends StatelessWidget {
-  final void Function(List<double> embedding, double quality, {Uint8List? faceImageBytes}) onCaptured;
+  final void Function(List<double> embedding, double quality,
+      {Uint8List? faceImageBytes}) onCaptured;
   final int? attemptNumber;
   final int? maxAttempts;
   final double? lastConfidence;
@@ -485,8 +508,7 @@ class _ScanningView extends StatelessWidget {
             left: 24,
             right: 24,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: colorTheme.alert.error.withOpacity(0.85),
                 borderRadius: BorderRadius.circular(12),
@@ -608,7 +630,8 @@ class _PinEntryView extends StatelessWidget {
   final String? errorMessage;
   final int attemptCount;
 
-  const _PinEntryView({required this.onSubmit, required this.attemptCount, this.errorMessage});
+  const _PinEntryView(
+      {required this.onSubmit, required this.attemptCount, this.errorMessage});
 
   @override
   Widget build(BuildContext context) {
@@ -860,7 +883,8 @@ class _LocationRow extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(Icons.location_on_rounded, size: 14, color: colorTheme.text.secondary),
+          Icon(Icons.location_on_rounded,
+              size: 14, color: colorTheme.text.secondary),
           const SizedBox(width: 6),
           Text(
             '$latStr, $lngStr',
