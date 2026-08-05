@@ -3,6 +3,7 @@ import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendance_log.dart';
 import 'package:digit_data_model/models/entities/project_type.dart';
 import 'package:digit_flow_builder/blocs/flow_crud_bloc.dart';
+import 'package:digit_flow_builder/utils/delivered_in_cycle.dart';
 import 'package:digit_flow_builder/utils/utils.dart';
 import 'package:digit_flow_builder/widget_registry.dart';
 import 'package:digit_ui_components/utils/date_utils.dart';
@@ -437,7 +438,7 @@ bool _isEligibleAge(ProjectTypeModel? projectType, int totalAgeMonths) {
 
   if (minAge == null || maxAge == null) return false;
 
-  if (totalAgeMonths > minAge && totalAgeMonths < maxAge) {
+  if (totalAgeMonths >= minAge && totalAgeMonths <= maxAge) {
     return true;
   }
   return false;
@@ -868,13 +869,65 @@ void initializeFunctionRegistry() {
     return TaskStatus.ineligible;
   });
 
+  /// Checks whether the beneficiary has a delivered status.
+  ///
+  /// Two call shapes are supported:
+  /// - Cycle-scoped: `isDelivered(item.task, contextData.0.currentRunningCycle)`
+  ///   — evaluates only the last task belonging to the current cycle, so a
+  ///   past-cycle ADMINISTRATION_SUCCESS no longer counts as delivered.
+  /// - Legacy: `isDelivered(item.task.last.status)` — a bare status string
+  ///   with no cycle awareness (kept for older configs).
   FunctionRegistry.register("isDelivered", (args, stateData) {
     // No arguments passed
     if (args.isEmpty) return false;
 
     final value = args.first;
 
-    // Must be a string
+    // Cycle-scoped form: a task list plus the current running cycle.
+    if (value is List) {
+      try {
+        final tasks = value.map((item) {
+          if (item is Map<String, dynamic>) {
+            return item;
+          } else if (item is Map) {
+            return Map<String, dynamic>.from(item);
+          } else {
+            // Try to convert model objects (e.g., TaskModel) to Map
+            try {
+              return (item as dynamic).toMap() as Map<String, dynamic>;
+            } catch (_) {
+              try {
+                return (item as dynamic).toJson() as Map<String, dynamic>;
+              } catch (_) {
+                return <String, dynamic>{};
+              }
+            }
+          }
+        }).toList();
+
+        final currentRunningCycle =
+            args.length > 1 ? int.tryParse(args[1]?.toString() ?? '') : null;
+
+        final cycleWindows = FlowBuilderSingleton()
+                .projectType
+                ?.cycles
+                ?.map((c) => CycleWindow(
+                      id: c.id,
+                      startDate: c.startDate,
+                      endDate: c.endDate,
+                    ))
+                .toList() ??
+            const <CycleWindow>[];
+
+        return isDeliveredInCycle(tasks, currentRunningCycle, cycleWindows);
+      } catch (_) {
+        // A throw in a flow-builder fn blanks the whole TEMPLATE screen;
+        // fail safe to "not delivered".
+        return false;
+      }
+    }
+
+    // Legacy form: must be a status string
     if (value is! String) return false;
 
     // Normalize (uppercase + trim)
