@@ -23,6 +23,7 @@ import '../../blocs/face_auth/reverification_bloc.dart';
 import '../../data/remote_client.dart';
 import '../../router/app_router.dart';
 import '../../services/face_auth_event_logger.dart';
+import '../../services/face_auth_feature_flag.dart';
 import '../../services/worker_registry_service.dart';
 import '../../utils/environment_config.dart';
 import '../../utils/extensions/extensions.dart';
@@ -58,6 +59,14 @@ class _NonMobileUserListPageState
   @override
   void initState() {
     super.initState();
+    if (!FaceAuthFeatureFlag.enabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.router.replaceAll([HomeRoute()]);
+        }
+      });
+      return;
+    }
     attendanceBloc = AttendanceBloc(
       const RegisterLoading(),
       attendanceDataRepository: context
@@ -248,8 +257,8 @@ class _NonMobileUserListPageState
       },
       child: Scaffold(
         body: BlocProvider<AttendanceBloc>(
-          create: (context) =>
-              attendanceBloc!..add(const AttendanceEvents.fetchNonMobileUsers()),
+          create: (context) => attendanceBloc!
+            ..add(const AttendanceEvents.fetchNonMobileUsers()),
           child: BlocBuilder<AttendanceBloc, AttendanceStates>(
             builder: (context, state) {
               return ScrollableContent(
@@ -333,19 +342,20 @@ class _NonMobileUserListPageState
                                       // individualId ("IND-...") is display-only.
                                       final enrollmentId = individual.id ?? '';
                                       final displayId =
-                                          individual.individualId ?? enrollmentId;
+                                          individual.individualId ??
+                                              enrollmentId;
                                       final givenName =
                                           individual.name?.givenName ?? '';
-                                      final genderName =
-                                          individual.gender?.name.toUpperCase() ??
-                                              '';
+                                      final genderName = individual.gender?.name
+                                              .toUpperCase() ??
+                                          '';
 
                                       return NonMobileUserCard(
                                         mobileNumber:
                                             individual.mobileNumber.toString(),
                                         userName: givenName,
-                                  
-                                        isFaceEnrolled: enrollmentId.isNotEmpty &&
+                                        isFaceEnrolled: enrollmentId
+                                                .isNotEmpty &&
                                             _enrolledIds.contains(enrollmentId),
                                         isTimerRunning: _isTimerRunning,
                                         isVerifiedThisCycle:
@@ -378,8 +388,8 @@ class _NonMobileUserListPageState
                                               individualScannerData:
                                                   ScannedIndividualDataModel(
                                                       individualId: displayId,
-                                                      age: getAge(
-                                                          individual.dateOfBirth),
+                                                      age: getAge(individual
+                                                          .dateOfBirth),
                                                       locality: localizations
                                                           .translate(registers
                                                                   .first

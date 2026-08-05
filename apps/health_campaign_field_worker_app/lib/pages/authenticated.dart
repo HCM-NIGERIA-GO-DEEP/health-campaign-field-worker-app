@@ -22,7 +22,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:isar/isar.dart';
-import 'package:location/location.dart';
 import '../services/location_service.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -57,6 +56,7 @@ import '../router/authenticated_route_observer.dart';
 import '../services/face_auth_config.dart';
 import '../services/reverification_scheduler.dart';
 import '../services/worker_registry_service.dart';
+import '../services/face_auth_feature_flag.dart';
 import '../widgets/face_auth/face_verification_dialog.dart';
 import '../widgets/face_auth/reverification_popup.dart';
 import '../utils/environment_config.dart';
@@ -110,16 +110,22 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
     WidgetsBinding.instance.addObserver(this);
     _connectivitySubscription =
         Connectivity().onConnectivityChanged.listen(_handleConnectivityChange);
-    _startReVerificationScheduler();
+    if (FaceAuthFeatureFlag.enabled) {
+      _startReVerificationScheduler();
+    }
     // When face enrollment finishes (notifier flips true → false) regenerate
     // the schedule so prompts are relative to enrollment end, not app launch.
-    faceEnrollmentActiveNotifier.addListener(_onEnrollmentActiveChanged);
+    if (FaceAuthFeatureFlag.enabled) {
+      faceEnrollmentActiveNotifier.addListener(_onEnrollmentActiveChanged);
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    faceEnrollmentActiveNotifier.removeListener(_onEnrollmentActiveChanged);
+    if (FaceAuthFeatureFlag.enabled) {
+      faceEnrollmentActiveNotifier.removeListener(_onEnrollmentActiveChanged);
+    }
     _reVerificationSubscription?.cancel();
     _reVerStateSubscription?.cancel();
     _reVerStateNotifier.dispose();
@@ -133,7 +139,7 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) {
+    if (FaceAuthFeatureFlag.enabled && state == AppLifecycleState.resumed) {
       _reVerificationScheduler?.checkNow();
     }
   }
@@ -195,6 +201,7 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
   }
 
   void _onEnrollmentActiveChanged() async {
+    if (!FaceAuthFeatureFlag.enabled) return;
     final now = faceEnrollmentActiveNotifier.value;
     if (_lastEnrollmentActive == true && now == false) {
       try {
@@ -268,6 +275,7 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
 
   Future<void> _startReVerificationScheduler(
       {bool immediateFirstTrigger = false}) async {
+    if (!FaceAuthFeatureFlag.enabled) return;
     if (_reVerificationScheduler != null) return;
 
     try {
@@ -353,6 +361,7 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
   }
 
   void _dispatchTrigger(ReVerificationTrigger trigger) async {
+    if (!FaceAuthFeatureFlag.enabled) return;
     final now = DateTime.now();
     try {
       final isar = context.read<Isar>();
@@ -627,93 +636,107 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
                   appBar: AppBar(
                     backgroundColor: theme.colorTheme.primary.primary2,
                     foregroundColor: theme.colorTheme.paper.primary,
-                    title: ValueListenableBuilder<ReVerificationState?>(
-                      valueListenable: _reVerStateNotifier,
-                      builder: (context, state, _) {
-                        if (state is! ReVerificationPromptedState) {
-                          return const SizedBox.shrink();
-                        }
-                        return Text(
-                          'Attempt ${state.iteration} of ${state.maxIterations}',
-                          style: TextStyle(
-                            color: theme.colorTheme.paper.primary,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        );
-                      },
-                    ),
+                    title: FaceAuthFeatureFlag.enabled
+                        ? ValueListenableBuilder<ReVerificationState?>(
+                            valueListenable: _reVerStateNotifier,
+                            builder: (context, state, _) {
+                              if (state is! ReVerificationPromptedState) {
+                                return const SizedBox.shrink();
+                              }
+                              return Text(
+                                'Attempt ${state.iteration} of ${state.maxIterations}',
+                                style: TextStyle(
+                                  color: theme.colorTheme.paper.primary,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              );
+                            },
+                          )
+                        : const SizedBox.shrink(),
                     actions: null,
                   ),
                   drawer: showDrawer ? drawerWidget(context) : null,
                   body: MultiRepositoryProvider(
                     providers: [
-                      RepositoryProvider<FaceModelService>(
-                        create: (_) => FaceModelService()..initialize(),
-                      ),
-                      RepositoryProvider<FaceEmbeddingRepository>(
-                        create: (ctx) => FaceEmbeddingRepository(
-                          ctx.read<Isar>(),
+                      if (FaceAuthFeatureFlag.enabled)
+                        RepositoryProvider<FaceModelService>(
+                          create: (_) => FaceModelService()..initialize(),
                         ),
-                      ),
+                      if (FaceAuthFeatureFlag.enabled)
+                        RepositoryProvider<FaceEmbeddingRepository>(
+                          create: (ctx) => FaceEmbeddingRepository(
+                            ctx.read<Isar>(),
+                          ),
+                        ),
+                      // `nested` asserts if providers is empty; keep one inert
+                      // provider when face-auth is switched off.
+                      if (!FaceAuthFeatureFlag.enabled)
+                        RepositoryProvider<Object>.value(
+                          value: const Object(),
+                        ),
                     ],
                     child: MultiBlocProvider(
                       providers: [
                         // Face-auth blocs
-                        BlocProvider(
-                          create: (ctx) {
-                            _faceGateBloc = FaceGateBloc(
-                              repository: ctx.read<FaceEmbeddingRepository>(),
-                              workerRegistryService: WorkerRegistryService(
-                                dio: DioClient().dio,
-                                tenantId: envConfig.variables.tenantId,
-                              ),
+                        if (FaceAuthFeatureFlag.enabled)
+                          BlocProvider(
+                            create: (ctx) {
+                              _faceGateBloc = FaceGateBloc(
+                                repository: ctx.read<FaceEmbeddingRepository>(),
+                                workerRegistryService: WorkerRegistryService(
+                                  dio: DioClient().dio,
+                                  tenantId: envConfig.variables.tenantId,
+                                ),
+                                similarityThreshold:
+                                    _faceAuthConfig.faceMatchThreshold,
+                                maxAttempts: _faceAuthConfig.maxFaceAttempts,
+                              );
+                              return _faceGateBloc!;
+                            },
+                          ),
+                        if (FaceAuthFeatureFlag.enabled)
+                          BlocProvider(
+                            create: (ctx) => FaceVerificationBloc(
+                              faceModelService: ctx.read<FaceModelService>(),
+                              embeddingRepository:
+                                  ctx.read<FaceEmbeddingRepository>(),
                               similarityThreshold:
                                   _faceAuthConfig.faceMatchThreshold,
-                              maxAttempts: _faceAuthConfig.maxFaceAttempts,
-                            );
-                            return _faceGateBloc!;
-                          },
-                        ),
-                        BlocProvider(
-                          create: (ctx) => FaceVerificationBloc(
-                            faceModelService: ctx.read<FaceModelService>(),
-                            embeddingRepository:
-                                ctx.read<FaceEmbeddingRepository>(),
-                            similarityThreshold:
-                                _faceAuthConfig.faceMatchThreshold,
+                            ),
                           ),
-                        ),
-                        BlocProvider(
-                          create: (_) => LivenessBloc(),
-                        ),
-                        BlocProvider(
-                          lazy: false,
-                          create: (ctx) {
-                            _reVerificationBloc = ReVerificationBloc(
-                              repository: ctx.read<FaceEmbeddingRepository>(),
-                              config: _faceAuthConfig,
-                              currentUserIndividualId:
-                                  context.loggedInIndividualId ?? '',
-                            );
-                            _reVerStateSubscription?.cancel();
-                            _reVerStateSubscription =
-                                _reVerificationBloc!.stream.listen((state) {
-                              _reVerStateNotifier.value = state;
-                              final terminal = state.maybeWhen(
-                                verified: (_, __) => true,
-                                missed: (_) => true,
-                                orElse: () => false,
+                        if (FaceAuthFeatureFlag.enabled)
+                          BlocProvider(
+                            create: (_) => LivenessBloc(),
+                          ),
+                        if (FaceAuthFeatureFlag.enabled)
+                          BlocProvider(
+                            lazy: false,
+                            create: (ctx) {
+                              _reVerificationBloc = ReVerificationBloc(
+                                repository: ctx.read<FaceEmbeddingRepository>(),
+                                config: _faceAuthConfig,
+                                currentUserIndividualId:
+                                    context.loggedInIndividualId ?? '',
                               );
-                              if (terminal && _activeTriggerIndex != null) {
-                                final idx = _activeTriggerIndex!;
-                                _reVerificationScheduler?.markCompleted(idx);
-                                _activeTriggerIndex = null;
-                              }
-                            });
-                            return _reVerificationBloc!;
-                          },
-                        ),
+                              _reVerStateSubscription?.cancel();
+                              _reVerStateSubscription =
+                                  _reVerificationBloc!.stream.listen((state) {
+                                _reVerStateNotifier.value = state;
+                                final terminal = state.maybeWhen(
+                                  verified: (_, __) => true,
+                                  missed: (_) => true,
+                                  orElse: () => false,
+                                );
+                                if (terminal && _activeTriggerIndex != null) {
+                                  final idx = _activeTriggerIndex!;
+                                  _reVerificationScheduler?.markCompleted(idx);
+                                  _activeTriggerIndex = null;
+                                }
+                              });
+                              return _reVerificationBloc!;
+                            },
+                          ),
                         // INFO : Need to add bloc of package Here
                         BlocProvider(
                           create: (context) {
@@ -1148,47 +1171,82 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
                         child: ErrorBoundary(builder: (context, error) {
                           if (error == null) {
                             WidgetsBinding.instance.addPostFrameCallback((_) {
-                              _checkFaceEnrollment();
-                              _prefetchCoWorkerEmbeddings(context);
-                              _retryPendingWorkerRegistrySync();
+                              if (FaceAuthFeatureFlag.enabled) {
+                                _checkFaceEnrollment();
+                                _prefetchCoWorkerEmbeddings(context);
+                                _retryPendingWorkerRegistrySync();
+                              }
                             });
                           }
                           return error != null
                               ? const ErrorScreen()
-                              : ReVerificationListener(
-                                  child: Column(
-                                    children: [
-                                      const _ReVerificationCountdownBanner(),
-                                      Expanded(
-                                        child: AutoRouter(
-                                          navigatorObservers: () => [
-                                            AuthenticatedRouteObserver(
-                                              onNavigated: () {
-                                                bool shouldShowDrawer;
-                                                switch (context
-                                                    .router.topRoute.name) {
-                                                  case ProjectSelectionRoute
-                                                        .name:
-                                                  case BoundarySelectionRoute
-                                                        .name:
-                                                  case PermissionsRoute.name:
-                                                  case FaceGateRoute.name:
-                                                    shouldShowDrawer = false;
-                                                    break;
-                                                  default:
-                                                    shouldShowDrawer = true;
-                                                }
+                              : (FaceAuthFeatureFlag.enabled
+                                  ? ReVerificationListener(
+                                      child: Column(
+                                        children: [
+                                          const _ReVerificationCountdownBanner(),
+                                          Expanded(
+                                            child: AutoRouter(
+                                              navigatorObservers: () => [
+                                                AuthenticatedRouteObserver(
+                                                  onNavigated: () {
+                                                    bool shouldShowDrawer;
+                                                    switch (context
+                                                        .router.topRoute.name) {
+                                                      case ProjectSelectionRoute
+                                                            .name:
+                                                      case BoundarySelectionRoute
+                                                            .name:
+                                                      case PermissionsRoute
+                                                            .name:
+                                                      case FaceGateRoute.name:
+                                                        shouldShowDrawer =
+                                                            false;
+                                                        break;
+                                                      default:
+                                                        shouldShowDrawer = true;
+                                                    }
 
-                                                _drawerVisibilityController
-                                                    .add(shouldShowDrawer);
-                                              },
+                                                    _drawerVisibilityController
+                                                        .add(shouldShowDrawer);
+                                                  },
+                                                ),
+                                              ],
                                             ),
-                                          ],
-                                        ),
+                                          ),
+                                        ],
                                       ),
-                                    ],
-                                  ),
-                                );
+                                    )
+                                  : Column(
+                                      children: [
+                                        Expanded(
+                                          child: AutoRouter(
+                                            navigatorObservers: () => [
+                                              AuthenticatedRouteObserver(
+                                                onNavigated: () {
+                                                  bool shouldShowDrawer;
+                                                  switch (context
+                                                      .router.topRoute.name) {
+                                                    case ProjectSelectionRoute
+                                                          .name:
+                                                    case BoundarySelectionRoute
+                                                          .name:
+                                                    case PermissionsRoute.name:
+                                                    case FaceGateRoute.name:
+                                                      shouldShowDrawer = false;
+                                                      break;
+                                                    default:
+                                                      shouldShowDrawer = true;
+                                                  }
+                                                  _drawerVisibilityController
+                                                      .add(shouldShowDrawer);
+                                                },
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ));
                         }),
                       ),
                     ),
@@ -1278,16 +1336,17 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
                       context.router.push(const BeneficiariesReportRoute());
                     },
                   ),
-                  SidebarItem(
-                    title: AppLocalizations.of(context).translate(
-                      i18.nonMobileUser.nonMobileUserLabel,
+                  if (FaceAuthFeatureFlag.enabled)
+                    SidebarItem(
+                      title: AppLocalizations.of(context).translate(
+                        i18.nonMobileUser.nonMobileUserLabel,
+                      ),
+                      icon: Icons.people_outline,
+                      onPressed: () {
+                        Navigator.of(context, rootNavigator: true).pop();
+                        context.router.navigate(const NonMobileUserListRoute());
+                      },
                     ),
-                    icon: Icons.people_outline,
-                    onPressed: () {
-                      Navigator.of(context, rootNavigator: true).pop();
-                      context.router.navigate(const NonMobileUserListRoute());
-                    },
-                  ),
                 ],
               ],
               logOutDigitButtonLabel: AppLocalizations.of(context)

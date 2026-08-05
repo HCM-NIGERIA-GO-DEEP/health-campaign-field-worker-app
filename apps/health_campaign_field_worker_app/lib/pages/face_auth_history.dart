@@ -1,12 +1,11 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
 import 'package:auto_route/auto_route.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/face_auth_event.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../router/app_router.dart';
+import '../services/face_auth_feature_flag.dart';
 import '../utils/extensions/extensions.dart';
 
 /// Page that displays face authentication event history matching the
@@ -38,6 +37,7 @@ class _FaceAuthHistoryPageState extends State<FaceAuthHistoryPage> {
 
   List<FaceAuthEventModel>? _events;
   Map<String, String> _individualNames = {};
+
   /// Maps face auth event's stored individualId (UUID) → display ID (IND-...).
   /// Falls back to the UUID itself when no IndividualModel match exists.
   Map<String, String> _individualDisplayIds = {};
@@ -49,6 +49,14 @@ class _FaceAuthHistoryPageState extends State<FaceAuthHistoryPage> {
   @override
   void initState() {
     super.initState();
+    if (!FaceAuthFeatureFlag.enabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.router.replaceAll([HomeRoute()]);
+        }
+      });
+      return;
+    }
     _loadEvents();
   }
 
@@ -139,9 +147,8 @@ class _FaceAuthHistoryPageState extends State<FaceAuthHistoryPage> {
 
       if (_searchQuery.isEmpty) return true;
       final q = _searchQuery.toLowerCase();
-      final name =
-          (_individualNames[e.individualId] ?? _subjectNameOf(e) ?? '')
-              .toLowerCase();
+      final name = (_individualNames[e.individualId] ?? _subjectNameOf(e) ?? '')
+          .toLowerCase();
       final displayId =
           (_individualDisplayIds[e.individualId] ?? '').toLowerCase();
       final uuid = e.individualId.toLowerCase();
@@ -153,10 +160,7 @@ class _FaceAuthHistoryPageState extends State<FaceAuthHistoryPage> {
     final fields = e.additionalFields?.fields;
     if (fields == null) return null;
     try {
-      return fields
-          .firstWhere((f) => f.key == 'subjectName')
-          .value
-          ?.toString();
+      return fields.firstWhere((f) => f.key == 'subjectName').value?.toString();
     } catch (_) {
       return null;
     }
@@ -370,8 +374,8 @@ class _FaceAuthHistoryPageState extends State<FaceAuthHistoryPage> {
                   _searchController.clear();
                   setState(() => _searchQuery = '');
                 },
-                child: const Icon(Icons.close,
-                    size: 18, color: Color(0xFFB1B4B6)),
+                child:
+                    const Icon(Icons.close, size: 18, color: Color(0xFFB1B4B6)),
               ),
           ],
         ),
@@ -423,6 +427,7 @@ class _FaceAuthHistoryPageState extends State<FaceAuthHistoryPage> {
 class _VerificationCard extends StatelessWidget {
   final FaceAuthEventModel event;
   final String? individualName;
+
   /// Human-readable "IND-..." code resolved from the IndividualModel
   /// for this event's individualId (UUID). Used in the card's ID line.
   final String? displayId;
@@ -444,8 +449,7 @@ class _VerificationCard extends StatelessWidget {
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
-          border: Border.all(
-              color: _FaceAuthHistoryPageState._divider),
+          border: Border.all(color: _FaceAuthHistoryPageState._divider),
           borderRadius: BorderRadius.circular(12),
           boxShadow: const [
             BoxShadow(
@@ -465,8 +469,7 @@ class _VerificationCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Padding(
-                      padding:
-                          const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -475,8 +478,7 @@ class _VerificationCard extends StatelessWidget {
                             children: [
                               Expanded(
                                 child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.start,
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     Text(
                                       _displayName(),
@@ -547,22 +549,23 @@ class _VerificationCard extends StatelessWidget {
                             children: [
                               const Icon(Icons.access_time,
                                   size: 15,
-                                  color: _FaceAuthHistoryPageState
-                                      ._secondaryText),
+                                  color:
+                                      _FaceAuthHistoryPageState._secondaryText),
                               const SizedBox(width: 8),
                               Text(
                                 dateStr,
                                 style: const TextStyle(
                                   fontFamily: 'Roboto',
                                   fontSize: 14,
-                                  color: _FaceAuthHistoryPageState
-                                      ._secondaryText,
+                                  color:
+                                      _FaceAuthHistoryPageState._secondaryText,
                                   height: 20 / 14,
                                 ),
                               ),
                             ],
                           ),
-                          if (event.latitude != 0.0 || event.longitude != 0.0) ...[
+                          if (event.latitude != 0.0 ||
+                              event.longitude != 0.0) ...[
                             const SizedBox(height: 6),
                             Row(
                               children: [
@@ -611,10 +614,8 @@ class _VerificationCard extends StatelessWidget {
     final fields = event.additionalFields?.fields;
     if (fields != null) {
       try {
-        final name = fields
-            .firstWhere((f) => f.key == 'subjectName')
-            .value
-            ?.toString();
+        final name =
+            fields.firstWhere((f) => f.key == 'subjectName').value?.toString();
         if (name != null && name.isNotEmpty) return name;
       } catch (_) {}
     }
@@ -662,8 +663,18 @@ class _VerificationCard extends StatelessWidget {
   static String _formatDate(int millis) {
     final t = DateTime.fromMillisecondsSinceEpoch(millis);
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final month = months[t.month - 1];
     final hh = t.hour.toString().padLeft(2, '0');
@@ -726,9 +737,7 @@ class _VerificationCard extends StatelessWidget {
     return _MethodInfo(
       icon: Icons.face_retouching_natural,
       label: 'Facial Recognition',
-      trailing: percent > 0
-          ? '${percent.toStringAsFixed(0)}% Match'
-          : null,
+      trailing: percent > 0 ? '${percent.toStringAsFixed(0)}% Match' : null,
       trailingColor: isFail
           ? _FaceAuthHistoryPageState._errorColor
           : _FaceAuthHistoryPageState._successColor,
@@ -799,8 +808,7 @@ class _MethodTile extends StatelessWidget {
       decoration: BoxDecoration(
         color: _FaceAuthHistoryPageState._methodTileBg,
         borderRadius: BorderRadius.circular(12),
-        border:
-            Border.all(color: _FaceAuthHistoryPageState._methodTileBorder),
+        border: Border.all(color: _FaceAuthHistoryPageState._methodTileBorder),
       ),
       child: Row(
         children: [
@@ -812,8 +820,8 @@ class _MethodTile extends StatelessWidget {
               borderRadius: BorderRadius.circular(6),
             ),
             alignment: Alignment.center,
-            child: Icon(icon, size: 18,
-                color: _FaceAuthHistoryPageState._primaryTeal),
+            child: Icon(icon,
+                size: 18, color: _FaceAuthHistoryPageState._primaryTeal),
           ),
           const SizedBox(width: 8),
           Expanded(

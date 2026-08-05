@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../../blocs/project/project.dart';
 import '../../data/remote_client.dart';
 import '../../services/face_auth_event_logger.dart';
+import '../../services/face_auth_feature_flag.dart';
 import '../../services/worker_registry_service.dart';
 import '../../utils/environment_config.dart';
 import '../../utils/extensions/extensions.dart';
@@ -41,6 +42,14 @@ class _NonMobileFaceEnrollPageState extends State<NonMobileFaceEnrollPage> {
   @override
   void initState() {
     super.initState();
+    if (!FaceAuthFeatureFlag.enabled) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.router.maybePop();
+        }
+      });
+      return;
+    }
     faceEnrollmentActiveNotifier.value = true;
   }
 
@@ -159,7 +168,8 @@ class _NonMobileFaceEnrollPageState extends State<NonMobileFaceEnrollPage> {
   }
 
   Future<void> _onResult(bool success, String? pin) async {
-    debugPrint('NonMobileFaceEnrollPage._onResult: success=$success, pin=$pin, mounted=$mounted, isDismissing=$_isDismissing');
+    debugPrint(
+        'NonMobileFaceEnrollPage._onResult: success=$success, pin=$pin, mounted=$mounted, isDismissing=$_isDismissing');
     if (!success || !mounted || _isDismissing) return;
     _isDismissing = true;
     // Show the same "Fetching location…" loading screen as the distributor

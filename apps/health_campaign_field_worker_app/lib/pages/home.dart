@@ -57,6 +57,7 @@ import '../sampleJsonConfigs/inventory_reports.dart';
 import '../sampleJsonConfigs/manage_stock.dart';
 import '../sampleJsonConfigs/registration_flows.dart';
 import '../sampleJsonConfigs/stock_reconciliation.dart';
+import '../services/face_auth_feature_flag.dart';
 import '../utils/attendance_utils.dart';
 import '../utils/date_util_attendance.dart';
 import '../utils/debound.dart';
@@ -101,7 +102,6 @@ class HomePage extends LocalizedStatefulWidget {
 
 class _HomePageState extends LocalizedState<HomePage> {
   bool skipProgressBar = false;
-  bool _faceGateActive = false;
   final storage = const FlutterSecureStorage();
   late StreamSubscription<List<ConnectivityResult>> subscription;
   bool isTriggerLocalisation = true;
@@ -145,7 +145,9 @@ class _HomePageState extends LocalizedState<HomePage> {
 
     // Face-auth: gate the home screen for distributors who haven't enrolled
     // or passed the face gate this session.
-    _checkFaceEnrollment();
+    if (FaceAuthFeatureFlag.enabled) {
+      _checkFaceEnrollment();
+    }
   }
 
   /// Face-auth gate: if the logged-in distributor hasn't enrolled a face (or
@@ -155,6 +157,7 @@ class _HomePageState extends LocalizedState<HomePage> {
   /// persists across app restarts within the same login session.
   void _checkFaceEnrollment() async {
     try {
+      if (!FaceAuthFeatureFlag.enabled) return;
       if (!context.isDistributorRole) return;
 
       final individualId = await LocalSecureStore.instance.userIndividualId;
@@ -165,21 +168,17 @@ class _HomePageState extends LocalizedState<HomePage> {
       final hasPassedGate = await LocalSecureStore.instance.isFaceGatePassed;
       if (isEnrollmentComplete || hasPassedGate || !mounted) return;
 
-      _faceGateActive = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           context.router.push(
             FaceGateRoute(
               onVerified: () {
-                _faceGateActive = false;
                 if (mounted) {
                   context.router.popUntilRouteWithName(HomeRoute.name);
                 }
               },
             ),
-          ).then((_) {
-            _faceGateActive = false;
-          });
+          );
         }
       });
     } catch (e) {
@@ -1705,7 +1704,8 @@ class _HomePageState extends LocalizedState<HomePage> {
                     showcaseFor: showcaseKeys.toSet().toList(),
                   ),
                 ),
-                if (context.isDistributorRole) const FaceAuthSessionCard(),
+                if (context.isDistributorRole && FaceAuthFeatureFlag.enabled)
+                  const FaceAuthSessionCard(),
                 // Show stock balance card for users with stock management access
                 if (state.actionsWrapper.actions
                     .map((e) => e.displayName)
@@ -3741,7 +3741,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.dashboard,
       i18.home
           .beneficiaryIdLabel, // TODO: Uncomment when beneficiary downsync is implemented
-      i18.home.faceRegistrationLabel,
+      if (FaceAuthFeatureFlag.enabled) i18.home.faceRegistrationLabel,
       i18.home.dataShare,
       i18.home.stockSyncDataLabel,
       i18.home.summaryReportLabel,

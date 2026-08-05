@@ -189,7 +189,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
           .map((e) => (e['21'] ?? e['SERIAL'] ?? e['serial'] ?? e['Serial'])
               ?.toString()
               .trim())
-          .where((s) => s != null && s!.isNotEmpty)
+          .where((s) => (s ?? '').isNotEmpty)
           .length;
 
       return serialCount > 0 ? serialCount : maps.length;
@@ -292,7 +292,6 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
             final index =
                 schemaObject.pages.keys.toList().indexOf(widget.pageName);
-            final showcaseKeys = <GlobalKey>[];
 
             // Register pages for cross-page validation
             registerPagesForValidation(
@@ -345,8 +344,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                   : localizations.translate(
                                       schema.actionLabel ?? 'Submit'),
                               isDisabled: _isSubmitting ||
-                                _hasIncompleteScannerScanLimit(
-                                  schema, formGroup),
+                                  _hasIncompleteScannerScanLimit(
+                                      schema, formGroup),
                               onPressed: () async {
                                 // Prevent multiple simultaneous submissions
                                 if (_isSubmitting) return;
@@ -1132,7 +1131,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                           : localizations
                               .translate(schema.actionLabel ?? 'Submit'),
                       isDisabled: _isSubmitting ||
-                        _hasIncompleteScannerScanLimit(schema, formGroup),
+                          _hasIncompleteScannerScanLimit(schema, formGroup),
                       onPressed: () async {
                         // Prevent multiple simultaneous submissions
                         if (_isSubmitting) return;
@@ -1678,7 +1677,6 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     final popUpConfig = schema.showSecondaryAlertPopUp!;
     final commentController = TextEditingController();
     final bodyFields = popUpConfig.body ?? [];
-    final hasMandatoryFields = bodyFields.any((field) => field.mandatory);
 
     bool showValidationError = false;
 

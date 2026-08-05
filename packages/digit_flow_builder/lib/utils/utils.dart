@@ -343,8 +343,15 @@ String _translateWithLocalization(String text, dynamic localization) {
   final trimmed = text.trim();
   if (trimmed.isEmpty) return text;
 
+  // Preserve dynamic numeric values (e.g. "1", "2") as literal values.
+  // Some localization datasets contain numeric keys with empty messages,
+  // which can hide values like memberCount when translated.
+  final isPureNumeric = RegExp(r'^-?\d+(\.\d+)?$').hasMatch(trimmed);
+  if (isPureNumeric) return text;
+
   try {
     final translated = localization.translate(trimmed);
+    if (translated.toString().trim().isEmpty) return text;
     // Preserve original whitespace
     if (text.startsWith(' ') || text.endsWith(' ')) {
       final leadingSpace = text.startsWith(' ') ? ' ' : '';

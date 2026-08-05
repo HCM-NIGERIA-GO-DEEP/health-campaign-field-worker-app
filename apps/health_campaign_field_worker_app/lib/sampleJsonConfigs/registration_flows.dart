@@ -437,7 +437,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "NUMBER_OF_ITN_FOR_DELIVERY",
                   "value":
-                      "{{contextData.0.targetCycle.0.deliveries.0.doseCriteria.0.ProductVariants.0.quantity}}",
+                      "{{contextData.0.eligibleProductVariants.0.ProductVariants.0.quantity}}",
                   "isActive": true
                 }
               ],
@@ -587,7 +587,7 @@ final dynamic sampleFlows = {
                       {
                         "key": "qty",
                         "value":
-                            "{{contextData.0.targetCycle.0.deliveries.0.doseCriteria.0.ProductVariants.0.quantity}}"
+                            "{{contextData.0.eligibleProductVariants.0.ProductVariants.0.quantity}}"
                       },
                       {
                         "key": "nameOfIndividual",
@@ -942,7 +942,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "NUMBER_OF_ITN_FOR_DELIVERY",
                   "value":
-                      "{{contextData.0.targetCycle.0.deliveries.0.doseCriteria.0.ProductVariants.0.quantity}}",
+                      "{{contextData.0.eligibleProductVariants.0.ProductVariants.0.quantity}}",
                   "isActive": true
                 }
               ],
