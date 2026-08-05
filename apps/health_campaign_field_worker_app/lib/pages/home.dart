@@ -192,15 +192,14 @@ class _HomePageState extends LocalizedState<HomePage> {
       fieldNames: const {'teamCode', 'deliveryTeam'},
       errorMessageKey: i18.common.teamQrOutOfScope,
       validator: (scannedValue) async {
-        final chainCodes = boundaryBloc.state.selectedBoundaryMap.values
+        final allBoundaryCodes = boundaryBloc.state.boundaryList
             .map((boundary) => boundary?.code)
             .whereType<String>()
             .toSet();
-        final leafCodes =
-            LeastLevelBoundarySingleton().boundary ?? const <String>[];
+
         return isTeamQrInScope(
           scannedValue,
-          scannerBoundaryCodes: {...chainCodes, ...leafCodes},
+          scannerBoundaryCodes: allBoundaryCodes,
           scannerTenantId: envConfig.variables.tenantId,
         );
       },
