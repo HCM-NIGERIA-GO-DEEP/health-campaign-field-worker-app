@@ -2,7 +2,7 @@
 
 ## 2.2.101 — 2026-08-05
 
-_(includes 2.2.99, 2.2.100 — bumped independently and in parallel on the `feat/smc-mc-borno` and `feat/smc-mc-plateau-ri` branches before being merged together into `smc-mc-base`)_
+_(includes 2.2.99, 2.2.100)_
 
 **Eligibility / cycle logic in `function_registry.dart`**
 
@@ -20,12 +20,6 @@ _(includes 2.2.99, 2.2.100 — bumped independently and in parallel on the `feat
 **Summary report**
 
 - The summary report's household-download step in `ProjectBloc` now returns immediately for any role other than distributor/CDD, and keys off `userObject.uuid` for the facility id instead of falling back through `currentFacilities`. This fix was committed separately but byte-identically on both `feat/smc-mc-borno` and `feat/smc-mc-plateau-ri` (same author, same timestamp) — a genuine duplicate landing that the merge reconciles into one.
-
-**Per-tenant Android identity and campaign ID (mostly moot on this branch)**
-
-- `feat/smc-mc-plateau-ri` renamed the Android package to `org.egov.pl` (label "Plateau") and rotated the Firebase Android app id; `feat/smc-mc-borno` did the equivalent for `org.egov.borno`/"Borno SMC" with its own Firebase app id. The Plateau rename initially missed `android/app/build.gradle`'s `applicationId` (left at the old `org.egov.kg`); a later commit ("update applicationId to match new project requirements") caught it up to `org.egov.pl`.
-- **None of this survives the merge into `smc-mc-base`.** The merge commit's conflict resolution for `build.gradle` kept neither side's `applicationId` — not `smc-mc-base`'s own `org.egov.bauchi` nor `feat/smc-mc-plateau-ri`'s `org.egov.pl` — but hand-resolved it to a third value, `com.digit.hcm`, and `AndroidManifest.xml`'s label was likewise merged down to plain "HCM". Firebase's Android app id at HEAD also matches neither tenant branch. Verify this was the intended resolution before shipping — as merged, this branch's Android identity is `com.digit.hcm`/"HCM", not Plateau's or Borno's.
-- The hardcoded SMC-RI campaign ID in `ProjectBloc` was swapped to `CMP-2026-06-08-000333` for the Plateau tenant — the same value 2.2.98 had deliberately moved *away* from for a different tenant. Not a regression of that fix; it's a separate per-tenant override, but worth confirming the right campaign ID is active for whichever tenant actually ships from `smc-mc-base`.
 
 ## 2.2.98 — 2026-07-28
 
