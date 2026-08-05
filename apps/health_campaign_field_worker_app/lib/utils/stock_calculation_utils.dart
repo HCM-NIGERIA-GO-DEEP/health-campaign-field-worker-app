@@ -43,34 +43,6 @@ class StockCalculationUtils {
     return _getAdditionalFieldValue(stock, 'stockEntryType');
   }
 
-  /// Timestamp at which [stock] starts contributing to [facilityId]'s
-  /// balance.
-  ///
-  /// Incoming dispatches count toward the receiver only once accepted, and
-  /// acceptance is an update to the sender-created record — so for those the
-  /// acceptance (lastModified) time is the balance-relevant moment. Keying
-  /// the incremental snapshot window on the sender's creation time lets the
-  /// record fall behind an older backup snapshot and never be counted.
-  /// Everything else contributes from its creation.
-  static int effectiveStockTime(StockModel stock, String facilityId) {
-    final createdTime = stock.clientAuditDetails?.createdTime ??
-        stock.auditDetails?.createdTime ??
-        0;
-
-    final isAcceptedIncomingDispatch = stock.receiverId == facilityId &&
-        (stock.transactionType?.toUpperCase() ?? '') == 'DISPATCHED' &&
-        _getAdditionalFieldValue(stock, 'status') == 'ACCEPTED';
-
-    if (isAcceptedIncomingDispatch) {
-      final modifiedTime = stock.clientAuditDetails?.lastModifiedTime ??
-          stock.auditDetails?.lastModifiedTime ??
-          0;
-      if (modifiedTime > createdTime) return modifiedTime;
-    }
-
-    return createdTime;
-  }
-
   static double _getDeliveryTaskValue(
     List<TaskModel> tasks,
     String productVariantId,

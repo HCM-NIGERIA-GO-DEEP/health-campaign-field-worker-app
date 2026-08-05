@@ -1,5 +1,6 @@
 import 'package:digit_data_model/models/entities/project_type.dart';
 
+import '../../utils/summary_report_cutoff.dart';
 import '../local_store/server_summary_report_storage.dart';
 import '../repositories/summary_report_remote_repository.dart';
 
@@ -127,7 +128,11 @@ class ServerSummaryReportService {
 
   Future<int?> timestamp() async {
     final report = await readActiveSummaryReportData();
-    return _toNullableInt(report?['timeStamp']) ?? _activeCycle?.startDate;
+    return effectiveReportCutoff(
+      storedTimeStamp: _toNullableInt(report?['timeStamp']),
+      cycleStartDate: _activeCycle?.startDate,
+      now: DateTime.now().millisecondsSinceEpoch,
+    );
   }
 
   Future<Map<String, dynamic>?> readActiveSummaryReportDayData({

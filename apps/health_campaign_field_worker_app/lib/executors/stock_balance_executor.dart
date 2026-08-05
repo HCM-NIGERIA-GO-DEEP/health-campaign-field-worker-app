@@ -352,8 +352,8 @@ class StockBalanceExecutor extends ActionExecutor {
     // Apply the transaction delta to the current balance
     final newBalance = currentBalance + quantityDelta;
 
-    StockBalanceCache.instance
-        .setCache(facilityId, {productVariantId: newBalance});
+    // StockBalanceCache.instance
+    //     .setCache(facilityId, {productVariantId: newBalance});
 
     debugPrint(
       'UPDATE_STOCK_BALANCE: Updated balance for $facilityId/$productVariantId = $newBalance (previous: $currentBalance, delta: $quantityDelta, existing record: ${existing != null})',

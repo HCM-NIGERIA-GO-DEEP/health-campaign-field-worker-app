@@ -232,7 +232,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
 
       final stockTransactionBalance =
           StockCalculationUtils.calculateStockInHandForProducts(
-        stockList: stockList,
+        stockList: filteredStockList,
         facilityId: facilityId,
         productIds: productIds,
         loggedInUserUuid: loggedInUserUuid,
