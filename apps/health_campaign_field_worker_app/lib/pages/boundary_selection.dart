@@ -620,7 +620,8 @@ class _BoundarySelectionPageState
 
                                                 if (context.mounted) {
                                                   if (isOnline &&
-                                                      isDistributor) {
+                                                      isDistributor &&
+                                                      false) {
                                                     context
                                                         .read<
                                                             BeneficiaryDownSyncBloc>()
