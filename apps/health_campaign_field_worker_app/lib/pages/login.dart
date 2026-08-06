@@ -42,8 +42,6 @@ class _LoginPageState extends LocalizedState<LoginPage> {
   bool _localizationReady = false;
   static const _userId = 'userId';
   static const _password = 'password';
-  static const _debugUserId = 'USR-314109';
-  static const _debugPassword = 'eGov@123';
 
   String? _pendingUserId;
   String? _pendingPassword;
@@ -383,11 +381,9 @@ class _LoginPageState extends LocalizedState<LoginPage> {
 
   FormGroup buildForm() => fb.group(<String, Object>{
         _userId: FormControl<String>(
-          value: kDebugMode ? _debugUserId : null,
           validators: [Validators.required],
         ),
         _password: FormControl<String>(
-          value: kDebugMode ? _debugPassword : null,
           validators: [Validators.required],
         ),
       });
