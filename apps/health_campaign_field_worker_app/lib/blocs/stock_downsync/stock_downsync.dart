@@ -293,7 +293,6 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
         int totalCount = event.initialServerCount;
         int syncedCount = 0;
         final downsyncedStocks = <String, StockModel>{};
-        final syncStartTime = DateTime.now().millisecondsSinceEpoch;
 
         emit(StockDownSyncState.inProgress(syncedCount, totalCount));
 
@@ -328,11 +327,20 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
           emit(StockDownSyncState.inProgress(syncedCount, totalCount));
         }
 
-        // Advance the per-user cursor only after all pages downloaded, using
-        // the time captured before the first fetch so records modified during
-        // the download are picked up next time.
-        await AppSharedPreferences()
-            .setStockDownsyncTime(cursorKey, syncStartTime);
+        // Advance the per-user cursor to the latest server lastModifiedTime
+        // among the downloaded records — the clock domain the server's
+        // lastChangedSince filter compares against. When nothing usable came
+        // back (e.g. an empty page despite a non-zero count) keep the stored
+        // cursor so the window is retried next sync instead of skipping the
+        // records forever.
+        final nextCursorTime = StockDownsyncCursor.nextCursor(
+          stored: AppSharedPreferences().getStockDownsyncTime(cursorKey),
+          stocks: downsyncedStocks.values,
+        );
+        if (nextCursorTime != null) {
+          await AppSharedPreferences().setStockDownsyncTime(cursorKey,
+              nextCursorTime + 1); // +1 to avoid re-downloading the same record
+        }
 
         // After stock download, downsync stock balance user actions
         await downSyncStockBalances(event.projectModel.id);

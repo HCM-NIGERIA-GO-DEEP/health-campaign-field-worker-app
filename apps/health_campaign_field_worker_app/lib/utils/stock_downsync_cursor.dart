@@ -1,3 +1,5 @@
+import 'package:digit_data_model/data_model.dart';
+
 /// Helpers for the per-user stock downsync cursor stored in SharedPreferences.
 ///
 /// The cursor (last successful downsync time) must be scoped per user and per
@@ -19,4 +21,31 @@ class StockDownsyncCursor {
   /// (no campaign cycles configured).
   static int? resolveCutoff({int? storedTime, int? cycleStartDate}) =>
       storedTime ?? cycleStartDate;
+
+  /// Next cursor value derived from the downloaded records: the latest
+  /// server `auditDetails.lastModifiedTime` — the same clock domain the
+  /// server's `lastChangedSince` filter compares against. Client audit
+  /// times are the sender's device clock and must not be used.
+  ///
+  /// Returns null when no record carries a server audit time (e.g. the
+  /// server returned an empty page while reporting a non-zero count) —
+  /// the caller must then keep the stored cursor so the window is retried
+  /// on the next sync instead of skipping records forever. Never moves
+  /// backward past [stored].
+  static int? nextCursor({
+    required int? stored,
+    required Iterable<StockModel> stocks,
+  }) {
+    int? latest;
+    for (final stock in stocks) {
+      final time = stock.auditDetails?.lastModifiedTime;
+      if (time == null) continue;
+      if (latest == null || time > latest) {
+        latest = time;
+      }
+    }
+    if (latest == null) return null;
+    if (stored != null && stored > latest) return stored;
+    return latest;
+  }
 }
