@@ -458,7 +458,7 @@ bool _isEligibleAge(ProjectTypeModel? projectType, int totalAgeMonths) {
 
   if (minAge == null || maxAge == null) return false;
 
-  if (totalAgeMonths > minAge && totalAgeMonths < maxAge) {
+  if (totalAgeMonths >= minAge && totalAgeMonths <= maxAge) {
     return true;
   }
   return false;
@@ -2925,8 +2925,6 @@ void initializeFunctionRegistry() {
 
     for (final task in riTasks) {
       final status = task['status']?.toString();
-      if (status == TaskStatus.beneficiaryDied) return false;
-      if (status == TaskStatus.ineligible) return false;
 
       if (currentRunningCycle != null) {
         final additionalFields = task['additionalFields'];
@@ -2942,16 +2940,34 @@ void initializeFunctionRegistry() {
             }
           }
         }
-        if (taskCycleIndex != currentRunningCycle) continue;
-      }
 
-      if (status == TaskStatus.beneficiaryMigrated ||
-          status == TaskStatus.beneficiaryAbsent ||
-          status == TaskStatus.beneficiaryRefused) {
-        return false;
+        // Fall back to deriving the cycle from the task's last modified
+        // time when no cycleIndex was recorded on the task.
+        if (taskCycleIndex == null) {
+          final clientAuditDetails = task['clientAuditDetails'];
+          final taskAuditDetails = task['auditDetails'];
+          final lastModifiedTime = (clientAuditDetails is Map
+                  ? clientAuditDetails['lastModifiedTime']
+                  : null) ??
+              (taskAuditDetails is Map
+                  ? taskAuditDetails['lastModifiedTime']
+                  : null);
+          final lastModifiedTimeMs =
+              int.tryParse(lastModifiedTime?.toString() ?? '');
+
+          if (lastModifiedTimeMs != null) {
+            final matchingCycle = projectType.cycles?.firstWhereOrNull(
+              (cycle) =>
+                  lastModifiedTimeMs >= cycle.startDate &&
+                  lastModifiedTimeMs <= cycle.endDate,
+            );
+            taskCycleIndex = matchingCycle?.id;
+          }
+        }
+
+        if (taskCycleIndex == currentRunningCycle) return false;
       }
     }
-
     return true;
   });
 
@@ -3008,7 +3024,7 @@ void initializeFunctionRegistry() {
 
     final projectType = FlowBuilderSingleton().projectType;
     final now = DateTime.now().millisecondsSinceEpoch;
-    final selectedCycle = projectType?.cycles?.firstWhereOrNull(
+    final currentRunningCycle = projectType?.cycles?.firstWhereOrNull(
       (e) => e.startDate < now && e.endDate > now,
     );
 
@@ -3017,7 +3033,9 @@ void initializeFunctionRegistry() {
       final ineligible = status == TaskStatus.ineligible;
       if (!ineligible) continue;
 
-      if (selectedCycle == null || selectedCycle.id == 0) return true;
+      if (currentRunningCycle == null || currentRunningCycle.id == 0) {
+        return false;
+      }
 
       final additionalFields = task['additionalFields'];
       final fields =
@@ -3036,9 +3054,32 @@ void initializeFunctionRegistry() {
           }
         }
       }
-      if (taskCycleIndex == null || taskCycleIndex == selectedCycle.id) {
-        return true;
+
+      // Fall back to deriving the cycle from the task's last modified
+      // time when no cycleIndex was recorded on the task.
+      if (taskCycleIndex == null) {
+        final clientAuditDetails = task['clientAuditDetails'];
+        final taskAuditDetails = task['auditDetails'];
+        final lastModifiedTime = (clientAuditDetails is Map
+                ? clientAuditDetails['lastModifiedTime']
+                : null) ??
+            (taskAuditDetails is Map
+                ? taskAuditDetails['lastModifiedTime']
+                : null);
+        final lastModifiedTimeMs =
+            int.tryParse(lastModifiedTime?.toString() ?? '');
+
+        if (lastModifiedTimeMs != null) {
+          final matchingCycle = projectType?.cycles?.firstWhereOrNull(
+            (cycle) =>
+                lastModifiedTimeMs >= cycle.startDate &&
+                lastModifiedTimeMs <= cycle.endDate,
+          );
+          taskCycleIndex = matchingCycle?.id;
+        }
       }
+
+      if (taskCycleIndex == currentRunningCycle.id) return true;
     }
     return false;
   });
