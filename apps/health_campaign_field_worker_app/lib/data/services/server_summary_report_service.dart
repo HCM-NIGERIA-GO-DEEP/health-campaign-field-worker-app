@@ -1,4 +1,5 @@
 import 'package:digit_data_model/models/entities/project_type.dart';
+import 'package:flutter/foundation.dart';
 
 import '../../utils/summary_report_cutoff.dart';
 import '../local_store/server_summary_report_storage.dart';
@@ -11,6 +12,11 @@ class ServerSummaryReportService {
   String? _activeUserUuid;
   String? _activeProjectId;
   ProjectCycle? _activeCycle;
+
+  /// Bumped whenever the stored report data changes (downsync after login,
+  /// clear) so display consumers — the home progress bar — can recompute
+  /// immediately instead of waiting for the next task-table write.
+  final ValueNotifier<int> revision = ValueNotifier<int>(0);
 
   ServerSummaryReportService({
     required this.storage,
@@ -74,6 +80,7 @@ class ServerSummaryReportService {
     );
 
     await _reloadCacheFromStorage();
+    revision.value++;
   }
 
   Future<Map<String, dynamic>?> readSummaryReportData({
@@ -260,6 +267,7 @@ class ServerSummaryReportService {
     _activeUserUuid = null;
     _activeProjectId = null;
     _activeCycle = null;
+    revision.value++;
   }
 
   Map<String, dynamic>? _getReportByKey({
