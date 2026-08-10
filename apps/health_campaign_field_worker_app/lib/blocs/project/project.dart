@@ -812,6 +812,9 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       String? campaignID = event.model.referenceID;
       var projectTypeString = event.model.projectType;
 
+      if (projectTypeString == "SMC-RI") {
+        campaignID = "CMP-2026-06-29-000423";
+      }
       if (projectTypeString == "ORS-Zinc") {
         campaignID = "CMP-2026-07-03-000424";
       }
@@ -1159,6 +1162,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       const batchSize = 50;
       int offset = 0;
       int syncedCount = 0;
+      final downloadedStocks = <String, StockModel>{};
       final currentSyncTime = DateTime.now().millisecondsSinceEpoch;
 
       while (syncedCount < totalCount) {
@@ -1173,6 +1177,9 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         if (stockEntries.isEmpty) break;
 
         await stockLocalRepository.bulkCreate(stockEntries);
+        for (final stock in stockEntries) {
+          downloadedStocks[stock.clientReferenceId] = stock;
+        }
 
         await downSyncLocalRepository.update(DownsyncModel(
           offset: 0,
@@ -1186,11 +1193,20 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         syncedCount += stockEntries.length;
       }
 
-      // Advance the per-user cursor only after all pages downloaded, using
-      // the time captured before the first fetch so records modified during
-      // the download are picked up next time.
-      await AppSharedPreferences()
-          .setStockDownsyncTime(cursorKey, currentSyncTime);
+      // Advance the per-user cursor to the latest server lastModifiedTime
+      // among the downloaded records — the clock domain the server's
+      // lastChangedSince filter compares against. When nothing usable came
+      // back (e.g. an empty page despite a non-zero count) keep the stored
+      // cursor so the window is retried next sync instead of skipping the
+      // records forever.
+      final nextCursorTime = StockDownsyncCursor.nextCursor(
+        stored: AppSharedPreferences().getStockDownsyncTime(cursorKey),
+        stocks: downloadedStocks.values,
+      );
+      if (nextCursorTime != null) {
+        await AppSharedPreferences()
+            .setStockDownsyncTime(cursorKey, nextCursorTime);
+      }
 
       await downSyncStockBalances(project);
 
@@ -1297,150 +1313,6 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       }
     } catch (e) {
       debugPrint('Stock balance downsync error: $e');
-    }
-  }
-
-  /// Creates or updates UserAction balance records after stock downsync.
-  /// This ensures that balance records exist for all facility × product variant combinations
-  /// based on the locally available stock data.
-  Future<void> _createStockBalanceUserActions({
-    required ProjectModel project,
-    required List<String> receiverIds,
-    required List<String> productVariantIds,
-    required Iterable<String> userRoles,
-    required UserRequestModel? userObject,
-  }) async {
-    try {
-      final isDistributor =
-          userRoles.contains(RolesType.distributor.toValue()) ||
-              userRoles.contains(RolesType.communityDistributor.toValue());
-
-      final projectFacilities = await projectFacilityLocalRepository.search(
-        ProjectFacilitySearchModel(projectId: [project.id]),
-      );
-
-      final currentFacilities = projectFacilities.where((pf) {
-        final facilityLevel = pf.additionalFields?.fields
-            .where((f) => f.key == 'facilityLevel')
-            .firstOrNull
-            ?.value;
-        return facilityLevel == null || facilityLevel == 'current';
-      }).toList();
-
-      List<String> facilityIds;
-      if (isDistributor) {
-        facilityIds = [userObject?.uuid ?? ''];
-      } else {
-        facilityIds = currentFacilities
-            .map((e) => e.facilityId)
-            .whereType<String>()
-            .toSet()
-            .toList();
-      }
-
-      if (facilityIds.isEmpty || facilityIds.first.isEmpty) return;
-      if (productVariantIds.isEmpty) return;
-
-      // Calculate balance for each facility × product variant combination
-      for (final facilityId in facilityIds) {
-        for (final productVariantId in productVariantIds) {
-          // Get all stocks for this facility and product
-          final receivedStocks = await stockLocalRepository.search(
-            StockSearchModel(receiverId: facilityId),
-          );
-          final sentStocks = await stockLocalRepository.search(
-            StockSearchModel(senderId: facilityId),
-          );
-
-          final allStocksMap = <String, StockModel>{};
-          for (final stock in receivedStocks) {
-            if (stock.productVariantId == productVariantId) {
-              allStocksMap[stock.clientReferenceId] = stock;
-            }
-          }
-          for (final stock in sentStocks) {
-            if (stock.productVariantId == productVariantId) {
-              allStocksMap[stock.clientReferenceId] = stock;
-            }
-          }
-          final allStocks = allStocksMap.values.toList();
-
-          // Calculate the balance
-          final metrics = StockCalculationUtils.calculateStockMetrics(
-            stockList: allStocks,
-            facilityId: facilityId,
-            productId: productVariantId,
-            isDistributor: isDistributor,
-          );
-
-          final balance = metrics['stockInHand'] ?? 0.0;
-          final balanceKey = generateBalanceKey(facilityId, productVariantId,
-              project.referenceID, userObject?.id);
-
-          // Check if UserAction already exists
-          final existingActions = await userActionLocalRepository.search(
-            UserActionSearchModel(clientReferenceId: [balanceKey]),
-          );
-
-          final now = DateTime.now().millisecondsSinceEpoch;
-          final loggedInUserUuid = userObject?.uuid ?? '';
-
-          final balanceAction = UserActionModel(
-            clientReferenceId: balanceKey,
-            action: 'STOCK_BALANCE',
-            projectId: project.id,
-            boundaryCode: project.address?.boundary ?? "",
-            latitude: 0.0,
-            longitude: 0.0,
-            locationAccuracy: 0.0,
-            isSync: false,
-            timestamp: now,
-            id: existingActions.isNotEmpty ? existingActions.first.id : null,
-            rowVersion: existingActions.isNotEmpty
-                ? existingActions.first.rowVersion
-                : null,
-            tenantId: userObject?.tenantId ?? '',
-            nonRecoverableError: false,
-            additionalFields: UserActionAdditionalFields(
-              version: 1,
-              fields: [
-                AdditionalField('balance', balance.toString()),
-                AdditionalField('facilityId', facilityId),
-                AdditionalField('productVariantId', productVariantId),
-              ],
-            ),
-            auditDetails: existingActions.isNotEmpty
-                ? existingActions.first.auditDetails
-                : AuditDetails(createdBy: loggedInUserUuid, createdTime: now),
-            clientAuditDetails: existingActions.isNotEmpty
-                ? existingActions.first.clientAuditDetails
-                : ClientAuditDetails(
-                    createdBy: loggedInUserUuid,
-                    createdTime: now,
-                    lastModifiedBy: loggedInUserUuid,
-                    lastModifiedTime: now,
-                  ),
-          );
-
-          /// INFO: need to revisit as user action is getting create and update to server also
-          if (existingActions.isNotEmpty) {
-            await userActionLocalRepository.update(
-              balanceAction,
-              createOpLog: true,
-            );
-          } else {
-            await userActionLocalRepository.create(
-              balanceAction,
-              createOpLog: true,
-            );
-          }
-
-          debugPrint(
-              'STOCK_BALANCE_INIT: Created/updated balance for $facilityId/$productVariantId = $balance');
-        }
-      }
-    } catch (e) {
-      debugPrint('STOCK_BALANCE_INIT: Error - $e');
     }
   }
 
