@@ -806,11 +806,13 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       String? campaignID = event.model.referenceID;
       var projectTypeString = event.model.projectType;
 
-      if (projectTypeString == "SMC-RI") {
-        campaignID = "CMP-2026-06-08-000333";
+      if (projectTypeString == "SMC-RI" &&
+          envConfig.variables.smcRiCampaignId != "") {
+        campaignID = envConfig.variables.smcRiCampaignId;
       }
-      if (projectTypeString == "ORS-Zinc") {
-        campaignID = "CMP-2026-07-03-000424";
+      if (projectTypeString == "ORS-Zinc" &&
+          envConfig.variables.orsZincCampaignId != "") {
+        campaignID = envConfig.variables.orsZincCampaignId;
       }
 
       try {
