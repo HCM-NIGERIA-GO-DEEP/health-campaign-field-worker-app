@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:battery_plus/battery_plus.dart';
 import 'package:collection/collection.dart';
+import 'package:digit_analytics/digit_analytics.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_location_tracker/utils/utils.dart'
     as location_tracker_utils;
@@ -25,6 +26,7 @@ import '../data/local_store/secure_store/secure_store.dart';
 import '../data/remote_client.dart';
 import '../data/repositories/remote/bandwidth_check.dart';
 import '../widgets/network_manager_provider_wrapper.dart';
+import 'analytics_sync_service.dart';
 import 'environment_config.dart';
 import 'utils.dart';
 
@@ -144,6 +146,15 @@ void onStart(ServiceInstance service) async {
   //     interval: 120, createdBy: userRequestModel.uuid, isar: _isar);
 
   final appConfiguration = await _isar.appConfigurations.where().findAll();
+
+  // Isar singletons are per-isolate; `setInitialDataOfPackages()` above does
+  // not configure `AnalyticsSingleton`, so do it explicitly here too.
+  AnalyticsSingleton().setData(
+    isar: _isar,
+    enabled: appConfiguration.firstOrNull?.firebaseConfig?.enableAnalytics ??
+        false,
+  );
+
   final interval =
       appConfiguration.first.backgroundServiceConfig?.serviceInterval;
   final frequencyCount =
@@ -167,6 +178,8 @@ void onStart(ServiceInstance service) async {
                   .first.backgroundServiceConfig!.batteryPercentCutOff!) {
             service.invoke("stopService");
           } else {
+            unawaited(AnalyticsSyncService().flushPendingEvents());
+
             final FlutterLocalNotificationsPlugin
                 flutterLocalNotificationsPlugin =
                 FlutterLocalNotificationsPlugin();

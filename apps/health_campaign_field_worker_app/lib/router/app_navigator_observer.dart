@@ -1,3 +1,4 @@
+import 'package:digit_analytics/digit_analytics.dart';
 import 'package:digit_ui_components/utils/app_logger.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -18,6 +19,7 @@ class AppRouterObserver extends NavigatorObserver {
       '${previousRoute?.settings.name} -> ${route.settings.name}',
       title: '$_base.didPush',
     );
+    _logScreenView(route);
   }
 
   @override
@@ -34,6 +36,16 @@ class AppRouterObserver extends NavigatorObserver {
       '${oldRoute?.settings.name} -X- ${newRoute?.settings.name}',
       title: '$_base.didReplace',
     );
+    if (newRoute != null) _logScreenView(newRoute);
+  }
+
+  void _logScreenView(Route<dynamic> route) {
+    final screenName = route.settings.name;
+    if (screenName == null || screenName.isEmpty) return;
+
+    AnalyticsService.instance.logEvent('screen_view', {
+      'screen_name': screenName,
+    });
   }
 
   @override
