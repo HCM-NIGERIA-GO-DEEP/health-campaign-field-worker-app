@@ -279,7 +279,7 @@ class Constants {
       );
     }
 
-    final enableAnalytics = config?.firebaseConfig?.enableAnalytics ?? false;
+    final enableAnalytics = config?.firebaseConfig?.enableAnalytics ?? true;
     await firebase_services.initializeAnalytics(enabled: enableAnalytics);
     AnalyticsSingleton().setData(isar: isar, enabled: enableAnalytics);
 

@@ -77,4 +77,50 @@ class AnalyticsQueueManager {
       await isar.analyticsEvents.put(event);
     });
   }
+
+  /// Deletes a single queued event, e.g. from a local db inspector screen.
+  Future<void> deleteEvent(Id id) async {
+    await isar.writeTxn(() async {
+      await isar.analyticsEvents.delete(id);
+    });
+  }
+
+  /// Deletes every queued event, synced or not.
+  Future<void> deleteAll() async {
+    await isar.writeTxn(() async {
+      await isar.analyticsEvents.clear();
+    });
+  }
+
+  /// Deletes terminal events that no longer need to stay in the local
+  /// queue: successfully synced events older than [syncedRetention], and
+  /// permanently-failed events older than [failedRetention]. Pending events
+  /// (not yet synced, not yet given up on) are never touched.
+  ///
+  /// Safe to call on every flush pass — it only ever removes rows that are
+  /// already done with (synced or given up on), keeping the queue from
+  /// growing unbounded over the life of an install without losing the
+  /// ability to debug recent sync activity.
+  Future<int> purgeOldEvents({
+    Duration syncedRetention = const Duration(days: 1),
+    Duration failedRetention = const Duration(days: 30),
+  }) async {
+    final syncedCutoff = DateTime.now().subtract(syncedRetention);
+    final failedCutoff = DateTime.now().subtract(failedRetention);
+
+    return isar.writeTxn(() async {
+      return isar.analyticsEvents
+          .filter()
+          .group((q) => q
+              .syncedUpEqualTo(true)
+              .and()
+              .syncedUpOnLessThan(syncedCutoff))
+          .or()
+          .group((q) => q
+              .nonRecoverableErrorEqualTo(true)
+              .and()
+              .createdAtLessThan(failedCutoff))
+          .deleteAll();
+    });
+  }
 }

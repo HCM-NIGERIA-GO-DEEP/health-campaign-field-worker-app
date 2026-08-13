@@ -1,4 +1,5 @@
 import 'package:digit_analytics/digit_analytics.dart';
+import 'package:digit_flow_builder/router/flow_builder_routes.gm.dart';
 import 'package:digit_ui_components/utils/app_logger.dart';
 import 'package:flutter/cupertino.dart';
 
@@ -40,12 +41,29 @@ class AppRouterObserver extends NavigatorObserver {
   }
 
   void _logScreenView(Route<dynamic> route) {
-    final screenName = route.settings.name;
+    final screenName = _resolveScreenName(route);
     if (screenName == null || screenName.isEmpty) return;
 
     AnalyticsService.instance.logEvent('screen_view', {
       'screen_name': screenName,
     });
+  }
+
+  /// `digit_flow_builder`'s dynamic pages all share the single route name
+  /// `FlowBuilderHomeRoute` (see `flow_builder_routes.gm.dart`) — the actual
+  /// page being shown only lives in the route's `pageName` argument. Without
+  /// this, every step of every flow (registration, checklists, attendance,
+  /// etc.) logs the same indistinguishable "FlowBuilderHomeRoute" screen
+  /// view.
+  String? _resolveScreenName(Route<dynamic> route) {
+    final name = route.settings.name;
+    if (name == FlowBuilderHomeRoute.name) {
+      final args = route.settings.arguments;
+      if (args is FlowBuilderHomeRouteArgs) {
+        return '$name/${args.pageName}';
+      }
+    }
+    return name;
   }
 
   @override

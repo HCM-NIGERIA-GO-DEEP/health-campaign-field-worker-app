@@ -56,6 +56,8 @@ class AnalyticsSyncService {
           );
         }
       }
+
+      await queueManager.purgeOldEvents();
     } finally {
       _isFlushing = false;
     }
