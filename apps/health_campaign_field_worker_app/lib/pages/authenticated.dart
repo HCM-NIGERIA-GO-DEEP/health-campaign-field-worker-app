@@ -45,6 +45,7 @@ import '../models/entities/roles_type.dart';
 import '../notification_handlers/notification_handler.dart';
 import '../router/app_router.dart';
 import '../router/authenticated_route_observer.dart';
+import '../utils/analytics_sync_service.dart';
 import '../utils/environment_config.dart';
 import '../utils/i18_key_constants.dart' as i18;
 import '../utils/utils.dart';
@@ -93,6 +94,10 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
       _showNoInternetDialog();
     } else if (!isOffline && _isOfflineDialogShowing && mounted) {
       _dismissNoInternetDialog();
+    }
+
+    if (isOnline) {
+      unawaited(AnalyticsSyncService().flushPendingEvents());
     }
   }
 
