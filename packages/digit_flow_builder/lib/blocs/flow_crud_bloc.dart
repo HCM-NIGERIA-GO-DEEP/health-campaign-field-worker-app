@@ -1,4 +1,6 @@
+import 'package:digit_analytics/digit_analytics.dart';
 import 'package:digit_crud_bloc/bloc/crud_bloc.dart';
+import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/blocs/search_state_manager.dart';
 import 'package:digit_flow_builder/blocs/state_wrapper_builder.dart';
 import 'package:flutter/foundation.dart';
@@ -134,6 +136,7 @@ class FlowCrudBloc extends CrudBloc {
       FlowCrudStateRegistry().updateByCompositeKey(compositeKey, flowState);
     } else if (crudState is CrudStatePersisted) {
       final entities = crudState.entities;
+      _logRegistrationCompleteIfApplicable(entities);
       // final persistedWrapperConfig = flowConfig['wrapperConfig'] as Map<String, dynamic>?;
       // Preserve the existing stateWrapper if the screen already has one
       // (typically a search page with its loaded results). Otherwise this
@@ -393,6 +396,26 @@ class FlowCrudBloc extends CrudBloc {
               ?.length ??
           0,
     );
+  }
+
+  /// Fires a `registration_complete` analytics event when a persisted create
+  /// includes a household/individual entity, since this app drives all
+  /// registration flows (household, individual, member) through this one
+  /// generic CRUD path rather than dedicated per-entity blocs.
+  void _logRegistrationCompleteIfApplicable(List<EntityModel> entities) {
+    final registrationEntityTypes = entities
+        .where((entity) =>
+            entity is HouseholdModel ||
+            entity is IndividualModel ||
+            entity is HouseholdMemberModel)
+        .map((entity) => entity.runtimeType.toString())
+        .toSet();
+
+    if (registrationEntityTypes.isEmpty) return;
+
+    AnalyticsService.instance.logEvent('registration_complete', {
+      'entity_types': registrationEntityTypes.toList(),
+    });
   }
 
   @override

@@ -24,6 +24,7 @@ class _HomePageShowcaseData {
         supervisorSyncData,
         deleteAll,
         db,
+        analyticsDb,
         dataShare,
         beneficiaryId,
         closedHouseHold,
@@ -104,6 +105,10 @@ class _HomePageShowcaseData {
 
   final db = ShowcaseItemBuilder(
     messageLocalizationKey: i18.home.db,
+  );
+
+  final analyticsDb = ShowcaseItemBuilder(
+    messageLocalizationKey: i18.home.analyticsDb,
   );
 
   final dataShare = ShowcaseItemBuilder(
