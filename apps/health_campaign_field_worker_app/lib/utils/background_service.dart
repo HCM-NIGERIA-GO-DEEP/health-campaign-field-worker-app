@@ -153,7 +153,7 @@ void onStart(ServiceInstance service) async {
   AnalyticsSingleton().setData(
     isar: _isar,
     enabled:
-        appConfiguration.firstOrNull?.firebaseConfig?.enableAnalytics ?? true,
+        appConfiguration.firstOrNull?.firebaseConfig?.enableAnalytics ?? false,
   );
 
   final interval =
