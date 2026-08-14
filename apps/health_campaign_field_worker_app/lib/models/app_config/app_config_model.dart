@@ -115,6 +115,8 @@ class HCMWrapperModel with _$HCMWrapperModel {
     @JsonKey(name: 'FIREBASE_CONFIG')
     required List<FirebaseConfig>? firebaseConfig,
     @JsonKey(name: 'TRANSIT_POST_TYPE') List<TransitPostType>? transitPostType,
+    @JsonKey(name: 'FACILITY_BOUNDARY_RELATIONSHIP')
+    List<FacilityBoundaryRelationship>? facilityBoundaryRelationship,
   }) = _HCMWrapperModel;
 
   factory HCMWrapperModel.fromJson(
@@ -463,5 +465,33 @@ class FirebaseConfig with _$FirebaseConfig {
 
   factory FirebaseConfig.fromJson(Map<String, dynamic> json) =>
       _$FirebaseConfigFromJson(json);
+}
+
+@freezed
+class FacilityBoundaryRelationship with _$FacilityBoundaryRelationship {
+  factory FacilityBoundaryRelationship({
+    required String boundaryType,
+    required int order,
+    // Scopes the entry to one boundary hierarchy. Must match the project's
+    // additionalDetails.hierarchyType verbatim; null/empty means legacy
+    // data that applies to any hierarchy.
+    String? hierarchyType,
+    FacilityBoundaryRelationshipRef? parent,
+    List<FacilityBoundaryRelationshipRef>? children,
+  }) = _FacilityBoundaryRelationship;
+
+  factory FacilityBoundaryRelationship.fromJson(Map<String, dynamic> json) =>
+      _$FacilityBoundaryRelationshipFromJson(json);
+}
+
+@freezed
+class FacilityBoundaryRelationshipRef with _$FacilityBoundaryRelationshipRef {
+  factory FacilityBoundaryRelationshipRef({
+    required String boundaryType,
+    required int order,
+  }) = _FacilityBoundaryRelationshipRef;
+
+  factory FacilityBoundaryRelationshipRef.fromJson(Map<String, dynamic> json) =>
+      _$FacilityBoundaryRelationshipRefFromJson(json);
 }
 

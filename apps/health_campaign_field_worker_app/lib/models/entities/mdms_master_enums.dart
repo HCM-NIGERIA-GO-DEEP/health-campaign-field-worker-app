@@ -68,5 +68,7 @@ enum MasterEnums {
   @MappableValue("SINGLE_USER_LOGIN")
   singleUserLogin,
   @MappableValue("BOUNDARY_RELATIONSHIP")
-  boundaryRelationShip
+  boundaryRelationShip,
+  @MappableValue("FACILITY_BOUNDARY_RELATIONSHIP")
+  facilityBoundaryRelationShip
 }

@@ -89,6 +89,8 @@ class MasterEnumsMapper extends EnumMapper<MasterEnums> {
         return MasterEnums.singleUserLogin;
       case "BOUNDARY_RELATIONSHIP":
         return MasterEnums.boundaryRelationShip;
+      case "FACILITY_BOUNDARY_RELATIONSHIP":
+        return MasterEnums.facilityBoundaryRelationShip;
       default:
         throw MapperException.unknownEnumValue(value);
     }
@@ -161,6 +163,8 @@ class MasterEnumsMapper extends EnumMapper<MasterEnums> {
         return "SINGLE_USER_LOGIN";
       case MasterEnums.boundaryRelationShip:
         return "BOUNDARY_RELATIONSHIP";
+      case MasterEnums.facilityBoundaryRelationShip:
+        return "FACILITY_BOUNDARY_RELATIONSHIP";
     }
   }
 }
