@@ -107,6 +107,9 @@ class AppConfiguration {
 
   @Name('FACE_AUTH_CONFIG')
   FaceAuthMdmsConfig? faceAuthMdmsConfig;
+
+  @Name('FACILITY_BOUNDARY_RELATIONSHIP')
+  List<FacilityBoundaryRelationshipConfig>? facilityBoundaryRelationship;
 }
 
 @embedded
@@ -356,4 +359,15 @@ class FaceAuthMdmsConfig {
   late int? minGapMinutes;
   @Name("COUNTDOWN_DURATION_MINUTES")
   late int? countdownDurationMinutes;
+}
+
+@embedded
+class FacilityBoundaryRelationshipConfig {
+  late String boundaryType;
+  late int order;
+  // Null/empty on legacy (pre-multi-hierarchy) MDMS data; otherwise must
+  // equal the project's additionalDetails.hierarchyType verbatim.
+  String? hierarchyType;
+  late String parentBoundaryType;
+  late List<String> childBoundaryTypes;
 }

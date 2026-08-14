@@ -1004,6 +1004,9 @@ mixin _$HCMWrapperModel {
   @JsonKey(name: 'TRANSIT_POST_TYPE')
   List<TransitPostType>? get transitPostType =>
       throw _privateConstructorUsedError;
+  @JsonKey(name: 'FACILITY_BOUNDARY_RELATIONSHIP')
+  List<FacilityBoundaryRelationship>? get facilityBoundaryRelationship =>
+      throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -1059,7 +1062,9 @@ abstract class $HCMWrapperModelCopyWith<$Res> {
       @JsonKey(name: 'REFUSAL_REASONS') List<CommonMasterModel>? refusalReasons,
       @JsonKey(name: 'FIREBASE_CONFIG') List<FirebaseConfig>? firebaseConfig,
       @JsonKey(name: 'TRANSIT_POST_TYPE')
-      List<TransitPostType>? transitPostType});
+      List<TransitPostType>? transitPostType,
+      @JsonKey(name: 'FACILITY_BOUNDARY_RELATIONSHIP')
+      List<FacilityBoundaryRelationship>? facilityBoundaryRelationship});
 }
 
 /// @nodoc
@@ -1100,6 +1105,7 @@ class _$HCMWrapperModelCopyWithImpl<$Res, $Val extends HCMWrapperModel>
     Object? refusalReasons = freezed,
     Object? firebaseConfig = freezed,
     Object? transitPostType = freezed,
+    Object? facilityBoundaryRelationship = freezed,
   }) {
     return _then(_value.copyWith(
       appConfig: null == appConfig
@@ -1203,6 +1209,10 @@ class _$HCMWrapperModelCopyWithImpl<$Res, $Val extends HCMWrapperModel>
           ? _value.transitPostType
           : transitPostType // ignore: cast_nullable_to_non_nullable
               as List<TransitPostType>?,
+      facilityBoundaryRelationship: freezed == facilityBoundaryRelationship
+          ? _value.facilityBoundaryRelationship
+          : facilityBoundaryRelationship // ignore: cast_nullable_to_non_nullable
+              as List<FacilityBoundaryRelationship>?,
     ) as $Val);
   }
 }
@@ -1257,7 +1267,9 @@ abstract class _$$HCMWrapperModelImplCopyWith<$Res>
       @JsonKey(name: 'REFUSAL_REASONS') List<CommonMasterModel>? refusalReasons,
       @JsonKey(name: 'FIREBASE_CONFIG') List<FirebaseConfig>? firebaseConfig,
       @JsonKey(name: 'TRANSIT_POST_TYPE')
-      List<TransitPostType>? transitPostType});
+      List<TransitPostType>? transitPostType,
+      @JsonKey(name: 'FACILITY_BOUNDARY_RELATIONSHIP')
+      List<FacilityBoundaryRelationship>? facilityBoundaryRelationship});
 }
 
 /// @nodoc
@@ -1296,6 +1308,7 @@ class __$$HCMWrapperModelImplCopyWithImpl<$Res>
     Object? refusalReasons = freezed,
     Object? firebaseConfig = freezed,
     Object? transitPostType = freezed,
+    Object? facilityBoundaryRelationship = freezed,
   }) {
     return _then(_$HCMWrapperModelImpl(
       appConfig: null == appConfig
@@ -1399,6 +1412,10 @@ class __$$HCMWrapperModelImplCopyWithImpl<$Res>
           ? _value._transitPostType
           : transitPostType // ignore: cast_nullable_to_non_nullable
               as List<TransitPostType>?,
+      facilityBoundaryRelationship: freezed == facilityBoundaryRelationship
+          ? _value._facilityBoundaryRelationship
+          : facilityBoundaryRelationship // ignore: cast_nullable_to_non_nullable
+              as List<FacilityBoundaryRelationship>?,
     ));
   }
 }
@@ -1456,7 +1473,9 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
       @JsonKey(name: 'FIREBASE_CONFIG')
       required final List<FirebaseConfig>? firebaseConfig,
       @JsonKey(name: 'TRANSIT_POST_TYPE')
-      final List<TransitPostType>? transitPostType})
+      final List<TransitPostType>? transitPostType,
+      @JsonKey(name: 'FACILITY_BOUNDARY_RELATIONSHIP')
+      final List<FacilityBoundaryRelationship>? facilityBoundaryRelationship})
       : _appConfig = appConfig,
         _bandWidthBatchSize = bandWidthBatchSize,
         _beneficiaryIdConfig = beneficiaryIdConfig,
@@ -1482,7 +1501,8 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
         _houseStructureTypes = houseStructureTypes,
         _refusalReasons = refusalReasons,
         _firebaseConfig = firebaseConfig,
-        _transitPostType = transitPostType;
+        _transitPostType = transitPostType,
+        _facilityBoundaryRelationship = facilityBoundaryRelationship;
 
   factory _$HCMWrapperModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$HCMWrapperModelImplFromJson(json);
@@ -1751,9 +1771,21 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
     return EqualUnmodifiableListView(value);
   }
 
+  final List<FacilityBoundaryRelationship>? _facilityBoundaryRelationship;
+  @override
+  @JsonKey(name: 'FACILITY_BOUNDARY_RELATIONSHIP')
+  List<FacilityBoundaryRelationship>? get facilityBoundaryRelationship {
+    final value = _facilityBoundaryRelationship;
+    if (value == null) return null;
+    if (_facilityBoundaryRelationship is EqualUnmodifiableListView)
+      return _facilityBoundaryRelationship;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
   @override
   String toString() {
-    return 'HCMWrapperModel(appConfig: $appConfig, bandWidthBatchSize: $bandWidthBatchSize, beneficiaryIdConfig: $beneficiaryIdConfig, downSyncBandWidthBatchSize: $downSyncBandWidthBatchSize, householdDeletionReasonOptions: $householdDeletionReasonOptions, householdMemberDeletionReasonOptions: $householdMemberDeletionReasonOptions, backgroundServiceConfig: $backgroundServiceConfig, checklistTypes: $checklistTypes, deviceChangeReasons: $deviceChangeReasons, singleUserLogin: $singleUserLogin, idTypeOptions: $idTypeOptions, relationShipTypeOptions: $relationShipTypeOptions, deliveryCommentOptions: $deliveryCommentOptions, backendInterface: $backendInterface, callSupportOptions: $callSupportOptions, transportTypes: $transportTypes, symptomsTypeList: $symptomsTypeList, searchHouseHoldFilters: $searchHouseHoldFilters, searchCLFFilters: $searchCLFFilters, referralReasonList: $referralReasonList, manualAttendanceReasonList: $manualAttendanceReasonList, houseStructureTypes: $houseStructureTypes, refusalReasons: $refusalReasons, firebaseConfig: $firebaseConfig, transitPostType: $transitPostType)';
+    return 'HCMWrapperModel(appConfig: $appConfig, bandWidthBatchSize: $bandWidthBatchSize, beneficiaryIdConfig: $beneficiaryIdConfig, downSyncBandWidthBatchSize: $downSyncBandWidthBatchSize, householdDeletionReasonOptions: $householdDeletionReasonOptions, householdMemberDeletionReasonOptions: $householdMemberDeletionReasonOptions, backgroundServiceConfig: $backgroundServiceConfig, checklistTypes: $checklistTypes, deviceChangeReasons: $deviceChangeReasons, singleUserLogin: $singleUserLogin, idTypeOptions: $idTypeOptions, relationShipTypeOptions: $relationShipTypeOptions, deliveryCommentOptions: $deliveryCommentOptions, backendInterface: $backendInterface, callSupportOptions: $callSupportOptions, transportTypes: $transportTypes, symptomsTypeList: $symptomsTypeList, searchHouseHoldFilters: $searchHouseHoldFilters, searchCLFFilters: $searchCLFFilters, referralReasonList: $referralReasonList, manualAttendanceReasonList: $manualAttendanceReasonList, houseStructureTypes: $houseStructureTypes, refusalReasons: $refusalReasons, firebaseConfig: $firebaseConfig, transitPostType: $transitPostType, facilityBoundaryRelationship: $facilityBoundaryRelationship)';
   }
 
   @override
@@ -1814,7 +1846,10 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
             const DeepCollectionEquality()
                 .equals(other._firebaseConfig, _firebaseConfig) &&
             const DeepCollectionEquality()
-                .equals(other._transitPostType, _transitPostType));
+                .equals(other._transitPostType, _transitPostType) &&
+            const DeepCollectionEquality().equals(
+                other._facilityBoundaryRelationship,
+                _facilityBoundaryRelationship));
   }
 
   @JsonKey(ignore: true)
@@ -1846,7 +1881,8 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
         const DeepCollectionEquality().hash(_houseStructureTypes),
         const DeepCollectionEquality().hash(_refusalReasons),
         const DeepCollectionEquality().hash(_firebaseConfig),
-        const DeepCollectionEquality().hash(_transitPostType)
+        const DeepCollectionEquality().hash(_transitPostType),
+        const DeepCollectionEquality().hash(_facilityBoundaryRelationship)
       ]);
 
   @JsonKey(ignore: true)
@@ -1915,7 +1951,10 @@ abstract class _HCMWrapperModel implements HCMWrapperModel {
       @JsonKey(name: 'FIREBASE_CONFIG')
       required final List<FirebaseConfig>? firebaseConfig,
       @JsonKey(name: 'TRANSIT_POST_TYPE')
-      final List<TransitPostType>? transitPostType}) = _$HCMWrapperModelImpl;
+      final List<TransitPostType>? transitPostType,
+      @JsonKey(name: 'FACILITY_BOUNDARY_RELATIONSHIP')
+      final List<FacilityBoundaryRelationship>?
+          facilityBoundaryRelationship}) = _$HCMWrapperModelImpl;
 
   factory _HCMWrapperModel.fromJson(Map<String, dynamic> json) =
       _$HCMWrapperModelImpl.fromJson;
@@ -1995,6 +2034,9 @@ abstract class _HCMWrapperModel implements HCMWrapperModel {
   @override
   @JsonKey(name: 'TRANSIT_POST_TYPE')
   List<TransitPostType>? get transitPostType;
+  @override
+  @JsonKey(name: 'FACILITY_BOUNDARY_RELATIONSHIP')
+  List<FacilityBoundaryRelationship>? get facilityBoundaryRelationship;
   @override
   @JsonKey(ignore: true)
   _$$HCMWrapperModelImplCopyWith<_$HCMWrapperModelImpl> get copyWith =>
@@ -7038,4 +7080,446 @@ abstract class _FirebaseConfig implements FirebaseConfig {
   @JsonKey(ignore: true)
   _$$FirebaseConfigImplCopyWith<_$FirebaseConfigImpl> get copyWith =>
       throw _privateConstructorUsedError;
+}
+
+FacilityBoundaryRelationship _$FacilityBoundaryRelationshipFromJson(
+    Map<String, dynamic> json) {
+  return _FacilityBoundaryRelationship.fromJson(json);
+}
+
+/// @nodoc
+mixin _$FacilityBoundaryRelationship {
+  String get boundaryType => throw _privateConstructorUsedError;
+  int get order =>
+      throw _privateConstructorUsedError; // Scopes the entry to one boundary hierarchy. Must match the project's
+// additionalDetails.hierarchyType verbatim; null/empty means legacy
+// data that applies to any hierarchy.
+  String? get hierarchyType => throw _privateConstructorUsedError;
+  FacilityBoundaryRelationshipRef? get parent =>
+      throw _privateConstructorUsedError;
+  List<FacilityBoundaryRelationshipRef>? get children =>
+      throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $FacilityBoundaryRelationshipCopyWith<FacilityBoundaryRelationship>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $FacilityBoundaryRelationshipCopyWith<$Res> {
+  factory $FacilityBoundaryRelationshipCopyWith(
+          FacilityBoundaryRelationship value,
+          $Res Function(FacilityBoundaryRelationship) then) =
+      _$FacilityBoundaryRelationshipCopyWithImpl<$Res,
+          FacilityBoundaryRelationship>;
+  @useResult
+  $Res call(
+      {String boundaryType,
+      int order,
+      String? hierarchyType,
+      FacilityBoundaryRelationshipRef? parent,
+      List<FacilityBoundaryRelationshipRef>? children});
+
+  $FacilityBoundaryRelationshipRefCopyWith<$Res>? get parent;
+}
+
+/// @nodoc
+class _$FacilityBoundaryRelationshipCopyWithImpl<$Res,
+        $Val extends FacilityBoundaryRelationship>
+    implements $FacilityBoundaryRelationshipCopyWith<$Res> {
+  _$FacilityBoundaryRelationshipCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? boundaryType = null,
+    Object? order = null,
+    Object? hierarchyType = freezed,
+    Object? parent = freezed,
+    Object? children = freezed,
+  }) {
+    return _then(_value.copyWith(
+      boundaryType: null == boundaryType
+          ? _value.boundaryType
+          : boundaryType // ignore: cast_nullable_to_non_nullable
+              as String,
+      order: null == order
+          ? _value.order
+          : order // ignore: cast_nullable_to_non_nullable
+              as int,
+      hierarchyType: freezed == hierarchyType
+          ? _value.hierarchyType
+          : hierarchyType // ignore: cast_nullable_to_non_nullable
+              as String?,
+      parent: freezed == parent
+          ? _value.parent
+          : parent // ignore: cast_nullable_to_non_nullable
+              as FacilityBoundaryRelationshipRef?,
+      children: freezed == children
+          ? _value.children
+          : children // ignore: cast_nullable_to_non_nullable
+              as List<FacilityBoundaryRelationshipRef>?,
+    ) as $Val);
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $FacilityBoundaryRelationshipRefCopyWith<$Res>? get parent {
+    if (_value.parent == null) {
+      return null;
+    }
+
+    return $FacilityBoundaryRelationshipRefCopyWith<$Res>(_value.parent!,
+        (value) {
+      return _then(_value.copyWith(parent: value) as $Val);
+    });
+  }
+}
+
+/// @nodoc
+abstract class _$$FacilityBoundaryRelationshipImplCopyWith<$Res>
+    implements $FacilityBoundaryRelationshipCopyWith<$Res> {
+  factory _$$FacilityBoundaryRelationshipImplCopyWith(
+          _$FacilityBoundaryRelationshipImpl value,
+          $Res Function(_$FacilityBoundaryRelationshipImpl) then) =
+      __$$FacilityBoundaryRelationshipImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String boundaryType,
+      int order,
+      String? hierarchyType,
+      FacilityBoundaryRelationshipRef? parent,
+      List<FacilityBoundaryRelationshipRef>? children});
+
+  @override
+  $FacilityBoundaryRelationshipRefCopyWith<$Res>? get parent;
+}
+
+/// @nodoc
+class __$$FacilityBoundaryRelationshipImplCopyWithImpl<$Res>
+    extends _$FacilityBoundaryRelationshipCopyWithImpl<$Res,
+        _$FacilityBoundaryRelationshipImpl>
+    implements _$$FacilityBoundaryRelationshipImplCopyWith<$Res> {
+  __$$FacilityBoundaryRelationshipImplCopyWithImpl(
+      _$FacilityBoundaryRelationshipImpl _value,
+      $Res Function(_$FacilityBoundaryRelationshipImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? boundaryType = null,
+    Object? order = null,
+    Object? hierarchyType = freezed,
+    Object? parent = freezed,
+    Object? children = freezed,
+  }) {
+    return _then(_$FacilityBoundaryRelationshipImpl(
+      boundaryType: null == boundaryType
+          ? _value.boundaryType
+          : boundaryType // ignore: cast_nullable_to_non_nullable
+              as String,
+      order: null == order
+          ? _value.order
+          : order // ignore: cast_nullable_to_non_nullable
+              as int,
+      hierarchyType: freezed == hierarchyType
+          ? _value.hierarchyType
+          : hierarchyType // ignore: cast_nullable_to_non_nullable
+              as String?,
+      parent: freezed == parent
+          ? _value.parent
+          : parent // ignore: cast_nullable_to_non_nullable
+              as FacilityBoundaryRelationshipRef?,
+      children: freezed == children
+          ? _value._children
+          : children // ignore: cast_nullable_to_non_nullable
+              as List<FacilityBoundaryRelationshipRef>?,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$FacilityBoundaryRelationshipImpl
+    implements _FacilityBoundaryRelationship {
+  _$FacilityBoundaryRelationshipImpl(
+      {required this.boundaryType,
+      required this.order,
+      this.hierarchyType,
+      this.parent,
+      final List<FacilityBoundaryRelationshipRef>? children})
+      : _children = children;
+
+  factory _$FacilityBoundaryRelationshipImpl.fromJson(
+          Map<String, dynamic> json) =>
+      _$$FacilityBoundaryRelationshipImplFromJson(json);
+
+  @override
+  final String boundaryType;
+  @override
+  final int order;
+// Scopes the entry to one boundary hierarchy. Must match the project's
+// additionalDetails.hierarchyType verbatim; null/empty means legacy
+// data that applies to any hierarchy.
+  @override
+  final String? hierarchyType;
+  @override
+  final FacilityBoundaryRelationshipRef? parent;
+  final List<FacilityBoundaryRelationshipRef>? _children;
+  @override
+  List<FacilityBoundaryRelationshipRef>? get children {
+    final value = _children;
+    if (value == null) return null;
+    if (_children is EqualUnmodifiableListView) return _children;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  @override
+  String toString() {
+    return 'FacilityBoundaryRelationship(boundaryType: $boundaryType, order: $order, hierarchyType: $hierarchyType, parent: $parent, children: $children)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$FacilityBoundaryRelationshipImpl &&
+            (identical(other.boundaryType, boundaryType) ||
+                other.boundaryType == boundaryType) &&
+            (identical(other.order, order) || other.order == order) &&
+            (identical(other.hierarchyType, hierarchyType) ||
+                other.hierarchyType == hierarchyType) &&
+            (identical(other.parent, parent) || other.parent == parent) &&
+            const DeepCollectionEquality().equals(other._children, _children));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, boundaryType, order,
+      hierarchyType, parent, const DeepCollectionEquality().hash(_children));
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$FacilityBoundaryRelationshipImplCopyWith<
+          _$FacilityBoundaryRelationshipImpl>
+      get copyWith => __$$FacilityBoundaryRelationshipImplCopyWithImpl<
+          _$FacilityBoundaryRelationshipImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$FacilityBoundaryRelationshipImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _FacilityBoundaryRelationship
+    implements FacilityBoundaryRelationship {
+  factory _FacilityBoundaryRelationship(
+          {required final String boundaryType,
+          required final int order,
+          final String? hierarchyType,
+          final FacilityBoundaryRelationshipRef? parent,
+          final List<FacilityBoundaryRelationshipRef>? children}) =
+      _$FacilityBoundaryRelationshipImpl;
+
+  factory _FacilityBoundaryRelationship.fromJson(Map<String, dynamic> json) =
+      _$FacilityBoundaryRelationshipImpl.fromJson;
+
+  @override
+  String get boundaryType;
+  @override
+  int get order;
+  @override // Scopes the entry to one boundary hierarchy. Must match the project's
+// additionalDetails.hierarchyType verbatim; null/empty means legacy
+// data that applies to any hierarchy.
+  String? get hierarchyType;
+  @override
+  FacilityBoundaryRelationshipRef? get parent;
+  @override
+  List<FacilityBoundaryRelationshipRef>? get children;
+  @override
+  @JsonKey(ignore: true)
+  _$$FacilityBoundaryRelationshipImplCopyWith<
+          _$FacilityBoundaryRelationshipImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+FacilityBoundaryRelationshipRef _$FacilityBoundaryRelationshipRefFromJson(
+    Map<String, dynamic> json) {
+  return _FacilityBoundaryRelationshipRef.fromJson(json);
+}
+
+/// @nodoc
+mixin _$FacilityBoundaryRelationshipRef {
+  String get boundaryType => throw _privateConstructorUsedError;
+  int get order => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $FacilityBoundaryRelationshipRefCopyWith<FacilityBoundaryRelationshipRef>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $FacilityBoundaryRelationshipRefCopyWith<$Res> {
+  factory $FacilityBoundaryRelationshipRefCopyWith(
+          FacilityBoundaryRelationshipRef value,
+          $Res Function(FacilityBoundaryRelationshipRef) then) =
+      _$FacilityBoundaryRelationshipRefCopyWithImpl<$Res,
+          FacilityBoundaryRelationshipRef>;
+  @useResult
+  $Res call({String boundaryType, int order});
+}
+
+/// @nodoc
+class _$FacilityBoundaryRelationshipRefCopyWithImpl<$Res,
+        $Val extends FacilityBoundaryRelationshipRef>
+    implements $FacilityBoundaryRelationshipRefCopyWith<$Res> {
+  _$FacilityBoundaryRelationshipRefCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? boundaryType = null,
+    Object? order = null,
+  }) {
+    return _then(_value.copyWith(
+      boundaryType: null == boundaryType
+          ? _value.boundaryType
+          : boundaryType // ignore: cast_nullable_to_non_nullable
+              as String,
+      order: null == order
+          ? _value.order
+          : order // ignore: cast_nullable_to_non_nullable
+              as int,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$FacilityBoundaryRelationshipRefImplCopyWith<$Res>
+    implements $FacilityBoundaryRelationshipRefCopyWith<$Res> {
+  factory _$$FacilityBoundaryRelationshipRefImplCopyWith(
+          _$FacilityBoundaryRelationshipRefImpl value,
+          $Res Function(_$FacilityBoundaryRelationshipRefImpl) then) =
+      __$$FacilityBoundaryRelationshipRefImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String boundaryType, int order});
+}
+
+/// @nodoc
+class __$$FacilityBoundaryRelationshipRefImplCopyWithImpl<$Res>
+    extends _$FacilityBoundaryRelationshipRefCopyWithImpl<$Res,
+        _$FacilityBoundaryRelationshipRefImpl>
+    implements _$$FacilityBoundaryRelationshipRefImplCopyWith<$Res> {
+  __$$FacilityBoundaryRelationshipRefImplCopyWithImpl(
+      _$FacilityBoundaryRelationshipRefImpl _value,
+      $Res Function(_$FacilityBoundaryRelationshipRefImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? boundaryType = null,
+    Object? order = null,
+  }) {
+    return _then(_$FacilityBoundaryRelationshipRefImpl(
+      boundaryType: null == boundaryType
+          ? _value.boundaryType
+          : boundaryType // ignore: cast_nullable_to_non_nullable
+              as String,
+      order: null == order
+          ? _value.order
+          : order // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$FacilityBoundaryRelationshipRefImpl
+    implements _FacilityBoundaryRelationshipRef {
+  _$FacilityBoundaryRelationshipRefImpl(
+      {required this.boundaryType, required this.order});
+
+  factory _$FacilityBoundaryRelationshipRefImpl.fromJson(
+          Map<String, dynamic> json) =>
+      _$$FacilityBoundaryRelationshipRefImplFromJson(json);
+
+  @override
+  final String boundaryType;
+  @override
+  final int order;
+
+  @override
+  String toString() {
+    return 'FacilityBoundaryRelationshipRef(boundaryType: $boundaryType, order: $order)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$FacilityBoundaryRelationshipRefImpl &&
+            (identical(other.boundaryType, boundaryType) ||
+                other.boundaryType == boundaryType) &&
+            (identical(other.order, order) || other.order == order));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, boundaryType, order);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$FacilityBoundaryRelationshipRefImplCopyWith<
+          _$FacilityBoundaryRelationshipRefImpl>
+      get copyWith => __$$FacilityBoundaryRelationshipRefImplCopyWithImpl<
+          _$FacilityBoundaryRelationshipRefImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$FacilityBoundaryRelationshipRefImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _FacilityBoundaryRelationshipRef
+    implements FacilityBoundaryRelationshipRef {
+  factory _FacilityBoundaryRelationshipRef(
+      {required final String boundaryType,
+      required final int order}) = _$FacilityBoundaryRelationshipRefImpl;
+
+  factory _FacilityBoundaryRelationshipRef.fromJson(Map<String, dynamic> json) =
+      _$FacilityBoundaryRelationshipRefImpl.fromJson;
+
+  @override
+  String get boundaryType;
+  @override
+  int get order;
+  @override
+  @JsonKey(ignore: true)
+  _$$FacilityBoundaryRelationshipRefImplCopyWith<
+          _$FacilityBoundaryRelationshipRefImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }

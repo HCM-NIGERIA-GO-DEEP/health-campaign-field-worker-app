@@ -36,9 +36,11 @@ import '../../models/auth/auth_model.dart';
 import '../../models/downsync/downsync.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/background_service.dart';
+import '../../utils/boundary_relationship_matcher.dart';
 import '../../utils/download_image.dart';
 import '../../utils/environment_config.dart';
 import '../../utils/least_level_boundary_singleton.dart';
+import '../../utils/runtime_hierarchy.dart';
 import '../../utils/stock_calculation_utils.dart';
 import '../../utils/utils.dart';
 import '../auth/auth.dart';
@@ -410,6 +412,42 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     List<String>? boundaryTypes;
 
     if (assignedBoundaryType != null && assignedBoundaryCode != null) {
+      // The facility flow can be a supply-chain hierarchy that skips
+      // geographic levels (State → Health Facility, bypassing LGA/Ward),
+      // which cannot be recovered from the boundary tree. Envs that need
+      // it ship the MDMS FACILITY_BOUNDARY_RELATIONSHIP master; its
+      // entries are scoped by hierarchyType so multiple hierarchies on
+      // one env don't collide. No matching entry → fall through to the
+      // derived path.
+      try {
+        final configs = await isar.appConfigurations.where().findAll();
+        final relationshipEntries =
+            configs.firstOrNull?.facilityBoundaryRelationship
+            ?.map((e) => BoundaryRelationshipEntry(
+                  boundaryType: e.boundaryType,
+                  hierarchyType: e.hierarchyType,
+                  parentBoundaryType: e.parentBoundaryType,
+                  childBoundaryTypes: e.childBoundaryTypes,
+                ))
+            .toList();
+
+        if (relationshipEntries != null && relationshipEntries.isNotEmpty) {
+          boundaryTypes = resolveBoundaryTypesFromRelationship(
+            entries: relationshipEntries,
+            hierarchyType: runtimeHierarchyType(),
+            assignedBoundaryType: assignedBoundaryType,
+          );
+        }
+      } catch (e) {
+        // A malformed config must never block project selection — fall
+        // through to the derived path.
+        debugPrint('facilityBoundaryRelationship lookup failed: $e');
+      }
+    }
+
+    if (assignedBoundaryType != null &&
+        assignedBoundaryCode != null &&
+        boundaryTypes == null) {
       // Derive parent → current → child boundary types from the boundary
       // search API response for the CURRENT hierarchy (multi-hierarchy
       // safe). We fetch the full hierarchy tree with no `codes` filter;
