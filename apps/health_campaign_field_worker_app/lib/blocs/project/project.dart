@@ -372,7 +372,6 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     projects.removeDuplicates((element) => element.id);
 
     final selectedProject = await localSecureStore.selectedProject;
-    final allProjectTypes = await localSecureStore.getAllProjectTypes;
 
     // Cold-restart restore: rehydrate the runtime hierarchy from the persisted
     // selected project before any boundary / MDMS work runs.
@@ -479,8 +478,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         // Any failure falls through to the single-type default below —
         // same behaviour the old MDMS path had when it couldn't find a
         // match.
-        debugPrint(
-            'boundary-derivation from search response failed: $e');
+        debugPrint('boundary-derivation from search response failed: $e');
       }
 
       boundaryTypes ??= [assignedBoundaryType];

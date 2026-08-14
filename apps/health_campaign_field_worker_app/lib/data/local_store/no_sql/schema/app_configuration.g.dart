@@ -410,14 +410,7 @@ int _appConfigurationEstimateSize(
       }
     }
   }
-  {
-    final value = object.faceAuthMdmsConfig;
-    if (value != null) {
-      bytesCount += 3 +
-          FaceAuthMdmsConfigSchema.estimateSize(
-              value, allOffsets[FaceAuthMdmsConfig]!, allOffsets);
-    }
-  }
+
   {
     final value = object.firebaseConfig;
     if (value != null) {
