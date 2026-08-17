@@ -800,14 +800,16 @@ void initializeFunctionRegistry() {
         // For other ineligible statuses, only check tasks matching the current cycle
         if (currentRunningCycle != null) {
           int? taskCycleIndex;
-          if (fields != null) {
-            for (final field in fields) {
-              if (field is Map && field['key'] == 'cycleIndex') {
-                taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
-                break;
-              }
-            }
-          }
+
+          // Giving wrong cycle index
+          // if (fields != null) {
+          //   for (final field in fields) {
+          //     if (field is Map && field['key'] == 'cycleIndex') {
+          //       taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
+          //       break;
+          //     }
+          //   }
+          // }
 
           // Fall back to deriving the cycle from the task's last modified
           // time when no cycleIndex was recorded on the task.
