@@ -605,6 +605,89 @@ class FunctionRegistries {
       }
       return 'INSUFFICIENT_STOCK';
     });
+
+    // Reads the value for `key` out of a record's additionalFields.fields
+    // list. Works whether additionalFields has already been flattened to a
+    // plain Map (via EntityModel.toMap()) or is still the typed object.
+    String? getAdditionalFieldValue(Map<String, dynamic> recordMap, String key) {
+      final additionalFields = recordMap['additionalFields'];
+      final fields = additionalFields is Map ? additionalFields['fields'] : null;
+      if (fields is! List) return null;
+      for (final field in fields) {
+        if (field is Map && field['key'] == key) {
+          return field['value']?.toString();
+        }
+      }
+      return null;
+    }
+
+    // Filters a list of stock/stock-reconciliation records down to the ones
+    // whose date field falls within the currently active project cycle, so
+    // stock reports only show entries recorded during the ongoing campaign
+    // cycle. Reads cycles from the ProjectBloc's selected project type
+    // (context.selectedProjectType) rather than FlowBuilderSingleton, since
+    // the latter is only populated while a delivery flow (SMC/VAS/etc.) is
+    // executing and is not set when browsing Stock Reports from Home.
+    //
+    // When the report is the "Stock Received" report (reportType == 'ISSUED'),
+    // also requires additionalFields.status == 'ACCEPTED' - the receiver only
+    // confirms this once the incoming dispatch has been accepted (see
+    // stock_balance_executor.dart), so unaccepted/in-transit records should
+    // not show as received stock. Other report types (dispatch/returned/
+    // damaged/loss) never carry an ACCEPTED status and are left unfiltered.
+    // args: [records, dateFieldKey, reportType?] e.g. (StockModel, 'dateOfEntry', navigation.reportType)
+    FunctionRegistry.register('filterRecordsWithinCurrentCycle',
+        (args, stateData) {
+      if (args.isEmpty || args.first == null) return <dynamic>[];
+      final records = args.first;
+      if (records is! List) return <dynamic>[];
+
+      final dateField = args.length > 1 ? (args[1]?.toString() ?? '') : '';
+      if (dateField.isEmpty) return records;
+
+      final reportType = args.length > 2 ? (args[2]?.toString() ?? '') : '';
+      final requireAccepted = reportType == 'ISSUED';
+
+      final cycles =
+          context.selectedProjectType?.cycles ??
+              FlowBuilderSingleton().projectType?.cycles;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final currentCycle = cycles?.firstWhereOrNull(
+        (cycle) => cycle.startDate <= now && cycle.endDate >= now,
+      );
+
+      if (currentCycle == null) return <dynamic>[];
+
+      return records.where((record) {
+        // Rows sourced from contextData (e.g. StockModel/StockReconciliationModel)
+        // are typed EntityModel instances, not raw maps - go through toMap()
+        // so the date field can be read the same way regardless of shape.
+        Map<String, dynamic>? recordMap;
+        if (record is Map<String, dynamic>) {
+          recordMap = record;
+        } else if (record is EntityModel) {
+          recordMap = record.toMap();
+        } else {
+          return false;
+        }
+
+        final rawDate = recordMap[dateField];
+        final dateValue =
+            rawDate is int ? rawDate : int.tryParse(rawDate?.toString() ?? '');
+        if (dateValue == null) return false;
+        if (dateValue < currentCycle.startDate ||
+            dateValue > currentCycle.endDate) {
+          return false;
+        }
+
+        if (requireAccepted &&
+            getAdditionalFieldValue(recordMap, 'status') != 'ACCEPTED') {
+          return false;
+        }
+
+        return true;
+      }).toList();
+    });
   }
 
   void _registerViewTransactionFunctions() {
