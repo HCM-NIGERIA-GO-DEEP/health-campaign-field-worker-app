@@ -762,23 +762,7 @@ void initializeFunctionRegistry() {
       final currentRunningCycle =
           args.length > 2 ? int.tryParse(args[2]?.toString() ?? '') : null;
 
-      for (final item in tasks) {
-        Map<String, dynamic> task;
-
-        if (item is Map<String, dynamic>) {
-          task = item;
-        } else {
-          try {
-            task = (item as dynamic).toMap() as Map<String, dynamic>;
-          } catch (_) {
-            try {
-              task = (item as dynamic).toJson() as Map<String, dynamic>;
-            } catch (_) {
-              continue;
-            }
-          }
-        }
-
+      for (final task in tasks) {
         final additionalFields = task['additionalFields'];
         final fields = additionalFields is Map
             ? additionalFields['fields'] as List?
