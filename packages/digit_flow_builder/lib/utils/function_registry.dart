@@ -762,7 +762,7 @@ void initializeFunctionRegistry() {
       final currentRunningCycle =
           args.length > 2 ? int.tryParse(args[2]?.toString() ?? '') : null;
 
-      for (final task in tasks) {
+      for (final task in tasks.reversed.toList()) {
         final additionalFields = task['additionalFields'];
         final fields = additionalFields is Map
             ? additionalFields['fields'] as List?
