@@ -752,6 +752,8 @@ void initializeFunctionRegistry() {
     );
     if (currentCycle == null) return false;
 
+    bool hasAdministrationSuccess = false;
+
 // --- Check eligibility (age, plus weight/height when recorded) ---
     final isWithinAge = _isEligibleAge(projectType, totalAgeMonths);
 
@@ -822,9 +824,14 @@ void initializeFunctionRegistry() {
           if (taskCycleIndex != currentRunningCycle) {
             if (isWithinAge == false &&
                 task['status'] == TaskStatus.administrationSuccess) {
-              return true;
+              hasAdministrationSuccess = true;
             }
             continue;
+          }
+          if (hasAdministrationSuccess &&
+              taskCycleIndex == currentRunningCycle &&
+              task['status'] == TaskStatus.administrationSuccess) {
+            return true;
           }
         }
 
