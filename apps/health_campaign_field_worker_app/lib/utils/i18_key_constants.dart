@@ -866,6 +866,8 @@ class Home {
 
   String get db => 'HOME_DB_LABEL';
 
+  String get analyticsDb => 'HOME_ANALYTICS_DB_LABEL';
+
   String get dataShare => 'HOME_DATA_SHARE_LABEL';
 
   String get dashboard => 'HOME_DASHBOARD_LABEL';
