@@ -1159,7 +1159,6 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       int offset = 0;
       int syncedCount = 0;
       final downloadedStocks = <String, StockModel>{};
-      final downloadedStocks = <String, StockModel>{};
       final currentSyncTime = DateTime.now().millisecondsSinceEpoch;
 
       while (syncedCount < totalCount) {
