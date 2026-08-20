@@ -425,17 +425,11 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       (role) => role.code == RolesType.distributor.toValue(),
     );
 
-    final facilityId = isDistributor
-        ? userObject.uuid
-        : (currentFacilities.firstOrNull?.facilityId ?? userObject.uuid);
+    if (isDistributor == false) return;
+    final facilityId = userObject.uuid;
 
-    if (facilityId.isEmpty) {
-      return;
-    }
-
-    if (currentCycle == null) {
-      return;
-    }
+    if (facilityId.isEmpty) return;
+    if (currentCycle == null) return;
 
     // Search for household repo
     // if household data present return else fetch from server and store in local storage
@@ -812,8 +806,13 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       String? campaignID = event.model.referenceID;
       var projectTypeString = event.model.projectType;
 
-      if (projectTypeString == "ORS-Zinc") {
-        campaignID = "CMP-2026-07-03-000424";
+      if (projectTypeString == "SMC-RI" &&
+          envConfig.variables.smcRiCampaignId != "") {
+        campaignID = envConfig.variables.smcRiCampaignId;
+      }
+      if (projectTypeString == "ORS-Zinc" &&
+          envConfig.variables.orsZincCampaignId != "") {
+        campaignID = envConfig.variables.orsZincCampaignId;
       }
 
       try {
@@ -1201,8 +1200,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         stocks: downloadedStocks.values,
       );
       if (nextCursorTime != null) {
-        await AppSharedPreferences()
-            .setStockDownsyncTime(cursorKey, nextCursorTime);
+        await AppSharedPreferences().setStockDownsyncTime(cursorKey,
+            nextCursorTime + 1); // +1 to avoid re-downloading the same record
       }
 
       await downSyncStockBalances(project);

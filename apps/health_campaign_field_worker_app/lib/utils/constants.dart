@@ -26,6 +26,7 @@ import 'package:digit_data_model/data/repositories/package_repository/remote/sto
 import 'package:digit_data_model/data/repositories/package_repository/remote/stock_reconciliation.dart';
 import 'package:digit_data_model/data/repositories/package_repository/remote/task.dart';
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_analytics/digit_analytics.dart';
 import 'package:digit_dss/digit_dss.dart';
 import 'package:digit_firebase_services/digit_firebase_services.dart'
     as firebase_services;
@@ -96,6 +97,7 @@ class Constants {
           RowVersionListSchema,
           DashboardConfigSchemaListSchema,
           DashboardResponseSchema,
+          AnalyticsEventSchema,
         ],
         name: 'HCM',
         inspector: true,
@@ -263,20 +265,23 @@ class Constants {
     final config = appConfigs.firstOrNull;
 
     // Always initialize Firebase Core (required for FCM, analytics, etc.)
-    await firebase_services.initialize(
+    await firebase_services.initializeFirebaseCore(
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
     final enableCrashlytics =
         config?.firebaseConfig?.enableCrashlytics ?? false;
     if (enableCrashlytics) {
-      await firebase_services.initialize(
-        options: DefaultFirebaseOptions.currentPlatform,
+      await firebase_services.initializeCrashlytics(
         onErrorMessage: (value) {
           AppLogger.instance.error(title: 'CRASHLYTICS', message: value);
         },
       );
     }
+
+    final enableAnalytics = config?.firebaseConfig?.enableAnalytics ?? false;
+    await firebase_services.initializeAnalytics(enabled: enableAnalytics);
+    AnalyticsSingleton().setData(isar: isar, enabled: enableAnalytics);
 
     _version = version;
   }

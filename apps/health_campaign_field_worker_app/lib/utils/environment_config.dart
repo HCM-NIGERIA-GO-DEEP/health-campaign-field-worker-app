@@ -130,6 +130,16 @@ class Variables {
     '$_minRamThresholdGbValue',
   );
 
+  static const _smcRiCampaignId = EnvEntry(
+    'SMC_RI_CAMPAIGN_ID',
+    '',
+  );
+
+  static const _orsZincCampaignId = EnvEntry(
+    'ORS_ZINC_CAMPAIGN_ID',
+    '',
+  );
+
   const Variables({
     this.useFallbackValues = false,
     required DotEnv dotEnv,
@@ -214,6 +224,17 @@ class Variables {
             fallback: _minRamThresholdGb.value,
           )) ??
           _minRamThresholdGbValue;
+
+  String get smcRiCampaignId => useFallbackValues
+      ? _smcRiCampaignId.value
+      : _dotEnv.get(_smcRiCampaignId.key, fallback: _smcRiCampaignId.value);
+
+  String get orsZincCampaignId => useFallbackValues
+      ? _orsZincCampaignId.value
+      : _dotEnv.get(
+          _orsZincCampaignId.key,
+          fallback: _orsZincCampaignId.value,
+        );
 
   EnvType get envType {
     final envName = useFallbackValues

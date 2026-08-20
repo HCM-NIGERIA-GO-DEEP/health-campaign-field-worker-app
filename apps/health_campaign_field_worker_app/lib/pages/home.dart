@@ -36,6 +36,7 @@ import 'package:sync_service/data/sync_service.dart';
 import 'package:transit_post/router/transit_post_router.gm.dart';
 import 'package:transit_post/utils/utils.dart';
 
+import 'analytics_db_viewer.dart';
 import '../blocs/app_initialization/app_initialization.dart';
 import '../blocs/auth/auth.dart';
 import '../blocs/localization/localization.dart';
@@ -2598,6 +2599,19 @@ class _HomePageState extends LocalizedState<HomePage> {
           },
         ),
       ),
+      i18.home.analyticsDb: homeShowcaseData.analyticsDb.buildWith(
+        child: HomeItemCard(
+          icon: Icons.query_stats,
+          label: i18.home.analyticsDb,
+          onPressed: () async {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => const AnalyticsDbViewer(),
+              ),
+            );
+          },
+        ),
+      ),
       i18.home.dataShare: homeShowcaseData.dataShare.buildWith(
         child: HomeItemCard(
           icon: Icons.send,
@@ -2697,6 +2711,7 @@ class _HomePageState extends LocalizedState<HomePage> {
           .showcaseKey, // TODO: Uncomment when beneficiary downsync is implemented
       i18.home.dataShare: homeShowcaseData.dataShare.showcaseKey,
       i18.home.db: homeShowcaseData.db.showcaseKey,
+      i18.home.analyticsDb: homeShowcaseData.analyticsDb.showcaseKey,
       i18.home.stockSyncDataLabel: homeShowcaseData.stockSyncData.showcaseKey,
       i18.home.summaryReportLabel: homeShowcaseData.summaryReport.showcaseKey,
     };
@@ -2723,6 +2738,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.stockSyncDataLabel,
       i18.home.summaryReportLabel,
       i18.home.db,
+      i18.home.analyticsDb,
     ];
 
     final List<String> filteredLabels = homeItemsLabel
@@ -2731,17 +2747,14 @@ class _HomePageState extends LocalizedState<HomePage> {
                 .map((e) => e.displayName)
                 .toList()
                 .contains(element) ||
-            element == i18.home.db)
+            element == i18.home.db ||
+            element == i18.home.analyticsDb)
         .toList();
 
     final showcaseKeys = filteredLabels
-        .where((f) => f != i18.home.db)
+        .where((f) => f != i18.home.db && f != i18.home.analyticsDb)
         .map((label) => homeItemsShowcaseMap[label]!)
         .toList();
-
-    if (envConfig.variables.envType == EnvType.demo && kReleaseMode) {
-      filteredLabels.remove(i18.home.db);
-    }
 
     final userRoleCodes = state.userModel.roles.map((e) => e.code).toList();
     final isDistributor =
@@ -2752,6 +2765,11 @@ class _HomePageState extends LocalizedState<HomePage> {
       }
     } else {
       filteredLabels.remove(i18.home.summaryReportLabel);
+    }
+
+    if (envConfig.variables.envType == EnvType.prod && kReleaseMode) {
+      filteredLabels.remove(i18.home.db);
+      filteredLabels.remove(i18.home.analyticsDb);
     }
 
     final List<Widget> widgetList =

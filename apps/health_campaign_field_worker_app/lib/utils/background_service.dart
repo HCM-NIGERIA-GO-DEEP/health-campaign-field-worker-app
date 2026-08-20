@@ -4,6 +4,7 @@ import 'dart:ui';
 
 import 'package:battery_plus/battery_plus.dart';
 import 'package:collection/collection.dart';
+import 'package:digit_analytics/digit_analytics.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_location_tracker/utils/utils.dart'
     as location_tracker_utils;
@@ -25,6 +26,7 @@ import '../data/local_store/secure_store/secure_store.dart';
 import '../data/remote_client.dart';
 import '../data/repositories/remote/bandwidth_check.dart';
 import '../widgets/network_manager_provider_wrapper.dart';
+import 'analytics_sync_service.dart';
 import 'environment_config.dart';
 import 'utils.dart';
 
@@ -122,7 +124,8 @@ void onStart(ServiceInstance service) async {
   final _isar = await isarFuture;
 
   // Initialize encrypted database for background service
-  final encryptionKey = await LocalSecureStore.instance.getOrCreateDbEncryptionKey();
+  final encryptionKey =
+      await LocalSecureStore.instance.getOrCreateDbEncryptionKey();
   _sql = LocalSqlDataStore(encryptionKey: encryptionKey);
 
   final userRequestModel = await LocalSecureStore.instance.userRequestModel;
@@ -144,6 +147,15 @@ void onStart(ServiceInstance service) async {
   //     interval: 120, createdBy: userRequestModel.uuid, isar: _isar);
 
   final appConfiguration = await _isar.appConfigurations.where().findAll();
+
+  // Isar singletons are per-isolate; `setInitialDataOfPackages()` above does
+  // not configure `AnalyticsSingleton`, so do it explicitly here too.
+  AnalyticsSingleton().setData(
+    isar: _isar,
+    enabled:
+        appConfiguration.firstOrNull?.firebaseConfig?.enableAnalytics ?? false,
+  );
+
   final interval =
       appConfiguration.first.backgroundServiceConfig?.serviceInterval;
   final frequencyCount =
@@ -167,20 +179,25 @@ void onStart(ServiceInstance service) async {
                   .first.backgroundServiceConfig!.batteryPercentCutOff!) {
             service.invoke("stopService");
           } else {
+            unawaited(AnalyticsSyncService().flushPendingEvents());
+
             final FlutterLocalNotificationsPlugin
                 flutterLocalNotificationsPlugin =
                 FlutterLocalNotificationsPlugin();
             final isSyncAlreadyRunning = await SyncLock.isLocked();
-            debugPrint('BG_SYNC: locked=$isSyncAlreadyRunning, frequencyCount=$frequencyCount');
+            debugPrint(
+                'BG_SYNC: locked=$isSyncAlreadyRunning, frequencyCount=$frequencyCount');
             if (frequencyCount != null && !isSyncAlreadyRunning) {
               final serviceRegistryList =
                   await _isar.serviceRegistrys.where().findAll();
-              debugPrint('BG_SYNC: serviceRegistryList=${serviceRegistryList.length}');
+              debugPrint(
+                  'BG_SYNC: serviceRegistryList=${serviceRegistryList.length}');
               if (serviceRegistryList.isNotEmpty) {
                 final bandwidthService = serviceRegistryList.firstWhereOrNull(
                   (element) => element.service == 'BANDWIDTH-CHECK',
                 );
-                debugPrint('BG_SYNC: bandwidthService=${bandwidthService?.service}');
+                debugPrint(
+                    'BG_SYNC: bandwidthService=${bandwidthService?.service}');
                 if (bandwidthService != null &&
                     bandwidthService.actions.isNotEmpty) {
                   final bandwidthPath = bandwidthService.actions.first.path;
@@ -209,7 +226,8 @@ void onStart(ServiceInstance service) async {
                       sum / speedArray.length,
                       appConfiguration,
                     );
-                    final BandwidthModel bandwidthModel = BandwidthModel.fromJson({
+                    final BandwidthModel bandwidthModel =
+                        BandwidthModel.fromJson({
                       'userId': userRequestModel?.uuid,
                       'batchSize': configuredBatchSize,
                     });
@@ -260,9 +278,11 @@ void onStart(ServiceInstance service) async {
                     // Re-check lock right before sync since bandwidth
                     // checks may have taken significant time.
                     final isLockedBeforeSync = await SyncLock.isLocked();
-                    debugPrint('BG_SYNC: lock status before performSync=$isLockedBeforeSync');
+                    debugPrint(
+                        'BG_SYNC: lock status before performSync=$isLockedBeforeSync');
                     if (isLockedBeforeSync) {
-                      debugPrint('BG_SYNC: Lock acquired by another process during bandwidth check, skipping sync');
+                      debugPrint(
+                          'BG_SYNC: Lock acquired by another process during bandwidth check, skipping sync');
                       await progressSub.cancel();
                       service.invoke('serviceRunning', {
                         "enablesManualSync": true,
@@ -278,9 +298,11 @@ void onStart(ServiceInstance service) async {
                         bandwidthModel: bandwidthModel,
                         service: service,
                       );
-                      debugPrint('BG_SYNC: performSync completed=$isSyncCompleted');
+                      debugPrint(
+                          'BG_SYNC: performSync completed=$isSyncCompleted');
                       if (!isSyncCompleted) {
-                        debugPrint('BG_SYNC: performSync returned false — lock was not acquired');
+                        debugPrint(
+                            'BG_SYNC: performSync returned false — lock was not acquired');
                       }
                     } catch (e) {
                       debugPrint('BG_SYNC: performSync failed with error: $e');
