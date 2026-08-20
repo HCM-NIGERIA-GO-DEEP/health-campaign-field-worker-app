@@ -19,6 +19,7 @@ import 'action_handler/action_config.dart';
 import 'action_handler/action_handler.dart';
 import 'blocs/flow_crud_bloc.dart';
 import 'widget_registry.dart';
+import 'widgets/implementations/list_view_widget.dart';
 
 class LayoutRendererPage extends LocalizedStatefulWidget {
   final Map<String, dynamic> config;
@@ -60,6 +61,30 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
   Timer? _debounceTimer;
   bool _hasTriggeredAtBottom = false;
   bool _hasTriggeredAtTop = false;
+
+  // Minimum-visible-duration guard for the loading indicator. Local-DB
+  // pagination fetches can resolve within a single frame, so `isLoading`
+  // can flip true->false before Flutter ever paints the "true" frame.
+  // Once shown, keep the indicator up for at least this long so it isn't
+  // an imperceptible flash.
+  static const _minLoadingVisibleDuration = Duration(milliseconds: 350);
+  bool _minDurationLoading = false;
+  DateTime? _loadingStartTime;
+  Timer? _minDurationTimer;
+
+  // Whether the modal loader dialog is currently on screen. Tracked so we
+  // only push/pop it on true state transitions, not on every rebuild.
+  bool _isLoaderDialogShowing = false;
+
+  // The FlowCrudState notifier this page is attached to. We listen to it
+  // directly (not just via ValueListenableBuilder in build()) because a
+  // fast isLoading:true->false round trip can resolve inside a single
+  // Flutter frame: build() only ever sees the *coalesced* final value, so
+  // a build()-driven dialog would never see the "true" moment at all. A
+  // raw addListener callback fires synchronously on every individual
+  // notifyListeners() call, so it can't miss a transition the way a
+  // rebuild can.
+  ValueNotifier<FlowCrudState?>? _crudNotifier;
 
   // Track the last wrapper reference to detect when new data arrives.
   // When the wrapper changes (new list created after data load), we
@@ -106,9 +131,105 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _attachCrudListener();
+  }
+
+  /// (Re)attaches [_onCrudStateChanged] to this screen's FlowCrudState
+  /// notifier. Safe to call repeatedly — it's a no-op once already attached
+  /// to the current notifier.
+  void _attachCrudListener() {
+    final screenKey =
+        getScreenKeyFromArgs(context) ?? context.router.currentPath;
+    final compositeKey = widget.compositeKey ??
+        getCompositeKey(context, screenKey: screenKey) ??
+        screenKey;
+    final notifier = FlowCrudStateRegistry().listen(compositeKey);
+    if (identical(notifier, _crudNotifier)) return;
+
+    _crudNotifier?.removeListener(_onCrudStateChanged);
+    _crudNotifier = notifier;
+    _crudNotifier!.addListener(_onCrudStateChanged);
+  }
+
+  /// Fires synchronously on every FlowCrudState change, including ones a
+  /// rebuild would coalesce away. Keeps the modal loader dialog in sync
+  /// with the real isLoading transitions for both the initial data load
+  /// and every scroll-triggered pagination load.
+  void _onCrudStateChanged() {
+    final isLoading = _crudNotifier?.value?.isLoading ?? false;
+    _syncLoaderDialog(_resolveDisplayLoading(isLoading));
+  }
+
+  @override
   void dispose() {
+    _crudNotifier?.removeListener(_onCrudStateChanged);
     _debounceTimer?.cancel();
+    _minDurationTimer?.cancel();
     super.dispose();
+  }
+
+  /// Ensures the loading indicator, once shown, stays visible for at least
+  /// [_minLoadingVisibleDuration] — local-DB pagination fetches can resolve
+  /// within a single frame, so `isLoading` can flip true->false before
+  /// Flutter ever paints the "true" frame, making the indicator an
+  /// imperceptible flash without this guard.
+  bool _resolveDisplayLoading(bool isLoading) {
+    final now = DateTime.now();
+
+    if (isLoading) {
+      // Cancel any pending hide from a previous load so it can't fire
+      // mid-way through this new one.
+      _minDurationTimer?.cancel();
+      _minDurationTimer = null;
+      if (!_minDurationLoading) {
+        _minDurationLoading = true;
+        _loadingStartTime = now;
+      }
+      return true;
+    }
+
+    if (!_minDurationLoading) return false;
+
+    final elapsed = now.difference(_loadingStartTime ?? now);
+    if (elapsed >= _minLoadingVisibleDuration) {
+      _minDurationLoading = false;
+      return false;
+    }
+
+    _minDurationTimer ??= Timer(_minLoadingVisibleDuration - elapsed, () {
+      if (!mounted) return;
+      setState(() {
+        _minDurationLoading = false;
+        _minDurationTimer = null;
+      });
+    });
+    return true;
+  }
+
+  /// Shows/hides a modal loader dialog in sync with [shouldShow], covering
+  /// both the screen's initial data load and every scroll-triggered
+  /// pagination load. Only acts on true->false/false->true transitions
+  /// (guarded by [_isLoaderDialogShowing]).
+  ///
+  /// Calls `showDialog`/`Navigator.pop` directly rather than deferring to
+  /// addPostFrameCallback: this runs from [_onCrudStateChanged], a raw
+  /// ValueNotifier listener, not from build(), so there's no "don't touch
+  /// Navigator during build" concern. Deferring was actively harmful here —
+  /// a fast show-then-hide pair (e.g. a sub-second fetch) would both land in
+  /// the *same* post-frame callback batch and fire back-to-back before the
+  /// dialog route ever got a chance to paint, so the loader never appeared.
+  void _syncLoaderDialog(bool shouldShow) {
+    if (shouldShow == _isLoaderDialogShowing) return;
+    _isLoaderDialogShowing = shouldShow;
+    if (!mounted) return;
+
+    if (shouldShow) {
+      DigitLoaders.overlayLoader(context: context, barrierDismissible: false);
+    } else {
+      DigitLoaders.hideLoaderDialog(context);
+    }
   }
 
   /// Handles scroll notifications from the page
@@ -301,6 +422,12 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
       builder: (context, flowState, __) {
         final stateData = extractCrudStateData(compositeKey);
         final isLoading = flowState?.isLoading ?? false;
+        final displayLoading = _resolveDisplayLoading(isLoading);
+        // Not just a rebuild-driven mirror of _onCrudStateChanged: this is
+        // what actually hides the dialog once the min-duration timer fires
+        // (that timer's own callback only calls setState(), it doesn't
+        // touch the dialog directly).
+        _syncLoaderDialog(displayLoading);
         final currentWrapper = flowState?.stateWrapper;
         final currentWrapperLength = currentWrapper?.length ?? 0;
 
@@ -388,121 +515,218 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
                                   .toList(),
                             )
                           : null,
-                      children: [
-                        Padding(
-                          padding: const EdgeInsets.all(spacer4),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              if (!_shouldHideBoundaryTag()) ...[
-                                Tag(
-                                  label: localizations.translate(
-                                      FlowBuilderSingleton().boundary?.code ??
-                                          ""),
-                                  isIcon: true,
-                                  customTextStyle: Theme.of(context)
-                                      .digitTextTheme(context)
-                                      .bodyS
-                                      .copyWith(
-                                          color: Theme.of(context)
-                                              .colorTheme
-                                              .alert
-                                              .info),
-                                  type: TagType.monochrome,
-                                  customIcon: Icon(
-                                    Icons.location_on_outlined,
-                                    color:
-                                        Theme.of(context).colorTheme.alert.info,
-                                    size: 16,
-                                  ),
-                                  themeData: TagThemeData(
-                                      monochromeBackgroundColor:
-                                          Theme.of(context)
-                                              .colorTheme
-                                              .alert
-                                              .infoBg,
-                                      iconLabelGap: spacer1),
-                                ),
-                                const SizedBox(height: spacer2),
-                              ],
-                              DigitTextBlock(
-                                padding: EdgeInsets.zero,
-                                heading: _resolveHeading(
-                                    widget.config['heading'], screenKey),
-                                headingStyle: Theme.of(context)
-                                    .digitTextTheme(context)
-                                    .headingXl
-                                    .copyWith(
-                                        color: Theme.of(context)
-                                            .colorTheme
-                                            .primary
-                                            .primary2),
-                                description: _resolveDescription(
-                                    widget.config['description'], screenKey),
-                              ),
-                              const SizedBox(height: spacer4),
-                              ...body
-                                  .asMap()
-                                  .entries
-                                  .map<MapEntry<bool, CrudItemContext>>(
-                                      (entry) {
-                                final e = entry.value;
-                                final processed =
-                                    preprocessConfigWithState(e, stateData);
-                                final isVisible = _checkWidgetVisibility(
-                                    processed, stateData, screenKey);
-
-                                return MapEntry(
-                                  isVisible,
-                                  CrudItemContext(
-                                    stateData: stateData,
-                                    screenKey: screenKey,
-                                    compositeKey: compositeKey,
-                                    child: LayoutMapper.map(
-                                      processed,
-                                      stateData,
-                                      context,
-                                      (action) {
-                                        ActionHandler.execute(action, context, {
-                                          'wrappers': const [],
-                                          '_compositeKey': compositeKey,
-                                        });
-                                      },
-                                      compositeKey: compositeKey,
-                                    ),
-                                  ),
-                                );
-                              }).expand((entry) {
-                                if (!entry.key) return <Widget>[];
-                                return <Widget>[
-                                  entry.value,
-                                  const SizedBox(height: spacer4),
-                                ];
-                              }).toList()
-                                ..removeLast(),
-                              // Scroll loading indicator at bottom of content
-                              if (_showLoadingIndicator && isLoading)
-                                Padding(
-                                  padding: const EdgeInsets.symmetric(
-                                      vertical: spacer4),
-                                  child: Center(
-                                    child: DigitLoaders.inlineLoader(),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        )
-                      ],
+                      slivers: _buildBodySlivers(
+                        body: body,
+                        stateData: stateData,
+                        context: context,
+                        screenKey: screenKey,
+                        compositeKey: compositeKey,
+                        isLoading: displayLoading,
+                      ),
                     ),
                   ),
                   // Loading overlay when search/CRUD operation is in progress
-                  if (isLoading) DigitLoaders.inlineLoader(),
+                  if (displayLoading) DigitLoaders.inlineLoader(),
                 ],
               ),
             ),
           ),
         );
       },
+    );
+  }
+
+  /// Builds the scrollable body as a sequence of slivers instead of one
+  /// eagerly-built `Column`.
+  ///
+  /// A top-level `format: listView` body entry (the paginated search-result
+  /// lists, e.g. household/complaint/referral/transaction inboxes) is built
+  /// as a lazy [SliverList] via [SliverChildBuilderDelegate] so only the
+  /// items actually on/near screen are built, instead of every currently
+  /// loaded item (up to `pagination.maxItems`) at once. Every other body
+  /// entry keeps the previous eager-`Widget` behaviour, just wrapped in a
+  /// [SliverToBoxAdapter] so it can sit in the same [CustomScrollView]
+  /// (`ScrollableContent` already renders `slivers` inside one).
+  List<Widget> _buildBodySlivers({
+    required List<dynamic> body,
+    required CrudStateData stateData,
+    required BuildContext context,
+    required String screenKey,
+    required String compositeKey,
+    required bool isLoading,
+  }) {
+    void onBodyAction(ActionConfig action) {
+      ActionHandler.execute(action, context, {
+        'wrappers': const [],
+        '_compositeKey': compositeKey,
+      });
+    }
+
+    // Segments in document order; a spacer4 gap is interleaved between
+    // consecutive segments below (mirrors the old expand()+removeLast()).
+    final segments = <Widget>[
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.only(
+              top: spacer4, left: spacer4, right: spacer4),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (!_shouldHideBoundaryTag()) ...[
+                Tag(
+                  label: localizations
+                      .translate(FlowBuilderSingleton().boundary?.code ?? ""),
+                  isIcon: true,
+                  customTextStyle: Theme.of(context)
+                      .digitTextTheme(context)
+                      .bodyS
+                      .copyWith(
+                          color: Theme.of(context).colorTheme.alert.info),
+                  type: TagType.monochrome,
+                  customIcon: Icon(
+                    Icons.location_on_outlined,
+                    color: Theme.of(context).colorTheme.alert.info,
+                    size: 16,
+                  ),
+                  themeData: TagThemeData(
+                      monochromeBackgroundColor:
+                          Theme.of(context).colorTheme.alert.infoBg,
+                      iconLabelGap: spacer1),
+                ),
+                const SizedBox(height: spacer2),
+              ],
+              DigitTextBlock(
+                padding: EdgeInsets.zero,
+                heading: _resolveHeading(widget.config['heading'], screenKey),
+                headingStyle: Theme.of(context)
+                    .digitTextTheme(context)
+                    .headingXl
+                    .copyWith(color: Theme.of(context).colorTheme.primary.primary2),
+                description:
+                    _resolveDescription(widget.config['description'], screenKey),
+              ),
+            ],
+          ),
+        ),
+      ),
+    ];
+
+    for (final e in body) {
+      final processed = preprocessConfigWithState(e, stateData);
+      if (!_checkWidgetVisibility(processed, stateData, screenKey)) continue;
+
+      if (processed['format'] == 'listView') {
+        final listSliver = _buildListViewSliver(
+          processed,
+          stateData,
+          context,
+          screenKey,
+          compositeKey,
+          onBodyAction,
+        );
+        if (listSliver != null) segments.add(listSliver);
+        continue;
+      }
+
+      segments.add(
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: spacer4),
+            child: CrudItemContext(
+              stateData: stateData,
+              screenKey: screenKey,
+              compositeKey: compositeKey,
+              child: LayoutMapper.map(
+                processed,
+                stateData,
+                context,
+                onBodyAction,
+                compositeKey: compositeKey,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final slivers = <Widget>[];
+    for (var i = 0; i < segments.length; i++) {
+      slivers.add(segments[i]);
+      if (i < segments.length - 1) {
+        slivers.add(const SliverToBoxAdapter(child: SizedBox(height: spacer4)));
+      }
+    }
+
+    // Trailing: scroll-loading indicator (if any) + bottom page margin.
+    // Mirrors the vertical-spacer4-wrapped loader that used to sit inside
+    // the single Padding(EdgeInsets.all(spacer4)) wrapping the whole body.
+    slivers.add(
+      SliverToBoxAdapter(
+        child: Padding(
+          padding: const EdgeInsets.only(
+              left: spacer4, right: spacer4, bottom: spacer4),
+          child: (_showLoadingIndicator && isLoading)
+              ? Padding(
+                  padding: const EdgeInsets.only(top: spacer4),
+                  child: Center(child: DigitLoaders.inlineLoader()),
+                )
+              : const SizedBox.shrink(),
+        ),
+      ),
+    );
+
+    return slivers;
+  }
+
+  /// Builds the lazy [SliverList] for a top-level `format: listView` body
+  /// entry. Returns null when there are no items to show (matches the old
+  /// `ListViewWidget` eager path returning `SizedBox.shrink()`).
+  Widget? _buildListViewSliver(
+    Map<String, dynamic> processed,
+    CrudStateData stateData,
+    BuildContext context,
+    String screenKey,
+    String compositeKey,
+    void Function(ActionConfig) onAction,
+  ) {
+    final items = ListViewWidget.resolveItems(
+      processed,
+      stateData.rawState,
+      null, // top-level list: no ambient `item` context
+    );
+
+    if (items == null || (items is List && items.isEmpty)) {
+      return null;
+    }
+
+    final itemsList = items as List;
+    final properties = processed['properties'] as Map<String, dynamic>?;
+    final spacingKey = properties?['spacing']?.toString();
+    final spacing = ListViewWidget.mapSpacingValue(context, spacingKey);
+    final itemCount = itemsList.length;
+
+    return SliverPadding(
+      padding: const EdgeInsets.symmetric(horizontal: spacer4),
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (builderContext, index) {
+            return ListViewWidget.buildListItem(
+                  json: processed,
+                  items: itemsList,
+                  index: index,
+                  itemCount: itemCount,
+                  stateData: stateData,
+                  context: builderContext,
+                  onAction: onAction,
+                  screenKey: screenKey,
+                  compositeKey: compositeKey,
+                  spacing: spacing,
+                ) ??
+                const SizedBox.shrink();
+          },
+          childCount: itemCount,
+        ),
+      ),
     );
   }
 

@@ -46,6 +46,7 @@ import '../data/local_store/secure_store/secure_store.dart';
 import '../models/app_config/app_config_model.dart';
 import '../router/app_router.dart';
 import '../widgets/progress_indicator/progress_indicator.dart';
+import 'analytics_sync_service.dart';
 import 'constants.dart';
 import 'environment_config.dart';
 import 'extensions/extensions.dart';
@@ -661,6 +662,8 @@ void attemptSyncUp(BuildContext context) async {
             ],
           ),
         );
+
+    unawaited(AnalyticsSyncService().flushPendingEvents());
   }
 }
 
