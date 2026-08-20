@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.2.106 — 2026-08-20
+
+**Eligibility / cycle logic in `function_registry.dart`**
+
+- The lastModifiedTime-based cycle-derivation logic inside `checkEligibilityForAgeAndSideEffect` was extracted into a standalone `getTaskCycleIndex(task, projectType)` helper, with no change to the derivation logic itself.
+- Task iteration in `checkEligibilityForAgeAndSideEffect` was changed back from `tasks.reversed.toList()` (newest-first, introduced in 2.2.105) to plain `tasks` (oldest-first), reversing that prior release's iteration-order change.
+- The early-eligible path — where an out-of-cycle, out-of-age task with `administrationSuccess` status made the function return `true` immediately — was removed from the main disqualification loop and moved into a new second loop that runs afterward and only considers tasks whose `additionalFields` records `flow: "smcDone"`. For tasks without that flow marker, an out-of-cycle, out-of-age `administrationSuccess` status no longer makes the beneficiary eligible.
+
 ## 2.2.105 — 2026-08-18
 
 _(includes 2.2.102, 2.2.103, 2.2.104)_
