@@ -1,0 +1,42 @@
+# TC-006: Search finds the registered household; overview shows head + child.
+# PRECONDITIONS: 03 + 04 passed in THIS run; logged in with the SAME boundary
+# used at registration (search is boundary-filtered - a different login boundary
+# makes every search empty; that is a precondition problem, not an app bug).
+appId: com.digit.hcm
+tags:
+  - smoke
+  - needs-logged-in
+---
+- launchApp
+- tapOn:
+    text: "ALLOW"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      text: ${HOME_REG}
+    timeout: 30000
+- tapOn:
+    text: ${HOME_REG}
+- extendedWaitUntil:
+    visible:
+      id: ".*_searchBar"
+    timeout: 20000
+- tapOn:
+    id: ".*_searchBar"
+- inputText: "QATEST ${RUN_STAMP}"
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      text: "QATEST ${RUN_STAMP} HEAD.*"
+    timeout: 15000
+- tapOn:
+    text: "QATEST ${RUN_STAMP} HEAD.*"
+- extendedWaitUntil:
+    visible:
+      id: ".*_addMember"
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      text: "QATEST ${RUN_STAMP} CHILD.*"
+    direction: DOWN
+    timeout: 20000

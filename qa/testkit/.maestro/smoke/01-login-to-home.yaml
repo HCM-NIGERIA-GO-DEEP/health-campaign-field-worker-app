@@ -1,0 +1,88 @@
+# Smoke: fresh login through boundary selection to the home screen.
+# PRECONDITION: the app is logged OUT (fresh install, or logged out manually).
+# This flow deliberately does NOT use clearState - clearing app data permanently
+# deletes unsynced locally-created records. Do a fresh install yourself if needed.
+#
+# Requires maestro.env (see maestro.env.example): USERNAME, PASSWORD,
+# BOUNDARY_L1_LABEL/BOUNDARY_L1 .. L3 (level display name + value to pick).
+# Leave unused deeper levels EMPTY in maestro.env (do not delete the lines).
+#
+# Selector notes: the login screen uses STABLE IDS (resource-ids), added by the
+# semantics-identifier patches (see patches/README.md) and device-verified on
+# 2026-08-21: login_userId, login_password, login_submit. IDs require an APK
+# built AFTER applying the patches - on an older APK this flow fails at the
+# first id: step (that is the signal to rebuild, not to edit this flow).
+# The consent checkbox row exists only on SOME builds/branches (it is one merged
+# text node, "By clicking, I accept the ...") - tapped optionally below.
+# Boundary dropdowns keep label-text selectors until verified on a logged-in
+# device; their ids (boundary_<levelName>, boundary_submit) exist in the patches.
+appId: com.digit.hcm
+tags:
+  - smoke
+  - needs-logged-out
+---
+- launchApp
+# The "run in background?" system dialog can cover a fresh post-install launch
+- tapOn:
+    text: "ALLOW"
+    optional: true
+# Landing screen (only on first launch)
+- tapOn:
+    text: "Continue"
+    optional: true
+# Login screen: title and button are both "Login"
+- extendedWaitUntil:
+    visible:
+      text: "Login"
+    timeout: 15000
+- tapOn:
+    id: "login_userId"
+- inputText: ${USERNAME}
+- hideKeyboard
+- tapOn:
+    id: "login_password"
+- inputText: ${PASSWORD}
+- hideKeyboard
+# Consent checkbox - only rendered on some builds; when present, Login stays
+# disabled until it is checked
+- tapOn:
+    text: "(?s)By clicking.*"
+    optional: true
+- tapOn:
+    id: "login_submit"
+# Boundary selection: tap each level's dropdown by its label, then pick the value
+- extendedWaitUntil:
+    visible:
+      text: "Submit"
+    timeout: 20000
+- tapOn:
+    text: "${BOUNDARY_L1_LABEL}.*"
+- tapOn:
+    text: ${BOUNDARY_L1}
+- runFlow:
+    when:
+      true: ${BOUNDARY_L2 != ''}
+    commands:
+      - tapOn:
+          text: "${BOUNDARY_L2_LABEL}.*"
+      - tapOn:
+          text: ${BOUNDARY_L2}
+- runFlow:
+    when:
+      true: ${BOUNDARY_L3 != ''}
+    commands:
+      - tapOn:
+          text: "${BOUNDARY_L3_LABEL}.*"
+      - tapOn:
+          text: ${BOUNDARY_L3}
+- tapOn:
+    text: "Submit"
+# First-login data download popup (either choice works; download preferred)
+- tapOn:
+    text: "Download"
+    optional: true
+# Home (first sync can take a while)
+- extendedWaitUntil:
+    visible:
+      text: "Registration & Delivery"
+    timeout: 180000

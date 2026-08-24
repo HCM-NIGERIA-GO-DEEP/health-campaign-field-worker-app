@@ -577,7 +577,9 @@ class _BoundarySelectionPageState
                                       child: ValueListenableBuilder(
                                         valueListenable: clickedStatus,
                                         builder: (context, bool isClicked, _) {
-                                          return DigitButton(
+                                          return Semantics(
+                                            identifier: 'boundary_submit',
+                                            child: DigitButton(
                                             mainAxisSize: MainAxisSize.max,
                                             isDisabled: (selectedBoundary ==
                                                         null &&
@@ -694,6 +696,7 @@ class _BoundarySelectionPageState
                                                 }
                                               }
                                             },
+                                            ),
                                           );
                                         },
                                       ),
@@ -753,7 +756,10 @@ class _BoundarySelectionPageState
                                         return Padding(
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 0, vertical: spacer2),
-                                          child: ReactiveWrapperField(
+                                          // Stable resource-id per level for UI tests
+                                          child: Semantics(
+                                            identifier: 'boundary_$label',
+                                            child: ReactiveWrapperField(
                                             formControlName: label,
                                             validationMessages: {
                                               "required": (control) {
@@ -988,6 +994,7 @@ class _BoundarySelectionPageState
                                                           : null,
                                                     ),
                                             ),
+                                          ),
                                           ),
                                         );
                                       },

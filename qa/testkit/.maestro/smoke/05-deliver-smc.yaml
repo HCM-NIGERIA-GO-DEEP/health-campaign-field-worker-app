@@ -1,0 +1,109 @@
+# TC-005: Deliver SMC to the eligible child from TC-004.
+# PRECONDITIONS: 03 + 04 passed in THIS run; inside working hours + cycle window;
+# daily delivery cap has headroom; the logged-in user has stock for the delivery
+# resource (an "insufficient stock" popup at Record-Cycle-Dose is an environment
+# problem, not an app bug - the flow fails loudly there by design).
+#
+# Eligibility answer key (from campaign config actions, not guessed):
+#   ALL FIVE questions = "No"  -> proceed to delivery
+#   (ec5=Yes -> ineligible; any other Yes -> refer - covered by flow 07)
+# On-screen question order is ec1, ec2, ec5, ec4, ec3 - the five "No" taps below
+# go top-to-bottom by index.
+# FIRST-RUN CHECKPOINTS: the member-card button text (BTN_RECORD, default
+# "Record Data"), and the resourceCard confirm tap on Delivery Details.
+appId: com.digit.hcm
+tags:
+  - smoke
+  - needs-logged-in
+---
+- launchApp
+- tapOn:
+    text: "ALLOW"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      text: ${HOME_REG}
+    timeout: 30000
+- tapOn:
+    text: ${HOME_REG}
+- extendedWaitUntil:
+    visible:
+      id: ".*_searchBar"
+    timeout: 20000
+- tapOn:
+    id: ".*_searchBar"
+- inputText: "QATEST ${RUN_STAMP}"
+- hideKeyboard
+- tapOn:
+    text: "QATEST ${RUN_STAMP} HEAD.*"
+- extendedWaitUntil:
+    visible:
+      id: ".*_addMember"
+    timeout: 20000
+# Record for the CHILD (anchor the button to the child's card, not the head's)
+- scrollUntilVisible:
+    element:
+      text: "QATEST ${RUN_STAMP} CHILD.*"
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    text: ${BTN_RECORD}
+    below:
+      text: "QATEST ${RUN_STAMP} CHILD.*"
+# --- Eligibility Assessment: all five answers "No" (config: NO NO NO NO NO -> deliver) ---
+- extendedWaitUntil:
+    visible:
+      id: "ec1"
+    timeout: 20000
+- tapOn:
+    text: ${OPT_NO}
+    index: 0
+- tapOn:
+    text: ${OPT_NO}
+    index: 1
+- tapOn:
+    text: ${OPT_NO}
+    index: 2
+- tapOn:
+    text: ${OPT_NO}
+    index: 3
+- tapOn:
+    text: ${OPT_NO}
+    index: 4
+- tapOn:
+    text: ${BTN_NEXT}
+# --- Child summary (beneficiary-details template) -> Record Cycle Dose ---
+- extendedWaitUntil:
+    visible:
+      id: ".*_recordCycle"
+    timeout: 20000
+- tapOn:
+    id: ".*_recordCycle"
+# --- Delivery Details: resource card is auto-selected by age; confirm-tap it ---
+- extendedWaitUntil:
+    visible:
+      id: "resourceCard"
+    timeout: 20000
+- tapOn:
+    id: "resourceCard"
+    optional: true
+- tapOn:
+    text: ${BTN_NEXT}
+# --- "Please check you have done the following": all three confirmations ---
+- extendedWaitUntil:
+    visible:
+      id: "ACTION1"
+    timeout: 20000
+- tapOn:
+    id: "ACTION1"
+- tapOn:
+    id: "ACTION2"
+- tapOn:
+    id: "ACTION3"
+- tapOn:
+    text: ${BTN_NEXT}
+# --- Delivery recorded ---
+- extendedWaitUntil:
+    visible:
+      id: ".*_successCard"
+    timeout: 30000

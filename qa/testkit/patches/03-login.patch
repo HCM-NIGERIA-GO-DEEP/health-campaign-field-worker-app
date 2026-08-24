@@ -1,0 +1,122 @@
+diff --git a/apps/health_campaign_field_worker_app/lib/pages/login.dart b/apps/health_campaign_field_worker_app/lib/pages/login.dart
+index 7468058f3..614ed5add 100644
+--- a/apps/health_campaign_field_worker_app/lib/pages/login.dart
++++ b/apps/health_campaign_field_worker_app/lib/pages/login.dart
+@@ -164,58 +164,67 @@ class _LoginPageState extends LocalizedState<LoginPage> {
+                       color: theme.colorTheme.primary.primary2,
+                     ),
+                   ),
+-                  ReactiveWrapperField(
+-                    formControlName: _userId,
+-                    validationMessages: {
+-                      "required": (control) {
+-                        return localizations.translate(
+-                          '${i18.login.userIdPlaceholder}_IS_REQUIRED',
+-                        );
+-                      },
+-                    },
+-                    builder: (field) => LabeledField(
+-                      label: localizations.translate(
+-                        i18.login.userIdPlaceholder,
+-                      ),
+-                      capitalizedFirstLetter: false,
+-                      isRequired: true,
+-                      child: DigitTextFormInput(
+-                        keyboardType: TextInputType.text,
+-                        initialValue: form.control(_userId).value,
+-                        errorMessage: field.errorText,
+-                        onChange: (value) {
+-                          form.control(_userId).value = value;
++                  // Semantics identifier = stable resource-id for UI tests
++                  Semantics(
++                    identifier: 'login_userId',
++                    child: ReactiveWrapperField(
++                      formControlName: _userId,
++                      validationMessages: {
++                        "required": (control) {
++                          return localizations.translate(
++                            '${i18.login.userIdPlaceholder}_IS_REQUIRED',
++                          );
+                         },
++                      },
++                      builder: (field) => LabeledField(
++                        label: localizations.translate(
++                          i18.login.userIdPlaceholder,
++                        ),
++                        capitalizedFirstLetter: false,
++                        isRequired: true,
++                        child: DigitTextFormInput(
++                          keyboardType: TextInputType.text,
++                          initialValue: form.control(_userId).value,
++                          errorMessage: field.errorText,
++                          onChange: (value) {
++                            form.control(_userId).value = value;
++                          },
++                        ),
+                       ),
+                     ),
+                   ),
+-                  ReactiveWrapperField(
+-                    formControlName: _password,
+-                    validationMessages: {
+-                      "required": (control) {
+-                        return localizations.translate(
+-                          '${i18.login.passwordPlaceholder}_IS_REQUIRED',
+-                        );
+-                      },
+-                    },
+-                    builder: (field) => LabeledField(
+-                      label: localizations.translate(
+-                        i18.login.passwordPlaceholder,
+-                      ),
+-                      isRequired: true,
+-                      child: DigitPasswordFormInput(
+-                        initialValue: form.control(_password).value,
+-                        errorMessage: field.errorText,
+-                        onChange: (value) {
+-                          form.control(_password).value = value;
++                  Semantics(
++                    identifier: 'login_password',
++                    child: ReactiveWrapperField(
++                      formControlName: _password,
++                      validationMessages: {
++                        "required": (control) {
++                          return localizations.translate(
++                            '${i18.login.passwordPlaceholder}_IS_REQUIRED',
++                          );
+                         },
+-                        keyboardType: TextInputType.text,
++                      },
++                      builder: (field) => LabeledField(
++                        label: localizations.translate(
++                          i18.login.passwordPlaceholder,
++                        ),
++                        isRequired: true,
++                        child: DigitPasswordFormInput(
++                          initialValue: form.control(_password).value,
++                          errorMessage: field.errorText,
++                          onChange: (value) {
++                            form.control(_password).value = value;
++                          },
++                          keyboardType: TextInputType.text,
++                        ),
+                       ),
+                     ),
+                   ),
+                   BlocBuilder<AppInitializationBloc, AppInitializationState>(
+                     builder: (context, state) {
+-                      return DigitButton(
++                      return Semantics(
++                        identifier: 'login_submit',
++                        child: DigitButton(
+                         label: localizations.translate(i18.login.actionLabel),
+                         type: DigitButtonType.primary,
+                         onPressed: () {
+@@ -255,6 +264,7 @@ class _LoginPageState extends LocalizedState<LoginPage> {
+                         },
+                         size: DigitButtonSize.large,
+                         mainAxisSize: MainAxisSize.max,
++                        ),
+                       );
+                     },
+                   ),

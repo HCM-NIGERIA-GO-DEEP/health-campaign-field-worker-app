@@ -1,0 +1,101 @@
+# TC-003: Register a new household (head of household).
+# PRECONDITION: logged in, synced, inside working hours + cycle window.
+# Test data: head named "QATEST <RUN_STAMP> HEAD" (RUN_STAMP injected by run-maestro.ps1).
+#
+# Selector strategy (see patches/README.md):
+#   - FORM fields have deterministic ids (= config fieldName): administrativeArea,
+#     memberCount, nameOfIndividual, isHeadOfFamily, dobPicker, gender...
+#   - TEMPLATE buttons have ids ending in their config fieldName: .*_registerBeneficiary
+#   - Only option picks / Next buttons use text (env-overridable: OPT_YES, BTN_NEXT).
+# FIRST-RUN CHECKPOINTS (authored from config, not yet run on device):
+#   1) date-of-birth picker interaction (see comment at the dob step)
+#   2) the consent screen may or may not appear on this campaign - steps are optional
+appId: com.digit.hcm
+tags:
+  - smoke
+  - needs-logged-in
+---
+- launchApp
+# System dialogs that can cover a fresh launch
+- tapOn:
+    text: "ALLOW"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      text: ${HOME_REG}
+    timeout: 30000
+- tapOn:
+    text: ${HOME_REG}
+# Search screen (funnel id suffix = fieldName)
+- extendedWaitUntil:
+    visible:
+      id: ".*_searchBar"
+    timeout: 20000
+- tapOn:
+    id: ".*_registerBeneficiary"
+# Beneficiary-ID pool popup may intercept (edge case: id pool low) - accept if shown
+- tapOn:
+    text: ${BTN_PROCEED}
+    optional: true
+# --- Household Location ---
+- extendedWaitUntil:
+    visible:
+      id: "administrativeArea"
+    timeout: 20000
+# administrativeArea + latLng auto-fill from login boundary/GPS; just proceed
+- tapOn:
+    text: ${BTN_NEXT}
+# --- Care giver's consent (only on some campaigns/first pass - all optional) ---
+- tapOn:
+    text: ${OPT_YES}
+    optional: true
+- tapOn:
+    text: ${BTN_NEXT}
+    optional: true
+# --- Household Details ---
+- extendedWaitUntil:
+    visible:
+      id: "memberCount"
+    timeout: 20000
+- tapOn:
+    id: "memberCount"
+- inputText: ${MEMBER_COUNT}
+- hideKeyboard
+- tapOn:
+    text: ${BTN_NEXT}
+# --- Beneficiary (head) Details ---
+- extendedWaitUntil:
+    visible:
+      id: "nameOfIndividual"
+    timeout: 20000
+- tapOn:
+    id: "nameOfIndividual"
+- inputText: "QATEST ${RUN_STAMP} HEAD"
+- hideKeyboard
+- tapOn:
+    id: "familyname"
+- inputText: "QATEST"
+- hideKeyboard
+- tapOn:
+    id: "isHeadOfFamily"
+# FIRST-RUN CHECKPOINT: date picker. Tapping the field opens the app's date
+# widget; the steps below try typed entry then confirm. If the picker is
+# calendar-only, adjust here once (failure screenshot will show the widget).
+- tapOn:
+    id: "dobPicker"
+- inputText: ${HEAD_DOB_TEXT}
+- tapOn:
+    text: "OK"
+    optional: true
+- hideKeyboard
+- tapOn:
+    id: "gender"
+- tapOn:
+    text: ${GENDER_HEAD}
+- tapOn:
+    text: ${BTN_NEXT}
+# --- Registered: success card or household overview must appear ---
+- extendedWaitUntil:
+    visible:
+      id: "(.*_successCard|.*_addMember)"
+    timeout: 30000

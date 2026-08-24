@@ -1,0 +1,78 @@
+# TC-004: Add an SMC-eligible child (3-59 months) to the TC-003 household.
+# PRECONDITION: 03-register-household passed in THIS run (same RUN_STAMP);
+# logged in with the SAME boundary used at registration (search is
+# boundary-filtered - wrong boundary = empty results).
+# FIRST-RUN CHECKPOINT: dob picker (same note as flow 03). CHILD_DOB_TEXT must
+# make the child 3-59 months old ON THE DEVICE DATE (mind the cycle window and
+# any deliberately-shifted device clock).
+appId: com.digit.hcm
+tags:
+  - smoke
+  - needs-logged-in
+---
+- launchApp
+- tapOn:
+    text: "ALLOW"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      text: ${HOME_REG}
+    timeout: 30000
+- tapOn:
+    text: ${HOME_REG}
+# Search for the TC-003 household by head name
+- extendedWaitUntil:
+    visible:
+      id: ".*_searchBar"
+    timeout: 20000
+- tapOn:
+    id: ".*_searchBar"
+- inputText: "QATEST ${RUN_STAMP}"
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      text: "QATEST ${RUN_STAMP} HEAD.*"
+    timeout: 15000
+- tapOn:
+    text: "QATEST ${RUN_STAMP} HEAD.*"
+# Household overview
+- extendedWaitUntil:
+    visible:
+      id: ".*_addMember"
+    timeout: 20000
+- tapOn:
+    id: ".*_addMember"
+- tapOn:
+    text: ${BTN_PROCEED}
+    optional: true
+# --- Member Details ---
+- extendedWaitUntil:
+    visible:
+      id: "nameOfIndividual"
+    timeout: 20000
+- tapOn:
+    id: "nameOfIndividual"
+- inputText: "QATEST ${RUN_STAMP} CHILD"
+- hideKeyboard
+- tapOn:
+    id: "familyname"
+- inputText: "QATEST"
+- hideKeyboard
+- tapOn:
+    id: "dobPicker"
+- inputText: ${CHILD_DOB_TEXT}
+- tapOn:
+    text: "OK"
+    optional: true
+- hideKeyboard
+- tapOn:
+    id: "gender"
+- tapOn:
+    text: ${GENDER_CHILD}
+- tapOn:
+    text: ${BTN_NEXT}
+# Acknowledgement, then the child must appear in the household
+- extendedWaitUntil:
+    visible:
+      id: ".*_successCard"
+    timeout: 30000

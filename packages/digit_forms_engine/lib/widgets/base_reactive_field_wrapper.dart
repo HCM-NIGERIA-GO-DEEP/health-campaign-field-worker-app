@@ -63,11 +63,17 @@ class BaseReactiveFieldWrapper extends StatelessWidget {
       validationMessages.addAll(customValidationMessages!);
     }
 
-    return ReactiveWrapperField(
-      formControlName: formControlName,
-      validationMessages: validationMessages,
-      showErrors: showErrors ?? (control) => control.invalid && control.touched,
-      builder: builder,
+    // Stable identifier (surfaces as Android resource-id) so UI-test selectors
+    // can target the field by its form control name instead of localized text.
+    return Semantics(
+      identifier: formControlName,
+      child: ReactiveWrapperField(
+        formControlName: formControlName,
+        validationMessages: validationMessages,
+        showErrors:
+            showErrors ?? (control) => control.invalid && control.touched,
+        builder: builder,
+      ),
     );
   }
 }

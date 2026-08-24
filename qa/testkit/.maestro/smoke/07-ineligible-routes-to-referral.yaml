@@ -1,0 +1,120 @@
+# TC-007 (negative): a child failing eligibility must NOT reach delivery.
+# Config answer key: first question (ec1) = "Yes" with the rest "No" routes to
+# REFER_BENEFICIARY (the DEFAULT action) - delivery must not open.
+# The flow adds a second child (CHILD2) so it never collides with the delivered
+# CHILD from flow 05, asserts the Refer screen appears, then BACKS OUT without
+# submitting - no referral record is created, nothing is delivered.
+# PRECONDITIONS: 03 passed in THIS run; working hours + cycle window.
+appId: com.digit.hcm
+tags:
+  - negative
+  - needs-logged-in
+---
+- launchApp
+- tapOn:
+    text: "ALLOW"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      text: ${HOME_REG}
+    timeout: 30000
+- tapOn:
+    text: ${HOME_REG}
+- extendedWaitUntil:
+    visible:
+      id: ".*_searchBar"
+    timeout: 20000
+- tapOn:
+    id: ".*_searchBar"
+- inputText: "QATEST ${RUN_STAMP}"
+- hideKeyboard
+- tapOn:
+    text: "QATEST ${RUN_STAMP} HEAD.*"
+- extendedWaitUntil:
+    visible:
+      id: ".*_addMember"
+    timeout: 20000
+# Add CHILD2 (eligible age - the blocking must come from the checklist, not age)
+- tapOn:
+    id: ".*_addMember"
+- tapOn:
+    text: ${BTN_PROCEED}
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: "nameOfIndividual"
+    timeout: 20000
+- tapOn:
+    id: "nameOfIndividual"
+- inputText: "QATEST ${RUN_STAMP} CHILD2"
+- hideKeyboard
+- tapOn:
+    id: "familyname"
+- inputText: "QATEST"
+- hideKeyboard
+- tapOn:
+    id: "dobPicker"
+- inputText: ${CHILD_DOB_TEXT}
+- tapOn:
+    text: "OK"
+    optional: true
+- hideKeyboard
+- tapOn:
+    id: "gender"
+- tapOn:
+    text: ${GENDER_CHILD}
+- tapOn:
+    text: ${BTN_NEXT}
+- extendedWaitUntil:
+    visible:
+      id: ".*_successCard"
+    timeout: 30000
+# Back to the household, start recording for CHILD2
+- tapOn:
+    text: "QATEST ${RUN_STAMP} HEAD.*"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      id: ".*_addMember"
+    timeout: 20000
+- scrollUntilVisible:
+    element:
+      text: "QATEST ${RUN_STAMP} CHILD2.*"
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    text: ${BTN_RECORD}
+    below:
+      text: "QATEST ${RUN_STAMP} CHILD2.*"
+# --- Eligibility: ec1 = Yes (disqualifying), rest No -> must route to Refer ---
+- extendedWaitUntil:
+    visible:
+      id: "ec1"
+    timeout: 20000
+- tapOn:
+    text: ${OPT_YES}
+    index: 0
+- tapOn:
+    text: ${OPT_NO}
+    index: 1
+- tapOn:
+    text: ${OPT_NO}
+    index: 2
+- tapOn:
+    text: ${OPT_NO}
+    index: 3
+- tapOn:
+    text: ${OPT_NO}
+    index: 4
+- tapOn:
+    text: ${BTN_NEXT}
+# --- MUST land on Refer Beneficiary (id from its form fields), NOT delivery ---
+- extendedWaitUntil:
+    visible:
+      id: "referredBy"
+    timeout: 20000
+- assertNotVisible:
+    id: "resourceCard"
+# Leave without creating a referral
+- back
+- back

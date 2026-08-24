@@ -1,0 +1,157 @@
+diff --git a/packages/digit_flow_builder/lib/utils/semantics_identifier.dart b/packages/digit_flow_builder/lib/utils/semantics_identifier.dart
+new file mode 100644
+index 000000000..208339c48
+--- /dev/null
++++ b/packages/digit_flow_builder/lib/utils/semantics_identifier.dart
+@@ -0,0 +1,40 @@
++/// Derives a stable semantics identifier for a config-driven widget.
++///
++/// The identifier is exposed to the Android accessibility tree as a
++/// `resource-id` (via `Semantics(identifier:)`), giving UI tests a selector
++/// that survives campaign label/localization changes because it is derived
++/// from the config's own keys rather than displayed text.
++///
++/// Kept import-free so its unit tests compile independently of the rest of
++/// the package.
++///
++/// Returns null when the widget has no stable key — pure layout nodes are
++/// intentionally left without an identifier.
++String? semanticsIdentifierFor(Map<String, dynamic> json, String? stateKey) {
++  String? fieldKey;
++
++  final dynamic rawKey = json['key'] ?? json['fieldName'];
++  if (rawKey is String && rawKey.isNotEmpty) {
++    fieldKey = rawKey;
++  }
++
++  // Buttons usually carry no key; their label localization CODE (not the
++  // displayed text) is a stable fallback. Template labels ({{...}}) resolve
++  // per item and are not stable, so they are rejected.
++  if (fieldKey == null && json['format'] == 'button') {
++    final dynamic label = json['label'];
++    if (label is String && label.isNotEmpty && !label.contains('{{')) {
++      fieldKey = label;
++    }
++  }
++
++  if (fieldKey == null) {
++    return null;
++  }
++
++  if (stateKey == null || stateKey.isEmpty) {
++    return fieldKey;
++  }
++
++  return '${stateKey}_$fieldKey';
++}
+diff --git a/packages/digit_flow_builder/lib/widgets/flow_widget_interface.dart b/packages/digit_flow_builder/lib/widgets/flow_widget_interface.dart
+index d031b64b3..0ec50e5e5 100644
+--- a/packages/digit_flow_builder/lib/widgets/flow_widget_interface.dart
++++ b/packages/digit_flow_builder/lib/widgets/flow_widget_interface.dart
+@@ -4,6 +4,7 @@ import '../action_handler/action_config.dart';
+ import '../blocs/flow_crud_bloc.dart';
+ import '../utils/conditional_evaluator.dart';
+ import '../utils/function_registry.dart';
++import '../utils/semantics_identifier.dart';
+ import '../widget_registry.dart';
+ 
+ /// Base interface for all flow widgets
+@@ -99,7 +100,14 @@ class FlowWidgetFactory {
+     final widget = _widgets[format];
+ 
+     if (widget != null) {
+-      return widget.build(json, context, onAction);
++      final built = widget.build(json, context, onAction);
++      // Stable identifier (surfaces as Android resource-id) derived from the
++      // config key, so UI-test selectors survive campaign label changes.
++      final semanticsId = semanticsIdentifierFor(json, stateKey);
++      if (semanticsId == null) {
++        return built;
++      }
++      return Semantics(identifier: semanticsId, child: built);
+     }
+ 
+     return Text('Unknown widget format: $format');
+diff --git a/packages/digit_flow_builder/test/semantics_identifier_test.dart b/packages/digit_flow_builder/test/semantics_identifier_test.dart
+new file mode 100644
+index 000000000..64f06f78f
+--- /dev/null
++++ b/packages/digit_flow_builder/test/semantics_identifier_test.dart
+@@ -0,0 +1,77 @@
++import 'package:digit_flow_builder/utils/semantics_identifier.dart';
++import 'package:flutter_test/flutter_test.dart';
++
++void main() {
++  group('semanticsIdentifierFor', () {
++    test('uses key when present', () {
++      expect(
++        semanticsIdentifierFor({'key': 'houseType'}, 'householdDetails'),
++        'householdDetails_houseType',
++      );
++    });
++
++    test('falls back to fieldName when key is absent', () {
++      expect(
++        semanticsIdentifierFor({'fieldName': 'searchBar'}, 'searchBeneficiary'),
++        'searchBeneficiary_searchBar',
++      );
++    });
++
++    test('key wins over fieldName when both present', () {
++      expect(
++        semanticsIdentifierFor(
++          {'key': 'primary', 'fieldName': 'secondary'},
++          's',
++        ),
++        's_primary',
++      );
++    });
++
++    test('button falls back to plain label code', () {
++      expect(
++        semanticsIdentifierFor(
++          {'format': 'button', 'label': 'APPONE_SUBMIT_LABEL'},
++          'deliveryDetails',
++        ),
++        'deliveryDetails_APPONE_SUBMIT_LABEL',
++      );
++    });
++
++    test('button with template label gets no identifier', () {
++      expect(
++        semanticsIdentifierFor(
++          {'format': 'button', 'label': '{{fn:someLabel()}}'},
++          's',
++        ),
++        isNull,
++      );
++    });
++
++    test('non-button widget never uses label fallback', () {
++      expect(
++        semanticsIdentifierFor({'format': 'text', 'label': 'SOME_CODE'}, 's'),
++        isNull,
++      );
++    });
++
++    test('returns null for layout nodes without key/fieldName', () {
++      expect(semanticsIdentifierFor({'format': 'card'}, 'screen'), isNull);
++    });
++
++    test('empty-string key is treated as missing', () {
++      expect(semanticsIdentifierFor({'key': ''}, 's'), isNull);
++    });
++
++    test('non-string key is treated as missing', () {
++      expect(semanticsIdentifierFor({'key': 42}, 's'), isNull);
++    });
++
++    test('null stateKey returns bare field key', () {
++      expect(semanticsIdentifierFor({'key': 'houseType'}, null), 'houseType');
++    });
++
++    test('empty stateKey returns bare field key', () {
++      expect(semanticsIdentifierFor({'key': 'houseType'}, ''), 'houseType');
++    });
++  });
++}

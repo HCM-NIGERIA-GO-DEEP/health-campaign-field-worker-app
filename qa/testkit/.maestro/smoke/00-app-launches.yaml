@@ -1,0 +1,17 @@
+# Smoke: the app launches and shows a known first screen.
+# Safe on any device: does NOT clear app data, does NOT log in, taps nothing.
+# Passes whether the app is logged out (landing/login) or already logged in (home).
+appId: com.digit.hcm
+tags:
+  - smoke
+  - safe
+---
+- launchApp
+# The "run in background?" system dialog can cover a fresh post-install launch
+- tapOn:
+    text: "ALLOW"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      text: "Continue|Login|Registration & Delivery"
+    timeout: 30000

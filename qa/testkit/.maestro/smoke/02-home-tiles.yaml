@@ -1,0 +1,24 @@
+# Smoke: home screen shows the core modules.
+# PRECONDITION: already logged in (run 01-login-to-home first on a fresh device).
+# Safe: read-only asserts, taps nothing.
+appId: com.digit.hcm
+tags:
+  - smoke
+  - safe
+  - needs-logged-in
+---
+- launchApp
+# The "run in background?" system dialog can cover a fresh post-install launch
+- tapOn:
+    text: "ALLOW"
+    optional: true
+- extendedWaitUntil:
+    visible:
+      text: "Registration & Delivery"
+    timeout: 30000
+- assertVisible: "Sync Data"
+- scrollUntilVisible:
+    element:
+      text: "Manage Stock"
+    direction: DOWN
+    timeout: 20000

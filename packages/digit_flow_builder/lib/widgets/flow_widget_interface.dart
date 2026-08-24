@@ -4,6 +4,7 @@ import '../action_handler/action_config.dart';
 import '../blocs/flow_crud_bloc.dart';
 import '../utils/conditional_evaluator.dart';
 import '../utils/function_registry.dart';
+import '../utils/semantics_identifier.dart';
 import '../widget_registry.dart';
 
 /// Base interface for all flow widgets
@@ -99,7 +100,14 @@ class FlowWidgetFactory {
     final widget = _widgets[format];
 
     if (widget != null) {
-      return widget.build(json, context, onAction);
+      final built = widget.build(json, context, onAction);
+      // Stable identifier (surfaces as Android resource-id) derived from the
+      // config key, so UI-test selectors survive campaign label changes.
+      final semanticsId = semanticsIdentifierFor(json, stateKey);
+      if (semanticsId == null) {
+        return built;
+      }
+      return Semantics(identifier: semanticsId, child: built);
     }
 
     return Text('Unknown widget format: $format');
