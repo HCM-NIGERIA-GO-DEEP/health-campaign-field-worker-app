@@ -467,6 +467,13 @@ abstract class LocalRepository<D extends EntityModel,
 
   FutureOr<void> bulkCreate(List<D> entities) => throw UnimplementedError();
 
+  /// Bulk-creates entities without requiring the caller to know the concrete
+  /// entity type [D] at compile time. Casts [entities] to `List<D>` before
+  /// delegating to [bulkCreate], so callers working generically over
+  /// [EntityModel] (e.g. `CrudService`) can still use the atomic bulk path.
+  FutureOr<void> bulkCreateEntities(List<EntityModel> entities) =>
+      bulkCreate(entities.cast<D>());
+
   @override
   @mustCallSuper
   FutureOr<void> update(
