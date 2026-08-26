@@ -1,5 +1,23 @@
 # Changelog
 
+## 2.2.107 — 2026-08-26
+
+_(includes 2.2.106)_
+
+**Eligibility logic in `function_registry.dart` (SMC)**
+
+- `checkEligibilityForAgeAndSideEffect`'s disqualifying-status loop had its cycle-index lookup pulled out into a shared `getTaskCycleIndex(task, projectType)` helper. The extraction drops the `additionalFields`-based `cycleIndex` lookup that used to run before the `lastModifiedTime` fallback — but that branch had already been commented out in a prior commit (annotated "Giving wrong cycle index"), so the helper keeps only the fallback and this is a no-op cleanup, not a behavior change.
+- The task-iteration order in that same loop was flipped back to oldest-first, undoing the newest-first reversal shipped in 2.2.105.
+- Both the disqualifying-status loop and a new administration-success loop now skip any task whose `additionalFields.fields` carries a `flow` value other than `"smcDone"`. This is a real narrowing: previously a task's `beneficiaryDied`/`ineligible`/`beneficiaryMigrated`/`beneficiaryAbsent`/`beneficiaryRefused` status could disqualify a beneficiary regardless of the task's flow type; now only SMC-flow tasks are considered.
+- The "out-of-cycle, out-of-age task with `administrationSuccess` counts as eligible" behavior — added and fully reverted within 2.2.105 — is back, reimplemented as its own loop that runs after the disqualifying-status loop rather than inline inside it, and now scoped to the SMC-flow-filtered task set described above.
+
+**ORS delivery status (`isSMCDelivered`, `function_registry.dart`)**
+
+- `transformer_config.dart`'s ORS task submission payload now also includes `isSMCDelivered` (sourced from `__context:isSMCDelivered`) alongside the existing ORS delivery fields.
+- `isORSDelivered`'s cycle-index check was rewritten from Map-based dynamic field access to typed-model access (`task.additionalFields?.fields` as `List<AdditionalField>`), while the near-identical `isVASDelivered` right above it was left on the old Map-based style, so the two now diverge. The rewrite is billed as a simplification but introduces two regressions:
+  - The loop over `fields` still guards with `if (field is Map && field.key == 'cycleIndex')`, but `field` is now a typed `AdditionalField` object, never a `Map` — so that condition is always false, the loop body never runs, and any `cycleIndex` recorded on a task's `additionalFields` is now silently ignored. `isORSDelivered` always falls through to the `lastModifiedTime`-derived cycle fallback.
+  - That fallback dropped its `is Map ? ... : null` guards and now reads `task.clientAuditDetails.lastModifiedTime` directly. `clientAuditDetails`/`auditDetails` are nullable fields on `EntityModel`, so a task with no `clientAuditDetails` recorded will throw a null-getter error at runtime instead of gracefully falling through, as the old defensive check allowed.
+
 ## 2.2.105 — 2026-08-18
 
 _(includes 2.2.102, 2.2.103, 2.2.104)_
