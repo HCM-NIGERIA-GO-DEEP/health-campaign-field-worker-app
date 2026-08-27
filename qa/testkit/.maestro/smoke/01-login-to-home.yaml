@@ -4,8 +4,10 @@
 # deletes unsynced locally-created records. Do a fresh install yourself if needed.
 #
 # Requires maestro.env (see maestro.env.example): USERNAME, PASSWORD,
-# BOUNDARY_L1_LABEL/BOUNDARY_L1 .. L3 (level display name + value to pick).
-# Leave unused deeper levels EMPTY in maestro.env (do not delete the lines).
+# BOUNDARY_L1_LABEL .. L3_LABEL (each level's display name). The VALUE picked
+# at each level is simply the FIRST option in the dropdown, so no boundary
+# values are needed. Leave unused deeper level labels EMPTY in maestro.env
+# (do not delete the lines).
 #
 # Selector notes: the login screen uses STABLE IDS (resource-ids), added by the
 # semantics-identifier patches (see patches/README.md) and device-verified on
@@ -50,31 +52,41 @@ tags:
     optional: true
 - tapOn:
     id: "login_submit"
-# Boundary selection: tap each level's dropdown by its label, then pick the value
+# Boundary selection: for each level, open the dropdown by its field id
+# (boundary_<label>, from the semantics patches - device-confirmed 2026-08-26,
+# note the id CONTAINS the label's space, e.g. "boundary_Health Facility"),
+# then pick the FIRST option: DigitDropdown renders the open option list
+# directly beneath the field, so the nearest element below the field is the
+# top option. NEVER combine below: with index: - Maestro resolves that against
+# the wrong candidate set (it picked the status-bar wifi icon in the
+# 2026-08-26-1801 run).
 - extendedWaitUntil:
     visible:
       text: "Submit"
     timeout: 20000
 - tapOn:
-    text: "${BOUNDARY_L1_LABEL}.*"
+    id: "boundary_${BOUNDARY_L1_LABEL}"
 - tapOn:
-    text: ${BOUNDARY_L1}
+    below:
+      id: "boundary_${BOUNDARY_L1_LABEL}"
 - runFlow:
     when:
-      true: ${BOUNDARY_L2 != ''}
+      true: ${BOUNDARY_L2_LABEL != ''}
     commands:
       - tapOn:
-          text: "${BOUNDARY_L2_LABEL}.*"
+          id: "boundary_${BOUNDARY_L2_LABEL}"
       - tapOn:
-          text: ${BOUNDARY_L2}
+          below:
+            id: "boundary_${BOUNDARY_L2_LABEL}"
 - runFlow:
     when:
-      true: ${BOUNDARY_L3 != ''}
+      true: ${BOUNDARY_L3_LABEL != ''}
     commands:
       - tapOn:
-          text: "${BOUNDARY_L3_LABEL}.*"
+          id: "boundary_${BOUNDARY_L3_LABEL}"
       - tapOn:
-          text: ${BOUNDARY_L3}
+          below:
+            id: "boundary_${BOUNDARY_L3_LABEL}"
 - tapOn:
     text: "Submit"
 # First-login data download popup (either choice works; download preferred)
