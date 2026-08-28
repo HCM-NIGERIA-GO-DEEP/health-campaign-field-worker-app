@@ -5,6 +5,7 @@ import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendance_log.dart';
 import 'package:digit_data_model/models/entities/project_type.dart';
 import 'package:digit_flow_builder/blocs/flow_crud_bloc.dart';
+import 'package:digit_flow_builder/utils/ri_age_eligibility.dart';
 import 'package:digit_flow_builder/utils/utils.dart';
 import 'package:digit_flow_builder/widget_registry.dart';
 import 'package:digit_formula_parser/digit_formula_parser.dart';
@@ -2908,10 +2909,12 @@ void initializeFunctionRegistry() {
     if (projectType == null) return false;
 
     // RI is eligible from birth (minimum age 0), unlike SMC which uses
-    // projectType.validMinAge. The upper bound still mirrors the campaign config.
-    const validMinAge = 0;
-    final validMaxAge = projectType.validMaxAge ?? 59;
-    if (totalAgeMonths < validMinAge || totalAgeMonths > validMaxAge) {
+    // projectType.validMinAge. The upper bound is a hard 59 months unless the
+    // config overrides it via an optional 4th argument — never the campaign
+    // projectType's validMaxAge, which encodes SMC continuation policy and can
+    // exceed 59 (Plateau SMC-RI carried 64, wrongly exposing RI to 60-64mo).
+    final configMaxAge = args.length > 3 ? args[3] : null;
+    if (!isRiAgeEligible(totalAgeMonths, configMaxAge: configMaxAge)) {
       return false;
     }
 
