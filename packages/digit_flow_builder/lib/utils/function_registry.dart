@@ -708,6 +708,30 @@ void initializeFunctionRegistry() {
     }
   });
 
+  int? getTaskCycleIndex(
+    Map<String, dynamic> task,
+    ProjectTypeModel? projectType,
+  ) {
+    int? taskCycleIndex;
+    final clientAuditDetails = task['clientAuditDetails'];
+    final taskAuditDetails = task['auditDetails'];
+    final lastModifiedTime = (clientAuditDetails is Map
+            ? clientAuditDetails['lastModifiedTime']
+            : null) ??
+        (taskAuditDetails is Map ? taskAuditDetails['lastModifiedTime'] : null);
+    final lastModifiedTimeMs = int.tryParse(lastModifiedTime?.toString() ?? '');
+
+    if (lastModifiedTimeMs != null) {
+      final matchingCycle = projectType?.cycles?.firstWhereOrNull(
+        (cycle) =>
+            lastModifiedTimeMs >= cycle.startDate &&
+            lastModifiedTimeMs <= cycle.endDate,
+      );
+      taskCycleIndex = matchingCycle?.id;
+    }
+    return taskCycleIndex;
+  }
+
   /// Registers a function to check eligibility for a task based on age and
   /// recorded side effects.
   ///
@@ -757,28 +781,13 @@ void initializeFunctionRegistry() {
 
 // --- Eligibility logic ---
     bool recordedSideEffect = false;
-    if (tasks.isEmpty == false) {
+    if (tasks.isNotEmpty) {
       // Get currentRunningCycle from third argument if provided
       final currentRunningCycle =
           args.length > 2 ? int.tryParse(args[2]?.toString() ?? '') : null;
 
-      for (final item in tasks) {
-        Map<String, dynamic> task;
-
-        if (item is Map<String, dynamic>) {
-          task = item;
-        } else {
-          try {
-            task = (item as dynamic).toMap() as Map<String, dynamic>;
-          } catch (_) {
-            try {
-              task = (item as dynamic).toJson() as Map<String, dynamic>;
-            } catch (_) {
-              continue;
-            }
-          }
-        }
-
+      // for any ineligible, beneficiaryMigrated, beneficiaryAbsent, or beneficiaryRefused in current cycles return false, for beneficiaryDied return false immediately regardless of current cycle state
+      for (final task in tasks) {
         final additionalFields = task['additionalFields'];
         final fields = additionalFields is Map
             ? additionalFields['fields'] as List?
@@ -797,47 +806,10 @@ void initializeFunctionRegistry() {
         // BENEFICIARY_DIED returns false immediately regardless of cycle
         if (task['status'] == TaskStatus.beneficiaryDied) return false;
 
-        // For other ineligible statuses, only check tasks matching the current cycle
         if (currentRunningCycle != null) {
-          int? taskCycleIndex;
-          if (fields != null) {
-            for (final field in fields) {
-              if (field is Map && field['key'] == 'cycleIndex') {
-                taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
-                break;
-              }
-            }
-          }
-
-          // Fall back to deriving the cycle from the task's last modified
-          // time when no cycleIndex was recorded on the task.
-          if (taskCycleIndex == null) {
-            final clientAuditDetails = task['clientAuditDetails'];
-            final taskAuditDetails = task['auditDetails'];
-            final lastModifiedTime = (clientAuditDetails is Map
-                    ? clientAuditDetails['lastModifiedTime']
-                    : null) ??
-                (taskAuditDetails is Map
-                    ? taskAuditDetails['lastModifiedTime']
-                    : null);
-            final lastModifiedTimeMs =
-                int.tryParse(lastModifiedTime?.toString() ?? '');
-
-            if (lastModifiedTimeMs != null) {
-              final matchingCycle = projectType.cycles?.firstWhereOrNull(
-                (cycle) =>
-                    lastModifiedTimeMs >= cycle.startDate &&
-                    lastModifiedTimeMs <= cycle.endDate,
-              );
-              taskCycleIndex = matchingCycle?.id;
-            }
-          }
+          int? taskCycleIndex = getTaskCycleIndex(task, projectType);
 
           if (taskCycleIndex != currentRunningCycle) {
-            if (isWithinAge == false &&
-                task['status'] == TaskStatus.administrationSuccess) {
-              return true;
-            }
             continue;
           }
         }
@@ -846,6 +818,35 @@ void initializeFunctionRegistry() {
             task['status'] == TaskStatus.beneficiaryMigrated ||
             task['status'] == TaskStatus.beneficiaryAbsent ||
             task['status'] == TaskStatus.beneficiaryRefused) return false;
+      }
+
+      // for any administrationSuccess in previous cycles, return true immediately regardless of current cycle state
+      for (final task in tasks) {
+        final additionalFields = task['additionalFields'];
+        final fields = additionalFields is Map
+            ? additionalFields['fields'] as List?
+            : null;
+
+        if (fields != null) {
+          String? flowType;
+          for (final field in fields) {
+            if (field is Map && field['key'] == 'flow') {
+              flowType = field['value']?.toString();
+            }
+          }
+          if (flowType != "smcDone") continue; // Skip non-SMC tasks
+        }
+
+        if (currentRunningCycle != null) {
+          int? taskCycleIndex = getTaskCycleIndex(task, projectType);
+
+          if (taskCycleIndex != currentRunningCycle) {
+            if (isWithinAge == false &&
+                task['status'] == TaskStatus.administrationSuccess) {
+              return true;
+            }
+          }
+        }
       }
     }
 
@@ -2925,8 +2926,6 @@ void initializeFunctionRegistry() {
 
     for (final task in riTasks) {
       final status = task['status']?.toString();
-      if (status == TaskStatus.beneficiaryDied) return false;
-      if (status == TaskStatus.ineligible) return false;
 
       if (currentRunningCycle != null) {
         final additionalFields = task['additionalFields'];
@@ -2942,16 +2941,34 @@ void initializeFunctionRegistry() {
             }
           }
         }
-        if (taskCycleIndex != currentRunningCycle) continue;
-      }
 
-      if (status == TaskStatus.beneficiaryMigrated ||
-          status == TaskStatus.beneficiaryAbsent ||
-          status == TaskStatus.beneficiaryRefused) {
-        return false;
+        // Fall back to deriving the cycle from the task's last modified
+        // time when no cycleIndex was recorded on the task.
+        if (taskCycleIndex == null) {
+          final clientAuditDetails = task['clientAuditDetails'];
+          final taskAuditDetails = task['auditDetails'];
+          final lastModifiedTime = (clientAuditDetails is Map
+                  ? clientAuditDetails['lastModifiedTime']
+                  : null) ??
+              (taskAuditDetails is Map
+                  ? taskAuditDetails['lastModifiedTime']
+                  : null);
+          final lastModifiedTimeMs =
+              int.tryParse(lastModifiedTime?.toString() ?? '');
+
+          if (lastModifiedTimeMs != null) {
+            final matchingCycle = projectType.cycles?.firstWhereOrNull(
+              (cycle) =>
+                  lastModifiedTimeMs >= cycle.startDate &&
+                  lastModifiedTimeMs <= cycle.endDate,
+            );
+            taskCycleIndex = matchingCycle?.id;
+          }
+        }
+
+        if (taskCycleIndex == currentRunningCycle) return false;
       }
     }
-
     return true;
   });
 
@@ -3008,7 +3025,7 @@ void initializeFunctionRegistry() {
 
     final projectType = FlowBuilderSingleton().projectType;
     final now = DateTime.now().millisecondsSinceEpoch;
-    final selectedCycle = projectType?.cycles?.firstWhereOrNull(
+    final currentRunningCycle = projectType?.cycles?.firstWhereOrNull(
       (e) => e.startDate < now && e.endDate > now,
     );
 
@@ -3017,7 +3034,9 @@ void initializeFunctionRegistry() {
       final ineligible = status == TaskStatus.ineligible;
       if (!ineligible) continue;
 
-      if (selectedCycle == null || selectedCycle.id == 0) return true;
+      if (currentRunningCycle == null || currentRunningCycle.id == 0) {
+        return false;
+      }
 
       final additionalFields = task['additionalFields'];
       final fields =
@@ -3036,9 +3055,32 @@ void initializeFunctionRegistry() {
           }
         }
       }
-      if (taskCycleIndex == null || taskCycleIndex == selectedCycle.id) {
-        return true;
+
+      // Fall back to deriving the cycle from the task's last modified
+      // time when no cycleIndex was recorded on the task.
+      if (taskCycleIndex == null) {
+        final clientAuditDetails = task['clientAuditDetails'];
+        final taskAuditDetails = task['auditDetails'];
+        final lastModifiedTime = (clientAuditDetails is Map
+                ? clientAuditDetails['lastModifiedTime']
+                : null) ??
+            (taskAuditDetails is Map
+                ? taskAuditDetails['lastModifiedTime']
+                : null);
+        final lastModifiedTimeMs =
+            int.tryParse(lastModifiedTime?.toString() ?? '');
+
+        if (lastModifiedTimeMs != null) {
+          final matchingCycle = projectType?.cycles?.firstWhereOrNull(
+            (cycle) =>
+                lastModifiedTimeMs >= cycle.startDate &&
+                lastModifiedTimeMs <= cycle.endDate,
+          );
+          taskCycleIndex = matchingCycle?.id;
+        }
       }
+
+      if (taskCycleIndex == currentRunningCycle.id) return true;
     }
     return false;
   });

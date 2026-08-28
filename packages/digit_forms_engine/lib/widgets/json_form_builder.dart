@@ -781,6 +781,7 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
           final subName = mapEntry.key;
 
           final field = JsonFormBuilder(
+            key: ValueKey(subName),
             pageName: widget.pageName,
             currentSchemaKey: widget.currentSchemaKey,
             formControlName: subName,

@@ -1,4 +1,6 @@
+import 'package:digit_analytics/digit_analytics.dart';
 import 'package:digit_crud_bloc/bloc/crud_bloc.dart';
+import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/blocs/search_state_manager.dart';
 import 'package:digit_flow_builder/blocs/state_wrapper_builder.dart';
 import 'package:flutter/foundation.dart';
@@ -134,6 +136,7 @@ class FlowCrudBloc extends CrudBloc {
       FlowCrudStateRegistry().updateByCompositeKey(compositeKey, flowState);
     } else if (crudState is CrudStatePersisted) {
       final entities = crudState.entities;
+      _logCompletionEvents(entities);
       // final persistedWrapperConfig = flowConfig['wrapperConfig'] as Map<String, dynamic>?;
       // Preserve the existing stateWrapper if the screen already has one
       // (typically a search page with its loaded results). Otherwise this
@@ -393,6 +396,50 @@ class FlowCrudBloc extends CrudBloc {
               ?.length ??
           0,
     );
+  }
+
+  static const _registrationEntityTypes = <Type>{
+    HouseholdModel,
+    IndividualModel,
+    HouseholdMemberModel,
+  };
+
+  /// Fires a completion analytics event for every entity type included in a
+  /// persisted create. Registration entities (household/individual/member)
+  /// are grouped into one `registration_complete` event, since a single
+  /// registration action commonly creates several of them together. Every
+  /// other entity type gets its own `<flow>_complete` event derived from its
+  /// model name, so flows added to the config later (stock reconciliation,
+  /// PGR, attendance, referrals, ...) get tracked automatically without
+  /// touching this bloc again.
+  void _logCompletionEvents(List<EntityModel> entities) {
+    final types = entities.map((e) => e.runtimeType).toSet();
+
+    final registrationTypes = types.where(_registrationEntityTypes.contains);
+    if (registrationTypes.isNotEmpty) {
+      AnalyticsService.instance.logEvent('registration_complete', {
+        'entity_types': registrationTypes.map((t) => t.toString()).toList(),
+      });
+    }
+
+    for (final type
+        in types.where((t) => !_registrationEntityTypes.contains(t))) {
+      AnalyticsService.instance.logEvent(_completionEventName(type), {});
+    }
+  }
+
+  /// Derives a `snake_case_complete` analytics event name from an entity
+  /// model's type, e.g. `StockReconciliationModel` ->
+  /// `stock_reconciliation_complete`.
+  String _completionEventName(Type type) {
+    final name = type.toString().replaceAll('Model', '');
+    final snakeCase = name
+        .replaceAllMapped(
+          RegExp(r'(?<=[a-z0-9])(?=[A-Z])'),
+          (match) => '_',
+        )
+        .toLowerCase();
+    return '${snakeCase}_complete';
   }
 
   @override

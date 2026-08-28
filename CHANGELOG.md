@@ -1,8 +1,71 @@
 # Changelog
 
+## 2.2.106 — 2026-08-20
+
+**Eligibility / cycle logic in `function_registry.dart`**
+
+- The lastModifiedTime-based cycle-derivation logic inside `checkEligibilityForAgeAndSideEffect` was extracted into a standalone `getTaskCycleIndex(task, projectType)` helper, with no change to the derivation logic itself.
+- Task iteration in `checkEligibilityForAgeAndSideEffect` was changed back from `tasks.reversed.toList()` (newest-first, introduced in 2.2.105) to plain `tasks` (oldest-first), reversing that prior release's iteration-order change.
+- The early-eligible path — where an out-of-cycle, out-of-age task with `administrationSuccess` status made the function return `true` immediately — was removed from the main disqualification loop and moved into a new second loop that runs afterward and only considers tasks whose `additionalFields` records `flow: "smcDone"`. For tasks without that flow marker, an out-of-cycle, out-of-age `administrationSuccess` status no longer makes the beneficiary eligible.
+
+## 2.2.105 — 2026-08-18
+
+_(includes 2.2.102, 2.2.103, 2.2.104)_
+
+**Analytics integration (new feature, ships disabled by default)**
+
+- A new `digit_analytics` package was created, providing an Isar-backed event queue (`AnalyticsQueueManager`, modeled on the existing sync oplog but kept separate from it) and an `AnalyticsService.instance.logEvent(...)` API that is a no-op unless analytics is enabled.
+- `digit_firebase_services` gained `initializeAnalytics`/`logFirebaseAnalyticsEvent` wrappers, splitting the previous single `initialize()` call into separate core/Crashlytics/Analytics steps.
+- The app was wired up to log `login`/`logout` events, per-screen `screen_view` events (including a fix so `digit_flow_builder`'s dynamic flow pages — which all otherwise share one route name — log distinguishable per-step screen names), and completion events for every persisted entity type (registrations still group into one `registration_complete` event; other entity types now each fire their own auto-derived `<entity>_complete` event). A new `AnalyticsSyncService.flushPendingEvents()` pushes the local queue to Firebase Analytics on reconnect and during regular sync-up.
+- A debug-only analytics event viewer/management page was added, reachable from Home and hidden in production release builds.
+- One commit in this sequence, described only as adding the event viewer, also silently flipped the `enableAnalytics` default from `false` to `true` in both `constants.dart` and `background_service.dart` — with no mention of that change in its commit message. Two follow-up commits explicitly titled "disable analytics by default" flipped both fallbacks back to `false`, so by 2.2.105 analytics remains off unless the remote `firebaseConfig.enableAnalytics` MDMS config explicitly turns it on — the same behavior as before this feature was built, net of the accidental one-commit regression in between.
+
+**Campaign ID configuration**
+
+- The SMC-RI and ORS-Zinc campaign IDs in `ProjectBloc` are no longer hardcoded strings; they now read from new `SMC_RI_CAMPAIGN_ID`/`ORS_ZINC_CAMPAIGN_ID` environment variables, falling back to the event's own `referenceID` when the environment value is empty.
+
+**Eligibility / cycle logic in `function_registry.dart`**
+
+- `checkEligibilityForAgeAndSideEffect` (SMC) no longer looks up `cycleIndex` from the task's `additionalFields`; it now always derives the task's cycle from `lastModifiedTime` against the project's cycle date ranges. This change was made only in this function — `checkRIEligibility` still uses the fields-based lookup, so SMC and RI eligibility now resolve their task's cycle differently.
+- A block that normalized each task to a `Map` before use was removed. It was confirmed dead code: the tasks list already arrives pre-normalized as `List<Map<String, dynamic>>`, so the removed branches could never run. This is a pure cleanup with no behavior change, matching its commit message.
+- A change that made an out-of-cycle, out-of-age task with an `administrationSuccess` status immediately count as eligible was landed, then fully reverted the same day. The revert restores the tree to its pre-change state byte-for-byte — while it was live, the change was materially narrower than its commit message ("enhance... check") suggested: it required *both* a past-cycle administration-success record *and* a separate current-cycle administration-success record before returning eligible, rather than either being sufficient.
+- The final change in this release reverses the order in which a beneficiary's tasks are iterated (from oldest-first to newest-first) inside `checkEligibilityForAgeAndSideEffect`. Because the loop returns as soon as it hits a task matching one of several disqualifying or qualifying conditions, this is a real behavioral change, not a stylistic reorder: for a beneficiary whose task history contains multiple tasks that would independently trigger different outcomes (for example, a `beneficiaryDied` task from one cycle alongside an `administrationSuccess` task from another), which status wins now depends on iteration order, and that order was just flipped.
+
+**Stock / list view**
+
+- Stock and stock-reconciliation records shown outside an active delivery flow (e.g. from the Stock Reports screen on Home) are now filtered to the active cycle's date window, resolved via the currently selected project type rather than the delivery-flow singleton that isn't populated in that context. "Stock Received" rows are additionally required to have an `ACCEPTED` status to be counted.
+- A logging call that printed every CRUD bloc state transition — including full search-result graphs on each pagination page load, which could take upward of ten seconds — was silenced for CRUD blocs, since it was starving the loading indicator from ever painting.
+- Top-level list-view bodies in the dynamic flow layout renderer were switched from an eagerly built `Column` of every loaded item to a lazily built `SliverList`, giving genuine list virtualization instead of rendering the whole loaded set up front.
+- A minimum 350ms display duration was added for the loading indicator, and the modal loader is now driven directly by a value listener rather than through `build()`, because a fast local-DB pagination fetch could otherwise show and hide the loader within the same frame and never paint it.
+
+**JsonFormBuilder**
+
+- Dynamically shown/hidden form fields in `JsonFormBuilder` are now keyed by field name (`ValueKey(subName)`). Previously, with no key, Flutter's positional list reconciliation could let one field inherit another field's live widget state — including its form control — whenever a visibility change shifted list positions. This is a real state-reuse bug fix, not merely, as the commit message put it, "improved widget identification."
+
+## 2.2.101 — 2026-08-05
+
+_(includes 2.2.99, 2.2.100)_
+
+**Eligibility / cycle logic in `function_registry.dart`**
+
+- A new age-only eligibility gate, `_isEligibleAge(projectType, totalAgeMonths)`, replaced the dose-criteria-based `_isEligibleFromDoseCriteria(currentCycle, totalAgeMonths, individual)` as the age check inside `checkEligibilityForAgeAndSideEffect` (3 call sites), `isORSEligible`, `vasWithinTheAge`, and `orsWithinTheAge`. This is a real simplification, not just a new check: the new function only compares `totalAgeMonths` against `projectType.validMinAge`/`validMaxAge`, dropping the per-cycle dose-criteria condition strings and weight/height clauses `_isEligibleFromDoseCriteria` supported. `_isEligibleFromDoseCriteria` is now dead code — still defined, no longer called.
+- That new function initially used strict bounds (`totalAgeMonths > minAge && totalAgeMonths < maxAge`), wrongly excluding a beneficiary exactly at the min or max age boundary. A same-day follow-up changed both comparisons to inclusive (`>=`/`<=`).
+- `checkRIEligibility` was reworked: it no longer returns false outright for a task with status `beneficiaryDied`/`ineligible` (regardless of cycle) or, for the current cycle, `beneficiaryMigrated`/`beneficiaryAbsent`/`beneficiaryRefused` — all of that status-based logic was removed. It now only checks whether the beneficiary has *any* RI task recorded in the current running cycle (via `cycleIndex`, falling back to deriving the cycle from the task's `lastModifiedTime` against the project's cycle dates when `cycleIndex` is missing); if so, ineligible, regardless of that task's status. Net effect: a `beneficiaryDied` task from a past cycle no longer disqualifies a beneficiary going forward, which the old code did unconditionally.
+- The RI full-immunization check got the same `lastModifiedTime`-derived cycle fallback, but also flips two defaults: with no active cycle (`currentRunningCycle == null || .id == 0`) it now returns `false` where it used to return `true`, and when a task's cycle can't be determined at all it now falls through to `false` instead of `true`. Both changes make the function default to "not fully immunized" instead of "fully immunized" when cycle data is ambiguous — a real behavioral inversion the "refine checks" commit message undersells.
+
+**Stock**
+
+- `StockBalanceCard` cached computed stock balances via `StockBalanceCache.instance.setCache(...)` *before* applying the server-report stock-consumption deduction to `_stockBalances`, so the cache permanently held pre-deduction figures while the card displayed post-deduction ones. The fix moves the `setCache` call after the deduction, caching the final `_stockBalances` — a real cache/UI mismatch bug fix, not a vague "caching logic update."
+- The stock-downsync cursor's "+1 ms past the latest downloaded record" fix (to avoid re-fetching that same record next sync) was applied independently in two separate cursor-writing code paths — `StockDownSyncBloc` and `ProjectBloc`'s own inline stock-download routine — the same off-by-one bug present in, and fixed in, both places rather than one fix duplicated.
+- `getFacilityName` was changed to accept a second `deliveryTeamName` argument and return it instead of the raw `facilityId` for non-facility (STAFF/delivery-team) senders. No call site — not `INVENTORY.json` nor `manage_stock.dart` — was updated to pass that second argument, so it always defaults to `""`. The practical effect is that non-facility sender names now render blank instead of the previously-shown raw id/QR string, not "including the delivery team name" as the message implies.
+
+**Summary report**
+
+- The summary report's household-download step in `ProjectBloc` now returns immediately for any role other than distributor/CDD, and keys off `userObject.uuid` for the facility id instead of falling back through `currentFacilities`. This fix was committed separately but byte-identically on both `feat/smc-mc-borno` and `feat/smc-mc-plateau-ri` (same author, same timestamp) — a genuine duplicate landing that the merge reconciles into one.
+
 ## 2.2.98 — 2026-07-28
 
-- The SMC-RI campaign ID hardcoded in `ProjectBloc` was corrected from `CMP-2026-06-08-000333` to `CMP-2026-06-29-000423`. The two commits that make this change look like duplicates going by their messages, but the second one is fixing a wrong value the first one shipped — it isn't a no-op.
+- The two commits that make this change look like duplicates going by their messages, but the second one is fixing a wrong value the first one shipped — it isn't a no-op.
 - A `'RI': 'riQ1'` symptom-to-checklist key mapping was added so that `computeReferralButtonLabel` resolves correctly for RI referrals instead of falling through unmapped.
 
 ## 2.2.97 — 2026-07-28
@@ -49,7 +112,6 @@ _(includes 2.2.86)_
 - `disableEdit` was extended with the same current-cycle matching, reusing (rather than duplicating) the existing "referral matches current cycle" check, which was moved earlier in the function to make that reuse possible.
 - `resolveReferralReasons` now short-circuits to `['RI']` whenever `navigationData['sourceFlow'] == 'RI_CHECKLIST'`, bypassing the normal reason-derivation logic for that flow.
 - Address transformer mappings for latitude, longitude, and location accuracy were switched from `address.latLng[0]/[1]` to `__context:latitude/longitude/locationAccuracy`. This also fixed a pre-existing bug the commit message didn't mention: location accuracy had been wrongly mapped to the same value as longitude (`latLng[1]`). A follow-up commit, described as "update address location fields," applies that identical fix to two more transformer blocks — it reads like a new feature but is really the same fix extended to more places.
-- The hardcoded ORS-Zinc campaign ID was bumped to `CMP-2026-07-03-000424` — a configuration value swap, not a logic change.
 
 ## 2.2.84 — 2026-07-03
 

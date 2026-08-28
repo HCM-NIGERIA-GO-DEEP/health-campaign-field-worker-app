@@ -85,6 +85,7 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
         return DigitSwitch(
           label: localization?.translate(widget.json['label'] ?? ''),
           value: _value,
+          mainAxisAlignment: MainAxisAlignment.start,
           onChanged: (newValue) {
             setState(() => _value = newValue);
 
