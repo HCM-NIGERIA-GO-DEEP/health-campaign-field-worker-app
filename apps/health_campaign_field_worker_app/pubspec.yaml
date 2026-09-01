@@ -1,7 +1,7 @@
 name: health_campaign_field_worker_app
 description: A new Flutter project.
 publish_to: "none"
-version: 2.2.101+101
+version: 2.2.109+109
 
 environment:
   sdk: ">=3.0.0 <=4.0.0"
@@ -81,6 +81,7 @@ dependencies:
   digit_forms_engine: ^0.0.2-dev
   digit_flow_builder:
     path: ../../packages/digit_flow_builder
+  digit_analytics: ^0.0.1
   jailbreak_root_detection: ^1.1.6
 
 dev_dependencies:

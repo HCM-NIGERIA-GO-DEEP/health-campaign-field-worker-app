@@ -1,9 +1,7 @@
-import 'package:digit_crud_bloc/bloc/crud_bloc.dart';
 import 'package:digit_crud_bloc/utils/utils.dart';
 import 'package:digit_data_converter/utils/utils.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../utils/utils.dart';
 import '../action_config.dart';
@@ -72,7 +70,10 @@ class CrudExecutor extends ActionExecutor {
       return contextData;
     }
 
-    context.read<CrudBloc>().add(CrudEventCreate(entities: entityList));
+    // Use CrudService directly to await persistence, ensuring all entities
+    // (e.g. the bulk DELIVERED tasks) are committed before subsequent
+    // actions such as NAVIGATION run and tear down this screen's CrudBloc.
+    await CrudBlocSingleton().crudService.createEntities(entityList);
 
     return contextData;
   }

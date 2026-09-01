@@ -22,6 +22,7 @@ dependencies:
   intl: ^0.19.0
   qr_flutter: ^4.1.0
   screen_protector: 1.4.1
+  digit_analytics: ^0.0.1
 
 dev_dependencies:
   flutter_test:

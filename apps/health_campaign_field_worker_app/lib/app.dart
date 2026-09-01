@@ -1,3 +1,4 @@
+import 'package:digit_analytics/digit_analytics.dart';
 import 'package:digit_crud_bloc/repositories/local/search_entity_repository.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/user_action.dart';
@@ -191,6 +192,16 @@ class MainApplicationState extends State<MainApplication>
                               userId: authState.userModel.uuid,
                             ),
                           );
+                      // `userId` is kept local-only for queue bookkeeping —
+                      // it is never included in the event parameters sent to
+                      // Firebase (see AnalyticsSyncService.flushPendingEvents).
+                      AnalyticsService.instance.logEvent(
+                        'login',
+                        const {},
+                        userId: authState.userModel.uuid,
+                      );
+                    } else if (authState is AuthUnauthenticatedState) {
+                      AnalyticsService.instance.logEvent('logout', {});
                     }
                   },
                   child: BlocBuilder<AuthBloc, AuthState>(
