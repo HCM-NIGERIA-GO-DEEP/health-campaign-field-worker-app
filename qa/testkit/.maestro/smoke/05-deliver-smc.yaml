@@ -17,13 +17,9 @@ tags:
   - needs-logged-in
 ---
 - launchApp
-- tapOn:
-    text: "ALLOW"
-    optional: true
-- extendedWaitUntil:
-    visible:
-      text: ${HOME_REG}
-    timeout: 30000
+# Shared preamble: handles login + per-launch boundary selection -> home
+# (the app cold-starts on the boundary screen EVERY launch; see its header)
+- runFlow: ../common/ensure-home.yaml
 - tapOn:
     text: ${HOME_REG}
 - extendedWaitUntil:

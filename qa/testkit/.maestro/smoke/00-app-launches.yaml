@@ -9,7 +9,7 @@ tags:
 - launchApp
 # The "run in background?" system dialog can cover a fresh post-install launch
 - tapOn:
-    text: "ALLOW"
+    text: "(?i)allow"
     optional: true
 - extendedWaitUntil:
     visible:

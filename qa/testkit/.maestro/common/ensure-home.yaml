@@ -1,0 +1,184 @@
+# SHARED PREAMBLE: bring the app from ANY cold-start state to the home screen.
+# Included by every smoke flow via `runFlow: ../common/ensure-home.yaml`.
+# Lives OUTSIDE .maestro/smoke so the runner never executes it as a test.
+#
+# APP LAUNCH-STATE MACHINE (verified in app code + runs 2026-09-02):
+# Maestro's launchApp STOPS the app first, so every flow cold-starts it, and
+# a logged-in cold start NEVER lands on home: permissions_handler.dart does
+# router.replace(BoundarySelectionRoute()) on EVERY launch, and the boundary
+# dropdowns come back EMPTY (selection is not persisted across restarts).
+#   logged out : login screen -> [projects screen] -> boundary -> home
+#   logged in  : boundary screen (empty fields)               -> home
+# Therefore every flow must be able to log in AND re-do boundary selection.
+#
+# SELECTOR RULES for the boundary section - each bought with a failed run,
+# do not "simplify" them away (evidence: reports/maestro-2026-09-02-*):
+# - Boundary values come from maestro.env (BOUNDARY_Lx_VALUE); each value is
+#   TYPED into the dropdown's search box (filters the list, so the option is
+#   visible without scrolling), then the option row is tapped by text.
+# - below+above anchors on the option tap: run -1340, bare `below:` hit the
+#   field's own suffix-arrow; run -1416, point taps missed the overlay (the
+#   screen is label-LEFT, the option list anchors under the input BOX); run
+#   -1437, the OPEN KEYBOARD's a11y nodes (Gboard "More features") sit below
+#   the field and the IME window precedes the app window in Maestro's
+#   hierarchy - `above: Submit` fences out IME/nav nodes (they all lie below
+#   Submit even when the keyboard resizes the viewport).
+# - NO id: filter on option taps: option rows carry NO resource-id attribute,
+#   and Maestro idMatches returns false on a missing attribute (run -1524).
+#   The typed field can't be matched instead: Filters.kt `below` = candidate
+#   top-y STRICTLY greater than anchor top-y, sorted by distance.
+# - hideKeyboard is a BACK press on Android (run -1554 logcat: every call
+#   logs onBackKeyPressed; one with no keyboard open EXITED the app from the
+#   root boundary screen). Only ever call it immediately after inputText.
+# - MULTISELECT levels (this env: Community - chips + "n Selected") keep
+#   their option panel open after selection; the close gesture is a tap
+#   OUTSIDE it (Amit's manual gesture). The (50%,7%) tap lands on the dismiss
+#   scrim when a panel is open and on the inert teal header when not. Do NOT
+#   tap the field again to close - run -1545: that drops "Submit" out of the
+#   a11y tree entirely.
+# - Each level is SKIPPED when it already shows its value, so this preamble
+#   also works if the app ever starts persisting the selection.
+# - Selection proof: never assert text ".+" on a field - Maestro text
+#   matching includes hintText, so "<Label> *" makes it pass on EMPTY fields
+#   (run -1416). Assert the concrete value instead.
+appId: com.digit.hcm
+---
+# The "run in background?" system dialog can cover a fresh post-install launch
+- tapOn:
+    text: "(?i)allow"
+    optional: true
+# Landing screen (first launch only)
+- tapOn:
+    text: "Continue"
+    optional: true
+# Every cold start shows either the login screen or the boundary screen
+- extendedWaitUntil:
+    visible:
+      id: "(login_userId|boundary_.*)"
+    timeout: 30000
+# Log in only when the login screen is actually showing
+- runFlow:
+    when:
+      visible:
+        id: "login_userId"
+    commands:
+      - tapOn:
+          id: "login_userId"
+      - inputText: ${USERNAME}
+      - hideKeyboard
+      - tapOn:
+          id: "login_password"
+      - inputText: ${PASSWORD}
+      - hideKeyboard
+      # Consent checkbox - only rendered on some builds; when present, Login
+      # stays disabled until it is checked
+      - tapOn:
+          text: "(?s)By clicking.*"
+          optional: true
+      - tapOn:
+          id: "login_submit"
+# Post-login: some environments show a Projects screen before boundary
+# selection. A transient PROJECTFACILITIES/bootstrap error popup can appear
+# there - give it ONE Retry (kit rule); if it persists, the Submit wait below
+# fails loudly with the popup on the screenshot (ENVIRONMENT finding).
+- extendedWaitUntil:
+    visible:
+      text: "${PROJECT_NAME}|Submit"
+    timeout: 30000
+- tapOn:
+    text: "Retry"
+    optional: true
+- tapOn:
+    text: ${PROJECT_NAME}
+    optional: true
+- extendedWaitUntil:
+    visible:
+      text: "Submit"
+    timeout: 20000
+# --- Boundary level 1 (skipped when the field already shows the value) ---
+- runFlow:
+    when:
+      notVisible:
+        id: "boundary_${BOUNDARY_L1_LABEL}"
+        text: "(?s).*${BOUNDARY_L1_VALUE}.*"
+    commands:
+      - tapOn:
+          id: "boundary_${BOUNDARY_L1_LABEL}"
+      - inputText: ${BOUNDARY_L1_VALUE}
+      - hideKeyboard
+      - tapOn:
+          text: "(?s).*${BOUNDARY_L1_VALUE}.*"
+          below:
+            id: "boundary_${BOUNDARY_L1_LABEL}"
+          above:
+            text: "Submit"
+      - assertVisible:
+          id: "boundary_${BOUNDARY_L1_LABEL}"
+          text: "(?s).*${BOUNDARY_L1_VALUE}.*"
+# --- Boundary level 2 (multiselect on this env: value shows as a chip) ---
+- runFlow:
+    when:
+      true: ${BOUNDARY_L2_LABEL != ''}
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              text: "(?s).*${BOUNDARY_L2_VALUE}.*"
+          commands:
+            - tapOn:
+                id: "boundary_${BOUNDARY_L2_LABEL}"
+            - inputText: ${BOUNDARY_L2_VALUE}
+            - hideKeyboard
+            - tapOn:
+                text: "(?s).*${BOUNDARY_L2_VALUE}.*"
+                below:
+                  id: "boundary_${BOUNDARY_L2_LABEL}"
+                above:
+                  text: "Submit"
+            - assertVisible:
+                text: "(?s).*${BOUNDARY_L2_VALUE}.*"
+            # Close the panel by tapping OUTSIDE it (see header)
+            - tapOn:
+                point: "50%,7%"
+# --- Boundary level 3 (unused on this env while BOUNDARY_L3_LABEL is empty) ---
+- runFlow:
+    when:
+      true: ${BOUNDARY_L3_LABEL != ''}
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              text: "(?s).*${BOUNDARY_L3_VALUE}.*"
+          commands:
+            - tapOn:
+                id: "boundary_${BOUNDARY_L3_LABEL}"
+            - inputText: ${BOUNDARY_L3_VALUE}
+            - hideKeyboard
+            - tapOn:
+                text: "(?s).*${BOUNDARY_L3_VALUE}.*"
+                below:
+                  id: "boundary_${BOUNDARY_L3_LABEL}"
+                above:
+                  text: "Submit"
+            - assertVisible:
+                text: "(?s).*${BOUNDARY_L3_VALUE}.*"
+            - tapOn:
+                point: "50%,7%"
+# Submit must be back in the a11y tree once every panel is closed - fails
+# loudly here if the outside tap did not close it. NO hideKeyboard here (see
+# header: BACK-press trap, run -1554 exited the app from this exact spot).
+- extendedWaitUntil:
+    visible:
+      text: "Submit"
+    timeout: 10000
+- tapOn:
+    text: "Submit"
+# First-login data download popup (absent on later launches)
+- tapOn:
+    text: "Download"
+    optional: true
+# Home (first sync can take a while)
+- extendedWaitUntil:
+    visible:
+      text: ${HOME_REG}
+    timeout: 180000

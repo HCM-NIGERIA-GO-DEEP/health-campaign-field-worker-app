@@ -1,100 +1,28 @@
-# Smoke: fresh login through boundary selection to the home screen.
+# Smoke (TC-001): fresh login through boundary selection to the home screen.
 # PRECONDITION: the app is logged OUT (fresh install, or logged out manually).
 # This flow deliberately does NOT use clearState - clearing app data permanently
 # deletes unsynced locally-created records. Do a fresh install yourself if needed.
 #
-# Requires maestro.env (see maestro.env.example): USERNAME, PASSWORD,
-# BOUNDARY_L1_LABEL .. L3_LABEL (each level's display name). The VALUE picked
-# at each level is simply the FIRST option in the dropdown, so no boundary
-# values are needed. Leave unused deeper level labels EMPTY in maestro.env
-# (do not delete the lines).
+# The entire login -> [projects] -> boundary -> home logic lives in the shared
+# preamble ../common/ensure-home.yaml (used by every flow, because the app
+# shows the boundary screen on EVERY cold start - see that file's header for
+# the launch-state machine and the hard-won selector rules).
+# Requires maestro.env (see maestro.env.example): USERNAME, PASSWORD, and per
+# boundary level BOUNDARY_Lx_LABEL + BOUNDARY_Lx_VALUE.
 #
-# Selector notes: the login screen uses STABLE IDS (resource-ids), added by the
-# semantics-identifier patches (see patches/README.md) and device-verified on
-# 2026-08-21: login_userId, login_password, login_submit. IDs require an APK
-# built AFTER applying the patches - on an older APK this flow fails at the
-# first id: step (that is the signal to rebuild, not to edit this flow).
-# The consent checkbox row exists only on SOME builds/branches (it is one merged
-# text node, "By clicking, I accept the ...") - tapped optionally below.
-# Boundary dropdowns keep label-text selectors until verified on a logged-in
-# device; their ids (boundary_<levelName>, boundary_submit) exist in the patches.
+# Login ids (login_userId/password/submit) and boundary ids
+# (boundary_<levelName>, boundary_submit) come from the semantics-identifier
+# patches (patches/README.md) - an APK built WITHOUT them fails at the first
+# id: step (signal to rebuild, not to edit flows). PASSED end-to-end on
+# emulator-5554, run 2026-09-02-1601.
 appId: com.digit.hcm
 tags:
   - smoke
   - needs-logged-out
 ---
 - launchApp
-# The "run in background?" system dialog can cover a fresh post-install launch
-- tapOn:
-    text: "ALLOW"
-    optional: true
-# Landing screen (only on first launch)
-- tapOn:
-    text: "Continue"
-    optional: true
-# Login screen: title and button are both "Login"
-- extendedWaitUntil:
-    visible:
-      text: "Login"
-    timeout: 15000
-- tapOn:
-    id: "login_userId"
-- inputText: ${USERNAME}
-- hideKeyboard
-- tapOn:
-    id: "login_password"
-- inputText: ${PASSWORD}
-- hideKeyboard
-# Consent checkbox - only rendered on some builds; when present, Login stays
-# disabled until it is checked
-- tapOn:
-    text: "(?s)By clicking.*"
-    optional: true
-- tapOn:
-    id: "login_submit"
-# Boundary selection: for each level, open the dropdown by its field id
-# (boundary_<label>, from the semantics patches - device-confirmed 2026-08-26,
-# note the id CONTAINS the label's space, e.g. "boundary_Health Facility"),
-# then pick the FIRST option: DigitDropdown renders the open option list
-# directly beneath the field, so the nearest element below the field is the
-# top option. NEVER combine below: with index: - Maestro resolves that against
-# the wrong candidate set (it picked the status-bar wifi icon in the
-# 2026-08-26-1801 run).
-- extendedWaitUntil:
-    visible:
-      text: "Submit"
-    timeout: 20000
-- tapOn:
-    id: "boundary_${BOUNDARY_L1_LABEL}"
-- tapOn:
-    below:
-      id: "boundary_${BOUNDARY_L1_LABEL}"
-- runFlow:
-    when:
-      true: ${BOUNDARY_L2_LABEL != ''}
-    commands:
-      - tapOn:
-          id: "boundary_${BOUNDARY_L2_LABEL}"
-      - tapOn:
-          below:
-            id: "boundary_${BOUNDARY_L2_LABEL}"
-- runFlow:
-    when:
-      true: ${BOUNDARY_L3_LABEL != ''}
-    commands:
-      - tapOn:
-          id: "boundary_${BOUNDARY_L3_LABEL}"
-      - tapOn:
-          below:
-            id: "boundary_${BOUNDARY_L3_LABEL}"
-- tapOn:
-    text: "Submit"
-# First-login data download popup (either choice works; download preferred)
-- tapOn:
-    text: "Download"
-    optional: true
-# Home (first sync can take a while)
-- extendedWaitUntil:
-    visible:
-      text: "Registration & Delivery"
-    timeout: 180000
+- runFlow: ../common/ensure-home.yaml
+# Explicit end-state assert (ensure-home already waited for it; this makes
+# the test's own verdict independent of the preamble's internals)
+- assertVisible:
+    text: ${HOME_REG}

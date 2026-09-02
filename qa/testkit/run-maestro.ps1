@@ -103,6 +103,7 @@ if (Test-Path $envFile) {
 $defaults = [ordered]@{
     "RUN_STAMP"      = (Get-Date -Format "MMdd-HHmm")
     "HOME_REG"       = "Registration & Delivery"
+    "PROJECT_NAME"   = "(?i).*campaign.*"
     "BTN_NEXT"       = "Next"
     "BTN_RECORD"     = "Record Data"
     "BTN_PROCEED"    = "Proceed"

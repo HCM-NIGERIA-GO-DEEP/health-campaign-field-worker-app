@@ -29,6 +29,18 @@ flows find what earlier ones registered. The eligibility answers in 05/07 come
 from the campaign config's own routing rules (all-No = deliver; first question
 Yes = refer), not from guesses.
 
+**App launch-state nuance (affects every case, manual or automated):** the app
+never opens on the home screen. Every cold start of a logged-in app lands on
+the **boundary selection screen with EMPTY dropdowns** (the app re-asks the
+working boundary per launch by design — `permissions_handler` routes there
+unconditionally; the selection is not persisted across restarts). Every Maestro
+flow therefore starts with the shared preamble
+`.maestro/common/ensure-home.yaml`, which logs in if needed, re-does boundary
+selection with the `BOUNDARY_Lx_VALUE`s from `maestro.env`, and waits for home.
+Manual testers: expect to reselect the boundary after every app kill; that is
+app behavior, not a bug. Community is a multi-select — close its option panel
+by tapping outside it before Submit.
+
 > Screen and button names below are the English texts of the **current campaign**
 > (Taraba SMC). If a campaign renames labels, update the quoted texts here — that is
 > normal maintenance, cases themselves rarely change.

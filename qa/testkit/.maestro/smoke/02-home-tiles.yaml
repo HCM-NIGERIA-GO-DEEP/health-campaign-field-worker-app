@@ -1,6 +1,8 @@
 # Smoke: home screen shows the core modules.
 # PRECONDITION: already logged in (run 01-login-to-home first on a fresh device).
-# Safe: read-only asserts, taps nothing.
+# The app cold-starts on the BOUNDARY screen every launch - the shared
+# preamble handles login/boundary and lands on home (see its header).
+# Read-only asserts after that; the preamble itself taps only login/boundary.
 appId: com.digit.hcm
 tags:
   - smoke
@@ -8,14 +10,9 @@ tags:
   - needs-logged-in
 ---
 - launchApp
-# The "run in background?" system dialog can cover a fresh post-install launch
-- tapOn:
-    text: "ALLOW"
-    optional: true
-- extendedWaitUntil:
-    visible:
-      text: "Registration & Delivery"
-    timeout: 30000
+- runFlow: ../common/ensure-home.yaml
+- assertVisible:
+    text: "Registration & Delivery"
 - assertVisible: "Sync Data"
 - scrollUntilVisible:
     element:
