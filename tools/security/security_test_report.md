@@ -1,6 +1,24 @@
 # Application Security Testing Report
 
-**Date:** Tue, Mar  3, 2026 11:12:54 AM
+**Date:** Wed Sep  2 04:02:43 PM IST 2026
+
+> **Note on this run.** The two Root Detection failures below are false
+> negatives, not vulnerabilities, and the tooling has since been corrected.
+>
+> * The run used a normal build, which silences `debugPrint` and calls
+>   `exit(0)` on a confirmed threat. The emulator *was* detected — the log this
+>   script greps for was suppressed and the process was gone before anything
+>   could report it. Re-run against a build made with
+>   `--dart-define=SECURITY_TEST_MODE=true`, which keeps every check running
+>   but leaves the result observable.
+> * The Frida case planted a file in `/data/local/tmp`, which SELinux forbids
+>   app processes from reading on Android 10+, so the app could never see it.
+>   That simulation is now reported as SKIPPED rather than failed, with
+>   instructions for testing against a real `frida-server`.
+>
+> A mitigation that could not be verified now reports as "Not verified" rather
+> than passing or failing, so this report can no longer read VULNERABLE on the
+> strength of a test that cannot succeed.
 
 ## Summary of Results
 
@@ -42,22 +60,23 @@
     > Broadcasting: Intent { act=android.intent.action.BOOT_COMPLETED flg=0x400000 cmp=com.digit.hcm/id.flutter.flutter_background_service.BootReceiver }
     > 
     > Exception occurred while executing 'broadcast':
-    > java.lang.SecurityException: Permission Denial: not allowed to send broadcast android.intent.action.BOOT_COMPLETED from pid=5600, uid=2000
-    > at com.android.server.am.BroadcastController.broadcastIntentLockedTraced(BroadcastController.java:1067)
-    > at com.android.server.am.BroadcastController.broadcastIntentLocked(BroadcastController.java:807)
-    > at com.android.server.am.BroadcastController.broadcastIntentWithFeature(BroadcastController.java:740)
-    > at com.android.server.am.ActivityManagerService.broadcastIntentWithFeature(ActivityManagerService.java:14407)
-    > at com.android.server.am.ActivityManagerShellCommand.runSendBroadcast(ActivityManagerShellCommand.java:1075)
-    > at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:280)
+    > java.lang.SecurityException: Permission Denial: not allowed to send broadcast android.intent.action.BOOT_COMPLETED from pid=5510, uid=2000
+    > at com.android.server.wm.Session$$ExternalSyntheticBUOutline1.m(R8$$SyntheticClass:0)
+    > at com.android.server.am.BroadcastController.broadcastIntentLockedTraced(BroadcastController.java:1142)
+    > at com.android.server.am.BroadcastController.broadcastIntentLocked(BroadcastController.java:876)
+    > at com.android.server.am.BroadcastController.broadcastIntentWithFeature(BroadcastController.java:810)
+    > at com.android.server.am.ActivityManagerService.broadcastIntentWithFeature(ActivityManagerService.java:15565)
+    > at com.android.server.am.ActivityManagerShellCommand.runSendBroadcast(ActivityManagerShellCommand.java:1265)
+    > at com.android.server.am.ActivityManagerShellCommand.onCommand(ActivityManagerShellCommand.java:290)
     > at com.android.modules.utils.BasicShellCommandHandler.exec(BasicShellCommandHandler.java:97)
-    > at android.os.ShellCommand.exec(ShellCommand.java:38)
-    > at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:10417)
-    > at android.os.Binder.shellCommand(Binder.java:1146)
-    > at android.os.Binder.onTransact(Binder.java:948)
-    > at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5733)
-    > at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:2734)
-    > at android.os.Binder.execTransactInternal(Binder.java:1414)
-    > at android.os.Binder.execTransact(Binder.java:1353)
+    > at android.os.ShellCommand.exec(ShellCommand.java:40)
+    > at com.android.server.am.ActivityManagerService.onShellCommand(ActivityManagerService.java:11454)
+    > at android.os.Binder.shellCommand(Binder.java:1054)
+    > at android.os.Binder.onTransact(Binder.java:914)
+    > at android.app.IActivityManager$Stub.onTransact(IActivityManager.java:5885)
+    > at com.android.server.am.ActivityManagerService.onTransact(ActivityManagerService.java:3526)
+    > at android.os.Binder.execTransactInternal(Binder.java:1328)
+    > at android.os.Binder.execTransact(Binder.java:1282)
     Result : [SECURE] Access Denied. The receiver is not exported or requires permissions.
 
 ===========================================================
@@ -120,7 +139,7 @@
     > Attempting to start LocationService externally...
     Command: adb shell am startservice -n com.digit.hcm/.LocationService
     > Starting service: Intent { cmp=com.digit.hcm/.LocationService }
-    > Error: Requires permission not exported from uid 10241
+    > Error: Requires permission not exported from uid 10253
     Result : [SECURE] Service is not exported and denied external start.
 
 [*] Testing PendingIntent Mutability Configuration (Static Check)...

@@ -73,7 +73,18 @@ void main() async {
   // Select which mitigations this build runs. Swap the preset for an explicit
   // `features: {...}` set, or keep the preset and pass `disable: {...}`, to
   // pick individual checks. See AppSecurityFeature.
-  AppSecurity.instance.configure(level: AppSecurityLevel.high);
+  AppSecurity.instance.configure(
+    level: AppSecurityLevel.high,
+    // A security-test build (--dart-define=SECURITY_TEST_MODE=true) runs every
+    // check but leaves the result observable, so tools/security can actually
+    // see it. Normal builds keep log suppression and terminate on a threat.
+    disable: kSecurityTestMode
+        ? const {AppSecurityFeature.debugPrintSuppression}
+        : const <AppSecurityFeature>{},
+    threatResponse: kSecurityTestMode
+        ? const ThreatResponse(mode: ThreatResponseMode.reportOnly)
+        : const ThreatResponse(),
+  );
 
   // Obfuscation and the manifest export flags cannot be switched on from Dart,
   // so selecting them only states intent. Verify the APK actually shipped with
