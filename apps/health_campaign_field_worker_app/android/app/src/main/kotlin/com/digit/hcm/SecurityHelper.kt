@@ -1,8 +1,10 @@
 package com.digit.hcm
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import android.security.NetworkSecurityPolicy
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 import java.io.File
@@ -31,6 +33,9 @@ class SecurityHelper(private val context: Context) {
                 }
                 "checkDebugger" -> {
                     result.success(checkDebugger())
+                }
+                "auditBuildConfiguration" -> {
+                    result.success(auditBuildConfiguration())
                 }
                 else -> result.notImplemented()
             }
@@ -287,6 +292,86 @@ class SecurityHelper(private val context: Context) {
             true
         } catch (e: PackageManager.NameNotFoundException) {
             false
+        }
+    }
+
+    /**
+     * Reports what this APK was actually built with, so Dart can verify the
+     * build-time mitigations it declared via AppSecurity.configure().
+     *
+     * These cannot be switched on from Dart: minifyEnabled is a build-type
+     * property and the export flags are baked into the merged manifest. All
+     * this does is make a mismatch between intent and reality visible.
+     */
+    private fun auditBuildConfiguration(): Map<String, Any?> {
+        val flags = context.applicationInfo.flags
+
+        val cleartextPermitted = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            NetworkSecurityPolicy.getInstance().isCleartextTrafficPermitted
+        } else {
+            true
+        }
+
+        return mapOf(
+            // Injected by app/build.gradle per build type; the only reliable
+            // signal, since R8 leaves no queryable runtime flag behind.
+            "isMinified" to BuildConfig.IS_MINIFIED,
+            "isDebuggable" to ((flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0),
+            "allowsBackup" to ((flags and ApplicationInfo.FLAG_ALLOW_BACKUP) != 0),
+            "cleartextTrafficPermitted" to cleartextPermitted,
+            "exportedComponents" to unexpectedlyExportedComponents()
+        )
+    }
+
+    /**
+     * Components that should not be reachable from other apps but are.
+     *
+     * Scoped to what the Insecure Broadcast Receiver mitigation actually
+     * hardened: this app's own components (LauncherActivity excepted, it is the
+     * launcher entry point) and the background-service components the manifest
+     * forces closed with tools:replace. Third-party components outside that set
+     * are left alone, since plenty are exported by design.
+     *
+     * A component guarded by a permission is not reported.
+     */
+    private fun unexpectedlyExportedComponents(): List<String> {
+        val ownPrefix = context.packageName + "."
+        val allowedExported = setOf(context.packageName + ".LauncherActivity")
+        val watchlist = setOf(
+            "id.flutter.flutter_background_service.BackgroundService",
+            "id.flutter.flutter_background_service.WatchdogReceiver",
+            "id.flutter.flutter_background_service.BootReceiver"
+        )
+
+        val offenders = mutableListOf<String>()
+
+        // `permission` is declared on ActivityInfo and ServiceInfo separately,
+        // not on their shared ComponentInfo supertype, so each array is walked
+        // with its concrete type rather than collected into one list.
+        fun consider(name: String, exported: Boolean, permission: String?) {
+            if (!exported) return
+            // An exported component behind a permission is not openly reachable.
+            if (permission != null) return
+            if (name in allowedExported) return
+            if (name.startsWith(ownPrefix) || name in watchlist) {
+                offenders.add(name)
+            }
+        }
+
+        return try {
+            val requested = PackageManager.GET_ACTIVITIES or
+                PackageManager.GET_SERVICES or
+                PackageManager.GET_RECEIVERS
+            val info = context.packageManager.getPackageInfo(context.packageName, requested)
+
+            // PackageInfo.receivers is an ActivityInfo[], same as activities.
+            info.activities?.forEach { consider(it.name, it.exported, it.permission) }
+            info.receivers?.forEach { consider(it.name, it.exported, it.permission) }
+            info.services?.forEach { consider(it.name, it.exported, it.permission) }
+
+            offenders.sorted()
+        } catch (e: Exception) {
+            emptyList()
         }
     }
 }

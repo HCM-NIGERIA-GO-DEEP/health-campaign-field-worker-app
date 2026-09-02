@@ -83,6 +83,7 @@ dependencies:
     path: ../../packages/digit_flow_builder
   digit_analytics: ^0.0.1
   jailbreak_root_detection: ^1.1.6
+  crypto: ^3.0.3
 
 dev_dependencies:
   flutter_test:

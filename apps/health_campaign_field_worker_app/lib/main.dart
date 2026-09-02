@@ -17,6 +17,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'app.dart';
+import 'security/security.dart';
 import 'blocs/app_bloc_observer.dart';
 import 'notification_service.dart';
 import 'data/local_store/app_shared_preferences.dart';
@@ -68,6 +69,25 @@ void main() async {
   //     debugPrint('Security check failed: $e');
   //   }
   // }
+
+  // Select which mitigations this build runs. Swap the preset for an explicit
+  // `features: {...}` set, or keep the preset and pass `disable: {...}`, to
+  // pick individual checks. See AppSecurityFeature.
+  AppSecurity.instance.configure(level: AppSecurityLevel.high);
+
+  // Obfuscation and the manifest export flags cannot be switched on from Dart,
+  // so selecting them only states intent. Verify the APK actually shipped with
+  // them. Fire and forget: this reports, it never blocks startup or exits.
+  // The result is also kept on AppSecurity.instance.lastBuildTimeReport, since
+  // release log suppression hides the message below.
+  AppSecurity.instance.verifyBuildTimeMitigations().then((report) {
+    if (report != null && !report.isSatisfied) {
+      AppLogger.instance.error(
+        title: 'AppSecurity',
+        message: 'Declared build-time mitigations are missing: $report',
+      );
+    }
+  });
   WidgetsBinding.instance.addObserver(AppLifecycleObserver());
   _dio = DioClient().dio;
 

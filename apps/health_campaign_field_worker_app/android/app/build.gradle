@@ -54,6 +54,11 @@ android {
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-build-configuration.
         minSdk = flutter.minSdkVersion
 
+        // Default for every build type, including the `profile` type the
+        // Flutter Gradle plugin generates. `release` overrides it to true.
+        // Read by AppSecurity.verifyBuildTimeMitigations(): R8 leaves no
+        // queryable runtime flag, so the value has to be injected at build time.
+        buildConfigField "boolean", "IS_MINIFIED", "false"
         targetSdk = flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
@@ -76,6 +81,9 @@ android {
             // Enable code obfuscation with R8 and updated ProGuard rules
             minifyEnabled true
             shrinkResources true
+            // Mirrors minifyEnabled for AppSecurity.verifyBuildTimeMitigations();
+            // R8 leaves no runtime flag behind, so it has to be injected here.
+            buildConfigField "boolean", "IS_MINIFIED", "true"
             // proguard-android-optimize.txt enables R8 full mode: better obfuscation + dead-code removal
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
 
