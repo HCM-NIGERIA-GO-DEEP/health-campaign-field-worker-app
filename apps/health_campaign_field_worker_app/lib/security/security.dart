@@ -6,6 +6,7 @@
 /// * `models/` — features, levels, results, reports.
 /// * `channel/` — the single native channel definition.
 /// * `integrity/` — detection, native transport, threat response.
+/// * `network/` — certificate pinning.
 /// * `audit/` — verification of build-time mitigations.
 library security;
 
@@ -19,3 +20,4 @@ export 'models/app_security_level.dart';
 export 'models/build_time_mitigation_report.dart';
 export 'models/security_check_result.dart';
 export 'models/security_threat_type.dart';
+export 'network/ssl_pinning.dart';

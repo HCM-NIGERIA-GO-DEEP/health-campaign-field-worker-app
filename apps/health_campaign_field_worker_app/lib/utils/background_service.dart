@@ -119,7 +119,7 @@ void onStart(ServiceInstance service) async {
     await initializeAllMappers();
     Constants().setInitialDataOfPackages();
   }
-
+  await DioClient().enableSSLPinning();
   _dio = DioClient().dio;
   final _isar = await isarFuture;
 

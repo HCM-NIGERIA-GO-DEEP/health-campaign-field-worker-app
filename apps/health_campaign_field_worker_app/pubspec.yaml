@@ -123,6 +123,7 @@ flutter:
     - assets/audio/add.wav
     - assets/audio/buzzer.wav
     - assets/configs/json/
+    - assets/certificates/
 
   fonts:
     - family: Roboto
