@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.2.110 — 2026-09-01
+
+_(includes 2.2.107 and 2.2.109; 2.2.108 was never cut — the version bump went straight from `2.2.107+107` to `2.2.109+109` in a single commit)_
+
+**Bulk entity creation (`CrudService`, `LocalRepository`, `CrudExecutor`)**
+
+- `CrudService.createEntities` no longer creates entities one-by-one. It now groups them by runtime type and, for any group with more than one entity whose repository is a `LocalRepository`, routes the group through a new `LocalRepository.bulkCreateEntities` (a `List<EntityModel>`-accepting wrapper that casts to `List<D>` and delegates to the existing `bulkCreate`), falling back to individual `create` calls when `bulkCreate` throws `UnimplementedError`. Per-entity failures are also no longer fatal to the rest of the batch: each failure is collected and a single aggregate `Exception` is thrown after every entity has been attempted, where previously the first failure aborted the loop.
+- `CrudExecutor` (the `CREATE_EVENT` action) was switched from dispatching `CrudEventCreate` on `CrudBloc` — fire-and-forget — to `await`ing `CrudBlocSingleton().crudService.createEntities(...)` directly, so persistence completes before later actions in the same chain (e.g. `NAVIGATION`) tear the screen down. Two consequences of bypassing the bloc: no `CrudState.loading`/`persisted`/`error` is emitted for this path any more (nothing in the tree listens for them on the create path, and the analytics `*_complete` events are emitted by `FlowCrudBloc`, not `CrudBloc`, so neither is lost), and the aggregate exception from `createEntities` is caught and only `debugPrint`ed by `ActionExecutorRegistry.execute`, which then returns the original context data and lets the remaining actions run. A failed create is therefore still silent to the user — the behavior this change actually buys is ordering, not error surfacing.
+- As shipped in 2.2.107 the bulk path wrote no oplog entries. `LocalRepository.create` queues an `OpLogEntry` via `createOplogEntry`, but `bulkCreate` deliberately does not (it exists for sync-*down*, where rows already exist on the server), and the new wrapper simply delegated to it. Any locally created batch of two or more same-type entities — the multi-task `DELIVERED` submission this feature was written for — was written to the local DB and never queued for sync-up, so it would never reach the server. 2.2.109 fixes this: `bulkCreateEntities` now takes a `createOpLog` flag (default `true`) and writes one `create` oplog entry per entity after the batch insert. The commit message ("enhance `bulkCreateEntities` to log operations") reads as instrumentation; it is a sync data-loss fix for a regression this release introduced three commits earlier, and any build cut at 2.2.107 or 2.2.108 carries it.
+- Two smaller asymmetries remain between the bulk and single-entity paths: `bulkCreateEntities` is not wrapped in `retryLocalCallOperation` the way each repository's `create` is, and its oplog writes happen after — not inside — the Drift batch, so a crash between the two leaves persisted records with no sync-up entry.
+
+**RI age eligibility (`checkRIEligibility`, new `ri_age_eligibility.dart`)**
+
+- The RI upper age bound no longer comes from `projectType.validMaxAge ?? 59`. It is now a hard 59 months, overridable only by an optional 4th argument to `fn:checkRIEligibility(dob, tasks, cycle, maxAgeMonths)`, resolved through a new import-free helper file (`resolveRiMaxAgeMonths`, `isRiAgeEligible`, `riDefaultMaxAgeMonths = 59`) that tolerates ints, numeric strings, leftover `{{ }}` templating and surrounding quotes, and falls back to 59 for anything absent, unparseable or non-positive.
+- The rationale given is that `validMaxAge` encodes SMC aged-out continuation policy and can exceed 59 (Plateau SMC-RI carried 64, exposing RI to 60–64-month-olds). Worth noting the change cuts both ways: for any campaign whose `validMaxAge` is *below* 59 the ceiling has now been raised to 59 rather than lowered, since the campaign value is no longer consulted at all. No config in this repo passes the 4th argument — every `fn:checkRIEligibility` call in `registration_flows.dart` uses 3 args — so until MDMS configs are updated, every campaign gets exactly 0–59 inclusive.
+- `resolveRiMaxAgeMonths` does not clamp its result at 59, so a config that passes a larger 4th argument can still widen RI eligibility past 59; what the change removes is the *implicit* widening via the SMC project type.
+- The new file's doc comment states it is kept import-free "so unit tests compile"; no tests were added, and `packages/digit_flow_builder` has no `test/` directory.
+
+**Stock metrics (`stock_calculation_utils.dart`)**
+
+- `_processDistributorStock` now returns immediately when the record's status is `REJECTED`, so rejected transactions are excluded from a distributor's stock figures entirely. The dispatched-sender path (`_categorizeDispatchedStock`) already had this guard; the distributor path did not.
+- The practical effect is mostly on rejected *returns*: a distributor's `RETURNED` record that the warehouse rejected previously still added to `stockReturned` (plus wastage/partial-used) and so was deducted from stock in hand, leaving the distributor's balance short of stock they never handed over. It now stays in hand until the return is accepted.
+- The guard was not extended to the non-distributor receiver path: `_categorizeReceivedStock` takes no `status` argument at all, so a `REJECTED` record still counts as received stock for facility/warehouse users. `status` here is read from the record's `additionalFields` (`_getAdditionalFieldValue(stock, 'status')`), not a top-level model field, so records that carry no `status` field resolve to `''` and are unaffected either way.
+
 ## 2.2.106 — 2026-08-20
 
 **Eligibility / cycle logic in `function_registry.dart`**
