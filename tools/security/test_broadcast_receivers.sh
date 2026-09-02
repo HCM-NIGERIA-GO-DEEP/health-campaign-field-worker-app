@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
+
 # Configuration
 PACKAGE_NAME="com.digit.hcm"
 WATCHDOG_RECEIVER="id.flutter.flutter_background_service.WatchdogReceiver"
@@ -158,12 +160,141 @@ function test_receiver() {
 
 # Test both broadcast receivers
 APK_PATH="${APK_PATH:-../../apps/health_campaign_field_worker_app/build/app/outputs/flutter-apk/app-release.apk}"
+
+# ---------------------------------------------------------------------------
+# Full component sweep. The tests above probe two known receivers by name; this
+# enumerates every component in the merged manifest, so a newly added or
+# plugin-contributed exported component cannot slip through unnoticed.
+# ---------------------------------------------------------------------------
+
+function test_all_exported_components() {
+    sec_begin "Sweeping every component in the merged manifest for unguarded exports"
+
+    local apk aapt2
+    apk=$(sec_find_apk) || { sec_skip "No built APK found; set APK_PATH or build one."; echo ""; return; }
+    aapt2=$(sec_find_aapt2) || { sec_skip "aapt2 not found; set ANDROID_HOME or AAPT2_PATH."; echo ""; return; }
+
+    echo "    > APK: $apk"
+
+    local xml
+    xml=$("$aapt2" dump xmltree "$apk" --file AndroidManifest.xml 2>/dev/null)
+    if [ -z "$xml" ]; then
+        sec_skip "aapt2 could not read the manifest."
+        echo ""
+        return
+    fi
+
+    # Walk the tree keeping the current element, and record name/exported/
+    # permission per component. aapt2 renders true as 0xffffffff.
+    local findings
+    # aapt2 prints attributes with the full namespace URI and renders booleans
+    # as true/false (older builds use 0xffffffff), so both forms are matched.
+    findings=$(echo "$xml" | awk '
+        function flush() {
+            if (elem != "" && exported == 1 && perm == 0) print elem " " name
+            elem = ""
+        }
+        /^[ \t]*E: (activity|activity-alias|service|receiver|provider) / {
+            flush(); elem = $2; name = "?"; exported = 0; perm = 0; next
+        }
+        /^[ \t]*E: / { flush(); next }
+        elem != "" && /:name\(0x01010003\)=/ {
+            if (match($0, /"[^"]+"/)) name = substr($0, RSTART + 1, RLENGTH - 2)
+        }
+        elem != "" && /:exported\(0x01010010\)=/ {
+            exported = ($0 ~ /=true/ || $0 ~ /0xffffffff/) ? 1 : 0
+        }
+        elem != "" && /:permission\(0x01010006\)=/ { perm = 1 }
+        END { flush() }
+    ')
+
+    # The launcher activity is required to be exported; everything else is not.
+    local unexpected
+    unexpected=$(echo "$findings" | grep -v 'LauncherActivity' | grep -v '^$')
+
+    if [ -z "$unexpected" ]; then
+        echo "    > Exported without a permission guard: only the launcher activity."
+        sec_pass "No unexpected unguarded exported components."
+        echo ""
+        return
+    fi
+
+    echo "    > Exported with no permission guard:"
+    echo "$unexpected" | sed 's/^/      - /'
+    echo "    > Each of these is reachable from any other app on the device."
+    echo "      Add android:exported=\"false\", or guard it with a signature-level"
+    echo "      permission if it must stay reachable."
+    sec_fail "$(echo "$unexpected" | wc -l | tr -d ' ') unguarded exported component(s) found."
+    echo ""
+}
+
+function test_exported_providers() {
+    sec_begin "Testing content providers for unguarded export and URI grants"
+
+    local apk aapt2
+    apk=$(sec_find_apk) || { sec_skip "No built APK found."; echo ""; return; }
+    aapt2=$(sec_find_aapt2) || { sec_skip "aapt2 not found."; echo ""; return; }
+
+    local xml
+    xml=$("$aapt2" dump xmltree "$apk" --file AndroidManifest.xml 2>/dev/null)
+
+    local providers
+    providers=$(echo "$xml" | awk '
+        function flush() {
+            if (inp && exported == 1) print name (grants ? " [grantUriPermissions]" : "")
+            inp = 0
+        }
+        /^[ \t]*E: provider / { flush(); inp = 1; name = "?"; exported = 0; grants = 0; next }
+        /^[ \t]*E: / { next }
+        inp && /:name\(0x01010003\)=/ {
+            if (match($0, /"[^"]+"/)) name = substr($0, RSTART + 1, RLENGTH - 2)
+        }
+        inp && /:exported\(0x01010010\)=/ { exported = ($0 ~ /=true/ || $0 ~ /0xffffffff/) ? 1 : 0 }
+        inp && /:grantUriPermissions\(/ { grants = ($0 ~ /=true/ || $0 ~ /0xffffffff/) ? 1 : 0 }
+        END { flush() }
+    ')
+
+    if [ -z "$providers" ]; then
+        echo "    > No exported content providers."
+        sec_pass "No exported content providers."
+    else
+        echo "$providers" | sed 's/^/      - /'
+        echo "    > FileProvider-style components are normally exported=false with"
+        echo "      grantUriPermissions; anything else exported is worth reviewing."
+        sec_inconclusive "Exported providers found; confirm each is intentional."
+    fi
+    echo ""
+}
+
+function test_runtime_registered_receivers() {
+    sec_begin "Testing receivers registered at runtime"
+
+    sec_device_ready || { sec_skip "No device connected."; echo ""; return; }
+
+    # Runtime receivers never appear in the manifest, so a manifest-only sweep
+    # cannot see them. On Android 13+ they must declare an export flag.
+    local dump
+    dump=$(adb shell dumpsys activity broadcasts 2>/dev/null | grep -A3 "$PACKAGE_NAME" | head -40)
+
+    if [ -z "$dump" ]; then
+        sec_skip "No broadcast state reported for $PACKAGE_NAME."
+        echo ""
+        return
+    fi
+
+    echo "    > Registered receiver entries referencing the package:"
+    echo "$dump" | grep -oE 'Receiver[^ ]*|filter=[^ ]*|act=[^ ]*' | sort -u | head -10 | sed 's/^/      /'
+    echo "    > MainActivity registers its location receiver with"
+    echo "      RECEIVER_NOT_EXPORTED, which cannot be confirmed from dumpsys."
+    sec_inconclusive "Runtime receivers listed for manual review."
+    echo ""
+}
+
 test_receiver "$WATCHDOG_RECEIVER" ""
 test_receiver "$BOOT_RECEIVER" "android.intent.action.BOOT_COMPLETED"
 
-echo "==========================================================="
-echo " Testing Complete."
-echo " Total Tests Run : $TOTAL_TESTS"
-echo " Passed (Secure) : $SUCCESS_COUNT"
-echo " Failed (Vuln)   : $FAILURE_COUNT"
-echo "==========================================================="
+test_all_exported_components
+test_exported_providers
+test_runtime_registered_receivers
+
+sec_summary

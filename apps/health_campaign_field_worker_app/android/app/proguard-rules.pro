@@ -315,8 +315,12 @@
 -keep class io.flutter.plugins.** { *; }
 -keep class io.flutter.embedding.** { *; }
 
-# App classes
--keep class com.digit.hcm.** { *; }
+# App classes: deliberately NOT a blanket keep. Each component this app needs
+# by name is kept individually in the "App Entry Points" section above, and
+# SecurityHelper is declared -keep,allowobfuscation there so R8 renames it.
+# A blanket `-keep class com.digit.hcm.** { *; }` here is more permissive and
+# wins the conflict, which left `Lcom/digit/hcm/SecurityHelper;` readable in
+# the shipped DEX. tools/security/test_obfuscation.sh checks for exactly that.
 
 # Flutter Background Service
 -keep class id.flutter.flutter_background_service.** { *; }

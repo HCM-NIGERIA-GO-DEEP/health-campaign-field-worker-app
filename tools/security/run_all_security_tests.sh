@@ -2,8 +2,10 @@
 
 # Configuration
 REPORT_FILE="security_test_report.md"
-SCRIPTS=("test_broadcast_receivers.sh" "test_root_detection.sh" "test_platform_usage.sh" "test_obfuscation.sh")
-SCRIPT_NAMES=("Insecure Broadcast Receiver Mitigation" "Root Detection Bypass Prevention" "Improper Platform Usage Mitigation" "Improper Code Obfuscation Mitigation")
+# All five VAPT mitigations. SSL Pinning had no script until now, which is how
+# an expired certificate for the wrong host went unnoticed in the repository.
+SCRIPTS=("test_broadcast_receivers.sh" "test_root_detection.sh" "test_platform_usage.sh" "test_obfuscation.sh" "test_ssl_pinning.sh")
+SCRIPT_NAMES=("Insecure Broadcast Receiver Mitigation" "Root Detection Bypass Prevention" "Improper Platform Usage Mitigation" "Improper Code Obfuscation Mitigation" "SSL Pinning")
 
 echo "==========================================================="
 echo " Running All Security Tests"

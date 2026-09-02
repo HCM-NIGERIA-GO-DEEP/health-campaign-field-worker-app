@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
+
 PACKAGE_NAME="com.digit.hcm"
 OBSERVE_SECONDS=10
 
@@ -203,14 +205,59 @@ function test_root_detection() {
     echo ""
 }
 
+
+# Prints what the device actually looks like, so a pass or fail below can be
+# read against the environment that produced it. Not a test, so it is not
+# counted.
+function report_device_posture() {
+    echo "[i] Device posture"
+    echo "    > fingerprint : $(adb shell getprop ro.build.fingerprint 2>/dev/null | tr -d '\r')"
+    echo "    > model       : $(adb shell getprop ro.product.model 2>/dev/null | tr -d '\r')"
+    echo "    > ro.debuggable: $(adb shell getprop ro.debuggable 2>/dev/null | tr -d '\r')"
+    echo "    > build tags  : $(adb shell getprop ro.build.tags 2>/dev/null | tr -d '\r')"
+
+    local su_path magisk
+    su_path=$(adb shell 'which su 2>/dev/null' 2>/dev/null | tr -d '\r')
+    magisk=$(adb shell 'ls -d /sbin/.magisk /data/adb/magisk 2>/dev/null' 2>/dev/null | tr -d '\r')
+    echo "    > su binary   : ${su_path:-not found}"
+    echo "    > magisk paths: ${magisk:-none}"
+    echo ""
+}
+
+# The real hook-detection test, run only when it can actually be performed.
+function test_frida_live() {
+    sec_begin "Testing hook detection against a running frida-server"
+
+    if ! command -v frida-ps >/dev/null 2>&1; then
+        sec_skip "frida tools are not installed on this host (pip install frida-tools)."
+        echo ""
+        return
+    fi
+
+    if ! frida-ps -U >/dev/null 2>&1; then
+        sec_skip "frida cannot reach the device; frida-server is probably not running."
+        echo ""
+        return
+    fi
+
+    echo "    > frida-server is reachable, so the app should detect it."
+    observe_launch
+
+    if [ -n "$THREAT_LOG" ]; then
+        echo "    > Log output: $THREAT_LOG"
+        sec_pass "App detected the running frida-server."
+    elif [ $APP_EXITED -eq 1 ]; then
+        echo "    > No log, but the app exited during the window."
+        sec_inconclusive "Likely detected. Rebuild with SECURITY_TEST_MODE=true to confirm."
+    else
+        sec_fail "App did not react to a live frida-server."
+    fi
+    echo ""
+}
+
+report_device_posture
 test_hook_framework_detection
 test_root_detection
+test_frida_live
 
-echo "==========================================================="
-echo " Testing Complete."
-echo " Total Tests Run : $TOTAL_TESTS"
-echo " Passed (Secure) : $SUCCESS_COUNT"
-echo " Failed (Vuln)   : $FAILURE_COUNT"
-echo " Inconclusive    : $INCONCLUSIVE_COUNT"
-echo " Skipped         : $SKIPPED_COUNT"
-echo "==========================================================="
+sec_summary

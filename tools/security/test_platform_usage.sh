@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
+
 # Configuration
 PACKAGE_NAME="com.digit.hcm"
 SERVICE_NAME=".LocationService"
@@ -131,13 +133,161 @@ function test_pending_intent_mutability() {
 }
 
 # Run tests
+
+# ---------------------------------------------------------------------------
+# Manifest-level checks read from the built APK, so they reflect what shipped
+# after manifest merging rather than what the source manifest asked for.
+# ---------------------------------------------------------------------------
+
+function apk_manifest_xml() {
+    local apk aapt2
+    apk=$(sec_find_apk) || return 1
+    aapt2=$(sec_find_aapt2) || return 1
+    "$aapt2" dump xmltree "$apk" --file AndroidManifest.xml 2>/dev/null
+}
+
+function test_backup_disabled() {
+    sec_begin "Testing that application backup is disabled"
+
+    local xml
+    xml=$(apk_manifest_xml) || { sec_skip "Needs a built APK and aapt2."; echo ""; return; }
+
+    local line
+    line=$(echo "$xml" | grep -i 'android:allowBackup' | head -1)
+    if [ -z "$line" ]; then
+        echo "    > allowBackup is not declared, so the platform default (true) applies."
+        sec_fail "Backup is not disabled: app data can be pulled with adb backup."
+        echo ""
+        return
+    fi
+
+    echo "    > $(echo "$line" | sed 's/^ *//')"
+    # Only the value after '=' may be inspected. Matching the whole line is
+    # wrong: every attribute id contains "0x0" (e.g. allowBackup(0x01010280)),
+    # so a substring test would call allowBackup=true secure.
+    local value
+    value=$(echo "$line" | sed 's/.*=//' | tr -d ' \r')
+    echo "    > parsed value: $value"
+    if [ "$value" = "false" ] || [ "$value" = "0x0" ]; then
+        sec_pass "allowBackup is false in the merged manifest."
+    else
+        sec_fail "allowBackup is true: app data can be pulled with adb backup."
+    fi
+    echo ""
+}
+
+function test_cleartext_blocked() {
+    sec_begin "Testing that cleartext HTTP is blocked"
+
+    local xml
+    xml=$(apk_manifest_xml) || { sec_skip "Needs a built APK and aapt2."; echo ""; return; }
+
+    local nsc cleartext
+    nsc=$(echo "$xml" | grep -i 'networkSecurityConfig' | head -1)
+    cleartext=$(echo "$xml" | grep -i 'usesCleartextTraffic' | head -1)
+
+    if [ -n "$cleartext" ]; then
+        local clear_value
+        clear_value=$(echo "$cleartext" | sed 's/.*=//' | tr -d ' \r')
+        echo "    > $(echo "$cleartext" | sed 's/^ *//')"
+        echo "    > parsed value: $clear_value"
+        if [ "$clear_value" = "true" ] || [ "$clear_value" = "0xffffffff" ]; then
+            sec_fail "usesCleartextTraffic is true, which permits plain HTTP regardless of config."
+            echo ""
+            return
+        fi
+    fi
+
+    if [ -z "$nsc" ]; then
+        echo "    > No android:networkSecurityConfig in the merged manifest."
+        sec_fail "No network security config: cleartext policy falls back to the platform default."
+        echo ""
+        return
+    fi
+
+    echo "    > $(echo "$nsc" | sed 's/^ *//')"
+    sec_pass "A network security config is applied in the merged manifest."
+    echo ""
+}
+
+function test_apk_not_debuggable() {
+    sec_begin "Testing that the shipped APK is not debuggable"
+
+    local apk aapt2
+    apk=$(sec_find_apk) || { sec_skip "No built APK found."; echo ""; return; }
+    aapt2=$(sec_find_aapt2) || { sec_skip "aapt2 not found."; echo ""; return; }
+
+    if "$aapt2" dump badging "$apk" 2>/dev/null | grep -q 'application-debuggable'; then
+        sec_fail "APK is debuggable: app memory and data are readable via a debugger."
+    else
+        echo "    > No application-debuggable flag."
+        sec_pass "APK is not debuggable."
+    fi
+    echo ""
+}
+
+function test_app_data_permissions() {
+    sec_begin "Testing that app-private files are not world readable"
+
+    sec_device_ready || { sec_skip "No device connected."; echo ""; return; }
+
+    # run-as only works on debuggable builds; on a release build this is
+    # expected to fail and is reported as skipped rather than passed.
+    local listing
+    listing=$(adb shell "run-as $PACKAGE_NAME ls -l /data/data/$PACKAGE_NAME 2>/dev/null" 2>/dev/null)
+    if [ -z "$listing" ]; then
+        sec_skip "Cannot enter the app sandbox (expected for a release build)."
+        echo ""
+        return
+    fi
+
+    local world
+    world=$(echo "$listing" | grep -E '^-rw(-|x)r(-|w)(-|x)r(w|x)' | head -5)
+    if [ -n "$world" ]; then
+        echo "$world" | sed 's/^/    > /'
+        sec_fail "World-accessible files found in the app data directory."
+    else
+        echo "    > No world-readable or world-writable entries found."
+        sec_pass "App data directory permissions are private."
+    fi
+    echo ""
+}
+
+function test_no_secrets_in_logs() {
+    sec_begin "Testing that the app does not log credentials or tokens"
+
+    sec_device_ready || { sec_skip "No device connected."; echo ""; return; }
+
+    echo "    > Clearing logcat, launching the app, sampling for 12s..."
+    adb logcat -c
+    adb shell am force-stop "$PACKAGE_NAME" >/dev/null 2>&1
+    adb shell monkey -p "$PACKAGE_NAME" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+    sleep 12
+
+    local hits
+    hits=$(adb logcat -d 2>/dev/null \
+        | grep -iE 'authorization: bearer|access_token|refresh_token|"password"|passwd=' \
+        | head -5)
+
+    if [ -n "$hits" ]; then
+        echo "$hits" | sed 's/^/    > /' | cut -c1-120
+        sec_fail "Credential-shaped values appear in logcat."
+    else
+        echo "    > No credential patterns matched."
+        echo "    > Note: at medium and high security levels debugPrint is silenced in"
+        echo "      non-debug builds, so a clean result here partly reflects that."
+        sec_pass "No credentials or tokens found in logs."
+    fi
+    echo ""
+}
+
 test_receiver_spoofing
 test_service_exported
 test_pending_intent_mutability
+test_backup_disabled
+test_cleartext_blocked
+test_apk_not_debuggable
+test_app_data_permissions
+test_no_secrets_in_logs
 
-echo "==========================================================="
-echo " Testing Complete."
-echo " Total Tests Run : $TOTAL_TESTS"
-echo " Passed (Secure) : $SUCCESS_COUNT"
-echo " Failed (Vuln)   : $FAILURE_COUNT"
-echo "==========================================================="
+sec_summary
