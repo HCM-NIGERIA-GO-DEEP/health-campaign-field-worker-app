@@ -22,6 +22,27 @@ tags:
 - runFlow: ../common/ensure-home.yaml
 - tapOn:
     text: ${HOME_REG}
+# Village-selection interstitial ("Select Your Village", device-observed
+# 2026-09-02 17:44): this campaign asks which village to work in right after
+# Registration & Delivery. The card is the boundary chosen at login
+# (BOUNDARY_L2_VALUE). Every flow cold-starts the app, so the screen shows
+# every time on this campaign; a campaign without it edits this step out.
+- extendedWaitUntil:
+    visible:
+      text: "Select Your Village"
+    timeout: 20000
+- tapOn:
+    text: ${BOUNDARY_L2_VALUE}
+# NO hideKeyboard after the search inputText (route-pop trap, run -2252) and
+# retype once on dropped keystrokes - see 04 for the full story.
+# Localization settle gate + re-tap before retyping - see 03 for the full
+# story (run -1128: ids go live one relayout before labels translate, the
+# header then shrinks 133px and a tap aimed at the pre-translation bounds
+# misses the field; an unfocused field also swallows eraseText/inputText).
+- extendedWaitUntil:
+    visible:
+      text: "Search Beneficiary"
+    timeout: 20000
 - extendedWaitUntil:
     visible:
       id: ".*_searchBar"
@@ -29,45 +50,60 @@ tags:
 - tapOn:
     id: ".*_searchBar"
 - inputText: "QATEST ${RUN_STAMP}"
-- hideKeyboard
+- runFlow:
+    when:
+      notVisible:
+        text: "QATEST ${RUN_STAMP}"
+    commands:
+      - tapOn:
+          id: ".*_searchBar"
+      - eraseText
+      - inputText: "QATEST ${RUN_STAMP}"
 - tapOn:
     text: "QATEST ${RUN_STAMP} HEAD.*"
+# Overview proof: Add Member swaps to fieldName beneficiaryIdMinCheck on
+# low-beneficiary-ID-pool devices (same label; see 03/04) - accept either id.
 - extendedWaitUntil:
     visible:
-      id: ".*_addMember"
+      id: ".*_(addMember|beneficiaryIdMinCheck)"
     timeout: 20000
-# Record for the CHILD (anchor the button to the child's card, not the head's)
+# Record for the CHILD (anchor the button to the child's card, not the head's).
+# Config: the per-member record button is fieldName deliveryButton (label code
+# DELIVERY, campaign-localized) - select by id, anchored below the child card.
 - scrollUntilVisible:
     element:
       text: "QATEST ${RUN_STAMP} CHILD.*"
     direction: DOWN
     timeout: 20000
 - tapOn:
-    text: ${BTN_RECORD}
+    id: ".*_deliveryButton"
     below:
       text: "QATEST ${RUN_STAMP} CHILD.*"
 # --- Eligibility Assessment: all five answers "No" (config: NO NO NO NO NO -> deliver) ---
+# Each radio is addressed by <fieldName>_<code> (config codes YES/NO), so the
+# answers no longer depend on on-screen order (ec1, ec2, ec5, ec4, ec3) the way
+# the old index-based text taps did - a re-ordered config used to silently
+# answer the wrong question. `text: "No"` cannot work at all here: option
+# labels are absorbed into each field's merged label node and the radio itself
+# is a bare clickable node (run -1214, consent page). Needs an APK built after
+# 2026-09-03.
 - extendedWaitUntil:
     visible:
-      id: "ec1"
+      id: "ec1_(YES|NO)"
     timeout: 20000
 - tapOn:
-    text: ${OPT_NO}
-    index: 0
+    id: "ec1_NO"
 - tapOn:
-    text: ${OPT_NO}
-    index: 1
+    id: "ec2_NO"
 - tapOn:
-    text: ${OPT_NO}
-    index: 2
+    id: "ec3_NO"
 - tapOn:
-    text: ${OPT_NO}
-    index: 3
+    id: "ec4_NO"
 - tapOn:
-    text: ${OPT_NO}
-    index: 4
+    id: "ec5_NO"
+# FORM footer by stable id (labels are per-page campaign texts; see 03)
 - tapOn:
-    text: ${BTN_NEXT}
+    id: "form_action"
 # --- Child summary (beneficiary-details template) -> Record Cycle Dose ---
 - extendedWaitUntil:
     visible:
@@ -75,29 +111,38 @@ tags:
     timeout: 20000
 - tapOn:
     id: ".*_recordCycle"
-# --- Delivery Details: resource card is auto-selected by age; confirm-tap it ---
+# --- Delivery Details: resource card is auto-selected by age; confirm-tap it.
+# resourceCard is a readonly CUSTOM widget and may expose no semantics (like
+# the location page's custom fields) - accept the page's deliveryComment
+# dropdown as arrival proof too.
 - extendedWaitUntil:
     visible:
-      id: "resourceCard"
+      id: "(resourceCard|deliveryComment)"
     timeout: 20000
 - tapOn:
     id: "resourceCard"
     optional: true
 - tapOn:
-    text: ${BTN_NEXT}
+    id: "form_action"
 # --- "Please check you have done the following": all three confirmations ---
+# Checkboxes have the radio problem: DigitCheckbox puts the tappable 24x24 box
+# and its label in SIBLING nodes, so the box carries no label and the field id
+# (ACTION1) lands on the label block - a node that spans the whole field and
+# whose centre is on the TEXT, so tapping it never toggles. Semantics-probed
+# 2026-09-03. Tap the box's own id instead: <fieldName>_checkbox, added by the
+# vendored DigitCheckbox change; needs an APK built after 2026-09-03.
 - extendedWaitUntil:
     visible:
-      id: "ACTION1"
+      id: "ACTION1_checkbox"
     timeout: 20000
 - tapOn:
-    id: "ACTION1"
+    id: "ACTION1_checkbox"
 - tapOn:
-    id: "ACTION2"
+    id: "ACTION2_checkbox"
 - tapOn:
-    id: "ACTION3"
+    id: "ACTION3_checkbox"
 - tapOn:
-    text: ${BTN_NEXT}
+    id: "form_action"
 # --- Delivery recorded ---
 - extendedWaitUntil:
     visible:

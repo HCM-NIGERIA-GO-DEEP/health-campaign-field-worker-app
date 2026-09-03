@@ -1,0 +1,47 @@
+﻿diff --git a/packages/digit_flow_builder/lib/widgets/flow_widget_interface.dart b/packages/digit_flow_builder/lib/widgets/flow_widget_interface.dart
+index 0ec50e5e5..e10ee03d2 100644
+--- a/packages/digit_flow_builder/lib/widgets/flow_widget_interface.dart
++++ b/packages/digit_flow_builder/lib/widgets/flow_widget_interface.dart
+@@ -101,6 +101,14 @@ class FlowWidgetFactory {
+ 
+     if (widget != null) {
+       final built = widget.build(json, context, onAction);
++      // 'button' widgets carry their identifier INSIDE DigitButton
++      // (ButtonWidget passes semanticsIdentifier) because popup footers cast
++      // the built widget to DigitButton - an outer Semantics wrapper crashes
++      // that cast at runtime ("type 'Semantics' is not a subtype of type
++      // 'DigitButton'", action_popup_widget/select_button/signature dialogs).
++      if (format == 'button') {
++        return built;
++      }
+       // Stable identifier (surfaces as Android resource-id) derived from the
+       // config key, so UI-test selectors survive campaign label changes.
+       final semanticsId = semanticsIdentifierFor(json, stateKey);
+diff --git a/packages/digit_flow_builder/lib/widgets/implementations/button_widget.dart b/packages/digit_flow_builder/lib/widgets/implementations/button_widget.dart
+index 73f976789..3fa90419a 100644
+--- a/packages/digit_flow_builder/lib/widgets/implementations/button_widget.dart
++++ b/packages/digit_flow_builder/lib/widgets/implementations/button_widget.dart
+@@ -3,6 +3,7 @@ import 'package:digit_ui_components/theme/ComponentTheme/button_theme.dart';
+ import 'package:flutter/material.dart';
+ 
+ import '../../action_handler/action_config.dart';
++import '../../utils/semantics_identifier.dart';
+ import '../../utils/widget_parsers.dart';
+ import '../resolved_flow_widget.dart';
+ 
+@@ -24,8 +25,15 @@ class ButtonWidget extends ResolvedFlowWidget {
+     String? height = props['height'];
+     String? radius = props['radius'];
+ 
++    // The identifier rides INSIDE DigitButton (not as an outer Semantics wrap
++    // from FlowWidgetFactory) because popup footers cast the built widget to
++    // DigitButton - an outer wrapper crashes that cast at runtime.
++    final semanticsId = semanticsIdentifierFor(
++        json, resolved.compositeKey ?? resolved.screenKey);
++
+     return WidgetParsers.wrapWithBottomGap(
+       DigitButton(
++        semanticsIdentifier: semanticsId,
+         crossAxisAlignment: CrossAxisAlignment.center,
+         capitalizeLetters: false,
+         label: resolved.resolvedLabel ?? '',

@@ -13,6 +13,27 @@ tags:
 - runFlow: ../common/ensure-home.yaml
 - tapOn:
     text: ${HOME_REG}
+# Village-selection interstitial ("Select Your Village", device-observed
+# 2026-09-02 17:44): this campaign asks which village to work in right after
+# Registration & Delivery. The card is the boundary chosen at login
+# (BOUNDARY_L2_VALUE). Every flow cold-starts the app, so the screen shows
+# every time on this campaign; a campaign without it edits this step out.
+- extendedWaitUntil:
+    visible:
+      text: "Select Your Village"
+    timeout: 20000
+- tapOn:
+    text: ${BOUNDARY_L2_VALUE}
+# NO hideKeyboard after the search inputText (route-pop trap, run -2252) and
+# retype once on dropped keystrokes - see 04 for the full story.
+# Localization settle gate + re-tap before retyping - see 03 for the full
+# story (run -1128: ids go live one relayout before labels translate, the
+# header then shrinks 133px and a tap aimed at the pre-translation bounds
+# misses the field; an unfocused field also swallows eraseText/inputText).
+- extendedWaitUntil:
+    visible:
+      text: "Search Beneficiary"
+    timeout: 20000
 - extendedWaitUntil:
     visible:
       id: ".*_searchBar"
@@ -20,16 +41,26 @@ tags:
 - tapOn:
     id: ".*_searchBar"
 - inputText: "QATEST ${RUN_STAMP}"
-- hideKeyboard
+- runFlow:
+    when:
+      notVisible:
+        text: "QATEST ${RUN_STAMP}"
+    commands:
+      - tapOn:
+          id: ".*_searchBar"
+      - eraseText
+      - inputText: "QATEST ${RUN_STAMP}"
 - extendedWaitUntil:
     visible:
       text: "QATEST ${RUN_STAMP} HEAD.*"
     timeout: 15000
 - tapOn:
     text: "QATEST ${RUN_STAMP} HEAD.*"
+# Overview proof: Add Member swaps to fieldName beneficiaryIdMinCheck on
+# low-beneficiary-ID-pool devices (same label; see 03/04) - accept either id.
 - extendedWaitUntil:
     visible:
-      id: ".*_addMember"
+      id: ".*_(addMember|beneficiaryIdMinCheck)"
     timeout: 20000
 - scrollUntilVisible:
     element:

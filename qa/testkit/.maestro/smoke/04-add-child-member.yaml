@@ -16,7 +16,31 @@ tags:
 - runFlow: ../common/ensure-home.yaml
 - tapOn:
     text: ${HOME_REG}
-# Search for the TC-003 household by head name
+# Village-selection interstitial ("Select Your Village", device-observed
+# 2026-09-02 17:44): this campaign asks which village to work in right after
+# Registration & Delivery. The card is the boundary chosen at login
+# (BOUNDARY_L2_VALUE). Every flow cold-starts the app, so the screen shows
+# every time on this campaign; a campaign without it edits this step out.
+- extendedWaitUntil:
+    visible:
+      text: "Select Your Village"
+    timeout: 20000
+- tapOn:
+    text: ${BOUNDARY_L2_VALUE}
+# Search for the TC-003 household by head name.
+# NO hideKeyboard after this inputText: the debounced search rebuild can
+# auto-close the IME first, turning hideKeyboard's BACK into a route pop
+# (run -2252, flow 03's screenshot was back on "Select Your Village"). The
+# app is adjustResize, so result cards stay visible above the open keyboard.
+# LOCALIZATION SETTLE GATE (see 03 for the full story): this screen's ids exist
+# one relayout before its labels translate, and the header shrinks 133px when
+# they do - run -1128's flow 03 tapped the field's PRE-translation coordinates
+# and missed it entirely. A translated string can't match a raw ALL_CAPS key,
+# so this wait proves the layout is final.
+- extendedWaitUntil:
+    visible:
+      text: "Search Beneficiary"
+    timeout: 20000
 - extendedWaitUntil:
     visible:
       id: ".*_searchBar"
@@ -24,22 +48,40 @@ tags:
 - tapOn:
     id: ".*_searchBar"
 - inputText: "QATEST ${RUN_STAMP}"
-- hideKeyboard
+# Typed-search integrity: this screen rebuilds on every keystroke and drops
+# input under load (run -2252: the box received "QATEST2-2252" - 4 chars
+# lost). Retype once if the field doesn't hold the exact text; a still-wrong
+# search then fails loudly at the result wait below.
+# Re-TAP before retyping: if the original tap missed (run -1128), the field is
+# not focused and eraseText/inputText would be swallowed too.
+- runFlow:
+    when:
+      notVisible:
+        text: "QATEST ${RUN_STAMP}"
+    commands:
+      - tapOn:
+          id: ".*_searchBar"
+      - eraseText
+      - inputText: "QATEST ${RUN_STAMP}"
 - extendedWaitUntil:
     visible:
       text: "QATEST ${RUN_STAMP} HEAD.*"
     timeout: 15000
 - tapOn:
     text: "QATEST ${RUN_STAMP} HEAD.*"
-# Household overview
+# Household overview. Add Member is TWO mutually-exclusive config variants
+# (REGISTRATION.json, proven pattern in run -1745): fieldName addMember when
+# the unique-beneficiary-ID pool >= minimum, fieldName beneficiaryIdMinCheck
+# (same visible label) when below; the low-pool popup's skip-and-continue
+# button (fieldName clearFilter) proceeds to the same ADD_MEMBER form.
 - extendedWaitUntil:
     visible:
-      id: ".*_addMember"
+      id: ".*_(addMember|beneficiaryIdMinCheck)"
     timeout: 20000
 - tapOn:
-    id: ".*_addMember"
+    id: ".*_(addMember|beneficiaryIdMinCheck)"
 - tapOn:
-    text: ${BTN_PROCEED}
+    id: ".*clearFilter"
     optional: true
 # --- Member Details ---
 - extendedWaitUntil:
@@ -49,28 +91,35 @@ tags:
 - tapOn:
     id: "nameOfIndividual"
 - inputText: "QATEST ${RUN_STAMP} CHILD"
+# Typed-name integrity (see 03): 05/06 search for this exact name.
+- runFlow:
+    when:
+      notVisible:
+        text: "QATEST ${RUN_STAMP} CHILD"
+    commands:
+      - eraseText
+      - inputText: "QATEST ${RUN_STAMP} CHILD"
 - hideKeyboard
+- assertVisible:
+    text: "QATEST ${RUN_STAMP} CHILD"
 - tapOn:
     id: "familyname"
 - inputText: "QATEST"
 - hideKeyboard
+# DOB via the AGE-in-months field (see 03): 3-59 months = SMC-eligible.
+# CHILD_AGE_MONTHS default 44 - even a dropped keystroke leaves "4", still
+# in the eligible band, so a typing glitch can't silently flip eligibility.
 - tapOn:
-    id: "dobPicker"
-- inputText: ${CHILD_DOB_TEXT}
-# hideKeyboard BEFORE the OK tap: Maestro's hideKeyboard is a BACK press on
-# Android (proven in run 2026-09-02-1554 logcat) - only safe while the
-# keyboard is open, i.e. immediately after inputText. Placed after OK it
-# BACKs out of the form when no keyboard is up.
+    id: "dob_months"
+- inputText: ${CHILD_AGE_MONTHS}
 - hideKeyboard
-- tapOn:
-    text: "OK"
-    optional: true
 - tapOn:
     id: "gender"
 - tapOn:
     text: ${GENDER_CHILD}
+# FORM footer by stable id (labels are per-page campaign texts; see 03)
 - tapOn:
-    text: ${BTN_NEXT}
+    id: "form_action"
 # Acknowledgement, then the child must appear in the household
 - extendedWaitUntil:
     visible:

@@ -3,13 +3,25 @@
 # Test data: head named "QATEST <RUN_STAMP> HEAD" (RUN_STAMP injected by run-maestro.ps1).
 #
 # Selector strategy (see patches/README.md):
-#   - FORM fields have deterministic ids (= config fieldName): administrativeArea,
-#     memberCount, nameOfIndividual, isHeadOfFamily, dobPicker, gender...
-#   - TEMPLATE buttons have ids ending in their config fieldName: .*_registerBeneficiary
-#   - Only option picks / Next buttons use text (env-overridable: OPT_YES, BTN_NEXT).
-# FIRST-RUN CHECKPOINTS (authored from config, not yet run on device):
-#   1) date-of-birth picker interaction (see comment at the dob step)
-#   2) the consent screen may or may not appear on this campaign - steps are optional
+#   - FORM fields have deterministic ids (= config fieldName): memberCount,
+#     nameOfIndividual, isHeadOfFamily, dobPicker, gender... (via the
+#     forms-engine JsonFormBuilder wrap, patch 07 - REQUIRES an APK built
+#     after 2026-09-03; the location page's readonly/custom fields stay
+#     id-less, use form_action there)
+#   - TEMPLATE buttons have ids ending in their config fieldName - but the
+#     register/addMember buttons are DUAL config variants (see comments below;
+#     learned from run -1745, where .*_registerBeneficiary matched nothing).
+#   - FORM page footers are tapped by id form_action (each page has its OWN
+#     campaign-localized label - run -0108 showed "Save Location", not "Next");
+#   - RADIO options have ids <fieldName>_<code> from the config's enum codes
+#     (consentToParticipate_TRUE/_FALSE) - their visible labels are NOT
+#     matchable, see the consent block below. Only the gender dropdown still
+#     picks by text (env-overridable: GENDER_*).
+# Page sequence (REGISTRATION.json HOUSEHOLD pages by order, device-confirmed
+# through consent in runs -0108/-0137): Beneficiary Location -> Care giver's
+# consent -> Household Details -> Beneficiary Details -> beneficiary-details
+# summary TEMPLATE. FIRST-RUN CHECKPOINTS still open: age-field dob entry,
+# gender option label (${GENDER_HEAD}), the summary-screen landing assert.
 appId: com.digit.hcm
 tags:
   - smoke
@@ -21,43 +33,153 @@ tags:
 - runFlow: ../common/ensure-home.yaml
 - tapOn:
     text: ${HOME_REG}
-# Search screen (funnel id suffix = fieldName)
+# Village-selection interstitial ("Select Your Village", device-observed
+# 2026-09-02 17:44): this campaign asks which village to work in right after
+# Registration & Delivery. The card is the boundary chosen at login
+# (BOUNDARY_L2_VALUE). Every flow cold-starts the app, so the screen shows
+# every time on this campaign; a campaign without it edits this step out.
+- extendedWaitUntil:
+    visible:
+      text: "Select Your Village"
+    timeout: 20000
+- tapOn:
+    text: ${BOUNDARY_L2_VALUE}
+# Search screen (funnel id suffix = fieldName).
+# LOCALIZATION SETTLE GATE - do not drop this. A config screen's a11y ids go
+# live one relayout BEFORE its labels resolve: in run -1128 Maestro resolved
+# the field as hintText=NAME_OF_INDIVIDUAL (the RAW key) at bounds
+# [56,1400][1384,1568] and tapped its centre (720,1484); by then the labels had
+# translated, the header had shrunk one row-pitch (133px) and the field sat at
+# [56,1267][1384,1435] - the tap landed 49px BELOW it. Nothing focused, all six
+# keystrokes went nowhere, Register Beneficiary stayed disabled
+# (clickable=false while enabled still reads true) and the flow died two steps
+# later on form_action. Waiting for a TRANSLATED string fixes it because raw
+# keys are ALL_CAPS_UNDERSCORE and cannot match this regex.
+- extendedWaitUntil:
+    visible:
+      text: "Search Beneficiary"
+    timeout: 20000
 - extendedWaitUntil:
     visible:
       id: ".*_searchBar"
     timeout: 20000
+# The register button is disabled while the search bar is empty (config:
+# disabled = {{searchBar}} == ''), so type SOMETHING first. Any non-empty text
+# works - it only enables the button plus prefills a form field we erase
+# anyway - and a partial string from dropped keystrokes still counts. Lowercase
+# single word = fewest key events (this screen rebuilds per keystroke and DROPS
+# input under load; run -2252 lost 4 chars of a 16-char string in flow 06).
+# NO hideKeyboard here: the debounced search rebuild can auto-close the IME
+# first, turning hideKeyboard's BACK press into a route pop - run -2252's 03
+# failed with the screenshot back on "Select Your Village". The app is
+# adjustResize, so the footer button stays visible above the open keyboard.
 - tapOn:
-    id: ".*_registerBeneficiary"
-# Beneficiary-ID pool popup may intercept (edge case: id pool low) - accept if shown
+    id: ".*_searchBar"
+- inputText: "qatest"
+# Recovery + loud failure. Dropped keystrokes still leave a usable non-empty
+# string, but a MISSED TAP (run -1128, above) leaves ZERO - and re-typing alone
+# cannot fix that, because an unfocused field swallows eraseText and inputText
+# alike. So re-TAP first, then retype; then assert, so a still-empty box fails
+# here with an obvious message instead of silently disabling the register
+# button and failing two steps later on form_action.
+- runFlow:
+    when:
+      notVisible:
+        text: "qatest"
+    commands:
+      - tapOn:
+          id: ".*_searchBar"
+      - eraseText
+      - inputText: "qatest"
+- assertVisible:
+    text: "qatest"
+# The register button is TWO mutually-exclusive config variants (run -1745
+# hierarchy + REGISTRATION.json): fieldName registerBeneficiary when the
+# device's unique-beneficiary-ID pool >= configured minimum, fieldName
+# beneficiaryIdMinCheck (same visible label) when below. A device that never
+# ran beneficiary-ID downsync always shows the second.
 - tapOn:
-    text: ${BTN_PROCEED}
+    id: ".*_(registerBeneficiary|beneficiaryIdMinCheck)"
+# Low-pool variant only: an alert offers download-IDs vs skip-and-continue.
+# Skip (fieldName clearFilter) is the app's own offline path and lands on the
+# same HOUSEHOLD form; smoke takes it to stay hermetic (no server download).
+- tapOn:
+    id: ".*clearFilter"
     optional: true
-# --- Household Location ---
+# --- Household Location ("Beneficiary Location") ---
+# Device-verified (run -0108 screenshot): this page's two fields expose NO
+# semantics at all (readonly locality + custom latLng widgets), and every FORM
+# page's footer has its OWN campaign-localized label (this one: "Save
+# Location", NOT "Next"). Anchor page-advance on the forms-engine footer id
+# form_action instead - added for exactly this, label-independent. Both
+# fields auto-fill from login boundary/GPS; just save.
 - extendedWaitUntil:
     visible:
-      id: "administrativeArea"
+      id: "form_action"
     timeout: 20000
-# administrativeArea + latLng auto-fill from login boundary/GPS; just proceed
 - tapOn:
-    text: ${BTN_NEXT}
-# --- Care giver's consent (only on some campaigns/first pass - all optional) ---
+    id: "form_action"
+# --- Care giver's consent ---
+# Config (HOUSEHOLD pages by order): location(1) -> consent(3) ->
+# householdDetails(4) -> beneficiaryDetails(5); consent is ALWAYS page 2 on
+# this campaign, so wait for it properly - run -0137 proved a quick
+# `runFlow when:` check races the page transition and silently skips.
+# Radio consentToParticipate: TRUE routes on to householdDetails, FALSE exits
+# to a refusal acknowledgement WITHOUT registering anything - so the Yes tap
+# must be unambiguous, never a coordinate guess next to No.
+# Radios are addressed by <fieldName>_<code> (config codes TRUE/FALSE). Run
+# -1214 proved neither of the obvious selectors works: `id: consentToParticipate`
+# lands on the field's LABEL block (not clickable, and its centre falls in the
+# gap 18px from the No radio), and `text: "Yes"` matches nothing because the
+# option labels are absorbed into that same merged node - the two radio
+# circles ship as bare clickable nodes with no id and no text. The per-option
+# ids come from the vendored RadioList change and need an APK built after
+# 2026-09-03.
+- extendedWaitUntil:
+    visible:
+      id: "consentToParticipate_(TRUE|FALSE)"
+    timeout: 20000
 - tapOn:
-    text: ${OPT_YES}
-    optional: true
+    id: "consentToParticipate_TRUE"
 - tapOn:
-    text: ${BTN_NEXT}
-    optional: true
+    id: "form_action"
 # --- Household Details ---
+# memberCount is a STEPPER, NOT a text box, and cannot be typed into at all:
+# DigitNumericFormInput takes `editable` (default FALSE) and
+# JsonSchemaIntegerBuilder never passes it, so the value field is readOnly by
+# construction. Run -1315 paid for that assumption twice over - the tap hit
+# the non-clickable container, eraseText/inputText went nowhere, and then
+# `hideKeyboard` (= a BACK press on Android) with NO keyboard open POPPED THE
+# PAGE back to consent; the following form_action tap re-submitted consent
+# (the log shows it resolved accessibilityText "Submit", not "Save Household
+# Details") and the flow died a page behind where it looked.
+# Config: value "1", step 1, min 0, max 30. Drive it with the "+" affordance
+# (accessibilityText "+", a symbol, so not campaign-localized).
+# memberCount MUST end above the member count this suite creates (head +
+# CHILD + CHILD2 = 3): householdOverview's Add Member fires SHOW_TOAST
+# CHILDREN_COUNT_EXCEEDED and refuses to navigate while
+# length(members) >= memberCount, which would strand flows 04 and 07.
 - extendedWaitUntil:
     visible:
       id: "memberCount"
     timeout: 20000
-- tapOn:
+# Tap "+" until the field reads MEMBER_COUNT - self-correcting whatever the
+# config prefills, and capped so a wrong MEMBER_COUNT fails at the assert
+# below instead of looping forever.
+- repeat:
+    times: 10
+    while:
+      notVisible:
+        id: "memberCount"
+        text: ${MEMBER_COUNT}
+    commands:
+      - tapOn:
+          text: "\\+"
+- assertVisible:
     id: "memberCount"
-- inputText: ${MEMBER_COUNT}
-- hideKeyboard
+    text: ${MEMBER_COUNT}
 - tapOn:
-    text: ${BTN_NEXT}
+    id: "form_action"
 # --- Beneficiary (head) Details ---
 - extendedWaitUntil:
     visible:
@@ -65,36 +187,56 @@ tags:
     timeout: 20000
 - tapOn:
     id: "nameOfIndividual"
+# Both register paths pass the search text as nameOfIndividual, so the field
+# may arrive prefilled; inputText APPENDS, so erase first (no-op when empty).
+- eraseText
 - inputText: "QATEST ${RUN_STAMP} HEAD"
+# Typed-name integrity: typing drops keystrokes under load (runs -2218/-2252).
+# This name IS the test data 04-07 search for - a silently corrupted name
+# would pass here and strand every later flow. Retype once, then hard-assert.
+- runFlow:
+    when:
+      notVisible:
+        text: "QATEST ${RUN_STAMP} HEAD"
+    commands:
+      - eraseText
+      - inputText: "QATEST ${RUN_STAMP} HEAD"
 - hideKeyboard
+- assertVisible:
+    text: "QATEST ${RUN_STAMP} HEAD"
 - tapOn:
     id: "familyname"
 - inputText: "QATEST"
 - hideKeyboard
+# isHeadOfFamily checkbox is PRE-CHECKED (config value "true") - do NOT tap
+# it, that would UNCHECK the head flag and break search/overview downstream.
+# DOB via the AGE fields: the dob widget is a card with a calendar-dialog date
+# input plus plain numeric Years/Months inputs that compute the DOB - typed
+# age needs no dialog. Ids dob_years/dob_months/dob_date are vendored
+# additions (patch 05).
 - tapOn:
-    id: "isHeadOfFamily"
-# FIRST-RUN CHECKPOINT: date picker. Tapping the field opens the app's date
-# widget; the steps below try typed entry then confirm. If the picker is
-# calendar-only, adjust here once (failure screenshot will show the widget).
-- tapOn:
-    id: "dobPicker"
-- inputText: ${HEAD_DOB_TEXT}
-# hideKeyboard BEFORE the OK tap: Maestro's hideKeyboard is a BACK press on
-# Android (proven in run 2026-09-02-1554 logcat) - only safe while the
-# keyboard is open, i.e. immediately after inputText. Placed after OK it
-# BACKs out of the form when no keyboard is up.
+    id: "dob_years"
+- inputText: ${HEAD_AGE_YEARS}
+# Safe here: dob_years is a real DigitTextFormInput (isEditable defaults true
+# in BaseDigitFormInput and DigitTextFormInput never overrides it), so the IME
+# really is open and swallows hideKeyboard's BACK. Contrast memberCount above.
 - hideKeyboard
-- tapOn:
-    text: "OK"
-    optional: true
-- tapOn:
-    id: "gender"
+# gender is a `select` field -> SelectionCard, whose option chips are SINGLE
+# nodes carrying both the label and the tap action (semantics-probed
+# 2026-09-03), so unlike radios/checkboxes they ARE reachable by text. No
+# tapOn: id "gender" first - that id sits on the field's label block, and
+# tapping its centre is the coin-flip that picked the wrong control on the
+# consent page.
 - tapOn:
     text: ${GENDER_HEAD}
 - tapOn:
-    text: ${BTN_NEXT}
-# --- Registered: success card or household overview must appear ---
+    id: "form_action"
+# --- Registered ---
+# Config: the beneficiaryDetails page navigates to the 'beneficiary-details'
+# TEMPLATE (the member summary screen, body field detailsCard) - accept that,
+# a success card, or the household overview (whose Add Member swaps to
+# beneficiaryIdMinCheck on low-ID-pool devices) as completion proof.
 - extendedWaitUntil:
     visible:
-      id: "(.*_successCard|.*_addMember)"
+      id: "(.*_successCard|.*_addMember|.*_beneficiaryIdMinCheck|.*_detailsCard)"
     timeout: 30000

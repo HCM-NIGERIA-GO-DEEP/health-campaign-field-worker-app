@@ -82,6 +82,7 @@ if ($Apk) {
 # --- env vars from maestro.env ---
 $envArgs = @()
 $setKeys = @()
+$envMap = @{}
 $envFile = Join-Path $kitRoot "maestro.env"
 if (Test-Path $envFile) {
     Get-Content $envFile | ForEach-Object {
@@ -89,7 +90,9 @@ if (Test-Path $envFile) {
         if ($line -and -not $line.StartsWith("#") -and $line.Contains("=")) {
             $envArgs += "-e"
             $envArgs += $line
-            $setKeys += $line.Split("=")[0].Trim()
+            $k = $line.Split("=")[0].Trim()
+            $setKeys += $k
+            $envMap[$k] = $line.Substring($line.IndexOf("=") + 1)
         }
     }
     Write-Host ("Loaded " + ($envArgs.Count / 2) + " env vars from maestro.env")
@@ -107,18 +110,40 @@ $defaults = [ordered]@{
     "BTN_NEXT"       = "Next"
     "BTN_RECORD"     = "Record Data"
     "BTN_PROCEED"    = "Proceed"
-    "OPT_YES"        = "Yes"
-    "OPT_NO"         = "No"
+    # OPT_YES / OPT_NO retired 2026-09-03: radio options are addressed by their
+    # config enum code (consentToParticipate_TRUE, ec1_NO ...). Their visible
+    # labels are absorbed into the field's merged accessibility node, so they
+    # were never matchable as text - see 03's consent block.
     "GENDER_HEAD"    = "Male"
     "GENDER_CHILD"   = "Female"
     "MEMBER_COUNT"   = "3"
-    "HEAD_DOB_TEXT"  = "01/01/1990"
-    "CHILD_DOB_TEXT" = "01/06/2024"
+    # DOB is entered via the dob widget's AGE fields (ids dob_years /
+    # dob_months, patch 05). 44 months is SMC-eligible (3-59) and stays
+    # eligible even if a keystroke drops ("4"); 36 years is safely adult.
+    "HEAD_AGE_YEARS"    = "36"
+    "CHILD_AGE_MONTHS"  = "44"
 }
 foreach ($k in $defaults.Keys) {
     if ($setKeys -notcontains $k) {
         $envArgs += "-e"
         $envArgs += ($k + "=" + $defaults[$k])
+    }
+}
+
+# Boundary typed-search fragments: flows TYPE BOUNDARY_Lx_FILTER into the
+# dropdown search box but TAP/ASSERT by the full BOUNDARY_Lx_VALUE. Short
+# fragments exist because Maestro's char-by-char injection can DROP a
+# keystroke while the dropdown rebuilds per keypress (run -2218: 4/4 flows
+# lost one random char out of 33 typed; corrupted filter -> "No matches
+# found"). Unset filters fall back to the full value (original behavior).
+foreach ($lvl in 1, 2, 3) {
+    $fk = "BOUNDARY_L${lvl}_FILTER"
+    if ($setKeys -notcontains $fk) {
+        $vk = "BOUNDARY_L${lvl}_VALUE"
+        $v = ""
+        if ($envMap.ContainsKey($vk)) { $v = $envMap[$vk] }
+        $envArgs += "-e"
+        $envArgs += ($fk + "=" + $v)
     }
 }
 

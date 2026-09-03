@@ -16,6 +16,27 @@ tags:
 - runFlow: ../common/ensure-home.yaml
 - tapOn:
     text: ${HOME_REG}
+# Village-selection interstitial ("Select Your Village", device-observed
+# 2026-09-02 17:44): this campaign asks which village to work in right after
+# Registration & Delivery. The card is the boundary chosen at login
+# (BOUNDARY_L2_VALUE). Every flow cold-starts the app, so the screen shows
+# every time on this campaign; a campaign without it edits this step out.
+- extendedWaitUntil:
+    visible:
+      text: "Select Your Village"
+    timeout: 20000
+- tapOn:
+    text: ${BOUNDARY_L2_VALUE}
+# NO hideKeyboard after the search inputText (route-pop trap, run -2252) and
+# retype once on dropped keystrokes - see 04 for the full story.
+# Localization settle gate + re-tap before retyping - see 03 for the full
+# story (run -1128: ids go live one relayout before labels translate, the
+# header then shrinks 133px and a tap aimed at the pre-translation bounds
+# misses the field; an unfocused field also swallows eraseText/inputText).
+- extendedWaitUntil:
+    visible:
+      text: "Search Beneficiary"
+    timeout: 20000
 - extendedWaitUntil:
     visible:
       id: ".*_searchBar"
@@ -23,18 +44,31 @@ tags:
 - tapOn:
     id: ".*_searchBar"
 - inputText: "QATEST ${RUN_STAMP}"
-- hideKeyboard
+- runFlow:
+    when:
+      notVisible:
+        text: "QATEST ${RUN_STAMP}"
+    commands:
+      - tapOn:
+          id: ".*_searchBar"
+      - eraseText
+      - inputText: "QATEST ${RUN_STAMP}"
 - tapOn:
     text: "QATEST ${RUN_STAMP} HEAD.*"
+# Add Member is TWO mutually-exclusive config variants (REGISTRATION.json,
+# proven pattern in run -1745): fieldName addMember when the unique-
+# beneficiary-ID pool >= minimum, fieldName beneficiaryIdMinCheck (same
+# visible label) when below; the low-pool popup's skip-and-continue button
+# (fieldName clearFilter) proceeds to the same ADD_MEMBER form.
 - extendedWaitUntil:
     visible:
-      id: ".*_addMember"
+      id: ".*_(addMember|beneficiaryIdMinCheck)"
     timeout: 20000
 # Add CHILD2 (eligible age - the blocking must come from the checklist, not age)
 - tapOn:
-    id: ".*_addMember"
+    id: ".*_(addMember|beneficiaryIdMinCheck)"
 - tapOn:
-    text: ${BTN_PROCEED}
+    id: ".*clearFilter"
     optional: true
 - extendedWaitUntil:
     visible:
@@ -43,39 +77,46 @@ tags:
 - tapOn:
     id: "nameOfIndividual"
 - inputText: "QATEST ${RUN_STAMP} CHILD2"
+# Typed-name integrity (see 03): the CHILD2 card is matched by this name.
+- runFlow:
+    when:
+      notVisible:
+        text: "QATEST ${RUN_STAMP} CHILD2"
+    commands:
+      - eraseText
+      - inputText: "QATEST ${RUN_STAMP} CHILD2"
 - hideKeyboard
+- assertVisible:
+    text: "QATEST ${RUN_STAMP} CHILD2"
 - tapOn:
     id: "familyname"
 - inputText: "QATEST"
 - hideKeyboard
+# DOB via the AGE-in-months field (see 03/04): eligible age on purpose -
+# the blocking must come from the checklist answer, not from age.
 - tapOn:
-    id: "dobPicker"
-- inputText: ${CHILD_DOB_TEXT}
-# hideKeyboard BEFORE the OK tap: Maestro's hideKeyboard is a BACK press on
-# Android (proven in run 2026-09-02-1554 logcat) - only safe while the
-# keyboard is open, i.e. immediately after inputText. Placed after OK it
-# BACKs out of the form when no keyboard is up.
+    id: "dob_months"
+- inputText: ${CHILD_AGE_MONTHS}
 - hideKeyboard
-- tapOn:
-    text: "OK"
-    optional: true
 - tapOn:
     id: "gender"
 - tapOn:
     text: ${GENDER_CHILD}
+# FORM footer by stable id (labels are per-page campaign texts; see 03)
 - tapOn:
-    text: ${BTN_NEXT}
+    id: "form_action"
 - extendedWaitUntil:
     visible:
       id: ".*_successCard"
     timeout: 30000
-# Back to the household, start recording for CHILD2
+# Back to the household: ADD_MEMBER always lands on the ACKNOWLEDGEMENT
+# template (config), whose View-Household button is fieldName
+# viewHouseholdButton.
 - tapOn:
-    text: "QATEST ${RUN_STAMP} HEAD.*"
-    optional: true
+    id: ".*_viewHouseholdButton"
 - extendedWaitUntil:
     visible:
-      id: ".*_addMember"
+      id: ".*_(addMember|beneficiaryIdMinCheck)"
     timeout: 20000
 - scrollUntilVisible:
     element:
@@ -83,31 +124,30 @@ tags:
     direction: DOWN
     timeout: 20000
 - tapOn:
-    text: ${BTN_RECORD}
+    id: ".*_deliveryButton"
     below:
       text: "QATEST ${RUN_STAMP} CHILD2.*"
 # --- Eligibility: ec1 = Yes (disqualifying), rest No -> must route to Refer ---
+# Radios by <fieldName>_<code> (config codes YES/NO) - see 05 for why neither
+# `id: ec1` nor `text: "Yes"` can reach a radio. This flow's whole point is
+# that ec1 SPECIFICALLY is the disqualifying Yes, so naming the field beats
+# the old index-into-screen-order tap. Needs an APK built after 2026-09-03.
 - extendedWaitUntil:
     visible:
-      id: "ec1"
+      id: "ec1_(YES|NO)"
     timeout: 20000
 - tapOn:
-    text: ${OPT_YES}
-    index: 0
+    id: "ec1_YES"
 - tapOn:
-    text: ${OPT_NO}
-    index: 1
+    id: "ec2_NO"
 - tapOn:
-    text: ${OPT_NO}
-    index: 2
+    id: "ec3_NO"
 - tapOn:
-    text: ${OPT_NO}
-    index: 3
+    id: "ec4_NO"
 - tapOn:
-    text: ${OPT_NO}
-    index: 4
+    id: "ec5_NO"
 - tapOn:
-    text: ${BTN_NEXT}
+    id: "form_action"
 # --- MUST land on Refer Beneficiary (id from its form fields), NOT delivery ---
 - extendedWaitUntil:
     visible:

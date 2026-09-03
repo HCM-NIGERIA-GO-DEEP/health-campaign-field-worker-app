@@ -1,0 +1,81 @@
+﻿diff --git a/packages/digit_forms_engine/lib/pages/forms_render.dart b/packages/digit_forms_engine/lib/pages/forms_render.dart
+index dc110cdfc..5efc6e031 100644
+--- a/packages/digit_forms_engine/lib/pages/forms_render.dart
++++ b/packages/digit_forms_engine/lib/pages/forms_render.dart
+@@ -173,6 +173,10 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
+                         children: [
+                           ReactiveFormConsumer(
+                             builder: (context, formGroup, child) => DigitButton(
++                              // Stable UI-test id: every FORM page's primary
++                              // footer action, independent of its campaign-
++                              // localized label (each page has its own).
++                              semanticsIdentifier: 'form_action',
+                               label: (index) < schemaObject.pages.length - 1
+                                   ? localizations
+                                       .translate(schema.actionLabel ?? 'Next')
+@@ -1006,6 +1010,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
+                 children: [
+                   ReactiveFormConsumer(
+                     builder: (context, formGroup, child) => DigitButton(
++                      // Stable UI-test id (see the other footer variant).
++                      semanticsIdentifier: 'form_action',
+                       label: (index) < schemaObject.pages.length - 1
+                           ? localizations
+                               .translate(schema.actionLabel ?? 'Next')
+diff --git a/packages/digit_forms_engine/lib/widgets/checkbox_builder.dart b/packages/digit_forms_engine/lib/widgets/checkbox_builder.dart
+index d2a470ffb..60357bd28 100644
+--- a/packages/digit_forms_engine/lib/widgets/checkbox_builder.dart
++++ b/packages/digit_forms_engine/lib/widgets/checkbox_builder.dart
+@@ -28,6 +28,11 @@ class JsonSchemaCheckboxBuilder extends JsonSchemaBuilder<bool> {
+           mainAxisAlignment: MainAxisAlignment.start,
+           children: [
+             DigitCheckbox(
++              // `<formControlName>_checkbox`, NOT the bare form control name:
++              // JsonFormBuilder already puts that id on the enclosing field
++              // node, and a duplicate would make the driver hit the
++              // non-tappable label block instead of the box.
++              semanticsIdentifier: '${formControlName}_checkbox',
+               capitalizeFirstLetter: false,
+               isRequired: isRequired ?? false,
+               readOnly: readOnly,
+diff --git a/packages/digit_forms_engine/lib/widgets/json_form_builder.dart b/packages/digit_forms_engine/lib/widgets/json_form_builder.dart
+index 4a77b8f39..2a1e90f52 100644
+--- a/packages/digit_forms_engine/lib/widgets/json_form_builder.dart
++++ b/packages/digit_forms_engine/lib/widgets/json_form_builder.dart
+@@ -51,7 +51,16 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
+ 
+     _checkAutoFill(form);
+ 
+-    return _buildByType(form);
++    // Stable identifier (surfaces as Android resource-id = formControlName)
++    // so UI-test selectors survive campaign label changes. This is the live
++    // per-field dispatch point - BaseReactiveFieldWrapper is not referenced
++    // anywhere on this branch, so instrumenting it never reached the screen
++    // (proven by run -0108: zero resource-ids on the Beneficiary Location
++    // form page).
++    return Semantics(
++      identifier: widget.formControlName,
++      child: _buildByType(form),
++    );
+   }
+ 
+   bool get _isReadOnly => (widget.schema.readOnly ?? false) || _autoReadOnly;
+diff --git a/packages/digit_forms_engine/lib/widgets/radio_builder.dart b/packages/digit_forms_engine/lib/widgets/radio_builder.dart
+index bffc5a378..46bd1c389 100644
+--- a/packages/digit_forms_engine/lib/widgets/radio_builder.dart
++++ b/packages/digit_forms_engine/lib/widgets/radio_builder.dart
+@@ -34,6 +34,14 @@ class JsonSchemaRadioBuilder extends JsonSchemaBuilder<bool> {
+           label: label,
+           infoText: tooltipText,
+           child: RadioList(
++            // Per-option resource-ids (`<formControlName>_<code>`) so UI tests
++            // and TalkBack can address a specific radio. The field-level
++            // Semantics(identifier:) in JsonFormBuilder lands on the merged
++            // label block, which is not clickable and whose centre falls
++            // between the options - it cannot select one. Scoping by form
++            // control name keeps ids unique when several groups on one page
++            // share option codes (eligibility ec1..ec5 are all YES/NO).
++            semanticsIdentifierPrefix: formControlName,
+             containerPadding:
+                 const EdgeInsets.only(bottom: spacer4, top: spacer2),
+             readOnly: readOnly,

@@ -13,29 +13,44 @@
 #
 # SELECTOR RULES for the boundary section - each bought with a failed run,
 # do not "simplify" them away (evidence: reports/maestro-2026-09-02-*):
-# - Boundary values come from maestro.env (BOUNDARY_Lx_VALUE); each value is
-#   TYPED into the dropdown's search box (filters the list, so the option is
-#   visible without scrolling), then the option row is tapped by text.
-# - below+above anchors on the option tap: run -1340, bare `below:` hit the
-#   field's own suffix-arrow; run -1416, point taps missed the overlay (the
-#   screen is label-LEFT, the option list anchors under the input BOX); run
-#   -1437, the OPEN KEYBOARD's a11y nodes (Gboard "More features") sit below
-#   the field and the IME window precedes the app window in Maestro's
-#   hierarchy - `above: Submit` fences out IME/nav nodes (they all lie below
-#   Submit even when the keyboard resizes the viewport).
-# - NO id: filter on option taps: option rows carry NO resource-id attribute,
-#   and Maestro idMatches returns false on a missing attribute (run -1524).
-#   The typed field can't be matched instead: Filters.kt `below` = candidate
-#   top-y STRICTLY greater than anchor top-y, sorted by distance.
+# - REQUIRES an APK built with patch 05 (vendored digit_ui_components, see
+#   patches/README.md): every dropdown option row carries a resource-id
+#   `option_<code>` (device-verified in run -1654's log). On an older APK the
+#   option taps fail at the first id: step - rebuild, don't edit this flow.
+# - Boundary values come from maestro.env (BOUNDARY_Lx_VALUE); a SHORT
+#   fragment (BOUNDARY_Lx_FILTER, runner defaults it to the value) is
+#   typed (filters the list when the widget is searchable; harmless when
+#   not), then the option row is tapped by `id: option_.*` + `text: <value>`.
+#   Typing is LOSSY under emulator load: run -2218 dropped exactly one random
+#   char in 4/4 flows (Healh/Iale/sale/epeteri) and the corrupted filter
+#   matched nothing - hence short fragments + the no-match retype retry.
+#   That pair replaced three failed strategies: point taps missed the overlay
+#   (label-LEFT layout, run -1416), bare `below:` hit the field's own arrow
+#   (run -1340), and generic text regexes matched the OPEN KEYBOARD's a11y
+#   nodes - Gboard "More features" (run -1437).
 # - hideKeyboard is a BACK press on Android (run -1554 logcat: every call
 #   logs onBackKeyPressed; one with no keyboard open EXITED the app from the
 #   root boundary screen). Only ever call it immediately after inputText.
 # - MULTISELECT levels (this env: Community - chips + "n Selected") keep
 #   their option panel open after selection; the close gesture is a tap
-#   OUTSIDE it (Amit's manual gesture). The (50%,7%) tap lands on the dismiss
-#   scrim when a panel is open and on the inert teal header when not. Do NOT
-#   tap the field again to close - run -1545: that drops "Submit" out of the
-#   a11y tree entirely.
+#   OUTSIDE it on the dismiss scrim. THE SCRIM IS NOT FULL-SCREEN: the
+#   boundary screen sits in the app's NESTED router Navigator, so
+#   Overlay.of(context) is the nested overlay and the scrim spans only the
+#   body area - bounds [0,280][1440,2476] in run -1736's hierarchy. Taps at
+#   the app bar (the old 50%,7% point, y=179) land ABOVE the scrim and hit
+#   nothing - that silent miss cost four runs. The point (21%,62%) lands in
+#   the LEFT GUTTER: inside the scrim, left of the option panel (options span
+#   x 510-1342), over empty page body (inert if the panel is already closed).
+#   Do NOT tap the field again to close (run
+#   -1545: that drops "Submit" out of the a11y tree entirely). And NEVER
+#   treat "Submit is visible" as a closed-panel proof: Submit stays in the
+#   a11y tree BEHIND the open panel (runs -1437/-1654), and a Submit tap
+#   through an open panel SELECTS WHATEVER OPTION ROW sits at those
+#   coordinates - run -1654 selected a second Community boundary that way.
+#   The only true proof is `notVisible: id: option_.*`, enforced below with
+#   one outside-tap retry (the close can lag or the panel resurrect on slow
+#   debug builds; not reproducible in widget tests -
+#   multiselect_outside_tap_close_test.dart passes).
 # - Each level is SKIPPED when it already shows its value, so this preamble
 #   also works if the app ever starts persisting the selection.
 # - Selection proof: never assert text ".+" on a field - Maestro text
@@ -104,14 +119,27 @@ appId: com.digit.hcm
     commands:
       - tapOn:
           id: "boundary_${BOUNDARY_L1_LABEL}"
-      - inputText: ${BOUNDARY_L1_VALUE}
+      # Type the SHORT filter fragment, not the full value: Maestro injects
+      # chars one by one and the dropdown refilters/rebuilds per keystroke -
+      # run -2218 dropped ONE random char in 4/4 flows (Healh / Iale / sale /
+      # epeteri) and the corrupted filter matched nothing. Fewer keystrokes,
+      # fewer chances; the option TAP below still matches the full VALUE.
+      - inputText: ${BOUNDARY_L1_FILTER}
       - hideKeyboard
+      # Keystroke-drop self-heal: if the filter still came out corrupted the
+      # list shows the (localized) no-match row - erase and retype ONCE, then
+      # the option tap fails loudly as usual if it is still wrong.
+      - runFlow:
+          when:
+            visible:
+              text: "(?i)no match(es)? found"
+          commands:
+            - eraseText
+            - inputText: ${BOUNDARY_L1_FILTER}
+            - hideKeyboard
       - tapOn:
+          id: "option_.*"
           text: "(?s).*${BOUNDARY_L1_VALUE}.*"
-          below:
-            id: "boundary_${BOUNDARY_L1_LABEL}"
-          above:
-            text: "Submit"
       - assertVisible:
           id: "boundary_${BOUNDARY_L1_LABEL}"
           text: "(?s).*${BOUNDARY_L1_VALUE}.*"
@@ -127,19 +155,25 @@ appId: com.digit.hcm
           commands:
             - tapOn:
                 id: "boundary_${BOUNDARY_L2_LABEL}"
-            - inputText: ${BOUNDARY_L2_VALUE}
+            # Filter fragment + drop self-heal: same rationale as L1 (run -2218)
+            - inputText: ${BOUNDARY_L2_FILTER}
             - hideKeyboard
+            - runFlow:
+                when:
+                  visible:
+                    text: "(?i)no match(es)? found"
+                commands:
+                  - eraseText
+                  - inputText: ${BOUNDARY_L2_FILTER}
+                  - hideKeyboard
             - tapOn:
+                id: "option_.*"
                 text: "(?s).*${BOUNDARY_L2_VALUE}.*"
-                below:
-                  id: "boundary_${BOUNDARY_L2_LABEL}"
-                above:
-                  text: "Submit"
             - assertVisible:
                 text: "(?s).*${BOUNDARY_L2_VALUE}.*"
             # Close the panel by tapping OUTSIDE it (see header)
             - tapOn:
-                point: "50%,7%"
+                point: "21%,62%"
 # --- Boundary level 3 (unused on this env while BOUNDARY_L3_LABEL is empty) ---
 - runFlow:
     when:
@@ -152,21 +186,33 @@ appId: com.digit.hcm
           commands:
             - tapOn:
                 id: "boundary_${BOUNDARY_L3_LABEL}"
-            - inputText: ${BOUNDARY_L3_VALUE}
+            # FILTER var like L1/L2 (defaults to the VALUE); this level is
+            # unused on this env - add the no-match retry when first exercised.
+            - inputText: ${BOUNDARY_L3_FILTER}
             - hideKeyboard
             - tapOn:
+                id: "option_.*"
                 text: "(?s).*${BOUNDARY_L3_VALUE}.*"
-                below:
-                  id: "boundary_${BOUNDARY_L3_LABEL}"
-                above:
-                  text: "Submit"
             - assertVisible:
                 text: "(?s).*${BOUNDARY_L3_VALUE}.*"
             - tapOn:
-                point: "50%,7%"
-# Submit must be back in the a11y tree once every panel is closed - fails
-# loudly here if the outside tap did not close it. NO hideKeyboard here (see
-# header: BACK-press trap, run -1554 exited the app from this exact spot).
+                point: "21%,62%"
+# One retry if an option panel is still (or again) open - see header
+- runFlow:
+    when:
+      visible:
+        id: "option_.*"
+    commands:
+      - tapOn:
+          point: "21%,62%"
+# TRUE closed-panel proof: no option rows left in the a11y tree. Submit taps
+# are only safe after this - a tap through an open panel selects an option
+# row instead (run -1654). NO hideKeyboard here (BACK-press trap, run -1554
+# exited the app from this exact spot).
+- extendedWaitUntil:
+    notVisible:
+      id: "option_.*"
+    timeout: 10000
 - extendedWaitUntil:
     visible:
       text: "Submit"
@@ -176,6 +222,19 @@ appId: com.digit.hcm
 # First-login data download popup (absent on later launches)
 - tapOn:
     text: "Download"
+    optional: true
+# Data-download acknowledgement screen: after the boundary data download
+# completes, the app shows "Downloaded successfully!" with a
+# "Go To Home Screen" button (device-observed 2026-09-02 17:43) - home never
+# appears until it is tapped. The wait accepts EITHER that button or home
+# (no download -> straight to home; download can take a while). If a campaign
+# localizes the button text, update it here - normal maintenance.
+- extendedWaitUntil:
+    visible:
+      text: "Go To Home Screen|${HOME_REG}"
+    timeout: 180000
+- tapOn:
+    text: "Go To Home Screen"
     optional: true
 # Home (first sync can take a while)
 - extendedWaitUntil:

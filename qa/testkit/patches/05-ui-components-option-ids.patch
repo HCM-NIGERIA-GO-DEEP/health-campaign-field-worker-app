@@ -1,0 +1,1045 @@
+﻿diff --git a/packages/digit_ui_components/lib/widgets/atoms/digit_button.dart b/packages/digit_ui_components/lib/widgets/atoms/digit_button.dart
+index 47789d3f7..a96c04d03 100644
+--- a/packages/digit_ui_components/lib/widgets/atoms/digit_button.dart
++++ b/packages/digit_ui_components/lib/widgets/atoms/digit_button.dart
+@@ -57,6 +57,13 @@ class DigitButton extends StatefulWidget {
+   final CrossAxisAlignment? crossAxisAlignment;
+   final MainAxisSize? mainAxisSize;
+ 
++  /// Optional stable identifier exposed to the accessibility tree as the
++  /// Android resource-id (via Semantics), for UI-test selectors. Applied
++  /// INSIDE the button so callers that need the widget to BE a DigitButton
++  /// (popup action lists cast to it) keep working — an outer Semantics
++  /// wrapper breaks that cast.
++  final String? semanticsIdentifier;
++
+   const DigitButton({
+     Key? key,
+     required this.label,
+@@ -73,6 +80,7 @@ class DigitButton extends StatefulWidget {
+     this.mainAxisAlignment,
+     this.crossAxisAlignment,
+     this.mainAxisSize,
++    this.semanticsIdentifier,
+   }) : super(key: key);
+ 
+   @override
+@@ -117,7 +125,15 @@ class _DigitButtonState extends State<DigitButton> {
+         break;
+     }
+ 
+-    return _buildDigitButtonWidget(context, digitButtonThemeData ?? digitButtonThemeDataDefault);
++    final button = _buildDigitButtonWidget(
++        context, digitButtonThemeData ?? digitButtonThemeDataDefault);
++    if (widget.semanticsIdentifier == null) {
++      return button;
++    }
++    return Semantics(
++      identifier: widget.semanticsIdentifier!,
++      child: button,
++    );
+   }
+ 
+   /// Build the DigitButton widget based on its type and state.
+diff --git a/packages/digit_ui_components/lib/widgets/atoms/digit_checkbox.dart b/packages/digit_ui_components/lib/widgets/atoms/digit_checkbox.dart
+index 85d898f22..80c216a06 100644
+--- a/packages/digit_ui_components/lib/widgets/atoms/digit_checkbox.dart
++++ b/packages/digit_ui_components/lib/widgets/atoms/digit_checkbox.dart
+@@ -47,6 +47,17 @@ class DigitCheckbox extends StatefulWidget {
+ 
+   final bool isRequired;
+ 
++  /// Optional stable accessibility identifier for the tappable box (surfaces as
++  /// the Android `resource-id`).
++  ///
++  /// The box and its label are SIBLINGS, so the tappable node carries no label
++  /// of its own — without this it is an anonymous node that accessibility-tree
++  /// drivers (Maestro, TalkBack) can only reach by screen coordinates. Same
++  /// shape as [RadioList]; see its `semanticsIdentifierPrefix`.
++  ///
++  /// Null leaves the box unannotated, i.e. the previous behaviour.
++  final String? semanticsIdentifier;
++
+   /// Creates a `DigitCheckbox` widget with the given parameters.
+   const DigitCheckbox({
+     Key? key,
+@@ -59,6 +70,7 @@ class DigitCheckbox extends StatefulWidget {
+     this.capitalizeFirstLetter = true,
+     this.checkboxThemeData,
+     this.isRequired = false,
++    this.semanticsIdentifier,
+   }) : super(key: key);
+ 
+   @override
+@@ -70,6 +82,28 @@ class _DigitCheckboxState extends State<DigitCheckbox> {
+   bool isHovered = false;
+   bool isFocused = false;
+ 
++  /// Annotates the tappable box with [DigitCheckbox.semanticsIdentifier] when
++  /// the caller supplied one; returns [child] untouched otherwise, so existing
++  /// call sites keep their semantics tree.
++  Widget _withCheckboxSemantics(Widget child) {
++    final identifier = widget.semanticsIdentifier;
++    if (identifier == null || identifier.isEmpty) return child;
++
++    // container: true is load-bearing. A single checkbox under the forms
++    // engine's field-level Semantics(identifier: formControlName) otherwise
++    // merges into ONE node that spans the whole field block: the field id
++    // wins, this id is dropped, and although the merged node reports
++    // tap=true its centre sits on the LABEL, so tapping it never toggles the
++    // box. Forcing our own node keeps the id on the box's own rect.
++    // (RadioList needs no such flag - two option nodes stop the ancestor
++    // annotation from collapsing into a single child.)
++    return Semantics(
++      identifier: identifier,
++      container: true,
++      child: child,
++    );
++  }
++
+   @override
+   void initState() {
+     super.initState();
+@@ -115,7 +149,10 @@ class _DigitCheckboxState extends State<DigitCheckbox> {
+             SizedBox(
+               height: isMobile ? 0 : 2,
+             ),
+-            InkWell(
++            // Stable resource-id on the tappable box. Its label is a sibling
++            // node, so without this the box is anonymous to accessibility-tree
++            // drivers (same trap RadioList hit in run -1214).
++            _withCheckboxSemantics(InkWell(
+               hoverColor: theme.colorTheme.generic.transparent,
+               splashColor: theme.colorTheme.generic.transparent,
+               highlightColor: theme.colorTheme.generic.transparent,
+@@ -147,7 +184,7 @@ class _DigitCheckboxState extends State<DigitCheckbox> {
+                 isDisabled: widget.isDisabled || widget.readOnly,
+                 checkboxThemeData: widget.checkboxThemeData ?? defaultThemeData,
+               ),
+-            ),
++            )),
+           ],
+         ),
+         if (widget.label != null) ...[
+diff --git a/packages/digit_ui_components/lib/widgets/atoms/digit_dob_picker.dart b/packages/digit_ui_components/lib/widgets/atoms/digit_dob_picker.dart
+index 26649da11..4caf0647b 100644
+--- a/packages/digit_ui_components/lib/widgets/atoms/digit_dob_picker.dart
++++ b/packages/digit_ui_components/lib/widgets/atoms/digit_dob_picker.dart
+@@ -144,7 +144,14 @@ class _DigitDobPickerState extends State<DigitDobPicker> {
+                 // Date picker component to select the date of birth
+                 LabeledField(
+                   label: widget.datePickerLabel,
+-                  child: DigitDateFormInput(
++                  // Stable UI-test ids (dob_date / dob_years / dob_months):
++                  // the whole card is one form field, so the inner inputs
++                  // carry no formControlName-derived id of their own; typed
++                  // AGE entry is the automation-friendly path (no calendar
++                  // dialog).
++                  child: Semantics(
++                    identifier: 'dob_date',
++                    child: DigitDateFormInput(
+                     readOnly: widget.readOnly,
+                     editable: false,
+                     initialValue: selectedDate != null
+@@ -169,6 +176,7 @@ class _DigitDobPickerState extends State<DigitDobPicker> {
+                       }
+                     },
+                   ),
++                  ),
+                 ),
+                 const SizedBox(height: 16),
+                 Text(
+@@ -185,7 +193,9 @@ class _DigitDobPickerState extends State<DigitDobPicker> {
+                       child: LabeledField(
+                         labelInline: false,
+                         label: widget.ageFieldLabel,
+-                        child: DigitTextFormInput(
++                        child: Semantics(
++                          identifier: 'dob_years',
++                          child: DigitTextFormInput(
+                           errorMessage: widget.ageErrorMessage,
+                           prefixTextStyle: textTheme.bodyS.copyWith(
+                             color: theme.colorTheme.text.secondary,
+@@ -207,6 +217,7 @@ class _DigitDobPickerState extends State<DigitDobPicker> {
+                           keyboardType: TextInputType.number,
+                           readOnly: widget.readOnly,
+                         ),
++                        ),
+                       ),
+                     ),
+                     const SizedBox(width: 16),
+@@ -215,7 +226,9 @@ class _DigitDobPickerState extends State<DigitDobPicker> {
+                       child: LabeledField(
+                         labelInline: false,
+                         label: '',
+-                        child: DigitTextFormInput(
++                        child: Semantics(
++                          identifier: 'dob_months',
++                          child: DigitTextFormInput(
+                           errorMessage: widget.monthErrorMessage,
+                           prefixTextStyle: textTheme.bodyS.copyWith(
+                             color: theme.colorTheme.text.secondary,
+@@ -237,6 +250,7 @@ class _DigitDobPickerState extends State<DigitDobPicker> {
+                           keyboardType: TextInputType.number,
+                           readOnly: widget.readOnly,
+                         ),
++                        ),
+                       ),
+                     ),
+                   ],
+diff --git a/packages/digit_ui_components/lib/widgets/atoms/digit_dropdown_input.dart b/packages/digit_ui_components/lib/widgets/atoms/digit_dropdown_input.dart
+index f86ba49a3..fb8ca914d 100644
+--- a/packages/digit_ui_components/lib/widgets/atoms/digit_dropdown_input.dart
++++ b/packages/digit_ui_components/lib/widgets/atoms/digit_dropdown_input.dart
+@@ -613,7 +613,12 @@ class _DigitDropdownState<T> extends State<DigitDropdown<T>>
+               if (_isMouseUsed) {
+                 _focusedIndex = -1;
+               }
+-              return InkWell(
++              // Stable resource-id per option row for UI tests / TalkBack:
++              // Flutter exposes no resource-id on plain widgets, which makes
++              // dropdown options unreachable for accessibility-tree drivers.
++              return Semantics(
++                identifier: 'option_${filteredItems[index].code}',
++                child: InkWell(
+                 onTapDown: (_) {
+                   /// Handle mouse down state
+                   setState(() {
+@@ -865,6 +870,7 @@ class _DigitDropdownState<T> extends State<DigitDropdown<T>>
+                     ),
+                   ),
+                 ),
++                ),
+               );
+             },
+           );
+diff --git a/packages/digit_ui_components/lib/widgets/atoms/digit_multiselect_dropdown.dart b/packages/digit_ui_components/lib/widgets/atoms/digit_multiselect_dropdown.dart
+index 0d78cd16c..f9116da5e 100644
+--- a/packages/digit_ui_components/lib/widgets/atoms/digit_multiselect_dropdown.dart
++++ b/packages/digit_ui_components/lib/widgets/atoms/digit_multiselect_dropdown.dart
+@@ -135,6 +135,10 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
+   /// The controller for the dropdown.
+   OverlayState? _overlayState;
+   OverlayEntry? _overlayEntry;
++
++  /// True after an outside tap dismissed the panel; blocks focus-driven
++  /// re-insertion until the user taps the field again (see _onOutSideTap).
++  bool _dismissedByOutsideTap = false;
+   bool _selectionMode = false;
+   int _focusedIndex = -1;
+   final TextEditingController _searchController = TextEditingController();
+@@ -205,7 +209,10 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
+     final hasAnyFocus = _focusNode.hasFocus ||
+         (widget.isSearchable && _searchFocusNode.hasFocus);
+ 
+-    if (hasAnyFocus && mounted && _overlayEntry == null) {
++    if (hasAnyFocus &&
++        mounted &&
++        _overlayEntry == null &&
++        !_dismissedByOutsideTap) {
+       _overlayEntry = _buildOverlayEntry();
+       Overlay.of(context).insert(_overlayEntry!);
+       _focusedIndex = -1;
+@@ -341,6 +348,8 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
+               hoverColor: const DigitColors().transparent,
+               onTap: !widget.isDisabled && !widget.readOnly
+                   ? () {
++                      // A field tap always ends an outside-tap dismissal.
++                      _dismissedByOutsideTap = false;
+                       // If searchable and dropdown is already open, don't toggle
+                       if (widget.isSearchable && _selectionMode) {
+                         // Keep focus on search field
+@@ -739,6 +748,13 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
+   /// Handle the focus change on tap outside of the dropdown.
+   void _onOutSideTap() {
+     _isInteractingWithDropdown = false; // Reset flag when tapping outside
++    // An explicit outside-tap dismissal is FINAL until the user taps the
++    // field again: on real devices Android focus churn can re-grant focus to
++    // the AlwaysFocusableFocusNode right after unfocus(), and
++    // _handleFocusChange would silently re-insert the overlay (panel
++    // "resurrection" - swallowed taps meant for widgets behind it).
++    _dismissedByOutsideTap = true;
++    _searchFocusNode.unfocus();
+     _focusNode.unfocus();
+     // Explicitly close overlay if it's open
+     if (_overlayEntry != null && mounted) {
+@@ -753,8 +769,15 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
+ 
+   /// Method to toggle the focus of the dropdown.
+   void _toggleFocus() {
+-    if (_focusNode.hasFocus) {
++    // A field tap always ends an outside-tap dismissal.
++    _dismissedByOutsideTap = false;
++    if (_focusNode.hasFocus && _overlayEntry != null) {
+       _focusNode.unfocus();
++    } else if (_focusNode.hasFocus) {
++      // Focus was retained (or re-granted) while the panel is closed - e.g.
++      // right after an outside-tap dismissal. No focus CHANGE will fire, so
++      // open the panel explicitly.
++      _handleFocusChange();
+     } else {
+       _focusNode.requestFocus();
+     }
+@@ -1034,7 +1057,10 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
+               bool isFocused = index == _focusedIndex;
+               return Column(
+                 children: [
+-                  DropdownOption(
++                  // Stable resource-id per option row for UI tests / TalkBack
++                  Semantics(
++                  identifier: 'option_${option.code}',
++                  child: DropdownOption(
+                     width: width,
+                     option: option,
+                     isFocused: isFocused,
+@@ -1075,6 +1101,7 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
+                     },
+                     selectionType: widget.selectionType,
+                   ),
++                  ),
+                 ],
+               );
+             },
+@@ -1290,7 +1317,10 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
+                   index == _focusedNestedIndex.index;
+               return StatefulBuilder(
+                 builder: (context, setState) {
+-                  return DropdownOption(
++                  // Stable resource-id per option row for UI tests / TalkBack
++                  return Semantics(
++                  identifier: 'option_${option.code}',
++                  child: DropdownOption(
+                     width: width,
+                     option: option,
+                     isSelected: selectedOptions.contains(option),
+@@ -1334,6 +1364,7 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
+                       widget.onOptionSelected?.call(_selectedOptions);
+                     },
+                     selectionType: widget.selectionType,
++                  ),
+                   );
+                 },
+               );
+diff --git a/packages/digit_ui_components/lib/widgets/atoms/digit_radio_list.dart b/packages/digit_ui_components/lib/widgets/atoms/digit_radio_list.dart
+index 1db2362cd..73cd82167 100644
+--- a/packages/digit_ui_components/lib/widgets/atoms/digit_radio_list.dart
++++ b/packages/digit_ui_components/lib/widgets/atoms/digit_radio_list.dart
+@@ -50,6 +50,19 @@ class RadioList extends StatefulWidget {
+   final bool sentenceCaseEnabled;
+   final TextDirection? textDirection;
+ 
++  /// Optional prefix that gives every radio a stable accessibility identifier
++  /// of the form `<prefix>_<code>` (surfaces as the Android `resource-id`).
++  ///
++  /// Without it the tappable radio is an anonymous node: its option label is
++  /// absorbed into the surrounding merged label block, so accessibility-tree
++  /// drivers (Maestro, TalkBack) have nothing to address it by and can only
++  /// guess at screen coordinates. Callers pass the field's form control name,
++  /// which keeps the ids unique when several radio groups share option codes
++  /// (e.g. the eligibility checklist's ec1..ec5, all YES/NO).
++  ///
++  /// Null leaves the radios unannotated, i.e. the previous behaviour.
++  final String? semanticsIdentifierPrefix;
++
+   /// Constructor for the RadioList widget
+   RadioList({
+     Key? key,
+@@ -64,6 +77,7 @@ class RadioList extends StatefulWidget {
+     this.radioHeight = RadioConstant.radioHeight,
+     this.sentenceCaseEnabled = true,
+     this.textDirection = TextDirection.ltr,
++    this.semanticsIdentifierPrefix,
+   }) : super(key: key);
+ 
+   /// Create the state for the widget
+@@ -201,6 +215,21 @@ class _RadioListState extends State<RadioList> {
+     );
+   }
+ 
++  /// Annotates a radio's tappable node with
++  /// `Semantics(identifier: '<prefix>_<code>')` when the caller supplied a
++  /// [RadioList.semanticsIdentifierPrefix]. Returns [child] untouched
++  /// otherwise, so call sites that pass no prefix keep their existing
++  /// semantics tree.
++  Widget _withRadioSemantics(String code, Widget child) {
++    final prefix = widget.semanticsIdentifierPrefix;
++    if (prefix == null || prefix.isEmpty) return child;
++
++    return Semantics(
++      identifier: '${prefix}_$code',
++      child: child,
++    );
++  }
++
+   List<Widget> _buildRadioDigitButtons(BuildContext context) {
+ 
+     final theme = Theme.of(context);
+@@ -222,7 +251,12 @@ class _RadioListState extends State<RadioList> {
+                   SizedBox(
+                     height: isMobile ? 0 : spacer1 / 2,
+                   ),
+-                  InkWell(
++                  // Stable resource-id per option for accessibility-tree
++                  // consumers. The option's own label ("Yes"/"No") is absorbed
++                  // into the field's merged label node, so this InkWell is
++                  // otherwise an anonymous tappable node that only screen
++                  // coordinates can reach.
++                  _withRadioSemantics(DigitButton.code, InkWell(
+                     hoverColor: const DigitColors().transparent,
+                     splashColor: const DigitColors().transparent,
+                     highlightColor: const DigitColors().transparent,
+@@ -309,7 +343,7 @@ class _RadioListState extends State<RadioList> {
+                       )
+                           : null,
+                     ),
+-                  ),
++                  )),
+                 ],
+               ),
+               const SizedBox(
+diff --git a/packages/digit_ui_components/test/widgets/atoms/digit_button_identifier_test.dart b/packages/digit_ui_components/test/widgets/atoms/digit_button_identifier_test.dart
+new file mode 100644
+index 000000000..c09e8537e
+--- /dev/null
++++ b/packages/digit_ui_components/test/widgets/atoms/digit_button_identifier_test.dart
+@@ -0,0 +1,105 @@
++import 'package:digit_ui_components/digit_components.dart';
++import 'package:flutter/material.dart';
++import 'package:flutter/rendering.dart';
++import 'package:flutter_test/flutter_test.dart';
++
++/// Regression tests for `DigitButton.semanticsIdentifier` (local vendored
++/// change): the identifier must ride INSIDE the button so callers that cast
++/// the built widget to DigitButton (flow-builder popup footers) keep working —
++/// wrapping the button in an outer Semantics crashed those casts at runtime
++/// ("type 'Semantics' is not a subtype of type 'DigitButton'").
++void main() {
++  List<String> allIdentifiers(WidgetTester tester) {
++    final ids = <String>[];
++    void visit(SemanticsNode node) {
++      final identifier = node.getSemanticsData().identifier;
++      if (identifier.isNotEmpty) ids.add(identifier);
++      node.visitChildren((child) {
++        visit(child);
++        return true;
++      });
++    }
++
++    final root =
++        tester.binding.pipelineOwner.semanticsOwner?.rootSemanticsNode;
++    expect(root, isNotNull, reason: 'semantics must be enabled');
++    visit(root!);
++    return ids;
++  }
++
++  testWidgets('semanticsIdentifier surfaces in the semantics tree',
++      (WidgetTester tester) async {
++    final handle = tester.ensureSemantics();
++    await tester.pumpWidget(
++      MaterialApp(
++        home: Scaffold(
++          body: DigitButton(
++            label: 'Skip & Continue',
++            semanticsIdentifier: 'searchBeneficiary_clearFilter',
++            onPressed: () {},
++            type: DigitButtonType.secondary,
++            size: DigitButtonSize.large,
++          ),
++        ),
++      ),
++    );
++
++    expect(allIdentifiers(tester), contains('searchBeneficiary_clearFilter'));
++
++    handle.dispose();
++    await tester.pumpWidget(const SizedBox.shrink());
++    await tester.pump(const Duration(minutes: 1));
++  });
++
++  testWidgets('no semanticsIdentifier -> no identifier node (default intact)',
++      (WidgetTester tester) async {
++    final handle = tester.ensureSemantics();
++    await tester.pumpWidget(
++      MaterialApp(
++        home: Scaffold(
++          body: DigitButton(
++            label: 'Plain',
++            onPressed: () {},
++            type: DigitButtonType.primary,
++            size: DigitButtonSize.large,
++          ),
++        ),
++      ),
++    );
++
++    expect(allIdentifiers(tester), isEmpty);
++
++    handle.dispose();
++    await tester.pumpWidget(const SizedBox.shrink());
++    await tester.pump(const Duration(minutes: 1));
++  });
++
++  testWidgets('identifier wrap does not swallow taps',
++      (WidgetTester tester) async {
++    final handle = tester.ensureSemantics();
++    var tapped = 0;
++    await tester.pumpWidget(
++      MaterialApp(
++        home: Scaffold(
++          body: DigitButton(
++            label: 'Tap me',
++            semanticsIdentifier: 'tap_probe',
++            onPressed: () => tapped++,
++            type: DigitButtonType.primary,
++            size: DigitButtonSize.large,
++          ),
++        ),
++      ),
++    );
++
++    // Tap by widget type - DigitButton reformats its label text (capitalize/
++    // sentence-case), so a raw text finder misses.
++    await tester.tap(find.byType(DigitButton));
++    await tester.pump();
++    expect(tapped, 1);
++
++    handle.dispose();
++    await tester.pumpWidget(const SizedBox.shrink());
++    await tester.pump(const Duration(minutes: 1));
++  });
++}
+diff --git a/packages/digit_ui_components/test/widgets/atoms/dropdown_option_identifier_test.dart b/packages/digit_ui_components/test/widgets/atoms/dropdown_option_identifier_test.dart
+new file mode 100644
+index 000000000..ab0f004f7
+--- /dev/null
++++ b/packages/digit_ui_components/test/widgets/atoms/dropdown_option_identifier_test.dart
+@@ -0,0 +1,112 @@
++import 'package:digit_ui_components/digit_components.dart';
++import 'package:flutter/material.dart';
++import 'package:flutter/rendering.dart';
++import 'package:flutter_test/flutter_test.dart';
++
++/// Regression tests for the option-row `Semantics(identifier: 'option_<code>')`
++/// added (local vendored change) for accessibility-tree drivers (Maestro) and
++/// TalkBack: such drivers can only address nodes that carry a resource-id, and
++/// Flutter exposes none unless SemanticsProperties.identifier is set.
++void main() {
++  /// Collect every semantics identifier currently in the tree.
++  List<String> allIdentifiers(WidgetTester tester) {
++    final ids = <String>[];
++    void visit(SemanticsNode node) {
++      final identifier = node.getSemanticsData().identifier;
++      if (identifier.isNotEmpty) ids.add(identifier);
++      node.visitChildren((child) {
++        visit(child);
++        return true;
++      });
++    }
++
++    final root =
++        tester.binding.pipelineOwner.semanticsOwner?.rootSemanticsNode;
++    expect(root, isNotNull, reason: 'semantics must be enabled');
++    visit(root!);
++    return ids;
++  }
++
++  testWidgets(
++      'DigitDropdown (single-select) option rows expose option_<code> ids',
++      (WidgetTester tester) async {
++    final handle = tester.ensureSemantics();
++    await tester.pumpWidget(
++      MaterialApp(
++        home: Scaffold(
++          body: DigitDropdown(
++            dropdownController: TextEditingController(),
++            onSelect: (item) {},
++            items: const [
++              DropdownItem(name: 'Apple', code: 'a1'),
++              DropdownItem(name: 'Banana', code: 'b2'),
++            ],
++          ),
++        ),
++      ),
++    );
++
++    // Closed: no option rows, no option identifiers.
++    expect(allIdentifiers(tester).where((id) => id.startsWith('option_')),
++        isEmpty);
++
++    // Open the dropdown via its suffix arrow (same recipe as the package's
++    // own tests).
++    await tester.tap(find.byIcon(Icons.arrow_drop_down));
++    await tester.pump();
++    expect(find.byType(ListView), findsOneWidget);
++
++    final optionIds = allIdentifiers(tester)
++        .where((id) => id.startsWith('option_'))
++        .toList();
++    expect(optionIds, containsAll(['option_a1', 'option_b2']));
++
++    // Close before the test ends (open overlays/focus leak timers otherwise).
++    await tester.tap(find.byType(GestureDetector, skipOffstage: false).first);
++    await tester.pumpAndSettle();
++    expect(find.byType(ListView), findsNothing);
++
++    // Teardown: drop semantics, dispose the tree, then advance fake time so
++    // any remaining one-shot timers (scrollbar fade etc.) fire - pumpAndSettle
++    // only settles frames, it does not advance the clock for plain Timers.
++    handle.dispose();
++    await tester.pumpWidget(const SizedBox.shrink());
++    await tester.pump(const Duration(minutes: 1));
++  });
++
++  testWidgets('MultiSelectDropDown option rows expose option_<code> ids',
++      (WidgetTester tester) async {
++    final handle = tester.ensureSemantics();
++    await tester.pumpWidget(
++      MaterialApp(
++        home: Scaffold(
++          body: MultiSelectDropDown<int>(
++            onOptionSelected: (selectedOptions) {},
++            options: const [
++              DropdownItem(name: 'Atosi', code: 'c1'),
++              DropdownItem(name: 'Yelwa', code: 'c2'),
++            ],
++          ),
++        ),
++      ),
++    );
++
++    expect(allIdentifiers(tester).where((id) => id.startsWith('option_')),
++        isEmpty);
++
++    // Open the multiselect via its suffix arrow.
++    await tester.tap(find.byIcon(Icons.arrow_drop_down));
++    await tester.pump();
++
++    final optionIds = allIdentifiers(tester)
++        .where((id) => id.startsWith('option_'))
++        .toList();
++    expect(optionIds, containsAll(['option_c1', 'option_c2']));
++
++    // Close by tapping outside (same recipe as the package's own tests).
++    await tester.tap(find.byType(GestureDetector).first);
++    await tester.pumpAndSettle();
++
++    handle.dispose();
++  });
++}
+diff --git a/packages/digit_ui_components/test/widgets/atoms/multiselect_outside_tap_close_test.dart b/packages/digit_ui_components/test/widgets/atoms/multiselect_outside_tap_close_test.dart
+new file mode 100644
+index 000000000..efde5b09a
+--- /dev/null
++++ b/packages/digit_ui_components/test/widgets/atoms/multiselect_outside_tap_close_test.dart
+@@ -0,0 +1,62 @@
++import 'package:digit_ui_components/digit_components.dart';
++import 'package:flutter/material.dart';
++import 'package:flutter_test/flutter_test.dart';
++
++/// Mirrors the boundary-screen automation sequence that failed on device
++/// (Maestro runs 2026-09-02-1601/-1654): non-searchable MultiSelectDropDown,
++/// open -> select an option (panel stays open) -> tap the outside scrim.
++/// The panel must close and STAY closed - on device the Submit tap 2s later
++/// landed on an option row, selecting a second boundary instead of submitting.
++void main() {
++  testWidgets(
++      'MultiSelectDropDown closes on outside tap after a selection and stays closed',
++      (WidgetTester tester) async {
++    await tester.pumpWidget(
++      MaterialApp(
++        home: Scaffold(
++          body: MultiSelectDropDown<int>(
++            onOptionSelected: (selectedOptions) {},
++            options: const [
++              DropdownItem(name: 'Atosi', code: 'c1'),
++              DropdownItem(name: 'Amulekangbo', code: 'c2'),
++              DropdownItem(name: 'Yelwa', code: 'c3'),
++            ],
++          ),
++        ),
++      ),
++    );
++
++    // Open the panel.
++    await tester.tap(find.byIcon(Icons.arrow_drop_down));
++    await tester.pump();
++    expect(find.byType(ListView), findsOneWidget);
++
++    // Select an option - the panel stays open (multiselect behavior).
++    await tester.tap(find.text('Atosi'));
++    await tester.pump();
++    // Let the widget's 100ms _isInteractingWithDropdown reset elapse.
++    await tester.pump(const Duration(milliseconds: 150));
++    expect(find.byType(ListView), findsOneWidget);
++
++    // Tap the outside scrim (full-screen GestureDetector).
++    await tester.tap(find.byType(GestureDetector).first);
++    await tester.pump();
++
++    // Closed now...
++    expect(find.byType(ListView), findsNothing,
++        reason: 'outside tap must close the panel');
++
++    // ...and still closed after focus events / delayed callbacks settle
++    // (on device the panel was back ~2s later and ate the Submit tap).
++    await tester.pump(const Duration(milliseconds: 500));
++    expect(find.byType(ListView), findsNothing,
++        reason: 'panel must not resurrect after the outside tap (0.5s)');
++    await tester.pump(const Duration(seconds: 3));
++    expect(find.byType(ListView), findsNothing,
++        reason: 'panel must not resurrect after the outside tap (3s)');
++
++    // Teardown: dispose tree, then flush any remaining timers.
++    await tester.pumpWidget(const SizedBox.shrink());
++    await tester.pump(const Duration(minutes: 1));
++  });
++}
+diff --git a/packages/digit_ui_components/test/widgets/atoms/multiselect_outside_tap_dismissal_test.dart b/packages/digit_ui_components/test/widgets/atoms/multiselect_outside_tap_dismissal_test.dart
+new file mode 100644
+index 000000000..d95535471
+--- /dev/null
++++ b/packages/digit_ui_components/test/widgets/atoms/multiselect_outside_tap_dismissal_test.dart
+@@ -0,0 +1,110 @@
++import 'package:digit_ui_components/digit_components.dart';
++import 'package:flutter/material.dart';
++import 'package:flutter_test/flutter_test.dart';
++
++/// Regression tests for the on-device panel "resurrection" (Maestro runs
++/// 2026-09-02-1654/-1710): after an outside tap dismissed the panel, it came
++/// back and swallowed the Submit tap (selecting a second boundary).
++/// Mechanism: the overlay lifecycle is driven by focus
++/// (`_handleFocusChange` re-inserts the overlay whenever the field's
++/// AlwaysFocusableFocusNode regains focus), and on a real device Android's
++/// window/IME focus churn can hand focus straight back after
++/// `_onOutSideTap`'s unfocus. Widget tests have no such churn, so the churn
++/// is SIMULATED here by re-requesting focus programmatically.
++///
++/// Invariant under test: an explicit outside-tap dismissal is FINAL until the
++/// user taps the field again - focus re-grants must not reopen the panel.
++void main() {
++  /// Mirrors the boundary screen: options/initialOptions are rebuilt as NEW
++  /// list instances on every parent rebuild (bloc-driven), and selection
++  /// triggers a parent rebuild.
++  Widget harness({required void Function(FocusNode node) onFocusNode}) {
++    final selected = <String>{};
++    return MaterialApp(
++      home: StatefulBuilder(
++        builder: (context, setState) {
++          const all = ['Atosi', 'Amulekangbo', 'Yelwa'];
++          return Scaffold(
++            body: Builder(builder: (context) {
++              final node = Focus.maybeOf(context);
++              return MultiSelectDropDown<int>(
++                onOptionSelected: (selectedOptions) {
++                  setState(() {
++                    selected
++                      ..clear()
++                      ..addAll(selectedOptions.map((e) => e.code));
++                  });
++                },
++                options: all
++                    .map((e) => DropdownItem(name: e, code: e))
++                    .toList(),
++                initialOptions: all
++                    .where(selected.contains)
++                    .map((e) => DropdownItem(name: e, code: e))
++                    .toList(),
++              );
++            }),
++          );
++        },
++      ),
++    );
++  }
++
++  testWidgets(
++      'outside-tap dismissal is final: focus re-grant must not reopen the panel',
++      (WidgetTester tester) async {
++    await tester.pumpWidget(harness(onFocusNode: (_) {}));
++
++    // Open the panel by tapping the field (device gesture).
++    await tester.tap(find.byType(MultiSelectDropDown<int>));
++    await tester.pump();
++    expect(find.byType(ListView), findsOneWidget);
++
++    // Select an option -> parent rebuilds with fresh list instances (bloc
++    // behavior on the boundary screen); the panel stays open.
++    await tester.tap(find.text('Atosi'));
++    await tester.pump();
++    await tester.pump(const Duration(milliseconds: 150));
++    expect(find.byType(ListView), findsOneWidget);
++
++    // Outside tap near the top of the screen (Maestro taps 50%,7%).
++    await tester.tapAt(const Offset(400, 40));
++    await tester.pump();
++    expect(find.byType(ListView), findsNothing,
++        reason: 'outside tap must close the panel');
++
++    // Simulate Android focus churn: the field FocusNode regains focus.
++    final focusNode = tester
++        .widgetList<Focus>(find.descendant(
++            of: find.byType(MultiSelectDropDown<int>),
++            matching: find.byType(Focus)))
++        .map((f) => f.focusNode)
++        .whereType<FocusNode>()
++        .first;
++    focusNode.requestFocus();
++    await tester.pump();
++    await tester.pump(const Duration(milliseconds: 300));
++
++    expect(find.byType(ListView), findsNothing,
++        reason: 'panel must NOT resurrect on a focus re-grant after an '
++            'explicit outside-tap dismissal (device bug, runs -1654/-1710)');
++
++    // A REAL field tap after dismissal must still open the panel again.
++    // (Tap the suffix arrow: after selection the widget grew a chips row, so
++    // the widget's center no longer lies on the field's InkWell.)
++    await tester.tap(find.byIcon(Icons.arrow_drop_down));
++    await tester.pump();
++    expect(find.byType(ListView), findsOneWidget,
++        reason: 'field tap must reopen the panel after a dismissal');
++
++    // Close again before teardown - disposing the tree with the panel open
++    // trips the package's own dispose bug (_overlayState?.dispose()).
++    await tester.tapAt(const Offset(400, 40));
++    await tester.pump();
++    expect(find.byType(ListView), findsNothing);
++
++    // Teardown.
++    await tester.pumpWidget(const SizedBox.shrink());
++    await tester.pump(const Duration(minutes: 1));
++  });
++}
+diff --git a/packages/digit_ui_components/test/widgets/atoms/radio_option_identifier_test.dart b/packages/digit_ui_components/test/widgets/atoms/radio_option_identifier_test.dart
+new file mode 100644
+index 000000000..5735cf784
+--- /dev/null
++++ b/packages/digit_ui_components/test/widgets/atoms/radio_option_identifier_test.dart
+@@ -0,0 +1,227 @@
++import 'package:digit_ui_components/models/RadioButtonModel.dart';
++import 'package:digit_ui_components/widgets/atoms/digit_checkbox.dart';
++import 'package:digit_ui_components/widgets/atoms/digit_radio_list.dart';
++import 'package:flutter/material.dart';
++import 'package:flutter/rendering.dart';
++import 'package:flutter_test/flutter_test.dart';
++
++/// Regression tests for the per-option `Semantics(identifier: '<prefix>_<code>')`
++/// added to [RadioList] (local vendored change).
++///
++/// Why it exists: on a real device the radio's own label is absorbed into the
++/// field's merged label node, so the tappable radio ships with no id, no text
++/// and no accessibility label — accessibility-tree drivers (Maestro, TalkBack)
++/// have nothing to address it by. Proven on run maestro-2026-09-03-1214, where
++/// the caregiver-consent radios appeared as two bare clickable nodes at
++/// [510,908][594,992] and [738,908][822,992].
++void main() {
++  /// Every semantics identifier currently in the tree.
++  List<String> allIdentifiers(WidgetTester tester) {
++    final ids = <String>[];
++    void visit(SemanticsNode node) {
++      final identifier = node.getSemanticsData().identifier;
++      if (identifier.isNotEmpty) ids.add(identifier);
++      node.visitChildren((child) {
++        visit(child);
++        return true;
++      });
++    }
++
++    final root =
++        tester.binding.pipelineOwner.semanticsOwner?.rootSemanticsNode;
++    expect(root, isNotNull, reason: 'semantics must be enabled');
++    visit(root!);
++    return ids;
++  }
++
++  Finder byIdentifier(String identifier) => find.byWidgetPredicate(
++        (widget) =>
++            widget is Semantics && widget.properties.identifier == identifier,
++      );
++
++  Widget host(Widget child) => MaterialApp(
++        home: Scaffold(body: Center(child: child)),
++      );
++
++  testWidgets('radio options expose <prefix>_<code> identifiers',
++      (WidgetTester tester) async {
++    final handle = tester.ensureSemantics();
++
++    await tester.pumpWidget(host(
++      RadioList(
++        semanticsIdentifierPrefix: 'consentToParticipate',
++        onChanged: (_) {},
++        radioDigitButtons: [
++          RadioButtonModel(code: 'TRUE', name: 'Yes'),
++          RadioButtonModel(code: 'FALSE', name: 'No'),
++        ],
++      ),
++    ));
++
++    expect(
++      allIdentifiers(tester),
++      containsAll(['consentToParticipate_TRUE', 'consentToParticipate_FALSE']),
++    );
++
++    handle.dispose();
++  });
++
++  testWidgets('the identified node is the one that selects the option',
++      (WidgetTester tester) async {
++    final handle = tester.ensureSemantics();
++    RadioButtonModel? selected;
++
++    await tester.pumpWidget(host(
++      RadioList(
++        semanticsIdentifierPrefix: 'consentToParticipate',
++        onChanged: (value) => selected = value,
++        radioDigitButtons: [
++          RadioButtonModel(code: 'TRUE', name: 'Yes'),
++          RadioButtonModel(code: 'FALSE', name: 'No'),
++        ],
++      ),
++    ));
++
++    // Tapping the identified node must pick that option - an id on a
++    // non-interactive ancestor would be useless to a UI-test driver.
++    await tester.tap(byIdentifier('consentToParticipate_TRUE'));
++    await tester.pump();
++
++    expect(selected?.code, 'TRUE');
++
++    handle.dispose();
++  });
++
++  testWidgets('option identifiers survive an enclosing field identifier',
++      (WidgetTester tester) async {
++    final handle = tester.ensureSemantics();
++
++    // Mirrors the live tree: JsonFormBuilder wraps every field in
++    // Semantics(identifier: formControlName), and that wrapper must not
++    // swallow the per-option identifiers underneath it.
++    await tester.pumpWidget(host(
++      Semantics(
++        identifier: 'consentToParticipate',
++        child: RadioList(
++          semanticsIdentifierPrefix: 'consentToParticipate',
++          onChanged: (_) {},
++          radioDigitButtons: [
++            RadioButtonModel(code: 'TRUE', name: 'Yes'),
++            RadioButtonModel(code: 'FALSE', name: 'No'),
++          ],
++        ),
++      ),
++    ));
++
++    expect(
++      allIdentifiers(tester),
++      containsAll([
++        'consentToParticipate',
++        'consentToParticipate_TRUE',
++        'consentToParticipate_FALSE',
++      ]),
++    );
++
++    handle.dispose();
++  });
++
++  testWidgets('groups sharing option codes get distinct identifiers',
++      (WidgetTester tester) async {
++    final handle = tester.ensureSemantics();
++
++    // The eligibility checklist renders ec1..ec5 on one page, all YES/NO -
++    // scoping by form control name is what keeps them addressable apart.
++    await tester.pumpWidget(host(
++      Column(
++        mainAxisSize: MainAxisSize.min,
++        children: [
++          for (final field in ['ec1', 'ec2'])
++            RadioList(
++              semanticsIdentifierPrefix: field,
++              onChanged: (_) {},
++              radioDigitButtons: [
++                RadioButtonModel(code: 'YES', name: 'Yes'),
++                RadioButtonModel(code: 'NO', name: 'No'),
++              ],
++            ),
++        ],
++      ),
++    ));
++
++    expect(
++      allIdentifiers(tester),
++      containsAll(['ec1_YES', 'ec1_NO', 'ec2_YES', 'ec2_NO']),
++    );
++
++    handle.dispose();
++  });
++
++  testWidgets('no prefix leaves the radios unannotated (previous behaviour)',
++      (WidgetTester tester) async {
++    final handle = tester.ensureSemantics();
++
++    await tester.pumpWidget(host(
++      RadioList(
++        onChanged: (_) {},
++        radioDigitButtons: [
++          RadioButtonModel(code: 'TRUE', name: 'Yes'),
++          RadioButtonModel(code: 'FALSE', name: 'No'),
++        ],
++      ),
++    ));
++
++    expect(allIdentifiers(tester), isEmpty);
++
++    handle.dispose();
++  });
++
++  // DigitCheckbox has the same shape as RadioList: the tappable box and its
++  // label are siblings, so the box carries no label of its own. Probed
++  // 2026-09-03 - the box is a bare 24x24 node with label="" and tap=true.
++  testWidgets('checkbox exposes semanticsIdentifier on the tappable box',
++      (WidgetTester tester) async {
++    final handle = tester.ensureSemantics();
++    bool? changed;
++
++    await tester.pumpWidget(host(
++      Semantics(
++        identifier: 'ACTION1',
++        child: DigitCheckbox(
++          semanticsIdentifier: 'ACTION1_checkbox',
++          label: 'I have explained the dosage',
++          value: false,
++          onChanged: (value) => changed = value,
++        ),
++      ),
++    ));
++
++    expect(
++      allIdentifiers(tester),
++      containsAll(['ACTION1', 'ACTION1_checkbox']),
++    );
++
++    // The identified node must be the box itself, not the label block.
++    await tester.tap(byIdentifier('ACTION1_checkbox'));
++    await tester.pump();
++    expect(changed, isTrue);
++
++    handle.dispose();
++  });
++
++  testWidgets('checkbox without an identifier stays unannotated',
++      (WidgetTester tester) async {
++    final handle = tester.ensureSemantics();
++
++    await tester.pumpWidget(host(
++      DigitCheckbox(
++        label: 'I have explained the dosage',
++        value: false,
++        onChanged: (_) {},
++      ),
++    ));
++
++    expect(allIdentifiers(tester), isEmpty);
++
++    handle.dispose();
++  });
++}
