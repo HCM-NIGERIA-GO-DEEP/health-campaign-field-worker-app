@@ -4,6 +4,10 @@ source "$(dirname "${BASH_SOURCE[0]}")/_common.sh"
 
 # Configuration
 PACKAGE_NAME="com.digit.hcm"
+# Above this many `package:` URI strings in libapp.so the Dart code is treated
+# as unobfuscated. An obfuscated build of this app measures ~12; an
+# unobfuscated one retains the full library table, which is far larger.
+DART_URI_THRESHOLD=100
 BUILD_GRADLE_PATH="../apps/health_campaign_field_worker_app/android/app/build.gradle"
 
 echo "==========================================================="
@@ -133,32 +137,65 @@ function check_apk_not_debuggable() {
 }
 
 function check_dex_class_names_obfuscated() {
-    sec_begin "Testing that Kotlin/Java class names were renamed by R8"
+    sec_begin "Testing that R8 renamed what it should and kept what it must"
 
     local apk
     apk=$(sec_find_apk) || { sec_skip "No built APK found."; echo ""; return; }
     command -v unzip >/dev/null 2>&1 || { sec_skip "unzip not available."; echo ""; return; }
     command -v strings >/dev/null 2>&1 || { sec_skip "strings not available."; echo ""; return; }
 
-    # SecurityHelper is kept with -keep,allowobfuscation, so its name is
-    # expected to be renamed. Finding it verbatim means R8 did not run, or a
-    # blanket -keep is overriding the intent.
-    local hits
-    hits=$(unzip -p "$apk" 'classes*.dex' 2>/dev/null | strings | grep -c 'SecurityHelper')
+    local dex
+    dex=$(unzip -p "$apk" 'classes*.dex' 2>/dev/null | strings)
+    if [ -z "$dex" ]; then
+        sec_skip "Could not read classes*.dex from the APK."
+        echo ""
+        return
+    fi
 
-    echo "    > Occurrences of 'SecurityHelper' in classes*.dex: $hits"
-    if [ "$hits" -gt 0 ]; then
-        echo "    > That class is declared -keep,allowobfuscation, so its name should"
-        echo "      not survive. A blanket -keep rule may be overriding it."
-        sec_fail "Security class names are readable in the DEX."
+    # Matched as JVM type descriptors (Lcom/digit/hcm/Foo;) rather than bare
+    # names, so an unrelated string literal cannot be mistaken for a class.
+    local failures=0
+
+    # Should be renamed: kept with -keep,allowobfuscation precisely so its name
+    # does not ship. A blanket `-keep class com.digit.hcm.** { *; }` used to
+    # override that rule and leave the name readable.
+    local helper
+    helper=$(echo "$dex" | grep -cF 'Lcom/digit/hcm/SecurityHelper;')
+    if [ "$helper" -gt 0 ]; then
+        echo "    > SecurityHelper: name is READABLE (expected renamed)"
+        echo "      Check for a broader -keep rule overriding allowobfuscation."
+        failures=$((failures + 1))
     else
-        sec_pass "Security class names were renamed."
+        echo "    > SecurityHelper: renamed, as intended"
+    fi
+
+    # Must be kept: the manifest resolves these by fully qualified name, so
+    # renaming them makes the app fail to launch. Over-obfuscation is a
+    # different bug from under-obfuscation, and worth catching here too.
+    local component missing
+    missing=""
+    for component in MainActivity LauncherActivity LocationService; do
+        if echo "$dex" | grep -qF "Lcom/digit/hcm/$component;"; then
+            echo "    > $component: kept, as required by the manifest"
+        else
+            echo "    > $component: MISSING from the DEX"
+            missing="$missing $component"
+            failures=$((failures + 1))
+        fi
+    done
+
+    if [ "$failures" -eq 0 ]; then
+        sec_pass "Security classes are renamed and manifest components are kept."
+    elif [ -n "$missing" ]; then
+        sec_fail "Manifest-resolved component(s) were renamed or stripped:$missing. The app will not launch."
+    else
+        sec_fail "Security class names are readable in the DEX."
     fi
     echo ""
 }
 
 function check_dart_symbols_stripped() {
-    sec_begin "Testing that Dart symbols were stripped (--obfuscate)"
+    sec_begin "Testing that Dart symbols were obfuscated (--obfuscate)"
 
     local apk
     apk=$(sec_find_apk) || { sec_skip "No built APK found."; echo ""; return; }
@@ -174,22 +211,56 @@ function check_dart_symbols_stripped() {
     fi
     echo "    > Inspecting $libapp"
 
-    # R8 does not touch Dart. Only `flutter build --obfuscate` removes these,
-    # so this is the check that distinguishes the two.
-    local hits
-    hits=$(unzip -p "$apk" "$libapp" 2>/dev/null | strings \
-            | grep -cE 'DeviceIntegrityService|AppSecurityFeature|ThreatResponseHandler')
+    # Measure the density of Dart library URIs rather than looking for specific
+    # class names.
+    #
+    # An earlier version grepped for app class names such as
+    # DeviceIntegrityService. That produced a false VULNERABLE on a correctly
+    # obfuscated build, because it cannot tell three different things apart:
+    # a retained symbol (bad), a string literal the developer wrote (harmless,
+    # e.g. `title: 'AppSecurity'`), and Dart's enum toString() prefix
+    # (`AppSecurityFeature.`, retained whenever an enum can be stringified).
+    #
+    # Library URIs are a sound discriminator: an unobfuscated AOT snapshot keeps
+    # the whole library table for stack traces, which runs to hundreds of
+    # entries, while an obfuscated one keeps only the few that survive in string
+    # literals and asset paths.
+    local density
+    density=$(unzip -p "$apk" "$libapp" 2>/dev/null | strings | grep -c 'package:')
+    echo "    > Dart library URI strings in libapp.so: $density"
 
-    echo "    > Dart security symbol occurrences: $hits"
-    if [ "$hits" -gt 0 ]; then
-        echo "    > Dart class names are readable, so the build did not use"
-        echo "      --obfuscate. R8 settings do not affect Dart code."
-        echo "    > Rebuild with: flutter build apk --release --obfuscate \\"
-        echo "        --split-debug-info=build/symbols"
-        sec_fail "Dart symbols are readable in libapp.so."
-    else
-        sec_pass "Dart symbols were stripped."
+    # Corroborating evidence: these files exist only when --split-debug-info was
+    # passed, which --obfuscate requires.
+    local app symbol_count
+    app=$(sec_app_dir) || app=""
+    symbol_count=0
+    if [ -n "$app" ]; then
+        symbol_count=$(find "$app/build" -name '*.symbols' 2>/dev/null | wc -l | tr -d ' ')
     fi
+    echo "    > Dart symbol files from --split-debug-info: $symbol_count"
+
+    if [ "$density" -gt "$DART_URI_THRESHOLD" ]; then
+        echo "    > That is far more than an obfuscated build retains, so the Dart"
+        echo "      code was compiled without --obfuscate. R8 settings do not"
+        echo "      affect Dart code."
+        echo "    > Rebuild with: ./build_obfuscated.sh apk"
+        echo "      or: flutter build apk --release --obfuscate \\"
+        echo "            --split-debug-info=build/app/outputs/symbols"
+        sec_fail "Dart library and class names are readable in libapp.so."
+        echo ""
+        return
+    fi
+
+    if [ "$symbol_count" -eq 0 ]; then
+        echo "    > No .symbols files found. Obfuscation appears to have run, but"
+        echo "      without the symbol files a production Dart stack trace cannot"
+        echo "      be read back. Archive them with each release."
+        sec_inconclusive "Dart symbols look obfuscated, but no symbol files were kept."
+        echo ""
+        return
+    fi
+
+    sec_pass "Dart symbols are obfuscated and symbol files were retained."
     echo ""
 }
 
