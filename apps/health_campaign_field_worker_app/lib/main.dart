@@ -55,21 +55,6 @@ void main() async {
 
   await envConfig.initialize();
 
-  // Security checks - enforce exit only in production environment
-  // if (!kDebugMode) {
-  //   try {
-  //     final issues = await JailbreakRootDetection.instance.checkForIssues;
-  //     if (issues.isNotEmpty) {
-  //       debugPrint('Security warning: ${issues.join(', ')}');
-  //       if (envConfig.variables.envType == EnvType.prod) {
-  //         exit(0);
-  //       }
-  //     }
-  //   } catch (e) {
-  //     debugPrint('Security check failed: $e');
-  //   }
-  // }
-
   // Select which mitigations this build runs. Swap the preset for an explicit
   // `features: {...}` set, or keep the preset and pass `disable: {...}`, to
   // pick individual checks. See AppSecurityFeature.

@@ -1564,3 +1564,19 @@ class DatabaseError {
 
   String get closeAppButton => 'DATABASE_ERROR_CLOSE_APP';
 }
+
+class SecurityWarnings {
+  const SecurityWarnings();
+
+  String get suspiciousTitle => 'SECURITY_WARNING_SUSPICIOUS_TITLE';
+
+  String get suspiciousMessage => 'SECURITY_WARNING_SUSPICIOUS_MESSAGE';
+
+  String get advisoryTitle => 'SECURITY_WARNING_ADVISORY_TITLE';
+
+  String get advisoryMessage => 'SECURITY_WARNING_ADVISORY_MESSAGE';
+
+  String get acknowledgeButton => 'SECURITY_WARNING_ACKNOWLEDGE';
+
+  String get dismissButton => 'SECURITY_WARNING_DISMISS';
+}

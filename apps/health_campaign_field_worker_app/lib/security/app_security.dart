@@ -61,6 +61,18 @@ class AppSecurity {
 
   Duration checkInterval = const Duration(minutes: 5);
 
+  /// Non-null when the pinned certificate could not be loaded, holding the
+  /// reason.
+  ///
+  /// Kept as state for the same reason as [lastBuildTimeReport]: at medium and
+  /// high levels `debugPrint` is silenced, so a log line describing a broken
+  /// pin would be invisible in exactly the build where it matters. When this is
+  /// set, network requests fail by design — see `SslPinning`.
+  String? sslPinningFailure;
+
+  /// True when pinning was requested but could not be established.
+  bool get isSslPinningBroken => sslPinningFailure != null;
+
   /// Result of the most recent [verifyBuildTimeMitigations] call.
   ///
   /// Kept as state on purpose: [AppSecurityFeature.debugPrintSuppression]
