@@ -75,7 +75,7 @@ tags:
       id: "nameOfIndividual"
     timeout: 20000
 - tapOn:
-    id: "nameOfIndividual"
+    id: "nameOfIndividual_input"
 - inputText: "QATEST ${RUN_STAMP} CHILD2"
 # Typed-name integrity (see 03): the CHILD2 card is matched by this name.
 - runFlow:
@@ -89,7 +89,7 @@ tags:
 - assertVisible:
     text: "QATEST ${RUN_STAMP} CHILD2"
 - tapOn:
-    id: "familyname"
+    id: "familyname_input"
 - inputText: "QATEST"
 - hideKeyboard
 # DOB via the AGE-in-months field (see 03/04): eligible age on purpose -
@@ -98,8 +98,10 @@ tags:
     id: "dob_months"
 - inputText: ${CHILD_AGE_MONTHS}
 - hideKeyboard
-- tapOn:
-    id: "gender"
+# gender is a `select` -> SelectionCard, whose option chips are SINGLE nodes
+# carrying both the label and the tap action (semantics-probed 2026-09-03),
+# so they ARE reachable by text. No `tapOn: id: gender` first - that id sits
+# on the field label block (see 03).
 - tapOn:
     text: ${GENDER_CHILD}
 # FORM footer by stable id (labels are per-page campaign texts; see 03)

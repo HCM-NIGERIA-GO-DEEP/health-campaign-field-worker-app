@@ -186,7 +186,7 @@ tags:
       id: "nameOfIndividual"
     timeout: 20000
 - tapOn:
-    id: "nameOfIndividual"
+    id: "nameOfIndividual_input"
 # Both register paths pass the search text as nameOfIndividual, so the field
 # may arrive prefilled; inputText APPENDS, so erase first (no-op when empty).
 - eraseText
@@ -205,7 +205,7 @@ tags:
 - assertVisible:
     text: "QATEST ${RUN_STAMP} HEAD"
 - tapOn:
-    id: "familyname"
+    id: "familyname_input"
 - inputText: "QATEST"
 - hideKeyboard
 # isHeadOfFamily checkbox is PRE-CHECKED (config value "true") - do NOT tap

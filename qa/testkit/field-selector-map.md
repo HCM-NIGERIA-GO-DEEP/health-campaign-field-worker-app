@@ -23,15 +23,28 @@ broke runs -1214 and -1315.
 ## The rule that matters
 
 > A field-level id (`fieldName`) is only tappable when the field IS one control.
-> If the control is a box/circle/chip next to a label, the label block absorbs
-> the id **and the label text**, leaving the control anonymous — you need an id
-> on the control itself.
+> If the control is a box/circle/chip beside a label, or has a helpText row
+> under it, the field block absorbs the id **and often the label text**, and its
+> centre is not on the control — you need an id on the control itself.
+
+Naming convention for those control-level ids, all added by patches 05/07:
+
+| Control | id |
+|---|---|
+| text/number input box | `<fieldName>_input` |
+| radio option | `<fieldName>_<enumCode>` |
+| checkbox box | `<fieldName>_checkbox` |
+| dropdown option row | `option_<code>` |
+| dob inner inputs | `dob_date`, `dob_years`, `dob_months` |
+
+The bare `<fieldName>` id still exists on the field block — keep using it for
+"has this page arrived" waits, never for taps or typing.
 
 ## Field map
 
 | config `type`/`format` | builder | widget | Accessibility shape | Maestro recipe | Evidence |
 |---|---|---|---|---|---|
-| `string`/`text`, and the default branch | `JsonSchemaStringBuilder` | `DigitTextFormInput` | one `EditText`, `id=fieldName`, typeable (`isEditable` defaults true in `BaseDigitFormInput`, never overridden) | `tapOn id` → `eraseText` → `inputText` → `hideKeyboard` is safe | code-read 2026-09-03 |
+| `string`/`text`, `mobileNumber`, `integer`/`text`, and the default branch | `JsonSchemaStringBuilder`, `JsonSchemaNumberBuilder` | `DigitTextFormInput` | typeable (`isEditable` defaults true in `BaseDigitFormInput`, never overridden), but the field id covers label + box + **helpText row**: with a helpText the block is two rows tall and its centre lands on the seam BELOW the box | `tapOn id: <fieldName>_input` (needs patch 05(g)) → `eraseText` → `inputText` → `hideKeyboard` is safe. Keep `<fieldName>` for the page-arrival wait | device run -1432 + tests |
 | `integer`/`numeric` | `JsonSchemaIntegerBuilder` | `DigitNumericFormInput` | **read-only stepper.** `id=fieldName` on a NON-clickable container whose `text` is the value; two bare clickable nodes with `accessibilityText` `-` and `+`. `editable` defaults **false** and the builder never passes it | `repeat while notVisible {id: fieldName, text: N}` → `tapOn text: "\\+"`, then `assertVisible {id, text}`. **Never** `inputText`, and **never** `hideKeyboard` after it | device run -1315 + code |
 | `string`/`radio`, `boolean`/`radio` | `JsonSchemaRadioBuilder` | `RadioList` | label + all option labels merge into ONE non-clickable block; each circle is a bare clickable node | `tapOn id: <fieldName>_<enumCode>` (needs patch 05(e)) | device run -1214 + tests |
 | `boolean`/`checkbox` | `JsonSchemaCheckboxBuilder` | `DigitCheckbox` | box and label are SIBLINGS; field id lands on a block spanning both whose centre is on the text | `tapOn id: <fieldName>_checkbox` (needs patch 05(f)) | semantics probe 2026-09-03 + tests |
