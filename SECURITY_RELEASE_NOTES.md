@@ -1,5 +1,323 @@
 # Security Enhancements Release Notes
 
+**Version:** 2.2.110+110  
+**Release Date:** September 3, 2026  
+
+---
+
+## Overview
+
+This release documents the security work carried out after the VAPT mitigations
+were ported onto the current application baseline. It adds no new vulnerability
+class; it makes the five existing mitigations selectable, verifiable, and
+survivable in the field.
+
+Three themes:
+
+- **SSL pinning is documented and made survivable.** The pinned anchor moved
+  from the server leaf to its issuing CA, and a failed pin now fails closed
+  without falling back to an unpinned client. See `SSL_PINNING.md` for the full
+  design, threat model and trade-offs.
+- **Mitigations became selectable and verifiable.** Each can be switched on
+  individually, and those decided at build time are checked against the shipped
+  APK rather than assumed.
+- **The test tooling was corrected.** Several checks reported VULNERABLE for
+  conditions that were impossible to observe, which is worse than reporting
+  nothing because it buries real findings.
+
+---
+
+## Security Measures Implemented
+
+### 1. SSL Pinning — Issuer Pinning, Fail-Closed, Rotation Tooling
+
+**Previously:** pinning existed but was undocumented, and the pinned certificate
+was the server leaf.
+
+**Problem with leaf pinning:** pinning fails closed. A leaf certificate expires
+within months, so every renewal would have taken every installed build offline
+— not degraded, unable to reach the API at all. Field devices do not update on
+demand, making that an availability incident rather than a security one.
+
+#### What is pinned now
+
+| | |
+|---|---|
+| Anchor | `Sectigo Public Server Authentication CA DV R36` (issuing CA) |
+| Expires | 21 Mar 2036 |
+| Host | `campaigns.afro.who.int` |
+| Asset | `assets/certificates/tls_cert.crt` |
+
+Routine leaf renewal now requires no application change at all. An update is
+only needed if the CA itself changes.
+
+#### Trust scope
+
+```dart
+final securityContext = SecurityContext(withTrustedRoots: false);
+securityContext.setTrustedCertificatesBytes(certData.buffer.asUint8List());
+```
+
+`withTrustedRoots: false` discards the platform trust store, so the device's
+system **and user** CA stores are both irrelevant. Only the bundled certificate
+can terminate a chain. `badCertificateCallback` always returns `false`.
+
+Hostname verification still applies to the leaf, so a certificate issued for a
+different host is rejected. Abusing the pinned DV CA would require proving
+control of `campaigns.afro.who.int`, a far higher bar than installing a
+certificate on a device — which is the attack pinning exists to stop.
+
+**Trade-off, stated plainly:** trust widened from one certificate to one CA. For
+a fleet that cannot be updated on demand, ~10 years of headroom is worth more
+than that marginal tightening.
+
+#### Both isolates pin independently
+
+Pinning is applied in the UI isolate (`main.dart`) and again in the background
+sync isolate (`background_service.dart`). An unpinned sync isolate would defeat
+pinning for exactly the traffic that carries campaign data.
+
+#### Fail-closed on a bad asset
+
+A missing or malformed certificate previously threw during startup, before the
+UI existed, and killed the background isolate silently. It now records the
+reason on `AppSecurity.sslPinningFailure` and returns a client that refuses
+every request: `badCertificateCallback` blocks TLS and `connectionFactory`
+fails before a socket opens, which also blocks cleartext.
+
+Deliberately **not** implemented: falling back to the default client. That would
+silently restore system and user CA trust, turning a packaging mistake into an
+undetected loss of pinning.
+
+#### Rotation
+
+`tools/security/rotate_pinned_cert.sh` performs the replacement and refuses to
+write an anchor that does not validate the live server, using the same
+semantics as the app. For a CA migration, `--add` produces a bundle trusting
+both the outgoing and incoming CA:
+
+```
+1. ./tools/security/rotate_pinned_cert.sh --anchor intermediate --add --write
+2. release, and wait for field adoption
+3. only then let the server switch
+4. rerun without --add to drop the superseded anchor
+```
+
+Steps 3 and 4 are ordered deliberately; reversing them takes every un-updated
+install offline.
+
+---
+
+### 2. Selectable Security Mitigations
+
+Security was a single `low`/`medium`/`high` dial. Each mitigation can now be
+chosen individually:
+
+```dart
+AppSecurity.instance.configure(
+  level: AppSecurityLevel.high,
+  disable: {AppSecurityFeature.emulatorDetection},
+);
+```
+
+Each of the six device-integrity layers is gated on its own feature, and SSL
+pinning is gated on `AppSecurityFeature.sslPinning`. Level presets preserve the
+previous behaviour exactly: `low` selects nothing, `medium` suppresses release
+logs and pins TLS, `high` enables everything.
+
+`AppSecurityFeature.isRuntimeEnforced` distinguishes what Dart can enforce from
+what is decided when the APK is built. Offering runtime toggles that silently do
+nothing would be worse than not offering them.
+
+---
+
+### 3. Build-Time Mitigation Verification
+
+Code Obfuscation, Insecure Broadcast Receiver and Improper Platform Usage are
+properties of the build, not of running code. Selecting one is now a declaration
+of intent that `AppSecurity.verifyBuildTimeMitigations()` checks against the
+shipped APK via a new `auditBuildConfiguration` channel method, reporting:
+
+- `minifyEnabled`, through a new `IS_MINIFIED` `buildConfigField` — R8 leaves no
+  queryable runtime flag, so the value is injected at build time;
+- `debuggable`, `allowBackup` and the cleartext-traffic policy;
+- components exported without a permission guard.
+
+The result is kept on `AppSecurity.lastBuildTimeReport`, because log suppression
+hides it in exactly the hardened build where it matters.
+
+---
+
+### 4. Code Obfuscation — Conflicting Keep Rule Removed
+
+`proguard-rules.pro` carried both a narrow rule intended to let R8 rename the
+native security helper, and a blanket rule retained from an earlier merge:
+
+```proguard
+-keep,allowobfuscation class com.digit.hcm.SecurityHelper   # intent
+-keep class com.digit.hcm.** { *; }                         # overrode it
+```
+
+The blanket rule is more permissive and wins, so `Lcom/digit/hcm/SecurityHelper;`
+shipped readable in the DEX, contradicting the warning in that same file against
+blanket keeps. Removed; every component needed by name is kept individually.
+
+Confirmed on a rebuilt release APK: `SecurityHelper` is renamed, while
+`MainActivity`, `LauncherActivity` and `LocationService` keep their names as the
+manifest requires.
+
+---
+
+### 5. Device Integrity Made Verifiable From Outside
+
+Root-detection tests reported VULNERABLE on an emulator while detection was in
+fact firing. A normal build silences `debugPrint` and calls `exit(0)` on a
+confirmed threat, so the app detected the emulator, logged nothing and
+terminated — correct for production, and impossible to verify from outside.
+
+`--dart-define=SECURITY_TEST_MODE=true` keeps every check running and every
+threat confirmed, but leaves the evidence visible: log suppression off and the
+response mode `reportOnly`. It defaults to false, so a shipped build is
+unaffected, and must never be set for a build that ships.
+
+Threat response is now an injectable policy (`exitApp`, `restrict`,
+`reportOnly`). `restrict` is reachable for the first time: the compromised flag
+is set before any termination, where it previously sat after an unconditional
+`exit(0)`.
+
+Also corrected: a plugin failure no longer terminates the app. Any exception
+from the root-detection library used to become an `unknown` threat, which
+reached `exit(0)` in production — so a `MissingPluginException` or an
+unsupported device killed the app with no diagnostic. A check that cannot run is
+now recorded as unavailable, never escalated into evidence of tampering.
+
+---
+
+### 6. Security Module Restructure
+
+Security code lived in three unrelated places: the `lib/` root, the
+`lib/utils/` grab bag, and inline in `lib/data/remote_client.dart`. It is now
+one module:
+
+```
+lib/security/
+  app_security.dart                 orchestration and policy
+  models/                           features, levels, results, reports
+  channel/security_channel.dart     the one channel definition
+  integrity/                        detection, native transport, response
+  network/ssl_pinning.dart          certificate pinning
+  audit/                            build-time verification
+```
+
+Two files carrying eight responsibilities became fourteen with one each.
+Detection no longer decides what to do about a threat, and no longer reads the
+environment. Dead code was removed: an unused root-detection BLoC and wrapper
+(210 lines across two files, every line commented out) and a stale generated
+file.
+
+---
+
+### 7. Security Test Automation — Expanded and Corrected
+
+Coverage went from 9 checks to 31, and a fifth suite was added for the
+mitigation that had none.
+
+| Suite | Before | Now |
+|---|---|---|
+| `test_ssl_pinning.sh` | — | **8** |
+| `test_obfuscation.sh` | 2 | 7 |
+| `test_platform_usage.sh` | 3 | 8 |
+| `test_broadcast_receivers.sh` | 2 | 5 |
+| `test_root_detection.sh` | 2 | 3 (reworked) |
+| **Total** | **9** | **31** |
+
+`test_ssl_pinning.sh` is the significant addition. SSL pinning had no test at
+all, which is how a certificate that had expired in April 2026, for a host
+unrelated to `BASE_URL`, sat in the repository unnoticed. It verifies expiry
+across every anchor, that a name covers the configured host, and that the live
+server chain validates against the pin.
+
+Outcomes now include SKIPPED and INCONCLUSIVE. A mitigation that could not be
+verified reports "Not verified" rather than passing: unverified is not the same
+as safe, and the previous aggregation could only say passed or failed.
+
+Several checks were corrected for reporting VULNERABLE on conditions that were
+impossible to observe or simply mismatched the data format — a commented-out
+attribute read as configuration, an aapt2 attribute id matched as a value, an
+app class name that was really a string literal, and a chain check that passed
+against any CA because it consulted the system trust store.
+
+---
+
+## Testing & Validation
+
+- `dart analyze`: 0 errors across `lib/`, unchanged issue baseline.
+- SSL, obfuscation, manifest and component-sweep checks executed against a real
+  release APK.
+- Pinning verified end to end with a standalone Dart client against the live
+  host: leaf pin, issuer pin, multi-anchor bundle all connect; an unrelated-CA
+  bundle fails with `CERTIFICATE_VERIFY_FAILED`.
+- BoringSSL was confirmed to reject a trust anchor whose own validity has
+  lapsed, using a purpose-built expired CA and a local TLS server. This is what
+  makes an expired pin unrecoverable in the field (see Known Limitations).
+- Unit tests added for feature selection, the availability-versus-threat
+  distinction, response modes and the pinning failure path.
+
+**Not verified here:** the Kotlin and Gradle changes were not compiled, and the
+Dart tests were not executed, because `flutter pub get` fails on a pre-existing
+`bloc_test` / path-pinned `dart_mappable_builder` conflict. Run `melos
+bootstrap` first.
+
+---
+
+## Known Limitations
+
+- **A pin cannot be pushed to a released app.** The certificate is a bundled
+  asset, so a pin change requires a release. Releases must therefore lead server
+  certificate changes, with time for field adoption.
+- **An expired pinned anchor cannot be recovered server-side.** BoringSSL
+  rejects an expired anchor, so no chain the server presents will validate. The
+  only workaround that avoids a new APK is rolling the device clock back, which
+  corrupts campaign timestamps and is not recommended. Prevention is the control:
+  the CI expiry check and the ~10-year anchor.
+- **Trust is one CA.** A change of certificate provider breaks every un-updated
+  install. `--add` exists for that migration, but only if run in advance.
+- **Pinning is bypassable on a compromised device.** It is client-side, so a
+  rooted or repackaged handset defeats it. Pinning protects users from network
+  attackers; it does not protect the server from the user.
+- **`DioClient.disableSSLPinning()` is never called** and remains a live way to
+  silently unpin the app. Delete it or gate it behind `kSecurityTestMode`.
+- Repackaging detection stays inert until an expected signing certificate is
+  supplied; it is a deployment step, not a code change.
+- Release builds self-exit on emulators when `ENV_NAME=PROD`. This is detection
+  working, not a crash.
+
+---
+
+## Migration & Deployment
+
+### Breaking Changes:
+None. Level presets preserve previous behaviour, and `setSecurityLevel` remains
+as a deprecated setter.
+
+### Deployment Steps:
+1. `melos bootstrap`, then `flutter test test/security/`
+2. Build with `./build_obfuscated.sh apk` (plain `flutter build apk --release`
+   does **not** obfuscate Dart)
+3. `./tools/security/test_ssl_pinning.sh` — confirm the pin matches the live
+   server before release
+4. `./tools/security/run_all_security_tests.sh` against a device; read SKIPPED
+   and INCONCLUSIVE as "not verified", not as passes
+5. For device-integrity verification, build a separate APK with
+   `--dart-define=SECURITY_TEST_MODE=true`; never ship it
+6. Archive `mapping.txt` and the Dart `.symbols` files — without them a
+   production crash report cannot be read
+7. Replace `signingConfigs.debug` with a real release signing config before
+   publishing
+
+---
+---
+
 **Version:** 1.8.7+7  
 **Release Date:** March 3, 2026  
 
