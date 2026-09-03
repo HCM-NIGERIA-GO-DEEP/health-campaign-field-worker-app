@@ -43,6 +43,9 @@ class JsonSchemaNumberBuilder extends JsonSchemaBuilder<int> {
             capitalizedFirstLetter: false,
             infoText: translateIfPresent(tooltipText, loc),
             child: DigitTextFormInput(
+              // Same reason as string_builder: the id must be on the box, not
+              // on the label + box + helpText block.
+              semanticsIdentifier: '${formControlName}_input',
               maxLength: getMaxLength(validations),
               helpText: helpText,
               innerLabel: innerLabel,

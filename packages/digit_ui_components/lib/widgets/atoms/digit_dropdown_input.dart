@@ -613,7 +613,12 @@ class _DigitDropdownState<T> extends State<DigitDropdown<T>>
               if (_isMouseUsed) {
                 _focusedIndex = -1;
               }
-              return InkWell(
+              // Stable resource-id per option row for UI tests / TalkBack:
+              // Flutter exposes no resource-id on plain widgets, which makes
+              // dropdown options unreachable for accessibility-tree drivers.
+              return Semantics(
+                identifier: 'option_${filteredItems[index].code}',
+                child: InkWell(
                 onTapDown: (_) {
                   /// Handle mouse down state
                   setState(() {
@@ -864,6 +869,7 @@ class _DigitDropdownState<T> extends State<DigitDropdown<T>>
                       ],
                     ),
                   ),
+                ),
                 ),
               );
             },

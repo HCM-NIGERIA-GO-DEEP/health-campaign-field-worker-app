@@ -57,6 +57,13 @@ class DigitButton extends StatefulWidget {
   final CrossAxisAlignment? crossAxisAlignment;
   final MainAxisSize? mainAxisSize;
 
+  /// Optional stable identifier exposed to the accessibility tree as the
+  /// Android resource-id (via Semantics), for UI-test selectors. Applied
+  /// INSIDE the button so callers that need the widget to BE a DigitButton
+  /// (popup action lists cast to it) keep working — an outer Semantics
+  /// wrapper breaks that cast.
+  final String? semanticsIdentifier;
+
   const DigitButton({
     Key? key,
     required this.label,
@@ -73,6 +80,7 @@ class DigitButton extends StatefulWidget {
     this.mainAxisAlignment,
     this.crossAxisAlignment,
     this.mainAxisSize,
+    this.semanticsIdentifier,
   }) : super(key: key);
 
   @override
@@ -117,7 +125,15 @@ class _DigitButtonState extends State<DigitButton> {
         break;
     }
 
-    return _buildDigitButtonWidget(context, digitButtonThemeData ?? digitButtonThemeDataDefault);
+    final button = _buildDigitButtonWidget(
+        context, digitButtonThemeData ?? digitButtonThemeDataDefault);
+    if (widget.semanticsIdentifier == null) {
+      return button;
+    }
+    return Semantics(
+      identifier: widget.semanticsIdentifier!,
+      child: button,
+    );
   }
 
   /// Build the DigitButton widget based on its type and state.

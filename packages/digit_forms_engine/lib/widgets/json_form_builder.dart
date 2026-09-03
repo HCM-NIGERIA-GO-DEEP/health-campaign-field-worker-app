@@ -51,7 +51,16 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
 
     _checkAutoFill(form);
 
-    return _buildByType(form);
+    // Stable identifier (surfaces as Android resource-id = formControlName)
+    // so UI-test selectors survive campaign label changes. This is the live
+    // per-field dispatch point - BaseReactiveFieldWrapper is not referenced
+    // anywhere on this branch, so instrumenting it never reached the screen
+    // (proven by run -0108: zero resource-ids on the Beneficiary Location
+    // form page).
+    return Semantics(
+      identifier: widget.formControlName,
+      child: _buildByType(form),
+    );
   }
 
   bool get _isReadOnly => (widget.schema.readOnly ?? false) || _autoReadOnly;

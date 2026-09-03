@@ -144,7 +144,14 @@ class _DigitDobPickerState extends State<DigitDobPicker> {
                 // Date picker component to select the date of birth
                 LabeledField(
                   label: widget.datePickerLabel,
-                  child: DigitDateFormInput(
+                  // Stable UI-test ids (dob_date / dob_years / dob_months):
+                  // the whole card is one form field, so the inner inputs
+                  // carry no formControlName-derived id of their own; typed
+                  // AGE entry is the automation-friendly path (no calendar
+                  // dialog).
+                  child: Semantics(
+                    identifier: 'dob_date',
+                    child: DigitDateFormInput(
                     readOnly: widget.readOnly,
                     editable: false,
                     initialValue: selectedDate != null
@@ -169,6 +176,7 @@ class _DigitDobPickerState extends State<DigitDobPicker> {
                       }
                     },
                   ),
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Text(
@@ -185,7 +193,9 @@ class _DigitDobPickerState extends State<DigitDobPicker> {
                       child: LabeledField(
                         labelInline: false,
                         label: widget.ageFieldLabel,
-                        child: DigitTextFormInput(
+                        child: Semantics(
+                          identifier: 'dob_years',
+                          child: DigitTextFormInput(
                           errorMessage: widget.ageErrorMessage,
                           prefixTextStyle: textTheme.bodyS.copyWith(
                             color: theme.colorTheme.text.secondary,
@@ -207,6 +217,7 @@ class _DigitDobPickerState extends State<DigitDobPicker> {
                           keyboardType: TextInputType.number,
                           readOnly: widget.readOnly,
                         ),
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -215,7 +226,9 @@ class _DigitDobPickerState extends State<DigitDobPicker> {
                       child: LabeledField(
                         labelInline: false,
                         label: '',
-                        child: DigitTextFormInput(
+                        child: Semantics(
+                          identifier: 'dob_months',
+                          child: DigitTextFormInput(
                           errorMessage: widget.monthErrorMessage,
                           prefixTextStyle: textTheme.bodyS.copyWith(
                             color: theme.colorTheme.text.secondary,
@@ -236,6 +249,7 @@ class _DigitDobPickerState extends State<DigitDobPicker> {
                           },
                           keyboardType: TextInputType.number,
                           readOnly: widget.readOnly,
+                        ),
                         ),
                       ),
                     ),

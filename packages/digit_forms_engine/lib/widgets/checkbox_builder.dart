@@ -28,6 +28,11 @@ class JsonSchemaCheckboxBuilder extends JsonSchemaBuilder<bool> {
           mainAxisAlignment: MainAxisAlignment.start,
           children: [
             DigitCheckbox(
+              // `<formControlName>_checkbox`, NOT the bare form control name:
+              // JsonFormBuilder already puts that id on the enclosing field
+              // node, and a duplicate would make the driver hit the
+              // non-tappable label block instead of the box.
+              semanticsIdentifier: '${formControlName}_checkbox',
               capitalizeFirstLetter: false,
               isRequired: isRequired ?? false,
               readOnly: readOnly,

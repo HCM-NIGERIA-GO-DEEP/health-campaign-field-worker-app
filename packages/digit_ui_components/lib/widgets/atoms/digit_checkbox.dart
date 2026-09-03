@@ -47,6 +47,17 @@ class DigitCheckbox extends StatefulWidget {
 
   final bool isRequired;
 
+  /// Optional stable accessibility identifier for the tappable box (surfaces as
+  /// the Android `resource-id`).
+  ///
+  /// The box and its label are SIBLINGS, so the tappable node carries no label
+  /// of its own — without this it is an anonymous node that accessibility-tree
+  /// drivers (Maestro, TalkBack) can only reach by screen coordinates. Same
+  /// shape as [RadioList]; see its `semanticsIdentifierPrefix`.
+  ///
+  /// Null leaves the box unannotated, i.e. the previous behaviour.
+  final String? semanticsIdentifier;
+
   /// Creates a `DigitCheckbox` widget with the given parameters.
   const DigitCheckbox({
     Key? key,
@@ -59,6 +70,7 @@ class DigitCheckbox extends StatefulWidget {
     this.capitalizeFirstLetter = true,
     this.checkboxThemeData,
     this.isRequired = false,
+    this.semanticsIdentifier,
   }) : super(key: key);
 
   @override
@@ -69,6 +81,28 @@ class _DigitCheckboxState extends State<DigitCheckbox> {
   late bool _currentState;
   bool isHovered = false;
   bool isFocused = false;
+
+  /// Annotates the tappable box with [DigitCheckbox.semanticsIdentifier] when
+  /// the caller supplied one; returns [child] untouched otherwise, so existing
+  /// call sites keep their semantics tree.
+  Widget _withCheckboxSemantics(Widget child) {
+    final identifier = widget.semanticsIdentifier;
+    if (identifier == null || identifier.isEmpty) return child;
+
+    // container: true is load-bearing. A single checkbox under the forms
+    // engine's field-level Semantics(identifier: formControlName) otherwise
+    // merges into ONE node that spans the whole field block: the field id
+    // wins, this id is dropped, and although the merged node reports
+    // tap=true its centre sits on the LABEL, so tapping it never toggles the
+    // box. Forcing our own node keeps the id on the box's own rect.
+    // (RadioList needs no such flag - two option nodes stop the ancestor
+    // annotation from collapsing into a single child.)
+    return Semantics(
+      identifier: identifier,
+      container: true,
+      child: child,
+    );
+  }
 
   @override
   void initState() {
@@ -115,7 +149,10 @@ class _DigitCheckboxState extends State<DigitCheckbox> {
             SizedBox(
               height: isMobile ? 0 : 2,
             ),
-            InkWell(
+            // Stable resource-id on the tappable box. Its label is a sibling
+            // node, so without this the box is anonymous to accessibility-tree
+            // drivers (same trap RadioList hit in run -1214).
+            _withCheckboxSemantics(InkWell(
               hoverColor: theme.colorTheme.generic.transparent,
               splashColor: theme.colorTheme.generic.transparent,
               highlightColor: theme.colorTheme.generic.transparent,
@@ -147,7 +184,7 @@ class _DigitCheckboxState extends State<DigitCheckbox> {
                 isDisabled: widget.isDisabled || widget.readOnly,
                 checkboxThemeData: widget.checkboxThemeData ?? defaultThemeData,
               ),
-            ),
+            )),
           ],
         ),
         if (widget.label != null) ...[

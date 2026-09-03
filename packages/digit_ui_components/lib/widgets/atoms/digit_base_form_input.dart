@@ -133,6 +133,18 @@ class BaseDigitFormInput extends StatefulWidget {
   final double? iconSize;
   final TextStyle? prefixTextStyle;
 
+  /// Optional stable accessibility identifier applied to the INPUT ITSELF
+  /// (surfaces as the Android `resource-id`).
+  ///
+  /// Deliberately not on the whole field: the help-text / char-count / error
+  /// rows are siblings of the input inside this widget's Column, so an id
+  /// covering the field block yields a rect up to twice the input's height
+  /// whose centre falls on the seam below the box — a tap there focuses
+  /// nothing. Callers pass e.g. `<formControlName>_input`.
+  ///
+  /// Null leaves the input unannotated, i.e. the previous behaviour.
+  final String? semanticsIdentifier;
+
   /// Custom function for focus lost
 
   const BaseDigitFormInput({
@@ -189,6 +201,7 @@ class BaseDigitFormInput extends StatefulWidget {
     this.contentPadding,
     this.iconSize,
     this.obscureText,
+    this.semanticsIdentifier,
   }) : super(key: key);
 
   @override
@@ -208,6 +221,24 @@ class BaseDigitFormInputState extends State<BaseDigitFormInput> {
   String? _errorMessage;
 
   TextEditingController get controller => _controller;
+
+  /// Annotates the input with [BaseDigitFormInput.semanticsIdentifier] when the
+  /// caller supplied one; returns [child] untouched otherwise.
+  ///
+  /// `container: true` is load-bearing — without it the annotation collapses
+  /// into the enclosing field node (the forms engine puts
+  /// `Semantics(identifier: formControlName)` there), which both drops this id
+  /// and leaves the surviving one on a rect whose centre is not the box.
+  Widget _withInputSemantics(Widget child) {
+    final identifier = widget.semanticsIdentifier;
+    if (identifier == null || identifier.isEmpty) return child;
+
+    return Semantics(
+      identifier: identifier,
+      container: true,
+      child: child,
+    );
+  }
 
   void onFocusChange() {
     if (!myFocusNode.hasFocus) {
@@ -362,7 +393,9 @@ class BaseDigitFormInputState extends State<BaseDigitFormInput> {
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          widget.isTextArea
+          // Wraps the input only - the helpText / charCount / error rows added
+          // to this Column below must stay OUTSIDE the annotated node.
+          _withInputSemantics(widget.isTextArea
               ? Stack(
                   children: [
                     StatefulBuilder(builder: (context, setState) {
@@ -832,7 +865,7 @@ class BaseDigitFormInputState extends State<BaseDigitFormInput> {
                     setState(() {});
                     widget.onChange?.call(value);
                   },
-                ),
+                )),
           if (widget.helpText != null ||
               widget.charCount ||
               _hasError ||

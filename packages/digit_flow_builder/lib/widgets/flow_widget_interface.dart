@@ -101,6 +101,14 @@ class FlowWidgetFactory {
 
     if (widget != null) {
       final built = widget.build(json, context, onAction);
+      // 'button' widgets carry their identifier INSIDE DigitButton
+      // (ButtonWidget passes semanticsIdentifier) because popup footers cast
+      // the built widget to DigitButton - an outer Semantics wrapper crashes
+      // that cast at runtime ("type 'Semantics' is not a subtype of type
+      // 'DigitButton'", action_popup_widget/select_button/signature dialogs).
+      if (format == 'button') {
+        return built;
+      }
       // Stable identifier (surfaces as Android resource-id) derived from the
       // config key, so UI-test selectors survive campaign label changes.
       final semanticsId = semanticsIdentifierFor(json, stateKey);

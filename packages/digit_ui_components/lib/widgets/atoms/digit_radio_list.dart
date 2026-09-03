@@ -50,6 +50,19 @@ class RadioList extends StatefulWidget {
   final bool sentenceCaseEnabled;
   final TextDirection? textDirection;
 
+  /// Optional prefix that gives every radio a stable accessibility identifier
+  /// of the form `<prefix>_<code>` (surfaces as the Android `resource-id`).
+  ///
+  /// Without it the tappable radio is an anonymous node: its option label is
+  /// absorbed into the surrounding merged label block, so accessibility-tree
+  /// drivers (Maestro, TalkBack) have nothing to address it by and can only
+  /// guess at screen coordinates. Callers pass the field's form control name,
+  /// which keeps the ids unique when several radio groups share option codes
+  /// (e.g. the eligibility checklist's ec1..ec5, all YES/NO).
+  ///
+  /// Null leaves the radios unannotated, i.e. the previous behaviour.
+  final String? semanticsIdentifierPrefix;
+
   /// Constructor for the RadioList widget
   RadioList({
     Key? key,
@@ -64,6 +77,7 @@ class RadioList extends StatefulWidget {
     this.radioHeight = RadioConstant.radioHeight,
     this.sentenceCaseEnabled = true,
     this.textDirection = TextDirection.ltr,
+    this.semanticsIdentifierPrefix,
   }) : super(key: key);
 
   /// Create the state for the widget
@@ -201,6 +215,21 @@ class _RadioListState extends State<RadioList> {
     );
   }
 
+  /// Annotates a radio's tappable node with
+  /// `Semantics(identifier: '<prefix>_<code>')` when the caller supplied a
+  /// [RadioList.semanticsIdentifierPrefix]. Returns [child] untouched
+  /// otherwise, so call sites that pass no prefix keep their existing
+  /// semantics tree.
+  Widget _withRadioSemantics(String code, Widget child) {
+    final prefix = widget.semanticsIdentifierPrefix;
+    if (prefix == null || prefix.isEmpty) return child;
+
+    return Semantics(
+      identifier: '${prefix}_$code',
+      child: child,
+    );
+  }
+
   List<Widget> _buildRadioDigitButtons(BuildContext context) {
 
     final theme = Theme.of(context);
@@ -222,7 +251,12 @@ class _RadioListState extends State<RadioList> {
                   SizedBox(
                     height: isMobile ? 0 : spacer1 / 2,
                   ),
-                  InkWell(
+                  // Stable resource-id per option for accessibility-tree
+                  // consumers. The option's own label ("Yes"/"No") is absorbed
+                  // into the field's merged label node, so this InkWell is
+                  // otherwise an anonymous tappable node that only screen
+                  // coordinates can reach.
+                  _withRadioSemantics(DigitButton.code, InkWell(
                     hoverColor: const DigitColors().transparent,
                     splashColor: const DigitColors().transparent,
                     highlightColor: const DigitColors().transparent,
@@ -309,7 +343,7 @@ class _RadioListState extends State<RadioList> {
                       )
                           : null,
                     ),
-                  ),
+                  )),
                 ],
               ),
               const SizedBox(

@@ -135,6 +135,10 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
   /// The controller for the dropdown.
   OverlayState? _overlayState;
   OverlayEntry? _overlayEntry;
+
+  /// True after an outside tap dismissed the panel; blocks focus-driven
+  /// re-insertion until the user taps the field again (see _onOutSideTap).
+  bool _dismissedByOutsideTap = false;
   bool _selectionMode = false;
   int _focusedIndex = -1;
   final TextEditingController _searchController = TextEditingController();
@@ -205,7 +209,10 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
     final hasAnyFocus = _focusNode.hasFocus ||
         (widget.isSearchable && _searchFocusNode.hasFocus);
 
-    if (hasAnyFocus && mounted && _overlayEntry == null) {
+    if (hasAnyFocus &&
+        mounted &&
+        _overlayEntry == null &&
+        !_dismissedByOutsideTap) {
       _overlayEntry = _buildOverlayEntry();
       Overlay.of(context).insert(_overlayEntry!);
       _focusedIndex = -1;
@@ -341,6 +348,8 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
               hoverColor: const DigitColors().transparent,
               onTap: !widget.isDisabled && !widget.readOnly
                   ? () {
+                      // A field tap always ends an outside-tap dismissal.
+                      _dismissedByOutsideTap = false;
                       // If searchable and dropdown is already open, don't toggle
                       if (widget.isSearchable && _selectionMode) {
                         // Keep focus on search field
@@ -739,6 +748,13 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
   /// Handle the focus change on tap outside of the dropdown.
   void _onOutSideTap() {
     _isInteractingWithDropdown = false; // Reset flag when tapping outside
+    // An explicit outside-tap dismissal is FINAL until the user taps the
+    // field again: on real devices Android focus churn can re-grant focus to
+    // the AlwaysFocusableFocusNode right after unfocus(), and
+    // _handleFocusChange would silently re-insert the overlay (panel
+    // "resurrection" - swallowed taps meant for widgets behind it).
+    _dismissedByOutsideTap = true;
+    _searchFocusNode.unfocus();
     _focusNode.unfocus();
     // Explicitly close overlay if it's open
     if (_overlayEntry != null && mounted) {
@@ -753,8 +769,15 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
 
   /// Method to toggle the focus of the dropdown.
   void _toggleFocus() {
-    if (_focusNode.hasFocus) {
+    // A field tap always ends an outside-tap dismissal.
+    _dismissedByOutsideTap = false;
+    if (_focusNode.hasFocus && _overlayEntry != null) {
       _focusNode.unfocus();
+    } else if (_focusNode.hasFocus) {
+      // Focus was retained (or re-granted) while the panel is closed - e.g.
+      // right after an outside-tap dismissal. No focus CHANGE will fire, so
+      // open the panel explicitly.
+      _handleFocusChange();
     } else {
       _focusNode.requestFocus();
     }
@@ -1034,7 +1057,10 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
               bool isFocused = index == _focusedIndex;
               return Column(
                 children: [
-                  DropdownOption(
+                  // Stable resource-id per option row for UI tests / TalkBack
+                  Semantics(
+                  identifier: 'option_${option.code}',
+                  child: DropdownOption(
                     width: width,
                     option: option,
                     isFocused: isFocused,
@@ -1074,6 +1100,7 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
                       widget.onOptionSelected?.call(_selectedOptions);
                     },
                     selectionType: widget.selectionType,
+                  ),
                   ),
                 ],
               );
@@ -1290,7 +1317,10 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
                   index == _focusedNestedIndex.index;
               return StatefulBuilder(
                 builder: (context, setState) {
-                  return DropdownOption(
+                  // Stable resource-id per option row for UI tests / TalkBack
+                  return Semantics(
+                  identifier: 'option_${option.code}',
+                  child: DropdownOption(
                     width: width,
                     option: option,
                     isSelected: selectedOptions.contains(option),
@@ -1334,6 +1364,7 @@ class _MultiSelectDropDownState<T> extends State<MultiSelectDropDown<T>> {
                       widget.onOptionSelected?.call(_selectedOptions);
                     },
                     selectionType: widget.selectionType,
+                  ),
                   );
                 },
               );

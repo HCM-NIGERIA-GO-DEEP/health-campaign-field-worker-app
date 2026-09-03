@@ -49,6 +49,12 @@ class JsonSchemaStringBuilder extends JsonSchemaBuilder<String> {
             capitalizedFirstLetter: false,
             isRequired: isRequired ?? false,
             child: DigitTextFormInput(
+              // `<formControlName>_input` targets the box alone. The field-level
+              // id from JsonFormBuilder covers label + box + helpText, and when
+              // a helpText is present its rect is two rows tall, so the centre
+              // Maestro taps lands on the seam below the box and focuses
+              // nothing (run -1432: nameOfIndividual).
+              semanticsIdentifier: '${formControlName}_input',
               maxLength: getMaxLength(validations),
               charCount: charCount ?? false,
               helpText: helpText,

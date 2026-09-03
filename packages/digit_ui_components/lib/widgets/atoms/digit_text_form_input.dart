@@ -50,8 +50,13 @@ class DigitTextFormInput extends BaseDigitFormInput {
     final TextStyle? suffixTextStyle,
     final TextStyle? prefixTextStyle,
     final bool? obscureText,
+    /// Stable resource-id for the input box itself - see
+    /// BaseDigitFormInput.semanticsIdentifier for why it must not cover the
+    /// surrounding label/help-text block.
+    final String? semanticsIdentifier,
   }) : super(
     key: key,
+    semanticsIdentifier: semanticsIdentifier,
     controller: controller,
     readOnly: readOnly,
     isRequired: isRequired,

@@ -173,6 +173,10 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                         children: [
                           ReactiveFormConsumer(
                             builder: (context, formGroup, child) => DigitButton(
+                              // Stable UI-test id: every FORM page's primary
+                              // footer action, independent of its campaign-
+                              // localized label (each page has its own).
+                              semanticsIdentifier: 'form_action',
                               label: (index) < schemaObject.pages.length - 1
                                   ? localizations
                                       .translate(schema.actionLabel ?? 'Next')
@@ -1006,6 +1010,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                 children: [
                   ReactiveFormConsumer(
                     builder: (context, formGroup, child) => DigitButton(
+                      // Stable UI-test id (see the other footer variant).
+                      semanticsIdentifier: 'form_action',
                       label: (index) < schemaObject.pages.length - 1
                           ? localizations
                               .translate(schema.actionLabel ?? 'Next')

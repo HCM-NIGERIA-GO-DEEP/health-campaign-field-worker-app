@@ -34,6 +34,14 @@ class JsonSchemaRadioBuilder extends JsonSchemaBuilder<bool> {
           label: label,
           infoText: tooltipText,
           child: RadioList(
+            // Per-option resource-ids (`<formControlName>_<code>`) so UI tests
+            // and TalkBack can address a specific radio. The field-level
+            // Semantics(identifier:) in JsonFormBuilder lands on the merged
+            // label block, which is not clickable and whose centre falls
+            // between the options - it cannot select one. Scoping by form
+            // control name keeps ids unique when several groups on one page
+            // share option codes (eligibility ec1..ec5 are all YES/NO).
+            semanticsIdentifierPrefix: formControlName,
             containerPadding:
                 const EdgeInsets.only(bottom: spacer4, top: spacer2),
             readOnly: readOnly,

@@ -3,6 +3,7 @@ import 'package:digit_ui_components/theme/ComponentTheme/button_theme.dart';
 import 'package:flutter/material.dart';
 
 import '../../action_handler/action_config.dart';
+import '../../utils/semantics_identifier.dart';
 import '../../utils/widget_parsers.dart';
 import '../resolved_flow_widget.dart';
 
@@ -24,8 +25,15 @@ class ButtonWidget extends ResolvedFlowWidget {
     String? height = props['height'];
     String? radius = props['radius'];
 
+    // The identifier rides INSIDE DigitButton (not as an outer Semantics wrap
+    // from FlowWidgetFactory) because popup footers cast the built widget to
+    // DigitButton - an outer wrapper crashes that cast at runtime.
+    final semanticsId = semanticsIdentifierFor(
+        json, resolved.compositeKey ?? resolved.screenKey);
+
     return WidgetParsers.wrapWithBottomGap(
       DigitButton(
+        semanticsIdentifier: semanticsId,
         crossAxisAlignment: CrossAxisAlignment.center,
         capitalizeLetters: false,
         label: resolved.resolvedLabel ?? '',
