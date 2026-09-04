@@ -163,12 +163,10 @@ it.
   computed on a compromised client proves nothing.
 
 **Impact.** Multi-vector detection reduces bypass probability and identifies
-emulator, hooked and debugged environments. Client-side detection remains
-bypassable by design — see §9.
+emulator, hooked and debugged environments.
 
-**Deployment note.** Repackaging detection is inert until an expected signing
-certificate is supplied via `AppSecurity.configure(expectedAppSignature:)`. With
-nothing to compare against, the native side reports a match.
+What this does *not* achieve, and the conditions it depends on, are recorded in
+§11.2 rather than here, so the limitations of every mitigation sit in one place.
 
 ---
 
@@ -554,47 +552,193 @@ levels.
 
 ## 11. Known Limitations
 
-**Release signing is still unresolved.** The release build type uses
-`signingConfigs.debug` with a TODO. A conditional release config exists, driven
-by `key.properties`, but is not referenced. Resolve before publishing.
+### 11.1 Release signing — blocker
 
-**Client-side controls are bypassable.** Root detection, hook detection and
-pinning all run on the device. A rooted or repackaged handset defeats them.
-These protect users from network attackers and raise the cost of tampering; they
-do not protect the server from the user. Server-side validation remains the only
-authoritative control.
+The release build type uses `signingConfig signingConfigs.debug` with a TODO. A
+conditional release config driven by `key.properties` exists but is not
+referenced. **Resolve before publishing:** an APK signed with debug keys cannot
+be distributed, and the repackaging check has no stable signature to compare
+against.
+
+---
+
+### 11.2 Root detection and other client-side controls
+
+**They are bypassable by design.** Root detection, hook detection and pinning
+all execute on the device. An attacker with device control can repackage the APK
+with a different anchor, hook the checks out with Frida, or patch the native
+library. Layering independent signals raises the cost and defeats casual
+tooling; it does not make the result trustworthy.
+
+The correct reading: these controls protect *users from network attackers* and
+raise the cost of tampering. They do not protect the *server from the user*.
+Server-side validation remains the only authoritative control — see §9 for why
+device attestation was evaluated and rejected for this application.
+
+**Repackaging detection is inert** until an expected signing certificate is
+supplied via `AppSecurity.configure(expectedAppSignature:)`. With nothing to
+compare against the native side reports a match, so this layer currently
+contributes nothing. Supplying it is a deployment step, not a code change, and
+depends on §11.1 being resolved first.
+
+**Emulator detection terminates release builds.** With `ENV_NAME=PROD` a
+release build self-exits on an emulator. That is detection working, not a
+crash, but it makes emulator-based QA of release builds impossible without
+`--dart-define=SECURITY_TEST_MODE=true`.
+
+**Detection accuracy decays.** Root and hook detection depend on indicators —
+paths, package names, property values — that change as rooting and
+instrumentation tooling evolves. Without periodic review the checks quietly
+become less effective while continuing to report success.
+
+---
+
+### 11.3 SSL pinning: expiry, offline-first data loss, and recovery
+
+Pinning fails closed, which on an offline-first app converts a certificate
+problem into a data-retention problem. This is the most consequential
+limitation in this document.
+
+#### What happens
+
+If the server presents a certificate that no installed build trusts — because
+the pinned anchor expired, or the CA changed — those installs cannot reach the
+API at all. The app itself keeps working: local data entry, local queries and
+the outbound queue are unaffected, which is what makes fail-closed acceptable
+rather than an outage.
+
+**But sync stops, and unsynced records then exist only on the handset.** The
+longer that lasts, the larger the exposure. "The app still works" is not "there
+is no incident".
+
+#### How data is actually lost
+
+Being unable to sync does not destroy data by itself. Loss happens when the
+handset's local store is discarded while records are still unsynced:
+
+- the device is lost, stolen, damaged or factory reset;
+- the app is **uninstalled and reinstalled**, which wipes app-private storage.
+  Both update paths are in use across deployments, and this one loses data;
+- "clear app data" is used during troubleshooting — a plausible first response
+  to "sync isn't working", and the worst possible one here.
+
+An in-place upgrade (same signing key, higher `versionCode`) preserves app data,
+so unsynced records survive. Where a deployment reinstalls instead, they do not.
+
+#### Why it cannot be fixed from the server
+
+BoringSSL rejects a trust anchor whose own validity has lapsed — confirmed
+against a purpose-built expired CA and a local TLS server — so **no chain the
+server presents will validate**. Installing a CA on the device does not help
+either, because `withTrustedRoots: false` discards the system and user stores.
+The certificate asset cannot be swapped on device: it sits inside the signed
+APK, and editing it breaks the signature.
+
+The only workaround requiring no new APK is rolling the device clock back to
+before the anchor's expiry. It is expected to work, since validity is evaluated
+against device time, but it writes wrong dates into campaign records and will
+likely trip server-side clock-skew checks. **Not recommended** except, at most,
+to drain data off a device before updating it.
+
+#### Resolution 1 — update the APK (primary)
+
+Ship a build with a valid pin. Where the deployment performs an in-place
+upgrade, unsynced records survive the update and sync resumes on their own.
+Where the deployment uninstalls first, resolution 2 is required to avoid losing
+them.
+
+Prevention is the real control: the CI expiry check, the ~10-year anchor, and
+releasing ahead of any server certificate change (§5).
+
+#### Resolution 2 — user-triggered local backup (planned)
+
+A button in the app exports the local database to device storage using a runtime
+file permission, so the export survives uninstall and can be imported by the
+updated APK. `MANAGE_EXTERNAL_STORAGE` is already declared in the manifest and
+`permission_handler` is already a dependency.
+
+The backup is **manual and on demand**, not automatic: it is intended to be used
+when sync has broken because of pinning.
+
+Constraints this design has to satisfy, recorded here because they are not
+obvious:
+
+1. **The worker has to press it in time.** A pin failure presents as "sync isn't
+   working", which is indistinguishable from poor connectivity. Someone who does
+   not know to back up before a reinstall gets no protection from a manual
+   button. This pairs with surfacing "update required" from
+   `AppSecurity.sslPinningFailure` (§11.4) — without that prompt, the button is
+   unlikely to be pressed at the right moment.
+2. **A raw file copy will not restore.** The local SQL database is encrypted
+   with a key held in `flutter_secure_storage` (`getOrCreateDbEncryptionKey`),
+   which is Android Keystore-backed and **destroyed on uninstall**. A byte copy
+   of the database is therefore permanently unreadable by the new install. The
+   export has to be produced in a form the reinstalled app can open — decrypted
+   at export time and re-protected — rather than copied.
+3. **Shared storage is exposed storage.** Anything written where it survives
+   uninstall is readable by other apps holding storage access and over USB. That
+   runs against `allowBackup="false"` and the `EncryptedSharedPreferences`
+   posture in §3, so the export should be encrypted under a secret that also
+   survives reinstall — for example derived from the worker's credentials —
+   rather than written in the clear. Note that the app-specific external
+   directory is *also* wiped on uninstall and so does not solve this.
+4. **Restore is an untrusted input path.** A file in shared storage can be
+   modified or replaced before import. The restore path must authenticate and
+   validate the export rather than trusting its contents, or it becomes a way
+   to inject records into the local store.
+5. **`MANAGE_EXTERNAL_STORAGE` is Play-restricted.** If distribution moves to
+   the Play Store, that permission needs justification or replacement with the
+   Storage Access Framework, which changes where the file lands and how it is
+   found again.
+
+#### Complementary path that already exists
+
+The app ships peer-to-peer transfer (`lib/pages/peer_to_peer/`). A device that
+cannot reach the server can hand its unsynced records to a device running an
+updated build, with no file export and no shared storage involved. It does not
+bring the stuck device online, but it addresses the data-retention risk directly
+and is available today.
+
+---
+
+### 11.4 Pinning: operational constraints
 
 **A pin cannot be pushed to a released app.** The certificate is a bundled
-asset, so a pin change requires a release. Releases must lead server certificate
-changes, with time for field adoption.
-
-**An expired pinned anchor cannot be recovered server-side.** BoringSSL rejects
-an expired anchor, so no chain the server presents will validate. The only
-workaround avoiding a new APK is rolling the device clock back, which corrupts
-campaign timestamps and is not recommended. Prevention is the control: the
-expiry check and the ~10-year anchor.
+asset, so a pin change requires a release. Releases must lead server
+certificate changes, with time for field adoption.
 
 **Trust is one CA.** A change of certificate provider breaks every un-updated
-install. `--add` covers that migration, but only if run in advance.
+install. `rotate_pinned_cert.sh --add` covers that migration, but only if run
+before the server switches.
 
 **`DioClient.disableSSLPinning()` is never called** and remains a live way to
 silently unpin the app. Delete it or gate it behind `kSecurityTestMode`.
 
-**Repackaging detection is inert** until an expected signing certificate is
-configured.
-
-**Release builds self-exit on emulators** when `ENV_NAME=PROD`. That is
-detection working, not a crash.
-
-**Debug builds trust user CAs** via `debug-overrides`, stripped from release.
-
 **A pin failure looks like poor connectivity** to a field worker. Surfacing
 "update required" from `AppSecurity.sslPinningFailure` is the highest-value
-outstanding improvement.
+outstanding improvement, and is a precondition for resolution 2 in §11.3 being
+useful.
 
-**Maintenance.** Root detection needs periodic updates as rooting evolves;
-ProGuard rules need review when libraries change; R8 full mode warrants
-regression testing when third-party dependencies are upgraded.
+---
+
+### 11.5 Build and tooling
+
+**The Kotlin and Gradle changes were not compiled and the Dart tests were not
+executed**, because `flutter pub get` fails on a pre-existing `bloc_test` /
+path-pinned `dart_mappable_builder` conflict. Run `melos bootstrap` first.
+
+**Debug builds trust user-installed CAs** via `debug-overrides`. This is
+intentional for proxy debugging and is stripped from release APKs by the build
+system.
+
+**Dart obfuscation is not automatic.** `flutter build apk --release` alone
+leaves Dart class names readable; only `--obfuscate --split-debug-info` removes
+them. Use `./build_obfuscated.sh apk`.
+
+**ProGuard rules need review when dependencies change.** R8 full mode is more
+aggressive, so a library upgrade can require a new keep rule, and a keep rule
+that is too broad silently defeats obfuscation — as one did for
+`SecurityHelper` (§4).
 
 ---
 
