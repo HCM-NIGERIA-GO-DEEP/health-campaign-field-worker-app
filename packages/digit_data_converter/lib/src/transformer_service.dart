@@ -74,7 +74,7 @@ class FormEntityMapper {
       if (factory != null) {
         try {
           final existingIndex = entities
-              .indexWhere((e) => e.runtimeType.toString() == fallbackModelName);
+              .indexWhere((e) => entityTypeName(e) == fallbackModelName);
 
           if (existingIndex != -1) {
             final existingModel = entities[existingIndex];
@@ -117,14 +117,14 @@ class FormEntityMapper {
   }) {
     final List<EntityModel> updatedModels = [];
     final Set<String> existingModelTypes =
-        existingModels.map((model) => model.runtimeType.toString()).toSet();
+        existingModels.map(entityTypeName).toSet();
 
     prepopulateGeneratedValuesFromExisting(existingModels, modelsConfig);
     usedPaths.clear();
 
     // Update existing models if config exists, else keep unchanged
     for (final model in existingModels) {
-      final modelType = model.runtimeType.toString();
+      final modelType = entityTypeName(model);
       final modelConfig = modelsConfig[modelType];
 
       if (modelConfig == null) {
@@ -168,7 +168,7 @@ class FormEntityMapper {
       if (factory != null) {
         try {
           final existingIndex = updatedModels
-              .indexWhere((e) => e.runtimeType.toString() == fallbackModelName);
+              .indexWhere((e) => entityTypeName(e) == fallbackModelName);
 
           if (existingIndex != -1) {
             final existingModel = updatedModels[existingIndex];
@@ -200,7 +200,7 @@ class FormEntityMapper {
     Map<String, dynamic> modelsConfig,
   ) {
     for (final model in existingModels) {
-      final modelName = model.runtimeType.toString();
+      final modelName = entityTypeName(model);
       final modelConfig = modelsConfig[modelName];
       if (modelConfig == null) continue;
 
@@ -224,7 +224,7 @@ class FormEntityMapper {
     required Map<String, dynamic> modelConfig,
     required Map<String, dynamic> context,
   }) {
-    final modelType = existingModel.runtimeType.toString();
+    final modelType = entityTypeName(existingModel);
     final factory = DataConverterSingleton()
         .dynamicEntityModelListener
         ?.modelFactoryRegistry[modelType];

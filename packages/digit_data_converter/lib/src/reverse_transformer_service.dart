@@ -21,7 +21,7 @@ class ReverseFormMapper {
 
       EntityModel? instance;
       for (final model in modelInstances) {
-        if (model.runtimeType.toString() == modelName) {
+        if (entityTypeName(model) == modelName) {
           instance = model;
           break;
         }

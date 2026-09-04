@@ -413,26 +413,32 @@ class FlowCrudBloc extends CrudBloc {
   /// PGR, attendance, referrals, ...) get tracked automatically without
   /// touching this bloc again.
   void _logCompletionEvents(List<EntityModel> entities) {
-    final types = entities.map((e) => e.runtimeType).toSet();
+    final entityByType = <Type, EntityModel>{
+      for (final entity in entities) entity.runtimeType: entity,
+    };
 
-    final registrationTypes = types.where(_registrationEntityTypes.contains);
-    if (registrationTypes.isNotEmpty) {
+    final registrationNames = entityByType.entries
+        .where((e) => _registrationEntityTypes.contains(e.key))
+        .map((e) => entityTypeName(e.value))
+        .toList();
+    if (registrationNames.isNotEmpty) {
       AnalyticsService.instance.logEvent('registration_complete', {
-        'entity_types': registrationTypes.map((t) => t.toString()).toList(),
+        'entity_types': registrationNames,
       });
     }
 
-    for (final type
-        in types.where((t) => !_registrationEntityTypes.contains(t))) {
-      AnalyticsService.instance.logEvent(_completionEventName(type), {});
+    for (final entry in entityByType.entries
+        .where((e) => !_registrationEntityTypes.contains(e.key))) {
+      AnalyticsService.instance
+          .logEvent(_completionEventName(entityTypeName(entry.value)), {});
     }
   }
 
   /// Derives a `snake_case_complete` analytics event name from an entity
-  /// model's type, e.g. `StockReconciliationModel` ->
+  /// model name, e.g. `StockReconciliationModel` ->
   /// `stock_reconciliation_complete`.
-  String _completionEventName(Type type) {
-    final name = type.toString().replaceAll('Model', '');
+  String _completionEventName(String modelName) {
+    final name = modelName.replaceAll('Model', '');
     final snakeCase = name
         .replaceAllMapped(
           RegExp(r'(?<=[a-z0-9])(?=[A-Z])'),

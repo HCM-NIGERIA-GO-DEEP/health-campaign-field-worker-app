@@ -366,10 +366,7 @@ String interpolateWithCrudStates({
 
 String getEntityKey(dynamic entity) {
   if (entity is EntityModel) {
-    return entity.runtimeType
-        .toString()
-        .replaceAll(RegExp(r'^_+\$?'), '')
-        .replaceAll(RegExp(r'Impl$'), '');
+    return entityTypeName(entity);
   }
   if (entity is Map<String, dynamic> && entity.containsKey('type')) {
     return entity['type'].toString();

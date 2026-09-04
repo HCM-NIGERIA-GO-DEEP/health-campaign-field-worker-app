@@ -96,7 +96,7 @@ class EntityFilter {
     // Create a local context that includes both the current entity and wrapper data
     final localContext = <String, dynamic>{
       ...wrapperData,
-      if (root is EntityModel) root.runtimeType.toString(): root,
+      if (root is EntityModel) entityTypeName(root): root,
     };
 
     final equalsValue = equalsFrom != null

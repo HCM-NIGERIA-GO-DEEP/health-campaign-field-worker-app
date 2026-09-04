@@ -298,6 +298,10 @@ R8 does not touch Dart. `flutter build apk --release` alone leaves Dart class
 names readable in `libapp.so`; only `--obfuscate --split-debug-info` removes
 them. Use `./build_obfuscated.sh apk`, which passes both.
 
+Renaming Dart classes does break code that reads class names at runtime, and it
+broke the MDMS-driven flows once. What survives obfuscation, what does not, and
+the rules for new code: **`OBFUSCATION.md`**.
+
 **Impact.** Reverse engineering is materially harder and security mechanism
 names are not published. It does not stop a determined attacker with device
 control; it raises cost.

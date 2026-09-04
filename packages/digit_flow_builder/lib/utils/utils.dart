@@ -3,7 +3,6 @@
 import 'dart:convert';
 
 import 'package:digit_data_model/data_model.dart';
-import 'package:digit_data_model/models/entities/hf_referral.dart';
 import 'package:digit_data_model/models/templates/template_config.dart';
 import 'package:digit_flow_builder/utils/interpolation.dart';
 import 'package:flutter/material.dart';
@@ -845,29 +844,8 @@ String createCompositeKey(String pageName, String instanceId) {
   return '$pageName::$instanceId';
 }
 
-/// Returns the type name of an EntityModel as a string.
-/// This function uses `is` checks instead of runtimeType.toString()
-/// to ensure it works correctly in release mode with obfuscation enabled.
-String getEntityTypeName(EntityModel entity) {
-  if (entity is HouseholdModel) return 'HouseholdModel';
-  if (entity is IndividualModel) return 'IndividualModel';
-  if (entity is HouseholdMemberModel) return 'HouseholdMemberModel';
-  if (entity is ProjectBeneficiaryModel) return 'ProjectBeneficiaryModel';
-  if (entity is TaskModel) return 'TaskModel';
-  if (entity is ProjectFacilityModel) return 'ProjectFacilityModel';
-  if (entity is ProductVariantModel) return 'ProductVariantModel';
-  if (entity is StockModel) return 'StockModel';
-  if (entity is PgrServiceModel) return 'PgrServiceModel';
-  if (entity is StockReconciliationModel) return 'StockReconciliationModel';
-  if (entity is HFReferralModel) return 'HFReferralModel';
-  if (entity is ReferralModel) return 'ReferralModel';
-  if (entity is IdentifierModel) return 'IdentifierModel';
-  if (entity is AddressModel) return 'AddressModel';
-  if (entity is SideEffectModel) return 'SideEffectModel';
-  if (entity is FacilityModel) return 'FacilityModel';
-  if (entity is ProjectTypeModel) return 'ProjectTypeModel';
-  if (entity is PgrComplaintModel) return 'PgrComplaintModel';
-  if (entity is PgrAddressModel) return 'PgrAddressModel';
-  // Fallback for unknown types - use runtimeType (may not work with obfuscation)
-  return entity.runtimeType.toString();
-}
+/// Returns the type name of an EntityModel as a string, e.g. `HouseholdModel`.
+///
+/// Delegates to [entityTypeName], which reads the name from the model's
+/// `dart_mappable` mapper so it stays correct in obfuscated release builds.
+String getEntityTypeName(EntityModel entity) => entityTypeName(entity);

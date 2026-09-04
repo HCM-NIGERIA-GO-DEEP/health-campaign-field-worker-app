@@ -97,6 +97,7 @@ export 'models/oplog/oplog_entry.dart' show OpLogEntry;
 export 'models/oplog/oplog_entry.dart';
 export 'models/project_type/project_type_model.dart';
 export 'utils/constants.dart' hide EntityPlurals;
+export 'utils/entity_type_name.dart';
 export 'utils/utils.dart';
 
 // The `part` directive is used to split the library into multiple files.

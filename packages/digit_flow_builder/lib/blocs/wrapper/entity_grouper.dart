@@ -9,11 +9,11 @@ class EntityGrouper {
 
   EntityGrouper(this._resolver);
 
-  /// Groups a list of entities by their runtime type name.
+  /// Groups a list of entities by their canonical model name.
   Map<String, List<dynamic>> groupEntitiesByType(List<EntityModel> entities) {
     final map = <String, List<dynamic>>{};
     for (final entity in entities) {
-      final typeName = entity.runtimeType.toString();
+      final typeName = entityTypeName(entity);
       map.putIfAbsent(typeName, () => []).add(entity);
     }
     return map;
