@@ -1,8 +1,11 @@
 # Security Enhancements Release Notes
 
-**Version:** 2.2.110+110  
-**Release Date:** September 3, 2026  
+**Version:** 2.2.111+111  
+**Release Date:** September 4, 2026  
 **Supersedes:** the separate 1.8.6+6 and 1.8.7+7 notes, consolidated here
+
+> 2.2.110 is the version this work was built *on top of*, not the one that
+> carries it. These mitigations first ship in 2.2.111.
 
 ---
 

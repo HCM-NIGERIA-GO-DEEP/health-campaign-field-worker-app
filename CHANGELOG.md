@@ -1,5 +1,48 @@
 # Changelog
 
+## 2.2.111 — 2026-09-04
+
+_Security release. The five VAPT mitigations were already present; this release makes each one selectable, verifiable and survivable in the field, and fixes three defects in them. Full detail in `SECURITY_RELEASE_NOTES.md`; the pinning design and its trade-offs in `SSL_PINNING.md`._
+
+**SSL pinning (`lib/security/network/ssl_pinning.dart`, `assets/certificates/tls_cert.crt`)**
+
+- The pinned anchor moved from the server leaf to its issuing CA (`Sectigo Public Server Authentication CA DV R36`, expires 21 Mar 2036). Pinning fails closed, and a leaf expires within months, so every certificate renewal would have taken every installed build unable to reach the API at all — field devices do not update on demand, making that an availability incident rather than a security one. Routine leaf renewal now needs no app change; only a change of CA does. The cost is that trust widened from one certificate to one CA, which is stated rather than glossed: hostname verification still applies to the leaf, and abusing the pinned DV CA would require control of `campaigns.afro.who.int`.
+- The certificate that shipped previously had **expired on 17 Apr 2026** and was issued for `kebbi-hcm-uat.digit.org`, a host unrelated to the configured `BASE_URL`. Pinning had no test, which is how it went unnoticed.
+- A missing or malformed certificate no longer throws during startup. `main.dart` awaits `enableSSLPinning()` before the UI exists and `background_service.dart` does the same in the sync isolate, so an unparseable asset previously failed the app to launch and killed sync silently. The failure is now recorded on `AppSecurity.sslPinningFailure` and a client that refuses every request is returned — `badCertificateCallback` blocks TLS and `connectionFactory` fails before a socket opens, which also blocks cleartext. Deliberately *not* implemented: falling back to the default client, which would silently restore system and user CA trust and turn a packaging mistake into an undetected loss of pinning.
+- Added `tools/security/rotate_pinned_cert.sh`, which fetches the live chain, resolves the requested anchor by walking issuer links rather than trusting chain order, and refuses to write an anchor that does not validate the live server using the app's own semantics (`-partial_chain`, system store excluded). `--add` produces a bundle trusting both the outgoing and incoming CA for a CA migration, since a pin cannot be pushed to an installed app and the release must therefore precede the server switch.
+
+**Selectable mitigations (`lib/security/`)**
+
+- `AppSecurity` exposed only a `low`/`medium`/`high` dial. Each mitigation is now selectable individually via `AppSecurityFeature`, with every device-integrity layer and SSL pinning gated on its own feature. Level presets preserve prior behaviour exactly.
+- `AppSecurityFeature.isRuntimeEnforced` separates what Dart can enforce from what the build decides. Code obfuscation, component export and platform hardening are properties of the APK, so selecting one is a declaration of intent that `verifyBuildTimeMitigations()` checks against the shipped artifact via a new `auditBuildConfiguration` channel method — reporting `minifyEnabled` (through an injected `IS_MINIFIED` `buildConfigField`, since R8 leaves no queryable runtime flag), `debuggable`, `allowBackup`, cleartext policy and unguarded exported components. Offering runtime toggles that silently do nothing would have been worse than not offering them.
+- Security code moved out of the `lib/` root, the `lib/utils/` grab bag and `lib/data/remote_client.dart` into a single `lib/security/` module: two files carrying eight responsibilities became fourteen with one each. Detection no longer decides how to respond, and no longer reads the environment.
+
+**Device integrity defects fixed (`lib/security/integrity/`)**
+
+- A plugin failure no longer terminates the app. Any exception from the root-detection library became an `unknown` threat, which failed the pass and reached `exit(0)` in production — so a `MissingPluginException` or an unsupported OEM device killed the app, with no log because `debugPrint` is silenced at `high`. Native probes now return `null` for "could not run", which is reported as an unavailable check and never escalated into evidence of tampering.
+- Threat response became an injectable policy (`exitApp`, `restrict`, `reportOnly`) instead of a line inside detection. `restrict` is reachable for the first time: the compromised flag is set before any termination, where it previously sat after an unconditional `exit(0)` and could never execute.
+- The threat "checksum" mixed in `DateTime.now()`, so it could never be compared with anything despite being labelled for integrity verification. Replaced by a deterministic, order-independent digest of the threat set, documented as a server-side deduplication key and explicitly not a proof.
+- Periodic re-checks use a cancellable timer rather than an unbreakable `while (true)` loop, and no longer block startup. `envConfig.variables` reads are guarded, since it throws before `initialize()`.
+- Removed dead code: an unused root-detection BLoC and wrapper (210 lines, every line commented out) and a stale generated file.
+
+**Code obfuscation (`android/app/proguard-rules.pro`)**
+
+- `proguard-rules.pro` carried both `-keep,allowobfuscation class com.digit.hcm.SecurityHelper` and a blanket `-keep class com.digit.hcm.** { *; }` retained from an earlier merge. The blanket rule is more permissive and wins, so `Lcom/digit/hcm/SecurityHelper;` shipped **readable in the DEX**, defeating the narrower rule and contradicting the warning in that same file against blanket keeps. Removed and confirmed against a rebuilt release APK: `SecurityHelper` is renamed while `MainActivity`, `LauncherActivity` and `LocationService` keep the names the manifest resolves by.
+
+**Security test tooling (`tools/security/`)**
+
+- Coverage went from 9 checks to 31, with a new `test_ssl_pinning.sh` for the mitigation that had none. Outcomes now include SKIPPED and INCONCLUSIVE, and a mitigation that could not be verified reports "Not verified" rather than passing — unverified is not the same as safe, and the previous aggregation could only say passed or failed.
+- Several checks were reporting VULNERABLE on conditions they could not observe: a commented-out XML attribute read as configuration, an `aapt2` attribute id matched as a value, a Dart string literal mistaken for a retained symbol, and a chain check that passed against any CA because it consulted the system trust store. Each now has a negative control.
+- `--dart-define=SECURITY_TEST_MODE=true` builds an APK whose detection is observable from outside — log suppression off and response mode `reportOnly` — because a shipped build silences `debugPrint` and calls `exit(0)`, which is correct for production and made the root-detection tests report VULNERABLE while detection was in fact firing. It defaults to false and must never be set for a build that ships.
+
+**Known gaps carried into this release**
+
+- The release build type still uses `signingConfig signingConfigs.debug` with a TODO. A conditional release config driven by `key.properties` exists but is not referenced. This must be resolved before publishing.
+- The Kotlin and Gradle changes were not compiled and the Dart tests were not executed, because `flutter pub get` fails on a pre-existing `bloc_test` / path-pinned `dart_mappable_builder` conflict. Run `melos bootstrap` first.
+- `DioClient.disableSSLPinning()` is never called and remains a live way to silently unpin the app.
+- Repackaging detection stays inert until an expected signing certificate is supplied via `AppSecurity.configure(expectedAppSignature:)`.
+- A pin cannot be pushed to an installed app, and an expired anchor cannot be recovered server-side — BoringSSL rejects an expired trust anchor, confirmed with a purpose-built expired CA against a local TLS server. Prevention is the control.
+
 ## 2.2.110 — 2026-09-01
 
 _(includes 2.2.107 and 2.2.109; 2.2.108 was never cut — the version bump went straight from `2.2.107+107` to `2.2.109+109` in a single commit)_
