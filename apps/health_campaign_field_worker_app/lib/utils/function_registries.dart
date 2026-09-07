@@ -24,6 +24,7 @@ class FunctionRegistries {
     _registerTransactionFunctions();
     _registerFacilityFunctions();
     _registerStockFunctions();
+    _registerRoleFunctions();
     _registerViewTransactionFunctions();
   }
 
@@ -286,6 +287,28 @@ class FunctionRegistries {
           return 'error';
         default:
           return 'default';
+      }
+    });
+  }
+
+  void _registerRoleFunctions() {
+    // True when the logged-in user holds any of the given role codes.
+    // Codes are matched case-insensitively against RolesType values.
+    // Usage: "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true"
+    FunctionRegistry.register('hasRole', (args, stateData) {
+      final requestedRoles = args
+          .expand((arg) => arg is List ? arg : [arg])
+          .where((arg) => arg != null)
+          .map((arg) => arg.toString().trim().toUpperCase())
+          .where((code) => code.isNotEmpty)
+          .toSet();
+      if (requestedRoles.isEmpty) return false;
+
+      try {
+        return context.loggedInUserRoles
+            .any((role) => requestedRoles.contains(role.code.toUpperCase()));
+      } catch (_) {
+        return false;
       }
     });
   }
