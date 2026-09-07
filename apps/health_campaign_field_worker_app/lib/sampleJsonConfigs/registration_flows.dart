@@ -484,7 +484,7 @@ final dynamic sampleFlows = {
           "type": "template",
           "label": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_ACTION_BUTTON_LABEL_1",
           "format": "button",
-          "visible": true,
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
           "onAction": [
             {
               "actions": [
@@ -1693,7 +1693,7 @@ final dynamic sampleFlows = {
           "label": "DOWNLOAD_BENEFICIARY_IDS",
           "format": "actionPopup",
           "visible":
-              "{{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==false",
+              "{{fn:hasRole('REGISTRAR')}} == true && {{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==false",
           "disabled": "false",
           "fieldName": "beneficiaryIdMinCheck",
           "properties": {
@@ -1779,6 +1779,8 @@ final dynamic sampleFlows = {
           "label": "REGISTER_NEW_BENEFICIARY",
           "format": "button",
           "fieldName": "registerNewBeneficiary",
+          "visible":
+              "{{fn:hasRole('REGISTRAR')}} == true && {{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==true",
           "onAction": [
             {
               "actions": [
