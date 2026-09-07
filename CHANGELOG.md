@@ -1,5 +1,71 @@
 # Changelog
 
+## 2.2.110 — 2026-09-01
+
+_(includes 2.2.107 and 2.2.109; 2.2.108 was never cut — the version bump went straight from `2.2.107+107` to `2.2.109+109` in a single commit)_
+
+**Bulk entity creation (`CrudService`, `LocalRepository`, `CrudExecutor`)**
+
+- `CrudService.createEntities` no longer creates entities one-by-one. It now groups them by runtime type and, for any group with more than one entity whose repository is a `LocalRepository`, routes the group through a new `LocalRepository.bulkCreateEntities` (a `List<EntityModel>`-accepting wrapper that casts to `List<D>` and delegates to the existing `bulkCreate`), falling back to individual `create` calls when `bulkCreate` throws `UnimplementedError`. Per-entity failures are also no longer fatal to the rest of the batch: each failure is collected and a single aggregate `Exception` is thrown after every entity has been attempted, where previously the first failure aborted the loop.
+- `CrudExecutor` (the `CREATE_EVENT` action) was switched from dispatching `CrudEventCreate` on `CrudBloc` — fire-and-forget — to `await`ing `CrudBlocSingleton().crudService.createEntities(...)` directly, so persistence completes before later actions in the same chain (e.g. `NAVIGATION`) tear the screen down. Two consequences of bypassing the bloc: no `CrudState.loading`/`persisted`/`error` is emitted for this path any more (nothing in the tree listens for them on the create path, and the analytics `*_complete` events are emitted by `FlowCrudBloc`, not `CrudBloc`, so neither is lost), and the aggregate exception from `createEntities` is caught and only `debugPrint`ed by `ActionExecutorRegistry.execute`, which then returns the original context data and lets the remaining actions run. A failed create is therefore still silent to the user — the behavior this change actually buys is ordering, not error surfacing.
+- As shipped in 2.2.107 the bulk path wrote no oplog entries. `LocalRepository.create` queues an `OpLogEntry` via `createOplogEntry`, but `bulkCreate` deliberately does not (it exists for sync-*down*, where rows already exist on the server), and the new wrapper simply delegated to it. Any locally created batch of two or more same-type entities — the multi-task `DELIVERED` submission this feature was written for — was written to the local DB and never queued for sync-up, so it would never reach the server. 2.2.109 fixes this: `bulkCreateEntities` now takes a `createOpLog` flag (default `true`) and writes one `create` oplog entry per entity after the batch insert. The commit message ("enhance `bulkCreateEntities` to log operations") reads as instrumentation; it is a sync data-loss fix for a regression this release introduced three commits earlier, and any build cut at 2.2.107 or 2.2.108 carries it.
+- Two smaller asymmetries remain between the bulk and single-entity paths: `bulkCreateEntities` is not wrapped in `retryLocalCallOperation` the way each repository's `create` is, and its oplog writes happen after — not inside — the Drift batch, so a crash between the two leaves persisted records with no sync-up entry.
+
+**RI age eligibility (`checkRIEligibility`, new `ri_age_eligibility.dart`)**
+
+- The RI upper age bound no longer comes from `projectType.validMaxAge ?? 59`. It is now a hard 59 months, overridable only by an optional 4th argument to `fn:checkRIEligibility(dob, tasks, cycle, maxAgeMonths)`, resolved through a new import-free helper file (`resolveRiMaxAgeMonths`, `isRiAgeEligible`, `riDefaultMaxAgeMonths = 59`) that tolerates ints, numeric strings, leftover `{{ }}` templating and surrounding quotes, and falls back to 59 for anything absent, unparseable or non-positive.
+- The rationale given is that `validMaxAge` encodes SMC aged-out continuation policy and can exceed 59 (Plateau SMC-RI carried 64, exposing RI to 60–64-month-olds). Worth noting the change cuts both ways: for any campaign whose `validMaxAge` is *below* 59 the ceiling has now been raised to 59 rather than lowered, since the campaign value is no longer consulted at all. No config in this repo passes the 4th argument — every `fn:checkRIEligibility` call in `registration_flows.dart` uses 3 args — so until MDMS configs are updated, every campaign gets exactly 0–59 inclusive.
+- `resolveRiMaxAgeMonths` does not clamp its result at 59, so a config that passes a larger 4th argument can still widen RI eligibility past 59; what the change removes is the *implicit* widening via the SMC project type.
+- The new file's doc comment states it is kept import-free "so unit tests compile"; no tests were added, and `packages/digit_flow_builder` has no `test/` directory.
+
+**Stock metrics (`stock_calculation_utils.dart`)**
+
+- `_processDistributorStock` now returns immediately when the record's status is `REJECTED`, so rejected transactions are excluded from a distributor's stock figures entirely. The dispatched-sender path (`_categorizeDispatchedStock`) already had this guard; the distributor path did not.
+- The practical effect is mostly on rejected *returns*: a distributor's `RETURNED` record that the warehouse rejected previously still added to `stockReturned` (plus wastage/partial-used) and so was deducted from stock in hand, leaving the distributor's balance short of stock they never handed over. It now stays in hand until the return is accepted.
+- The guard was not extended to the non-distributor receiver path: `_categorizeReceivedStock` takes no `status` argument at all, so a `REJECTED` record still counts as received stock for facility/warehouse users. `status` here is read from the record's `additionalFields` (`_getAdditionalFieldValue(stock, 'status')`), not a top-level model field, so records that carry no `status` field resolve to `''` and are unaffected either way.
+
+## 2.2.106 — 2026-08-20
+
+**Eligibility / cycle logic in `function_registry.dart`**
+
+- The lastModifiedTime-based cycle-derivation logic inside `checkEligibilityForAgeAndSideEffect` was extracted into a standalone `getTaskCycleIndex(task, projectType)` helper, with no change to the derivation logic itself.
+- Task iteration in `checkEligibilityForAgeAndSideEffect` was changed back from `tasks.reversed.toList()` (newest-first, introduced in 2.2.105) to plain `tasks` (oldest-first), reversing that prior release's iteration-order change.
+- The early-eligible path — where an out-of-cycle, out-of-age task with `administrationSuccess` status made the function return `true` immediately — was removed from the main disqualification loop and moved into a new second loop that runs afterward and only considers tasks whose `additionalFields` records `flow: "smcDone"`. For tasks without that flow marker, an out-of-cycle, out-of-age `administrationSuccess` status no longer makes the beneficiary eligible.
+
+## 2.2.105 — 2026-08-18
+
+_(includes 2.2.102, 2.2.103, 2.2.104)_
+
+**Analytics integration (new feature, ships disabled by default)**
+
+- A new `digit_analytics` package was created, providing an Isar-backed event queue (`AnalyticsQueueManager`, modeled on the existing sync oplog but kept separate from it) and an `AnalyticsService.instance.logEvent(...)` API that is a no-op unless analytics is enabled.
+- `digit_firebase_services` gained `initializeAnalytics`/`logFirebaseAnalyticsEvent` wrappers, splitting the previous single `initialize()` call into separate core/Crashlytics/Analytics steps.
+- The app was wired up to log `login`/`logout` events, per-screen `screen_view` events (including a fix so `digit_flow_builder`'s dynamic flow pages — which all otherwise share one route name — log distinguishable per-step screen names), and completion events for every persisted entity type (registrations still group into one `registration_complete` event; other entity types now each fire their own auto-derived `<entity>_complete` event). A new `AnalyticsSyncService.flushPendingEvents()` pushes the local queue to Firebase Analytics on reconnect and during regular sync-up.
+- A debug-only analytics event viewer/management page was added, reachable from Home and hidden in production release builds.
+- One commit in this sequence, described only as adding the event viewer, also silently flipped the `enableAnalytics` default from `false` to `true` in both `constants.dart` and `background_service.dart` — with no mention of that change in its commit message. Two follow-up commits explicitly titled "disable analytics by default" flipped both fallbacks back to `false`, so by 2.2.105 analytics remains off unless the remote `firebaseConfig.enableAnalytics` MDMS config explicitly turns it on — the same behavior as before this feature was built, net of the accidental one-commit regression in between.
+
+**Campaign ID configuration**
+
+- The SMC-RI and ORS-Zinc campaign IDs in `ProjectBloc` are no longer hardcoded strings; they now read from new `SMC_RI_CAMPAIGN_ID`/`ORS_ZINC_CAMPAIGN_ID` environment variables, falling back to the event's own `referenceID` when the environment value is empty.
+
+**Eligibility / cycle logic in `function_registry.dart`**
+
+- `checkEligibilityForAgeAndSideEffect` (SMC) no longer looks up `cycleIndex` from the task's `additionalFields`; it now always derives the task's cycle from `lastModifiedTime` against the project's cycle date ranges. This change was made only in this function — `checkRIEligibility` still uses the fields-based lookup, so SMC and RI eligibility now resolve their task's cycle differently.
+- A block that normalized each task to a `Map` before use was removed. It was confirmed dead code: the tasks list already arrives pre-normalized as `List<Map<String, dynamic>>`, so the removed branches could never run. This is a pure cleanup with no behavior change, matching its commit message.
+- A change that made an out-of-cycle, out-of-age task with an `administrationSuccess` status immediately count as eligible was landed, then fully reverted the same day. The revert restores the tree to its pre-change state byte-for-byte — while it was live, the change was materially narrower than its commit message ("enhance... check") suggested: it required *both* a past-cycle administration-success record *and* a separate current-cycle administration-success record before returning eligible, rather than either being sufficient.
+- The final change in this release reverses the order in which a beneficiary's tasks are iterated (from oldest-first to newest-first) inside `checkEligibilityForAgeAndSideEffect`. Because the loop returns as soon as it hits a task matching one of several disqualifying or qualifying conditions, this is a real behavioral change, not a stylistic reorder: for a beneficiary whose task history contains multiple tasks that would independently trigger different outcomes (for example, a `beneficiaryDied` task from one cycle alongside an `administrationSuccess` task from another), which status wins now depends on iteration order, and that order was just flipped.
+
+**Stock / list view**
+
+- Stock and stock-reconciliation records shown outside an active delivery flow (e.g. from the Stock Reports screen on Home) are now filtered to the active cycle's date window, resolved via the currently selected project type rather than the delivery-flow singleton that isn't populated in that context. "Stock Received" rows are additionally required to have an `ACCEPTED` status to be counted.
+- A logging call that printed every CRUD bloc state transition — including full search-result graphs on each pagination page load, which could take upward of ten seconds — was silenced for CRUD blocs, since it was starving the loading indicator from ever painting.
+- Top-level list-view bodies in the dynamic flow layout renderer were switched from an eagerly built `Column` of every loaded item to a lazily built `SliverList`, giving genuine list virtualization instead of rendering the whole loaded set up front.
+- A minimum 350ms display duration was added for the loading indicator, and the modal loader is now driven directly by a value listener rather than through `build()`, because a fast local-DB pagination fetch could otherwise show and hide the loader within the same frame and never paint it.
+
+**JsonFormBuilder**
+
+- Dynamically shown/hidden form fields in `JsonFormBuilder` are now keyed by field name (`ValueKey(subName)`). Previously, with no key, Flutter's positional list reconciliation could let one field inherit another field's live widget state — including its form control — whenever a visibility change shifted list positions. This is a real state-reuse bug fix, not merely, as the commit message put it, "improved widget identification."
+
 ## 2.2.101 — 2026-08-05
 
 _(includes 2.2.99, 2.2.100)_
@@ -23,7 +89,7 @@ _(includes 2.2.99, 2.2.100)_
 
 ## 2.2.98 — 2026-07-28
 
-- The SMC-RI campaign ID hardcoded in `ProjectBloc` was corrected from `CMP-2026-06-08-000333` to `CMP-2026-06-29-000423`. The two commits that make this change look like duplicates going by their messages, but the second one is fixing a wrong value the first one shipped — it isn't a no-op.
+- The two commits that make this change look like duplicates going by their messages, but the second one is fixing a wrong value the first one shipped — it isn't a no-op.
 - A `'RI': 'riQ1'` symptom-to-checklist key mapping was added so that `computeReferralButtonLabel` resolves correctly for RI referrals instead of falling through unmapped.
 
 ## 2.2.97 — 2026-07-28
@@ -70,7 +136,6 @@ _(includes 2.2.86)_
 - `disableEdit` was extended with the same current-cycle matching, reusing (rather than duplicating) the existing "referral matches current cycle" check, which was moved earlier in the function to make that reuse possible.
 - `resolveReferralReasons` now short-circuits to `['RI']` whenever `navigationData['sourceFlow'] == 'RI_CHECKLIST'`, bypassing the normal reason-derivation logic for that flow.
 - Address transformer mappings for latitude, longitude, and location accuracy were switched from `address.latLng[0]/[1]` to `__context:latitude/longitude/locationAccuracy`. This also fixed a pre-existing bug the commit message didn't mention: location accuracy had been wrongly mapped to the same value as longitude (`latLng[1]`). A follow-up commit, described as "update address location fields," applies that identical fix to two more transformer blocks — it reads like a new feature but is really the same fix extended to more places.
-- The hardcoded ORS-Zinc campaign ID was bumped to `CMP-2026-07-03-000424` — a configuration value swap, not a logic change.
 
 ## 2.2.84 — 2026-07-03
 
