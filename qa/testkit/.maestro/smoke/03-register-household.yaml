@@ -3,11 +3,16 @@
 # Test data: head named "QATEST <RUN_STAMP> HEAD" (RUN_STAMP injected by run-maestro.ps1).
 #
 # Selector strategy (see patches/README.md):
-#   - FORM fields have deterministic ids (= config fieldName): memberCount,
-#     nameOfIndividual, isHeadOfFamily, dobPicker, gender... (via the
-#     forms-engine JsonFormBuilder wrap, patch 07 - REQUIRES an APK built
-#     after 2026-09-03; the location page's readonly/custom fields stay
-#     id-less, use form_action there)
+#   - FORM fields are addressed by their CONTROL id, not the config fieldName.
+#     JsonFormBuilder still wraps each field in Semantics(identifier: fieldName),
+#     but on any field whose control got its own `container: true` id (patch 07:
+#     text/number `_input`, checkbox `_checkbox`, radio `_<code>`) that outer
+#     node is GONE from the device tree - run -1135 proved it for
+#     nameOfIndividual. Bare fieldName ids survive only where no control id was
+#     added: memberCount (readonly stepper), dateOfRegistration (date),
+#     deliveryComment (dropdown), resourceCard (custom). The location page's
+#     readonly/custom fields stay id-less entirely, use form_action there.
+#     REQUIRES an APK built after 2026-09-03.
 #   - TEMPLATE buttons have ids ending in their config fieldName - but the
 #     register/addMember buttons are DUAL config variants (see comments below;
 #     learned from run -1745, where .*_registerBeneficiary matched nothing).
@@ -181,9 +186,18 @@ tags:
 - tapOn:
     id: "form_action"
 # --- Beneficiary (head) Details ---
+# Gate on the CONTROL id, never the field id: giving the input its own
+# `container: true` node (patch 07) DELETED the field-level node on this page.
+# Run -1432's log resolved `resource-id=nameOfIndividual` at [98,861][1342,1169];
+# run -1135's hierarchy for the same page has no such node at all - only
+# `nameOfIndividual_input` at [510,861][1342,1001] - and every label on the page
+# has collapsed into one merged block whose resource-id is "/". Maestro matches
+# `id:` on the FULL string (that is exactly why the bare name did not fall back
+# to `nameOfIndividual_input`), so the old gate could only ever time out: run
+# -1135 sat here for 20s on a fully rendered, correct page.
 - extendedWaitUntil:
     visible:
-      id: "nameOfIndividual"
+      id: "nameOfIndividual_input"
     timeout: 20000
 - tapOn:
     id: "nameOfIndividual_input"
@@ -232,11 +246,28 @@ tags:
 - tapOn:
     id: "form_action"
 # --- Registered ---
-# Config: the beneficiaryDetails page navigates to the 'beneficiary-details'
-# TEMPLATE (the member summary screen, body field detailsCard) - accept that,
-# a success card, or the household overview (whose Add Member swaps to
-# beneficiaryIdMinCheck on low-ID-pool devices) as completion proof.
+# Run -1245 device truth: submitting beneficiaryDetails lands on the
+# householdOverview TEMPLATE (config flow 4), whose body children are
+# householdDetails(0), listViewMembers(1), addMember(2), beneficiaryIdMinCheck(3)
+# - ids `householdOverview::householdOverview_<ts>_<fieldName>`. The previous
+# regex could not match a SUCCESSFUL registration: `detailsCard` belongs to the
+# separate `beneficiaryDetails` TEMPLATE (flow 2) which never rendered, and
+# `addMember`/`beneficiaryIdMinCheck` sit BELOW the member list, off-screen on
+# arrival (absent from the -1245 hierarchy entirely). Gate on the two children
+# that are always in view instead; keep successCard/detailsCard for campaigns
+# whose config routes to the acknowledgement or summary screen.
+# NOTE for a human: the config says page order 5 navigateTo
+# {'name': 'beneficiary-details', type template}, but the device went to
+# householdOverview - worth confirming against the MDMS-served config.
 - extendedWaitUntil:
     visible:
-      id: "(.*_successCard|.*_addMember|.*_beneficiaryIdMinCheck|.*_detailsCard)"
+      id: ".*_(householdDetails|listViewMembers|successCard|detailsCard)"
     timeout: 30000
+# Data proof, not just page proof. TC-003's Expected requires the head to be
+# "visible afterwards: on the household overview" - the old id-only assert never
+# checked that, so a household saved under a corrupted name would have passed.
+# Maestro matches the FULL string, so anchor with .*: the card renders
+# "<nameOfIndividual> <familyname>" = "QATEST <stamp> HEAD QATEST", and the
+# labelPairList node carries it inside a multi-line blob (hence (?s)).
+- assertVisible:
+    text: "(?s).*QATEST ${RUN_STAMP} HEAD.*"

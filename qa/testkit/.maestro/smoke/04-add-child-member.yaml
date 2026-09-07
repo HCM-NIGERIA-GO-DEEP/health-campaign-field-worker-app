@@ -54,29 +54,51 @@ tags:
 # search then fails loudly at the result wait below.
 # Re-TAP before retyping: if the original tap missed (run -1128), the field is
 # not focused and eraseText/inputText would be swallowed too.
+# Close the IME BEFORE the verify guard: while the keyboard is up Maestro sees
+# no Flutter nodes at all (run -1314), so `notVisible` below would be trivially
+# true and the guard would retype on every run. See close-keyboard.yaml.
+- runFlow: ../common/close-keyboard.yaml
 - runFlow:
     when:
       notVisible:
-        text: "QATEST ${RUN_STAMP}"
+        text: "(?s).*QATEST ${RUN_STAMP}.*"
     commands:
       - tapOn:
           id: ".*_searchBar"
       - eraseText
       - inputText: "QATEST ${RUN_STAMP}"
+      # The re-tap above reopened the keyboard - close it again.
+      - runFlow: ../common/close-keyboard.yaml
 - extendedWaitUntil:
     visible:
-      text: "QATEST ${RUN_STAMP} HEAD.*"
+      text: "(?s).*QATEST ${RUN_STAMP} HEAD.*"
     timeout: 15000
+# Open the household from its result card. Config flow 6 searchBeneficiary:
+# listView > memberCard > detailsRow > { headOfHousehold (textTemplate),
+# openMemberCard (BUTTON, label OPEN) } + memberTable. The card's action is that
+# Open button - tapping the NAME text is not a navigation affordance. The search
+# string is the unique RUN_STAMP head name so exactly one card is expected, and
+# the assert above proves it is the right household before we open it.
 - tapOn:
-    text: "QATEST ${RUN_STAMP} HEAD.*"
+    id: ".*_openMemberCard"
 # Household overview. Add Member is TWO mutually-exclusive config variants
 # (REGISTRATION.json, proven pattern in run -1745): fieldName addMember when
 # the unique-beneficiary-ID pool >= minimum, fieldName beneficiaryIdMinCheck
 # (same visible label) when below; the low-pool popup's skip-and-continue
 # button (fieldName clearFilter) proceeds to the same ADD_MEMBER form.
+# Gate on the overview's always-visible top children first, THEN scroll the
+# button into view: addMember is body child #2, BELOW listViewMembers, and run
+# -1245's hierarchy (1 member) had no addMember node at all - it is off-screen
+# on arrival and Maestro's tapOn does NOT auto-scroll. scrollUntilVisible fails
+# loudly if the button genuinely is not on the page.
 - extendedWaitUntil:
     visible:
+      id: ".*_(householdDetails|listViewMembers)"
+    timeout: 20000
+- scrollUntilVisible:
+    element:
       id: ".*_(addMember|beneficiaryIdMinCheck)"
+    direction: DOWN
     timeout: 20000
 - tapOn:
     id: ".*_(addMember|beneficiaryIdMinCheck)"
@@ -84,9 +106,11 @@ tags:
     id: ".*clearFilter"
     optional: true
 # --- Member Details ---
+# Control id, not field id - the field-level `nameOfIndividual` node no longer
+# exists once the input carries its own id (see 03 for the run -1432/-1135 proof).
 - extendedWaitUntil:
     visible:
-      id: "nameOfIndividual"
+      id: "nameOfIndividual_input"
     timeout: 20000
 - tapOn:
     id: "nameOfIndividual_input"

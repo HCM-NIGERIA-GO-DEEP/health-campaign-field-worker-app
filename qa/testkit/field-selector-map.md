@@ -15,10 +15,12 @@ REGISTRATION.json  properties[].type + .format
 ```
 
 `JsonFormBuilder.build` wraps **every** field in
-`Semantics(identifier: formControlName)`. That id therefore lands on the field's
-**label block**, not on the control. For simple inputs the two coincide; for
-composite controls (radio, checkbox) they do not, and that distinction is what
-broke runs -1214 and -1315.
+`Semantics(identifier: formControlName)`. Where that wrap is the only annotation
+in the field, its id lands on the field's **label block**, not on the control —
+for simple inputs the two coincide; for composite controls (radio, checkbox)
+they do not, and that distinction is what broke runs -1214 and -1315. Where the
+control now carries its own id, the wrap produces no node at all (see below),
+which is what broke run -1135.
 
 ## The rule that matters
 
@@ -37,21 +39,42 @@ Naming convention for those control-level ids, all added by patches 05/07:
 | dropdown option row | `option_<code>` |
 | dob inner inputs | `dob_date`, `dob_years`, `dob_months` |
 
-The bare `<fieldName>` id still exists on the field block — keep using it for
-"has this page arrived" waits, never for taps or typing.
+### Adding a control id DELETES the field id — do not wait on `<fieldName>`
+
+Once a control carries its own `Semantics(..., container: true)` id, the
+enclosing `Semantics(identifier: formControlName)` **stops producing a node at
+all** on device. Both ids do not coexist:
+
+| run | same page, same field | tree |
+|---|---|---|
+| -1432 (before `_input`) | `resource-id=nameOfIndividual`, clickable, `[98,861][1342,1169]` (label+box+helpText) | field id present, no control id |
+| -1135 (after `_input`) | `resource-id=nameOfIndividual_input`, `[510,861][1342,1001]` (box only) | field id **absent**; all six field labels merged into one block whose `resource-id` is `/` |
+
+Maestro matches `id:` against the **whole** string, so a stale `<fieldName>`
+gate does not silently fall through to `<fieldName>_input` — it times out on a
+perfectly good page (run -1135, flow 03, 20s at a rendered Caregiver's Details).
+
+> **Gate every page on the control id you are about to use.** Only fall back to
+> a bare `<fieldName>` for fields in the "no control id" column below.
+
+Fields that still expose a bare `<fieldName>` id (no control id was added):
+`integer`/`numeric` steppers, `date`, `dropdown`, `select`, `custom`.
+Fields that do **not**: `string`/`text` and `mobileNumber` (`_input`),
+`number` (`_input`), `checkbox` (`_checkbox`), `radio` (`_<enumCode>`).
 
 ## Field map
 
 | config `type`/`format` | builder | widget | Accessibility shape | Maestro recipe | Evidence |
 |---|---|---|---|---|---|
-| `string`/`text`, `mobileNumber`, `integer`/`text`, and the default branch | `JsonSchemaStringBuilder`, `JsonSchemaNumberBuilder` | `DigitTextFormInput` | typeable (`isEditable` defaults true in `BaseDigitFormInput`, never overridden), but the field id covers label + box + **helpText row**: with a helpText the block is two rows tall and its centre lands on the seam BELOW the box | `tapOn id: <fieldName>_input` (needs patch 05(g)) → `eraseText` → `inputText` → `hideKeyboard` is safe. Keep `<fieldName>` for the page-arrival wait | device run -1432 + tests |
+| `string`/`text`, `mobileNumber`, `integer`/`text`, and the default branch | `JsonSchemaStringBuilder`, `JsonSchemaNumberBuilder` | `DigitTextFormInput` | typeable (`isEditable` defaults true in `BaseDigitFormInput`, never overridden), but the field id covers label + box + **helpText row**: with a helpText the block is two rows tall and its centre lands on the seam BELOW the box | `tapOn id: <fieldName>_input` (needs patch 05(g)) → `eraseText` → `inputText` → `hideKeyboard` is safe. Wait on `<fieldName>_input` too — the bare `<fieldName>` node is gone | device runs -1432 and -1135 + tests |
 | `integer`/`numeric` | `JsonSchemaIntegerBuilder` | `DigitNumericFormInput` | **read-only stepper.** `id=fieldName` on a NON-clickable container whose `text` is the value; two bare clickable nodes with `accessibilityText` `-` and `+`. `editable` defaults **false** and the builder never passes it | `repeat while notVisible {id: fieldName, text: N}` → `tapOn text: "\\+"`, then `assertVisible {id, text}`. **Never** `inputText`, and **never** `hideKeyboard` after it | device run -1315 + code |
 | `string`/`radio`, `boolean`/`radio` | `JsonSchemaRadioBuilder` | `RadioList` | label + all option labels merge into ONE non-clickable block; each circle is a bare clickable node | `tapOn id: <fieldName>_<enumCode>` (needs patch 05(e)) | device run -1214 + tests |
 | `boolean`/`checkbox` | `JsonSchemaCheckboxBuilder` | `DigitCheckbox` | box and label are SIBLINGS; field id lands on a block spanning both whose centre is on the text | `tapOn id: <fieldName>_checkbox` (needs patch 05(f)) | semantics probe 2026-09-03 + tests |
 | `string`/`select` | `JsonSchemaSelectionBuilder` | `SelectionCard` | each option chip is a SINGLE node carrying **both** the label and the tap action | `tapOn text: "<localized option label>"` — no id needed, and do **not** tap the field id first | semantics probe 2026-09-03 |
 | `string`/`dropdown` | `JsonSchemaDropdownBuilder` | `DigitDropdown` | closed field, then overlay rows with `id=option_<code>` | tap the field, then `tapOn {id: "option_.*", text: value}` | device run -1654 |
 | `string`/`dob` | `JsonSchemaDOBBuilder` | `DigitDobPicker` | one card = one form field; inner inputs carry `dob_date` / `dob_years` / `dob_months` | type into `dob_years` / `dob_months` (real text inputs — no calendar dialog needed) | code-read; **ids unverified on device** |
-| `string`/`locality`, any `readOnly: true` | `JsonSchemaStringBuilder` | `DigitTextFormInput` (readOnly) | `id=fieldName`, value in `text`, not typeable | read/assert only; auto-filled | device run -1315 (`dateOfRegistration`) |
+| `string`/`locality`, `string`/`text` with `readOnly: true` | `JsonSchemaStringBuilder` | `DigitTextFormInput` (readOnly) | same as the `text` row above — `readOnly` changes only editability, not which node exists, so the id is `<fieldName>_input` and the bare `<fieldName>` is gone | read/assert on `<fieldName>_input`; auto-filled | code-read; **not device-confirmed** (`referredBy` in flow 07 is the first to exercise it) |
+| `string`/`date` with `readOnly: true` | `JsonSchemaDatePickerBuilder` | date input | `id=fieldName`, value in `text`, label in `hintText`, not typeable | read/assert only; auto-filled | device run -1432 (`dateOfRegistration`) |
 | `string`/`latLng` | `JsonSchemaLatLngBuilder` | custom | **no semantics at all** | never select it; advance with `form_action` | device run -0108 |
 | `dynamic`/`custom` | app `components` map | app widget | unknown per component | treat as unverified; make the tap `optional: true` and assert something else | `resourceCard`, `healthFacility` still unverified |
 | `hidden: true` | not built (early return) | — | absent from the tree | never reference it | code-read |

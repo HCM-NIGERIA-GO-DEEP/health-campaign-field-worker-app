@@ -1,0 +1,36 @@
+# SHARED: close the soft keyboard, but ONLY when it is actually open.
+# Included via `runFlow: ../common/close-keyboard.yaml`.
+# Lives OUTSIDE .maestro/smoke so the runner never executes it as a test.
+#
+# WHY IT EXISTS - an open IME hides the WHOLE app from Maestro.
+# Run -1314's flow-04 failure hierarchy (the assert on the search result) had
+# 206 nodes and not ONE of them was a Flutter node: only the status bar and the
+# Gboard window (android:id/parentPanel > inputArea > keyboard_holder > keys).
+# The app's window was absent entirely, so the result card could be neither
+# asserted nor tapped, and the flow died on a search that had actually worked -
+# the screenshot showed "QATEST <stamp>" correctly typed with results underneath
+# the keyboard. This is the same family as run -1437 (IME nodes matching the
+# flow's text regexes) but more severe: there is nothing of the app to match.
+#
+# WHY IT IS CONDITIONAL - hideKeyboard is a BACK press on Android.
+# Proven in run -1554 (logcat logged onBackKeyPressed on every hideKeyboard,
+# 3/3). An open IME swallows that BACK; with NO keyboard open it reaches the
+# app and POPS THE ROUTE - run -2252 ended flow 03 sitting back on "Select Your
+# Village" for exactly this reason, and run -1315 popped a form page the same
+# way. The search screens are the worst place to guess, because their
+# 400ms-debounced rebuild can auto-close the IME on its own between the typing
+# step and this one. Gating on the keyboard's presence makes a stray BACK
+# impossible.
+#
+# WHY THIS GATE ID - `android:id/inputArea` is the AOSP InputMethodService
+# framework id, so it is present whatever IME the device ships. Do NOT gate on
+# com.google.android.inputmethod.latin:* - that only matches Gboard, and QA
+# devices are not all emulators.
+appId: com.digit.hcm
+---
+- runFlow:
+    when:
+      visible:
+        id: "android:id/inputArea"
+    commands:
+      - hideKeyboard

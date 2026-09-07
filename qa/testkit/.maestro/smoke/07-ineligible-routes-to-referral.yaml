@@ -44,35 +44,55 @@ tags:
 - tapOn:
     id: ".*_searchBar"
 - inputText: "QATEST ${RUN_STAMP}"
+# An open IME hides every Flutter node from Maestro (run -1314) - close it
+# before the guard, or `notVisible` is trivially true. See close-keyboard.yaml.
+- runFlow: ../common/close-keyboard.yaml
 - runFlow:
     when:
       notVisible:
-        text: "QATEST ${RUN_STAMP}"
+        text: "(?s).*QATEST ${RUN_STAMP}.*"
     commands:
       - tapOn:
           id: ".*_searchBar"
       - eraseText
       - inputText: "QATEST ${RUN_STAMP}"
+      - runFlow: ../common/close-keyboard.yaml
+# Wait for the right card, THEN open it via its Open button (config flow 6:
+# memberCard > detailsRow > openMemberCard, label OPEN).
+- extendedWaitUntil:
+    visible:
+      text: "(?s).*QATEST ${RUN_STAMP} HEAD.*"
+    timeout: 15000
 - tapOn:
-    text: "QATEST ${RUN_STAMP} HEAD.*"
+    id: ".*_openMemberCard"
 # Add Member is TWO mutually-exclusive config variants (REGISTRATION.json,
 # proven pattern in run -1745): fieldName addMember when the unique-
 # beneficiary-ID pool >= minimum, fieldName beneficiaryIdMinCheck (same
 # visible label) when below; the low-pool popup's skip-and-continue button
 # (fieldName clearFilter) proceeds to the same ADD_MEMBER form.
+# Overview arrival on its always-visible top children, then scroll addMember in:
+# it is body child #2 below listViewMembers and was absent from run -1245's
+# hierarchy (off-screen); tapOn does NOT auto-scroll. See 04 for the same fix.
 - extendedWaitUntil:
     visible:
-      id: ".*_(addMember|beneficiaryIdMinCheck)"
+      id: ".*_(householdDetails|listViewMembers)"
     timeout: 20000
 # Add CHILD2 (eligible age - the blocking must come from the checklist, not age)
+- scrollUntilVisible:
+    element:
+      id: ".*_(addMember|beneficiaryIdMinCheck)"
+    direction: DOWN
+    timeout: 20000
 - tapOn:
     id: ".*_(addMember|beneficiaryIdMinCheck)"
 - tapOn:
     id: ".*clearFilter"
     optional: true
+# Control id, not field id - the field-level `nameOfIndividual` node no longer
+# exists once the input carries its own id (see 03 for the run -1432/-1135 proof).
 - extendedWaitUntil:
     visible:
-      id: "nameOfIndividual"
+      id: "nameOfIndividual_input"
     timeout: 20000
 - tapOn:
     id: "nameOfIndividual_input"
@@ -116,9 +136,11 @@ tags:
 # viewHouseholdButton.
 - tapOn:
     id: ".*_viewHouseholdButton"
+# Overview arrival on the always-visible top children (see above) - addMember is
+# below the member list and is not in the tree on arrival.
 - extendedWaitUntil:
     visible:
-      id: ".*_(addMember|beneficiaryIdMinCheck)"
+      id: ".*_(householdDetails|listViewMembers)"
     timeout: 20000
 - scrollUntilVisible:
     element:
@@ -151,9 +173,13 @@ tags:
 - tapOn:
     id: "form_action"
 # --- MUST land on Refer Beneficiary (id from its form fields), NOT delivery ---
+# referredBy is `string`/`text` (readOnly) -> JsonSchemaStringBuilder, the same
+# builder as nameOfIndividual, so it carries `_input` and has likewise lost its
+# field-level node. readOnly changes only the box's editability, not which
+# semantics node exists. NOT yet device-confirmed: no run has reached this page.
 - extendedWaitUntil:
     visible:
-      id: "referredBy"
+      id: "referredBy_input"
     timeout: 20000
 - assertNotVisible:
     id: "resourceCard"

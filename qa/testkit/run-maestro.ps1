@@ -107,6 +107,12 @@ $defaults = [ordered]@{
     "RUN_STAMP"      = (Get-Date -Format "MMdd-HHmm")
     "HOME_REG"       = "Registration & Delivery"
     "PROJECT_NAME"   = "(?i).*campaign.*"
+    # Text on the boundary-data download progress dialog. ensure-home waits for
+    # this to DISAPPEAR before the home wait, so a slow sync does not burn the
+    # home timeout and fail looking like a selector bug (run -1339 flow 02 sat
+    # on it at 0% for the full 180s). Campaign-localized - override in
+    # maestro.env if this campaign words it differently.
+    "DOWNLOAD_PROGRESS" = "Data is being downloaded"
     "BTN_NEXT"       = "Next"
     "BTN_RECORD"     = "Record Data"
     "BTN_PROCEED"    = "Proceed"

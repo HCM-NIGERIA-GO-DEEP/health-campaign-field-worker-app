@@ -223,6 +223,25 @@ appId: com.digit.hcm
 - tapOn:
     text: "Download"
     optional: true
+# While the boundary data downloads the app shows a progress dialog
+# ("<boundary> (1/1)", a percent bar, "Data is being downloaded"). Give THAT its
+# own budget before the home wait, otherwise a slow sync burns the home
+# timeout and the flow fails looking like a selector bug: run -1339's flow 02
+# spent its whole 180s sitting on this dialog still reading 0% / 0 of 50, then
+# failed on "Go To Home Screen|${HOME_REG}" - while 01 and 03 passed in the
+# same run, because the download speed differs per launch. Waiting on the
+# dialog's DISAPPEARANCE is self-limiting: no dialog -> this block is skipped
+# entirely, and a genuinely hung download still fails loudly here with an
+# obvious message instead of a misleading one.
+- runFlow:
+    when:
+      visible:
+        text: "(?s).*${DOWNLOAD_PROGRESS}.*"
+    commands:
+      - extendedWaitUntil:
+          notVisible:
+            text: "(?s).*${DOWNLOAD_PROGRESS}.*"
+          timeout: 300000
 # Data-download acknowledgement screen: after the boundary data download
 # completes, the app shows "Downloaded successfully!" with a
 # "Go To Home Screen" button (device-observed 2026-09-02 17:43) - home never
