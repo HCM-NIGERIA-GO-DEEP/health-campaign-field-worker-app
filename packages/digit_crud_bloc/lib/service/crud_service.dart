@@ -129,20 +129,68 @@ class CrudService {
   ///
   /// [entities] - List of entities to create.
   ///
+  /// Entities are grouped by type. Groups with more than one entity are
+  /// created atomically via the repository's `bulkCreate` when available,
+  /// falling back to individual creates otherwise. A failure creating one
+  /// entity does not prevent the rest from being attempted; any failures are
+  /// collected and thrown together once all entities have been attempted.
+  ///
   /// Throws [UnimplementedError] if [getRepositoryForEntity] is not overridden.
   Future<void> createEntities(List<EntityModel> entities) async {
     if (entities.isEmpty) return;
 
+    final grouped = <Type, List<EntityModel>>{};
     for (final entity in entities) {
-      final repository = getRepositoryForEntity(entity);
-      if (repository != null) {
-        await repository.create(entity);
-      } else {
+      grouped.putIfAbsent(entity.runtimeType, () => []).add(entity);
+    }
+
+    final errors = <Object>[];
+
+    for (final group in grouped.values) {
+      final repository = getRepositoryForEntity(group.first);
+      if (repository == null) {
         _log(
-          'Warning: No repository found for entity type: ${entity.runtimeType}. '
-          'Entity was not created.',
+          'Warning: No repository found for entity type: ${group.first.runtimeType}. '
+          '${group.length} entit(y/ies) not created.',
         );
+        continue;
       }
+
+      if (group.length > 1 && repository is LocalRepository) {
+        try {
+          await repository.bulkCreateEntities(group);
+          continue;
+        } on UnimplementedError {
+          _log(
+            'bulkCreate not implemented for ${repository.runtimeType}; '
+            'falling back to individual creates.',
+          );
+        } catch (e, stackTrace) {
+          _logError(
+            'Bulk create failed for ${repository.runtimeType}',
+            e,
+            stackTrace,
+          );
+          errors.add(e);
+          continue;
+        }
+      }
+
+      for (final entity in group) {
+        try {
+          await repository.create(entity);
+        } catch (e, stackTrace) {
+          _logError('Create failed for ${entity.runtimeType}', e, stackTrace);
+          errors.add(e);
+        }
+      }
+    }
+
+    if (errors.isNotEmpty) {
+      throw Exception(
+        'Failed to create ${errors.length} of ${entities.length} '
+        'entit(y/ies): ${errors.join('; ')}',
+      );
     }
   }
 

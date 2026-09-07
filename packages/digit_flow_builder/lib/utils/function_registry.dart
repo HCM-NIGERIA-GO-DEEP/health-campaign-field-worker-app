@@ -5,6 +5,7 @@ import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendance_log.dart';
 import 'package:digit_data_model/models/entities/project_type.dart';
 import 'package:digit_flow_builder/blocs/flow_crud_bloc.dart';
+import 'package:digit_flow_builder/utils/ri_age_eligibility.dart';
 import 'package:digit_flow_builder/utils/utils.dart';
 import 'package:digit_flow_builder/widget_registry.dart';
 import 'package:digit_formula_parser/digit_formula_parser.dart';
@@ -708,6 +709,30 @@ void initializeFunctionRegistry() {
     }
   });
 
+  int? getTaskCycleIndex(
+    Map<String, dynamic> task,
+    ProjectTypeModel? projectType,
+  ) {
+    int? taskCycleIndex;
+    final clientAuditDetails = task['clientAuditDetails'];
+    final taskAuditDetails = task['auditDetails'];
+    final lastModifiedTime = (clientAuditDetails is Map
+            ? clientAuditDetails['lastModifiedTime']
+            : null) ??
+        (taskAuditDetails is Map ? taskAuditDetails['lastModifiedTime'] : null);
+    final lastModifiedTimeMs = int.tryParse(lastModifiedTime?.toString() ?? '');
+
+    if (lastModifiedTimeMs != null) {
+      final matchingCycle = projectType?.cycles?.firstWhereOrNull(
+        (cycle) =>
+            lastModifiedTimeMs >= cycle.startDate &&
+            lastModifiedTimeMs <= cycle.endDate,
+      );
+      taskCycleIndex = matchingCycle?.id;
+    }
+    return taskCycleIndex;
+  }
+
   /// Registers a function to check eligibility for a task based on age and
   /// recorded side effects.
   ///
@@ -757,12 +782,13 @@ void initializeFunctionRegistry() {
 
 // --- Eligibility logic ---
     bool recordedSideEffect = false;
-    if (tasks.isEmpty == false) {
+    if (tasks.isNotEmpty) {
       // Get currentRunningCycle from third argument if provided
       final currentRunningCycle =
           args.length > 2 ? int.tryParse(args[2]?.toString() ?? '') : null;
 
-      for (final task in tasks.reversed.toList()) {
+      // for any ineligible, beneficiaryMigrated, beneficiaryAbsent, or beneficiaryRefused in current cycles return false, for beneficiaryDied return false immediately regardless of current cycle state
+      for (final task in tasks) {
         final additionalFields = task['additionalFields'];
         final fields = additionalFields is Map
             ? additionalFields['fields'] as List?
@@ -781,49 +807,10 @@ void initializeFunctionRegistry() {
         // BENEFICIARY_DIED returns false immediately regardless of cycle
         if (task['status'] == TaskStatus.beneficiaryDied) return false;
 
-        // For other ineligible statuses, only check tasks matching the current cycle
         if (currentRunningCycle != null) {
-          int? taskCycleIndex;
-
-          // Giving wrong cycle index
-          // if (fields != null) {
-          //   for (final field in fields) {
-          //     if (field is Map && field['key'] == 'cycleIndex') {
-          //       taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
-          //       break;
-          //     }
-          //   }
-          // }
-
-          // Fall back to deriving the cycle from the task's last modified
-          // time when no cycleIndex was recorded on the task.
-          if (taskCycleIndex == null) {
-            final clientAuditDetails = task['clientAuditDetails'];
-            final taskAuditDetails = task['auditDetails'];
-            final lastModifiedTime = (clientAuditDetails is Map
-                    ? clientAuditDetails['lastModifiedTime']
-                    : null) ??
-                (taskAuditDetails is Map
-                    ? taskAuditDetails['lastModifiedTime']
-                    : null);
-            final lastModifiedTimeMs =
-                int.tryParse(lastModifiedTime?.toString() ?? '');
-
-            if (lastModifiedTimeMs != null) {
-              final matchingCycle = projectType.cycles?.firstWhereOrNull(
-                (cycle) =>
-                    lastModifiedTimeMs >= cycle.startDate &&
-                    lastModifiedTimeMs <= cycle.endDate,
-              );
-              taskCycleIndex = matchingCycle?.id;
-            }
-          }
+          int? taskCycleIndex = getTaskCycleIndex(task, projectType);
 
           if (taskCycleIndex != currentRunningCycle) {
-            if (isWithinAge == false &&
-                task['status'] == TaskStatus.administrationSuccess) {
-              return true;
-            }
             continue;
           }
         }
@@ -832,6 +819,35 @@ void initializeFunctionRegistry() {
             task['status'] == TaskStatus.beneficiaryMigrated ||
             task['status'] == TaskStatus.beneficiaryAbsent ||
             task['status'] == TaskStatus.beneficiaryRefused) return false;
+      }
+
+      // for any administrationSuccess in previous cycles, return true immediately regardless of current cycle state
+      for (final task in tasks) {
+        final additionalFields = task['additionalFields'];
+        final fields = additionalFields is Map
+            ? additionalFields['fields'] as List?
+            : null;
+
+        if (fields != null) {
+          String? flowType;
+          for (final field in fields) {
+            if (field is Map && field['key'] == 'flow') {
+              flowType = field['value']?.toString();
+            }
+          }
+          if (flowType != "smcDone") continue; // Skip non-SMC tasks
+        }
+
+        if (currentRunningCycle != null) {
+          int? taskCycleIndex = getTaskCycleIndex(task, projectType);
+
+          if (taskCycleIndex != currentRunningCycle) {
+            if (isWithinAge == false &&
+                task['status'] == TaskStatus.administrationSuccess) {
+              return true;
+            }
+          }
+        }
       }
     }
 
@@ -2893,10 +2909,12 @@ void initializeFunctionRegistry() {
     if (projectType == null) return false;
 
     // RI is eligible from birth (minimum age 0), unlike SMC which uses
-    // projectType.validMinAge. The upper bound still mirrors the campaign config.
-    const validMinAge = 0;
-    final validMaxAge = projectType.validMaxAge ?? 59;
-    if (totalAgeMonths < validMinAge || totalAgeMonths > validMaxAge) {
+    // projectType.validMinAge. The upper bound is a hard 59 months unless the
+    // config overrides it via an optional 4th argument — never the campaign
+    // projectType's validMaxAge, which encodes SMC continuation policy and can
+    // exceed 59 (Plateau SMC-RI carried 64, wrongly exposing RI to 60-64mo).
+    final configMaxAge = args.length > 3 ? args[3] : null;
+    if (!isRiAgeEligible(totalAgeMonths, configMaxAge: configMaxAge)) {
       return false;
     }
 
