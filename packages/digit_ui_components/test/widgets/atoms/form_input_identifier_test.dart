@@ -14,6 +14,18 @@ import 'package:flutter_test/flutter_test.dart';
 /// bounds [98,861][1342,1169], Maestro tapped the centre (720,1015), nothing
 /// focused, `eraseText` fired 50 backspaces into nothing, and the follow-up
 /// `hideKeyboard` (a BACK press) popped the page.
+///
+/// CAUTION — this host tree does NOT model the live form page, and the first
+/// test's `containsAll` must not be read as "both ids exist on device". On the
+/// real Caregiver's Details page the field-level node disappears as soon as the
+/// input carries its own `container: true` id: run maestro-2026-09-07-1135's
+/// hierarchy has `nameOfIndividual_input` at [510,861][1342,1001] and NO
+/// `nameOfIndividual` at all, with every field label collapsed into one merged
+/// block whose resource-id is `/`. A flow that waits on the bare field id
+/// therefore times out (that run, flow 03). The extra structure responsible for
+/// the collapse is not reproduced here — adding LabeledField alone does not do
+/// it — so treat the device hierarchy, not this file, as the source of truth for
+/// which ids exist.
 void main() {
   Finder byIdentifier(String identifier) => find.byWidgetPredicate(
         (widget) =>

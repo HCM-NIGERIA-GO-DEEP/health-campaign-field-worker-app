@@ -130,8 +130,22 @@ class _DigitButtonState extends State<DigitButton> {
     if (widget.semanticsIdentifier == null) {
       return button;
     }
+    // `container: true` is load-bearing for buttons nested inside another
+    // annotated node. Without it this annotation has no node of its own and is
+    // absorbed by the nearest enclosing Semantics, which keeps ITS identifier
+    // and drops this one: run -1339 looked for `.*_openMemberCard` on the
+    // search-result card and found nothing, because the flow-builder `row`
+    // above it had already claimed the node
+    // (`...searchBeneficiary_<ts>_detailsRow`, accessibilityText
+    // "QATEST 0907-1339 HEAD QATEST\nOpen", one 112px row spanning BOTH the
+    // name and the button). That merged row is also untappable in practice —
+    // its centre falls in the gap between the name and the Open button.
+    // Same reason BaseDigitFormInput and DigitCheckbox set it; top-level
+    // buttons (form_action, login_submit) already formed their own node, so
+    // for them this changes nothing.
     return Semantics(
       identifier: widget.semanticsIdentifier!,
+      container: true,
       child: button,
     );
   }
