@@ -13,6 +13,7 @@ export 'src/algorithms/levenshtein.dart';
 
 // Models
 export 'models/dedup_result.dart';
+export 'models/dedup_match.dart';
 export 'models/candidate_pair.dart';
 
 // Utils
