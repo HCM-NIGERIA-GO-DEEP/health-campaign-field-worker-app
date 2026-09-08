@@ -79,6 +79,8 @@ class PropertySchema with _$PropertySchema {
     // Comparison config for scanner fields - enables duplicate detection against historical data
     @JsonKey(fromJson: _comparisonConfigOrNull)
     ComparisonConfig? comparisonConfig,
+    // Dedup config for pages - warns about similar existing records on submit
+    @JsonKey(fromJson: _dedupCheckOrNull) DedupCheck? dedupCheck,
   }) = _PropertySchema;
 
   factory PropertySchema.fromJson(Map<String, dynamic> json) =>
@@ -273,6 +275,169 @@ class ComparisonFilter with _$ComparisonFilter {
       _$ComparisonFilterFromJson(json);
 }
 
+/// The warning dialog shown when [DedupCheck] finds similar records.
+///
+/// Mirrors [ShowAlertPopUp] -- title, description and two action labels -- and
+/// adds a [body] of flow builder display widgets for the match rows.
+///
+/// Nested inside [DedupCheck] so one block describes the whole feature, and
+/// kept separate from `showAlertPopUp` so a page can carry both a dedup warning
+/// and a genuine submit confirmation.
+@freezed
+class DedupAlertPopUp with _$DedupAlertPopUp {
+  const DedupAlertPopUp._();
+
+  @JsonSerializable(explicitToJson: true, includeIfNull: false)
+  const factory DedupAlertPopUp({
+    /// Localization key for the dialog heading.
+    required String title,
+
+    /// Localization key for the body text above [body].
+    String? description,
+
+    /// Localization key for the button that continues the submission.
+    required String primaryActionLabel,
+
+    /// Localization key for the button that abandons the form.
+    required String secondaryActionLabel,
+
+    /// Name of an icon from the shared icon mapping, shown beside the title.
+    String? titleIcon,
+
+    /// Flow builder widget JSON for the match rows, typically a `listView`
+    /// bound to [matchesKey].
+    ///
+    /// Left untyped because this package cannot depend on
+    /// `digit_flow_builder` -- the dependency runs the other way -- so these
+    /// widgets are rendered by whatever registered the dedup check.
+    @Default(<dynamic>[]) List<dynamic> body,
+
+    /// Key the match list is published under, for `dataSource` bindings in
+    /// [body].
+    @Default('dedupMatches') String matchesKey,
+
+    /// Whether each match shows its similarity score. Only consulted by the
+    /// built-in dialog -- a [body] decides for itself, e.g. by leaving
+    /// `{{item.scoreText}}` out.
+    @Default(true) bool showScore,
+
+    /// Localization key for the per-match score, receiving the whole
+    /// percentage as `{score}`. Built-in dialog only.
+    String? scoreLabel,
+
+    /// Localization key shown in place of a match's beneficiary ID when it has
+    /// none. Built-in dialog only.
+    String? missingIdLabel,
+
+    /// Both default to false: a duplicate warning should be answered, not
+    /// dismissed by accident.
+    @Default(false) bool barrierDismissible,
+    @Default(false) bool showCloseButton,
+  }) = _DedupAlertPopUp;
+
+  factory DedupAlertPopUp.fromJson(Map<String, dynamic> json) =>
+      _$DedupAlertPopUpFromJson(json);
+}
+
+/// Page-level config that warns the user about existing records similar to the
+/// one being registered, before the form is submitted.
+///
+/// Declared on a page (not a field) because the check scores several fields
+/// together. Absent config means no check runs, so the feature stays inert
+/// until a page opts in.
+@freezed
+class DedupCheck with _$DedupCheck {
+  const DedupCheck._();
+
+  @JsonSerializable(explicitToJson: true, includeIfNull: false)
+  const factory DedupCheck({
+    /// Maps a dedup engine attribute to the form field feeding it, e.g.
+    /// `{"givenName": "nameOfIndividual", "familyName": "familyname"}`.
+    @JsonKey(fromJson: _stringMapOrEmpty) required Map<String, String> fields,
+
+    /// Local model searched for existing records (e.g. "individual").
+    @Default('individual') String model,
+
+    /// Scoping filters narrowing the corpus searched for similar records.
+    /// At least one is required, since an unfiltered search is rejected.
+    @Default(<DedupFilter>[]) List<DedupFilter> filters,
+
+    /// Minimum weighted similarity score (0.0-1.0) for a record to be shown.
+    @JsonKey(fromJson: _doubleOrNull) double? matchThreshold,
+
+    /// Most matches listed in the dialog.
+    @JsonKey(fromJson: _intOrNull) int? maxResults,
+
+    /// Shortest a mapped field value may be before the check is skipped.
+    /// Guards against scoring against a single typed character.
+    @JsonKey(fromJson: _intOrNull) int? minFieldLength,
+
+    /// Hard cap on corpus rows loaded into memory for scoring.
+    @JsonKey(fromJson: _intOrNull) int? maxCandidates,
+
+    /// Whether the check is skipped while editing an existing record, which
+    /// would otherwise match itself.
+    @Default(true) bool skipOnEdit,
+
+    /// Page the "back to search" action returns to.
+    String? backToSearchPage,
+
+    /// The warning dialog. Absent means the built-in dialog is used with its
+    /// own default copy.
+    @JsonKey(fromJson: _dedupAlertPopUpOrNull)
+    DedupAlertPopUp? dedupAlertPopUp,
+  }) = _DedupCheck;
+
+  factory DedupCheck.fromJson(Map<String, dynamic> json) =>
+      _$DedupCheckFromJson(json);
+
+  static const double defaultMatchThreshold = 0.85;
+  static const int defaultMaxResults = 5;
+  static const int defaultMinFieldLength = 2;
+  static const int defaultMaxCandidates = 5000;
+
+  double get effectiveMatchThreshold =>
+      matchThreshold ?? defaultMatchThreshold;
+
+  int get effectiveMaxResults => maxResults ?? defaultMaxResults;
+
+  int get effectiveMinFieldLength => minFieldLength ?? defaultMinFieldLength;
+
+  int get effectiveMaxCandidates => maxCandidates ?? defaultMaxCandidates;
+}
+
+/// A scoping filter on the corpus a [DedupCheck] searches.
+///
+/// Mirrors the shape of a `SEARCH_EVENT` data entry, so the same
+/// `{key, root, value, operation}` config a search screen uses applies here.
+@freezed
+class DedupFilter with _$DedupFilter {
+  @JsonSerializable(explicitToJson: true, includeIfNull: false)
+  const factory DedupFilter({
+    /// Column filtered on (e.g. "projectId").
+    required String key,
+
+    /// Table the column belongs to (e.g. "projectBeneficiary"). Defaults to
+    /// the config's own model when omitted.
+    String? root,
+
+    /// Value template, e.g. `{{singleton.projectId}}`. A filter whose value
+    /// resolves to empty is dropped.
+    required String value,
+
+    @Default('equals') String operation,
+
+    /// Template selecting between [cases], e.g. `{{navigation.flowType}}`.
+    String? switchOn,
+
+    /// Value templates keyed by the resolved [switchOn] result.
+    Map<String, String>? cases,
+  }) = _DedupFilter;
+
+  factory DedupFilter.fromJson(Map<String, dynamic> json) =>
+      _$DedupFilterFromJson(json);
+}
+
 String? _stringOrNull(dynamic value) {
   return value is String ? value : null;
 }
@@ -374,6 +539,39 @@ ComparisonConfig? _comparisonConfigOrNull(dynamic value) {
     return ComparisonConfig.fromJson(Map<String, dynamic>.from(value));
   }
   return null;
+}
+
+DedupCheck? _dedupCheckOrNull(dynamic value) {
+  if (value is Map && value.isNotEmpty) {
+    return DedupCheck.fromJson(Map<String, dynamic>.from(value));
+  }
+  return null;
+}
+
+DedupAlertPopUp? _dedupAlertPopUpOrNull(dynamic value) {
+  if (value is Map && value.isNotEmpty) {
+    return DedupAlertPopUp.fromJson(Map<String, dynamic>.from(value));
+  }
+  return null;
+}
+
+double? _doubleOrNull(dynamic value) {
+  if (value == null) return null;
+  if (value is num) return value.toDouble();
+  if (value is String) return double.tryParse(value);
+  return null;
+}
+
+/// Coerces a config map to <String, String>, dropping entries that cannot be
+/// read as a pair of strings.
+Map<String, String> _stringMapOrEmpty(dynamic value) {
+  if (value is! Map) return const {};
+  final result = <String, String>{};
+  value.forEach((key, entryValue) {
+    if (key == null || entryValue == null) return;
+    result[key.toString()] = entryValue.toString();
+  });
+  return result;
 }
 
 enum FormulaBehavior { show, hide }

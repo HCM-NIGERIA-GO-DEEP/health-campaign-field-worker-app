@@ -169,6 +169,7 @@ Map<String, dynamic> transformJson(Map<String, dynamic> inputJson) {
         'multiEntityConfig': pageMap['multiEntityConfig'],
         'preventScreenCapture': pageMap['preventScreenCapture'],
         'submitCondition': pageMap['submitCondition'],
+        'dedupCheck': pageMap['dedupCheck'],
         'secondaryActionLabel': pageMap['secondaryActionLabel'],
       };
 

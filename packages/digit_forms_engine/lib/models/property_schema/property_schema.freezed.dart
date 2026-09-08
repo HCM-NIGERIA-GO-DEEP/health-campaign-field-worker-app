@@ -93,7 +93,10 @@ mixin _$PropertySchema {
   String? get secondaryActionLabel =>
       throw _privateConstructorUsedError; // Comparison config for scanner fields - enables duplicate detection against historical data
   @JsonKey(fromJson: _comparisonConfigOrNull)
-  ComparisonConfig? get comparisonConfig => throw _privateConstructorUsedError;
+  ComparisonConfig? get comparisonConfig =>
+      throw _privateConstructorUsedError; // Dedup config for pages - warns about similar existing records on submit
+  @JsonKey(fromJson: _dedupCheckOrNull)
+  DedupCheck? get dedupCheck => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -161,7 +164,8 @@ abstract class $PropertySchemaCopyWith<$Res> {
       VisibilityCondition? submitCondition,
       String? secondaryActionLabel,
       @JsonKey(fromJson: _comparisonConfigOrNull)
-      ComparisonConfig? comparisonConfig});
+      ComparisonConfig? comparisonConfig,
+      @JsonKey(fromJson: _dedupCheckOrNull) DedupCheck? dedupCheck});
 
   $DisplayBehaviorCopyWith<$Res>? get displayBehavior;
   $NavigateToConfigCopyWith<$Res>? get navigateTo;
@@ -171,6 +175,7 @@ abstract class $PropertySchemaCopyWith<$Res> {
   $MultiEntityConfigCopyWith<$Res>? get multiEntityConfig;
   $VisibilityConditionCopyWith<$Res>? get submitCondition;
   $ComparisonConfigCopyWith<$Res>? get comparisonConfig;
+  $DedupCheckCopyWith<$Res>? get dedupCheck;
 }
 
 /// @nodoc
@@ -231,6 +236,7 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
     Object? submitCondition = freezed,
     Object? secondaryActionLabel = freezed,
     Object? comparisonConfig = freezed,
+    Object? dedupCheck = freezed,
   }) {
     return _then(_value.copyWith(
       type: null == type
@@ -413,6 +419,10 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
           ? _value.comparisonConfig
           : comparisonConfig // ignore: cast_nullable_to_non_nullable
               as ComparisonConfig?,
+      dedupCheck: freezed == dedupCheck
+          ? _value.dedupCheck
+          : dedupCheck // ignore: cast_nullable_to_non_nullable
+              as DedupCheck?,
     ) as $Val);
   }
 
@@ -513,6 +523,18 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
       return _then(_value.copyWith(comparisonConfig: value) as $Val);
     });
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $DedupCheckCopyWith<$Res>? get dedupCheck {
+    if (_value.dedupCheck == null) {
+      return null;
+    }
+
+    return $DedupCheckCopyWith<$Res>(_value.dedupCheck!, (value) {
+      return _then(_value.copyWith(dedupCheck: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -577,7 +599,8 @@ abstract class _$$PropertySchemaImplCopyWith<$Res>
       VisibilityCondition? submitCondition,
       String? secondaryActionLabel,
       @JsonKey(fromJson: _comparisonConfigOrNull)
-      ComparisonConfig? comparisonConfig});
+      ComparisonConfig? comparisonConfig,
+      @JsonKey(fromJson: _dedupCheckOrNull) DedupCheck? dedupCheck});
 
   @override
   $DisplayBehaviorCopyWith<$Res>? get displayBehavior;
@@ -595,6 +618,8 @@ abstract class _$$PropertySchemaImplCopyWith<$Res>
   $VisibilityConditionCopyWith<$Res>? get submitCondition;
   @override
   $ComparisonConfigCopyWith<$Res>? get comparisonConfig;
+  @override
+  $DedupCheckCopyWith<$Res>? get dedupCheck;
 }
 
 /// @nodoc
@@ -653,6 +678,7 @@ class __$$PropertySchemaImplCopyWithImpl<$Res>
     Object? submitCondition = freezed,
     Object? secondaryActionLabel = freezed,
     Object? comparisonConfig = freezed,
+    Object? dedupCheck = freezed,
   }) {
     return _then(_$PropertySchemaImpl(
       type: null == type
@@ -835,6 +861,10 @@ class __$$PropertySchemaImplCopyWithImpl<$Res>
           ? _value.comparisonConfig
           : comparisonConfig // ignore: cast_nullable_to_non_nullable
               as ComparisonConfig?,
+      dedupCheck: freezed == dedupCheck
+          ? _value.dedupCheck
+          : dedupCheck // ignore: cast_nullable_to_non_nullable
+              as DedupCheck?,
     ));
   }
 }
@@ -893,7 +923,8 @@ class _$PropertySchemaImpl implements _PropertySchema {
       this.preventScreenCapture,
       @JsonKey(fromJson: _visibilityConditionOrNull) this.submitCondition,
       this.secondaryActionLabel,
-      @JsonKey(fromJson: _comparisonConfigOrNull) this.comparisonConfig})
+      @JsonKey(fromJson: _comparisonConfigOrNull) this.comparisonConfig,
+      @JsonKey(fromJson: _dedupCheckOrNull) this.dedupCheck})
       : _properties = properties,
         _enums = enums,
         _conditions = conditions,
@@ -1071,10 +1102,14 @@ class _$PropertySchemaImpl implements _PropertySchema {
   @override
   @JsonKey(fromJson: _comparisonConfigOrNull)
   final ComparisonConfig? comparisonConfig;
+// Dedup config for pages - warns about similar existing records on submit
+  @override
+  @JsonKey(fromJson: _dedupCheckOrNull)
+  final DedupCheck? dedupCheck;
 
   @override
   String toString() {
-    return 'PropertySchema(type: $type, readOnly: $readOnly, displayOnly: $displayOnly, hidden: $hidden, properties: $properties, enums: $enums, schemaCode: $schemaCode, systemDate: $systemDate, charCount: $charCount, format: $format, startDate: $startDate, endDate: $endDate, minValue: $minValue, maxValue: $maxValue, minLength: $minLength, maxLength: $maxLength, min: $min, max: $max, helpText: $helpText, tooltip: $tooltip, prefixText: $prefixText, suffixText: $suffixText, innerLabel: $innerLabel, label: $label, isMultiSelect: $isMultiSelect, value: $value, displayBehavior: $displayBehavior, conditions: $conditions, order: $order, actionLabel: $actionLabel, description: $description, validations: $validations, includeInForm: $includeInForm, includeInSummary: $includeInSummary, navigateTo: $navigateTo, visibilityCondition: $visibilityCondition, conditionalNavigateTo: $conditionalNavigateTo, autoFillCondition: $autoFillCondition, showAlertPopUp: $showAlertPopUp, showSecondaryAlertPopUp: $showSecondaryAlertPopUp, multiEntityConfig: $multiEntityConfig, preventScreenCapture: $preventScreenCapture, submitCondition: $submitCondition, secondaryActionLabel: $secondaryActionLabel, comparisonConfig: $comparisonConfig)';
+    return 'PropertySchema(type: $type, readOnly: $readOnly, displayOnly: $displayOnly, hidden: $hidden, properties: $properties, enums: $enums, schemaCode: $schemaCode, systemDate: $systemDate, charCount: $charCount, format: $format, startDate: $startDate, endDate: $endDate, minValue: $minValue, maxValue: $maxValue, minLength: $minLength, maxLength: $maxLength, min: $min, max: $max, helpText: $helpText, tooltip: $tooltip, prefixText: $prefixText, suffixText: $suffixText, innerLabel: $innerLabel, label: $label, isMultiSelect: $isMultiSelect, value: $value, displayBehavior: $displayBehavior, conditions: $conditions, order: $order, actionLabel: $actionLabel, description: $description, validations: $validations, includeInForm: $includeInForm, includeInSummary: $includeInSummary, navigateTo: $navigateTo, visibilityCondition: $visibilityCondition, conditionalNavigateTo: $conditionalNavigateTo, autoFillCondition: $autoFillCondition, showAlertPopUp: $showAlertPopUp, showSecondaryAlertPopUp: $showSecondaryAlertPopUp, multiEntityConfig: $multiEntityConfig, preventScreenCapture: $preventScreenCapture, submitCondition: $submitCondition, secondaryActionLabel: $secondaryActionLabel, comparisonConfig: $comparisonConfig, dedupCheck: $dedupCheck)';
   }
 
   @override
@@ -1161,7 +1196,9 @@ class _$PropertySchemaImpl implements _PropertySchema {
             (identical(other.secondaryActionLabel, secondaryActionLabel) ||
                 other.secondaryActionLabel == secondaryActionLabel) &&
             (identical(other.comparisonConfig, comparisonConfig) ||
-                other.comparisonConfig == comparisonConfig));
+                other.comparisonConfig == comparisonConfig) &&
+            (identical(other.dedupCheck, dedupCheck) ||
+                other.dedupCheck == dedupCheck));
   }
 
   @JsonKey(ignore: true)
@@ -1212,7 +1249,8 @@ class _$PropertySchemaImpl implements _PropertySchema {
         preventScreenCapture,
         submitCondition,
         secondaryActionLabel,
-        comparisonConfig
+        comparisonConfig,
+        dedupCheck
       ]);
 
   @JsonKey(ignore: true)
@@ -1286,7 +1324,9 @@ abstract class _PropertySchema implements PropertySchema {
       final VisibilityCondition? submitCondition,
       final String? secondaryActionLabel,
       @JsonKey(fromJson: _comparisonConfigOrNull)
-      final ComparisonConfig? comparisonConfig}) = _$PropertySchemaImpl;
+      final ComparisonConfig? comparisonConfig,
+      @JsonKey(fromJson: _dedupCheckOrNull)
+      final DedupCheck? dedupCheck}) = _$PropertySchemaImpl;
 
   factory _PropertySchema.fromJson(Map<String, dynamic> json) =
       _$PropertySchemaImpl.fromJson;
@@ -1400,6 +1440,9 @@ abstract class _PropertySchema implements PropertySchema {
   @override // Comparison config for scanner fields - enables duplicate detection against historical data
   @JsonKey(fromJson: _comparisonConfigOrNull)
   ComparisonConfig? get comparisonConfig;
+  @override // Dedup config for pages - warns about similar existing records on submit
+  @JsonKey(fromJson: _dedupCheckOrNull)
+  DedupCheck? get dedupCheck;
   @override
   @JsonKey(ignore: true)
   _$$PropertySchemaImplCopyWith<_$PropertySchemaImpl> get copyWith =>
@@ -4253,5 +4296,1271 @@ abstract class _ComparisonFilter implements ComparisonFilter {
   @override
   @JsonKey(ignore: true)
   _$$ComparisonFilterImplCopyWith<_$ComparisonFilterImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+DedupAlertPopUp _$DedupAlertPopUpFromJson(Map<String, dynamic> json) {
+  return _DedupAlertPopUp.fromJson(json);
+}
+
+/// @nodoc
+mixin _$DedupAlertPopUp {
+  /// Localization key for the dialog heading.
+  String get title => throw _privateConstructorUsedError;
+
+  /// Localization key for the body text above [body].
+  String? get description => throw _privateConstructorUsedError;
+
+  /// Localization key for the button that continues the submission.
+  String get primaryActionLabel => throw _privateConstructorUsedError;
+
+  /// Localization key for the button that abandons the form.
+  String get secondaryActionLabel => throw _privateConstructorUsedError;
+
+  /// Name of an icon from the shared icon mapping, shown beside the title.
+  String? get titleIcon => throw _privateConstructorUsedError;
+
+  /// Flow builder widget JSON for the match rows, typically a `listView`
+  /// bound to [matchesKey].
+  ///
+  /// Left untyped because this package cannot depend on
+  /// `digit_flow_builder` -- the dependency runs the other way -- so these
+  /// widgets are rendered by whatever registered the dedup check.
+  List<dynamic> get body => throw _privateConstructorUsedError;
+
+  /// Key the match list is published under, for `dataSource` bindings in
+  /// [body].
+  String get matchesKey => throw _privateConstructorUsedError;
+
+  /// Whether each match shows its similarity score. Only consulted by the
+  /// built-in dialog -- a [body] decides for itself, e.g. by leaving
+  /// `{{item.scoreText}}` out.
+  bool get showScore => throw _privateConstructorUsedError;
+
+  /// Localization key for the per-match score, receiving the whole
+  /// percentage as `{score}`. Built-in dialog only.
+  String? get scoreLabel => throw _privateConstructorUsedError;
+
+  /// Localization key shown in place of a match's beneficiary ID when it has
+  /// none. Built-in dialog only.
+  String? get missingIdLabel => throw _privateConstructorUsedError;
+
+  /// Both default to false: a duplicate warning should be answered, not
+  /// dismissed by accident.
+  bool get barrierDismissible => throw _privateConstructorUsedError;
+  bool get showCloseButton => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $DedupAlertPopUpCopyWith<DedupAlertPopUp> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $DedupAlertPopUpCopyWith<$Res> {
+  factory $DedupAlertPopUpCopyWith(
+          DedupAlertPopUp value, $Res Function(DedupAlertPopUp) then) =
+      _$DedupAlertPopUpCopyWithImpl<$Res, DedupAlertPopUp>;
+  @useResult
+  $Res call(
+      {String title,
+      String? description,
+      String primaryActionLabel,
+      String secondaryActionLabel,
+      String? titleIcon,
+      List<dynamic> body,
+      String matchesKey,
+      bool showScore,
+      String? scoreLabel,
+      String? missingIdLabel,
+      bool barrierDismissible,
+      bool showCloseButton});
+}
+
+/// @nodoc
+class _$DedupAlertPopUpCopyWithImpl<$Res, $Val extends DedupAlertPopUp>
+    implements $DedupAlertPopUpCopyWith<$Res> {
+  _$DedupAlertPopUpCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? title = null,
+    Object? description = freezed,
+    Object? primaryActionLabel = null,
+    Object? secondaryActionLabel = null,
+    Object? titleIcon = freezed,
+    Object? body = null,
+    Object? matchesKey = null,
+    Object? showScore = null,
+    Object? scoreLabel = freezed,
+    Object? missingIdLabel = freezed,
+    Object? barrierDismissible = null,
+    Object? showCloseButton = null,
+  }) {
+    return _then(_value.copyWith(
+      title: null == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      primaryActionLabel: null == primaryActionLabel
+          ? _value.primaryActionLabel
+          : primaryActionLabel // ignore: cast_nullable_to_non_nullable
+              as String,
+      secondaryActionLabel: null == secondaryActionLabel
+          ? _value.secondaryActionLabel
+          : secondaryActionLabel // ignore: cast_nullable_to_non_nullable
+              as String,
+      titleIcon: freezed == titleIcon
+          ? _value.titleIcon
+          : titleIcon // ignore: cast_nullable_to_non_nullable
+              as String?,
+      body: null == body
+          ? _value.body
+          : body // ignore: cast_nullable_to_non_nullable
+              as List<dynamic>,
+      matchesKey: null == matchesKey
+          ? _value.matchesKey
+          : matchesKey // ignore: cast_nullable_to_non_nullable
+              as String,
+      showScore: null == showScore
+          ? _value.showScore
+          : showScore // ignore: cast_nullable_to_non_nullable
+              as bool,
+      scoreLabel: freezed == scoreLabel
+          ? _value.scoreLabel
+          : scoreLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      missingIdLabel: freezed == missingIdLabel
+          ? _value.missingIdLabel
+          : missingIdLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      barrierDismissible: null == barrierDismissible
+          ? _value.barrierDismissible
+          : barrierDismissible // ignore: cast_nullable_to_non_nullable
+              as bool,
+      showCloseButton: null == showCloseButton
+          ? _value.showCloseButton
+          : showCloseButton // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$DedupAlertPopUpImplCopyWith<$Res>
+    implements $DedupAlertPopUpCopyWith<$Res> {
+  factory _$$DedupAlertPopUpImplCopyWith(_$DedupAlertPopUpImpl value,
+          $Res Function(_$DedupAlertPopUpImpl) then) =
+      __$$DedupAlertPopUpImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String title,
+      String? description,
+      String primaryActionLabel,
+      String secondaryActionLabel,
+      String? titleIcon,
+      List<dynamic> body,
+      String matchesKey,
+      bool showScore,
+      String? scoreLabel,
+      String? missingIdLabel,
+      bool barrierDismissible,
+      bool showCloseButton});
+}
+
+/// @nodoc
+class __$$DedupAlertPopUpImplCopyWithImpl<$Res>
+    extends _$DedupAlertPopUpCopyWithImpl<$Res, _$DedupAlertPopUpImpl>
+    implements _$$DedupAlertPopUpImplCopyWith<$Res> {
+  __$$DedupAlertPopUpImplCopyWithImpl(
+      _$DedupAlertPopUpImpl _value, $Res Function(_$DedupAlertPopUpImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? title = null,
+    Object? description = freezed,
+    Object? primaryActionLabel = null,
+    Object? secondaryActionLabel = null,
+    Object? titleIcon = freezed,
+    Object? body = null,
+    Object? matchesKey = null,
+    Object? showScore = null,
+    Object? scoreLabel = freezed,
+    Object? missingIdLabel = freezed,
+    Object? barrierDismissible = null,
+    Object? showCloseButton = null,
+  }) {
+    return _then(_$DedupAlertPopUpImpl(
+      title: null == title
+          ? _value.title
+          : title // ignore: cast_nullable_to_non_nullable
+              as String,
+      description: freezed == description
+          ? _value.description
+          : description // ignore: cast_nullable_to_non_nullable
+              as String?,
+      primaryActionLabel: null == primaryActionLabel
+          ? _value.primaryActionLabel
+          : primaryActionLabel // ignore: cast_nullable_to_non_nullable
+              as String,
+      secondaryActionLabel: null == secondaryActionLabel
+          ? _value.secondaryActionLabel
+          : secondaryActionLabel // ignore: cast_nullable_to_non_nullable
+              as String,
+      titleIcon: freezed == titleIcon
+          ? _value.titleIcon
+          : titleIcon // ignore: cast_nullable_to_non_nullable
+              as String?,
+      body: null == body
+          ? _value._body
+          : body // ignore: cast_nullable_to_non_nullable
+              as List<dynamic>,
+      matchesKey: null == matchesKey
+          ? _value.matchesKey
+          : matchesKey // ignore: cast_nullable_to_non_nullable
+              as String,
+      showScore: null == showScore
+          ? _value.showScore
+          : showScore // ignore: cast_nullable_to_non_nullable
+              as bool,
+      scoreLabel: freezed == scoreLabel
+          ? _value.scoreLabel
+          : scoreLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      missingIdLabel: freezed == missingIdLabel
+          ? _value.missingIdLabel
+          : missingIdLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
+      barrierDismissible: null == barrierDismissible
+          ? _value.barrierDismissible
+          : barrierDismissible // ignore: cast_nullable_to_non_nullable
+              as bool,
+      showCloseButton: null == showCloseButton
+          ? _value.showCloseButton
+          : showCloseButton // ignore: cast_nullable_to_non_nullable
+              as bool,
+    ));
+  }
+}
+
+/// @nodoc
+
+@JsonSerializable(explicitToJson: true, includeIfNull: false)
+class _$DedupAlertPopUpImpl extends _DedupAlertPopUp {
+  const _$DedupAlertPopUpImpl(
+      {required this.title,
+      this.description,
+      required this.primaryActionLabel,
+      required this.secondaryActionLabel,
+      this.titleIcon,
+      final List<dynamic> body = const <dynamic>[],
+      this.matchesKey = 'dedupMatches',
+      this.showScore = true,
+      this.scoreLabel,
+      this.missingIdLabel,
+      this.barrierDismissible = false,
+      this.showCloseButton = false})
+      : _body = body,
+        super._();
+
+  factory _$DedupAlertPopUpImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DedupAlertPopUpImplFromJson(json);
+
+  /// Localization key for the dialog heading.
+  @override
+  final String title;
+
+  /// Localization key for the body text above [body].
+  @override
+  final String? description;
+
+  /// Localization key for the button that continues the submission.
+  @override
+  final String primaryActionLabel;
+
+  /// Localization key for the button that abandons the form.
+  @override
+  final String secondaryActionLabel;
+
+  /// Name of an icon from the shared icon mapping, shown beside the title.
+  @override
+  final String? titleIcon;
+
+  /// Flow builder widget JSON for the match rows, typically a `listView`
+  /// bound to [matchesKey].
+  ///
+  /// Left untyped because this package cannot depend on
+  /// `digit_flow_builder` -- the dependency runs the other way -- so these
+  /// widgets are rendered by whatever registered the dedup check.
+  final List<dynamic> _body;
+
+  /// Flow builder widget JSON for the match rows, typically a `listView`
+  /// bound to [matchesKey].
+  ///
+  /// Left untyped because this package cannot depend on
+  /// `digit_flow_builder` -- the dependency runs the other way -- so these
+  /// widgets are rendered by whatever registered the dedup check.
+  @override
+  @JsonKey()
+  List<dynamic> get body {
+    if (_body is EqualUnmodifiableListView) return _body;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_body);
+  }
+
+  /// Key the match list is published under, for `dataSource` bindings in
+  /// [body].
+  @override
+  @JsonKey()
+  final String matchesKey;
+
+  /// Whether each match shows its similarity score. Only consulted by the
+  /// built-in dialog -- a [body] decides for itself, e.g. by leaving
+  /// `{{item.scoreText}}` out.
+  @override
+  @JsonKey()
+  final bool showScore;
+
+  /// Localization key for the per-match score, receiving the whole
+  /// percentage as `{score}`. Built-in dialog only.
+  @override
+  final String? scoreLabel;
+
+  /// Localization key shown in place of a match's beneficiary ID when it has
+  /// none. Built-in dialog only.
+  @override
+  final String? missingIdLabel;
+
+  /// Both default to false: a duplicate warning should be answered, not
+  /// dismissed by accident.
+  @override
+  @JsonKey()
+  final bool barrierDismissible;
+  @override
+  @JsonKey()
+  final bool showCloseButton;
+
+  @override
+  String toString() {
+    return 'DedupAlertPopUp(title: $title, description: $description, primaryActionLabel: $primaryActionLabel, secondaryActionLabel: $secondaryActionLabel, titleIcon: $titleIcon, body: $body, matchesKey: $matchesKey, showScore: $showScore, scoreLabel: $scoreLabel, missingIdLabel: $missingIdLabel, barrierDismissible: $barrierDismissible, showCloseButton: $showCloseButton)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$DedupAlertPopUpImpl &&
+            (identical(other.title, title) || other.title == title) &&
+            (identical(other.description, description) ||
+                other.description == description) &&
+            (identical(other.primaryActionLabel, primaryActionLabel) ||
+                other.primaryActionLabel == primaryActionLabel) &&
+            (identical(other.secondaryActionLabel, secondaryActionLabel) ||
+                other.secondaryActionLabel == secondaryActionLabel) &&
+            (identical(other.titleIcon, titleIcon) ||
+                other.titleIcon == titleIcon) &&
+            const DeepCollectionEquality().equals(other._body, _body) &&
+            (identical(other.matchesKey, matchesKey) ||
+                other.matchesKey == matchesKey) &&
+            (identical(other.showScore, showScore) ||
+                other.showScore == showScore) &&
+            (identical(other.scoreLabel, scoreLabel) ||
+                other.scoreLabel == scoreLabel) &&
+            (identical(other.missingIdLabel, missingIdLabel) ||
+                other.missingIdLabel == missingIdLabel) &&
+            (identical(other.barrierDismissible, barrierDismissible) ||
+                other.barrierDismissible == barrierDismissible) &&
+            (identical(other.showCloseButton, showCloseButton) ||
+                other.showCloseButton == showCloseButton));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      title,
+      description,
+      primaryActionLabel,
+      secondaryActionLabel,
+      titleIcon,
+      const DeepCollectionEquality().hash(_body),
+      matchesKey,
+      showScore,
+      scoreLabel,
+      missingIdLabel,
+      barrierDismissible,
+      showCloseButton);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$DedupAlertPopUpImplCopyWith<_$DedupAlertPopUpImpl> get copyWith =>
+      __$$DedupAlertPopUpImplCopyWithImpl<_$DedupAlertPopUpImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$DedupAlertPopUpImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _DedupAlertPopUp extends DedupAlertPopUp {
+  const factory _DedupAlertPopUp(
+      {required final String title,
+      final String? description,
+      required final String primaryActionLabel,
+      required final String secondaryActionLabel,
+      final String? titleIcon,
+      final List<dynamic> body,
+      final String matchesKey,
+      final bool showScore,
+      final String? scoreLabel,
+      final String? missingIdLabel,
+      final bool barrierDismissible,
+      final bool showCloseButton}) = _$DedupAlertPopUpImpl;
+  const _DedupAlertPopUp._() : super._();
+
+  factory _DedupAlertPopUp.fromJson(Map<String, dynamic> json) =
+      _$DedupAlertPopUpImpl.fromJson;
+
+  @override
+
+  /// Localization key for the dialog heading.
+  String get title;
+  @override
+
+  /// Localization key for the body text above [body].
+  String? get description;
+  @override
+
+  /// Localization key for the button that continues the submission.
+  String get primaryActionLabel;
+  @override
+
+  /// Localization key for the button that abandons the form.
+  String get secondaryActionLabel;
+  @override
+
+  /// Name of an icon from the shared icon mapping, shown beside the title.
+  String? get titleIcon;
+  @override
+
+  /// Flow builder widget JSON for the match rows, typically a `listView`
+  /// bound to [matchesKey].
+  ///
+  /// Left untyped because this package cannot depend on
+  /// `digit_flow_builder` -- the dependency runs the other way -- so these
+  /// widgets are rendered by whatever registered the dedup check.
+  List<dynamic> get body;
+  @override
+
+  /// Key the match list is published under, for `dataSource` bindings in
+  /// [body].
+  String get matchesKey;
+  @override
+
+  /// Whether each match shows its similarity score. Only consulted by the
+  /// built-in dialog -- a [body] decides for itself, e.g. by leaving
+  /// `{{item.scoreText}}` out.
+  bool get showScore;
+  @override
+
+  /// Localization key for the per-match score, receiving the whole
+  /// percentage as `{score}`. Built-in dialog only.
+  String? get scoreLabel;
+  @override
+
+  /// Localization key shown in place of a match's beneficiary ID when it has
+  /// none. Built-in dialog only.
+  String? get missingIdLabel;
+  @override
+
+  /// Both default to false: a duplicate warning should be answered, not
+  /// dismissed by accident.
+  bool get barrierDismissible;
+  @override
+  bool get showCloseButton;
+  @override
+  @JsonKey(ignore: true)
+  _$$DedupAlertPopUpImplCopyWith<_$DedupAlertPopUpImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+DedupCheck _$DedupCheckFromJson(Map<String, dynamic> json) {
+  return _DedupCheck.fromJson(json);
+}
+
+/// @nodoc
+mixin _$DedupCheck {
+  /// Maps a dedup engine attribute to the form field feeding it, e.g.
+  /// `{"givenName": "nameOfIndividual", "familyName": "familyname"}`.
+  @JsonKey(fromJson: _stringMapOrEmpty)
+  Map<String, String> get fields => throw _privateConstructorUsedError;
+
+  /// Local model searched for existing records (e.g. "individual").
+  String get model => throw _privateConstructorUsedError;
+
+  /// Scoping filters narrowing the corpus searched for similar records.
+  /// At least one is required, since an unfiltered search is rejected.
+  List<DedupFilter> get filters => throw _privateConstructorUsedError;
+
+  /// Minimum weighted similarity score (0.0-1.0) for a record to be shown.
+  @JsonKey(fromJson: _doubleOrNull)
+  double? get matchThreshold => throw _privateConstructorUsedError;
+
+  /// Most matches listed in the dialog.
+  @JsonKey(fromJson: _intOrNull)
+  int? get maxResults => throw _privateConstructorUsedError;
+
+  /// Shortest a mapped field value may be before the check is skipped.
+  /// Guards against scoring against a single typed character.
+  @JsonKey(fromJson: _intOrNull)
+  int? get minFieldLength => throw _privateConstructorUsedError;
+
+  /// Hard cap on corpus rows loaded into memory for scoring.
+  @JsonKey(fromJson: _intOrNull)
+  int? get maxCandidates => throw _privateConstructorUsedError;
+
+  /// Whether the check is skipped while editing an existing record, which
+  /// would otherwise match itself.
+  bool get skipOnEdit => throw _privateConstructorUsedError;
+
+  /// Page the "back to search" action returns to.
+  String? get backToSearchPage => throw _privateConstructorUsedError;
+
+  /// The warning dialog. Absent means the built-in dialog is used with its
+  /// own default copy.
+  @JsonKey(fromJson: _dedupAlertPopUpOrNull)
+  DedupAlertPopUp? get dedupAlertPopUp => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $DedupCheckCopyWith<DedupCheck> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $DedupCheckCopyWith<$Res> {
+  factory $DedupCheckCopyWith(
+          DedupCheck value, $Res Function(DedupCheck) then) =
+      _$DedupCheckCopyWithImpl<$Res, DedupCheck>;
+  @useResult
+  $Res call(
+      {@JsonKey(fromJson: _stringMapOrEmpty) Map<String, String> fields,
+      String model,
+      List<DedupFilter> filters,
+      @JsonKey(fromJson: _doubleOrNull) double? matchThreshold,
+      @JsonKey(fromJson: _intOrNull) int? maxResults,
+      @JsonKey(fromJson: _intOrNull) int? minFieldLength,
+      @JsonKey(fromJson: _intOrNull) int? maxCandidates,
+      bool skipOnEdit,
+      String? backToSearchPage,
+      @JsonKey(fromJson: _dedupAlertPopUpOrNull)
+      DedupAlertPopUp? dedupAlertPopUp});
+
+  $DedupAlertPopUpCopyWith<$Res>? get dedupAlertPopUp;
+}
+
+/// @nodoc
+class _$DedupCheckCopyWithImpl<$Res, $Val extends DedupCheck>
+    implements $DedupCheckCopyWith<$Res> {
+  _$DedupCheckCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? fields = null,
+    Object? model = null,
+    Object? filters = null,
+    Object? matchThreshold = freezed,
+    Object? maxResults = freezed,
+    Object? minFieldLength = freezed,
+    Object? maxCandidates = freezed,
+    Object? skipOnEdit = null,
+    Object? backToSearchPage = freezed,
+    Object? dedupAlertPopUp = freezed,
+  }) {
+    return _then(_value.copyWith(
+      fields: null == fields
+          ? _value.fields
+          : fields // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>,
+      model: null == model
+          ? _value.model
+          : model // ignore: cast_nullable_to_non_nullable
+              as String,
+      filters: null == filters
+          ? _value.filters
+          : filters // ignore: cast_nullable_to_non_nullable
+              as List<DedupFilter>,
+      matchThreshold: freezed == matchThreshold
+          ? _value.matchThreshold
+          : matchThreshold // ignore: cast_nullable_to_non_nullable
+              as double?,
+      maxResults: freezed == maxResults
+          ? _value.maxResults
+          : maxResults // ignore: cast_nullable_to_non_nullable
+              as int?,
+      minFieldLength: freezed == minFieldLength
+          ? _value.minFieldLength
+          : minFieldLength // ignore: cast_nullable_to_non_nullable
+              as int?,
+      maxCandidates: freezed == maxCandidates
+          ? _value.maxCandidates
+          : maxCandidates // ignore: cast_nullable_to_non_nullable
+              as int?,
+      skipOnEdit: null == skipOnEdit
+          ? _value.skipOnEdit
+          : skipOnEdit // ignore: cast_nullable_to_non_nullable
+              as bool,
+      backToSearchPage: freezed == backToSearchPage
+          ? _value.backToSearchPage
+          : backToSearchPage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      dedupAlertPopUp: freezed == dedupAlertPopUp
+          ? _value.dedupAlertPopUp
+          : dedupAlertPopUp // ignore: cast_nullable_to_non_nullable
+              as DedupAlertPopUp?,
+    ) as $Val);
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $DedupAlertPopUpCopyWith<$Res>? get dedupAlertPopUp {
+    if (_value.dedupAlertPopUp == null) {
+      return null;
+    }
+
+    return $DedupAlertPopUpCopyWith<$Res>(_value.dedupAlertPopUp!, (value) {
+      return _then(_value.copyWith(dedupAlertPopUp: value) as $Val);
+    });
+  }
+}
+
+/// @nodoc
+abstract class _$$DedupCheckImplCopyWith<$Res>
+    implements $DedupCheckCopyWith<$Res> {
+  factory _$$DedupCheckImplCopyWith(
+          _$DedupCheckImpl value, $Res Function(_$DedupCheckImpl) then) =
+      __$$DedupCheckImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {@JsonKey(fromJson: _stringMapOrEmpty) Map<String, String> fields,
+      String model,
+      List<DedupFilter> filters,
+      @JsonKey(fromJson: _doubleOrNull) double? matchThreshold,
+      @JsonKey(fromJson: _intOrNull) int? maxResults,
+      @JsonKey(fromJson: _intOrNull) int? minFieldLength,
+      @JsonKey(fromJson: _intOrNull) int? maxCandidates,
+      bool skipOnEdit,
+      String? backToSearchPage,
+      @JsonKey(fromJson: _dedupAlertPopUpOrNull)
+      DedupAlertPopUp? dedupAlertPopUp});
+
+  @override
+  $DedupAlertPopUpCopyWith<$Res>? get dedupAlertPopUp;
+}
+
+/// @nodoc
+class __$$DedupCheckImplCopyWithImpl<$Res>
+    extends _$DedupCheckCopyWithImpl<$Res, _$DedupCheckImpl>
+    implements _$$DedupCheckImplCopyWith<$Res> {
+  __$$DedupCheckImplCopyWithImpl(
+      _$DedupCheckImpl _value, $Res Function(_$DedupCheckImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? fields = null,
+    Object? model = null,
+    Object? filters = null,
+    Object? matchThreshold = freezed,
+    Object? maxResults = freezed,
+    Object? minFieldLength = freezed,
+    Object? maxCandidates = freezed,
+    Object? skipOnEdit = null,
+    Object? backToSearchPage = freezed,
+    Object? dedupAlertPopUp = freezed,
+  }) {
+    return _then(_$DedupCheckImpl(
+      fields: null == fields
+          ? _value._fields
+          : fields // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>,
+      model: null == model
+          ? _value.model
+          : model // ignore: cast_nullable_to_non_nullable
+              as String,
+      filters: null == filters
+          ? _value._filters
+          : filters // ignore: cast_nullable_to_non_nullable
+              as List<DedupFilter>,
+      matchThreshold: freezed == matchThreshold
+          ? _value.matchThreshold
+          : matchThreshold // ignore: cast_nullable_to_non_nullable
+              as double?,
+      maxResults: freezed == maxResults
+          ? _value.maxResults
+          : maxResults // ignore: cast_nullable_to_non_nullable
+              as int?,
+      minFieldLength: freezed == minFieldLength
+          ? _value.minFieldLength
+          : minFieldLength // ignore: cast_nullable_to_non_nullable
+              as int?,
+      maxCandidates: freezed == maxCandidates
+          ? _value.maxCandidates
+          : maxCandidates // ignore: cast_nullable_to_non_nullable
+              as int?,
+      skipOnEdit: null == skipOnEdit
+          ? _value.skipOnEdit
+          : skipOnEdit // ignore: cast_nullable_to_non_nullable
+              as bool,
+      backToSearchPage: freezed == backToSearchPage
+          ? _value.backToSearchPage
+          : backToSearchPage // ignore: cast_nullable_to_non_nullable
+              as String?,
+      dedupAlertPopUp: freezed == dedupAlertPopUp
+          ? _value.dedupAlertPopUp
+          : dedupAlertPopUp // ignore: cast_nullable_to_non_nullable
+              as DedupAlertPopUp?,
+    ));
+  }
+}
+
+/// @nodoc
+
+@JsonSerializable(explicitToJson: true, includeIfNull: false)
+class _$DedupCheckImpl extends _DedupCheck {
+  const _$DedupCheckImpl(
+      {@JsonKey(fromJson: _stringMapOrEmpty)
+      required final Map<String, String> fields,
+      this.model = 'individual',
+      final List<DedupFilter> filters = const <DedupFilter>[],
+      @JsonKey(fromJson: _doubleOrNull) this.matchThreshold,
+      @JsonKey(fromJson: _intOrNull) this.maxResults,
+      @JsonKey(fromJson: _intOrNull) this.minFieldLength,
+      @JsonKey(fromJson: _intOrNull) this.maxCandidates,
+      this.skipOnEdit = true,
+      this.backToSearchPage,
+      @JsonKey(fromJson: _dedupAlertPopUpOrNull) this.dedupAlertPopUp})
+      : _fields = fields,
+        _filters = filters,
+        super._();
+
+  factory _$DedupCheckImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DedupCheckImplFromJson(json);
+
+  /// Maps a dedup engine attribute to the form field feeding it, e.g.
+  /// `{"givenName": "nameOfIndividual", "familyName": "familyname"}`.
+  final Map<String, String> _fields;
+
+  /// Maps a dedup engine attribute to the form field feeding it, e.g.
+  /// `{"givenName": "nameOfIndividual", "familyName": "familyname"}`.
+  @override
+  @JsonKey(fromJson: _stringMapOrEmpty)
+  Map<String, String> get fields {
+    if (_fields is EqualUnmodifiableMapView) return _fields;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_fields);
+  }
+
+  /// Local model searched for existing records (e.g. "individual").
+  @override
+  @JsonKey()
+  final String model;
+
+  /// Scoping filters narrowing the corpus searched for similar records.
+  /// At least one is required, since an unfiltered search is rejected.
+  final List<DedupFilter> _filters;
+
+  /// Scoping filters narrowing the corpus searched for similar records.
+  /// At least one is required, since an unfiltered search is rejected.
+  @override
+  @JsonKey()
+  List<DedupFilter> get filters {
+    if (_filters is EqualUnmodifiableListView) return _filters;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(_filters);
+  }
+
+  /// Minimum weighted similarity score (0.0-1.0) for a record to be shown.
+  @override
+  @JsonKey(fromJson: _doubleOrNull)
+  final double? matchThreshold;
+
+  /// Most matches listed in the dialog.
+  @override
+  @JsonKey(fromJson: _intOrNull)
+  final int? maxResults;
+
+  /// Shortest a mapped field value may be before the check is skipped.
+  /// Guards against scoring against a single typed character.
+  @override
+  @JsonKey(fromJson: _intOrNull)
+  final int? minFieldLength;
+
+  /// Hard cap on corpus rows loaded into memory for scoring.
+  @override
+  @JsonKey(fromJson: _intOrNull)
+  final int? maxCandidates;
+
+  /// Whether the check is skipped while editing an existing record, which
+  /// would otherwise match itself.
+  @override
+  @JsonKey()
+  final bool skipOnEdit;
+
+  /// Page the "back to search" action returns to.
+  @override
+  final String? backToSearchPage;
+
+  /// The warning dialog. Absent means the built-in dialog is used with its
+  /// own default copy.
+  @override
+  @JsonKey(fromJson: _dedupAlertPopUpOrNull)
+  final DedupAlertPopUp? dedupAlertPopUp;
+
+  @override
+  String toString() {
+    return 'DedupCheck(fields: $fields, model: $model, filters: $filters, matchThreshold: $matchThreshold, maxResults: $maxResults, minFieldLength: $minFieldLength, maxCandidates: $maxCandidates, skipOnEdit: $skipOnEdit, backToSearchPage: $backToSearchPage, dedupAlertPopUp: $dedupAlertPopUp)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$DedupCheckImpl &&
+            const DeepCollectionEquality().equals(other._fields, _fields) &&
+            (identical(other.model, model) || other.model == model) &&
+            const DeepCollectionEquality().equals(other._filters, _filters) &&
+            (identical(other.matchThreshold, matchThreshold) ||
+                other.matchThreshold == matchThreshold) &&
+            (identical(other.maxResults, maxResults) ||
+                other.maxResults == maxResults) &&
+            (identical(other.minFieldLength, minFieldLength) ||
+                other.minFieldLength == minFieldLength) &&
+            (identical(other.maxCandidates, maxCandidates) ||
+                other.maxCandidates == maxCandidates) &&
+            (identical(other.skipOnEdit, skipOnEdit) ||
+                other.skipOnEdit == skipOnEdit) &&
+            (identical(other.backToSearchPage, backToSearchPage) ||
+                other.backToSearchPage == backToSearchPage) &&
+            (identical(other.dedupAlertPopUp, dedupAlertPopUp) ||
+                other.dedupAlertPopUp == dedupAlertPopUp));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType,
+      const DeepCollectionEquality().hash(_fields),
+      model,
+      const DeepCollectionEquality().hash(_filters),
+      matchThreshold,
+      maxResults,
+      minFieldLength,
+      maxCandidates,
+      skipOnEdit,
+      backToSearchPage,
+      dedupAlertPopUp);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$DedupCheckImplCopyWith<_$DedupCheckImpl> get copyWith =>
+      __$$DedupCheckImplCopyWithImpl<_$DedupCheckImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$DedupCheckImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _DedupCheck extends DedupCheck {
+  const factory _DedupCheck(
+      {@JsonKey(fromJson: _stringMapOrEmpty)
+      required final Map<String, String> fields,
+      final String model,
+      final List<DedupFilter> filters,
+      @JsonKey(fromJson: _doubleOrNull) final double? matchThreshold,
+      @JsonKey(fromJson: _intOrNull) final int? maxResults,
+      @JsonKey(fromJson: _intOrNull) final int? minFieldLength,
+      @JsonKey(fromJson: _intOrNull) final int? maxCandidates,
+      final bool skipOnEdit,
+      final String? backToSearchPage,
+      @JsonKey(fromJson: _dedupAlertPopUpOrNull)
+      final DedupAlertPopUp? dedupAlertPopUp}) = _$DedupCheckImpl;
+  const _DedupCheck._() : super._();
+
+  factory _DedupCheck.fromJson(Map<String, dynamic> json) =
+      _$DedupCheckImpl.fromJson;
+
+  @override
+
+  /// Maps a dedup engine attribute to the form field feeding it, e.g.
+  /// `{"givenName": "nameOfIndividual", "familyName": "familyname"}`.
+  @JsonKey(fromJson: _stringMapOrEmpty)
+  Map<String, String> get fields;
+  @override
+
+  /// Local model searched for existing records (e.g. "individual").
+  String get model;
+  @override
+
+  /// Scoping filters narrowing the corpus searched for similar records.
+  /// At least one is required, since an unfiltered search is rejected.
+  List<DedupFilter> get filters;
+  @override
+
+  /// Minimum weighted similarity score (0.0-1.0) for a record to be shown.
+  @JsonKey(fromJson: _doubleOrNull)
+  double? get matchThreshold;
+  @override
+
+  /// Most matches listed in the dialog.
+  @JsonKey(fromJson: _intOrNull)
+  int? get maxResults;
+  @override
+
+  /// Shortest a mapped field value may be before the check is skipped.
+  /// Guards against scoring against a single typed character.
+  @JsonKey(fromJson: _intOrNull)
+  int? get minFieldLength;
+  @override
+
+  /// Hard cap on corpus rows loaded into memory for scoring.
+  @JsonKey(fromJson: _intOrNull)
+  int? get maxCandidates;
+  @override
+
+  /// Whether the check is skipped while editing an existing record, which
+  /// would otherwise match itself.
+  bool get skipOnEdit;
+  @override
+
+  /// Page the "back to search" action returns to.
+  String? get backToSearchPage;
+  @override
+
+  /// The warning dialog. Absent means the built-in dialog is used with its
+  /// own default copy.
+  @JsonKey(fromJson: _dedupAlertPopUpOrNull)
+  DedupAlertPopUp? get dedupAlertPopUp;
+  @override
+  @JsonKey(ignore: true)
+  _$$DedupCheckImplCopyWith<_$DedupCheckImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+DedupFilter _$DedupFilterFromJson(Map<String, dynamic> json) {
+  return _DedupFilter.fromJson(json);
+}
+
+/// @nodoc
+mixin _$DedupFilter {
+  /// Column filtered on (e.g. "projectId").
+  String get key => throw _privateConstructorUsedError;
+
+  /// Table the column belongs to (e.g. "projectBeneficiary"). Defaults to
+  /// the config's own model when omitted.
+  String? get root => throw _privateConstructorUsedError;
+
+  /// Value template, e.g. `{{singleton.projectId}}`. A filter whose value
+  /// resolves to empty is dropped.
+  String get value => throw _privateConstructorUsedError;
+  String get operation => throw _privateConstructorUsedError;
+
+  /// Template selecting between [cases], e.g. `{{navigation.flowType}}`.
+  String? get switchOn => throw _privateConstructorUsedError;
+
+  /// Value templates keyed by the resolved [switchOn] result.
+  Map<String, String>? get cases => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $DedupFilterCopyWith<DedupFilter> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $DedupFilterCopyWith<$Res> {
+  factory $DedupFilterCopyWith(
+          DedupFilter value, $Res Function(DedupFilter) then) =
+      _$DedupFilterCopyWithImpl<$Res, DedupFilter>;
+  @useResult
+  $Res call(
+      {String key,
+      String? root,
+      String value,
+      String operation,
+      String? switchOn,
+      Map<String, String>? cases});
+}
+
+/// @nodoc
+class _$DedupFilterCopyWithImpl<$Res, $Val extends DedupFilter>
+    implements $DedupFilterCopyWith<$Res> {
+  _$DedupFilterCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? key = null,
+    Object? root = freezed,
+    Object? value = null,
+    Object? operation = null,
+    Object? switchOn = freezed,
+    Object? cases = freezed,
+  }) {
+    return _then(_value.copyWith(
+      key: null == key
+          ? _value.key
+          : key // ignore: cast_nullable_to_non_nullable
+              as String,
+      root: freezed == root
+          ? _value.root
+          : root // ignore: cast_nullable_to_non_nullable
+              as String?,
+      value: null == value
+          ? _value.value
+          : value // ignore: cast_nullable_to_non_nullable
+              as String,
+      operation: null == operation
+          ? _value.operation
+          : operation // ignore: cast_nullable_to_non_nullable
+              as String,
+      switchOn: freezed == switchOn
+          ? _value.switchOn
+          : switchOn // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cases: freezed == cases
+          ? _value.cases
+          : cases // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$DedupFilterImplCopyWith<$Res>
+    implements $DedupFilterCopyWith<$Res> {
+  factory _$$DedupFilterImplCopyWith(
+          _$DedupFilterImpl value, $Res Function(_$DedupFilterImpl) then) =
+      __$$DedupFilterImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String key,
+      String? root,
+      String value,
+      String operation,
+      String? switchOn,
+      Map<String, String>? cases});
+}
+
+/// @nodoc
+class __$$DedupFilterImplCopyWithImpl<$Res>
+    extends _$DedupFilterCopyWithImpl<$Res, _$DedupFilterImpl>
+    implements _$$DedupFilterImplCopyWith<$Res> {
+  __$$DedupFilterImplCopyWithImpl(
+      _$DedupFilterImpl _value, $Res Function(_$DedupFilterImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? key = null,
+    Object? root = freezed,
+    Object? value = null,
+    Object? operation = null,
+    Object? switchOn = freezed,
+    Object? cases = freezed,
+  }) {
+    return _then(_$DedupFilterImpl(
+      key: null == key
+          ? _value.key
+          : key // ignore: cast_nullable_to_non_nullable
+              as String,
+      root: freezed == root
+          ? _value.root
+          : root // ignore: cast_nullable_to_non_nullable
+              as String?,
+      value: null == value
+          ? _value.value
+          : value // ignore: cast_nullable_to_non_nullable
+              as String,
+      operation: null == operation
+          ? _value.operation
+          : operation // ignore: cast_nullable_to_non_nullable
+              as String,
+      switchOn: freezed == switchOn
+          ? _value.switchOn
+          : switchOn // ignore: cast_nullable_to_non_nullable
+              as String?,
+      cases: freezed == cases
+          ? _value._cases
+          : cases // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>?,
+    ));
+  }
+}
+
+/// @nodoc
+
+@JsonSerializable(explicitToJson: true, includeIfNull: false)
+class _$DedupFilterImpl implements _DedupFilter {
+  const _$DedupFilterImpl(
+      {required this.key,
+      this.root,
+      required this.value,
+      this.operation = 'equals',
+      this.switchOn,
+      final Map<String, String>? cases})
+      : _cases = cases;
+
+  factory _$DedupFilterImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DedupFilterImplFromJson(json);
+
+  /// Column filtered on (e.g. "projectId").
+  @override
+  final String key;
+
+  /// Table the column belongs to (e.g. "projectBeneficiary"). Defaults to
+  /// the config's own model when omitted.
+  @override
+  final String? root;
+
+  /// Value template, e.g. `{{singleton.projectId}}`. A filter whose value
+  /// resolves to empty is dropped.
+  @override
+  final String value;
+  @override
+  @JsonKey()
+  final String operation;
+
+  /// Template selecting between [cases], e.g. `{{navigation.flowType}}`.
+  @override
+  final String? switchOn;
+
+  /// Value templates keyed by the resolved [switchOn] result.
+  final Map<String, String>? _cases;
+
+  /// Value templates keyed by the resolved [switchOn] result.
+  @override
+  Map<String, String>? get cases {
+    final value = _cases;
+    if (value == null) return null;
+    if (_cases is EqualUnmodifiableMapView) return _cases;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(value);
+  }
+
+  @override
+  String toString() {
+    return 'DedupFilter(key: $key, root: $root, value: $value, operation: $operation, switchOn: $switchOn, cases: $cases)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$DedupFilterImpl &&
+            (identical(other.key, key) || other.key == key) &&
+            (identical(other.root, root) || other.root == root) &&
+            (identical(other.value, value) || other.value == value) &&
+            (identical(other.operation, operation) ||
+                other.operation == operation) &&
+            (identical(other.switchOn, switchOn) ||
+                other.switchOn == switchOn) &&
+            const DeepCollectionEquality().equals(other._cases, _cases));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, key, root, value, operation,
+      switchOn, const DeepCollectionEquality().hash(_cases));
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$DedupFilterImplCopyWith<_$DedupFilterImpl> get copyWith =>
+      __$$DedupFilterImplCopyWithImpl<_$DedupFilterImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$DedupFilterImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _DedupFilter implements DedupFilter {
+  const factory _DedupFilter(
+      {required final String key,
+      final String? root,
+      required final String value,
+      final String operation,
+      final String? switchOn,
+      final Map<String, String>? cases}) = _$DedupFilterImpl;
+
+  factory _DedupFilter.fromJson(Map<String, dynamic> json) =
+      _$DedupFilterImpl.fromJson;
+
+  @override
+
+  /// Column filtered on (e.g. "projectId").
+  String get key;
+  @override
+
+  /// Table the column belongs to (e.g. "projectBeneficiary"). Defaults to
+  /// the config's own model when omitted.
+  String? get root;
+  @override
+
+  /// Value template, e.g. `{{singleton.projectId}}`. A filter whose value
+  /// resolves to empty is dropped.
+  String get value;
+  @override
+  String get operation;
+  @override
+
+  /// Template selecting between [cases], e.g. `{{navigation.flowType}}`.
+  String? get switchOn;
+  @override
+
+  /// Value templates keyed by the resolved [switchOn] result.
+  Map<String, String>? get cases;
+  @override
+  @JsonKey(ignore: true)
+  _$$DedupFilterImplCopyWith<_$DedupFilterImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }

@@ -84,6 +84,7 @@ dependencies:
   jailbreak_root_detection: ^1.1.6
 
 dev_dependencies:
+  digit_dedup_engine: ^0.0.1-dev
   flutter_test:
     sdk: flutter
   integration_test:

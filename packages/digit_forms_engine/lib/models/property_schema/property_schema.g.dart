@@ -69,6 +69,7 @@ _$PropertySchemaImpl _$$PropertySchemaImplFromJson(Map<String, dynamic> json) =>
       submitCondition: _visibilityConditionOrNull(json['submitCondition']),
       secondaryActionLabel: json['secondaryActionLabel'] as String?,
       comparisonConfig: _comparisonConfigOrNull(json['comparisonConfig']),
+      dedupCheck: _dedupCheckOrNull(json['dedupCheck']),
     );
 
 Map<String, dynamic> _$$PropertySchemaImplToJson(
@@ -132,6 +133,7 @@ Map<String, dynamic> _$$PropertySchemaImplToJson(
   writeNotNull('submitCondition', instance.submitCondition?.toJson());
   writeNotNull('secondaryActionLabel', instance.secondaryActionLabel);
   writeNotNull('comparisonConfig', instance.comparisonConfig?.toJson());
+  writeNotNull('dedupCheck', instance.dedupCheck?.toJson());
   return val;
 }
 
@@ -432,6 +434,120 @@ Map<String, dynamic> _$$ComparisonFilterImplToJson(
     }
   }
 
+  writeNotNull('switchOn', instance.switchOn);
+  writeNotNull('cases', instance.cases);
+  return val;
+}
+
+_$DedupAlertPopUpImpl _$$DedupAlertPopUpImplFromJson(
+        Map<String, dynamic> json) =>
+    _$DedupAlertPopUpImpl(
+      title: json['title'] as String,
+      description: json['description'] as String?,
+      primaryActionLabel: json['primaryActionLabel'] as String,
+      secondaryActionLabel: json['secondaryActionLabel'] as String,
+      titleIcon: json['titleIcon'] as String?,
+      body: json['body'] as List<dynamic>? ?? const <dynamic>[],
+      matchesKey: json['matchesKey'] as String? ?? 'dedupMatches',
+      showScore: json['showScore'] as bool? ?? true,
+      scoreLabel: json['scoreLabel'] as String?,
+      missingIdLabel: json['missingIdLabel'] as String?,
+      barrierDismissible: json['barrierDismissible'] as bool? ?? false,
+      showCloseButton: json['showCloseButton'] as bool? ?? false,
+    );
+
+Map<String, dynamic> _$$DedupAlertPopUpImplToJson(
+    _$DedupAlertPopUpImpl instance) {
+  final val = <String, dynamic>{
+    'title': instance.title,
+  };
+
+  void writeNotNull(String key, dynamic value) {
+    if (value != null) {
+      val[key] = value;
+    }
+  }
+
+  writeNotNull('description', instance.description);
+  val['primaryActionLabel'] = instance.primaryActionLabel;
+  val['secondaryActionLabel'] = instance.secondaryActionLabel;
+  writeNotNull('titleIcon', instance.titleIcon);
+  val['body'] = instance.body;
+  val['matchesKey'] = instance.matchesKey;
+  val['showScore'] = instance.showScore;
+  writeNotNull('scoreLabel', instance.scoreLabel);
+  writeNotNull('missingIdLabel', instance.missingIdLabel);
+  val['barrierDismissible'] = instance.barrierDismissible;
+  val['showCloseButton'] = instance.showCloseButton;
+  return val;
+}
+
+_$DedupCheckImpl _$$DedupCheckImplFromJson(Map<String, dynamic> json) =>
+    _$DedupCheckImpl(
+      fields: _stringMapOrEmpty(json['fields']),
+      model: json['model'] as String? ?? 'individual',
+      filters: (json['filters'] as List<dynamic>?)
+              ?.map((e) => DedupFilter.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <DedupFilter>[],
+      matchThreshold: _doubleOrNull(json['matchThreshold']),
+      maxResults: _intOrNull(json['maxResults']),
+      minFieldLength: _intOrNull(json['minFieldLength']),
+      maxCandidates: _intOrNull(json['maxCandidates']),
+      skipOnEdit: json['skipOnEdit'] as bool? ?? true,
+      backToSearchPage: json['backToSearchPage'] as String?,
+      dedupAlertPopUp: _dedupAlertPopUpOrNull(json['dedupAlertPopUp']),
+    );
+
+Map<String, dynamic> _$$DedupCheckImplToJson(_$DedupCheckImpl instance) {
+  final val = <String, dynamic>{
+    'fields': instance.fields,
+    'model': instance.model,
+    'filters': instance.filters.map((e) => e.toJson()).toList(),
+  };
+
+  void writeNotNull(String key, dynamic value) {
+    if (value != null) {
+      val[key] = value;
+    }
+  }
+
+  writeNotNull('matchThreshold', instance.matchThreshold);
+  writeNotNull('maxResults', instance.maxResults);
+  writeNotNull('minFieldLength', instance.minFieldLength);
+  writeNotNull('maxCandidates', instance.maxCandidates);
+  val['skipOnEdit'] = instance.skipOnEdit;
+  writeNotNull('backToSearchPage', instance.backToSearchPage);
+  writeNotNull('dedupAlertPopUp', instance.dedupAlertPopUp?.toJson());
+  return val;
+}
+
+_$DedupFilterImpl _$$DedupFilterImplFromJson(Map<String, dynamic> json) =>
+    _$DedupFilterImpl(
+      key: json['key'] as String,
+      root: json['root'] as String?,
+      value: json['value'] as String,
+      operation: json['operation'] as String? ?? 'equals',
+      switchOn: json['switchOn'] as String?,
+      cases: (json['cases'] as Map<String, dynamic>?)?.map(
+        (k, e) => MapEntry(k, e as String),
+      ),
+    );
+
+Map<String, dynamic> _$$DedupFilterImplToJson(_$DedupFilterImpl instance) {
+  final val = <String, dynamic>{
+    'key': instance.key,
+  };
+
+  void writeNotNull(String key, dynamic value) {
+    if (value != null) {
+      val[key] = value;
+    }
+  }
+
+  writeNotNull('root', instance.root);
+  val['value'] = instance.value;
+  val['operation'] = instance.operation;
   writeNotNull('switchOn', instance.switchOn);
   writeNotNull('cases', instance.cases);
   return val;

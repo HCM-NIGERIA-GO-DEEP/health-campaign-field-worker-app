@@ -12,6 +12,7 @@ dependencies:
     sdk: flutter
   digit_crud_bloc: ^0.0.2-dev
   digit_data_converter: ^0.0.2-dev
+  digit_dedup_engine: ^0.0.1-dev
   digit_forms_engine: ^0.0.2-dev
   digit_ui_components: ^0.3.0+1
   flutter_bloc: ^8.1.5

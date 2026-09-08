@@ -23,6 +23,7 @@ import '../models/property_schema/property_schema.dart';
 import '../models/schema_object/schema_object.dart';
 import '../utils/screen_protection_manager.dart';
 import '../utils/utils.dart';
+import '../widgets/dedup_check_provider.dart';
 import '../widgets/multi_entity_tab_view.dart';
 
 @RoutePage()
@@ -103,6 +104,53 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
       _backDisabledSchemas.contains(widget.currentSchemaKey) ||
       widget.navigationParams?['disableBack'] == true ||
       widget.navigationParams?['disableBack'] == 'true';
+
+  /// Runs the page's configured duplicate check before anything is written.
+  ///
+  /// Returns [DedupCheckOutcome.proceed] whenever the page opts out, the check
+  /// does not apply, or no callback is registered, so a submission is only ever
+  /// halted by an explicit user decision. The search itself lives outside this
+  /// package -- see [DedupCheckRegistry].
+  Future<DedupCheckOutcome> _runDedupCheck(
+    PropertySchema schema,
+    FormGroup formGroup,
+  ) async {
+    final config = schema.dedupCheck;
+    if (config == null) return DedupCheckOutcome.proceed;
+
+    // Editing an existing record would match that record against itself.
+    if (config.skipOnEdit && widget.isEdit) return DedupCheckOutcome.proceed;
+
+    final checkFn = DedupCheckRegistry().checkFn;
+    if (checkFn == null) return DedupCheckOutcome.proceed;
+
+    // Collect the mapped fields. Every one has to carry enough text to score
+    // against, since a single character would be similar to almost anything.
+    final formValues = <String, dynamic>{};
+    for (final fieldName in config.fields.values) {
+      if (!formGroup.contains(fieldName)) return DedupCheckOutcome.proceed;
+
+      final value = formGroup.control(fieldName).value;
+      if (value == null) return DedupCheckOutcome.proceed;
+
+      final asText = value.toString().trim();
+      if (asText.length < config.effectiveMinFieldLength) {
+        return DedupCheckOutcome.proceed;
+      }
+      formValues[fieldName] = value;
+    }
+    if (formValues.isEmpty) return DedupCheckOutcome.proceed;
+
+    return checkFn(DedupCheckRequest(
+      config: config,
+      alert: config.dedupAlertPopUp,
+      schemaKey: widget.currentSchemaKey,
+      pageName: widget.pageName,
+      formValues: formValues,
+      navigationParams: widget.navigationParams ?? const {},
+      isEdit: widget.isEdit,
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -291,6 +339,22 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                   setState(() {});
                                   return;
                                 }
+
+                                // 3b. Warn about existing records similar to
+                                // this one. Runs after validation so the user
+                                // is not interrupted over an incomplete form,
+                                // and before step 4 so nothing is written when
+                                // they back out.
+                                final dedupOutcome =
+                                    await _runDedupCheck(schema, formGroup);
+
+                                if (dedupOutcome == DedupCheckOutcome.abort) {
+                                  _isSubmitting = false;
+                                  if (mounted) setState(() {});
+                                  return;
+                                }
+
+                                if (!mounted) return;
 
                                 // 4. Proceed with value extraction and state update
                                 final values = JsonForms.getFormValues(
