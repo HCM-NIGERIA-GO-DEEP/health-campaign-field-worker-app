@@ -691,6 +691,17 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                             /// FIXME: need to send null as empty string will take space
                                             actions: [
                                               DigitButton(
+                                                  // Stable UI-test ids for the
+                                                  // submit-confirmation dialog.
+                                                  // Its labels come from config
+                                                  // (ACTION_SUBMIT /
+                                                  // ACTION_CANCEL) and on this
+                                                  // campaign BOTH translate to
+                                                  // blank, so the buttons carry
+                                                  // no text to match on either
+                                                  // (run -1524, flow 04).
+                                                  semanticsIdentifier:
+                                                      'form_alert_primary',
                                                   label: localizations
                                                       .translate(schema
                                                           .showAlertPopUp!
@@ -718,6 +729,10 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                                   type: DigitButtonType.primary,
                                                   size: DigitButtonSize.large),
                                               DigitButton(
+                                                  // Cancel half of the same
+                                                  // dialog - see above.
+                                                  semanticsIdentifier:
+                                                      'form_alert_secondary',
                                                   label: localizations
                                                       .translate(schema
                                                           .showAlertPopUp!

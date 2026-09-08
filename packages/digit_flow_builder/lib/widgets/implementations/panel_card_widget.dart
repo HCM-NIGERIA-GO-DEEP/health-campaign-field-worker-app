@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../action_handler/action_config.dart';
 import '../../blocs/flow_crud_bloc.dart';
+import '../../utils/semantics_identifier.dart';
 import '../../utils/utils.dart';
 import '../../widget_registry.dart';
 import '../localization_context.dart';
@@ -43,6 +44,20 @@ class PanelCardWidget extends ResolvedFlowWidget {
 
     Map<String, dynamic>? primaryAction = json['primaryAction'];
     Map<String, dynamic>? secondaryAction = json['secondaryAction'];
+
+    // Stable identifiers for the two action buttons, same derivation as
+    // FlowWidgetFactory.build() uses for top-level widgets - but these are
+    // nested inside primaryAction/secondaryAction sub-configs and built
+    // directly below (not routed back through the factory), so they were
+    // never getting one at all (viewHouseholdButton stayed resource-id-less
+    // no matter how long a UI test waited - run -2244).
+    final stateKey = resolved.compositeKey ?? resolved.screenKey;
+    final primaryActionId = primaryAction != null
+        ? semanticsIdentifierFor(primaryAction, stateKey)
+        : null;
+    final secondaryActionId = secondaryAction != null
+        ? semanticsIdentifierFor(secondaryAction, stateKey)
+        : null;
 
     void handleAction(Map<String, dynamic>? actionJson) {
       if (actionJson == null) return;
@@ -100,6 +115,7 @@ class PanelCardWidget extends ResolvedFlowWidget {
             label: localization?.translate(primaryAction['label'] ?? '') ??
                 (primaryAction['label'] ?? ''),
             onPressed: () => handleAction(json['primaryAction']),
+            semanticsIdentifier: primaryActionId,
           ),
         if (secondaryAction != null)
           DigitButton(
@@ -109,6 +125,7 @@ class PanelCardWidget extends ResolvedFlowWidget {
                 localization?.translate(secondaryAction['label'] ?? '') ??
                     (secondaryAction['label'] ?? ''),
             onPressed: () => handleAction(json['secondaryAction']),
+            semanticsIdentifier: secondaryActionId,
           ),
       ],
     );
