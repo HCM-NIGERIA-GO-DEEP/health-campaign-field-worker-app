@@ -146,6 +146,11 @@ tags:
 # FORM footer by stable id (labels are per-page campaign texts; see 03)
 - tapOn:
     id: "form_action"
+# ADD_MEMBER is a single-page flow, so this submit hits the forms-engine
+# "Ready to submit?" confirmation. Its buttons are BLANK on this campaign and
+# so can only be addressed by id - see close-keyboard's sibling
+# confirm-submit.yaml for the full config audit.
+- runFlow: ../common/confirm-submit.yaml
 # Acknowledgement, then the child must appear in the household
 - extendedWaitUntil:
     visible:

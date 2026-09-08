@@ -17,17 +17,20 @@ anyone — QA, developers, leads — can read and edit it. Cases are executed tw
 | TC-004 add child member | automated (first live run pending) | `04-add-child-member` |
 | TC-005 SMC delivery | automated (first live run pending) | `05-deliver-smc` |
 | TC-006 search household | automated (first live run pending) | `06-search-household` |
-| TC-007 ineligible blocked | automated (first live run pending) | `07-ineligible-routes-to-referral` |
+| TC-007 ineligible blocked | automated (first live run pending) | `07-ineligible-routes-to-referral` (referral sub-case), `08-ineligible-child` (ineligible sub-case) |
 | TC-008 outside working hours | manual (time-gated: needs control of the device clock; emulator only) | — |
 
 `02-home-tiles` is an extra build-smoke flow with no MD case. When a flow is added or
 retired, update this table (that's part of adding the flow).
 
-Flows 03–07 run as ONE suite invocation: `run-maestro.ps1` injects a shared
+Flows 03–08 run as ONE suite invocation: `run-maestro.ps1` injects a shared
 `RUN_STAMP`, so the test household is named `QATEST <RUN_STAMP> HEAD` and later
-flows find what earlier ones registered. The eligibility answers in 05/07 come
-from the campaign config's own routing rules (all-No = deliver; first question
-Yes = refer), not from guesses.
+flows find what earlier ones registered. The eligibility answers in 05/07/08 come
+from REGISTRATION.json's CHECKLIST onAction conditions, not from guesses: all-No
+(or the ec3=Yes variant) delivers (05), ec5=Yes is silently marked ineligible with
+no extra screen (08), any other Yes (e.g. ec1) routes to Refer Beneficiary (07).
+Each of the three outcomes uses its own child (CHILD/CHILD2/CHILD3) added within
+its own flow, since one child can only exercise one outcome.
 
 **App launch-state nuance (affects every case, manual or automated):** the app
 never opens on the home screen. Every cold start of a logged-in app lands on

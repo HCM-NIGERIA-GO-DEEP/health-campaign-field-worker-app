@@ -161,9 +161,14 @@ tags:
 # Config: value "1", step 1, min 0, max 30. Drive it with the "+" affordance
 # (accessibilityText "+", a symbol, so not campaign-localized).
 # memberCount MUST end above the member count this suite creates (head +
-# CHILD + CHILD2 = 3): householdOverview's Add Member fires SHOW_TOAST
-# CHILDREN_COUNT_EXCEEDED and refuses to navigate while
-# length(members) >= memberCount, which would strand flows 04 and 07.
+# CHILD/05 + CHILD2/07 + CHILD3/08 = 4): householdOverview's Add Member fires
+# SHOW_TOAST CHILDREN_COUNT_EXCEEDED and refuses to navigate to the ADD_MEMBER
+# form while length(members) >= memberCount, checked BEFORE the member being
+# added - so memberCount==4 already strands the 4th add (run -1711: default
+# "3" stranded flow 08's CHILD3, never reaching the member form). Keep
+# MEMBER_COUNT (run-maestro.ps1 default) at least one above the current total
+# child count, and bump both this comment and that default together whenever
+# a new flow adds another child.
 - extendedWaitUntil:
     visible:
       id: "memberCount"

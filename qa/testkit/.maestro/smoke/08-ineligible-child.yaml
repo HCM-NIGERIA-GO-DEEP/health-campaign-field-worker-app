@@ -1,14 +1,19 @@
-# TC-007 (negative), REFERRAL sub-case: a child failing eligibility with a
-# non-ec5 "Yes" must NOT reach delivery, and must NOT be silently marked
-# ineligible either - it must route to Refer Beneficiary.
-# Config answer key (REGISTRATION.json CHECKLIST onAction, actionId 4/DEFAULT):
-# first question (ec1) = "Yes" with the rest "No" routes to REFER_BENEFICIARY -
-# delivery must not open. (ec5=Yes is the OTHER negative sub-case - straight-
-# to-ineligible instead of a referral form - covered separately by flow 08,
-# since one child can only exercise one outcome.)
-# The flow adds a second child (CHILD2) so it never collides with the delivered
-# CHILD from flow 05, asserts the Refer screen appears, then BACKS OUT without
-# submitting - no referral record is created, nothing is delivered.
+# TC-007 (negative), INELIGIBLE sub-case: a child whose LAST checklist
+# question (ec5) is "Yes" must be routed straight back to the household
+# overview - not to delivery, and not to the Refer Beneficiary form (that is
+# the OTHER negative sub-case, ec1=Yes, covered by flow 07 with CHILD2).
+# Config answer key (REGISTRATION.json CHECKLIST onAction, actionId 3):
+#   ec5==YES -> FETCH_TRANSFORMER_CONFIG(ineligibleConfig) + CREATE_EVENT,
+#   then navigate straight to "householdOverview" (popUntilAndPush,
+#   popUntilPageName searchBeneficiary) - no beneficiaryDetails/Delivery
+#   Details screen, no REFER_BENEFICIARY form. actionId 1/2 (all-No or the
+#   ec3=Yes variant) require ec5==NO, so ec5=Yes can never fall through to the
+#   "administered" branch; DEFAULT (actionId 4, referral) is only reached when
+#   NEITHER the administer nor the ec5==YES condition matched, so ec1-ec4 are
+#   set to "No" here to keep this run unambiguously in the ineligible branch.
+# The flow adds a THIRD child (CHILD3) so it never collides with the delivered
+# CHILD from flow 05 or the referred CHILD2 from flow 07 - one child exercises
+# exactly one outcome. NOT yet device-confirmed: no run has reached this path.
 # PRECONDITIONS: 03 passed in THIS run; working hours + cycle window.
 appId: com.digit.hcm
 tags:
@@ -34,10 +39,6 @@ tags:
     text: ${BOUNDARY_L2_VALUE}
 # NO hideKeyboard after the search inputText (route-pop trap, run -2252) and
 # retype once on dropped keystrokes - see 04 for the full story.
-# Localization settle gate + re-tap before retyping - see 03 for the full
-# story (run -1128: ids go live one relayout before labels translate, the
-# header then shrinks 133px and a tap aimed at the pre-translation bounds
-# misses the field; an unfocused field also swallows eraseText/inputText).
 - extendedWaitUntil:
     visible:
       text: "Search Beneficiary"
@@ -75,14 +76,11 @@ tags:
 # beneficiary-ID pool >= minimum, fieldName beneficiaryIdMinCheck (same
 # visible label) when below; the low-pool popup's skip-and-continue button
 # (fieldName clearFilter) proceeds to the same ADD_MEMBER form.
-# Overview arrival on its always-visible top children, then scroll addMember in:
-# it is body child #2 below listViewMembers and was absent from run -1245's
-# hierarchy (off-screen); tapOn does NOT auto-scroll. See 04 for the same fix.
 - extendedWaitUntil:
     visible:
       id: ".*_(householdDetails|listViewMembers)"
     timeout: 20000
-# Add CHILD2 (eligible age - the blocking must come from the checklist, not age)
+# Add CHILD3 (eligible age - the blocking must come from the checklist, not age)
 - scrollUntilVisible:
     element:
       id: ".*_(addMember|beneficiaryIdMinCheck)"
@@ -101,18 +99,18 @@ tags:
     timeout: 20000
 - tapOn:
     id: "nameOfIndividual_input"
-- inputText: "QATEST ${RUN_STAMP} CHILD2"
-# Typed-name integrity (see 03): the CHILD2 card is matched by this name.
+- inputText: "QATEST ${RUN_STAMP} CHILD3"
+# Typed-name integrity (see 03): the CHILD3 card is matched by this name.
 - runFlow:
     when:
       notVisible:
-        text: "QATEST ${RUN_STAMP} CHILD2"
+        text: "QATEST ${RUN_STAMP} CHILD3"
     commands:
       - eraseText
-      - inputText: "QATEST ${RUN_STAMP} CHILD2"
+      - inputText: "QATEST ${RUN_STAMP} CHILD3"
 - hideKeyboard
 - assertVisible:
-    text: "QATEST ${RUN_STAMP} CHILD2"
+    text: "QATEST ${RUN_STAMP} CHILD3"
 - tapOn:
     id: "familyname_input"
 - inputText: "QATEST"
@@ -141,42 +139,38 @@ tags:
 # Back to the household: ADD_MEMBER always lands on the ACKNOWLEDGEMENT
 # template (config), whose View-Household button is fieldName
 # viewHouseholdButton. It is nested inside the panelCard's primaryAction, one
-# relayout behind the panelCard's OWN successCard id - waiting only on
-# successCard and tapping immediately raced it (run -1711: the button's
-# accessibilityText "View Household Details" was on screen but its
-# resource-id was still empty). Wait on the button's own id first.
+# relayout behind the panelCard's OWN successCard id - wait on the button's
+# own id before tapping (see 07 for the device-confirmed race, run -1711).
 - extendedWaitUntil:
     visible:
       id: ".*_viewHouseholdButton"
     timeout: 20000
 - tapOn:
     id: ".*_viewHouseholdButton"
-# Overview arrival on the always-visible top children (see above) - addMember is
-# below the member list and is not in the tree on arrival.
 - extendedWaitUntil:
     visible:
       id: ".*_(householdDetails|listViewMembers)"
     timeout: 20000
 - scrollUntilVisible:
     element:
-      text: "QATEST ${RUN_STAMP} CHILD2.*"
+      text: "QATEST ${RUN_STAMP} CHILD3.*"
     direction: DOWN
     timeout: 20000
 - tapOn:
     id: ".*_deliveryButton"
     below:
-      text: "QATEST ${RUN_STAMP} CHILD2.*"
-# --- Eligibility: ec1 = Yes (disqualifying), rest No -> must route to Refer ---
-# Radios by <fieldName>_<code> (config codes YES/NO) - see 05 for why neither
-# `id: ec1` nor `text: "Yes"` can reach a radio. This flow's whole point is
-# that ec1 SPECIFICALLY is the disqualifying Yes, so naming the field beats
-# the old index-into-screen-order tap. Needs an APK built after 2026-09-03.
+      text: "QATEST ${RUN_STAMP} CHILD3.*"
+# --- Eligibility: ec5 = Yes (the ineligible-specific disqualifier), rest No ---
+# actionId 3's condition is ec5==YES alone; ec1-ec4 are set to No purely to
+# keep this run unambiguous (see header) - they do not affect which branch
+# fires. Radios by <fieldName>_<code> id - see 05 for why neither `id: ec5`
+# nor `text: "Yes"` can reach a radio.
 - extendedWaitUntil:
     visible:
       id: "ec1_(YES|NO)"
     timeout: 20000
 - tapOn:
-    id: "ec1_YES"
+    id: "ec1_NO"
 - tapOn:
     id: "ec2_NO"
 - tapOn:
@@ -191,23 +185,25 @@ tags:
     direction: DOWN
     timeout: 15000
 - tapOn:
-    id: "ec5_NO"
+    id: "ec5_YES"
 - tapOn:
     id: "form_action"
 # CHECKLIST (config flow 9) is single-page with showAlertPopUp -> the same
-# blank-buttoned "Ready to submit?" dialog as the add-member submit above.
+# blank-buttoned "Ready to submit?" dialog as the add-member submit above
+# (this dialog's title/body differ per branch - "Ineligible flow" here - but
+# the button ids are the same form_alert_primary/secondary).
 - runFlow: ../common/confirm-submit.yaml
-# --- MUST land on Refer Beneficiary (id from its form fields), NOT delivery ---
-# referredBy is `string`/`text` (readOnly) -> JsonSchemaStringBuilder, the same
-# builder as nameOfIndividual, so it carries `_input` and has likewise lost its
-# field-level node. readOnly changes only the box's editability, not which
-# semantics node exists. NOT yet device-confirmed: no run has reached this page.
+# --- MUST land straight back on the household overview - NOT delivery, NOT
+# the referral form. actionId 3 pops until searchBeneficiary/householdOverview
+# with no intermediate screen, unlike actionId 4 (REFER_BENEFICIARY form) or
+# actionId 1/2 (beneficiaryDetails -> Delivery Details).
 - extendedWaitUntil:
     visible:
-      id: "referredBy_input"
+      id: ".*_(householdDetails|listViewMembers)"
     timeout: 20000
 - assertNotVisible:
+    id: "referredBy_input"
+- assertNotVisible:
     id: "resourceCard"
-# Leave without creating a referral
-- back
-- back
+- assertNotVisible:
+    id: ".*_successCard"

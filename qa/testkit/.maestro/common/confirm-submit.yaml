@@ -1,0 +1,37 @@
+# SHARED: answer the forms-engine "Ready to submit?" confirmation dialog.
+# Included via `runFlow: ../common/confirm-submit.yaml` immediately after the
+# form_action tap that SUBMITS a flow. Lives OUTSIDE .maestro/smoke so the
+# runner never executes it as a test.
+#
+# WHEN IT APPEARS (forms_render.dart, the `nextPageEntry.isEmpty` branch):
+# only on a flow's FINAL page, only when that page declares `showAlertPopUp`,
+# and only when the schema has no summary screen. Config audit of
+# REGISTRATION.json:
+#   flow 10 ADD_MEMBER   order 4, single page, alert -> FIRES
+#   flow  9 CHECKLIST    order 1, single page, alert -> FIRES  (ec1..ec5)
+#   flow  7 DELIVERY     alert is on order 1, but order 2 follows -> no popup
+#   flow 13 HOUSEHOLD    alert is on consent order 3, orders 4/5 follow -> none
+# That last row is why flow 03 never sees this dialog and 04 always does.
+#
+# WHY IDS AND NOT TEXT - the dialog's buttons are BLANK on this campaign.
+# Their labels come from config (`primaryActionLabel: ACTION_SUBMIT`,
+# `secondaryActionLabel: ACTION_CANCEL`) and both resolve to empty strings, so
+# the buttons render with no caption at all (run -1524 screenshot). A missing
+# localization key would show the raw key and be matchable; a record that EXISTS
+# with an empty message is not. The two DigitButtons therefore carry
+# semanticsIdentifier `form_alert_primary` / `form_alert_secondary`, added in
+# forms_render.dart alongside the existing `form_action` id.
+#
+# NOTE FOR A HUMAN: those blank captions are a real user-facing defect, not a
+# test problem - a field worker sees two unlabelled buttons on every add-member
+# and eligibility submit. Same family as the campaign-module records that
+# shadow base text with ""/" ". Raised, not worked around: this flow taps the
+# PRIMARY button by id, so it still submits exactly what a user submits.
+appId: com.digit.hcm
+---
+- extendedWaitUntil:
+    visible:
+      id: "form_alert_primary"
+    timeout: 20000
+- tapOn:
+    id: "form_alert_primary"

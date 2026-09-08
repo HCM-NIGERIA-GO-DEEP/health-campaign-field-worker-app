@@ -242,6 +242,26 @@ appId: com.digit.hcm
           notVisible:
             text: "(?s).*${DOWNLOAD_PROGRESS}.*"
           timeout: 300000
+# "Data found!" popup ("There are records found for the selected area...")
+# with Proceed Without Downloading / Download buttons - DIFFERENT from the
+# first-login "Download" popup above (device-observed run -2222, flow 07):
+# it appeared well AFTER that popup's own tap had already given up (10s
+# WARNED, nothing to tap yet) and then sat un-tapped for the full 180s home
+# timeout, since nothing polled for it. Its arrival time (and whether it
+# appears at all) is unpredictable, so poll for its dismiss button on every
+# pass instead of a single one-shot check - optional tapOn is a harmless
+# no-op on the passes where it is absent. Skip (don't download) to keep the
+# suite fast: this run's own QATEST data was just created locally moments
+# ago and does not depend on syncing OTHER server records for the boundary.
+- repeat:
+    times: 18
+    while:
+      notVisible:
+        text: "Go To Home Screen|${HOME_REG}"
+    commands:
+      - tapOn:
+          text: "Proceed Without Downloading"
+          optional: true
 # Data-download acknowledgement screen: after the boundary data download
 # completes, the app shows "Downloaded successfully!" with a
 # "Go To Home Screen" button (device-observed 2026-09-02 17:43) - home never

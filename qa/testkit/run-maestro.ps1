@@ -122,7 +122,15 @@ $defaults = [ordered]@{
     # were never matchable as text - see 03's consent block.
     "GENDER_HEAD"    = "Male"
     "GENDER_CHILD"   = "Female"
-    "MEMBER_COUNT"   = "3"
+    # Household's registered size, consumed by REGISTRATION.json's
+    # beneficiaryIdMinCheck popup: it blocks "Add Member" with a
+    # CHILDREN_COUNT_EXCEEDED toast (instead of navigating to the form)
+    # whenever length(members) >= memberCount, checked BEFORE the member being
+    # added. This suite ends with 4 members (head + CHILD/05 + CHILD2/07 +
+    # CHILD3/08), so memberCount must be > 3 - "5" leaves headroom for one more
+    # child before this needs bumping again (run -1711: "3" stranded flow 08's
+    # CHILD3 add on the household overview, never reaching the member form).
+    "MEMBER_COUNT"   = "5"
     # DOB is entered via the dob widget's AGE fields (ids dob_years /
     # dob_months, patch 05). 44 months is SMC-eligible (3-59) and stays
     # eligible even if a keystroke drops ("4"); 36 years is safely adult.

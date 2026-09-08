@@ -4,11 +4,14 @@
 # resource (an "insufficient stock" popup at Record-Cycle-Dose is an environment
 # problem, not an app bug - the flow fails loudly there by design).
 #
-# Eligibility answer key (from campaign config actions, not guessed):
-#   ALL FIVE questions = "No"  -> proceed to delivery
-#   (ec5=Yes -> ineligible; any other Yes -> refer - covered by flow 07)
-# On-screen question order is ec1, ec2, ec5, ec4, ec3 - the five "No" taps below
-# go top-to-bottom by index.
+# Eligibility answer key (from REGISTRATION.json CHECKLIST onAction conditions,
+# not guessed - actionId 1/2 route to beneficiaryDetails/delivery):
+#   ALL FIVE questions = "No"  -> proceed to delivery (this flow)
+#   ec5=Yes                    -> ineligible, straight back to householdOverview
+#                                  (actionId 3) - covered by flow 08
+#   any other Yes (e.g. ec1)   -> refer (DEFAULT/actionId 4) - covered by flow 07
+# On-screen field order is ec1, ec2, ec3, ec4 (visible only when ec3==NO), ec5 -
+# addressed by <fieldName>_<code> id, not screen position.
 # FIRST-RUN CHECKPOINTS: the member-card button text (BTN_RECORD, default
 # "Record Data"), and the resourceCard confirm tap on Delivery Details.
 appId: com.digit.hcm
@@ -93,9 +96,9 @@ tags:
       text: "QATEST ${RUN_STAMP} CHILD.*"
 # --- Eligibility Assessment: all five answers "No" (config: NO NO NO NO NO -> deliver) ---
 # Each radio is addressed by <fieldName>_<code> (config codes YES/NO), so the
-# answers no longer depend on on-screen order (ec1, ec2, ec5, ec4, ec3) the way
-# the old index-based text taps did - a re-ordered config used to silently
-# answer the wrong question. `text: "No"` cannot work at all here: option
+# answers no longer depend on on-screen field order the way the old
+# index-based text taps did - a re-ordered config used to silently answer the
+# wrong question. `text: "No"` cannot work at all here: option
 # labels are absorbed into each field's merged label node and the radio itself
 # is a bare clickable node (run -1214, consent page). Needs an APK built after
 # 2026-09-03.
@@ -111,11 +114,26 @@ tags:
     id: "ec3_NO"
 - tapOn:
     id: "ec4_NO"
+# ec5 sits below the fold: the page has 5 questions above a fixed "Save
+# Delivery" footer and only ~4 fit on an emulator screen; tapOn does NOT
+# auto-scroll (same rule as the addMember/deliveryButton scrolls elsewhere in
+# this kit). ec1-ec4 above were confirmed reachable without scrolling
+# (run -1620 got this far before failing at ec5).
+- scrollUntilVisible:
+    element:
+      id: "ec5_(YES|NO)"
+    direction: DOWN
+    timeout: 15000
 - tapOn:
     id: "ec5_NO"
 # FORM footer by stable id (labels are per-page campaign texts; see 03)
 - tapOn:
     id: "form_action"
+# CHECKLIST (config flow 9) is a single-page flow with showAlertPopUp, so this
+# submit raises the blank-buttoned "Ready to submit?" dialog. The two later
+# form_action taps in this flow do NOT: DELIVERY's alert sits on order 1, which
+# still has order 2 after it. See confirm-submit.yaml.
+- runFlow: ../common/confirm-submit.yaml
 # --- Child summary (beneficiary-details template) -> Record Cycle Dose ---
 - extendedWaitUntil:
     visible:
