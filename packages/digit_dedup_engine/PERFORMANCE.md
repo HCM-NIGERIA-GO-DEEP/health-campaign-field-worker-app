@@ -102,31 +102,37 @@ Peak RSS reaches **1244 MB** at 200k and 1313 MB after projection — roughly
 app heap is a few hundred megabytes, so the uncapped path would be killed on a
 field device long before the 85 seconds elapsed. The capped path stays bounded.
 
-### 5. Most of a probe is rebuilding the block index
+### 5. Reusing the block index makes a probe ~5x cheaper
 
 `DedupEngine.findMatchesFor` calls `BlockingStrategy.buildBlocks(records)` on
 **every** invocation, so the index is rebuilt per probe rather than reused.
 
-| Candidates | `buildBlocks` alone | Whole probe | Share |
+`DedupEngine.findMatchesFor` builds a block index per call. `buildIndex` plus
+`findMatchesUsing` build it once and reuse it:
+
+| Candidates | Rebuilt per call | Reused index | Speed-up |
 | --- | --- | --- | --- |
-| 10,000 | 63 ms* | 47.2 ms | — |
-| 50,000 | 189 ms | 235.2 ms | 80 % |
-| 200,000 | 750 ms | 943.8 ms | 79 % |
+| 10,000 | 59.6 ms | 11.8 ms | 5.1× |
+| 50,000 | 272.2 ms | 49.2 ms | 5.5× |
+| 200,000 | 989.2 ms | 195.2 ms | 5.1× |
 
-\* measured cold and once, whereas the probe figure averages five warm calls, so
-the small-corpus number is inflated by JIT warm-up. The 50k and 200k rows are
-the reliable ones.
-
-Roughly **80 %** of a probe is index construction. Building the index once and
-reusing it across probes would cut probe cost by about 5× and matters most for
-any future flow that scores several records in one pass — the current
-single-probe-per-submission flow pays it once.
+Index construction alone costs 87 / 198 / 789 ms at the three sizes, which is
+where the rebuilt figures go. Reuse matters for any flow scoring several
+records against one corpus; the current one-probe-per-submission flow pays the
+build once either way, so this changes nothing for it today.
 
 ### 6. The boundary scan grows even at a fixed result count
 
 Capped query time rises 1487 → 1510 → 2566 ms while always returning 5000 rows,
 so the filter scan itself scales with total table size, not just with rows
 returned. Worth watching as downsynced datasets grow.
+
+### 7. Scoring is unchanged by the number of attributes
+
+Weights renormalize over whichever attributes both records carry, so a probe
+with fewer attributes costs the same and scores on the same 0..1 scale. The
+figures above use a two-attribute probe; adding date of birth, gender or a
+phone number changes accuracy, not latency.
 
 ## Reproducing
 

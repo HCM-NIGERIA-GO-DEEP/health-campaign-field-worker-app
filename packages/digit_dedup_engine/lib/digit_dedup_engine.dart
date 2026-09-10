@@ -4,6 +4,7 @@ library digit_dedup_engine;
 export 'src/dedup_engine.dart';
 export 'src/matching_service.dart';
 export 'src/blocking_strategy.dart';
+export 'src/dedup_index.dart';
 
 // Algorithms
 export 'src/algorithms/soundex.dart';

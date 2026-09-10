@@ -18,6 +18,10 @@ import 'algorithms/soundex.dart';
 /// pair rather than being capped at the names' share of the weights.
 class MatchingService {
   /// Default attribute weights for scoring
+  /// Weights are relative, not absolute: [computeScore] renormalizes over
+  /// whichever attributes both records actually carry, so the table does not
+  /// need to sum to 1.0 and adding an attribute cannot change the score of a
+  /// pair that does not carry it.
   static const Map<String, double> defaultWeights = {
     'givenName': 0.25,
     'familyName': 0.20,
@@ -26,6 +30,11 @@ class MatchingService {
     'fatherName': 0.10,
     'gpsProximity': 0.15,
     'phoneticMatch': 0.10,
+
+    // Weighted high because it discriminates where names cannot: in a dense
+    // boundary many people genuinely share a name, and a differing phone
+    // number is the cheapest signal that they are different people.
+    'mobileNumber': 0.20,
   };
 
   /// Attributes scored with fuzzy string similarity.
@@ -34,6 +43,13 @@ class MatchingService {
     'familyName',
     'fatherName',
   ];
+
+  static final RegExp _nonDigits = RegExp(r'[^0-9]');
+  static final RegExp _hasAlphanumeric = RegExp(r'[A-Z0-9]');
+
+  /// How many trailing digits of a phone number are compared. Nine covers a
+  /// subscriber number without its country code.
+  static const int _significantPhoneDigits = 9;
 
   /// Share of a name attribute's score taken from Jaro-Winkler, with the
   /// remainder from normalized Levenshtein. Jaro-Winkler leads because it
@@ -95,6 +111,10 @@ class MatchingService {
 
     final gender = _exactScore(record1['gender'], record2['gender']);
     if (gender != null) scores['gender'] = gender;
+
+    final mobile =
+        _mobileNumberScore(record1['mobileNumber'], record2['mobileNumber']);
+    if (mobile != null) scores['mobileNumber'] = mobile;
 
     final proximity = _proximityScore(record1, record2);
     if (proximity != null) scores['gpsProximity'] = proximity;
@@ -162,11 +182,52 @@ class MatchingService {
     return 0.0;
   }
 
-  double? _exactScore(dynamic value1, dynamic value2) {
-    final a = value1?.toString().trim().toUpperCase();
-    final b = value2?.toString().trim().toUpperCase();
-    if (a == null || b == null || a.isEmpty || b.isEmpty) return null;
+  /// Exact match on the significant digits of a phone number.
+  ///
+  /// Compares the last [_significantPhoneDigits] so a number stored with a
+  /// country code matches the same number stored without one. Returns null
+  /// when either side is absent -- the field is optional on the registration
+  /// form, and a missing number is no evidence either way.
+  double? _mobileNumberScore(dynamic value1, dynamic value2) {
+    final a = _significantDigits(value1);
+    final b = _significantDigits(value2);
+    if (a == null || b == null) return null;
     return a == b ? 1.0 : 0.0;
+  }
+
+  /// The trailing digits of a phone number, or null when there are too few to
+  /// compare meaningfully.
+  static String? _significantDigits(dynamic value) {
+    if (value == null) return null;
+
+    final digits = value.toString().replaceAll(_nonDigits, '');
+    if (digits.length < _significantPhoneDigits) return null;
+
+    return digits.substring(digits.length - _significantPhoneDigits);
+  }
+
+  /// Exact match on a categorical value, e.g. gender.
+  ///
+  /// Requires at least one letter or digit on both sides, so a placeholder
+  /// like `--` or `N/A` is treated as absent rather than as a value that
+  /// mismatches. Every other attribute already rejects unusable input -- a
+  /// name of punctuation normalizes to nothing, an unparseable date parses to
+  /// null, a number with too few digits is skipped -- and this keeps
+  /// categorical fields consistent with them, so junk cannot drag a score
+  /// down.
+  double? _exactScore(dynamic value1, dynamic value2) {
+    final a = _categorical(value1);
+    final b = _categorical(value2);
+    if (a == null || b == null) return null;
+    return a == b ? 1.0 : 0.0;
+  }
+
+  static String? _categorical(dynamic value) {
+    if (value == null) return null;
+    final normalized = value.toString().trim().toUpperCase();
+    if (normalized.isEmpty) return null;
+    if (!_hasAlphanumeric.hasMatch(normalized)) return null;
+    return normalized;
   }
 
   double? _proximityScore(

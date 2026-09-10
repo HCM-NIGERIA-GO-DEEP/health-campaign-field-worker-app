@@ -301,6 +301,273 @@ void main() {
     });
   });
 
+  group('absent attributes', () {
+    final service = MatchingService();
+
+    /// Values that all mean "not recorded", whatever the field.
+    const emptyish = <dynamic>[null, '', '   ', '--'];
+
+    test('every optional attribute drops out when either side is empty', () {
+      // givenName is excluded on purpose: it is the one field a probe must
+      // carry, since with no name there is nothing to match on.
+      const attributes = [
+        'familyName',
+        'fatherName',
+        'dateOfBirth',
+        'gender',
+        'mobileNumber',
+      ];
+
+      for (final attribute in attributes) {
+        for (final empty in emptyish) {
+          final scores = service.computeAttributeScores(
+            {'givenName': 'Musa', attribute: empty},
+            {'givenName': 'Musa', attribute: 'Ibrahim'},
+          );
+          expect(scores, isNot(contains(attribute)),
+              reason: '$attribute should drop out for ${empty ?? "null"}');
+
+          // And symmetrically, with the empty value on the other side.
+          final flipped = service.computeAttributeScores(
+            {'givenName': 'Musa', attribute: 'Ibrahim'},
+            {'givenName': 'Musa', attribute: empty},
+          );
+          expect(flipped, isNot(contains(attribute)),
+              reason: '$attribute should drop out for ${empty ?? "null"}');
+        }
+      }
+    });
+
+    test('a name of only punctuation counts as absent', () {
+      final scores = service.computeAttributeScores(
+        {'givenName': 'Musa', 'familyName': "-'-"},
+        {'givenName': 'Musa', 'familyName': 'Ibrahim'},
+      );
+      expect(scores, isNot(contains('familyName')));
+    });
+
+    test('gpsProximity needs all four coordinates', () {
+      for (final missing in [
+        'latitude',
+        'longitude',
+      ]) {
+        final a = {
+          'givenName': 'Musa',
+          'latitude': 9.05,
+          'longitude': 7.49,
+        }..remove(missing);
+
+        final scores = service.computeAttributeScores(
+          a,
+          {'givenName': 'Musa', 'latitude': 9.05, 'longitude': 7.49},
+        );
+        expect(scores, isNot(contains('gpsProximity')),
+            reason: 'missing $missing');
+      }
+    });
+
+    test('an unparseable date or coordinate is treated as absent', () {
+      final scores = service.computeAttributeScores(
+        {
+          'givenName': 'Musa',
+          'dateOfBirth': 'not a date',
+          'latitude': 'north',
+          'longitude': 'east',
+        },
+        {
+          'givenName': 'Musa',
+          'dateOfBirth': '01/02/1990',
+          'latitude': 9.05,
+          'longitude': 7.49,
+        },
+      );
+      expect(scores, isNot(contains('dateOfBirth')));
+      expect(scores, isNot(contains('gpsProximity')));
+    });
+
+    test('a probe carrying only a given name still scores', () {
+      // Everything except givenName may be absent, and the pair must still be
+      // comparable rather than collapsing to zero.
+      final score = service.computeScore(
+        {'givenName': 'Musa'},
+        {'givenName': 'Musa', 'familyName': 'Ibrahim', 'gender': 'MALE'},
+      );
+      expect(score, closeTo(1.0, 1e-9));
+    });
+
+    test('dropping an attribute never lowers the score', () {
+      // Renormalization means an absent attribute is neither reward nor
+      // penalty, so a sparser probe cannot score worse on what it does carry.
+      final full = service.computeScore(
+        {'givenName': 'Musa', 'familyName': 'Ibrahim', 'gender': 'MALE'},
+        {'givenName': 'Musa', 'familyName': 'Ibrahim', 'gender': 'MALE'},
+      );
+      final sparse = service.computeScore(
+        {'givenName': 'Musa'},
+        {'givenName': 'Musa', 'familyName': 'Ibrahim', 'gender': 'MALE'},
+      );
+      expect(sparse, greaterThanOrEqualTo(full - 1e-9));
+    });
+
+    test('two records with nothing comparable score zero, not a crash', () {
+      expect(service.computeScore({'gender': null}, {'gender': null}), 0.0);
+      expect(service.computeScore(const {}, const {}), 0.0);
+    });
+  });
+
+  group('DedupIndex', () {
+    final corpus = [
+      person('Peter', 'Okafor', id: 'a'),
+      person('Aminatou', 'Bello', id: 'b'),
+      person('Petr', 'Okafor', id: 'c'),
+    ];
+
+    test('reports the shape of the blocking it produced', () {
+      final index = DedupIndex.build(corpus);
+      expect(index.length, corpus.length);
+      expect(index.blockCount, greaterThan(0));
+      // Peter and Petr share a given-name block, so no block is a singleton.
+      expect(index.largestBlock, greaterThanOrEqualTo(2));
+    });
+
+    test('narrows candidates to the probe\'s blocks', () {
+      final index = DedupIndex.build(corpus);
+      final candidates = index.candidatesFor(person('Peter', 'Okafor'));
+
+      expect(candidates, contains(0));
+      expect(candidates, isNot(contains(1)),
+          reason: 'Aminatou Bello shares no block with Peter Okafor');
+    });
+
+    test('returns nothing for a probe with no blockable name', () {
+      expect(DedupIndex.build(corpus).candidatesFor({'gender': 'MALE'}),
+          isEmpty);
+    });
+
+    test('a prebuilt index gives the same matches as building per call', () {
+      final engine = DedupEngine(matchThreshold: 0.5);
+      final probe = person('Peter', 'Okafor');
+
+      final perCall = engine.findMatchesFor(probe, corpus);
+      final indexed =
+          engine.findMatchesUsing(engine.buildIndex(corpus), probe);
+
+      expect(indexed.map((m) => m.record['id']),
+          perCall.map((m) => m.record['id']));
+      expect(indexed.map((m) => m.score), perCall.map((m) => m.score));
+    });
+
+    test('an index built once serves many probes', () {
+      final engine = DedupEngine(matchThreshold: 0.5);
+      final index = engine.buildIndex(corpus);
+
+      for (final record in corpus) {
+        final matches = engine.findMatchesUsing(index, record);
+        expect(matches.map((m) => m.record['id']), contains(record['id']),
+            reason: 'a record should at least match itself');
+      }
+    });
+
+    test('respects maxResults', () {
+      final engine = DedupEngine(matchThreshold: 0.0);
+      final index = engine.buildIndex(corpus);
+      expect(
+        engine.findMatchesUsing(index, person('Peter', 'Okafor'),
+            maxResults: 1),
+        hasLength(1),
+      );
+    });
+  });
+
+  group('mobile number', () {
+    final service = MatchingService();
+
+    test('a matching number scores 1.0', () {
+      final scores = service.computeAttributeScores(
+        {'givenName': 'Musa', 'mobileNumber': '9876543210'},
+        {'givenName': 'Musa', 'mobileNumber': '9876543210'},
+      );
+      expect(scores['mobileNumber'], 1.0);
+    });
+
+    test('ignores a country code', () {
+      final scores = service.computeAttributeScores(
+        {'mobileNumber': '+234 987 654 3210'},
+        {'mobileNumber': '9876543210'},
+      );
+      expect(scores['mobileNumber'], 1.0);
+    });
+
+    test('a different number scores 0.0', () {
+      final scores = service.computeAttributeScores(
+        {'mobileNumber': '9876543210'},
+        {'mobileNumber': '9876500000'},
+      );
+      expect(scores['mobileNumber'], 0.0);
+    });
+
+    test('is skipped when either side is missing or too short', () {
+      expect(
+        service.computeAttributeScores(
+            {'mobileNumber': '9876543210'}, {'givenName': 'Musa'}),
+        isNot(contains('mobileNumber')),
+      );
+      expect(
+        service.computeAttributeScores(
+            {'mobileNumber': '123'}, {'mobileNumber': '123'}),
+        isNot(contains('mobileNumber')),
+      );
+    });
+
+    test('separates two people who share a name', () {
+      // The collision this attribute exists to fix: names alone cannot tell
+      // these apart, and in a dense boundary many people share a name.
+      final engine = DedupEngine();
+      final matches = engine.findMatchesFor(
+        {
+          'givenName': 'Musa',
+          'familyName': 'Ibrahim',
+          'mobileNumber': '9876543210'
+        },
+        [
+          {
+            'givenName': 'Musa',
+            'familyName': 'Ibrahim',
+            'mobileNumber': '9000000001',
+            'id': 'other'
+          }
+        ],
+      );
+      expect(matches, isEmpty);
+    });
+
+    test('still matches when only one side recorded a number', () {
+      // The field is optional, so a missing number must not suppress a match.
+      final engine = DedupEngine();
+      final matches = engine.findMatchesFor(
+        {
+          'givenName': 'Musa',
+          'familyName': 'Ibrahim',
+          'mobileNumber': '9876543210'
+        },
+        [
+          {'givenName': 'Musa', 'familyName': 'Ibrahim', 'id': 'other'}
+        ],
+      );
+      expect(matches, isNotEmpty);
+    });
+
+    test('adding the attribute leaves name-only pairs unchanged', () {
+      // Weights are renormalized over present attributes, so a pair carrying
+      // no number scores exactly as it did before the attribute existed.
+      final score = service.computeScore(
+        person('Peter', 'Okafor'),
+        person('Peter', 'Okafor'),
+      );
+      expect(score, closeTo(1.0, 1e-9));
+    });
+  });
+
   group('DedupEngine.findDuplicates', () {
     test('finds a duplicate pair within a batch', () {
       final results = DedupEngine(matchThreshold: 0.8).findDuplicates([

@@ -2,6 +2,7 @@ import '../models/candidate_pair.dart';
 import '../models/dedup_match.dart';
 import '../models/dedup_result.dart';
 import 'blocking_strategy.dart';
+import 'dedup_index.dart';
 import 'matching_service.dart';
 
 /// Main entry point for the deduplication engine.
@@ -69,9 +70,57 @@ class DedupEngine {
   }) {
     if (records.isEmpty) return const [];
 
+    // Blocking is what makes an index worth building; without it every record
+    // is a candidate anyway.
+    if (!useBlocking) {
+      return _score(
+        record,
+        records,
+        Iterable<int>.generate(records.length),
+        maxResults,
+      );
+    }
+
+    return findMatchesUsing(buildIndex(records), record,
+        maxResults: maxResults);
+  }
+
+  /// Builds a reusable index over [records].
+  ///
+  /// Pass the result to [findMatchesUsing] when scoring more than one record
+  /// against the same corpus -- [findMatchesFor] rebuilds the index on every
+  /// call, which dominates its cost on a large corpus.
+  DedupIndex buildIndex(List<Map<String, dynamic>> records) =>
+      DedupIndex.build(records, blockingStrategy: blockingStrategy);
+
+  /// Scores [record] against a prebuilt [index].
+  ///
+  /// Equivalent to [findMatchesFor] but without rebuilding the block index, so
+  /// repeated probes over one corpus cost a fraction of the first.
+  List<DedupMatch> findMatchesUsing(
+    DedupIndex index,
+    Map<String, dynamic> record, {
+    int? maxResults,
+  }) {
+    if (index.length == 0) return const [];
+
+    final candidates = useBlocking
+        ? index.candidatesFor(record)
+        : Iterable<int>.generate(index.length);
+
+    return _score(record, index.records, candidates, maxResults);
+  }
+
+  /// Scores [record] against the given corpus [candidates].
+  List<DedupMatch> _score(
+    Map<String, dynamic> record,
+    List<Map<String, dynamic>> records,
+    Iterable<int> candidates,
+    int? maxResults,
+  ) {
     final matches = <DedupMatch>[];
 
-    for (final index in _candidateIndicesFor(record, records)) {
+    for (final index in candidates) {
       final scored = scorePair(record, records[index]);
       if (scored.overallScore < matchThreshold) continue;
 
@@ -120,40 +169,6 @@ class DedupEngine {
       ];
     }
 
-    // A record sits in one block per name attribute, so the same pair can
-    // surface from several blocks; the set collapses those repeats.
-    final pairs = <(int, int)>{};
-    for (final block in blockingStrategy.buildBlocks(records).values) {
-      if (block.length < 2) continue;
-      for (var i = 0; i < block.length; i++) {
-        for (var j = i + 1; j < block.length; j++) {
-          final a = block[i];
-          final b = block[j];
-          pairs.add(a < b ? (a, b) : (b, a));
-        }
-      }
-    }
-    return pairs;
-  }
-
-  /// Corpus indices worth scoring against [record].
-  Iterable<int> _candidateIndicesFor(
-    Map<String, dynamic> record,
-    List<Map<String, dynamic>> records,
-  ) {
-    if (!useBlocking) {
-      return Iterable<int>.generate(records.length);
-    }
-
-    final probeKeys = blockingStrategy.blockKeysFor(record);
-    if (probeKeys.isEmpty) return const [];
-
-    final blocks = blockingStrategy.buildBlocks(records);
-    final candidates = <int>{};
-    for (final key in probeKeys) {
-      final block = blocks[key];
-      if (block != null) candidates.addAll(block);
-    }
-    return candidates;
+    return buildIndex(records).candidatePairs();
   }
 }

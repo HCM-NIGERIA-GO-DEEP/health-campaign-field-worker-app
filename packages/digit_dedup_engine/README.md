@@ -21,6 +21,7 @@ lib/
     dedup_engine.dart            - Main orchestrator
     matching_service.dart        - Multi-attribute scoring
     blocking_strategy.dart       - Phonetic blocking for search space reduction
+    dedup_index.dart             - Reusable block index
     algorithms/
       soundex.dart               - Soundex phonetic encoding
       double_metaphone.dart      - Double Metaphone encoding (not implemented)
@@ -37,10 +38,17 @@ lib/
 
 ## Implementation status
 
-`DoubleMetaphone.encode` still throws `UnimplementedError`. Everything else is
-implemented, and nothing in the package calls Double Metaphone -- phonetic
-blocking and phonetic scoring both use Soundex. Implement it only when there is
-a case Soundex demonstrably gets wrong.
+Everything is implemented. Blocking and phonetic scoring still use Soundex;
+`DoubleMetaphone` is available but nothing calls it yet, because switching over
+is a matching-quality change that should be measured against a corpus first.
+
+**On Double Metaphone's fidelity:** it is validated behaviourally -- silent
+initial letters, `PH`→F, silent P after M, both CH readings, the two-code
+property, the four-character cap, and equivalence pairs such as
+`Smith`/`Smyth` and `Katherine`/`Catherine`. It has **not** been verified
+byte-identical against Lawrence Philips' reference implementation. If you need
+codes to interoperate with another Double Metaphone implementation, check them
+against an authoritative vector set first.
 
 ## Pattern
 
@@ -95,12 +103,25 @@ carried through untouched.
 | `phoneticMatch` | 0.10 | fraction of the compared name fields whose Soundex codes agree |
 | `dateOfBirth` | 0.15 | 1.0 on the same day, 0.5 on the same year, else 0.0 |
 | `gender` | 0.05 | exact match |
+| `mobileNumber` | 0.20 | exact match on the last 9 digits |
 | `gpsProximity` | 0.15 | Haversine distance, 1.0 within 50m decaying to 0.0 at 500m |
 
 Only attributes present on **both** records contribute, and the contributing
 weights are renormalized to sum to 1.0. A pair carrying names alone therefore
 scores on the same 0..1 scale as a fully populated pair, instead of being
-capped at the names' share of the weights.
+capped at the names' share of the weights. Weights are therefore *relative*:
+the table does not need to sum to 1.0, and adding an attribute cannot change
+the score of a pair that does not carry it.
+
+`mobileNumber` is weighted high because it discriminates where names cannot. In
+a dense boundary many people genuinely share a name -- roughly a third of
+records collide on name alone -- and a differing phone number is the cheapest
+evidence that two of them are different people. It compares the trailing nine
+digits, so `+234 987 654 3210` matches `9876543210`. It is **skipped entirely**
+when either side is null, blank, or has fewer than nine digits: the field is
+optional on the registration form, and a missing number is no evidence either
+way. A caller wiring this up must treat the field as optional end to end, or a
+beneficiary with no phone number gets no duplicate check at all.
 
 `dateOfBirth` accepts a `DateTime`, epoch milliseconds (as `int` or `String`),
 an ISO-8601 string, or `dd/MM/yyyy`.
@@ -112,6 +133,28 @@ DedupEngine(
   matchingService: MatchingService(weights: {'givenName': 0.6, 'familyName': 0.4}),
 );
 ```
+
+## Reusing the index
+
+`findMatchesFor` builds a block index on every call, which measured about 80%
+of a probe's cost at 200,000 candidates. When scoring several records against
+one corpus, build the index once:
+
+```dart
+final engine = DedupEngine();
+final index = engine.buildIndex(existingRecords);
+
+for (final incoming in batch) {
+  final matches = engine.findMatchesUsing(index, incoming, maxResults: 5);
+}
+```
+
+`DedupIndex` also reports `blockCount` and `largestBlock`. A `largestBlock`
+close to the corpus size means blocking is not discriminating and little
+comparison work is being avoided.
+
+The index holds a reference to the corpus rather than a copy, so mutating that
+list afterwards invalidates it.
 
 ## Blocking
 
