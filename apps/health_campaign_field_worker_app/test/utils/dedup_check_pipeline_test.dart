@@ -129,6 +129,35 @@ void main() {
       }
     });
 
+    test('only the given name is required to attempt a check', () {
+      if (!_hasDedupBlock()) return;
+
+      final schema = _page('HOUSEHOLD', 'beneficiaryDetails');
+      final dedup = schema.dedupCheck!;
+
+      // forms_render skips the whole check when any *required* field is
+      // blank, so anything a user may leave empty has to be optional or
+      // duplicate detection quietly stops running for those beneficiaries.
+      // Only the given name is treated as guaranteed.
+      expect(dedup.fields.keys, ['givenName'],
+          reason: 'only givenName should gate the check');
+      expect(dedup.optionalFields['familyName'], 'familyname');
+      expect(dedup.optionalFields['mobileNumber'], 'phone');
+
+      // The field exists and is visible, so a user can fill it -- but the
+      // form does not force them to, which is the premise for treating it as
+      // optional here.
+      // Every mapped field must exist on the page, required or not.
+      final properties = schema.properties!;
+      for (final mapped in [
+        ...dedup.fields.values,
+        ...dedup.optionalFields.values,
+      ]) {
+        expect(properties.keys, contains(mapped), reason: mapped);
+        expect(properties[mapped]!.hidden, isNot(isTrue), reason: mapped);
+      }
+    });
+
     test('the back-to-search target is a flow in the config', () {
       if (!_hasDedupBlock()) return;
 

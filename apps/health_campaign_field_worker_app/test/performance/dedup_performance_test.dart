@@ -162,6 +162,7 @@ class _Measurement {
   int buildBlocksMs = 0;
   double probeBlockedMs = 0;
   double probeUnblockedMs = 0;
+  double probeIndexedMs = 0;
   int rssAfterSeedMb = 0;
   int rssAfterQueryMb = 0;
   int rssAfterProjectMb = 0;
@@ -216,6 +217,7 @@ void main() {
           'project=${r.projectMs}ms buildBlocks=${r.buildBlocksMs}ms '
           'probeBlocked=${r.probeBlockedMs.toStringAsFixed(1)}ms '
           'probeUnblocked=${r.probeUnblockedMs.toStringAsFixed(1)}ms '
+          'probeIndexed=${r.probeIndexedMs.toStringAsFixed(1)}ms '
           'cappedTotal=${r.cappedTotalMs}ms '
           'uncappedTotal=${r.uncappedTotalMs}ms '
           'rssSeed=${r.rssAfterSeedMb}MB rssQuery=${r.rssAfterQueryMb}MB '
@@ -420,6 +422,17 @@ void main() {
         measurement.probeBlockedMs = blockedWatch.elapsedMilliseconds / probes;
         measurement.matchesFound = matches.length;
 
+        // With the index built once up front, a probe skips the rebuild that
+        // dominated the per-call path.
+        final reusableIndex = engine.buildIndex(corpus);
+        engine.findMatchesUsing(reusableIndex, probe, maxResults: _maxResults);
+        final indexedWatch = Stopwatch()..start();
+        for (var i = 0; i < probes; i++) {
+          engine.findMatchesUsing(reusableIndex, probe,
+              maxResults: _maxResults);
+        }
+        indexedWatch.stop();
+        measurement.probeIndexedMs = indexedWatch.elapsedMilliseconds / probes;
         final unblocked =
             DedupEngine(matchThreshold: _matchThreshold, useBlocking: false);
         unblocked.findMatchesFor(probe, corpus, maxResults: _maxResults);
