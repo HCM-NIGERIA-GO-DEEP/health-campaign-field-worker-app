@@ -64,6 +64,23 @@ class _LocalizationDelegate
 
 final _registrationConfig = File('assets/configs/json/REGISTRATION.json');
 
+/// Whether the shipped config still declares the dialog. It is gitignored and
+/// console-generated, so a refresh can drop it.
+bool _hasShippedAlert() {
+  if (!_registrationConfig.existsSync()) return false;
+  final config = json.decode(_registrationConfig.readAsStringSync())
+      as Map<String, dynamic>;
+  final flow = (config['flows'] as List)
+      .cast<Map<String, dynamic>>()
+      .firstWhere((f) => f['name'] == 'HOUSEHOLD');
+  final pages = transformJson(flow)['pages'] as Map<String, dynamic>;
+  return PropertySchema.fromJson(pages['beneficiaryDetails']
+              as Map<String, dynamic>)
+          .dedupCheck
+          ?.dedupAlertPopUp !=
+      null;
+}
+
 /// The real shipped alert config, so the test exercises what runs on device.
 DedupAlertPopUp _shippedAlert() {
   final config = json.decode(_registrationConfig.readAsStringSync())
@@ -160,14 +177,21 @@ void main() {
   }
 
   group('config-driven dedup alert', () {
+    setUp(() {
+      if (!_hasShippedAlert()) {
+        markTestSkipped('REGISTRATION.json declares no dedupAlertPopUp');
+      }
+    });
+
     testWidgets('renders the match row from the shipped config',
         (tester) async {
       await pumpAlert(tester, matches: [_match()]);
 
       // These come from the config body binding to the published match list.
       expect(find.text('Piter one'), findsOneWidget);
-      expect(find.text('551520131'), findsOneWidget);
       expect(find.text('92% match'), findsOneWidget);
+      expect(find.text('Beneficiary ID'), findsOneWidget);
+      expect(find.text('551520131'), findsOneWidget);
     });
 
     testWidgets('renders a copy button per value', (tester) async {
@@ -181,6 +205,135 @@ void main() {
       // An overflowing Row paints striped bars in debug and pushes the copy
       // button out of hit-test range, which is how this first showed up.
       expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('keeps each copy button a compact tap target',
+        (tester) async {
+      await pumpAlert(tester, matches: [_match()]);
+
+      // Material 3 floors IconButton at 40x40 through its ButtonStyle, which
+      // `constraints` alone cannot lower. At 40px the button, not the text,
+      // set each row's height and pushed the name and ID apart.
+      const materialMinimum = 40.0;
+
+      for (final element in find.byType(IconButton).evaluate()) {
+        final size = tester.getSize(find.byWidget(element.widget));
+        expect(size.width, lessThan(materialMinimum),
+            reason: 'copy button is ${size.width}px wide, so the ButtonStyle '
+                'override is not being applied');
+        // Still large enough to hit reliably.
+        expect(size.width, greaterThanOrEqualTo(24));
+      }
+    });
+
+    /// Finds the [SelectableText] showing exactly [value].
+    Finder selectable(String value) => find.byWidgetPredicate(
+        (widget) => widget is SelectableText && widget.data == value);
+
+    /// How wide [value] is when laid out with no width constraint.
+    double intrinsicWidth(WidgetTester tester, String value) {
+      final widget = tester.widget<SelectableText>(selectable(value));
+      final painter = TextPainter(
+        text: TextSpan(text: value, style: widget.style),
+        textDirection: TextDirection.ltr,
+      )..layout();
+      return painter.width;
+    }
+
+    testWidgets('lays every value out at its natural width', (tester) async {
+      await pumpAlert(tester, matches: [_match()]);
+
+      // A box wider than its text means `expanded` stretched it to fill the
+      // row, stranding the copy button at the far edge.
+      //
+      // Only the name is pinned exactly. The ID shares its line with a label
+      // and may legitimately compress on a narrow card, and this harness's
+      // theme renders text roughly twice the size the app does, so an exact
+      // width here would assert a device-specific outcome.
+      expect(
+        tester.getSize(selectable('Piter one')).width,
+        closeTo(intrinsicWidth(tester, 'Piter one'), 12),
+        reason: 'the name is stretched rather than hugging its text',
+      );
+      expect(
+        tester.getSize(selectable('551520131')).width,
+        lessThanOrEqualTo(intrinsicWidth(tester, '551520131') + 12),
+        reason: 'the ID is stretched rather than hugging its text',
+      );
+    });
+
+    testWidgets('keeps a match on one compact block', (tester) async {
+      await pumpAlert(tester, matches: [_match()]);
+
+      final name = tester.getRect(selectable('Piter one'));
+      final id = tester.getRect(selectable('551520131'));
+
+      // A name and its ID are one unit. An oversized copy button inflated each
+      // row to 40px and left 25px between the two lines.
+      expect(id.top - name.bottom, lessThan(14),
+          reason: 'name and ID are ${id.top - name.bottom}px apart');
+      expect(id.top, greaterThan(name.bottom),
+          reason: 'the ID should sit below the name');
+    });
+
+    testWidgets('pins the score to the right edge of the card',
+        (tester) async {
+      await pumpAlert(tester, matches: [_match()]);
+
+      final score = tester.getRect(find.text('92% match'));
+      final row = tester.getRect(find.ancestor(
+        of: find.text('92% match'),
+        matching: find.byType(Row),
+      ).first);
+
+      // spaceBetween only separates children when the row actually fills its
+      // parent; the default min sizing shrink-wraps it and bunches the score
+      // up against the name's copy button.
+      expect(score.right, closeTo(row.right, 1),
+          reason: 'score is ${row.right - score.right}px short of the edge');
+      expect(score.left - tester.getRect(selectable('Piter one')).right,
+          greaterThan(24),
+          reason: 'score is crowding the name instead of sitting apart');
+    });
+
+    testWidgets('puts each copy button beside the value it copies',
+        (tester) async {
+      await pumpAlert(tester, matches: [_match()]);
+
+      final pairs = {
+        'Piter one': find.byIcon(Icons.content_copy_outlined).first,
+        '551520131': find.byIcon(Icons.content_copy_outlined).last,
+      };
+
+      pairs.forEach((value, button) {
+        final text = tester.getRect(selectable(value));
+        final icon = tester.getRect(button);
+
+        // The ID's button follows its label/value group rather than the value
+        // itself, so it can sit a little further out than the name's.
+        final tolerance = value == 'Piter one' ? 16.0 : 32.0;
+        expect(icon.left - text.right, lessThan(tolerance),
+            reason: '$value: copy button is ${icon.left - text.right}px away');
+        expect(icon.left, greaterThanOrEqualTo(text.right - 1),
+            reason: '$value: copy button overlaps the text');
+
+        // Against the glyphs, not the box. SelectableText reserved maxLines of
+        // height, so a single line sat in a double-height box and the icon
+        // centred 9px below the text it belongs to while the boxes agreed.
+        //
+        // Name only: the ID shares its line with a label, so at large text
+        // scales it compresses onto two lines and its icon centres on the
+        // taller box by design.
+        if (value == 'Piter one') {
+          final widget = tester.widget<SelectableText>(selectable(value));
+          final painter = TextPainter(
+            text: TextSpan(text: value, style: widget.style),
+            textDirection: TextDirection.ltr,
+          )..layout();
+          expect(icon.center.dy, closeTo(text.top + painter.height / 2, 2),
+              reason: '$value: copy button is off the text baseline');
+        }
+      });
     });
 
     testWidgets('copying the name resolves its own item template',
@@ -221,7 +374,7 @@ void main() {
         (tester) async {
       await pumpAlert(tester, matches: [_match(beneficiaryId: null)]);
 
-      expect(find.text('551520131'), findsNothing);
+      expect(find.textContaining('551520131'), findsNothing);
       expect(find.text('No beneficiary ID'), findsOneWidget);
       // Only the name stays copyable.
       expect(find.byIcon(Icons.content_copy_outlined), findsOneWidget);
