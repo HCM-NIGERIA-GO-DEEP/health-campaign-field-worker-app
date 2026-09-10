@@ -35,6 +35,9 @@ class JsonSchemaTextAreaBuilder extends JsonSchemaBuilder<String> {
             capitalizedFirstLetter: false,
             isRequired: isRequired ?? false,
             child: DigitTextAreaFormInput(
+              // Same reason as string_builder/number_builder: the id must be
+              // on the box, not on the label + box + helpText block.
+              semanticsIdentifier: '${formControlName}_input',
               textAreaScroll: TextAreaScroll.smart,
               maxLength: getMaxLength(validations),
               charCount: charCount ?? false,

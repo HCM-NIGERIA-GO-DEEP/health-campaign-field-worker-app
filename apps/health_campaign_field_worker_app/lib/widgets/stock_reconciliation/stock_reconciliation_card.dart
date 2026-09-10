@@ -226,171 +226,206 @@ class _StockReconciliationCardState
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Facility Dropdown
+                //
+                // Semantics wrap here (not around the whole LabeledField): this
+                // is a CustomComponentRegistry-built widget, so it never passes
+                // through JsonFormBuilder's generic field-level wrap the way
+                // schema-dispatched FORM fields do - without this, neither the
+                // dropdown trigger nor the label carries any identifier at
+                // all. `container: true` for the same reason patch 05 needed
+                // it on checkbox/text-input boxes: without it, the id can
+                // collapse into an ancestor node instead of marking this
+                // widget's own tappable rect.
                 LabeledField(
                   isRequired: true,
                   label: localizations.translate('SELECT_WAREHOUSE'),
-                  child: DigitDropdown<FacilityModel>(
-                    errorMessage: _facilityError,
-                    selectedOption: _selectedFacility != null
-                        ? DropdownItem(
-                            name: localizations
-                                .translate('FAC_${_selectedFacility!.id}'),
-                            code: _selectedFacility!.id,
-                          )
-                        : null,
-                    emptyItemText:
-                        localizations.translate('NO_FACILITIES_FOUND'),
-                    items: displayFacilities.map((facility) {
-                      return DropdownItem(
-                        name: localizations.translate('FAC_${facility.id}'),
-                        code: facility.id,
-                      );
-                    }).toList(),
-                    onSelect: (value) {
-                      final selected = displayFacilities.firstWhere(
-                        (f) => f.id == value.code,
-                      );
-                      setState(() {
-                        _facilityTouched = true;
-                        _selectedFacility = selected;
-                        // Reset flags when facility changes
-                        _manualCountInitialized = false;
-                        _needsMetricsRecalculation = true;
-                      });
-                      _triggerStockSearchIfReady(context);
-                      _updateFormData();
-                    },
+                  child: Semantics(
+                    identifier: 'stockReconciliationCard_facility',
+                    container: true,
+                    child: DigitDropdown<FacilityModel>(
+                      errorMessage: _facilityError,
+                      selectedOption: _selectedFacility != null
+                          ? DropdownItem(
+                              name: localizations
+                                  .translate('FAC_${_selectedFacility!.id}'),
+                              code: _selectedFacility!.id,
+                            )
+                          : null,
+                      emptyItemText:
+                          localizations.translate('NO_FACILITIES_FOUND'),
+                      items: displayFacilities.map((facility) {
+                        return DropdownItem(
+                          name: localizations.translate('FAC_${facility.id}'),
+                          code: facility.id,
+                        );
+                      }).toList(),
+                      onSelect: (value) {
+                        final selected = displayFacilities.firstWhere(
+                          (f) => f.id == value.code,
+                        );
+                        setState(() {
+                          _facilityTouched = true;
+                          _selectedFacility = selected;
+                          // Reset flags when facility changes
+                          _manualCountInitialized = false;
+                          _needsMetricsRecalculation = true;
+                        });
+                        _triggerStockSearchIfReady(context);
+                        _updateFormData();
+                      },
+                    ),
                   ),
                 ),
                 const SizedBox(height: spacer4),
 
-                // Product Variant Dropdown
+                // Product Variant Dropdown (same Semantics-wrap rationale as
+                // the facility dropdown above).
                 LabeledField(
                   isRequired: true,
                   label: localizations.translate('SELECT_PRODUCT'),
-                  child: DigitDropdown<ProductVariantModel>(
-                    errorMessage: _productError,
-                    sentenceCaseEnabled: true,
-                    selectedOption: _selectedProduct != null
-                        ? DropdownItem(
-                            name: localizations.translate(
-                                _selectedProduct!.sku ?? _selectedProduct!.id),
-                            code: _selectedProduct!.id,
-                          )
-                        : null,
-                    emptyItemText: localizations.translate('NO_PRODUCTS_FOUND'),
-                    items: displayProductVariants.map((product) {
-                      return DropdownItem(
-                        name:
-                            localizations.translate(product.sku ?? product.id),
-                        code: product.id,
-                      );
-                    }).toList(),
-                    onSelect: (value) {
-                      final selected = displayProductVariants.firstWhere(
-                        (p) => p.id == value.code,
-                      );
-                      setState(() {
-                        _productTouched = true;
-                        _selectedProduct = selected;
-                        // If user interacts with product first, facility should
-                        // show as required until it is selected.
-                        _facilityTouched = true;
-                        // Reset flags when product changes
-                        _manualCountInitialized = false;
-                        _needsMetricsRecalculation = true;
-                      });
-                      _triggerStockSearchIfReady(context);
-                      _updateFormData();
-                    },
+                  child: Semantics(
+                    identifier: 'stockReconciliationCard_product',
+                    container: true,
+                    child: DigitDropdown<ProductVariantModel>(
+                      errorMessage: _productError,
+                      sentenceCaseEnabled: true,
+                      selectedOption: _selectedProduct != null
+                          ? DropdownItem(
+                              name: localizations.translate(
+                                  _selectedProduct!.sku ??
+                                      _selectedProduct!.id),
+                              code: _selectedProduct!.id,
+                            )
+                          : null,
+                      emptyItemText:
+                          localizations.translate('NO_PRODUCTS_FOUND'),
+                      items: displayProductVariants.map((product) {
+                        return DropdownItem(
+                          name: localizations
+                              .translate(product.sku ?? product.id),
+                          code: product.id,
+                        );
+                      }).toList(),
+                      onSelect: (value) {
+                        final selected = displayProductVariants.firstWhere(
+                          (p) => p.id == value.code,
+                        );
+                        setState(() {
+                          _productTouched = true;
+                          _selectedProduct = selected;
+                          // If user interacts with product first, facility should
+                          // show as required until it is selected.
+                          _facilityTouched = true;
+                          // Reset flags when product changes
+                          _manualCountInitialized = false;
+                          _needsMetricsRecalculation = true;
+                        });
+                        _triggerStockSearchIfReady(context);
+                        _updateFormData();
+                      },
+                    ),
                   ),
                 ),
                 if (_selectedFacility != null && _selectedProduct != null)
                   const SizedBox(height: spacer4),
 
                 // Stock Metrics Display (only show if both facility and product are selected)
+                //
+                // Semantics id lets a test gate arrival on this card instead of
+                // a fixed sleep - the metrics (and manualCount's auto-fill) land
+                // via a post-frame callback after both dropdowns are selected,
+                // so there is otherwise no stable, non-fragile signal that the
+                // async calculation has settled.
                 if (_selectedFacility != null && _selectedProduct != null) ...[
-                  DigitCard(
-                    margin: const EdgeInsets.all(0),
-                    children: [
-                      Text(
-                        localizations.translate(
-                            i18.stockReconciliationMetrics.stockMetrics),
-                        style: textTheme.headingS.copyWith(
-                          color: theme.colorTheme.text.primary,
+                  Semantics(
+                    identifier: 'stockReconciliationCard_metrics',
+                    container: true,
+                    child: DigitCard(
+                      margin: const EdgeInsets.all(0),
+                      children: [
+                        Text(
+                          localizations.translate(
+                              i18.stockReconciliationMetrics.stockMetrics),
+                          style: textTheme.headingS.copyWith(
+                            color: theme.colorTheme.text.primary,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: spacer2),
-                      LabelValueItem(
-                        label: localizations.translate(i18
-                            .stockReconciliationMetrics.dateOfReconciliation),
-                        value:
-                            DateFormat('dd MMMM yyyy').format(DateTime.now()),
-                        labelFlex: 5,
-                      ),
-                      const DigitDivider(),
-                      LabelValueItem(
-                        label: localizations.translate(
-                            i18.stockReconciliationMetrics.stockReceived),
-                        value:
-                            _stockMetrics['stockReceived']!.toStringAsFixed(0),
-                        labelFlex: 5,
-                      ),
-                      const DigitDivider(),
-                      LabelValueItem(
-                        label: localizations.translate(
-                            i18.stockReconciliationMetrics.stockIssued),
-                        value: _stockMetrics['stockIssued']!.toStringAsFixed(0),
-                        labelFlex: 5,
-                      ),
-                      const DigitDivider(),
-                      LabelValueItem(
-                        label: localizations.translate(
-                            i18.stockReconciliationMetrics.stockReturned),
-                        value:
-                            _stockMetrics['stockReturned']!.toStringAsFixed(0),
-                        labelFlex: 5,
-                      ),
-                      const DigitDivider(),
-                      if (isDistributor) ...[
+                        const SizedBox(height: spacer2),
                         LabelValueItem(
-                          label: localizations.translate(
-                              i18.stockReconciliationMetrics.stockLost),
-                          value: _stockMetrics['stockLost']!.toStringAsFixed(0),
-                          labelFlex: 5,
-                        ),
-                        const DigitDivider(),
-                        LabelValueItem(
-                          label: localizations.translate(
-                              i18.stockReconciliationMetrics.stockDamaged),
+                          label: localizations.translate(i18
+                              .stockReconciliationMetrics.dateOfReconciliation),
                           value:
-                              _stockMetrics['stockDamaged']!.toStringAsFixed(0),
+                              DateFormat('dd MMMM yyyy').format(DateTime.now()),
                           labelFlex: 5,
                         ),
                         const DigitDivider(),
                         LabelValueItem(
                           label: localizations.translate(
-                              i18.stockReconciliationMetrics.stockExcess),
+                              i18.stockReconciliationMetrics.stockReceived),
+                          value: _stockMetrics['stockReceived']!
+                              .toStringAsFixed(0),
+                          labelFlex: 5,
+                        ),
+                        const DigitDivider(),
+                        LabelValueItem(
+                          label: localizations.translate(
+                              i18.stockReconciliationMetrics.stockIssued),
                           value:
-                              _stockMetrics['stockExcess']!.toStringAsFixed(0),
+                              _stockMetrics['stockIssued']!.toStringAsFixed(0),
                           labelFlex: 5,
                         ),
                         const DigitDivider(),
                         LabelValueItem(
                           label: localizations.translate(
-                              i18.stockReconciliationMetrics.stockLess),
-                          value: _stockMetrics['stockLess']!.toStringAsFixed(0),
+                              i18.stockReconciliationMetrics.stockReturned),
+                          value: _stockMetrics['stockReturned']!
+                              .toStringAsFixed(0),
                           labelFlex: 5,
                         ),
                         const DigitDivider(),
+                        if (isDistributor) ...[
+                          LabelValueItem(
+                            label: localizations.translate(
+                                i18.stockReconciliationMetrics.stockLost),
+                            value:
+                                _stockMetrics['stockLost']!.toStringAsFixed(0),
+                            labelFlex: 5,
+                          ),
+                          const DigitDivider(),
+                          LabelValueItem(
+                            label: localizations.translate(
+                                i18.stockReconciliationMetrics.stockDamaged),
+                            value: _stockMetrics['stockDamaged']!
+                                .toStringAsFixed(0),
+                            labelFlex: 5,
+                          ),
+                          const DigitDivider(),
+                          LabelValueItem(
+                            label: localizations.translate(
+                                i18.stockReconciliationMetrics.stockExcess),
+                            value: _stockMetrics['stockExcess']!
+                                .toStringAsFixed(0),
+                            labelFlex: 5,
+                          ),
+                          const DigitDivider(),
+                          LabelValueItem(
+                            label: localizations.translate(
+                                i18.stockReconciliationMetrics.stockLess),
+                            value:
+                                _stockMetrics['stockLess']!.toStringAsFixed(0),
+                            labelFlex: 5,
+                          ),
+                          const DigitDivider(),
+                        ],
+                        LabelValueItem(
+                          label: localizations.translate(
+                              i18.stockReconciliationMetrics.stockOnHand),
+                          value:
+                              _stockMetrics['stockInHand']!.toStringAsFixed(0),
+                          labelFlex: 5,
+                        ),
                       ],
-                      LabelValueItem(
-                        label: localizations.translate(
-                            i18.stockReconciliationMetrics.stockOnHand),
-                        value: _stockMetrics['stockInHand']!.toStringAsFixed(0),
-                        labelFlex: 5,
-                      ),
-                    ],
+                    ),
                   ),
                   // TODO: COMMENTING THIS AS INFOCARD IS NOT REQUIRED FOR NOW
                   // const SizedBox(height: spacer4),
