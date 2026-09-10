@@ -61,7 +61,11 @@ class TextWidget extends ResolvedFlowWidget {
           ? SelectableText(
               text,
               style: style,
-              maxLines: maxLines,
+              // Only when the config asks for it: SelectableText *reserves*
+              // maxLines of height rather than treating it as a ceiling, so
+              // the default of 2 leaves a single line sitting in a
+              // double-height box and drags anything centred beside it low.
+              maxLines: json['maxLines'] as int?,
             )
           : Text(
               text,

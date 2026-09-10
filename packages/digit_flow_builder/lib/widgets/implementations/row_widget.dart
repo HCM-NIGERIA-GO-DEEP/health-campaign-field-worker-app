@@ -24,7 +24,10 @@ class RowWidget extends ResolvedFlowWidget {
     return WidgetParsers.wrapWithBottomGap(
       Row(
         mainAxisSize: WidgetParsers.parseMainAxisSize(props['mainAxisSize']),
-        mainAxisAlignment: WidgetParsers.parseMainAxisAlignment(props['mainAxisAlignment']),
+        mainAxisAlignment:
+            WidgetParsers.parseMainAxisAlignment(props['mainAxisAlignment']),
+        crossAxisAlignment:
+            WidgetParsers.parseCrossAxisAlignment(props['crossAxisAlignment']),
         children: (json['children'] as List).map<Widget>((childJson) {
           final processedChild = stateData != null
               ? preprocessConfigWithState(
@@ -41,8 +44,10 @@ class RowWidget extends ResolvedFlowWidget {
             item: resolved.state.itemData,
             screenKey: resolved.screenKey,
             compositeKey: resolved.compositeKey,
-            child: LayoutMapper.map(processedChild, stateData, context, onAction,
-                item: resolved.state.itemData, listIndex: resolved.state.listIndex,
+            child: LayoutMapper.map(
+                processedChild, stateData, context, onAction,
+                item: resolved.state.itemData,
+                listIndex: resolved.state.listIndex,
                 compositeKey: resolved.compositeKey),
           );
         }).toList(),

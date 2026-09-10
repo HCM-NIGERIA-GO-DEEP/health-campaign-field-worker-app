@@ -6,6 +6,7 @@ import 'package:digit_flow_builder/widgets/implementations/check_box_widget.dart
 import 'package:digit_flow_builder/widgets/implementations/date_widget.dart';
 import 'package:digit_flow_builder/widgets/implementations/expandable_widget.dart';
 import 'package:digit_flow_builder/widgets/implementations/expanded_widget.dart';
+import 'package:digit_flow_builder/widgets/implementations/flexible_widget.dart';
 import 'package:digit_flow_builder/widgets/implementations/icon_button_widget.dart';
 import 'package:digit_flow_builder/widgets/implementations/label_toggle_widget.dart';
 import 'package:digit_flow_builder/widgets/implementations/no_result_card_widget.dart';
@@ -77,6 +78,7 @@ class WidgetRegistration {
     FlowWidgetFactory.register(ProximitySearchWidget());
     FlowWidgetFactory.register(ExpandableWidget());
     FlowWidgetFactory.register(ExpandedWidget());
+    FlowWidgetFactory.register(FlexibleWidget());
     FlowWidgetFactory.register(SizedBoxWidget());
     FlowWidgetFactory.register(IconsButtonWidget());
     FlowWidgetFactory.register(DateWidget());

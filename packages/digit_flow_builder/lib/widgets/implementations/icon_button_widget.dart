@@ -3,6 +3,7 @@ import 'package:digit_flow_builder/blocs/flow_crud_bloc.dart';
 import 'package:digit_flow_builder/utils/flow_widget_state.dart';
 import 'package:digit_flow_builder/utils/utils.dart';
 import 'package:digit_ui_components/constants/icon_mapping.dart';
+import 'package:digit_ui_components/theme/spacers.dart';
 import 'package:flutter/material.dart';
 
 import '../../action_handler/action_config.dart';
@@ -22,7 +23,38 @@ class IconsButtonWidget implements FlowWidget {
     final flowState = WidgetStateContext.of(context);
     final crudStateData = flowState.stateData;
 
+    final props = json['properties'] as Map<String, dynamic>? ?? const {};
+    final iconSize = (props['iconSize'] as num?)?.toDouble();
+    final padding = (props['padding'] as num?)?.toDouble();
+
+    // An unsized IconButton dwarfs body text and drives the height of the row
+    // it sits in. `constraints` alone is not enough: Material 3 gives
+    // IconButton a ButtonStyle with a 40x40 minimum plus a larger tap target,
+    // so it stays 40px however small the icon is. Overriding that style, and
+    // shrink-wrapping the tap target, is what actually sizes the control.
+    //
+    // Sizing it below 48px trades away Material's recommended tap target, so
+    // raise `padding` where the icon is a primary action.
+    final isSized = iconSize != null || padding != null;
+    final effectivePadding = padding ?? (iconSize != null ? spacer1 : null);
+    final tapTarget =
+        iconSize == null ? null : iconSize + 2 * (effectivePadding ?? 0);
+
     return IconButton(
+      iconSize: iconSize,
+      padding:
+          effectivePadding == null ? null : EdgeInsets.all(effectivePadding),
+      constraints: isSized && tapTarget != null
+          ? BoxConstraints(minWidth: tapTarget, minHeight: tapTarget)
+          : null,
+      style: isSized && tapTarget != null
+          ? IconButton.styleFrom(
+              minimumSize: Size(tapTarget, tapTarget),
+              padding: EdgeInsets.all(effectivePadding ?? 0),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            )
+          : null,
+      tooltip: json['tooltip'] as String?,
       onPressed: () async {
         if (json['onAction'] != null) {
           final actionsList = List<Map<String, dynamic>>.from(json['onAction']);
@@ -157,7 +189,7 @@ class IconsButtonWidget implements FlowWidget {
           );
         }
       },
-      icon: Icon(DigitIconMapping.getIcon(iconData)),
+      icon: Icon(DigitIconMapping.getIcon(iconData), size: iconSize),
     );
   }
 }
