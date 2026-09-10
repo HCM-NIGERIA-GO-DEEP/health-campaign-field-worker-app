@@ -101,6 +101,75 @@ void main() {
     });
   });
 
+  group('spelling variations', () {
+    final service = MatchingService();
+
+    /// Pairs that are the same name written two ways.
+    const variations = <List<String>>[
+      ['Al-Mustapha', 'Almustapha'],
+      ["M'Bala", 'Mbala'],
+      ['Al-Hassan', 'Hassan'],
+      ["N'Diaye", 'Ndiaye'],
+      ['El-Yakubu', 'Elyakubu'],
+    ];
+
+    test('a separator or affix variation never lowers the score', () {
+      // Normalizing by stripping affixes alone is a trap: it only rewrites the
+      // separated spelling, so "Al-Mustapha" vs "Almustapha" scored 0.767 --
+      // below the 0.85 default -- where the raw pair scored 0.976. Comparing
+      // through both forms means normalization can only help.
+      for (final pair in variations) {
+        final normalizedScore = service.computeScore(
+          {'givenName': StringUtils.normalizeName(pair[0])},
+          {'givenName': StringUtils.normalizeName(pair[1])},
+        );
+        final rawScore = service.computeScore(
+          {'givenName': pair[0]},
+          {'givenName': pair[1]},
+        );
+
+        expect(rawScore, greaterThanOrEqualTo(normalizedScore - 1e-9),
+            reason: '${pair[0]} vs ${pair[1]}');
+      }
+    });
+
+    test('every variation clears the default threshold', () {
+      final engine = DedupEngine();
+
+      for (final pair in variations) {
+        final matches = engine.findMatchesFor(
+          {'givenName': pair[0], 'familyName': 'Danjuma'},
+          [
+            {'givenName': pair[1], 'familyName': 'Danjuma', 'id': 'x'}
+          ],
+        );
+        expect(matches, isNotEmpty, reason: '${pair[0]} vs ${pair[1]}');
+      }
+    });
+
+    test('variations share a block, or scoring never sees them', () {
+      final strategy = BlockingStrategy();
+
+      for (final pair in variations) {
+        final a = strategy.blockKeysFor({'givenName': pair[0]});
+        final b = strategy.blockKeysFor({'givenName': pair[1]});
+        expect(a.intersection(b), isNotEmpty,
+            reason: '${pair[0]} vs ${pair[1]} were filed apart');
+      }
+    });
+
+    test('distinct names are still kept apart', () {
+      final engine = DedupEngine();
+      final matches = engine.findMatchesFor(
+        {'givenName': 'Aliyu', 'familyName': 'Danjuma'},
+        [
+          {'givenName': 'Bitrus', 'familyName': 'Njobdi', 'id': 'x'}
+        ],
+      );
+      expect(matches, isEmpty);
+    });
+  });
+
   group('BlockingStrategy', () {
     test('files a record under one block per name attribute', () {
       final keys = BlockingStrategy().blockKeysFor(person('Peter', 'Okafor'));

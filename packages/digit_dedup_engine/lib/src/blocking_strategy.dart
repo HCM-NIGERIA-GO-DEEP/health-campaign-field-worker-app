@@ -48,15 +48,18 @@ class BlockingStrategy {
       if (raw == null) continue;
 
       // A name field may hold several words ("Peter John"); each contributes
-      // its own key so word order between records does not matter.
-      final normalized = StringUtils.removeAffixes(
-        StringUtils.normalizeName(raw.toString()),
-      );
-      for (final token in normalized.split(' ')) {
-        if (token.isEmpty) continue;
-        final code = Soundex.encode(token);
-        if (code.isEmpty) continue;
-        keys.add('$attribute:$code');
+      // its own key so word order between records does not matter. Each word
+      // also contributes a key per spelling form, so "Al-Mustapha" and
+      // "Almustapha" share a block instead of being filed apart and never
+      // compared.
+      final normalized = StringUtils.normalizeName(raw.toString());
+      for (final form in StringUtils.comparisonForms(normalized)) {
+        for (final token in form.split(' ')) {
+          if (token.isEmpty) continue;
+          final code = Soundex.encode(token);
+          if (code.isEmpty) continue;
+          keys.add('$attribute:$code');
+        }
       }
     }
 

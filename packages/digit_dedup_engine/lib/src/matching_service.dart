@@ -80,8 +80,8 @@ class MatchingService {
     final scores = <String, double>{};
 
     for (final attribute in _nameAttributes) {
-      final a = _normalized(record1[attribute]);
-      final b = _normalized(record2[attribute]);
+      final a = _comparisonForms(record1[attribute]);
+      final b = _comparisonForms(record2[attribute]);
       if (a == null || b == null) continue;
       scores[attribute] = _nameSimilarity(a, b);
     }
@@ -102,13 +102,26 @@ class MatchingService {
     return scores;
   }
 
-  /// Blended fuzzy similarity for a pair of normalized name strings.
-  double _nameSimilarity(String a, String b) {
-    if (a == b) return 1.0;
-    final jaroWinkler = JaroWinkler.similarity(a, b);
-    final levenshtein = Levenshtein.similarity(a, b);
-    return (jaroWinkler * _jaroWinklerShare) +
-        (levenshtein * (1 - _jaroWinklerShare));
+  /// Best blended similarity across the spelling forms of two names.
+  ///
+  /// Each name contributes more than one form (see
+  /// [StringUtils.comparisonForms]); the best pairing wins so that a spelling
+  /// variation can only ever help.
+  double _nameSimilarity(List<String> a, List<String> b) {
+    var best = 0.0;
+
+    for (final formA in a) {
+      for (final formB in b) {
+        if (formA == formB) return 1.0;
+        final jaroWinkler = JaroWinkler.similarity(formA, formB);
+        final levenshtein = Levenshtein.similarity(formA, formB);
+        final blended = (jaroWinkler * _jaroWinklerShare) +
+            (levenshtein * (1 - _jaroWinklerShare));
+        if (blended > best) best = blended;
+      }
+    }
+
+    return best;
   }
 
   /// Fraction of the compared name attributes whose Soundex codes agree.
@@ -122,11 +135,15 @@ class MatchingService {
     var agreed = 0;
 
     for (final attribute in _nameAttributes) {
-      final a = _normalized(record1[attribute]);
-      final b = _normalized(record2[attribute]);
+      final a = _comparisonForms(record1[attribute]);
+      final b = _comparisonForms(record2[attribute]);
       if (a == null || b == null) continue;
       compared++;
-      if (Soundex.encode(a) == Soundex.encode(b)) agreed++;
+
+      // Agreement through any pair of forms counts, matching how
+      // [_nameSimilarity] takes the best pairing.
+      final codesB = b.map(Soundex.encode).toSet();
+      if (a.any((form) => codesB.contains(Soundex.encode(form)))) agreed++;
     }
 
     if (compared == 0) return null;
@@ -166,13 +183,18 @@ class MatchingService {
     return GpsUtils.proximityScore(lat1, lon1, lat2, lon2);
   }
 
-  /// Normalizes a name value, returning null when there is nothing to compare.
-  static String? _normalized(dynamic value) {
+  /// The forms a name value should be compared through, or null when there is
+  /// nothing to compare.
+  static List<String>? _comparisonForms(dynamic value) {
     if (value == null) return null;
-    final normalized = StringUtils.removeAffixes(
-      StringUtils.normalizeName(value.toString()),
-    );
-    return normalized.isEmpty ? null : normalized;
+
+    final normalized = StringUtils.normalizeName(value.toString());
+    if (normalized.isEmpty) return null;
+
+    final forms = StringUtils.comparisonForms(normalized)
+        .where((form) => form.isNotEmpty)
+        .toList();
+    return forms.isEmpty ? null : forms;
   }
 
   static DateTime? _parseDate(dynamic value) {

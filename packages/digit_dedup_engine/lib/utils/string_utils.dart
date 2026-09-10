@@ -153,6 +153,32 @@ class StringUtils {
         .trim();
   }
 
+  static final RegExp _separators = RegExp(r"[-']");
+
+  /// Collapse the hyphens and apostrophes that separate an affix from the rest
+  /// of a name, so "Al-Mustapha" and "Almustapha" converge.
+  static String removeSeparators(String name) =>
+      name.replaceAll(_separators, '');
+
+  /// The forms a name should be compared through, best match winning.
+  ///
+  /// Two forms are needed because the two spelling variations pull in opposite
+  /// directions: "Al-Mustapha" vs "Almustapha" only agree once the separator
+  /// is gone, while "Al-Hassan" vs "Hassan" only agree once the affix is gone.
+  /// Comparing through both means neither variation is penalised -- crucially,
+  /// [removeAffixes] alone makes the first pair *less* similar than no
+  /// normalization at all, because it strips only the separated spelling.
+  ///
+  /// Expects an already [normalizeName]d input.
+  static List<String> comparisonForms(String normalized) {
+    final separatorFree = removeSeparators(normalized);
+    final affixStripped = removeSeparators(removeAffixes(normalized));
+
+    return affixStripped == separatorFree
+        ? [separatorFree]
+        : [separatorFree, affixStripped];
+  }
+
   /// Remove common prefixes/suffixes that don't affect identity
   /// (e.g., "Al-", "El-", "M'" in African/Arabic names)
   ///
