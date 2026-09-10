@@ -124,8 +124,9 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     final checkFn = DedupCheckRegistry().checkFn;
     if (checkFn == null) return DedupCheckOutcome.proceed;
 
-    // Collect the mapped fields. Every one has to carry enough text to score
-    // against, since a single character would be similar to almost anything.
+    // Required fields: each has to carry enough text to score against, since
+    // a single character would be similar to almost anything. A blank one
+    // means there is nothing to match on, so the check is skipped.
     final formValues = <String, dynamic>{};
     for (final fieldName in config.fields.values) {
       if (!formGroup.contains(fieldName)) return DedupCheckOutcome.proceed;
@@ -140,6 +141,19 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
       formValues[fieldName] = value;
     }
     if (formValues.isEmpty) return DedupCheckOutcome.proceed;
+
+    // Optional fields are included when filled and dropped when not, rather
+    // than cancelling the check. The matcher ignores an attribute that is
+    // absent on either side, so an empty one costs nothing.
+    for (final fieldName in config.optionalFields.values) {
+      if (!formGroup.contains(fieldName)) continue;
+
+      final value = formGroup.control(fieldName).value;
+      if (value == null) continue;
+      if (value.toString().trim().isEmpty) continue;
+
+      formValues[fieldName] = value;
+    }
 
     return checkFn(DedupCheckRequest(
       config: config,

@@ -143,6 +143,23 @@ void main() {
       expect(config.dedupAlertPopUp, isNull);
     });
 
+    test('optional fields default to empty and parse when given', () {
+      expect(
+        DedupCheck.fromJson({'fields': {'givenName': 'nameOfIndividual'}})
+            .optionalFields,
+        isEmpty,
+      );
+
+      final config = DedupCheck.fromJson({
+        'fields': {'givenName': 'nameOfIndividual'},
+        'optionalFields': {'mobileNumber': 'phone'},
+      });
+      expect(config.optionalFields, {'mobileNumber': 'phone'});
+      // Optional fields must not leak into the required set, or a blank phone
+      // would cancel the whole check.
+      expect(config.fields, {'givenName': 'nameOfIndividual'});
+    });
+
     test('a filter defaults its operation to equals', () {
       final filter = DedupFilter.fromJson({
         'key': 'projectId',

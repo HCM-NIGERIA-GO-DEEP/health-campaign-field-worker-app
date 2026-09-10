@@ -150,13 +150,20 @@ class DedupCheckUtils {
   ) {
     final probe = <String, dynamic>{};
 
-    config.fields.forEach((attribute, fieldName) {
-      final value = formValues[fieldName];
-      if (value == null) return;
-      final asText = value.toString().trim();
-      if (asText.isEmpty) return;
-      probe[attribute] = asText;
-    });
+    void take(Map<String, String> mapping) {
+      mapping.forEach((attribute, fieldName) {
+        final value = formValues[fieldName];
+        if (value == null) return;
+        final asText = value.toString().trim();
+        if (asText.isEmpty) return;
+        probe[attribute] = asText;
+      });
+    }
+
+    take(config.fields);
+    // Absent optional values simply never reach the probe, and the matcher
+    // skips any attribute missing from either side.
+    take(config.optionalFields);
 
     return probe;
   }
@@ -262,6 +269,9 @@ class DedupCheckUtils {
         'fatherName': entity.fatherName,
         'dateOfBirth': entity.dateOfBirth,
         'gender': entity.gender?.name,
+        // Nullable on the model and optional on the form; the matcher skips
+        // it unless both sides have one.
+        'mobileNumber': entity.mobileNumber,
         DedupRecordKeys.displayName: nameParts.join(' '),
         DedupRecordKeys.beneficiaryId: beneficiaryIdOf(entity),
         DedupRecordKeys.clientReferenceId: entity.clientReferenceId,

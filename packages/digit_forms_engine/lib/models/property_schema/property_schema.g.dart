@@ -485,6 +485,9 @@ Map<String, dynamic> _$$DedupAlertPopUpImplToJson(
 _$DedupCheckImpl _$$DedupCheckImplFromJson(Map<String, dynamic> json) =>
     _$DedupCheckImpl(
       fields: _stringMapOrEmpty(json['fields']),
+      optionalFields: json['optionalFields'] == null
+          ? const <String, String>{}
+          : _stringMapOrEmpty(json['optionalFields']),
       model: json['model'] as String? ?? 'individual',
       filters: (json['filters'] as List<dynamic>?)
               ?.map((e) => DedupFilter.fromJson(e as Map<String, dynamic>))
@@ -502,6 +505,7 @@ _$DedupCheckImpl _$$DedupCheckImplFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$$DedupCheckImplToJson(_$DedupCheckImpl instance) {
   final val = <String, dynamic>{
     'fields': instance.fields,
+    'optionalFields': instance.optionalFields,
     'model': instance.model,
     'filters': instance.filters.map((e) => e.toJson()).toList(),
   };

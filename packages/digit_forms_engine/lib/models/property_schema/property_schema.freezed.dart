@@ -4809,8 +4809,24 @@ DedupCheck _$DedupCheckFromJson(Map<String, dynamic> json) {
 mixin _$DedupCheck {
   /// Maps a dedup engine attribute to the form field feeding it, e.g.
   /// `{"givenName": "nameOfIndividual", "familyName": "familyname"}`.
+  ///
+  /// Every field here is **required**: if any is blank the check is skipped
+  /// entirely, on the grounds that there is not enough to match on. Put
+  /// anything the user may legitimately leave empty in [optionalFields]
+  /// instead.
   @JsonKey(fromJson: _stringMapOrEmpty)
   Map<String, String> get fields => throw _privateConstructorUsedError;
+
+  /// Attributes that sharpen a match but are not needed to attempt one, in
+  /// the same shape as [fields].
+  ///
+  /// A blank optional field is simply left out of the probe rather than
+  /// cancelling the check. `mobileNumber` belongs here: the registration
+  /// form does not require a phone number, so treating it as required would
+  /// silently disable duplicate detection for every beneficiary without
+  /// one.
+  @JsonKey(fromJson: _stringMapOrEmpty)
+  Map<String, String> get optionalFields => throw _privateConstructorUsedError;
 
   /// Local model searched for existing records (e.g. "individual").
   String get model => throw _privateConstructorUsedError;
@@ -4862,6 +4878,7 @@ abstract class $DedupCheckCopyWith<$Res> {
   @useResult
   $Res call(
       {@JsonKey(fromJson: _stringMapOrEmpty) Map<String, String> fields,
+      @JsonKey(fromJson: _stringMapOrEmpty) Map<String, String> optionalFields,
       String model,
       List<DedupFilter> filters,
       @JsonKey(fromJson: _doubleOrNull) double? matchThreshold,
@@ -4890,6 +4907,7 @@ class _$DedupCheckCopyWithImpl<$Res, $Val extends DedupCheck>
   @override
   $Res call({
     Object? fields = null,
+    Object? optionalFields = null,
     Object? model = null,
     Object? filters = null,
     Object? matchThreshold = freezed,
@@ -4904,6 +4922,10 @@ class _$DedupCheckCopyWithImpl<$Res, $Val extends DedupCheck>
       fields: null == fields
           ? _value.fields
           : fields // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>,
+      optionalFields: null == optionalFields
+          ? _value.optionalFields
+          : optionalFields // ignore: cast_nullable_to_non_nullable
               as Map<String, String>,
       model: null == model
           ? _value.model
@@ -4967,6 +4989,7 @@ abstract class _$$DedupCheckImplCopyWith<$Res>
   @useResult
   $Res call(
       {@JsonKey(fromJson: _stringMapOrEmpty) Map<String, String> fields,
+      @JsonKey(fromJson: _stringMapOrEmpty) Map<String, String> optionalFields,
       String model,
       List<DedupFilter> filters,
       @JsonKey(fromJson: _doubleOrNull) double? matchThreshold,
@@ -4994,6 +5017,7 @@ class __$$DedupCheckImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? fields = null,
+    Object? optionalFields = null,
     Object? model = null,
     Object? filters = null,
     Object? matchThreshold = freezed,
@@ -5008,6 +5032,10 @@ class __$$DedupCheckImplCopyWithImpl<$Res>
       fields: null == fields
           ? _value._fields
           : fields // ignore: cast_nullable_to_non_nullable
+              as Map<String, String>,
+      optionalFields: null == optionalFields
+          ? _value._optionalFields
+          : optionalFields // ignore: cast_nullable_to_non_nullable
               as Map<String, String>,
       model: null == model
           ? _value.model
@@ -5056,6 +5084,8 @@ class _$DedupCheckImpl extends _DedupCheck {
   const _$DedupCheckImpl(
       {@JsonKey(fromJson: _stringMapOrEmpty)
       required final Map<String, String> fields,
+      @JsonKey(fromJson: _stringMapOrEmpty)
+      final Map<String, String> optionalFields = const <String, String>{},
       this.model = 'individual',
       final List<DedupFilter> filters = const <DedupFilter>[],
       @JsonKey(fromJson: _doubleOrNull) this.matchThreshold,
@@ -5066,6 +5096,7 @@ class _$DedupCheckImpl extends _DedupCheck {
       this.backToSearchPage,
       @JsonKey(fromJson: _dedupAlertPopUpOrNull) this.dedupAlertPopUp})
       : _fields = fields,
+        _optionalFields = optionalFields,
         _filters = filters,
         super._();
 
@@ -5074,16 +5105,52 @@ class _$DedupCheckImpl extends _DedupCheck {
 
   /// Maps a dedup engine attribute to the form field feeding it, e.g.
   /// `{"givenName": "nameOfIndividual", "familyName": "familyname"}`.
+  ///
+  /// Every field here is **required**: if any is blank the check is skipped
+  /// entirely, on the grounds that there is not enough to match on. Put
+  /// anything the user may legitimately leave empty in [optionalFields]
+  /// instead.
   final Map<String, String> _fields;
 
   /// Maps a dedup engine attribute to the form field feeding it, e.g.
   /// `{"givenName": "nameOfIndividual", "familyName": "familyname"}`.
+  ///
+  /// Every field here is **required**: if any is blank the check is skipped
+  /// entirely, on the grounds that there is not enough to match on. Put
+  /// anything the user may legitimately leave empty in [optionalFields]
+  /// instead.
   @override
   @JsonKey(fromJson: _stringMapOrEmpty)
   Map<String, String> get fields {
     if (_fields is EqualUnmodifiableMapView) return _fields;
     // ignore: implicit_dynamic_type
     return EqualUnmodifiableMapView(_fields);
+  }
+
+  /// Attributes that sharpen a match but are not needed to attempt one, in
+  /// the same shape as [fields].
+  ///
+  /// A blank optional field is simply left out of the probe rather than
+  /// cancelling the check. `mobileNumber` belongs here: the registration
+  /// form does not require a phone number, so treating it as required would
+  /// silently disable duplicate detection for every beneficiary without
+  /// one.
+  final Map<String, String> _optionalFields;
+
+  /// Attributes that sharpen a match but are not needed to attempt one, in
+  /// the same shape as [fields].
+  ///
+  /// A blank optional field is simply left out of the probe rather than
+  /// cancelling the check. `mobileNumber` belongs here: the registration
+  /// form does not require a phone number, so treating it as required would
+  /// silently disable duplicate detection for every beneficiary without
+  /// one.
+  @override
+  @JsonKey(fromJson: _stringMapOrEmpty)
+  Map<String, String> get optionalFields {
+    if (_optionalFields is EqualUnmodifiableMapView) return _optionalFields;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableMapView(_optionalFields);
   }
 
   /// Local model searched for existing records (e.g. "individual").
@@ -5144,7 +5211,7 @@ class _$DedupCheckImpl extends _DedupCheck {
 
   @override
   String toString() {
-    return 'DedupCheck(fields: $fields, model: $model, filters: $filters, matchThreshold: $matchThreshold, maxResults: $maxResults, minFieldLength: $minFieldLength, maxCandidates: $maxCandidates, skipOnEdit: $skipOnEdit, backToSearchPage: $backToSearchPage, dedupAlertPopUp: $dedupAlertPopUp)';
+    return 'DedupCheck(fields: $fields, optionalFields: $optionalFields, model: $model, filters: $filters, matchThreshold: $matchThreshold, maxResults: $maxResults, minFieldLength: $minFieldLength, maxCandidates: $maxCandidates, skipOnEdit: $skipOnEdit, backToSearchPage: $backToSearchPage, dedupAlertPopUp: $dedupAlertPopUp)';
   }
 
   @override
@@ -5153,6 +5220,8 @@ class _$DedupCheckImpl extends _DedupCheck {
         (other.runtimeType == runtimeType &&
             other is _$DedupCheckImpl &&
             const DeepCollectionEquality().equals(other._fields, _fields) &&
+            const DeepCollectionEquality()
+                .equals(other._optionalFields, _optionalFields) &&
             (identical(other.model, model) || other.model == model) &&
             const DeepCollectionEquality().equals(other._filters, _filters) &&
             (identical(other.matchThreshold, matchThreshold) ||
@@ -5176,6 +5245,7 @@ class _$DedupCheckImpl extends _DedupCheck {
   int get hashCode => Object.hash(
       runtimeType,
       const DeepCollectionEquality().hash(_fields),
+      const DeepCollectionEquality().hash(_optionalFields),
       model,
       const DeepCollectionEquality().hash(_filters),
       matchThreshold,
@@ -5204,6 +5274,8 @@ abstract class _DedupCheck extends DedupCheck {
   const factory _DedupCheck(
       {@JsonKey(fromJson: _stringMapOrEmpty)
       required final Map<String, String> fields,
+      @JsonKey(fromJson: _stringMapOrEmpty)
+      final Map<String, String> optionalFields,
       final String model,
       final List<DedupFilter> filters,
       @JsonKey(fromJson: _doubleOrNull) final double? matchThreshold,
@@ -5223,8 +5295,25 @@ abstract class _DedupCheck extends DedupCheck {
 
   /// Maps a dedup engine attribute to the form field feeding it, e.g.
   /// `{"givenName": "nameOfIndividual", "familyName": "familyname"}`.
+  ///
+  /// Every field here is **required**: if any is blank the check is skipped
+  /// entirely, on the grounds that there is not enough to match on. Put
+  /// anything the user may legitimately leave empty in [optionalFields]
+  /// instead.
   @JsonKey(fromJson: _stringMapOrEmpty)
   Map<String, String> get fields;
+  @override
+
+  /// Attributes that sharpen a match but are not needed to attempt one, in
+  /// the same shape as [fields].
+  ///
+  /// A blank optional field is simply left out of the probe rather than
+  /// cancelling the check. `mobileNumber` belongs here: the registration
+  /// form does not require a phone number, so treating it as required would
+  /// silently disable duplicate detection for every beneficiary without
+  /// one.
+  @JsonKey(fromJson: _stringMapOrEmpty)
+  Map<String, String> get optionalFields;
   @override
 
   /// Local model searched for existing records (e.g. "individual").

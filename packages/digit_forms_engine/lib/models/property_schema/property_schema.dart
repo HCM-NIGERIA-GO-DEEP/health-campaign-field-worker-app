@@ -353,7 +353,24 @@ class DedupCheck with _$DedupCheck {
   const factory DedupCheck({
     /// Maps a dedup engine attribute to the form field feeding it, e.g.
     /// `{"givenName": "nameOfIndividual", "familyName": "familyname"}`.
+    ///
+    /// Every field here is **required**: if any is blank the check is skipped
+    /// entirely, on the grounds that there is not enough to match on. Put
+    /// anything the user may legitimately leave empty in [optionalFields]
+    /// instead.
     @JsonKey(fromJson: _stringMapOrEmpty) required Map<String, String> fields,
+
+    /// Attributes that sharpen a match but are not needed to attempt one, in
+    /// the same shape as [fields].
+    ///
+    /// A blank optional field is simply left out of the probe rather than
+    /// cancelling the check. `mobileNumber` belongs here: the registration
+    /// form does not require a phone number, so treating it as required would
+    /// silently disable duplicate detection for every beneficiary without
+    /// one.
+    @JsonKey(fromJson: _stringMapOrEmpty)
+    @Default(<String, String>{})
+    Map<String, String> optionalFields,
 
     /// Local model searched for existing records (e.g. "individual").
     @Default('individual') String model,
