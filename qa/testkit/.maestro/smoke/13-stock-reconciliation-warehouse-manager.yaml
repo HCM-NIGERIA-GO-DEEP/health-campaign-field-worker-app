@@ -1,0 +1,89 @@
+# TC-011 (smoke), Warehouse Manager sub-case: same Stock Reconciliation module as
+# 12-stock-reconciliation-cdd.yaml, but logged in as the Warehouse Manager test user
+# (maestro.env WAREHOUSE_MANAGER_USERNAME - see common/ensure-home-warehouse-manager.yaml).
+# See that flow's header for the full rationale on: why this deliberately creates a
+# manualCount/stockInHand mismatch instead of just submitting the auto-filled value,
+# the three Semantics fixes added this session (stockReconciliationCard_facility/
+# _product/_metrics, comments_input, the success screen's .*_primaryAction id), and why
+# a run failing at the very first home-tile tap is itself informative (tile visibility
+# is 100% server-driven, not a hardcoded role check - genuinely unverified for either
+# role until a real run confirms it).
+#
+# STANDALONE - logs in fresh as the Warehouse Manager test user; no dependency on any
+# other flow. Creates a REAL StockReconciliationModel record.
+appId: com.digit.hcm
+tags:
+  - smoke
+  - needs-logged-in
+---
+- launchApp
+- runFlow: ../common/ensure-home-warehouse-manager.yaml
+- scrollUntilVisible:
+    element:
+      text: ${HOME_STOCK_RECON}
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    text: ${HOME_STOCK_RECON}
+- extendedWaitUntil:
+    visible:
+      id: "stockReconciliationCard_facility"
+    timeout: 30000
+- assertNotVisible:
+    text: "STOCKRECONCILIATION_STOCKRECONCILIATION_HEADING"
+- tapOn:
+    id: "stockReconciliationCard_facility"
+- extendedWaitUntil:
+    visible:
+      id: "option_.*"
+    timeout: 15000
+- tapOn:
+    id: "option_.*"
+- tapOn:
+    id: "stockReconciliationCard_product"
+- extendedWaitUntil:
+    visible:
+      id: "option_.*"
+    timeout: 15000
+- tapOn:
+    id: "option_.*"
+- extendedWaitUntil:
+    visible:
+      id: "stockReconciliationCard_metrics"
+    timeout: 20000
+- tapOn:
+    id: "manualCount_input"
+- eraseText
+- inputText: "999999"
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      id: "comments_input"
+    timeout: 15000
+- tapOn:
+    id: "comments_input"
+- inputText: "QATEST ${RUN_STAMP} manual count differs from system count"
+- runFlow:
+    when:
+      notVisible:
+        text: "QATEST ${RUN_STAMP} manual count differs from system count"
+    commands:
+      - eraseText
+      - inputText: "QATEST ${RUN_STAMP} manual count differs from system count"
+- hideKeyboard
+- assertVisible:
+    text: "QATEST ${RUN_STAMP}.*"
+- tapOn:
+    id: "form_action"
+- extendedWaitUntil:
+    visible:
+      id: ".*_primaryAction"
+    timeout: 30000
+- assertNotVisible:
+    text: "STOCKRECONCILIATION_STOCKRECONCILIATIONSUCCESS_HEADING"
+- tapOn:
+    id: ".*_primaryAction"
+- extendedWaitUntil:
+    visible:
+      text: ${HOME_STOCK_RECON}
+    timeout: 20000

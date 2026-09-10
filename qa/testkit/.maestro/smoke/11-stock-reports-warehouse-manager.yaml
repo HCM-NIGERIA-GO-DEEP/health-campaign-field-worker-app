@@ -1,0 +1,148 @@
+# TC-010 (smoke), WAREHOUSE_MANAGER sub-case: same "View Reports" module as
+# 10-stock-reports-cdd.yaml, but logged in as a user actually assigned the
+# WAREHOUSE_MANAGER role server-side (maestro.env WAREHOUSE_MANAGER_USERNAME - see
+# common/ensure-home-warehouse-manager.yaml). This proves the OPPOSITE role-gating
+# direction from flow 10: the facility dropdown on `reportDetails`/`reckonReportDetails`
+# (`"visible": "{{fn:hasRole('WAREHOUSE_MANAGER')}}"`) IS present and selectable for
+# this role, and selecting both filters correctly clears the initial "select filters"
+# info card (its `visible` condition requires BOTH selectedFacility and selectedProduct
+# to be empty - guaranteed false once both are chosen, independent of server data).
+#
+# UNVERIFIED SELECTOR RISK (flagged, not yet device-confirmed): dropdownTemplate's
+# outer Semantics wrap covers the WHOLE `LabeledField(label + DigitDropdown)` subtree
+# (packages/digit_flow_builder flow_widget_interface.dart's generic
+# `semanticsIdentifierFor` wrap - confirmed this session), unlike forms-engine's
+# `BaseDigitFormInput`/`DigitButton`/`DigitCheckbox`/`RadioList`, which patches 05/07
+# specifically fixed to put the id on the TAPPABLE node after the same class of bug hit
+# text inputs/radios (see field-selector-map.md). No patch touches `DropdownWidget`'s
+# outer wrap the same way, so the wrap's centre-tap MAY land on the label instead of the
+# actual `DigitDropdown` text field, exactly like the pre-patch text-input bug. If the
+# tap below on `.*_selectedFacility`/`.*_selectedReconFacility` etc. does not open the
+# dropdown, dump the failure hierarchy (field-selector-map.md, "When a step still
+# fails") to find the actual tappable node's bounds before guessing again.
+#
+# COVERAGE SCOPE / KNOWN APP-SIDE GAP: same as 10-stock-reports-cdd.yaml - only Stock
+# Received (of 3 reportType variants) is deep-dived, and NEITHER flow asserts on table
+# row content or on which "no record"/populated state appears after selection, because
+# `fn:filterRecordsWithinCurrentCycle` (STOCKREPORTS.json:559,760) is registered NOWHERE
+# in this app branch (apps/health_campaign_field_worker_app/test/shared/COMPAT.md:9).
+# The only guaranteed-correct post-selection assertion is that the INITIAL info card
+# disappears (a pure function of the two selections being non-empty, not of server
+# data) - do not extend this to assert specific table/no-record content until that
+# function ships.
+#
+# STANDALONE - logs in fresh as the Warehouse Manager test user; no dependency on any
+# other flow in this kit.
+appId: com.digit.hcm
+tags:
+  - smoke
+  - needs-logged-in
+---
+- launchApp
+- runFlow: ../common/ensure-home-warehouse-manager.yaml
+- scrollUntilVisible:
+    element:
+      text: "View Reports"
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    text: "View Reports"
+# === viewReports: menu renders correctly for a WAREHOUSE_MANAGER user ===
+- extendedWaitUntil:
+    visible:
+      id: ".*_stockRecieved"
+    timeout: 20000
+- assertVisible:
+    id: ".*_stockIssued"
+- assertVisible:
+    id: ".*_stockReturned"
+- scrollUntilVisible:
+    element:
+      id: ".*_stockReconciliation"
+    direction: DOWN
+    timeout: 15000
+# === Stock Received -> reportDetails ===
+- tapOn:
+    id: ".*_stockRecieved"
+- extendedWaitUntil:
+    visible:
+      id: ".*_infoCardReportDetails"
+    timeout: 20000
+# Role-gating proof: facility dropdown IS present for this role.
+- assertVisible:
+    id: ".*_selectedFacility"
+- assertVisible:
+    id: ".*_selectedProduct"
+- tapOn:
+    id: ".*_selectedFacility"
+- extendedWaitUntil:
+    visible:
+      id: "option_.*"
+    timeout: 15000
+- tapOn:
+    id: "option_.*"
+- tapOn:
+    id: ".*_selectedProduct"
+- extendedWaitUntil:
+    visible:
+      id: "option_.*"
+    timeout: 15000
+- tapOn:
+    id: "option_.*"
+# Both filters non-empty -> the initial info card's visible condition is guaranteed
+# false now, regardless of what server data exists.
+- assertNotVisible:
+    id: ".*_infoCardReportDetails"
+- tapOn:
+    id: ".*_reportDetailsBackToHomeButton"
+- extendedWaitUntil:
+    visible:
+      text: "View Reports"
+    timeout: 20000
+# === Stock Reconciliation -> reckonReportDetails ===
+- scrollUntilVisible:
+    element:
+      text: "View Reports"
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    text: "View Reports"
+- scrollUntilVisible:
+    element:
+      id: ".*_stockReconciliation"
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    id: ".*_stockReconciliation"
+- extendedWaitUntil:
+    visible:
+      id: ".*_infoCardReckonReportDetails"
+    timeout: 20000
+- assertVisible:
+    id: ".*_selectedReconFacility"
+- assertVisible:
+    id: ".*_selectedReckonProduct"
+- tapOn:
+    id: ".*_selectedReconFacility"
+- extendedWaitUntil:
+    visible:
+      id: "option_.*"
+    timeout: 15000
+- tapOn:
+    id: "option_.*"
+- tapOn:
+    id: ".*_selectedReckonProduct"
+- extendedWaitUntil:
+    visible:
+      id: "option_.*"
+    timeout: 15000
+- tapOn:
+    id: "option_.*"
+- assertNotVisible:
+    id: ".*_infoCardReckonReportDetails"
+- tapOn:
+    id: ".*_reckonReportDetailsBackToHomeButton"
+- extendedWaitUntil:
+    visible:
+      text: "View Reports"
+    timeout: 20000

@@ -106,6 +106,15 @@ if (Test-Path $envFile) {
 $defaults = [ordered]@{
     "RUN_STAMP"      = (Get-Date -Format "MMdd-HHmm")
     "HOME_REG"       = "Registration & Delivery"
+    # UNVERIFIED (2026-09-09): no flow has reached the HF Referral home tile yet, and
+    # its i18n key (HOME_BENEFICIARY_REFERRAL_LABEL) has no local translation asset to
+    # confirm against - best-effort guess, override in maestro.env once the real text
+    # is known (flow 09-hf-referral-create.yaml).
+    "HOME_REFERRAL"  = "HF Referral|Beneficiary Referral"
+    # UNVERIFIED (2026-09-10): no flow had reached this home tile either until
+    # flows 12/13 - its i18n key (HOME_STOCK_RECONCILIATION_LABEL) has no local
+    # translation asset. Override in maestro.env once the real text is known.
+    "HOME_STOCK_RECON" = "Stock Reconciliation"
     "PROJECT_NAME"   = "(?i).*campaign.*"
     # Text on the boundary-data download progress dialog. ensure-home waits for
     # this to DISAPPEAR before the home wait, so a slow sync does not burn the
@@ -154,6 +163,31 @@ foreach ($lvl in 1, 2, 3) {
     $fk = "BOUNDARY_L${lvl}_FILTER"
     if ($setKeys -notcontains $fk) {
         $vk = "BOUNDARY_L${lvl}_VALUE"
+        $v = ""
+        if ($envMap.ContainsKey($vk)) { $v = $envMap[$vk] }
+        $envArgs += "-e"
+        $envArgs += ($fk + "=" + $v)
+    }
+}
+# Same auto-fallback for the HF-Referral-specific user's boundary (flow 09,
+# common/ensure-home-hfreferral.yaml) - up to 5 levels since that hierarchy may run
+# deeper than the main login's 3.
+foreach ($lvl in 1, 2, 3, 4, 5) {
+    $fk = "HFREFERRAL_BOUNDARY_L${lvl}_FILTER"
+    if ($setKeys -notcontains $fk) {
+        $vk = "HFREFERRAL_BOUNDARY_L${lvl}_VALUE"
+        $v = ""
+        if ($envMap.ContainsKey($vk)) { $v = $envMap[$vk] }
+        $envArgs += "-e"
+        $envArgs += ($fk + "=" + $v)
+    }
+}
+# Same auto-fallback for the Warehouse-Manager-specific user's boundary (flow 11,
+# common/ensure-home-warehouse-manager.yaml).
+foreach ($lvl in 1, 2, 3, 4, 5) {
+    $fk = "WAREHOUSE_MANAGER_BOUNDARY_L${lvl}_FILTER"
+    if ($setKeys -notcontains $fk) {
+        $vk = "WAREHOUSE_MANAGER_BOUNDARY_L${lvl}_VALUE"
         $v = ""
         if ($envMap.ContainsKey($vk)) { $v = $envMap[$vk] }
         $envArgs += "-e"

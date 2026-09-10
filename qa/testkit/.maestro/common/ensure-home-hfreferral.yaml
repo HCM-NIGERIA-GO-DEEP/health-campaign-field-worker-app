@@ -1,0 +1,295 @@
+# SHARED PREAMBLE (HF-Referral-specific fork of ensure-home.yaml): bring the app from
+# ANY cold-start state to the home screen, logging in as the HF-Referral test user
+# rather than CDD user 1.
+#
+# WHY A SEPARATE FILE (Amit's call, 2026-09-09): HF Referral needs a different login
+# user AND a different boundary selection than every other flow in this kit. The
+# boundary widget is the SAME cascading dropdown as the main login (confirmed), but
+# this user's boundary hierarchy may have MORE LEVELS than CDD user 1's - so this file
+# extends the level count to 5 (L1-L5) rather than parameterizing the existing 3-level
+# ensure-home.yaml. Forked instead of made generic because Maestro's `runFlow` env-
+# override (passing different var names into a shared file) has never been exercised
+# in this kit and forking is 100% certain to work on the first try.
+#
+# SIBLING FILES - AVOID DRIFT: this file's login/download/multiselect-close/keystroke-
+# retry mechanics are copied from ensure-home.yaml, which also has a THIRD sibling,
+# ensure-home-warehouse-manager.yaml (same shape, different user). If you fix a
+# MECHANICS bug in any of the three (not a value/selector specific to one user), check
+# the other two - this repo has already been burned once by fixes not propagating
+# between near-duplicate configs (see campaign-config-fix-drift in memory).
+# ensure-home.yaml carries the matching note pointing back here.
+#
+# Included via `runFlow: ../common/ensure-home-hfreferral.yaml` (currently only
+# 09-hf-referral-create.yaml). Lives OUTSIDE .maestro/smoke so the runner never
+# executes it as a test.
+#
+# APP LAUNCH-STATE MACHINE (see ensure-home.yaml's header for the full evidence trail -
+# identical for any user): Maestro's launchApp stops the app first, so every flow
+# cold-starts it, and a logged-in cold start NEVER lands on home - the boundary
+# dropdowns come back EMPTY every launch (selection is not persisted).
+#   logged out : login screen -> [projects screen] -> boundary -> home
+#   logged in  : boundary screen (empty fields)               -> home
+#
+# SELECTOR RULES - identical to ensure-home.yaml (same widgets, same patches). See that
+# file's header for the full rationale/evidence per rule; not re-derived here:
+# - Requires an APK built with patch 05 (option rows carry `option_<code>`).
+# - Boundary values come from maestro.env (HFREFERRAL_BOUNDARY_Lx_VALUE); a SHORT typed
+#   filter fragment (HFREFERRAL_BOUNDARY_Lx_FILTER, defaults to the value) avoids the
+#   keystroke-drop trap (run -2218 on the OTHER user's boundary values - same class of
+#   bug applies here, untested for this user specifically).
+# - hideKeyboard is a BACK press on Android - only ever call it immediately after
+#   inputText.
+# - Each level is skipped when it already shows its value, or when its LABEL var is
+#   empty (this file goes up to L5; leave unused deeper levels' LABEL empty in
+#   maestro.env - do not delete the lines).
+# - Selection proof: never assert text ".+" on a field (matches hintText on an EMPTY
+#   field) - assert the concrete value instead.
+# - MULTISELECT levels keep their option panel open after selection; close by tapping
+#   OUTSIDE it (point "21%,62%", the nested-Navigator scrim's left gutter - see
+#   ensure-home.yaml's header for the exact bounds evidence). Applied defensively to
+#   every level except L1, same as ensure-home.yaml.
+appId: com.digit.hcm
+---
+# The "run in background?" system dialog can cover a fresh post-install launch
+- tapOn:
+    text: "(?i)allow"
+    optional: true
+# Landing screen (first launch only)
+- tapOn:
+    text: "Continue"
+    optional: true
+# Every cold start shows either the login screen or the boundary screen
+- extendedWaitUntil:
+    visible:
+      id: "(login_userId|boundary_.*)"
+    timeout: 30000
+# Log in only when the login screen is actually showing
+- runFlow:
+    when:
+      visible:
+        id: "login_userId"
+    commands:
+      - tapOn:
+          id: "login_userId"
+      - inputText: ${HFREFERRAL_USERNAME}
+      - hideKeyboard
+      - tapOn:
+          id: "login_password"
+      - inputText: ${HFREFERRAL_PASSWORD}
+      - hideKeyboard
+      # Consent checkbox - only rendered on some builds; when present, Login
+      # stays disabled until it is checked
+      - tapOn:
+          text: "(?s)By clicking.*"
+          optional: true
+      - tapOn:
+          id: "login_submit"
+# Post-login: some environments show a Projects screen before boundary selection.
+- extendedWaitUntil:
+    visible:
+      text: "${PROJECT_NAME}|Submit"
+    timeout: 30000
+- tapOn:
+    text: "Retry"
+    optional: true
+- tapOn:
+    text: ${PROJECT_NAME}
+    optional: true
+- extendedWaitUntil:
+    visible:
+      text: "Submit"
+    timeout: 20000
+# --- Boundary level 1 (mandatory - skipped only when the field already shows the value) ---
+- runFlow:
+    when:
+      notVisible:
+        id: "boundary_${HFREFERRAL_BOUNDARY_L1_LABEL}"
+        text: "(?s).*${HFREFERRAL_BOUNDARY_L1_VALUE}.*"
+    commands:
+      - tapOn:
+          id: "boundary_${HFREFERRAL_BOUNDARY_L1_LABEL}"
+      - inputText: ${HFREFERRAL_BOUNDARY_L1_FILTER}
+      - hideKeyboard
+      - runFlow:
+          when:
+            visible:
+              text: "(?i)no match(es)? found"
+          commands:
+            - eraseText
+            - inputText: ${HFREFERRAL_BOUNDARY_L1_FILTER}
+            - hideKeyboard
+      - tapOn:
+          id: "option_.*"
+          text: "(?s).*${HFREFERRAL_BOUNDARY_L1_VALUE}.*"
+      - assertVisible:
+          id: "boundary_${HFREFERRAL_BOUNDARY_L1_LABEL}"
+          text: "(?s).*${HFREFERRAL_BOUNDARY_L1_VALUE}.*"
+# --- Boundary levels 2-5 (all optional - skipped whenever their LABEL var is empty;
+# leave unused deeper levels' LABEL empty in maestro.env, do not delete the lines) ---
+- runFlow:
+    when:
+      true: ${HFREFERRAL_BOUNDARY_L2_LABEL != ''}
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              text: "(?s).*${HFREFERRAL_BOUNDARY_L2_VALUE}.*"
+          commands:
+            - tapOn:
+                id: "boundary_${HFREFERRAL_BOUNDARY_L2_LABEL}"
+            - inputText: ${HFREFERRAL_BOUNDARY_L2_FILTER}
+            - hideKeyboard
+            - runFlow:
+                when:
+                  visible:
+                    text: "(?i)no match(es)? found"
+                commands:
+                  - eraseText
+                  - inputText: ${HFREFERRAL_BOUNDARY_L2_FILTER}
+                  - hideKeyboard
+            - tapOn:
+                id: "option_.*"
+                text: "(?s).*${HFREFERRAL_BOUNDARY_L2_VALUE}.*"
+            - assertVisible:
+                text: "(?s).*${HFREFERRAL_BOUNDARY_L2_VALUE}.*"
+            - tapOn:
+                point: "21%,62%"
+- runFlow:
+    when:
+      true: ${HFREFERRAL_BOUNDARY_L3_LABEL != ''}
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              text: "(?s).*${HFREFERRAL_BOUNDARY_L3_VALUE}.*"
+          commands:
+            - tapOn:
+                id: "boundary_${HFREFERRAL_BOUNDARY_L3_LABEL}"
+            - inputText: ${HFREFERRAL_BOUNDARY_L3_FILTER}
+            - hideKeyboard
+            - runFlow:
+                when:
+                  visible:
+                    text: "(?i)no match(es)? found"
+                commands:
+                  - eraseText
+                  - inputText: ${HFREFERRAL_BOUNDARY_L3_FILTER}
+                  - hideKeyboard
+            - tapOn:
+                id: "option_.*"
+                text: "(?s).*${HFREFERRAL_BOUNDARY_L3_VALUE}.*"
+            - assertVisible:
+                text: "(?s).*${HFREFERRAL_BOUNDARY_L3_VALUE}.*"
+            - tapOn:
+                point: "21%,62%"
+- runFlow:
+    when:
+      true: ${HFREFERRAL_BOUNDARY_L4_LABEL != ''}
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              text: "(?s).*${HFREFERRAL_BOUNDARY_L4_VALUE}.*"
+          commands:
+            - tapOn:
+                id: "boundary_${HFREFERRAL_BOUNDARY_L4_LABEL}"
+            - inputText: ${HFREFERRAL_BOUNDARY_L4_FILTER}
+            - hideKeyboard
+            - runFlow:
+                when:
+                  visible:
+                    text: "(?i)no match(es)? found"
+                commands:
+                  - eraseText
+                  - inputText: ${HFREFERRAL_BOUNDARY_L4_FILTER}
+                  - hideKeyboard
+            - tapOn:
+                id: "option_.*"
+                text: "(?s).*${HFREFERRAL_BOUNDARY_L4_VALUE}.*"
+            - assertVisible:
+                text: "(?s).*${HFREFERRAL_BOUNDARY_L4_VALUE}.*"
+            - tapOn:
+                point: "21%,62%"
+- runFlow:
+    when:
+      true: ${HFREFERRAL_BOUNDARY_L5_LABEL != ''}
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              text: "(?s).*${HFREFERRAL_BOUNDARY_L5_VALUE}.*"
+          commands:
+            - tapOn:
+                id: "boundary_${HFREFERRAL_BOUNDARY_L5_LABEL}"
+            - inputText: ${HFREFERRAL_BOUNDARY_L5_FILTER}
+            - hideKeyboard
+            - runFlow:
+                when:
+                  visible:
+                    text: "(?i)no match(es)? found"
+                commands:
+                  - eraseText
+                  - inputText: ${HFREFERRAL_BOUNDARY_L5_FILTER}
+                  - hideKeyboard
+            - tapOn:
+                id: "option_.*"
+                text: "(?s).*${HFREFERRAL_BOUNDARY_L5_VALUE}.*"
+            - assertVisible:
+                text: "(?s).*${HFREFERRAL_BOUNDARY_L5_VALUE}.*"
+            - tapOn:
+                point: "21%,62%"
+# One retry if an option panel is still (or again) open
+- runFlow:
+    when:
+      visible:
+        id: "option_.*"
+    commands:
+      - tapOn:
+          point: "21%,62%"
+# TRUE closed-panel proof: no option rows left in the a11y tree.
+- extendedWaitUntil:
+    notVisible:
+      id: "option_.*"
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      text: "Submit"
+    timeout: 10000
+- tapOn:
+    text: "Submit"
+# First-login data download popup (absent on later launches)
+- tapOn:
+    text: "Download"
+    optional: true
+# While the boundary data downloads the app shows a progress dialog
+- runFlow:
+    when:
+      visible:
+        text: "(?s).*${DOWNLOAD_PROGRESS}.*"
+    commands:
+      - extendedWaitUntil:
+          notVisible:
+            text: "(?s).*${DOWNLOAD_PROGRESS}.*"
+          timeout: 300000
+# "Data found!" popup - poll for its dismiss button on every pass
+- repeat:
+    times: 18
+    while:
+      notVisible:
+        text: "Go To Home Screen|${HOME_REG}"
+    commands:
+      - tapOn:
+          text: "Proceed Without Downloading"
+          optional: true
+- extendedWaitUntil:
+    visible:
+      text: "Go To Home Screen|${HOME_REG}"
+    timeout: 180000
+- tapOn:
+    text: "Go To Home Screen"
+    optional: true
+# Home (first sync can take a while)
+- extendedWaitUntil:
+    visible:
+      text: ${HOME_REG}
+    timeout: 180000

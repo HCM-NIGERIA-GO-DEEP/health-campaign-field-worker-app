@@ -1,0 +1,277 @@
+# SHARED PREAMBLE (Warehouse-Manager-specific fork of ensure-home.yaml): bring the app
+# from ANY cold-start state to the home screen, logging in as a WAREHOUSE_MANAGER-role
+# test user rather than CDD user 1.
+#
+# WHY A SEPARATE FILE (mirrors ensure-home-hfreferral.yaml's rationale, Amit's call
+# 2026-09-09): STOCKREPORTS role-gates its facility filter on
+# `fn:hasRole('WAREHOUSE_MANAGER')` (packages/digit_flow_builder function_registry.dart)
+# - a genuinely different user than CDD user 1, whose boundary/facility assignment may
+# have a different hierarchy shape. Forked (not parameterized via runFlow's env-
+# override, which this kit has never exercised) for the same 100%-certain-to-work
+# reason as the HF Referral preamble.
+#
+# SIBLING FILES - AVOID DRIFT: this file's login/download/multiselect-close/keystroke-
+# retry mechanics are copied from ensure-home.yaml, which also has ensure-home-
+# hfreferral.yaml as a sibling. If you fix a MECHANICS bug in any of the three (not a
+# value/selector specific to one user), check the other two - this repo has already
+# been burned once by fixes not propagating between near-duplicate configs (see
+# campaign-config-fix-drift in memory). ensure-home.yaml carries the matching note
+# pointing back here.
+#
+# Included via `runFlow: ../common/ensure-home-warehouse-manager.yaml` (currently only
+# 11-stock-reports-warehouse-manager.yaml). Lives OUTSIDE .maestro/smoke so the runner
+# never executes it as a test.
+#
+# APP LAUNCH-STATE MACHINE / SELECTOR RULES: identical to ensure-home.yaml - see that
+# file's header for the full rationale/evidence (same widgets, same patches, same
+# device-observed traps). Not re-derived here.
+appId: com.digit.hcm
+---
+# The "run in background?" system dialog can cover a fresh post-install launch
+- tapOn:
+    text: "(?i)allow"
+    optional: true
+# Landing screen (first launch only)
+- tapOn:
+    text: "Continue"
+    optional: true
+# Every cold start shows either the login screen or the boundary screen
+- extendedWaitUntil:
+    visible:
+      id: "(login_userId|boundary_.*)"
+    timeout: 30000
+# Log in only when the login screen is actually showing
+- runFlow:
+    when:
+      visible:
+        id: "login_userId"
+    commands:
+      - tapOn:
+          id: "login_userId"
+      - inputText: ${WAREHOUSE_MANAGER_USERNAME}
+      - hideKeyboard
+      - tapOn:
+          id: "login_password"
+      - inputText: ${WAREHOUSE_MANAGER_PASSWORD}
+      - hideKeyboard
+      # Consent checkbox - only rendered on some builds; when present, Login
+      # stays disabled until it is checked
+      - tapOn:
+          text: "(?s)By clicking.*"
+          optional: true
+      - tapOn:
+          id: "login_submit"
+# Post-login: some environments show a Projects screen before boundary selection.
+- extendedWaitUntil:
+    visible:
+      text: "${PROJECT_NAME}|Submit"
+    timeout: 30000
+- tapOn:
+    text: "Retry"
+    optional: true
+- tapOn:
+    text: ${PROJECT_NAME}
+    optional: true
+- extendedWaitUntil:
+    visible:
+      text: "Submit"
+    timeout: 20000
+# --- Boundary level 1 (mandatory - skipped only when the field already shows the value) ---
+- runFlow:
+    when:
+      notVisible:
+        id: "boundary_${WAREHOUSE_MANAGER_BOUNDARY_L1_LABEL}"
+        text: "(?s).*${WAREHOUSE_MANAGER_BOUNDARY_L1_VALUE}.*"
+    commands:
+      - tapOn:
+          id: "boundary_${WAREHOUSE_MANAGER_BOUNDARY_L1_LABEL}"
+      - inputText: ${WAREHOUSE_MANAGER_BOUNDARY_L1_FILTER}
+      - hideKeyboard
+      - runFlow:
+          when:
+            visible:
+              text: "(?i)no match(es)? found"
+          commands:
+            - eraseText
+            - inputText: ${WAREHOUSE_MANAGER_BOUNDARY_L1_FILTER}
+            - hideKeyboard
+      - tapOn:
+          id: "option_.*"
+          text: "(?s).*${WAREHOUSE_MANAGER_BOUNDARY_L1_VALUE}.*"
+      - assertVisible:
+          id: "boundary_${WAREHOUSE_MANAGER_BOUNDARY_L1_LABEL}"
+          text: "(?s).*${WAREHOUSE_MANAGER_BOUNDARY_L1_VALUE}.*"
+# --- Boundary levels 2-5 (all optional - skipped whenever their LABEL var is empty;
+# leave unused deeper levels' LABEL empty in maestro.env, do not delete the lines) ---
+- runFlow:
+    when:
+      true: ${WAREHOUSE_MANAGER_BOUNDARY_L2_LABEL != ''}
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              text: "(?s).*${WAREHOUSE_MANAGER_BOUNDARY_L2_VALUE}.*"
+          commands:
+            - tapOn:
+                id: "boundary_${WAREHOUSE_MANAGER_BOUNDARY_L2_LABEL}"
+            - inputText: ${WAREHOUSE_MANAGER_BOUNDARY_L2_FILTER}
+            - hideKeyboard
+            - runFlow:
+                when:
+                  visible:
+                    text: "(?i)no match(es)? found"
+                commands:
+                  - eraseText
+                  - inputText: ${WAREHOUSE_MANAGER_BOUNDARY_L2_FILTER}
+                  - hideKeyboard
+            - tapOn:
+                id: "option_.*"
+                text: "(?s).*${WAREHOUSE_MANAGER_BOUNDARY_L2_VALUE}.*"
+            - assertVisible:
+                text: "(?s).*${WAREHOUSE_MANAGER_BOUNDARY_L2_VALUE}.*"
+            - tapOn:
+                point: "21%,62%"
+- runFlow:
+    when:
+      true: ${WAREHOUSE_MANAGER_BOUNDARY_L3_LABEL != ''}
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              text: "(?s).*${WAREHOUSE_MANAGER_BOUNDARY_L3_VALUE}.*"
+          commands:
+            - tapOn:
+                id: "boundary_${WAREHOUSE_MANAGER_BOUNDARY_L3_LABEL}"
+            - inputText: ${WAREHOUSE_MANAGER_BOUNDARY_L3_FILTER}
+            - hideKeyboard
+            - runFlow:
+                when:
+                  visible:
+                    text: "(?i)no match(es)? found"
+                commands:
+                  - eraseText
+                  - inputText: ${WAREHOUSE_MANAGER_BOUNDARY_L3_FILTER}
+                  - hideKeyboard
+            - tapOn:
+                id: "option_.*"
+                text: "(?s).*${WAREHOUSE_MANAGER_BOUNDARY_L3_VALUE}.*"
+            - assertVisible:
+                text: "(?s).*${WAREHOUSE_MANAGER_BOUNDARY_L3_VALUE}.*"
+            - tapOn:
+                point: "21%,62%"
+- runFlow:
+    when:
+      true: ${WAREHOUSE_MANAGER_BOUNDARY_L4_LABEL != ''}
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              text: "(?s).*${WAREHOUSE_MANAGER_BOUNDARY_L4_VALUE}.*"
+          commands:
+            - tapOn:
+                id: "boundary_${WAREHOUSE_MANAGER_BOUNDARY_L4_LABEL}"
+            - inputText: ${WAREHOUSE_MANAGER_BOUNDARY_L4_FILTER}
+            - hideKeyboard
+            - runFlow:
+                when:
+                  visible:
+                    text: "(?i)no match(es)? found"
+                commands:
+                  - eraseText
+                  - inputText: ${WAREHOUSE_MANAGER_BOUNDARY_L4_FILTER}
+                  - hideKeyboard
+            - tapOn:
+                id: "option_.*"
+                text: "(?s).*${WAREHOUSE_MANAGER_BOUNDARY_L4_VALUE}.*"
+            - assertVisible:
+                text: "(?s).*${WAREHOUSE_MANAGER_BOUNDARY_L4_VALUE}.*"
+            - tapOn:
+                point: "21%,62%"
+- runFlow:
+    when:
+      true: ${WAREHOUSE_MANAGER_BOUNDARY_L5_LABEL != ''}
+    commands:
+      - runFlow:
+          when:
+            notVisible:
+              text: "(?s).*${WAREHOUSE_MANAGER_BOUNDARY_L5_VALUE}.*"
+          commands:
+            - tapOn:
+                id: "boundary_${WAREHOUSE_MANAGER_BOUNDARY_L5_LABEL}"
+            - inputText: ${WAREHOUSE_MANAGER_BOUNDARY_L5_FILTER}
+            - hideKeyboard
+            - runFlow:
+                when:
+                  visible:
+                    text: "(?i)no match(es)? found"
+                commands:
+                  - eraseText
+                  - inputText: ${WAREHOUSE_MANAGER_BOUNDARY_L5_FILTER}
+                  - hideKeyboard
+            - tapOn:
+                id: "option_.*"
+                text: "(?s).*${WAREHOUSE_MANAGER_BOUNDARY_L5_VALUE}.*"
+            - assertVisible:
+                text: "(?s).*${WAREHOUSE_MANAGER_BOUNDARY_L5_VALUE}.*"
+            - tapOn:
+                point: "21%,62%"
+# One retry if an option panel is still (or again) open
+- runFlow:
+    when:
+      visible:
+        id: "option_.*"
+    commands:
+      - tapOn:
+          point: "21%,62%"
+# TRUE closed-panel proof: no option rows left in the a11y tree.
+- extendedWaitUntil:
+    notVisible:
+      id: "option_.*"
+    timeout: 10000
+- extendedWaitUntil:
+    visible:
+      text: "Submit"
+    timeout: 10000
+- tapOn:
+    text: "Submit"
+# First-login data download popup (absent on later launches)
+- tapOn:
+    text: "Download"
+    optional: true
+# While the boundary data downloads the app shows a progress dialog
+- runFlow:
+    when:
+      visible:
+        text: "(?s).*${DOWNLOAD_PROGRESS}.*"
+    commands:
+      - extendedWaitUntil:
+          notVisible:
+            text: "(?s).*${DOWNLOAD_PROGRESS}.*"
+          timeout: 300000
+# "Data found!" popup - poll for its dismiss button on every pass
+- repeat:
+    times: 18
+    while:
+      notVisible:
+        text: "Go To Home Screen|View Reports"
+    commands:
+      - tapOn:
+          text: "Proceed Without Downloading"
+          optional: true
+- extendedWaitUntil:
+    visible:
+      text: "Go To Home Screen|View Reports"
+    timeout: 180000
+- tapOn:
+    text: "Go To Home Screen"
+    optional: true
+# Home (first sync can take a while). Waits on "View Reports" (confirmed-translated
+# text, i18n key HOME_VIEW_REPORTS_LABEL - the tile every flow using this preamble taps
+# next), NOT ${HOME_REG} ("Registration & Delivery") like ensure-home.yaml - a pure
+# WAREHOUSE_MANAGER-role login may not have that tile at all (home-screen tiles are
+# server-driven per-role via state.actionsWrapper.actions, home.dart), so gating on it
+# here would be a false timeout for this user.
+- extendedWaitUntil:
+    visible:
+      text: "View Reports"
+    timeout: 180000

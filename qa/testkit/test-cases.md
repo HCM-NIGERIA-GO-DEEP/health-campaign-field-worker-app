@@ -19,6 +19,9 @@ anyone — QA, developers, leads — can read and edit it. Cases are executed tw
 | TC-006 search household | automated (first live run pending) | `06-search-household` |
 | TC-007 ineligible blocked | automated (first live run pending) | `07-ineligible-routes-to-referral` (referral sub-case), `08-ineligible-child` (ineligible sub-case) |
 | TC-008 outside working hours | manual (time-gated: needs control of the device clock; emulator only) | — |
+| TC-009 create + view HF Referral | automated (first live run pending) | `09-hf-referral-create` |
+| TC-010 View Reports, role-gated | automated (first live run pending) | `10-stock-reports-cdd` (CDD sub-case), `11-stock-reports-warehouse-manager` (Warehouse Manager sub-case) |
+| TC-011 create a Stock Reconciliation | automated (first live run pending) | `12-stock-reconciliation-cdd` (CDD sub-case), `13-stock-reconciliation-warehouse-manager` (Warehouse Manager sub-case) |
 
 `02-home-tiles` is an extra build-smoke flow with no MD case. When a flow is added or
 retired, update this table (that's part of adding the flow).
@@ -232,10 +235,105 @@ Setup flows (`SETUP-*`) are reusable step sequences referenced by the cases.
     cannot reach the registration or delivery forms.
 - **Cleanup:** **restore the device clock to real time** before any further cases.
 
+### TC-009 — Create and view an HF Referral · `smoke`
+
+- **Preconditions:** Logged in as the **HF Referral test user** (`maestro.env`
+  `HFREFERRAL_USERNAME` - a *different* user from CDD user 1, with its own boundary);
+  network available. Standalone - does **not** need TC-003's household or any other
+  prior case in this run.
+- **Steps:**
+  1. Log in as the HF Referral test user and select their working boundary (may be a
+     deeper hierarchy than CDD user 1's).
+  2. From home open **"HF Referral"** (the home tile for the standalone HF Referral
+     module, separate from Registration & Delivery).
+  3. Select the working boundary on the screen that follows.
+  4. On the referral inbox, tap **"Create Referral"**.
+  5. **"Facility Details"** screen: fill the administrative area, pick an evaluation
+     facility, tap Next.
+  6. **"Referral Details"** screen: pick a cycle, enter the child's name
+     `QATEST <today's date> REFCHILD`, an age in months (3–59), a gender, and referral
+     reason **"Sick"**, tap Next.
+  7. **"Side Effects"** (Sick) screen: answer all three questions **No**, tap Next.
+  8. On the acknowledgement screen, tap back to return to the inbox.
+  9. Search the inbox for `QATEST <today's date> REFCHILD` and open it.
+- **Expected:**
+  - Each screen advances without validation errors after mandatory fields are filled.
+  - The flow ends on a referral success/acknowledgement screen - no crash, no blank
+    screen, no raw codes like `REFERRAL_INBOX_HEADING` anywhere.
+  - The new referral (`QATEST <today's date> REFCHILD`) is listed in the inbox
+    afterwards, and opening it shows its details with a **"Go Back"** action (not
+    "Continue" - the side-effect questions were all answered).
+- **Cleanup:** none (test data stays in the environment on purpose).
+
+### TC-010 — View Reports, role-gated · `smoke`
+
+- **Preconditions:** Network available. Two sub-cases with different logins - CDD
+  sub-case: logged in as CDD user 1; Warehouse Manager sub-case: logged in as a user
+  actually assigned the WAREHOUSE_MANAGER role server-side (`maestro.env`
+  `WAREHOUSE_MANAGER_USERNAME`). Standalone - neither sub-case depends on any other
+  case in this run.
+- **Steps (both sub-cases, same steps - only the login differs):**
+  1. From home, open **"View Reports"**.
+  2. Confirm all four report tiles are visible: Stock Received, Stock Issued, Stock
+     Returned, Stock Reconciliation.
+  3. Tap **Stock Received**. On the details screen: for a CDD login, confirm there is
+     **no warehouse/facility selector** and a product selector is available; for a
+     Warehouse Manager login, confirm the facility selector **is** available and pick a
+     facility and a product.
+  4. Return to **"View Reports"** and tap **Stock Reconciliation**; repeat the same
+     check (facility selector absent for CDD, present and selectable for Warehouse
+     Manager).
+- **Expected:**
+  - All four report tiles render for both roles - no crash, no blank screen, no raw
+    codes like `STOCKREPORTS_VIEW_REPORTS_HEADING` anywhere.
+  - The facility/warehouse selector is visible **only** for the Warehouse Manager
+    login, never for the CDD login - a product selector is available on both.
+  - **Known gap, not a test bug:** the report tables themselves cannot yet be verified
+    end-to-end - the app is currently missing the function that populates their rows
+    (`fn:filterRecordsWithinCurrentCycle`, tracked in this repo's own
+    `apps/health_campaign_field_worker_app/test/shared/COMPAT.md`), so a table will show
+    no rows regardless of whether matching stock data exists. Do not treat an empty
+    table as a pass/fail signal until that function ships; this case only verifies the
+    screens are reachable and role-gated correctly.
+- **Cleanup:** none.
+
+### TC-011 — Create a Stock Reconciliation · `smoke`
+
+- **Not the same screen as TC-010's "Stock Reconciliation" report card** - that one
+  (inside View Reports) only *displays* past reconciliations; this case is the
+  separate **"Stock Reconciliation" home tile**, which *creates* a new one.
+- **Preconditions:** Network available. Two sub-cases with different logins, same
+  shape as TC-010 - CDD sub-case: logged in as CDD user 1; Warehouse Manager
+  sub-case: logged in as the `WAREHOUSE_MANAGER_USERNAME` user. Which role(s)
+  actually see this tile is **not yet confirmed** - home-tile visibility is
+  server-driven per user, not a fixed rule in the app - so if a sub-case can't even
+  find the tile, that is itself the finding, report it rather than treating it as a
+  blocked case. Standalone - neither sub-case depends on any other case in this run.
+- **Steps (both sub-cases, same steps - only the login differs):**
+  1. From home, open **"Stock Reconciliation"**.
+  2. Pick a warehouse/facility and a product.
+  3. Once the stock metrics summary appears, change the manual/physical count to a
+     value clearly different from the system count shown.
+  4. A comment field should appear asking to explain the difference - fill it in and
+     submit.
+- **Expected:**
+  - Each step advances without crashing or going blank - no raw codes like
+    `STOCKRECONCILIATION_STOCKRECONCILIATION_HEADING` anywhere.
+  - The comment field only appears/requires input when the manual count and system
+    count differ - it should not block submission when they match.
+  - The flow ends on a success screen with a way back to home.
+- **Cleanup:** none (test data - a real stock reconciliation record - stays in the
+  environment on purpose).
+
 ---
 
 ## Adding new cases — checklist
 
+- **New flows are standalone by default** (their own setup/data, runnable alone via
+  `run-maestro.ps1 -Flows ".maestro\smoke\<file>.yaml"` with no other flow having run
+  first - `-Flows` takes a path, not a bare name) - decided 2026-09-09. The chained suite 03-08 (shared `RUN_STAMP` household/children) is the one
+  established exception, not the pattern to copy; only chain a new flow onto another if
+  the case genuinely cannot be tested any other way, and say so explicitly in its header.
 - Next free ID, correct tags.
 - Preconditions state: user + role, boundary, network, cycle/working-hours/cap
   assumptions, and any data the case depends on.

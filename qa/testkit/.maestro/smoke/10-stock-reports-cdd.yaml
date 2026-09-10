@@ -1,0 +1,112 @@
+# TC-010 (smoke), CDD sub-case: "View Reports" (STOCKREPORTS module) is enabled for ALL
+# users (Amit's ask, 2026-09-09) - but STOCKREPORTS.json role-gates its facility filter
+# on `fn:hasRole('WAREHOUSE_MANAGER')` (packages/digit_flow_builder function_registry.dart
+# - confirmed this session: reads straight off the logged-in user's session roles, no
+# app-side toggle) on BOTH the `reportDetails` and `reckonReportDetails` screens'
+# dropdownTemplate `visible` condition. For a plain CDD user that dropdown must NOT
+# render at all. This flow proves: the menu renders (all 4 visible cards), the facility
+# dropdown is correctly ABSENT for this role, the product dropdown IS available, and the
+# initial "select filters" info card shows with no crash/raw-code. See
+# 11-stock-reports-warehouse-manager.yaml for the WAREHOUSE_MANAGER sub-case (facility
+# dropdown present, both filters selectable).
+#
+# COVERAGE SCOPE (Amit's call, 2026-09-09): 3 of the 4 visible menu cards (Stock
+# Received/Issued/Returned) navigate to the IDENTICAL `reportDetails` screen, differing
+# only in a `reportType` value passed through navigation - only Stock Received is
+# deep-dived here (the mechanism is generic; Issued/Returned are config-value variants,
+# not different mechanics). Stock Reconciliation uses a separate `reckonReportDetails`
+# screen and gets its own deep-dive. The 4 HIDDEN cards (stockDamaged/stockLoss/
+# stockExcess/stockLess, all `"hidden": true` in STOCKREPORTS.json) never reach the UI
+# and are out of scope.
+#
+# KNOWN APP-SIDE GAP (confirmed this session, NOT a bug in this flow): both report
+# tables' rows are sourced from `fn:filterRecordsWithinCurrentCycle`
+# (STOCKREPORTS.json:559,760), which is registered NOWHERE in this app branch's code -
+# apps/health_campaign_field_worker_app/test/shared/COMPAT.md:9 already flags this
+# exact gap ("config branch is ahead of app branch; don't ship together"). The table
+# will render nothing regardless of whether real Stock/StockReconciliation data exists,
+# until that function ships. This flow does NOT assert on table row content or on which
+# of the two info cards (initial vs "no record found") appears after a selection, for
+# that reason - only on what is reachable/functioning today. Do not "fix" a future red
+# here by asserting fabricated row content; if this function ships, that's when table
+# assertions become meaningful.
+#
+# STANDALONE - logs in fresh as CDD user 1 (same as every other non-role-specific flow
+# in this kit); no dependency on flows 03-08 or 09.
+appId: com.digit.hcm
+tags:
+  - smoke
+  - needs-logged-in
+---
+- launchApp
+- runFlow: ../common/ensure-home.yaml
+- scrollUntilVisible:
+    element:
+      text: "View Reports"
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    text: "View Reports"
+# === viewReports: menu renders correctly for a CDD user ===
+- extendedWaitUntil:
+    visible:
+      id: ".*_stockRecieved"
+    timeout: 20000
+- assertVisible:
+    id: ".*_stockIssued"
+- assertVisible:
+    id: ".*_stockReturned"
+- scrollUntilVisible:
+    element:
+      id: ".*_stockReconciliation"
+    direction: DOWN
+    timeout: 15000
+# === Stock Received -> reportDetails ===
+- tapOn:
+    id: ".*_stockRecieved"
+- extendedWaitUntil:
+    visible:
+      id: ".*_infoCardReportDetails"
+    timeout: 20000
+# Role-gating proof: facility dropdown absent for a non-WAREHOUSE_MANAGER user.
+- assertNotVisible:
+    id: ".*_selectedFacility"
+- assertVisible:
+    id: ".*_selectedProduct"
+- assertNotVisible:
+    text: "STOCKREPORTS_REPORT_DETAILS_HEADING|STOCK_REPORT_DETAILS_INFO_CARD_LABEL"
+- tapOn:
+    id: ".*_reportDetailsBackToHomeButton"
+- extendedWaitUntil:
+    visible:
+      text: "View Reports"
+    timeout: 20000
+# === Stock Reconciliation -> reckonReportDetails ===
+- scrollUntilVisible:
+    element:
+      text: "View Reports"
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    text: "View Reports"
+- scrollUntilVisible:
+    element:
+      id: ".*_stockReconciliation"
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    id: ".*_stockReconciliation"
+- extendedWaitUntil:
+    visible:
+      id: ".*_infoCardReckonReportDetails"
+    timeout: 20000
+- assertNotVisible:
+    id: ".*_selectedReconFacility"
+- assertVisible:
+    id: ".*_selectedReckonProduct"
+- tapOn:
+    id: ".*_reckonReportDetailsBackToHomeButton"
+- extendedWaitUntil:
+    visible:
+      text: "View Reports"
+    timeout: 20000

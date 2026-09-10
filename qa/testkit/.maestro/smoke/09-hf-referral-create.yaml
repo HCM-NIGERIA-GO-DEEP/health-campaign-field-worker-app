@@ -1,0 +1,258 @@
+# TC-009 (smoke): create an HF Referral (reason = SICK, the simplest branch - three
+# yes/no questions answered No/No/No so none of the conditional follow-up text fields
+# unlock), confirm it lands in the referral inbox, open it via the Overview screen, and
+# back out. STANDALONE - referral creation types the child's details directly into the
+# form (no household/beneficiary lookup), so unlike 04-08 this does not depend on flow 03
+# having run first and does not need to share RUN_STAMP-registered data with any other
+# flow; RUN_STAMP is still used for QATEST-identifiable naming only.
+#
+# SCOPE (first pass on a never-before-exercised module - see qa/testkit/CLAUDE.md, Claude
+# does not run this, a human does via run-maestro.ps1):
+#   covered      - create via referralInbox's "createReferral" button (isEdit=false),
+#                  the SICK side-effect branch, inbox listing, Overview view + GO_BACK.
+#   NOT covered  - the other 3 referral-reason branches (FEVER/DRUG_SE_CC/DRUG_SE_PC),
+#                  the isEdit=true "Continue" resume path, the QR-scanner entry point.
+#                  Follow-up flows once this one is proven green.
+#
+# LOGIN: HF Referral needs a different test user than every other flow in this kit,
+# with its own (possibly deeper) boundary hierarchy - see maestro.env's HFREFERRAL_*
+# vars and common/ensure-home-hfreferral.yaml's header (Amit's call, 2026-09-09).
+#
+# TWO SELECTORS BELOW ARE GENUINELY UNVERIFIED (flagged inline where used) because no
+# flow has ever reached these two screens and neither carries a code-confirmed selector:
+#   1. The home tile's rendered text (env var HOME_REFERRAL, i18n key
+#      HOME_BENEFICIARY_REFERRAL_LABEL - no local translation asset has this key).
+#   2. The boundary-picker screen right after it (lib/pages/current_boundary.dart) -
+#      read the widget source directly: it is a plain ListView of tappable DigitCards
+#      with NO Semantics/identifier anywhere, unlike the login boundary screen's
+#      `boundary_<Label>`/`option_<code>` ids. Best effort: bet that the card's
+#      `translate(boundary.code)` text contains the same place name already used for
+#      login (BOUNDARY_L1_VALUE). If this run fails here, dump the failure hierarchy for
+#      the card's ACTUAL text (qa/testkit/field-selector-map.md, "When a step still
+#      fails") rather than guessing again - or drive the screen's own
+#      "want to choose another boundary?" link, which routes into the SAME
+#      already-proven `boundary_<Label>`/`option_<code>` flow used by ensure-home.yaml.
+#
+# EVERYTHING ELSE below is derived directly from reading HFREFERRAL.json +
+# packages/digit_forms_engine + packages/digit_flow_builder + the app's
+# CustomComponentRegistry (this session), following the id conventions already
+# device-proven by flows 03-08 and documented in field-selector-map.md:
+#   - FORM-page footers are always `id: form_action` (forms-engine fixed id).
+#   - TEMPLATE-screen buttons get a `<compositeKey>_<fieldName>` id -> match with
+#     `.*_<fieldName>` wildcards (proven pattern: `.*_searchBar`, `.*_openMemberCard`
+#     etc. in flows 07/08).
+#   - text/number inputs lose their bare fieldName id to `<fieldName>_input`; radios to
+#     `<fieldName>_<enumCode>`; dropdown OPTION ROWS to `option_<code>` - but a closed
+#     DROPDOWN box (incl. the two custom components below) keeps its bare fieldName id,
+#     since only text/radio/checkbox/number builders were patched to add an inner id
+#     that steals the outer one (qa/testkit/patches/05/07 - confirmed by reading
+#     digit_dropdown_input.dart, which was only patched on its OPTION rows).
+#   - `referralCycle` (referralDetails) and `evaluationFacility` (facilityDetails) are
+#     app-registered custom widgets (CustomComponentRegistry, home.dart) - both are
+#     plain single-select dropdowns (CycleDropDown / EvaluationKeyDropDown). Their
+#     exact option values (facility UUIDs, cycle numbers) are unknowable ahead of time
+#     and irrelevant to a happy-path pass, so this flow blind-picks the FIRST
+#     `option_.*` row in each.
+#   - facilityDetails (order 2) is inferred to be the actual FIRST page of a fresh
+#     (isEdit=false) create, not referralDetails (order 3) - the "startPage":
+#     "referralDetails" override that referralOverview's CONTINUE button passes
+#     explicitly only makes sense as a way to SKIP the default order-based start page,
+#     which createReferral's plain `isEdit:false` navigation does not set. Guarded below
+#     so the flow still works if this inference is wrong and referralDetails appears
+#     directly.
+appId: com.digit.hcm
+tags:
+  - smoke
+  - needs-logged-in
+---
+- launchApp
+# HF-Referral-specific preamble: logs in as HFREFERRAL_USERNAME (not CDD user 1) and
+# does its own boundary selection (see its header - forked from ensure-home.yaml
+# because this user's boundary hierarchy may have a different level count).
+- runFlow: ../common/ensure-home-hfreferral.yaml
+# --- UNVERIFIED #1: home tile text (see header) ---
+- tapOn:
+    text: ${HOME_REFERRAL}
+# --- UNVERIFIED #2: boundary-picker card text (see header) ---
+- extendedWaitUntil:
+    visible:
+      text: "(?s).*${BOUNDARY_L1_VALUE}.*"
+    timeout: 20000
+- tapOn:
+    text: "(?s).*${BOUNDARY_L1_VALUE}.*"
+# Straight into the HFREFERRAL module's initialPage (referralInbox) - no interstitial
+# download/loading screen (traced FlowNavigationUtils.navigateToFlowModule), but the
+# awaited localization/SharedPreferences load can hang briefly - generous timeout.
+- extendedWaitUntil:
+    visible:
+      id: ".*_createReferral"
+    timeout: 30000
+- assertNotVisible:
+    text: "REFERRAL_INBOX_HEADING"
+- tapOn:
+    id: ".*_createReferral"
+# === facilityDetails (order 2) OR referralDetails (order 3) - see header caveat ===
+- extendedWaitUntil:
+    visible:
+      id: "(administrativeArea_input|referralCycle)"
+    timeout: 20000
+- runFlow:
+    when:
+      visible:
+        id: "administrativeArea_input"
+    commands:
+      - tapOn:
+          id: "administrativeArea_input"
+      - inputText: "QATEST ${RUN_STAMP} AREA"
+      - runFlow:
+          when:
+            notVisible:
+              text: "QATEST ${RUN_STAMP} AREA"
+          commands:
+            - eraseText
+            - inputText: "QATEST ${RUN_STAMP} AREA"
+      - hideKeyboard
+      # dateOfEvaluation is readOnly + systemDate (auto today's date) - no interaction.
+      # evaluationFacility: app-registered custom dropdown (EvaluationKeyDropDown),
+      # populated from this project's facilities - blind-pick the first option, the
+      # specific facility does not matter for a happy-path pass.
+      - tapOn:
+          id: "evaluationFacility"
+      - extendedWaitUntil:
+          visible:
+            id: "option_.*"
+          timeout: 15000
+      - tapOn:
+          id: "option_.*"
+      # hfCoordinator is optional - skip.
+      - tapOn:
+          id: "form_action"
+      - extendedWaitUntil:
+          visible:
+            id: "referralCycle"
+          timeout: 20000
+# === referralDetails (order 3) ===
+- tapOn:
+    id: "referralCycle"
+- extendedWaitUntil:
+    visible:
+      id: "option_.*"
+    timeout: 15000
+- tapOn:
+    id: "option_.*"
+- tapOn:
+    id: "nameOfChild_input"
+- inputText: "QATEST ${RUN_STAMP} REFCHILD"
+- runFlow:
+    when:
+      notVisible:
+        text: "QATEST ${RUN_STAMP} REFCHILD"
+    commands:
+      - eraseText
+      - inputText: "QATEST ${RUN_STAMP} REFCHILD"
+- hideKeyboard
+- assertVisible:
+    text: "QATEST ${RUN_STAMP} REFCHILD"
+# beneficiaryId / referralCode are optional - skip.
+- tapOn:
+    id: "ageInMonths_input"
+- inputText: ${CHILD_AGE_MONTHS}
+- hideKeyboard
+- tapOn:
+    id: "gender"
+- extendedWaitUntil:
+    visible:
+      id: "option_MALE"
+    timeout: 15000
+- tapOn:
+    id: "option_MALE"
+# referralReason sits below the fold on this 7-field page - tapOn does not auto-scroll
+# (same cutoff pattern proven in flows 05/07/08 for ec5).
+- scrollUntilVisible:
+    element:
+      id: "referralReason_SICK"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: "referralReason_SICK"
+- tapOn:
+    id: "form_action"
+# === sideEffectSick (order 4.4, reached via referralReason==SICK conditionalNavigateTo) ===
+# No `showAlertPopUp` key on this page's config -> the shared confirm-submit dialog does
+# NOT fire here (see confirm-submit.yaml's own config-audit comment) - go straight to
+# waiting for the next screen after form_action.
+- extendedWaitUntil:
+    visible:
+      id: "sickQ1_(YES|NO)"
+    timeout: 20000
+- tapOn:
+    id: "sickQ1_NO"
+- tapOn:
+    id: "sickQ2_NO"
+- scrollUntilVisible:
+    element:
+      id: "sickQ3_(YES|NO)"
+    direction: DOWN
+    timeout: 15000
+- tapOn:
+    id: "sickQ3_NO"
+- tapOn:
+    id: "form_action"
+# === referralAcknowledgement (TEMPLATE) ===
+- extendedWaitUntil:
+    visible:
+      id: ".*_referralSuccess"
+    timeout: 30000
+- tapOn:
+    id: ".*_back"
+# === Back on referralInbox - find the referral just created ===
+- extendedWaitUntil:
+    visible:
+      id: ".*_searchBar"
+    timeout: 20000
+- tapOn:
+    id: ".*_searchBar"
+- inputText: "QATEST ${RUN_STAMP} REFCHILD"
+- runFlow: ../common/close-keyboard.yaml
+- runFlow:
+    when:
+      notVisible:
+        text: "(?s).*QATEST ${RUN_STAMP} REFCHILD.*"
+    commands:
+      - tapOn:
+          id: ".*_searchBar"
+      - eraseText
+      - inputText: "QATEST ${RUN_STAMP} REFCHILD"
+      - runFlow: ../common/close-keyboard.yaml
+- extendedWaitUntil:
+    visible:
+      text: "(?s).*QATEST ${RUN_STAMP} REFCHILD.*"
+    timeout: 15000
+# Row layout is name-LEFT / Open-button-RIGHT (mainAxisAlignment spaceBetween on one
+# horizontal row) - `rightOf`, not `below` (below is for vertically-stacked cards, the
+# pattern used elsewhere in this kit for household/member cards).
+- tapOn:
+    id: ".*_openButton"
+    rightOf:
+      text: "QATEST ${RUN_STAMP} REFCHILD.*"
+# === referralOverview ===
+- extendedWaitUntil:
+    visible:
+      id: ".*_actionButton"
+    timeout: 20000
+- assertVisible:
+    text: "(?s).*QATEST ${RUN_STAMP} REFCHILD.*"
+- assertNotVisible:
+    text: "REFERRAL_INBOX_NAME|REFERRAL_INBOX_REFERRAL_SYMPTOM|REFERRAL_INBOX_REFERRAL_STATUS"
+# sickQ1 is a mandatory radio, always answered by the time a referral reaches this
+# screen through this form - computeReferralButtonLabel therefore always resolves to
+# HF_REFERRAL_GO_BACK here, never HF_REFERRAL_CONTINUE (function_registry.dart, traced
+# this session). Only one of the two same-fieldName footer buttons is actually
+# rendered (gated by its own `visible` condition), so the wildcard id is unambiguous.
+- tapOn:
+    id: ".*_actionButton"
+# Back on referralInbox
+- extendedWaitUntil:
+    visible:
+      id: ".*_searchBar"
+    timeout: 20000

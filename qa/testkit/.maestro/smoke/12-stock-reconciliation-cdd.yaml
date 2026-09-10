@@ -1,0 +1,143 @@
+# TC-011 (smoke), CDD sub-case: create a Stock Reconciliation record. The user's own
+# framing was "available for all users mostly except hf referral I think" - static code
+# could NOT confirm which roles actually see this tile (home-screen tile visibility is
+# 100% server-driven via the logged-in user's actionsWrapper, not a hardcoded role
+# check - confirmed this session), so this flow's first job IS to find out for the CDD
+# role. If it fails at the very first tile tap, that is itself the answer, not
+# necessarily a selector bug - see 13-stock-reconciliation-warehouse-manager.yaml for
+# the other role.
+#
+# WHY THIS FLOW DELIBERATELY CREATES A MISMATCH (not the simplest "just submit"
+# happy path): STOCKRECONCILIATION.json's `stockReconciliationCard` custom widget
+# (lib/widgets/stock_reconciliation/stock_reconciliation_card.dart) auto-fills
+# `manualCount` to match the computed `stockInHand` on first calculation, which would
+# make the `comments` field (visibilityCondition: manualCount != stockInHand) stay
+# hidden for the whole run - the actual point of this screen (reconciling a manual
+# count against the system count) is the MISMATCH path, and this session just fixed
+# `comments`' missing `_input` semantics id (qa/testkit/patches/08-textarea-input-id.patch)
+# - leaving it completely unexercised here would be a wasted opportunity to prove that
+# fix on a real screen. So this flow overwrites manualCount with a sentinel value
+# (999999, near the field's own max validation of 1000000) that is implausible to
+# coincidentally match real stock data, forcing the mismatch branch open.
+#
+# SEMANTICS ADDED THIS SESSION (all confirmed present now, not just best-effort
+# guesses - see the header of the .dart files for the full rationale):
+#   - stockReconciliationCard_facility / _product / _metrics: this custom widget had
+#     ZERO Semantics before (a CustomComponentRegistry-built widget never passes
+#     through JsonFormBuilder's generic per-field wrap the way schema-dispatched FORM
+#     fields do). Added directly to stock_reconciliation_card.dart - app code, no
+#     patch needed.
+#   - comments_input: textArea fields had NO `_input` id anywhere in this app (grep
+#     confirmed) - the base widget already wrapped the box correctly, but
+#     DigitTextAreaFormInput's own constructor never exposed the parameter. Fixed in
+#     patches/08-textarea-input-id.patch; NEEDS AN APK REBUILD before this flow can
+#     pass the comments step.
+#   - .*_primaryAction on the success screen: STOCKRECONCILIATION.json's
+#     stockReconciliationSuccess panelCard's primaryAction had NO "fieldName" at all,
+#     so it could never get an id (config-side gap, not code - the widget chain
+#     already derives ids from fieldName correctly, proven on HFREFERRAL). Added
+#     "fieldName": "primaryAction" directly to the LOCAL gitignored
+#     STOCKRECONCILIATION.json for this device/testing setup - flag this for
+#     HCM-SOLUTION-CONFIG too, the same way past config fixes here have needed to
+#     ship there (see campaign-config-fix-drift in memory) - this local edit alone
+#     does not persist for anyone else pulling a fresh config.
+#   - manualCount_input: already worked before this session - `integer`+format
+#     "number" (not "numeric") dispatches to the SAME builder as `integer`+"text"
+#     (JsonSchemaNumberBuilder -> DigitTextFormInput), which patch 07(e) already
+#     covers.
+#   - stockInHand is `hidden: true` and never renders at all - no selector exists or
+#     is needed for it.
+#
+# STANDALONE - logs in fresh as CDD user 1; no dependency on any other flow. Creates a
+# REAL StockReconciliationModel record with no QATEST-taggable identifying field on
+# the happy path except the comments text (this screen has no free-text "name" field
+# the way households/referrals do), so the comment itself carries the QATEST tag.
+appId: com.digit.hcm
+tags:
+  - smoke
+  - needs-logged-in
+---
+- launchApp
+- runFlow: ../common/ensure-home.yaml
+- scrollUntilVisible:
+    element:
+      text: ${HOME_STOCK_RECON}
+    direction: DOWN
+    timeout: 20000
+- tapOn:
+    text: ${HOME_STOCK_RECON}
+# Straight into STOCKRECONCILIATION's initialPage - no boundary-picker interstitial
+# (confirmed this session: home.dart just reads the login-time boundary singleton,
+# unlike the HF Referral tile's CurrentBoundaryPage push).
+- extendedWaitUntil:
+    visible:
+      id: "stockReconciliationCard_facility"
+    timeout: 30000
+- assertNotVisible:
+    text: "STOCKRECONCILIATION_STOCKRECONCILIATION_HEADING"
+- tapOn:
+    id: "stockReconciliationCard_facility"
+- extendedWaitUntil:
+    visible:
+      id: "option_.*"
+    timeout: 15000
+# Blind-pick the first available facility - the specific one does not matter for a
+# happy-path pass, and facility ids are server UUIDs unknowable ahead of time.
+- tapOn:
+    id: "option_.*"
+- tapOn:
+    id: "stockReconciliationCard_product"
+- extendedWaitUntil:
+    visible:
+      id: "option_.*"
+    timeout: 15000
+- tapOn:
+    id: "option_.*"
+# Metrics (and manualCount's auto-fill) land via a post-frame callback after both
+# selections - gate on the metrics card's own id instead of a fixed sleep.
+- extendedWaitUntil:
+    visible:
+      id: "stockReconciliationCard_metrics"
+    timeout: 20000
+# Force the mismatch branch: overwrite the auto-filled manualCount with a sentinel
+# value implausible to coincidentally match real stock-on-hand data.
+- tapOn:
+    id: "manualCount_input"
+- eraseText
+- inputText: "999999"
+- hideKeyboard
+- extendedWaitUntil:
+    visible:
+      id: "comments_input"
+    timeout: 15000
+- tapOn:
+    id: "comments_input"
+- inputText: "QATEST ${RUN_STAMP} manual count differs from system count"
+- runFlow:
+    when:
+      notVisible:
+        text: "QATEST ${RUN_STAMP} manual count differs from system count"
+    commands:
+      - eraseText
+      - inputText: "QATEST ${RUN_STAMP} manual count differs from system count"
+- hideKeyboard
+- assertVisible:
+    text: "QATEST ${RUN_STAMP}.*"
+- tapOn:
+    id: "form_action"
+# No `showAlertPopUp` key on this page's config -> the shared confirm-submit dialog
+# does NOT fire here (see confirm-submit.yaml's own config-audit comment).
+- extendedWaitUntil:
+    visible:
+      id: ".*_primaryAction"
+    timeout: 30000
+- assertNotVisible:
+    text: "STOCKRECONCILIATION_STOCKRECONCILIATIONSUCCESS_HEADING"
+- tapOn:
+    id: ".*_primaryAction"
+# Back on home - reuse the same tile text as the "we're home again" proof (role-
+# agnostic, unlike ${HOME_REG} which a warehouse-manager-only login may not have).
+- extendedWaitUntil:
+    visible:
+      text: ${HOME_STOCK_RECON}
+    timeout: 20000

@@ -2,6 +2,14 @@
 # Included by every smoke flow via `runFlow: ../common/ensure-home.yaml`.
 # Lives OUTSIDE .maestro/smoke so the runner never executes it as a test.
 #
+# SIBLING FILES - AVOID DRIFT: `ensure-home-hfreferral.yaml` and
+# `ensure-home-warehouse-manager.yaml` are forks of this file for flows that need a
+# different login user + boundary (Amit's call, 2026-09-09 - each such user's boundary
+# hierarchy may have more levels than this one, so forked rather than parameterized via
+# runFlow's env-override). If you fix a MECHANICS bug here (download popup, multiselect
+# panel closing, keystroke-drop retry) - not a value/selector specific to THIS user -
+# check both sibling files too.
+#
 # APP LAUNCH-STATE MACHINE (verified in app code + runs 2026-09-02):
 # Maestro's launchApp STOPS the app first, so every flow cold-starts it, and
 # a logged-in cold start NEVER lands on home: permissions_handler.dart does
