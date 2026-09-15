@@ -1741,7 +1741,10 @@ void initializeFunctionRegistry() {
     if (cycleIndex < 0) return false;
 
     final flowType =
-        args.length > 2 ? args[2]?.toString() ?? 'smcDone' : 'smcDone';
+        (args.length > 2 ? args[2]?.toString() ?? 'smcDone' : 'smcDone')
+            .trim()
+            .toUpperCase();
+    ;
 
     // Get tasks from modelMap
     final tasks = stateData.modelMap['tasks'] as List? ?? [];
@@ -1764,8 +1767,7 @@ void initializeFunctionRegistry() {
       if (fields == null) continue;
 
       final taskFlowType = fields
-          .firstWhereOrNull((f) => f.key == 'flow')
-          ?.value
+          .firstWhereOrNull((f) => f["key"] == 'flow')?["value"]
           ?.toString()
           .trim()
           .toUpperCase();
