@@ -1740,6 +1740,9 @@ void initializeFunctionRegistry() {
         args.length > 1 ? int.tryParse(args[1]?.toString() ?? '') ?? -1 : -1;
     if (cycleIndex < 0) return false;
 
+    final flowType =
+        args.length > 2 ? args[2]?.toString() ?? 'smcDone' : 'smcDone';
+
     // Get tasks from modelMap
     final tasks = stateData.modelMap['tasks'] as List? ?? [];
 
@@ -1759,6 +1762,15 @@ void initializeFunctionRegistry() {
       }
 
       if (fields == null) continue;
+
+      final taskFlowType = fields
+          .firstWhereOrNull((f) => f.key == 'flow')
+          ?.value
+          ?.toString()
+          .trim()
+          .toUpperCase();
+
+      if (taskFlowType != flowType) continue;
 
       // Find doseIndex and cycleIndex in fields
       int? taskDoseIndex;
