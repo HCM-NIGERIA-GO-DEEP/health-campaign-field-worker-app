@@ -1085,15 +1085,11 @@ void initializeFunctionRegistry() {
           .toUpperCase();
 
       if (currentRunningCycle != null) {
-        final additionalFields = task['additionalFields'];
-        final fields = additionalFields is Map
-            ? additionalFields['fields'] as List?
-            : null;
         int? taskCycleIndex;
         if (fields != null) {
           for (final field in fields) {
-            if (field is Map && field['key'] == 'cycleIndex') {
-              taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
+            if (field.key == 'cycleIndex') {
+              taskCycleIndex = int.tryParse(field.value?.toString() ?? '');
               break;
             }
           }
@@ -1102,14 +1098,10 @@ void initializeFunctionRegistry() {
         // Fall back to deriving the cycle from the task's last modified
         // time when no cycleIndex was recorded on the task.
         if (taskCycleIndex == null) {
-          final clientAuditDetails = task['clientAuditDetails'];
-          final taskAuditDetails = task['auditDetails'];
-          final lastModifiedTime = (clientAuditDetails is Map
-                  ? clientAuditDetails['lastModifiedTime']
-                  : null) ??
-              (taskAuditDetails is Map
-                  ? taskAuditDetails['lastModifiedTime']
-                  : null);
+          final clientAuditDetails = task.clientAuditDetails;
+          final taskAuditDetails = task.auditDetails;
+          final lastModifiedTime = clientAuditDetails.lastModifiedTime ??
+              taskAuditDetails.lastModifiedTime;
           final lastModifiedTimeMs =
               int.tryParse(lastModifiedTime?.toString() ?? '');
 
@@ -1161,15 +1153,11 @@ void initializeFunctionRegistry() {
           .toUpperCase();
 
       if (currentRunningCycle != null) {
-        final additionalFields = task['additionalFields'];
-        final fields = additionalFields is Map
-            ? additionalFields['fields'] as List?
-            : null;
         int? taskCycleIndex;
         if (fields != null) {
           for (final field in fields) {
-            if (field is Map && field['key'] == 'cycleIndex') {
-              taskCycleIndex = int.tryParse(field['value']?.toString() ?? '');
+            if (field.key == 'cycleIndex') {
+              taskCycleIndex = int.tryParse(field.value?.toString() ?? '');
               break;
             }
           }
@@ -1178,14 +1166,10 @@ void initializeFunctionRegistry() {
         // Fall back to deriving the cycle from the task's last modified
         // time when no cycleIndex was recorded on the task.
         if (taskCycleIndex == null) {
-          final clientAuditDetails = task['clientAuditDetails'];
-          final taskAuditDetails = task['auditDetails'];
-          final lastModifiedTime = (clientAuditDetails is Map
-                  ? clientAuditDetails['lastModifiedTime']
-                  : null) ??
-              (taskAuditDetails is Map
-                  ? taskAuditDetails['lastModifiedTime']
-                  : null);
+          final clientAuditDetails = task.clientAuditDetails;
+          final taskAuditDetails = task.auditDetails;
+          final lastModifiedTime = clientAuditDetails.lastModifiedTime ??
+              taskAuditDetails.lastModifiedTime;
           final lastModifiedTimeMs =
               int.tryParse(lastModifiedTime?.toString() ?? '');
 
