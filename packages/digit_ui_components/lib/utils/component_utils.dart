@@ -12,8 +12,11 @@ class DigitComponentsUtils {
     );
   }
 
-  static void showDialog(BuildContext context, String? label, DialogType dialogType,
-      ) {
+  static void showDialog(
+    BuildContext context,
+    String? label,
+    DialogType dialogType,
+  ) {
     DigitSyncDialog.show(
       context,
       type: dialogType,
@@ -45,7 +48,7 @@ class DigitSyncDialog {
   }
 }
 
-class DigitSyncDialogContent extends StatelessWidget {
+class DigitSyncDialogContent extends StatefulWidget {
   final String? label;
   final DialogType type;
 
@@ -61,7 +64,56 @@ class DigitSyncDialogContent extends StatelessWidget {
   });
 
   @override
+  State<DigitSyncDialogContent> createState() => _DigitSyncDialogContentState();
+}
+
+class _DigitSyncDialogContentState extends State<DigitSyncDialogContent>
+    with SingleTickerProviderStateMixin {
+  /// Drives the in-progress icon. Without it the dialog shows a still
+  /// `autorenew` glyph, which reads as an icon rather than as work in
+  /// progress.
+  static const Duration _spinDuration = Duration(milliseconds: 1200);
+
+  AnimationController? _spin;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.type == DialogType.inProgress) {
+      _spin = AnimationController(vsync: this, duration: _spinDuration)
+        ..repeat();
+    }
+  }
+
+  @override
+  void didUpdateWidget(DigitSyncDialogContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.type == oldWidget.type) return;
+
+    // The same dialog can be reused to report completion or failure, and a
+    // finished state must not keep spinning.
+    if (widget.type == DialogType.inProgress) {
+      _spin ??= AnimationController(vsync: this, duration: _spinDuration)
+        ..repeat();
+    } else {
+      _spin?.dispose();
+      _spin = null;
+    }
+  }
+
+  @override
+  void dispose() {
+    _spin?.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final label = widget.label;
+    final type = widget.type;
+    final primaryAction = widget.primaryAction;
+    final secondaryAction = widget.secondaryAction;
+
     final theme = Theme.of(context);
     final textTheme = theme.digitTextTheme(context);
     IconData icon;
@@ -110,10 +162,21 @@ class DigitSyncDialogContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.center,
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, size: 32, color: color),
-                if (label != null && label !="") ...[
+                _spin == null
+                    ? Icon(icon, size: 32, color: color)
+                    : RotationTransition(
+                        turns: _spin!,
+                        child: Icon(icon, size: 32, color: color),
+                      ),
+                if (label != null && label != "") ...[
                   const SizedBox(height: spacer4),
-                  Text(label!, style: labelStyle.copyWith(color: color)),
+                  Text(
+                    label,
+                    // The icon above is centred, so a label that wraps has to
+                    // be centred too or the two visibly disagree.
+                    textAlign: TextAlign.center,
+                    style: labelStyle.copyWith(color: color),
+                  ),
                 ],
                 if (primaryAction != null || secondaryAction != null) ...[
                   const SizedBox(height: spacer4),
@@ -121,24 +184,24 @@ class DigitSyncDialogContent extends StatelessWidget {
                     DigitButton(
                       type: DigitButtonType.secondary,
                       size: DigitButtonSize.medium,
-                      label: secondaryAction!.label,
+                      label: secondaryAction.label,
                       onPressed: () {
-                        if (secondaryAction!.action != null) {
-                          secondaryAction!.action!(context);
+                        if (secondaryAction.action != null) {
+                          secondaryAction.action!(context);
                         } else {
                           Navigator.of(context).pop();
                         }
                       },
                       mainAxisSize: MainAxisSize.max,
                     ),
-                  if(primaryAction != null && secondaryAction != null)
+                  if (primaryAction != null && secondaryAction != null)
                     const SizedBox(height: spacer4),
                   if (primaryAction != null)
                     DigitButton(
-                      label: primaryAction!.label,
+                      label: primaryAction.label,
                       onPressed: () {
-                        if (primaryAction!.action != null) {
-                          primaryAction!.action!(context);
+                        if (primaryAction.action != null) {
+                          primaryAction.action!(context);
                         } else {
                           Navigator.of(context).pop();
                         }
