@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../data/local_store/no_sql/schema/app_configuration.dart';
+import '../../data/local_store/secure_store/secure_store.dart';
 import '../../data/repositories/remote/bandwidth_check.dart';
 import '../../models/downsync/downsync.dart';
 import '../../utils/background_service.dart';
@@ -41,6 +42,32 @@ class HFReferralDownSyncBloc
 
   String _getLocalityKey(String projectId) => 'hfReferral_$projectId';
 
+  Future<int?> _getCurrentCycleStartDate(String projectId) async {
+    final now = DateTime.now().millisecondsSinceEpoch;
+    final selectedProjectType =
+        await LocalSecureStore.instance.selectedProjectType;
+    final selectedProject = await LocalSecureStore.instance.selectedProject;
+
+    final currentCycleFromSelectedType = selectedProjectType?.cycles
+        ?.where(
+          (cycle) =>
+              (cycle.startDate ?? 0) <= now && (cycle.endDate ?? 0) >= now,
+        )
+        .firstOrNull
+        ?.startDate;
+
+    final currentCycleFromSelectedProject = selectedProject?.id == projectId
+        ? selectedProject?.additionalDetails?.projectType?.cycles
+            ?.where(
+              (cycle) => cycle.startDate <= now && cycle.endDate >= now,
+            )
+            .firstOrNull
+            ?.startDate
+        : null;
+
+    return currentCycleFromSelectedType ?? currentCycleFromSelectedProject;
+  }
+
   FutureOr<void> _handleDownSyncResetState(
     HFReferralDownSyncResetStateEvent event,
     HFReferralDownSyncEmitter emit,
@@ -63,8 +90,11 @@ class HFReferralDownSyncBloc
         locality: localityKey,
       ));
 
+      final currentCycleStartDate =
+          await _getCurrentCycleStartDate(event.projectId);
+
       int? lastSyncedTime = existingDownSyncData.isEmpty
-          ? null
+          ? currentCycleStartDate
           : existingDownSyncData.first.lastSyncedTime;
 
       // Fetch total count from server using lastSyncedTime to get only new records
@@ -73,7 +103,8 @@ class HFReferralDownSyncBloc
               .fetchTotalCount(
         HFReferralSearchModel(
           projectId: event.projectId,
-        ), includeOnlyUpdatedByOthers: true,
+        ),
+        includeOnlyUpdatedByOthers: true,
         offSet: 0,
         lastSyncedTime: lastSyncedTime,
       );
@@ -112,8 +143,11 @@ class HFReferralDownSyncBloc
         locality: localityKey,
       ));
 
+      final currentCycleStartDate =
+          await _getCurrentCycleStartDate(event.projectId);
+
       int? lastSyncedTime = existingDownSyncData.isEmpty
-          ? null
+          ? currentCycleStartDate
           : existingDownSyncData.first.lastSyncedTime;
 
       final totalCount = event.totalCount;
@@ -141,9 +175,7 @@ class HFReferralDownSyncBloc
       // Download in batches using lastSyncedTime, offset always 0
       while (syncedCount < totalCount) {
         final hfReferrals = await hfReferralRemoteRepository.search(
-          HFReferralSearchModel(
-            projectId: event.projectId
-          ),
+          HFReferralSearchModel(projectId: event.projectId),
           includeOnlyUpdatedByOthers: true,
           offSet: 0,
           limit: batchSize,

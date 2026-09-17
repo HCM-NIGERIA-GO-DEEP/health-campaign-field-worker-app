@@ -1,6 +1,5 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 
-import '../../data/local_store/no_sql/schema/app_configuration.dart';
 import '../manual_attendance_reasons/manual_attendance_reasons_model.dart';
 import '../privacy_notice/privacy_notice_model.dart';
 import '../referral_reasons/referral_reasons_model.dart';
@@ -45,9 +44,9 @@ class MdmsModuleDetailModel with _$MdmsModuleDetailModel {
 @freezed
 class MdmsMasterDetailModel with _$MdmsMasterDetailModel {
   const factory MdmsMasterDetailModel(
-      String name, {
-        String? filter,
-      }) = _MdmsMasterDetailModel;
+    String name, {
+    String? filter,
+  }) = _MdmsMasterDetailModel;
 
   factory MdmsMasterDetailModel.fromJson(Map<String, dynamic> json) =>
       _$MdmsMasterDetailModelFromJson(json);
@@ -108,7 +107,7 @@ class HCMWrapperModel with _$HCMWrapperModel {
     List<SearchCLFFilters>? searchCLFFilters,
     @JsonKey(name: 'REFERRAL_REASONS')
     List<ReferralReasonType>? referralReasonList,
-    @JsonKey(name:'MANUAL_ATTENDANCE_REASONS')
+    @JsonKey(name: 'MANUAL_ATTENDANCE_REASONS')
     List<ManualAttendanceReasonType>? manualAttendanceReasonList,
     @JsonKey(name: 'HOUSE_STRUCTURE_TYPES')
     List<CommonMasterModel>? houseStructureTypes,
@@ -116,9 +115,8 @@ class HCMWrapperModel with _$HCMWrapperModel {
     @JsonKey(name: 'FIREBASE_CONFIG')
     required List<FirebaseConfig>? firebaseConfig,
     @JsonKey(name: 'TRANSIT_POST_TYPE') List<TransitPostType>? transitPostType,
-    @JsonKey(name: 'BOUNDARY_RELATIONSHIP')
-    List<BoundaryRelationship>? boundaryRelationship,
-    @JsonKey(name: 'FACE_AUTH_CONFIG') List<FaceAuthMdmsConfig>? faceAuthConfig,
+    @JsonKey(name: 'FACILITY_BOUNDARY_RELATIONSHIP')
+    List<FacilityBoundaryRelationship>? facilityBoundaryRelationship,
   }) = _HCMWrapperModel;
 
   factory HCMWrapperModel.fromJson(
@@ -424,7 +422,6 @@ class DeviceChangeReasons with _$DeviceChangeReasons {
       _$DeviceChangeReasonsFromJson(json);
 }
 
-
 @freezed
 class SingleUserLogin with _$SingleUserLogin {
   factory SingleUserLogin({
@@ -469,48 +466,69 @@ class FirebaseConfig with _$FirebaseConfig {
       _$FirebaseConfigFromJson(json);
 }
 
-@freezed
-class FaceAuthMdmsConfig with _$FaceAuthMdmsConfig {
-  factory FaceAuthMdmsConfig({
-    @JsonKey(name: 'FACE_MATCH_THRESHOLD') double? faceMatchThreshold,
-    @JsonKey(name: 'MAX_FACE_ATTEMPTS') int? maxFaceAttempts,
-    @JsonKey(name: 'START_HOUR') int? startHour,
-    @JsonKey(name: 'END_HOUR') int? endHour,
-    @JsonKey(name: 'PROMPT_COUNT') int? promptCount,
-    @JsonKey(name: 'MIN_GAP_MINUTES') int? minGapMinutes,
-    @JsonKey(name: 'COUNTDOWN_DURATION_MINUTES') int? countdownDurationMinutes,
-  }) = _FaceAuthMdmsConfig;
+class FaceAuthMdmsConfig {
+  final double? faceMatchThreshold;
+  final int? maxFaceAttempts;
+  final int? startHour;
+  final int? endHour;
+  final int? promptCount;
+  final int? minGapMinutes;
+  final int? countdownDurationMinutes;
 
-  factory FaceAuthMdmsConfig.fromJson(Map<String, dynamic> json) =>
-      // MDMS v2 schema records wrap the payload under a 'data' key.
-      // Fall back to the top-level map for v1-style flat responses.
-      _$FaceAuthMdmsConfigFromJson(
-        json['data'] is Map<String, dynamic>
-            ? json['data'] as Map<String, dynamic>
-            : json,
-      );
+  const FaceAuthMdmsConfig({
+    this.faceMatchThreshold,
+    this.maxFaceAttempts,
+    this.startHour,
+    this.endHour,
+    this.promptCount,
+    this.minGapMinutes,
+    this.countdownDurationMinutes,
+  });
+
+  factory FaceAuthMdmsConfig.fromJson(Map<String, dynamic> json) {
+    // MDMS v2 schema records wrap the payload under a 'data' key.
+    // Fall back to the top-level map for v1-style flat responses.
+    final payload = json['data'] is Map<String, dynamic>
+        ? json['data'] as Map<String, dynamic>
+        : json;
+
+    return FaceAuthMdmsConfig(
+      faceMatchThreshold: (payload['FACE_MATCH_THRESHOLD'] as num?)?.toDouble(),
+      maxFaceAttempts: (payload['MAX_FACE_ATTEMPTS'] as num?)?.toInt(),
+      startHour: (payload['START_HOUR'] as num?)?.toInt(),
+      endHour: (payload['END_HOUR'] as num?)?.toInt(),
+      promptCount: (payload['PROMPT_COUNT'] as num?)?.toInt(),
+      minGapMinutes: (payload['MIN_GAP_MINUTES'] as num?)?.toInt(),
+      countdownDurationMinutes:
+          (payload['COUNTDOWN_DURATION_MINUTES'] as num?)?.toInt(),
+    );
+  }
 }
 
 @freezed
-class BoundaryRelationship with _$BoundaryRelationship {
-  factory BoundaryRelationship({
+class FacilityBoundaryRelationship with _$FacilityBoundaryRelationship {
+  factory FacilityBoundaryRelationship({
     required String boundaryType,
     required int order,
-    BoundaryRelationshipRef? parent,
-    List<BoundaryRelationshipRef>? children,
-  }) = _BoundaryRelationship;
+    // Scopes the entry to one boundary hierarchy. Must match the project's
+    // additionalDetails.hierarchyType verbatim; null/empty means legacy
+    // data that applies to any hierarchy.
+    String? hierarchyType,
+    FacilityBoundaryRelationshipRef? parent,
+    List<FacilityBoundaryRelationshipRef>? children,
+  }) = _FacilityBoundaryRelationship;
 
-  factory BoundaryRelationship.fromJson(Map<String, dynamic> json) =>
-      _$BoundaryRelationshipFromJson(json);
+  factory FacilityBoundaryRelationship.fromJson(Map<String, dynamic> json) =>
+      _$FacilityBoundaryRelationshipFromJson(json);
 }
 
 @freezed
-class BoundaryRelationshipRef with _$BoundaryRelationshipRef {
-  factory BoundaryRelationshipRef({
+class FacilityBoundaryRelationshipRef with _$FacilityBoundaryRelationshipRef {
+  factory FacilityBoundaryRelationshipRef({
     required String boundaryType,
     required int order,
-  }) = _BoundaryRelationshipRef;
+  }) = _FacilityBoundaryRelationshipRef;
 
-  factory BoundaryRelationshipRef.fromJson(Map<String, dynamic> json) =>
-      _$BoundaryRelationshipRefFromJson(json);
+  factory FacilityBoundaryRelationshipRef.fromJson(Map<String, dynamic> json) =>
+      _$FacilityBoundaryRelationshipRefFromJson(json);
 }

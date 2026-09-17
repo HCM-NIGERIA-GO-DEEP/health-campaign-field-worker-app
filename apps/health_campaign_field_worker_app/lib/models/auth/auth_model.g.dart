@@ -30,6 +30,8 @@ _$ValidateResponseModelImpl _$$ValidateResponseModelImplFromJson(
     _$ValidateResponseModelImpl(
       isDuplicateLogin: json['isDuplicateLogin'] as bool,
       existingDeviceToken: json['existingDeviceToken'] as String?,
+      canSwitchDevice: json['canSwitchDevice'] as bool? ?? true,
+      message: json['message'] as String?,
     );
 
 Map<String, dynamic> _$$ValidateResponseModelImplToJson(
@@ -37,6 +39,8 @@ Map<String, dynamic> _$$ValidateResponseModelImplToJson(
     <String, dynamic>{
       'isDuplicateLogin': instance.isDuplicateLogin,
       'existingDeviceToken': instance.existingDeviceToken,
+      'canSwitchDevice': instance.canSwitchDevice,
+      'message': instance.message,
     };
 
 _$LoginModelImpl _$$LoginModelImplFromJson(Map<String, dynamic> json) =>
@@ -47,6 +51,7 @@ _$LoginModelImpl _$$LoginModelImplFromJson(Map<String, dynamic> json) =>
       tenantId: json['tenantId'] as String,
       scope: json['scope'] as String? ?? 'read',
       grantType: json['grant_type'] as String? ?? 'password',
+      deviceId: json['deviceId'] as String?,
     );
 
 Map<String, dynamic> _$$LoginModelImplToJson(_$LoginModelImpl instance) =>
@@ -57,6 +62,7 @@ Map<String, dynamic> _$$LoginModelImplToJson(_$LoginModelImpl instance) =>
       'tenantId': instance.tenantId,
       'scope': instance.scope,
       'grant_type': instance.grantType,
+      'deviceId': instance.deviceId,
     };
 
 _$UserRequestModelImpl _$$UserRequestModelImplFromJson(

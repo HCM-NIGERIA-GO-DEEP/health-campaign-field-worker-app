@@ -4,8 +4,6 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:attendance_management/attendance_management.dart'
-    as attendance_mappers;
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crypto/crypto.dart';
 import 'package:device_info_plus/device_info_plus.dart';
@@ -36,13 +34,14 @@ import 'package:transit_post/data/repositories/local/user_action.dart';
 import 'package:transit_post/data/repositories/remote/user_action.dart';
 
 import '../blocs/app_initialization/app_initialization.dart';
-import '../blocs/hf_referral_downsync/hf_referral_downsync.dart';
+import '../blocs/auth/auth.dart';
 import '../blocs/localization/app_localization.dart';
 import '../blocs/localization/localization.dart';
 import '../blocs/projects_beneficiary_downsync/project_beneficiaries_downsync.dart';
+import '../blocs/push_notification/push_notification.dart';
 import '../data/local_store/app_shared_preferences.dart';
-import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../data/local_store/no_sql/schema/localization.dart';
+import '../data/local_store/no_sql/schema/service_registry.dart';
 import '../data/local_store/secure_store/secure_store.dart';
 import '../models/app_config/app_config_model.dart';
 import '../router/app_router.dart';
@@ -97,6 +96,136 @@ Future<void> requestDisableBatteryOptimization() async {
 setBgRunning(bool isBgRunning) async {
   final localSecureStore = LocalSecureStore.instance;
   await localSecureStore.setBackgroundService(isBgRunning);
+}
+
+/// Returns true if online. If offline, shows an alert and returns false —
+/// used to block logout while offline instead of logging out locally.
+Future<bool> ensureOnlineOrAlert(BuildContext context) async {
+  final connectivityResult = await Connectivity().checkConnectivity();
+  final hasNetwork = !connectivityResult.contains(ConnectivityResult.none);
+  final hasActiveInternet = hasNetwork ? await getIsConnected() : false;
+
+  if (!hasActiveInternet && context.mounted) {
+    Toast.showToast(
+      context,
+      message: AppLocalizations.of(context)
+          .translate(i18.syncDialog.noInternetConnection),
+      type: ToastType.error,
+    );
+  }
+
+  return hasActiveInternet;
+}
+
+/// Runs the full app logout flow so all logout buttons behave consistently.
+///
+/// Flow:
+/// 1. Optional confirmation popup
+/// 2. Online check
+/// 3. Push token unregister (best effort)
+/// 4. Boundary/localization reset
+/// 5. Auth logout
+Future<void> performAppLogout(
+  BuildContext context, {
+  bool requireConfirmation = true,
+}) async {
+  if (!context.mounted) return;
+
+  if (requireConfirmation) {
+    await showCustomPopup(
+      context: context,
+      builder: (dialogContext) => Popup(
+        title: AppLocalizations.of(context).translate(
+          i18.common.coreCommonWarning,
+        ),
+        description: AppLocalizations.of(context).translate(
+          i18.common.logOutWarningMsg,
+        ),
+        onOutsideTap: () {
+          Navigator.of(dialogContext).pop();
+        },
+        type: PopUpType.simple,
+        actions: [
+          DigitButton(
+            label: AppLocalizations.of(context).translate(
+              i18.common.coreCommonOk,
+            ),
+            onPressed: () async {
+              Navigator.of(dialogContext).pop();
+              await _executeLogout(context);
+            },
+            type: DigitButtonType.secondary,
+            size: DigitButtonSize.large,
+          ),
+          DigitButton(
+            label: AppLocalizations.of(context).translate(
+              i18.common.coreCommonNo,
+            ),
+            onPressed: () {
+              Navigator.of(dialogContext).pop();
+            },
+            type: DigitButtonType.primary,
+            size: DigitButtonSize.large,
+          ),
+        ],
+      ),
+    );
+    return;
+  }
+
+  await _executeLogout(context);
+}
+
+Future<void> _executeLogout(BuildContext context) async {
+  if (!await ensureOnlineOrAlert(context)) return;
+  if (!context.mounted) return;
+
+  final authBloc = _readBlocOrNull<AuthBloc>(context);
+  if (authBloc == null) return;
+
+  final pushBloc = _readBlocOrNull<PushNotificationBloc>(context);
+  final boundaryBloc = _readBlocOrNull<BoundaryBloc>(context);
+  final localizationBloc = _readBlocOrNull<LocalizationBloc>(context);
+
+  if (pushBloc != null) {
+    try {
+      final isar = context.read<Isar>();
+      final serviceRegistry = await isar.serviceRegistrys.where().findAll();
+      final apiEndPoint = Constants.getNotificationEndPoint(
+        serviceRegistry: serviceRegistry,
+        service: 'NOTIFICATION',
+        action: ApiOperation.unRegister.toValue(),
+        entityName: 'NotificationToken',
+      );
+
+      if (apiEndPoint.isNotEmpty) {
+        pushBloc.add(PushNotificationEvent.logout(apiEndPoint: apiEndPoint));
+      }
+    } catch (_) {
+      // Best effort: logout should continue even if token unregister fails.
+    }
+  }
+
+  boundaryBloc?.add(const BoundaryResetEvent());
+
+  localizationBloc?.add(
+    LocalizationEvent.onLoadLocalization(
+      module: Constants.homeLocalizationModules.join(','),
+      tenantId: envConfig.variables.tenantId,
+      locale: AppSharedPreferences().getSelectedLocale ?? '',
+      path: Constants.localizationApiPath,
+    ),
+  );
+
+  authBloc.add(const AuthLogoutEvent());
+}
+
+T? _readBlocOrNull<T>(BuildContext context) {
+  try {
+    return context.read<T>();
+  } catch (_) {
+    return null;
+  }
 }
 
 performBackgroundService({

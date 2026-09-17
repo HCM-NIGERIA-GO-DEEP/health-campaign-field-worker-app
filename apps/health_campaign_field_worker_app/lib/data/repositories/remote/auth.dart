@@ -18,12 +18,17 @@ class AuthRepository {
       "authorization": "Basic ZWdvdi11c2VyLWNsaWVudDo=",
     };
 
-    final formData = FormData.fromMap(loginModel.toJson());
-
     final response = await _client.post(
       loginPath,
-      data: formData,
-      options: Options(headers: headers),
+      data: {
+        ...loginModel.toJson(),
+        'clientType': 'mobile',
+      },
+      options: Options(
+        headers: headers,
+        contentType: Headers.formUrlEncodedContentType,
+        extra: {'skipRequestInfo': true},
+      ),
     );
 
     final data = response.data;
@@ -48,6 +53,12 @@ class AuthRepository {
         logoutPath,
         queryParameters: queryParameters,
         data: body ?? {},
+        options: Options(
+          headers: {
+            "content-type": 'application/json',
+          },
+          extra: {'skipRequestInfo': true},
+        ),
       );
     } catch (error) {
       rethrow;

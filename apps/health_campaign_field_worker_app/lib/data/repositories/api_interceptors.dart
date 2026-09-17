@@ -12,6 +12,8 @@ import '../local_store/secure_store/secure_store.dart';
 class AuthTokenInterceptor extends Interceptor {
   final LocalSecureStore localSecureStore;
 
+  static const _skipRequestInfoKey = 'skipRequestInfo';
+
   AuthTokenInterceptor({
     LocalSecureStore? localSecureStore,
   }) : localSecureStore = localSecureStore ?? LocalSecureStore.instance;
@@ -21,6 +23,11 @@ class AuthTokenInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
+    final skipRequestInfo = options.extra[_skipRequestInfoKey] == true;
+    if (skipRequestInfo) {
+      return super.onRequest(options, handler);
+    }
+
     final authToken = await localSecureStore.accessToken;
     final userInfo = await localSecureStore.userRequestModel;
     if (options.data is Map) {

@@ -1,5 +1,8 @@
 // Importing necessary packages and files
+import 'dart:io';
+
 import "package:dio/dio.dart"; // Dio package for HTTP requests
+import 'package:dio/io.dart';
 
 import '../utils/environment_config.dart'; // Custom utility file for environment configurations
 import 'repositories/api_interceptors.dart'; // Custom API interceptors for Dio
@@ -46,5 +49,21 @@ class DioClient {
         baseUrl: envConfig.variables
             .baseUrl, // Base URL for API endpoints from the environment configuration
       );
+
+    _configureTlsForDev();
+  }
+
+  void _configureTlsForDev() {
+    if (envConfig.variables.envType != EnvType.dev) return;
+
+    // Dev-only bypass for invalid/self-signed cert chains.
+    final adapter = IOHttpClientAdapter()
+      ..createHttpClient = () {
+        final client = HttpClient();
+        client.badCertificateCallback = (_, __, ___) => true;
+        return client;
+      };
+
+    _dio.httpClientAdapter = adapter;
   }
 }

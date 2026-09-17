@@ -105,11 +105,11 @@ class AppConfiguration {
   @Name('STOCK_THRESHOLD_CONFIG')
   StockThresholdConfig? stockThresholdConfig;
 
-  @Name('BOUNDARY_RELATIONSHIP')
-  List<BoundaryRelationshipConfig>? boundaryRelationship;
-
   @Name('FACE_AUTH_CONFIG')
   FaceAuthMdmsConfig? faceAuthMdmsConfig;
+
+  @Name('FACILITY_BOUNDARY_RELATIONSHIP')
+  List<FacilityBoundaryRelationshipConfig>? facilityBoundaryRelationship;
 }
 
 @embedded
@@ -344,14 +344,6 @@ class StockThresholdConfig {
 }
 
 @embedded
-class BoundaryRelationshipConfig {
-  late String boundaryType;
-  late int order;
-  late String parentBoundaryType;
-  late List<String> childBoundaryTypes;
-}
-
-@embedded
 class FaceAuthMdmsConfig {
   @Name("FACE_MATCH_THRESHOLD")
   late double? faceMatchThreshold;
@@ -367,4 +359,15 @@ class FaceAuthMdmsConfig {
   late int? minGapMinutes;
   @Name("COUNTDOWN_DURATION_MINUTES")
   late int? countdownDurationMinutes;
+}
+
+@embedded
+class FacilityBoundaryRelationshipConfig {
+  late String boundaryType;
+  late int order;
+  // Null/empty on legacy (pre-multi-hierarchy) MDMS data; otherwise must
+  // equal the project's additionalDetails.hierarchyType verbatim.
+  String? hierarchyType;
+  late String parentBoundaryType;
+  late List<String> childBoundaryTypes;
 }

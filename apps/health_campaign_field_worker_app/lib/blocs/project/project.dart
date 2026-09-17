@@ -5,6 +5,7 @@ import 'dart:core';
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:digit_data_model/data/local_store/sql_store/sql_store.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/household.dart';
 import 'package:digit_data_model/data/repositories/package_repository/remote/stock.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendance_log.dart';
@@ -25,21 +26,28 @@ import 'package:transit_post/data/repositories/local/user_action.dart';
 import 'package:transit_post/data/repositories/remote/user_action.dart';
 
 import '../../../models/app_config/app_config_model.dart' as app_configuration;
+import '../../data/local_store/app_shared_preferences.dart';
 import '../../data/local_store/no_sql/schema/app_configuration.dart';
 import '../../data/local_store/no_sql/schema/row_versions.dart';
 import '../../data/local_store/no_sql/schema/service_registry.dart';
 import '../../data/local_store/secure_store/secure_store.dart';
+import '../../data/remote_client.dart';
 import '../../data/repositories/remote/bandwidth_check.dart';
 import '../../data/repositories/remote/mdms.dart';
+import '../../data/repositories/summary_report_remote_repository.dart';
+import '../../data/services/server_summary_report_service.dart';
 import '../../models/app_config/app_config_model.dart';
 import '../../models/auth/auth_model.dart';
 import '../../models/downsync/downsync.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/background_service.dart';
+import '../../utils/boundary_relationship_matcher.dart';
 import '../../utils/download_image.dart';
 import '../../utils/environment_config.dart';
 import '../../utils/least_level_boundary_singleton.dart';
+import '../../utils/runtime_hierarchy.dart';
 import '../../utils/stock_calculation_utils.dart';
+import '../../utils/stock_downsync_cursor.dart';
 import '../../utils/utils.dart';
 import '../auth/auth.dart';
 import '../push_notification/push_notification.dart';
@@ -67,6 +75,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       projectRemoteRepository;
   final LocalRepository<ProjectModel, ProjectSearchModel>
       projectLocalRepository;
+  final ServerSummaryReportService serverSummaryReportService;
 
   final RemoteRepository<AttendanceRegisterModel, AttendanceRegisterSearchModel>
       attendanceRemoteRepository;
@@ -141,6 +150,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     required this.projectRemoteRepository,
     required this.projectStaffLocalRepository,
     required this.projectLocalRepository,
+    required this.serverSummaryReportService,
     required this.projectFacilityRemoteRepository,
     required this.projectFacilityLocalRepository,
     required this.facilityRemoteRepository,
@@ -372,6 +382,19 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     projects.removeDuplicates((element) => element.id);
 
     final selectedProject = await localSecureStore.selectedProject;
+
+    // Cold-restart restore: rehydrate the runtime hierarchy from the persisted
+    // selected project before any boundary / MDMS work runs.
+    if (selectedProject != null) {
+      final restoredHierarchy =
+          selectedProject.additionalDetails?.hierarchyType;
+      DigitDataModelSingleton().setHierarchyType(
+        (restoredHierarchy != null && restoredHierarchy.isNotEmpty)
+            ? restoredHierarchy
+            : envConfig.variables.hierarchyType,
+      );
+    }
+
     emit(
       ProjectState(
         loading: false,
@@ -390,28 +413,211 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         .setBoundary(boundaries: findLeastLevelBoundaries(boundaries));
   }
 
+  ProjectCycle? _getCurrentCycle(List<ProjectCycle> allCycles) {
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    return allCycles
+        .where((cycle) => cycle.startDate <= now && cycle.endDate >= now)
+        .firstOrNull;
+  }
+
+  FutureOr<void> _loadSummaryReportData({
+    required ProjectModel project,
+    required ProjectType? selectedProjectType,
+  }) async {
+    final userObject = await localSecureStore.userRequestModel;
+    if (userObject == null) {
+      return;
+    }
+
+    final projectFacilities = await projectFacilityLocalRepository.search(
+      ProjectFacilitySearchModel(projectId: [project.id]),
+    );
+
+    List<ProjectCycle> allCycles =
+        project.additionalDetails?.projectType?.cycles ?? [];
+
+    ProjectCycle? currentCycle = _getCurrentCycle(allCycles);
+
+    final currentFacilities = projectFacilities.where((pf) {
+      final facilityLevel = pf.additionalFields?.fields
+          .where((f) => f.key == 'facilityLevel')
+          .firstOrNull
+          ?.value;
+      return facilityLevel == null || facilityLevel == 'current';
+    }).toList();
+
+    final isDistributor = context.loggedInUserRoles.any(
+      (role) => role.code == RolesType.distributor.toValue(),
+    );
+
+    if (isDistributor == false) return;
+    final facilityId = userObject.uuid;
+
+    if (facilityId.isEmpty) return;
+    if (currentCycle == null) return;
+
+    // Search for household repo
+    // if household data present return else fetch from server and store in local storage
+    final householdRepo =
+        context.read<LocalRepository<HouseholdModel, HouseholdSearchModel>>()
+            as HouseholdLocalRepository;
+
+    final households = await householdRepo.search(
+      HouseholdSearchModel(),
+      userObject.uuid,
+    );
+
+    final hasHouseholdDataForCycle = households.any((household) {
+      final createdBy = household.clientAuditDetails?.createdBy ??
+          household.auditDetails?.createdBy;
+      if (createdBy != userObject.uuid) {
+        return false;
+      }
+
+      final createdTime = household.clientAuditDetails?.createdTime ??
+          household.auditDetails?.createdTime;
+      if (createdTime == null) {
+        return false;
+      }
+
+      return createdTime >= currentCycle.startDate &&
+          createdTime <= currentCycle.endDate;
+    });
+
+    if (hasHouseholdDataForCycle) {
+      return;
+    }
+
+    final reports = await SummaryReportRemoteRepository(
+      DioClient().dio,
+      searchPath: envConfig.variables.summaryReportApiPath,
+    ).search(
+      tenantId: envConfig.variables.tenantId,
+      startDate: currentCycle.startDate,
+      endDate: DateTime.now().millisecondsSinceEpoch,
+    );
+
+    await serverSummaryReportService.syncSummaryReports(
+      userUuid: userObject.uuid,
+      projectId: project.id,
+      currentCycle: currentCycle,
+      reports: reports,
+    );
+  }
+
   FutureOr<void> _loadProjectFacilities(ProjectModel project) async {
     final userObject = await localSecureStore.userRequestModel;
     final assignedBoundaryType = project.address?.boundaryType;
+    final assignedBoundaryCode = project.address?.boundary;
     List<String>? boundaryTypes;
 
-    if (assignedBoundaryType != null) {
-      final configs = await isar.appConfigurations.where().findAll();
-      final boundaryRelationships = configs.firstOrNull?.boundaryRelationship;
+    if (assignedBoundaryType != null && assignedBoundaryCode != null) {
+      // The facility flow can be a supply-chain hierarchy that skips
+      // geographic levels (State → Health Facility, bypassing LGA/Ward),
+      // which cannot be recovered from the boundary tree. Envs that need
+      // it ship the MDMS FACILITY_BOUNDARY_RELATIONSHIP master; its
+      // entries are scoped by hierarchyType so multiple hierarchies on
+      // one env don't collide. No matching entry → fall through to the
+      // derived path.
+      try {
+        final configs = await isar.appConfigurations.where().findAll();
+        final relationshipEntries =
+            configs.firstOrNull?.facilityBoundaryRelationship
+                ?.map((e) => BoundaryRelationshipEntry(
+                      boundaryType: e.boundaryType,
+                      hierarchyType: e.hierarchyType,
+                      parentBoundaryType: e.parentBoundaryType,
+                      childBoundaryTypes: e.childBoundaryTypes,
+                    ))
+                .toList();
 
-      if (boundaryRelationships != null) {
-        final match = boundaryRelationships
-            .where((e) => e.boundaryType == assignedBoundaryType)
-            .firstOrNull;
-
-        if (match != null) {
-          boundaryTypes = [
-            if (match.parentBoundaryType.isNotEmpty) match.parentBoundaryType,
-            match.boundaryType,
-            if (match.childBoundaryTypes.isNotEmpty)
-              match.childBoundaryTypes.first,
-          ];
+        if (relationshipEntries != null && relationshipEntries.isNotEmpty) {
+          boundaryTypes = resolveBoundaryTypesFromRelationship(
+            entries: relationshipEntries,
+            hierarchyType: runtimeHierarchyType(),
+            assignedBoundaryType: assignedBoundaryType,
+          );
         }
+      } catch (e) {
+        // A malformed config must never block project selection — fall
+        // through to the derived path.
+        debugPrint('facilityBoundaryRelationship lookup failed: $e');
+      }
+    }
+
+    if (assignedBoundaryType != null &&
+        assignedBoundaryCode != null &&
+        boundaryTypes == null) {
+      // Derive parent → current → child boundary types from the boundary
+      // search API response for the CURRENT hierarchy (multi-hierarchy
+      // safe). We fetch the full hierarchy tree with no `codes` filter;
+      // the remote client's
+      // `_flattenBoundaryMap` computes `materializedPath` and
+      // `boundaryNum` root-to-leaf, so once flattened we can locate the
+      // assigned code by materializedPath (which is unique) and take
+      // parent (boundaryNum-1) and child (boundaryNum+1) types.
+      try {
+        final treeRows = await boundaryRemoteRepository.search(
+          BoundarySearchModel(),
+        );
+
+        // Locate the assigned row anywhere in the tree by exact code
+        // match.
+        final assigned = treeRows.firstWhere(
+          (b) => b.code == assignedBoundaryCode,
+          orElse: () => BoundaryModel(code: assignedBoundaryCode),
+        );
+
+        final assignedPath = assigned.materializedPath;
+        final assignedNum = assigned.boundaryNum;
+
+        String? parentType;
+        String? childType;
+
+        if (assignedNum != null && assignedPath != null) {
+          // Parent's materializedPath is assigned's minus the last
+          // (dot-separated) segment. This is authoritative — no
+          // reliance on boundary-code underscore structure.
+          if (assignedNum > 1) {
+            final segs = assignedPath.split('.');
+            if (segs.length >= 2) {
+              final parentPath = segs.sublist(0, segs.length - 1).join('.');
+              final parent = treeRows.firstWhere(
+                (b) =>
+                    b.materializedPath == parentPath &&
+                    b.label != null &&
+                    b.label!.isNotEmpty,
+                orElse: () => BoundaryModel(),
+              );
+              parentType = parent.label;
+            }
+          }
+
+          // Child = any row whose materializedPath starts with
+          // assigned's + '.' and whose boundaryNum is exactly one deeper.
+          final childPrefix = '$assignedPath.';
+          final child = treeRows.firstWhere(
+            (b) =>
+                b.boundaryNum == assignedNum + 1 &&
+                b.label != null &&
+                b.label!.isNotEmpty &&
+                (b.materializedPath?.startsWith(childPrefix) ?? false),
+            orElse: () => BoundaryModel(),
+          );
+          childType = child.label;
+        }
+
+        boundaryTypes = [
+          if (parentType != null && parentType.isNotEmpty) parentType,
+          assignedBoundaryType,
+          if (childType != null && childType.isNotEmpty) childType,
+        ];
+      } catch (e) {
+        // Any failure falls through to the single-type default below —
+        // same behaviour the old MDMS path had when it couldn't find a
+        // match.
+        debugPrint('boundary-derivation from search response failed: $e');
       }
 
       boundaryTypes ??= [assignedBoundaryType];
@@ -574,7 +780,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       final allEvents = await faceAuthEventRemoteRepository!.search(
         FaceAuthEventSearchModel(projectId: projectId),
       );
-      debugPrint('[FaceAuth] projectId=$projectId → ${allEvents.length} total events');
+      debugPrint(
+          '[FaceAuth] projectId=$projectId → ${allEvents.length} total events');
 
       // Rewrite old-format events where individualId is a system user UUID.
       final normalizedEvents = allEvents.map((e) {
@@ -584,7 +791,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
       if (normalizedEvents.isNotEmpty) {
         await faceAuthEventLocalRepository!.bulkCreate(normalizedEvents);
-        debugPrint('[FaceAuth] stored ${normalizedEvents.length} events locally');
+        debugPrint(
+            '[FaceAuth] stored ${normalizedEvents.length} events locally');
       }
     } catch (e) {
       debugPrint('[FaceAuth] fetch for projectId=$projectId failed: $e');
@@ -596,6 +804,16 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     ProjectEmitter emit,
   ) async {
     emit(state.copyWith(loading: true, syncError: null));
+
+    // Populate the runtime hierarchy from the selected project's
+    // additionalDetails before any hierarchy-keyed work runs. Env fallback only
+    // when the project payload lacks the field.
+    final projectHierarchy = event.model.additionalDetails?.hierarchyType;
+    DigitDataModelSingleton().setHierarchyType(
+      (projectHierarchy != null && projectHierarchy.isNotEmpty)
+          ? projectHierarchy
+          : envConfig.variables.hierarchyType,
+    );
 
     List<BoundaryModel> boundaries;
     try {
@@ -887,6 +1105,11 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       );
       cycles.sort((a, b) => a.id.compareTo(b.id));
 
+      await _loadSummaryReportData(
+        project: event.model,
+        selectedProjectType: selectedProjectType,
+      );
+
       final reqProjectType = selectedProjectType?.copyWith(cycles: cycles);
 
       final rowversionList = await isar.rowVersionLists
@@ -1074,9 +1297,31 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
         locality: localityKey,
       ));
 
-      final lastSyncedTime = existingDownSyncData.isEmpty
-          ? null
-          : existingDownSyncData.first.lastSyncedTime;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      ProjectCycle? currentCycle =
+          project.additionalDetails?.projectType?.cycles
+              ?.where(
+                (cycle) => cycle.startDate <= now && cycle.endDate >= now,
+              )
+              .firstOrNull;
+
+      int? currentCycleStartDate = currentCycle?.startDate;
+
+      currentCycleStartDate ??= project
+          .additionalDetails?.projectType?.cycles?.firstOrNull?.startDate;
+
+      // Cursor is per user + cycle so a second user on the same device
+      // still downloads their own stock from cycle start.
+      final cursorKey = StockDownsyncCursor.key(
+        project.id,
+        userObject.uuid,
+        currentCycle?.id ?? 0,
+      );
+
+      final lastSyncedTime = StockDownsyncCursor.resolveCutoff(
+        storedTime: AppSharedPreferences().getStockDownsyncTime(cursorKey),
+        cycleStartDate: currentCycleStartDate,
+      );
 
       if (existingDownSyncData.isEmpty) {
         await downSyncLocalRepository.create(DownsyncModel(
@@ -1233,150 +1478,6 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       }
     } catch (e) {
       debugPrint('Stock balance downsync error: $e');
-    }
-  }
-
-  /// Creates or updates UserAction balance records after stock downsync.
-  /// This ensures that balance records exist for all facility × product variant combinations
-  /// based on the locally available stock data.
-  Future<void> _createStockBalanceUserActions({
-    required ProjectModel project,
-    required List<String> receiverIds,
-    required List<String> productVariantIds,
-    required Iterable<String> userRoles,
-    required UserRequestModel? userObject,
-  }) async {
-    try {
-      final isDistributor =
-          userRoles.contains(RolesType.distributor.toValue()) ||
-              userRoles.contains(RolesType.communityDistributor.toValue());
-
-      final projectFacilities = await projectFacilityLocalRepository.search(
-        ProjectFacilitySearchModel(projectId: [project.id]),
-      );
-
-      final currentFacilities = projectFacilities.where((pf) {
-        final facilityLevel = pf.additionalFields?.fields
-            .where((f) => f.key == 'facilityLevel')
-            .firstOrNull
-            ?.value;
-        return facilityLevel == null || facilityLevel == 'current';
-      }).toList();
-
-      List<String> facilityIds;
-      if (isDistributor) {
-        facilityIds = [userObject?.uuid ?? ''];
-      } else {
-        facilityIds = currentFacilities
-            .map((e) => e.facilityId)
-            .whereType<String>()
-            .toSet()
-            .toList();
-      }
-
-      if (facilityIds.isEmpty || facilityIds.first.isEmpty) return;
-      if (productVariantIds.isEmpty) return;
-
-      // Calculate balance for each facility × product variant combination
-      for (final facilityId in facilityIds) {
-        for (final productVariantId in productVariantIds) {
-          // Get all stocks for this facility and product
-          final receivedStocks = await stockLocalRepository.search(
-            StockSearchModel(receiverId: facilityId),
-          );
-          final sentStocks = await stockLocalRepository.search(
-            StockSearchModel(senderId: facilityId),
-          );
-
-          final allStocksMap = <String, StockModel>{};
-          for (final stock in receivedStocks) {
-            if (stock.productVariantId == productVariantId) {
-              allStocksMap[stock.clientReferenceId] = stock;
-            }
-          }
-          for (final stock in sentStocks) {
-            if (stock.productVariantId == productVariantId) {
-              allStocksMap[stock.clientReferenceId] = stock;
-            }
-          }
-          final allStocks = allStocksMap.values.toList();
-
-          // Calculate the balance
-          final metrics = StockCalculationUtils.calculateStockMetrics(
-            stockList: allStocks,
-            facilityId: facilityId,
-            productId: productVariantId,
-            isDistributor: isDistributor,
-          );
-
-          final balance = metrics['stockInHand'] ?? 0.0;
-          final balanceKey = generateBalanceKey(facilityId, productVariantId,
-              project.referenceID, userObject?.id);
-
-          // Check if UserAction already exists
-          final existingActions = await userActionLocalRepository.search(
-            UserActionSearchModel(clientReferenceId: [balanceKey]),
-          );
-
-          final now = DateTime.now().millisecondsSinceEpoch;
-          final loggedInUserUuid = userObject?.uuid ?? '';
-
-          final balanceAction = UserActionModel(
-            clientReferenceId: balanceKey,
-            action: 'STOCK_BALANCE',
-            projectId: project.id,
-            boundaryCode: project.address?.boundary ?? "",
-            latitude: 0.0,
-            longitude: 0.0,
-            locationAccuracy: 0.0,
-            isSync: false,
-            timestamp: now,
-            id: existingActions.isNotEmpty ? existingActions.first.id : null,
-            rowVersion: existingActions.isNotEmpty
-                ? existingActions.first.rowVersion
-                : null,
-            tenantId: userObject?.tenantId ?? '',
-            nonRecoverableError: false,
-            additionalFields: UserActionAdditionalFields(
-              version: 1,
-              fields: [
-                AdditionalField('balance', balance.toString()),
-                AdditionalField('facilityId', facilityId),
-                AdditionalField('productVariantId', productVariantId),
-              ],
-            ),
-            auditDetails: existingActions.isNotEmpty
-                ? existingActions.first.auditDetails
-                : AuditDetails(createdBy: loggedInUserUuid, createdTime: now),
-            clientAuditDetails: existingActions.isNotEmpty
-                ? existingActions.first.clientAuditDetails
-                : ClientAuditDetails(
-                    createdBy: loggedInUserUuid,
-                    createdTime: now,
-                    lastModifiedBy: loggedInUserUuid,
-                    lastModifiedTime: now,
-                  ),
-          );
-
-          /// INFO: need to revisit as user action is getting create and update to server also
-          if (existingActions.isNotEmpty) {
-            await userActionLocalRepository.update(
-              balanceAction,
-              createOpLog: true,
-            );
-          } else {
-            await userActionLocalRepository.create(
-              balanceAction,
-              createOpLog: true,
-            );
-          }
-
-          debugPrint(
-              'STOCK_BALANCE_INIT: Created/updated balance for $facilityId/$productVariantId = $balance');
-        }
-      }
-    } catch (e) {
-      debugPrint('STOCK_BALANCE_INIT: Error - $e');
     }
   }
 

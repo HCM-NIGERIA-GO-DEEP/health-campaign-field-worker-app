@@ -50,4 +50,10 @@ class AppSharedPreferences {
       localeString,
     );
   }
+
+  int? getStockDownsyncTime(String key) => sharedPreferences.getInt(key);
+
+  Future<void> setStockDownsyncTime(String key, int value) async {
+    await sharedPreferences.setInt(key, value);
+  }
 }

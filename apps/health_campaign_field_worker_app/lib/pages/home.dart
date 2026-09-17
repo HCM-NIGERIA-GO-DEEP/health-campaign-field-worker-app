@@ -48,6 +48,9 @@ import '../data/repositories/local/localization.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../data/local_store/no_sql/schema/service_registry.dart';
 import '../data/local_store/secure_store/secure_store.dart';
+import '../data/remote_client.dart';
+import '../data/repositories/summary_report_remote_repository.dart';
+import '../data/services/server_summary_report_service.dart';
 import '../models/entities/roles_type.dart';
 import '../router/app_router.dart';
 import '../sampleJsonConfigs/attendance_flows.dart';
@@ -109,6 +112,38 @@ class _HomePageState extends LocalizedState<HomePage> {
   final StreamController<double> stockDownloadProgress =
       StreamController<double>.broadcast();
 
+  Future<void> _refreshSummaryReportAfterSync() async {
+    try {
+      final project = context.selectedProject;
+      final currentCycle = context.selectedCycle;
+      final userUuid = context.loggedInUserUuid;
+
+      if (project.id.isEmpty || currentCycle == null || userUuid.isEmpty) {
+        return;
+      }
+
+      final reports = await SummaryReportRemoteRepository(
+        DioClient().dio,
+        searchPath: envConfig.variables.summaryReportApiPath,
+      ).search(
+        tenantId: envConfig.variables.tenantId,
+        startDate: currentCycle.startDate,
+        endDate: DateTime.now().millisecondsSinceEpoch,
+      );
+
+      await context.read<ServerSummaryReportService>().syncSummaryReports(
+            userUuid: userUuid,
+            projectId: project.id,
+            currentCycle: currentCycle,
+            reports: reports,
+          );
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('Summary report refresh after sync failed: $e');
+      }
+    }
+  }
+
   @override
   initState() {
     super.initState();
@@ -139,6 +174,7 @@ class _HomePageState extends LocalizedState<HomePage> {
     });
     //// Function to set initial Data required for the packages to run
     setPackagesSingleton(context);
+    unawaited(_initializeServerSummaryReportService());
 
     // Register custom components for forms
     _registerCustomComponents();
@@ -148,6 +184,27 @@ class _HomePageState extends LocalizedState<HomePage> {
     if (FaceAuthFeatureFlag.enabled) {
       _checkFaceEnrollment();
     }
+  }
+
+  Future<void> _initializeServerSummaryReportService() async {
+    try {
+      final summaryReportService = context.read<ServerSummaryReportService>();
+
+      final userUuid = context.loggedInUserUuid;
+      final projectId = context.projectId;
+
+      final selectedCycle = context.selectedCycle;
+
+      if (selectedCycle == null) {
+        return;
+      }
+
+      await summaryReportService.initializeForContext(
+        userUuid: userUuid,
+        projectId: projectId,
+        currentCycle: selectedCycle,
+      );
+    } catch (_) {}
   }
 
   /// Face-auth gate: if the logged-in distributor hasn't enrolled a face (or
@@ -1798,6 +1855,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                       }
                     },
                     completedSync: () async {
+                      await _refreshSummaryReportAfterSync();
                       Navigator.of(context, rootNavigator: true).pop();
                       await localSecureStore.setManualSyncTrigger(true);
                       if (context.mounted) {
@@ -2806,7 +2864,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-inventory-${context.selectedProject.referenceID}';
+                'hcm-inventory-${context.selectedProject.referenceID},hcm-inventory';
             await triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
@@ -3128,7 +3186,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             );
 
             final moduleName =
-                'hcm-stockreconciliation-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
+                'hcm-stockreconciliation-${context.selectedProject.referenceID},hcm-inventory,hcm-inventory-${context.selectedProject.referenceID}';
             await triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
@@ -3314,7 +3372,7 @@ class _HomePageState extends LocalizedState<HomePage> {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
                 final moduleName =
-                    'hcm-hfreferral-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}';
+                    'hcm-hfreferral-${context.selectedProject.referenceID},hcm-inventory,hcm-inventory-${context.selectedProject.referenceID},hcm-boundary-${envConfig.variables.hierarchyType.toLowerCase()}';
                 await triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
@@ -3410,7 +3468,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                     code: LeastLevelBoundarySingleton().boundary?.first));
 
             final moduleName =
-                'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
+                'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory,hcm-inventory-${context.selectedProject.referenceID}';
             await triggerLocalization(module: moduleName);
             isTriggerLocalisation = false;
 
@@ -3742,7 +3800,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home
           .beneficiaryIdLabel, // TODO: Uncomment when beneficiary downsync is implemented
       if (FaceAuthFeatureFlag.enabled) i18.home.faceRegistrationLabel,
-      i18.home.dataShare,
+      // i18.home.dataShare,
       i18.home.stockSyncDataLabel,
       i18.home.summaryReportLabel,
       i18.home.db,
