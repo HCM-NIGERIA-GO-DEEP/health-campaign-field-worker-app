@@ -301,6 +301,87 @@ void main() {
     });
   });
 
+  group('proximity', () {
+    /// Roughly 1 km apart at this latitude.
+    const nearLat = 9.0500, nearLon = 7.4900;
+    const sameSpotLat = 9.0500, sameSpotLon = 7.4901;
+    const farLat = 9.0590, farLon = 7.4900;
+
+    Map<String, dynamic> at(double lat, double lon) => {
+          'givenName': 'Musa',
+          'familyName': 'Ibrahim',
+          'latitude': lat,
+          'longitude': lon,
+        };
+
+    test('being nearby raises the score, being far lowers it', () {
+      final service = MatchingService();
+
+      final near = service.computeScore(
+          at(nearLat, nearLon), at(sameSpotLat, sameSpotLon));
+      final far =
+          service.computeScore(at(nearLat, nearLon), at(farLat, farLon));
+      final noLocation = service.computeScore(
+        {'givenName': 'Musa', 'familyName': 'Ibrahim'},
+        {'givenName': 'Musa', 'familyName': 'Ibrahim'},
+      );
+
+      expect(near, greaterThan(far),
+          reason: 'co-located records should outscore distant ones');
+      // Identical names, so proximity is the only thing that can move this.
+      expect(near, closeTo(noLocation, 1e-9),
+          reason: 'co-located adds no doubt');
+      expect(far, lessThan(noLocation),
+          reason: 'distance should cost confidence');
+    });
+
+    test('a wider radius keeps distant records in contention', () {
+      final tight = MatchingService(proximityMaxDistanceMeters: 500);
+      final wide = MatchingService(proximityMaxDistanceMeters: 5000);
+
+      final probe = at(nearLat, nearLon);
+      final other = at(farLat, farLon);
+
+      expect(wide.computeScore(probe, other),
+          greaterThan(tight.computeScore(probe, other)),
+          reason: 'a rural radius should penalise the same gap less');
+    });
+
+    test('proximity alone cannot carry a match', () {
+      // Same place, different people: location must not outvote the names.
+      final matches = DedupEngine().findMatchesFor(
+        {
+          'givenName': 'Musa',
+          'familyName': 'Ibrahim',
+          'latitude': nearLat,
+          'longitude': nearLon,
+        },
+        [
+          {
+            'givenName': 'Aminatou',
+            'familyName': 'Bello',
+            'latitude': sameSpotLat,
+            'longitude': sameSpotLon,
+            'id': 'other',
+          }
+        ],
+      );
+      expect(matches, isEmpty);
+    });
+
+    test('a co-located pair scores 1.0 on proximity', () {
+      final scores = MatchingService().computeAttributeScores(
+          at(nearLat, nearLon), at(sameSpotLat, sameSpotLon));
+      expect(scores['gpsProximity'], 1.0);
+    });
+
+    test('beyond the radius scores 0.0, not a negative', () {
+      final scores = MatchingService(proximityMaxDistanceMeters: 100)
+          .computeAttributeScores(at(nearLat, nearLon), at(farLat, farLon));
+      expect(scores['gpsProximity'], 0.0);
+    });
+  });
+
   group('absent attributes', () {
     final service = MatchingService();
 

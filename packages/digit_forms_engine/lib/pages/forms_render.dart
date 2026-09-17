@@ -124,14 +124,31 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     final checkFn = DedupCheckRegistry().checkFn;
     if (checkFn == null) return DedupCheckOutcome.proceed;
 
+    // A mapped field may live on an earlier page of the same flow -- the
+    // location fix is captured before these details -- in which case it is
+    // not in this page's form group and has to come from the cached schema.
+    final cachedSchema =
+        context.read<FormsBloc>().state.cachedSchemas[widget.currentSchemaKey];
+
+    dynamic readField(String fieldName) {
+      if (formGroup.contains(fieldName)) {
+        return formGroup.control(fieldName).value;
+      }
+
+      final pages = cachedSchema?.pages.values ?? const <PropertySchema>[];
+      for (final page in pages) {
+        final property = page.properties?[fieldName];
+        if (property?.value != null) return property!.value;
+      }
+      return null;
+    }
+
     // Required fields: each has to carry enough text to score against, since
     // a single character would be similar to almost anything. A blank one
     // means there is nothing to match on, so the check is skipped.
     final formValues = <String, dynamic>{};
     for (final fieldName in config.fields.values) {
-      if (!formGroup.contains(fieldName)) return DedupCheckOutcome.proceed;
-
-      final value = formGroup.control(fieldName).value;
+      final value = readField(fieldName);
       if (value == null) return DedupCheckOutcome.proceed;
 
       final asText = value.toString().trim();
@@ -146,9 +163,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     // than cancelling the check. The matcher ignores an attribute that is
     // absent on either side, so an empty one costs nothing.
     for (final fieldName in config.optionalFields.values) {
-      if (!formGroup.contains(fieldName)) continue;
-
-      final value = formGroup.control(fieldName).value;
+      final value = readField(fieldName);
       if (value == null) continue;
       if (value.toString().trim().isEmpty) continue;
 

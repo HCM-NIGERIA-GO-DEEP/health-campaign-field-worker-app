@@ -392,6 +392,15 @@ class DedupCheck with _$DedupCheck {
     /// Hard cap on corpus rows loaded into memory for scoring.
     @JsonKey(fromJson: _intOrNull) int? maxCandidates,
 
+    /// Distance in metres at which proximity stops contributing.
+    ///
+    /// Nearby records score higher and distant ones lower, so this sets how
+    /// far apart two records can be and still count as evidence of the same
+    /// household. The 500 m default suits a dense settlement; widen it
+    /// somewhere rural or every pair scores zero and proximity stops
+    /// discriminating.
+    @JsonKey(fromJson: _doubleOrNull) double? proximityRadiusMeters,
+
     /// Whether the check is skipped while editing an existing record, which
     /// would otherwise match itself.
     @Default(true) bool skipOnEdit,
@@ -413,6 +422,10 @@ class DedupCheck with _$DedupCheck {
   static const int defaultMinFieldLength = 2;
   static const int defaultMaxCandidates = 5000;
 
+  /// Matches `GpsUtils.defaultMaxDistanceMeters`, restated here so this
+  /// package need not depend on the engine.
+  static const double defaultProximityRadiusMeters = 500.0;
+
   double get effectiveMatchThreshold =>
       matchThreshold ?? defaultMatchThreshold;
 
@@ -421,6 +434,9 @@ class DedupCheck with _$DedupCheck {
   int get effectiveMinFieldLength => minFieldLength ?? defaultMinFieldLength;
 
   int get effectiveMaxCandidates => maxCandidates ?? defaultMaxCandidates;
+
+  double get effectiveProximityRadiusMeters =>
+      proximityRadiusMeters ?? defaultProximityRadiusMeters;
 }
 
 /// A scoping filter on the corpus a [DedupCheck] searches.

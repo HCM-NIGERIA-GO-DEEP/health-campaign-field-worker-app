@@ -85,6 +85,9 @@ dependencies:
 
 dev_dependencies:
   digit_dedup_engine: ^0.0.1-dev
+  # Used only by test/performance to open a real database off-device.
+  path_provider_platform_interface: ^2.1.0
+  sqlite3: ^2.4.0
   flutter_test:
     sdk: flutter
   integration_test:

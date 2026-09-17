@@ -59,8 +59,19 @@ class MatchingService {
 
   final Map<String, double> weights;
 
-  MatchingService({Map<String, double>? weights})
-      : weights = weights ?? defaultWeights;
+  /// Distance at which [GpsUtils.proximityScore] reaches 0.0.
+  ///
+  /// The default suits a dense settlement. Somewhere rural, where neighbouring
+  /// households are legitimately further apart than this, every pair scores
+  /// 0.0 on proximity and the attribute stops discriminating -- widen it to
+  /// match how far apart two records can plausibly be and still be the same
+  /// household.
+  final double proximityMaxDistanceMeters;
+
+  MatchingService({
+    Map<String, double>? weights,
+    this.proximityMaxDistanceMeters = GpsUtils.defaultMaxDistanceMeters,
+  }) : weights = weights ?? defaultWeights;
 
   /// Compute weighted similarity score between two records.
   /// Returns a value between 0.0 (no match) and 1.0 (perfect match).
@@ -241,7 +252,13 @@ class MatchingService {
     if (lat1 == null || lon1 == null || lat2 == null || lon2 == null) {
       return null;
     }
-    return GpsUtils.proximityScore(lat1, lon1, lat2, lon2);
+    return GpsUtils.proximityScore(
+      lat1,
+      lon1,
+      lat2,
+      lon2,
+      maxDistanceMeters: proximityMaxDistanceMeters,
+    );
   }
 
   /// The forms a name value should be compared through, or null when there is

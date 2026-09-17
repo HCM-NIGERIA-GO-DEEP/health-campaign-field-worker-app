@@ -4852,6 +4852,16 @@ mixin _$DedupCheck {
   @JsonKey(fromJson: _intOrNull)
   int? get maxCandidates => throw _privateConstructorUsedError;
 
+  /// Distance in metres at which proximity stops contributing.
+  ///
+  /// Nearby records score higher and distant ones lower, so this sets how
+  /// far apart two records can be and still count as evidence of the same
+  /// household. The 500 m default suits a dense settlement; widen it
+  /// somewhere rural or every pair scores zero and proximity stops
+  /// discriminating.
+  @JsonKey(fromJson: _doubleOrNull)
+  double? get proximityRadiusMeters => throw _privateConstructorUsedError;
+
   /// Whether the check is skipped while editing an existing record, which
   /// would otherwise match itself.
   bool get skipOnEdit => throw _privateConstructorUsedError;
@@ -4885,6 +4895,7 @@ abstract class $DedupCheckCopyWith<$Res> {
       @JsonKey(fromJson: _intOrNull) int? maxResults,
       @JsonKey(fromJson: _intOrNull) int? minFieldLength,
       @JsonKey(fromJson: _intOrNull) int? maxCandidates,
+      @JsonKey(fromJson: _doubleOrNull) double? proximityRadiusMeters,
       bool skipOnEdit,
       String? backToSearchPage,
       @JsonKey(fromJson: _dedupAlertPopUpOrNull)
@@ -4914,6 +4925,7 @@ class _$DedupCheckCopyWithImpl<$Res, $Val extends DedupCheck>
     Object? maxResults = freezed,
     Object? minFieldLength = freezed,
     Object? maxCandidates = freezed,
+    Object? proximityRadiusMeters = freezed,
     Object? skipOnEdit = null,
     Object? backToSearchPage = freezed,
     Object? dedupAlertPopUp = freezed,
@@ -4951,6 +4963,10 @@ class _$DedupCheckCopyWithImpl<$Res, $Val extends DedupCheck>
           ? _value.maxCandidates
           : maxCandidates // ignore: cast_nullable_to_non_nullable
               as int?,
+      proximityRadiusMeters: freezed == proximityRadiusMeters
+          ? _value.proximityRadiusMeters
+          : proximityRadiusMeters // ignore: cast_nullable_to_non_nullable
+              as double?,
       skipOnEdit: null == skipOnEdit
           ? _value.skipOnEdit
           : skipOnEdit // ignore: cast_nullable_to_non_nullable
@@ -4996,6 +5012,7 @@ abstract class _$$DedupCheckImplCopyWith<$Res>
       @JsonKey(fromJson: _intOrNull) int? maxResults,
       @JsonKey(fromJson: _intOrNull) int? minFieldLength,
       @JsonKey(fromJson: _intOrNull) int? maxCandidates,
+      @JsonKey(fromJson: _doubleOrNull) double? proximityRadiusMeters,
       bool skipOnEdit,
       String? backToSearchPage,
       @JsonKey(fromJson: _dedupAlertPopUpOrNull)
@@ -5024,6 +5041,7 @@ class __$$DedupCheckImplCopyWithImpl<$Res>
     Object? maxResults = freezed,
     Object? minFieldLength = freezed,
     Object? maxCandidates = freezed,
+    Object? proximityRadiusMeters = freezed,
     Object? skipOnEdit = null,
     Object? backToSearchPage = freezed,
     Object? dedupAlertPopUp = freezed,
@@ -5061,6 +5079,10 @@ class __$$DedupCheckImplCopyWithImpl<$Res>
           ? _value.maxCandidates
           : maxCandidates // ignore: cast_nullable_to_non_nullable
               as int?,
+      proximityRadiusMeters: freezed == proximityRadiusMeters
+          ? _value.proximityRadiusMeters
+          : proximityRadiusMeters // ignore: cast_nullable_to_non_nullable
+              as double?,
       skipOnEdit: null == skipOnEdit
           ? _value.skipOnEdit
           : skipOnEdit // ignore: cast_nullable_to_non_nullable
@@ -5092,6 +5114,7 @@ class _$DedupCheckImpl extends _DedupCheck {
       @JsonKey(fromJson: _intOrNull) this.maxResults,
       @JsonKey(fromJson: _intOrNull) this.minFieldLength,
       @JsonKey(fromJson: _intOrNull) this.maxCandidates,
+      @JsonKey(fromJson: _doubleOrNull) this.proximityRadiusMeters,
       this.skipOnEdit = true,
       this.backToSearchPage,
       @JsonKey(fromJson: _dedupAlertPopUpOrNull) this.dedupAlertPopUp})
@@ -5193,6 +5216,17 @@ class _$DedupCheckImpl extends _DedupCheck {
   @JsonKey(fromJson: _intOrNull)
   final int? maxCandidates;
 
+  /// Distance in metres at which proximity stops contributing.
+  ///
+  /// Nearby records score higher and distant ones lower, so this sets how
+  /// far apart two records can be and still count as evidence of the same
+  /// household. The 500 m default suits a dense settlement; widen it
+  /// somewhere rural or every pair scores zero and proximity stops
+  /// discriminating.
+  @override
+  @JsonKey(fromJson: _doubleOrNull)
+  final double? proximityRadiusMeters;
+
   /// Whether the check is skipped while editing an existing record, which
   /// would otherwise match itself.
   @override
@@ -5211,7 +5245,7 @@ class _$DedupCheckImpl extends _DedupCheck {
 
   @override
   String toString() {
-    return 'DedupCheck(fields: $fields, optionalFields: $optionalFields, model: $model, filters: $filters, matchThreshold: $matchThreshold, maxResults: $maxResults, minFieldLength: $minFieldLength, maxCandidates: $maxCandidates, skipOnEdit: $skipOnEdit, backToSearchPage: $backToSearchPage, dedupAlertPopUp: $dedupAlertPopUp)';
+    return 'DedupCheck(fields: $fields, optionalFields: $optionalFields, model: $model, filters: $filters, matchThreshold: $matchThreshold, maxResults: $maxResults, minFieldLength: $minFieldLength, maxCandidates: $maxCandidates, proximityRadiusMeters: $proximityRadiusMeters, skipOnEdit: $skipOnEdit, backToSearchPage: $backToSearchPage, dedupAlertPopUp: $dedupAlertPopUp)';
   }
 
   @override
@@ -5232,6 +5266,8 @@ class _$DedupCheckImpl extends _DedupCheck {
                 other.minFieldLength == minFieldLength) &&
             (identical(other.maxCandidates, maxCandidates) ||
                 other.maxCandidates == maxCandidates) &&
+            (identical(other.proximityRadiusMeters, proximityRadiusMeters) ||
+                other.proximityRadiusMeters == proximityRadiusMeters) &&
             (identical(other.skipOnEdit, skipOnEdit) ||
                 other.skipOnEdit == skipOnEdit) &&
             (identical(other.backToSearchPage, backToSearchPage) ||
@@ -5252,6 +5288,7 @@ class _$DedupCheckImpl extends _DedupCheck {
       maxResults,
       minFieldLength,
       maxCandidates,
+      proximityRadiusMeters,
       skipOnEdit,
       backToSearchPage,
       dedupAlertPopUp);
@@ -5282,6 +5319,7 @@ abstract class _DedupCheck extends DedupCheck {
       @JsonKey(fromJson: _intOrNull) final int? maxResults,
       @JsonKey(fromJson: _intOrNull) final int? minFieldLength,
       @JsonKey(fromJson: _intOrNull) final int? maxCandidates,
+      @JsonKey(fromJson: _doubleOrNull) final double? proximityRadiusMeters,
       final bool skipOnEdit,
       final String? backToSearchPage,
       @JsonKey(fromJson: _dedupAlertPopUpOrNull)
@@ -5344,6 +5382,17 @@ abstract class _DedupCheck extends DedupCheck {
   /// Hard cap on corpus rows loaded into memory for scoring.
   @JsonKey(fromJson: _intOrNull)
   int? get maxCandidates;
+  @override
+
+  /// Distance in metres at which proximity stops contributing.
+  ///
+  /// Nearby records score higher and distant ones lower, so this sets how
+  /// far apart two records can be and still count as evidence of the same
+  /// household. The 500 m default suits a dense settlement; widen it
+  /// somewhere rural or every pair scores zero and proximity stops
+  /// discriminating.
+  @JsonKey(fromJson: _doubleOrNull)
+  double? get proximityRadiusMeters;
   @override
 
   /// Whether the check is skipped while editing an existing record, which

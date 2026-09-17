@@ -22,6 +22,12 @@ class GpsUtils {
     return earthRadiusMeters * c;
   }
 
+  /// Distance beyond which two records share no proximity evidence.
+  static const double defaultMaxDistanceMeters = 1500.0;
+
+  /// Distance within which two records are treated as co-located.
+  static const double coLocatedMeters = 50.0;
+
   /// Convert GPS distance to a similarity score (0.0 to 1.0).
   /// Records within 50m get score 1.0, decaying to 0.0 at maxDistanceMeters.
   static double proximityScore(
@@ -29,12 +35,13 @@ class GpsUtils {
     double lon1,
     double lat2,
     double lon2, {
-    double maxDistanceMeters = 500.0,
+    double maxDistanceMeters = defaultMaxDistanceMeters,
   }) {
     final distance = haversineDistance(lat1, lon1, lat2, lon2);
-    if (distance <= 50) return 1.0;
+    if (distance <= coLocatedMeters) return 1.0;
     if (distance >= maxDistanceMeters) return 0.0;
-    return 1.0 - ((distance - 50) / (maxDistanceMeters - 50));
+    return 1.0 -
+        ((distance - coLocatedMeters) / (maxDistanceMeters - coLocatedMeters));
   }
 
   static double _toRadians(double degrees) => degrees * pi / 180;

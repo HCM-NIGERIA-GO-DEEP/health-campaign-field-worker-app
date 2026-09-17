@@ -156,6 +156,14 @@ class DedupCheckUtils {
         if (value == null) return;
         final asText = value.toString().trim();
         if (asText.isEmpty) return;
+
+        // One control holds both coordinates, so it expands into the two
+        // attributes the matcher reads rather than becoming one of its own.
+        if (attribute == coordinateAttribute) {
+          probe.addAll(splitCoordinates(asText));
+          return;
+        }
+
         probe[attribute] = asText;
       });
     }
@@ -236,8 +244,12 @@ class DedupCheckUtils {
     debugPrint('DedupCheckUtils: scoring against ${corpus.length} candidates');
     if (corpus.isEmpty) return const [];
 
-    return DedupEngine(matchThreshold: config.effectiveMatchThreshold)
-        .findMatchesFor(
+    return DedupEngine(
+      matchThreshold: config.effectiveMatchThreshold,
+      matchingService: MatchingService(
+        proximityMaxDistanceMeters: config.effectiveProximityRadiusMeters,
+      ),
+    ).findMatchesFor(
       probe,
       corpus,
       maxResults: config.effectiveMaxResults,
@@ -272,6 +284,7 @@ class DedupCheckUtils {
         // Nullable on the model and optional on the form; the matcher skips
         // it unless both sides have one.
         'mobileNumber': entity.mobileNumber,
+        ...coordinatesOf(entity),
         DedupRecordKeys.displayName: nameParts.join(' '),
         DedupRecordKeys.beneficiaryId: beneficiaryIdOf(entity),
         DedupRecordKeys.clientReferenceId: entity.clientReferenceId,
@@ -279,6 +292,42 @@ class DedupCheckUtils {
     }
 
     return corpus;
+  }
+
+  /// Engine attribute that accepts a combined `"lat,lng[,accuracy]"` string,
+  /// which is how the form's `latLng` control stores a fix.
+  static const String coordinateAttribute = 'latLng';
+
+  /// The individual's recorded position, keyed as the matcher expects.
+  ///
+  /// Returns an empty map when no address carries a fix, so proximity is
+  /// simply absent rather than scored against a missing location.
+  static Map<String, dynamic> coordinatesOf(IndividualModel individual) {
+    for (final address in individual.address ?? const <AddressModel>[]) {
+      final latitude = address.latitude;
+      final longitude = address.longitude;
+      if (latitude == null || longitude == null) continue;
+      return {'latitude': latitude, 'longitude': longitude};
+    }
+    return const {};
+  }
+
+  /// Splits a combined `"lat,lng[,accuracy]"` value into the two attributes
+  /// the matcher reads.
+  ///
+  /// Returns an empty map for anything unparseable, so a partial or malformed
+  /// fix drops out instead of scoring against a wrong position.
+  static Map<String, dynamic> splitCoordinates(dynamic value) {
+    if (value == null) return const {};
+
+    final parts = value.toString().split(',');
+    if (parts.length < 2) return const {};
+
+    final latitude = double.tryParse(parts[0].trim());
+    final longitude = double.tryParse(parts[1].trim());
+    if (latitude == null || longitude == null) return const {};
+
+    return {'latitude': latitude, 'longitude': longitude};
   }
 
   /// The individual's beneficiary ID, or null when they have not been issued

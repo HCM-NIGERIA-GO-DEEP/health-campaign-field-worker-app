@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:digit_flow_builder/utils/utils.dart';
+import 'package:digit_data_model/data_model.dart';
+import 'package:digit_flow_builder/utils/dedup_check_utils.dart';
 import 'package:digit_forms_engine/forms_engine.dart';
 import 'package:digit_ui_components/constants/icon_mapping.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -88,6 +90,54 @@ void main() {
     });
   });
 
+  group('coordinate plumbing', () {
+    test('splits a combined lat,lng fix', () {
+      expect(DedupCheckUtils.splitCoordinates('9.05,7.49'),
+          {'latitude': 9.05, 'longitude': 7.49});
+      // The control appends accuracy as a third part.
+      expect(DedupCheckUtils.splitCoordinates('9.05,7.49,12.5'),
+          {'latitude': 9.05, 'longitude': 7.49});
+      expect(DedupCheckUtils.splitCoordinates(' 9.05 , 7.49 '),
+          {'latitude': 9.05, 'longitude': 7.49});
+    });
+
+    test('drops a fix it cannot parse rather than guessing', () {
+      // A wrong position is worse than no position: it would score proximity
+      // against somewhere the household is not.
+      for (final bad in [null, '', '9.05', 'north,east', ',', '9.05,']) {
+        expect(DedupCheckUtils.splitCoordinates(bad), isEmpty,
+            reason: 'input: ${bad ?? "null"}');
+      }
+    });
+
+    test('reads coordinates off the first address that has them', () {
+      final individual = IndividualModel(
+        clientReferenceId: 'ref',
+        address: [
+          AddressModel(id: 'a1'),
+          AddressModel(id: 'a2', latitude: 9.05, longitude: 7.49),
+        ],
+      );
+      expect(DedupCheckUtils.coordinatesOf(individual),
+          {'latitude': 9.05, 'longitude': 7.49});
+    });
+
+    test('omits coordinates when no address carries a fix', () {
+      expect(
+        DedupCheckUtils.coordinatesOf(IndividualModel(
+          clientReferenceId: 'ref',
+          address: [AddressModel(id: 'a1')],
+        )),
+        isEmpty,
+      );
+      expect(
+        DedupCheckUtils.coordinatesOf(
+            IndividualModel(clientReferenceId: 'ref')),
+        isEmpty,
+      );
+    });
+  });
+
   group('bundled REGISTRATION.json', () {
     setUp(() {
       if (!_registrationConfig.existsSync()) {
@@ -147,15 +197,57 @@ void main() {
       // The field exists and is visible, so a user can fill it -- but the
       // form does not force them to, which is the premise for treating it as
       // optional here.
-      // Every mapped field must exist on the page, required or not.
-      final properties = schema.properties!;
+      // Every mapped field must exist and be visible somewhere in the flow.
+      // Not necessarily on this page: forms_render reads across pages, which
+      // is how the location fix captured on beneficiaryLocation reaches the
+      // check that runs on beneficiaryDetails.
+      final flowPages = (_flow('HOUSEHOLD')['pages'] as List)
+          .cast<Map<String, dynamic>>();
+      final everyProperty = <String, PropertySchema>{};
+      for (final page in flowPages) {
+        final pages = transformJson({
+          'name': 'HOUSEHOLD',
+          'version': 1,
+          'pages': [page],
+        })['pages'] as Map<String, dynamic>;
+        final parsed =
+            PropertySchema.fromJson(pages.values.first as Map<String, dynamic>);
+        everyProperty.addAll(parsed.properties ?? const {});
+      }
+
       for (final mapped in [
         ...dedup.fields.values,
         ...dedup.optionalFields.values,
       ]) {
-        expect(properties.keys, contains(mapped), reason: mapped);
-        expect(properties[mapped]!.hidden, isNot(isTrue), reason: mapped);
+        expect(everyProperty.keys, contains(mapped), reason: mapped);
+        expect(everyProperty[mapped]!.hidden, isNot(isTrue), reason: mapped);
       }
+    });
+
+    test('proximity is wired from a page that runs earlier', () {
+      if (!_hasDedupBlock()) return;
+
+      final dedup = _page('HOUSEHOLD', 'beneficiaryDetails').dedupCheck!;
+
+      // Optional, because a fix may be unavailable indoors and the matcher
+      // skips proximity unless both sides have one.
+      expect(dedup.optionalFields[DedupCheckUtils.coordinateAttribute],
+          'latLng');
+      expect(dedup.effectiveProximityRadiusMeters, 500);
+
+      // The control lives on beneficiaryLocation, so forms_render has to read
+      // it across pages -- and that page must come first or the value is not
+      // captured yet.
+      final flow = _flow('HOUSEHOLD');
+      final orders = {
+        for (final page in (flow['pages'] as List).cast<Map<String, dynamic>>())
+          page['page'] as String: page['order'] as int,
+      };
+      expect(orders['beneficiaryLocation']!,
+          lessThan(orders['beneficiaryDetails']!));
+
+      final locationPage = _page('HOUSEHOLD', 'beneficiaryLocation');
+      expect(locationPage.properties!.keys, contains('latLng'));
     });
 
     test('the back-to-search target is a flow in the config', () {

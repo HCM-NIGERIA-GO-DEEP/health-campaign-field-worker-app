@@ -497,6 +497,7 @@ _$DedupCheckImpl _$$DedupCheckImplFromJson(Map<String, dynamic> json) =>
       maxResults: _intOrNull(json['maxResults']),
       minFieldLength: _intOrNull(json['minFieldLength']),
       maxCandidates: _intOrNull(json['maxCandidates']),
+      proximityRadiusMeters: _doubleOrNull(json['proximityRadiusMeters']),
       skipOnEdit: json['skipOnEdit'] as bool? ?? true,
       backToSearchPage: json['backToSearchPage'] as String?,
       dedupAlertPopUp: _dedupAlertPopUpOrNull(json['dedupAlertPopUp']),
@@ -520,6 +521,7 @@ Map<String, dynamic> _$$DedupCheckImplToJson(_$DedupCheckImpl instance) {
   writeNotNull('maxResults', instance.maxResults);
   writeNotNull('minFieldLength', instance.minFieldLength);
   writeNotNull('maxCandidates', instance.maxCandidates);
+  writeNotNull('proximityRadiusMeters', instance.proximityRadiusMeters);
   val['skipOnEdit'] = instance.skipOnEdit;
   writeNotNull('backToSearchPage', instance.backToSearchPage);
   writeNotNull('dedupAlertPopUp', instance.dedupAlertPopUp?.toJson());
