@@ -417,8 +417,19 @@ class FlowCrudBloc extends CrudBloc {
 
     final registrationTypes = types.where(_registrationEntityTypes.contains);
     if (registrationTypes.isNotEmpty) {
+      // Firebase Analytics event parameters only accept String/num values —
+      // a List is rejected outright (an assert in debug, an
+      // `Unsupported value type` PlatformException in release), which would
+      // make this event permanently unsendable. Join into a single param
+      // instead, and keep it inside the 100-character parameter limit.
+      final entityTypes = (registrationTypes.map((t) => t.toString()).toList()
+            ..sort())
+          .join(',');
       AnalyticsService.instance.logEvent('registration_complete', {
-        'entity_types': registrationTypes.map((t) => t.toString()).toList(),
+        'entity_types': entityTypes.length > 100
+            ? entityTypes.substring(0, 100)
+            : entityTypes,
+        'entity_type_count': registrationTypes.length,
       });
     }
 
