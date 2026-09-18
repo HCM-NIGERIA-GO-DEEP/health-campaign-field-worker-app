@@ -55,6 +55,49 @@ screenshot and device log show exactly what broke. Minutes per run, zero cost.
 
 Make this a habit: **no APK leaves your machine without a green run.**
 
+**From Git Bash instead of PowerShell:** `run-maestro.ps1` is a PowerShell script, so
+call it through `powershell.exe` (still from inside `qa/testkit`):
+
+```bash
+powershell.exe -ExecutionPolicy Bypass -File ./run-maestro.ps1 -Apk path/to/app-release.apk
+```
+
+(`-ExecutionPolicy Bypass` is only needed if your machine's default policy blocks
+unsigned scripts - harmless to always include.)
+
+### Running just one flow
+
+`-Flows` takes a **path** (not a bare flow name) - point it at one file:
+
+```powershell
+.\run-maestro.ps1 -Flows .maestro\smoke\09-hf-referral-create.yaml
+```
+
+```bash
+powershell.exe -ExecutionPolicy Bypass -File ./run-maestro.ps1 -Flows .maestro/smoke/09-hf-referral-create.yaml
+```
+
+Combine with `-Apk`/`-Serial` as usual. Leaving `-Flows` out runs everything under
+`.maestro\smoke\`. Gotcha: `--exclude-tags needs-logged-out` still applies even to an
+explicitly-named flow, so running `01-login-to-home` (or any other
+`needs-logged-out`-tagged flow) by itself also needs `-All`:
+
+```powershell
+.\run-maestro.ps1 -Flows .maestro\smoke\01-login-to-home.yaml -All
+```
+
+```bash
+powershell.exe -ExecutionPolicy Bypass -File ./run-maestro.ps1 -Flows .maestro/smoke/01-login-to-home.yaml -All
+```
+
+If `-Apk` needs to point at a path that only exists in Git Bash form (e.g.
+`/c/Users/you/Downloads/app.apk`), convert it first - PowerShell doesn't understand
+POSIX paths:
+
+```bash
+powershell.exe -ExecutionPolicy Bypass -File ./run-maestro.ps1 -Apk "$(cygpath -m /c/Users/you/Downloads/app.apk)"
+```
+
 ## QA workflow — testing an APK you received
 
 QA needs no AI tooling and never touches the app source — same 4-step setup
@@ -77,6 +120,23 @@ QA needs no AI tooling and never touches the app source — same 4-step setup
 | `00-app-launches` | smoke, safe | nothing | app starts and shows a known first screen |
 | `01-login-to-home` | smoke, needs-logged-out | logged-out app + maestro.env | full login → boundary selection → home |
 | `02-home-tiles` | smoke, needs-logged-in | a logged-in app | home shows Registration & Delivery, Sync Data, Manage Stock |
+| `03-register-household` | smoke, needs-logged-in | CDD user 1 | register a new household (TC-003) |
+| `04-add-child-member` | smoke, needs-logged-in | 03 (same run) | add an SMC-eligible child (TC-004) |
+| `05-deliver-smc` | smoke, needs-logged-in | 04 (same run) | deliver SMC to that child (TC-005) |
+| `06-search-household` | smoke, needs-logged-in | 03 (same run) | search finds the registered household (TC-006) |
+| `07-ineligible-routes-to-referral` | negative, needs-logged-in | 03 (same run) | a disqualifying checklist answer routes to Refer Beneficiary, not delivery (TC-007) |
+| `08-ineligible-child` | negative, needs-logged-in | 03 (same run) | the other disqualifying answer marks a child ineligible with no referral form (TC-007) |
+| `09-hf-referral-create` | smoke, needs-logged-in | CDD user 1 - standalone | create + view an HF Referral (TC-009) |
+| `10-stock-reports-cdd` | smoke, needs-logged-in | CDD user 1 - standalone | View Reports menu + role-gated facility filter, CDD side (TC-010) |
+| `11-stock-reports-warehouse-manager` | smoke, needs-logged-in | Warehouse Manager user - standalone | same, Warehouse Manager side (TC-010) |
+| `12-stock-reconciliation-cdd` | smoke, needs-logged-in | CDD user 1 - standalone | create a Stock Reconciliation record, CDD side (TC-011) |
+| `13-stock-reconciliation-warehouse-manager` | smoke, needs-logged-in | Warehouse Manager user - standalone | same, Warehouse Manager side (TC-011) |
+
+Flows 03-08 share one `RUN_STAMP`-named household within a single `run-maestro.ps1`
+invocation (03 registers it, 04-08 reuse it) - run them together, not individually,
+unless the household already exists from an earlier run in the same session. Every
+flow from 09 onward is standalone (own login/setup, no dependency on any other flow) -
+see the "Running just one flow" section above.
 
 - The default run **excludes** `needs-logged-out` (it would fail on an already
   logged-in device). Use `-All` after a fresh install.

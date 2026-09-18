@@ -101,17 +101,20 @@ tags:
       visible:
         id: "administrativeArea_input"
     commands:
-      - tapOn:
+      # CORRECTED 2026-09-10 (run 1504): despite HFREFERRAL.json's facilityDetails
+      # page declaring `"readOnly": false` for this field, on device it renders
+      # auto-filled from the selected boundary and is NOT actually clickable - the
+      # failure hierarchy showed
+      # `text="oy Isale ola Health Post Sepeteri.", clickable=false` on this exact
+      # node. The ORIGINAL version of this block tapped it, typed into it, and
+      # called hideKeyboard - since nothing was ever focusable, no IME opened, and
+      # that hideKeyboard fired as a BACK PRESS, popping the page back to
+      # referralInbox (explains why the NEXT step, tapping evaluationFacility,
+      # always failed - it wasn't a missing id, it was the wrong screen entirely).
+      # Fix: don't touch it - just confirm the auto-fill happened.
+      - assertVisible:
           id: "administrativeArea_input"
-      - inputText: "QATEST ${RUN_STAMP} AREA"
-      - runFlow:
-          when:
-            notVisible:
-              text: "QATEST ${RUN_STAMP} AREA"
-          commands:
-            - eraseText
-            - inputText: "QATEST ${RUN_STAMP} AREA"
-      - hideKeyboard
+          text: "(?s).*${HFREFERRAL_BOUNDARY_L1_VALUE}.*"
       # dateOfEvaluation is readOnly + systemDate (auto today's date) - no interaction.
       # evaluationFacility: app-registered custom dropdown (EvaluationKeyDropDown),
       # populated from this project's facilities - blind-pick the first option, the

@@ -99,11 +99,20 @@ appId: com.digit.hcm
     visible:
       text: "Submit"
     timeout: 20000
-# --- Boundary level 1 (mandatory - skipped only when the field already shows the value) ---
+# --- Boundary level 1 (mandatory - skipped only when the value already shows).
+# Treated like the multiselect levels below (assert by TEXT alone, then close the
+# panel), not like the old single-select-only version of this block - device-proven
+# 2026-09-10 (run 1308): this account's "Health Facility" level renders as a
+# MULTISELECT (chips "1 Selected" / the facility name / "Clear All"), so the value
+# lands on a sibling chip node, never merged into `boundary_<Label>`'s own
+# accessibilityText (that node keeps showing just the static label). Asserting
+# `id: boundary_<Label>, text: <value>` together therefore never matches on either
+# node and times out even though selection genuinely succeeded - same class of bug
+# as the CDD login's Community level. The outside-tap close is a documented no-op
+# when the panel already auto-closed (single-select), so this is safe either way. ---
 - runFlow:
     when:
       notVisible:
-        id: "boundary_${HFREFERRAL_BOUNDARY_L1_LABEL}"
         text: "(?s).*${HFREFERRAL_BOUNDARY_L1_VALUE}.*"
     commands:
       - tapOn:
@@ -122,8 +131,9 @@ appId: com.digit.hcm
           id: "option_.*"
           text: "(?s).*${HFREFERRAL_BOUNDARY_L1_VALUE}.*"
       - assertVisible:
-          id: "boundary_${HFREFERRAL_BOUNDARY_L1_LABEL}"
           text: "(?s).*${HFREFERRAL_BOUNDARY_L1_VALUE}.*"
+      - tapOn:
+          point: "21%,62%"
 # --- Boundary levels 2-5 (all optional - skipped whenever their LABEL var is empty;
 # leave unused deeper levels' LABEL empty in maestro.env, do not delete the lines) ---
 - runFlow:
@@ -271,25 +281,41 @@ appId: com.digit.hcm
           notVisible:
             text: "(?s).*${DOWNLOAD_PROGRESS}.*"
           timeout: 300000
-# "Data found!" popup - poll for its dismiss button on every pass
+# "Data found!" (Proceed Without Downloading/Download) OR "No data found!" (Go
+# Back) popup - poll for whichever one's dismiss button is showing on every pass.
+# Device-confirmed 2026-09-10 (run 1308 follow-up, HFREFERRAL_USERNAME's boundary had
+# no downloadable records for this module): "No data found! There are no new
+# records found for the selected boundary" -> "Go Back" does NOT return to boundary
+# selection - it dismisses straight to the home screen (all tiles visible),
+# skipping the "Go To Home Screen" button entirely. Both dialogs are optional/
+# mutually exclusive per pass, so both taps are safe no-ops when their dialog isn't
+# the one showing.
 - repeat:
     times: 18
     while:
       notVisible:
-        text: "Go To Home Screen|${HOME_REG}"
+        text: "Go To Home Screen|${HOME_REFERRAL}"
     commands:
       - tapOn:
           text: "Proceed Without Downloading"
           optional: true
+      - tapOn:
+          text: "Go Back"
+          optional: true
 - extendedWaitUntil:
     visible:
-      text: "Go To Home Screen|${HOME_REG}"
+      text: "Go To Home Screen|${HOME_REFERRAL}"
     timeout: 180000
 - tapOn:
     text: "Go To Home Screen"
     optional: true
-# Home (first sync can take a while)
+# Home (first sync can take a while). Waits on ${HOME_REFERRAL} (the tile this
+# preamble's callers tap next), NOT ${HOME_REG} ("Registration & Delivery") like
+# ensure-home.yaml - device-confirmed 2026-09-10 (run 1446): this account's home
+# screen sat with all tiles rendered while the flow hung the full 180s waiting on
+# a Registration & Delivery text that never appeared, exactly the same class of gap
+# already fixed for ensure-home-warehouse-manager.yaml's ${HOME_REG} wait.
 - extendedWaitUntil:
     visible:
-      text: ${HOME_REG}
+      text: ${HOME_REFERRAL}
     timeout: 180000

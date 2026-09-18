@@ -34,6 +34,45 @@ After a fresh install you can include the full login flow too:
 .\run-maestro.ps1 -Apk path\to\the.apk -All
 ```
 
+**Using Git Bash instead of PowerShell?** `run-maestro.ps1` is a PowerShell script -
+call it through `powershell.exe` (still from inside `qa/testkit`):
+
+```bash
+powershell.exe -ExecutionPolicy Bypass -File ./run-maestro.ps1 -Apk path/to/the.apk
+```
+
+(`-ExecutionPolicy Bypass` only matters if your machine's default policy blocks
+unsigned scripts - harmless to always include. If your APK path only exists in Git
+Bash form, e.g. `/c/Users/you/Downloads/app.apk`, convert it first with
+`"$(cygpath -m /c/Users/you/Downloads/app.apk)"` - PowerShell doesn't understand POSIX
+paths.)
+
+## Running just one flow
+
+`-Flows` takes a **path**, not a flow name - point it at one file under
+`.maestro\smoke\` (run from inside `qa\testkit`):
+
+```powershell
+.\run-maestro.ps1 -Flows .maestro\smoke\09-hf-referral-create.yaml
+```
+
+```bash
+powershell.exe -ExecutionPolicy Bypass -File ./run-maestro.ps1 -Flows .maestro/smoke/09-hf-referral-create.yaml
+```
+
+Add `-Apk path\to\the.apk` too if you need to (re)install first. Leaving `-Flows` out
+runs every flow in `.maestro\smoke\`. One catch: the fresh-login flow
+(`01-login-to-home`, tag `needs-logged-out`) is excluded by default even when named
+explicitly - add `-All` to run it:
+
+```powershell
+.\run-maestro.ps1 -Flows .maestro\smoke\01-login-to-home.yaml -All
+```
+
+```bash
+powershell.exe -ExecutionPolicy Bypass -File ./run-maestro.ps1 -Flows .maestro/smoke/01-login-to-home.yaml -All
+```
+
 ## Before trusting a FAIL
 
 Check the preconditions — this app **blocks flows by design** outside campaign

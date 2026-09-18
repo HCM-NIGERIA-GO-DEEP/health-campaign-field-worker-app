@@ -118,11 +118,21 @@ appId: com.digit.hcm
     visible:
       text: "Submit"
     timeout: 20000
-# --- Boundary level 1 (skipped when the field already shows the value) ---
+# --- Boundary level 1 (skipped when the field already shows the value).
+# Asserted/closed like the multiselect levels below (TEXT alone, then outside-tap),
+# NOT the old id+text-combined, no-close version - device-proven 2026-09-10 on the
+# HFREFERRAL sibling preamble (run 1308): an L1 level CAN render as a MULTISELECT
+# (chips "1 Selected" / the value / "Clear All"), and when it does, the value lands
+# on a sibling chip node, never merged into `boundary_<Label>`'s own
+# accessibilityText - asserting id+text together on the SAME node then never
+# matches and times out even though selection succeeded. Applied here defensively
+# (not yet reproduced for THIS env's L1 specifically, only for a different user's) -
+# the outside-tap close is a documented no-op when the panel already auto-closed
+# (single-select), so this should not change behavior for an env where L1 truly is
+# single-select. Watch the NEXT 01-08 run to confirm no regression. ---
 - runFlow:
     when:
       notVisible:
-        id: "boundary_${BOUNDARY_L1_LABEL}"
         text: "(?s).*${BOUNDARY_L1_VALUE}.*"
     commands:
       - tapOn:
@@ -149,8 +159,9 @@ appId: com.digit.hcm
           id: "option_.*"
           text: "(?s).*${BOUNDARY_L1_VALUE}.*"
       - assertVisible:
-          id: "boundary_${BOUNDARY_L1_LABEL}"
           text: "(?s).*${BOUNDARY_L1_VALUE}.*"
+      - tapOn:
+          point: "21%,62%"
 # --- Boundary level 2 (multiselect on this env: value shows as a chip) ---
 - runFlow:
     when:
@@ -261,6 +272,11 @@ appId: com.digit.hcm
 # no-op on the passes where it is absent. Skip (don't download) to keep the
 # suite fast: this run's own QATEST data was just created locally moments
 # ago and does not depend on syncing OTHER server records for the boundary.
+# Sibling "No data found! There are no new records found for the selected
+# boundary" -> "Go Back" dialog device-confirmed 2026-09-10 on the HFREFERRAL
+# preamble - it does NOT return to boundary selection, it dismisses straight to
+# the home screen (all tiles visible), skipping "Go To Home Screen" entirely.
+# Applied here defensively even though not yet reproduced for the CDD boundary.
 - repeat:
     times: 18
     while:
@@ -269,6 +285,9 @@ appId: com.digit.hcm
     commands:
       - tapOn:
           text: "Proceed Without Downloading"
+          optional: true
+      - tapOn:
+          text: "Go Back"
           optional: true
 # Data-download acknowledgement screen: after the boundary data download
 # completes, the app shows "Downloaded successfully!" with a
