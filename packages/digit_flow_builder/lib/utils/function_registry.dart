@@ -1744,7 +1744,6 @@ void initializeFunctionRegistry() {
         (args.length > 2 ? args[2]?.toString() ?? 'smcDone' : 'smcDone')
             .trim()
             .toUpperCase();
-    ;
 
     // Get tasks from modelMap
     final tasks = stateData.modelMap['tasks'] as List? ?? [];
@@ -1821,9 +1820,14 @@ void initializeFunctionRegistry() {
         args.length > 1 ? int.tryParse(args[1]?.toString() ?? '') ?? -1 : -1;
     if (cycleIndex < 0) return '';
 
+    final flowType =
+        (args.length > 2 ? args[2]?.toString() ?? 'smcDone' : 'smcDone')
+            .trim()
+            .toUpperCase();
+
     // Get date format from third argument (optional)
     final dateFormat =
-        args.length > 2 ? args[2]?.toString() ?? 'dd MMM yyyy' : 'dd MMM yyyy';
+        args.length > 3 ? args[3]?.toString() ?? 'dd MMM yyyy' : 'dd MMM yyyy';
 
     // Get tasks from modelMap
     final tasks = stateData.modelMap['tasks'] as List? ?? [];
@@ -1844,6 +1848,14 @@ void initializeFunctionRegistry() {
       }
 
       if (fields == null) continue;
+
+      final taskFlowType = fields
+          .firstWhereOrNull((f) => f["key"] == 'flow')?["value"]
+          ?.toString()
+          .trim()
+          .toUpperCase();
+
+      if (taskFlowType != flowType) continue;
 
       // Find doseIndex and cycleIndex in fields
       int? taskDoseIndex;
