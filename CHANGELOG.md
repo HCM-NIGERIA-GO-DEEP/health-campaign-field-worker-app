@@ -1,5 +1,29 @@
 # Changelog
 
+## 2.2.112 — 2026-09-18
+
+_(includes 2.2.111; both releases are `packages/digit_flow_builder/lib/utils/function_registry.dart` changes plus an Android app-identity change)_
+
+**ORS flow filtering (`_filterByFlow`, new `_flowValue` / `_isOrsEntity`) — 2.2.111**
+
+- The `flow` marker lookup inside `_isRiEntity` was extracted into a shared `_flowValue(entity)` helper that returns the raw `additionalFields.flow` value (or `null`), and a parallel `_isOrsEntity` was added for `flow == 'orsDone'`. Both comparisons are now case-insensitive (`toUpperCase()` on both sides), where `_isRiEntity` previously compared the stored value to `'riDone'` exactly.
+- `_filterByFlow` gained a **required** `keepOrs` flag alongside `keepRi`. The keep predicate is now `(isRi && keepRi) || (isOrs && keepOrs) || (!isRi && !isOrs && !keepRi && !keepOrs)`, i.e. "keep RI", "keep ORS", "keep both", or — with both flags false — "keep only entities in neither flow". All 13 call sites were updated; every one passes `keepOrs: false`, so the flag is never actually used to *include* ORS entities anywhere in this repo. The behavioral change the release buys is the *exclusion*: ORS delivery tasks (written with `flow: orsDone` by the `orsDelivery` transformer config) no longer count towards the SMC/VAS-only checks — `getTaskStatus`, `checkAllDoseDelivered`, `hasSMCAdministered`, the redose window/status checks, `getLastSMCTaskDate`, and the two referral checks.
+- Worth noting what this does *not* cover: VAS tasks are written with `flow: vasDone`, which is neither RI nor ORS, so they still land in the "neither" bucket and are still included by every `keepRi: false, keepOrs: false` filter. Where the surrounding code separately requires `flowType == "smcDone"` (the two referral checks) that is harmless; where it only checks task status (`hasSMCAdministered`, `checkAllDoseDelivered`, the redose checks) a VAS task can still satisfy an SMC condition. The `_isRiEntity` doc comment ("SMC entities are written without this key") is also stale — SMC tasks have carried `flow: smcDone` since May 2026.
+- The dead `_hasLogWithType` attendance helper (unreferenced since the attendance log work) was deleted in the same commit.
+
+**`isVASDelivered` / `isORSDelivered` map-vs-model access (crash fix)**
+
+- Both functions read `task.status` and `task.additionalFields?.fields` via typed model access at the top of the loop, but then re-read the same data inside the `if (currentRunningCycle != null)` branch through map subscripts (`task['additionalFields']`, `task['clientAuditDetails']`, `field['key']`) on a shadowing local named `fields`. Since the outer lines only compile/run against a `TaskModel`, the inner map subscripts would throw `NoSuchMethodError` on the same object — and `FunctionRegistry.call` has no try/catch, so it propagates out of interpolation rather than degrading to `false`. Any config that passed the optional cycle argument to `fn:isVASDelivered`/`fn:isORSDelivered` therefore crashed on evaluation.
+- The fix switches the inner branch to model access (`field.key`, `field.value`, `task.clientAuditDetails.lastModifiedTime ?? task.auditDetails.lastModifiedTime`) and drops the shadowing local so both the flow-type and cycle-index lookups read the same `fields` list. The commit message ("change the task type from map to model") reads as a refactor; it is a crash fix. No in-repo config calls either function, so the affected calls come from MDMS.
+
+**Flow-type filtering in `isDoseCompleted` / `getTaskCompletionDate`**
+
+- Both functions now take a flow type and skip any task whose `additionalFields.flow` does not match it, defaulting to `smcDone`. Previously they matched purely on `doseIndex` + `cycleIndex`, so an RI/VAS/ORS task that happened to record the same dose and cycle numbers could satisfy an SMC dose check or supply its completion date.
+- `getTaskCompletionDate`'s argument list shifted: the flow type took over the 3rd position and the date format moved to the 4th (`getTaskCompletionDate(doseIndex, cycleIndex, flowType, dateFormat)`). This is a breaking config change for any caller that passed a date format as the 3rd argument — it would now be read as a flow type, no task would match, and the function would return `''`. Both in-repo callers in `registration_flows.dart` pass only 2 arguments, so the repo is unaffected; MDMS configs need checking.
+- Because matching is now positive (`taskFlowType != flowType` → skip) rather than exclusionary, a task with **no** `flow` field at all is skipped too. Tasks created before the `flow` marker was introduced (May 2026) therefore stop reporting as completed and lose their completion date. No migration backfills the marker.
+- The first cut of this change (the commit the `2.2.112+112` bump sits on) was broken: it compared an upper-cased task value against the raw `'smcDone'` default, so nothing ever matched and `isDoseCompleted` always returned `false`; it also read the field with `f.key` on what are plain `Map`s in this code path, which would throw. A follow-up commit ~2 hours later normalized the argument with `.trim().toUpperCase()` and switched the lookup to `f["key"]`/`["value"]`. A build cut at the bump commit itself carries the broken version.
+- One asymmetry remains in both functions: the `flow` lookup uses `f["key"]` with no type guard, while the `doseIndex`/`cycleIndex` loop immediately below still guards each element with `field is Map`. If a `fields` list ever arrives holding model objects rather than maps, the flow lookup throws before the guarded loop is reached.
+
 ## 2.2.110 — 2026-09-01
 
 _(includes 2.2.107 and 2.2.109; 2.2.108 was never cut — the version bump went straight from `2.2.107+107` to `2.2.109+109` in a single commit)_
