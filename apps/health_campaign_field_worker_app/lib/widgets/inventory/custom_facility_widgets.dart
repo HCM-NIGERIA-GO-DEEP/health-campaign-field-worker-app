@@ -252,6 +252,7 @@ class _FacilityCardContent extends StatelessWidget {
       if (facilityLevel == null) return true;
 
       if (isLessExcessFlow) {
+        if (isToField && !isWareHouseMgr) return facilityLevel == 'current';
         if (isToField) return facilityLevel == 'parent';
         if (isFromField && !isWareHouseMgr) return false;
         if (isFromField) return facilityLevel == 'current';

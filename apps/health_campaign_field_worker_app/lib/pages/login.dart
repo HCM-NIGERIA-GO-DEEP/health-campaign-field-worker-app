@@ -121,6 +121,35 @@ class _LoginPageState extends LocalizedState<LoginPage> {
             },
             error: (message) {
               Navigator.of(context, rootNavigator: true).pop();
+
+              final isActiveSessionExists =
+                  (message ?? '').contains('ACTIVE_SESSION_EXISTS');
+
+              if (isActiveSessionExists) {
+                showCustomPopup(
+                  context: context,
+                  builder: (ctx) => Popup(
+                    title: localizations.translate(i18.login.labelText),
+                    titleIcon: Icon(
+                      Icons.error_outline,
+                      color: theme.colorTheme.alert.error,
+                    ),
+                    description:
+                        localizations.translate(i18.login.userAlreadyLoggedIn),
+                    type: PopUpType.simple,
+                    actions: [
+                      DigitButton(
+                        label: localizations.translate(i18.common.coreCommonOk),
+                        onPressed: () => Navigator.of(ctx).pop(),
+                        type: DigitButtonType.primary,
+                        size: DigitButtonSize.large,
+                      ),
+                    ],
+                  ),
+                );
+                return;
+              }
+
               Toast.showToast(
                 context,
                 message: message ??
@@ -310,20 +339,30 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                                     (form.control(_password).value as String)
                                         .trim();
 
-                                context.read<AuthBloc>().add(
-                                      AuthLoginEvent(
-                                        userId: _pendingUserId as String,
-                                        password: _pendingPassword as String,
-                                        tenantId: envConfig.variables.tenantId,
-                                      ),
+                                final singleUserLoginEnabled = context
+                                    .read<AppInitializationBloc>()
+                                    .state
+                                    .maybeWhen(
+                                      initialized: (appConfiguration, _, __) =>
+                                          appConfiguration.singleUserLogin
+                                              ?.any((e) => e.enabled) ??
+                                          false,
+                                      orElse: () => false,
                                     );
 
-                                // if (singleUserLogin) {
-                                //   _checkOtherDeviceLogin(
-                                //       context, _pendingUserId as String);
-                                // } else {
-
-                                // }
+                                if (singleUserLoginEnabled) {
+                                  _checkOtherDeviceLogin(
+                                      context, _pendingUserId as String);
+                                } else {
+                                  context.read<AuthBloc>().add(
+                                        AuthLoginEvent(
+                                          userId: _pendingUserId as String,
+                                          password: _pendingPassword as String,
+                                          tenantId:
+                                              envConfig.variables.tenantId,
+                                        ),
+                                      );
+                                }
                               },
                               size: DigitButtonSize.large,
                               mainAxisSize: MainAxisSize.max,

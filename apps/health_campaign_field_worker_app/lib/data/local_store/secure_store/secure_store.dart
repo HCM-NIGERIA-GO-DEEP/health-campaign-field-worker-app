@@ -29,6 +29,7 @@ class LocalSecureStore {
   static const faceEnrollmentCompleteKey = 'faceEnrollmentComplete';
   static const isFaceGatePassedKey = 'isFaceGatePassed';
   static const lastReVerificationScheduleKey = 'lastReVerificationSchedule';
+  static const deviceIdKey = 'deviceIdKey';
 
   final storage = const FlutterSecureStorage();
 
@@ -316,6 +317,8 @@ class LocalSecureStore {
     // Preserve the database encryption key before deleting all
     final encryptionKey = await storage.read(key: dbEncryptionKeyKey);
     final userTokenMapString = await storage.read(key: userVsDeviceTokenMapKey);
+    // Device id is per-device, not per-user session — keep it across logout.
+    final deviceId = await storage.read(key: deviceIdKey);
 
     await storage.deleteAll();
 
@@ -328,6 +331,9 @@ class LocalSecureStore {
         key: userVsDeviceTokenMapKey,
         value: userTokenMapString,
       );
+    }
+    if (deviceId != null) {
+      await storage.write(key: deviceIdKey, value: deviceId);
     }
   }
 
@@ -411,5 +417,13 @@ class LocalSecureStore {
       await storage.write(key: dbEncryptionKeyKey, value: key);
     }
     return key;
+  }
+
+  // ── Device id accessor ──
+
+  Future<String?> get deviceId => storage.read(key: deviceIdKey);
+
+  Future<void> setDeviceId(String deviceId) async {
+    await storage.write(key: deviceIdKey, value: deviceId);
   }
 }

@@ -130,6 +130,31 @@ final dynamic sampleInventoryFlows = {
               }
             }
           ]
+        },
+        {
+          "format": "menu_card",
+          "type": "template",
+          "fieldName": "manageStockRecordLessExcessCard",
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
+          "heading": "INVENTORY_LESS_EXCESS_DETAILS_HEADING",
+          "description": "INVENTORY_LESS_EXCESS_DETAILS_DESCRIPTION",
+          "icon": "Assessment",
+          "onAction": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "type": "FORM",
+                "name": "RECORDLESSEXCESS",
+                "data": [
+                  {"key": "stockEntryType", "value": "LESS_EXCESS"},
+                  {
+                    "key": "mrnNumber",
+                    "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
+                  }
+                ]
+              }
+            }
+          ]
         }
       ]
     },
@@ -1075,7 +1100,7 @@ final dynamic sampleInventoryFlows = {
               "order": 5,
               "value": "",
               "format": "text",
-              "hidden": false,
+              "hidden": true,
               "tooltip": "",
               "helpText": "",
               "infoText": "",
@@ -1115,7 +1140,7 @@ final dynamic sampleInventoryFlows = {
               "order": 6,
               "value": "",
               "format": "text",
-              "hidden": false,
+              "hidden": true,
               "tooltip": "",
               "helpText": "",
               "infoText": "",
@@ -1460,7 +1485,7 @@ final dynamic sampleInventoryFlows = {
               "format": "date",
               "hidden": false,
               "tooltip": "",
-              "helpText": "INVENTORY_DATE_OF_RECEIPT_HELPTEXT",
+              "helpText": "",
               "infoText": "",
               "readOnly": true,
               "fieldName": "dateOfEntry",
@@ -1487,7 +1512,7 @@ final dynamic sampleInventoryFlows = {
               "format": "locality",
               "hidden": false,
               "tooltip": "",
-              "helpText": "INVENTORY_ADMINISTRATIVE_AREA_HELPTEXT",
+              "helpText": "",
               "infoText": "",
               "readOnly": false,
               "fieldName": "administrativeArea",
@@ -1638,7 +1663,7 @@ final dynamic sampleInventoryFlows = {
               "errorMessage": "",
               "isMultiSelect": false,
               "enums": [
-                {"code": "LESS", "name": "Less"},
+                {"code": "LESS", "name": "Loss"},
                 {"code": "EXCESS", "name": "Excess"}
               ]
             },
@@ -1762,7 +1787,7 @@ final dynamic sampleInventoryFlows = {
               "format": "text",
               "hidden": false,
               "tooltip": "",
-              "helpText": "INVENTORY_QUANTITY_HELPTEXT",
+              "helpText": "",
               "infoText": "",
               "readOnly": false,
               "fieldName": "quantity",
@@ -1774,6 +1799,16 @@ final dynamic sampleInventoryFlows = {
                   "type": "required",
                   "value": true,
                   "message": "INVENTORY_QUANTITY_REQUIRED_MESSAGE"
+                },
+                {
+                  "type": "min",
+                  "value": 1,
+                  "message": "QUANTITY_SENT_MIN_REQUIRED_ERROR_MESSAGE"
+                },
+                {
+                  "type": "max",
+                  "value": 5,
+                  "message": "QUANTITY_CANNOT_EXCEED_STOCK_MAX_LIMIT_VALUE"
                 },
                 {
                   "type": "regex",

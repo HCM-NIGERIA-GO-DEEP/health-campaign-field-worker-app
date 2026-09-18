@@ -408,6 +408,10 @@ class Common {
   String get stockNoDataFoundContent => 'STOCK_NO_DATA_FOUND_CONTENT';
 
   String get coreCommonDownloading => 'CORE_COMMON_DOWNLOADING';
+
+  String get loss => 'LOSS';
+
+  String get excess => 'EXCESS';
 }
 
 class HomeShowcase {
@@ -651,6 +655,8 @@ class Login {
   String get switchReasonHeader => 'SWITCH_REASON_HEADER_LABEL';
 
   String get switchReasonContinue => 'SWITCH_REASON_CONTINUE';
+
+  String get userAlreadyLoggedIn => 'USER_ALREADY_LOGGED_IN';
 }
 
 class SelectSurveyFormShowcase {
@@ -1531,7 +1537,8 @@ class SummaryReport {
 
   String get dateColumn => 'SUMMARY_REPORT_DATE';
 
-  String get householdsRegistered => 'SUMMARY_REPORT_HOUSEHOLDS_REGISTERED_BEDNET';
+  String get householdsRegistered =>
+      'SUMMARY_REPORT_HOUSEHOLDS_REGISTERED_BEDNET';
 
   String get numberOfPeopleInHouseholds => 'NUMBER_OF_PEOPLE_IN_HOUSEHOLDS';
 
@@ -1580,11 +1587,13 @@ class FaceAuth {
   String get enrollmentDescription => 'FACE_AUTH_ENROLLMENT_DESCRIPTION';
   String get enrollmentStart => 'FACE_AUTH_ENROLLMENT_START';
   String get enrollmentComplete => 'FACE_AUTH_ENROLLMENT_COMPLETE';
-  String get enrollmentAngleInstruction => 'FACE_AUTH_ENROLLMENT_ANGLE_INSTRUCTION';
+  String get enrollmentAngleInstruction =>
+      'FACE_AUTH_ENROLLMENT_ANGLE_INSTRUCTION';
   String get enrollmentLivenessCheck => 'FACE_AUTH_ENROLLMENT_LIVENESS_CHECK';
   String get enrollmentPinAssigned => 'FACE_AUTH_ENROLLMENT_PIN_ASSIGNED';
   String get enrollmentPinNote => 'FACE_AUTH_ENROLLMENT_PIN_NOTE';
-  String get enrollmentDuplicateDetected => 'FACE_AUTH_ENROLLMENT_DUPLICATE_DETECTED';
+  String get enrollmentDuplicateDetected =>
+      'FACE_AUTH_ENROLLMENT_DUPLICATE_DETECTED';
   String get enrollmentMaxUsers => 'FACE_AUTH_ENROLLMENT_MAX_USERS';
   String get enrollmentQualityLow => 'FACE_AUTH_ENROLLMENT_QUALITY_LOW';
 

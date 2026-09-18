@@ -279,6 +279,10 @@ mixin _$ValidateResponseModel {
   bool get isDuplicateLogin => throw _privateConstructorUsedError;
   @JsonKey(name: 'existingDeviceToken')
   String? get existingDeviceToken => throw _privateConstructorUsedError;
+  @JsonKey(name: 'canSwitchDevice')
+  bool get canSwitchDevice => throw _privateConstructorUsedError;
+  @JsonKey(name: 'message')
+  String? get message => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -294,7 +298,9 @@ abstract class $ValidateResponseModelCopyWith<$Res> {
   @useResult
   $Res call(
       {@JsonKey(name: 'isDuplicateLogin') bool isDuplicateLogin,
-      @JsonKey(name: 'existingDeviceToken') String? existingDeviceToken});
+      @JsonKey(name: 'existingDeviceToken') String? existingDeviceToken,
+      @JsonKey(name: 'canSwitchDevice') bool canSwitchDevice,
+      @JsonKey(name: 'message') String? message});
 }
 
 /// @nodoc
@@ -313,6 +319,8 @@ class _$ValidateResponseModelCopyWithImpl<$Res,
   $Res call({
     Object? isDuplicateLogin = null,
     Object? existingDeviceToken = freezed,
+    Object? canSwitchDevice = null,
+    Object? message = freezed,
   }) {
     return _then(_value.copyWith(
       isDuplicateLogin: null == isDuplicateLogin
@@ -322,6 +330,14 @@ class _$ValidateResponseModelCopyWithImpl<$Res,
       existingDeviceToken: freezed == existingDeviceToken
           ? _value.existingDeviceToken
           : existingDeviceToken // ignore: cast_nullable_to_non_nullable
+              as String?,
+      canSwitchDevice: null == canSwitchDevice
+          ? _value.canSwitchDevice
+          : canSwitchDevice // ignore: cast_nullable_to_non_nullable
+              as bool,
+      message: freezed == message
+          ? _value.message
+          : message // ignore: cast_nullable_to_non_nullable
               as String?,
     ) as $Val);
   }
@@ -338,7 +354,9 @@ abstract class _$$ValidateResponseModelImplCopyWith<$Res>
   @useResult
   $Res call(
       {@JsonKey(name: 'isDuplicateLogin') bool isDuplicateLogin,
-      @JsonKey(name: 'existingDeviceToken') String? existingDeviceToken});
+      @JsonKey(name: 'existingDeviceToken') String? existingDeviceToken,
+      @JsonKey(name: 'canSwitchDevice') bool canSwitchDevice,
+      @JsonKey(name: 'message') String? message});
 }
 
 /// @nodoc
@@ -355,6 +373,8 @@ class __$$ValidateResponseModelImplCopyWithImpl<$Res>
   $Res call({
     Object? isDuplicateLogin = null,
     Object? existingDeviceToken = freezed,
+    Object? canSwitchDevice = null,
+    Object? message = freezed,
   }) {
     return _then(_$ValidateResponseModelImpl(
       isDuplicateLogin: null == isDuplicateLogin
@@ -365,6 +385,14 @@ class __$$ValidateResponseModelImplCopyWithImpl<$Res>
           ? _value.existingDeviceToken
           : existingDeviceToken // ignore: cast_nullable_to_non_nullable
               as String?,
+      canSwitchDevice: null == canSwitchDevice
+          ? _value.canSwitchDevice
+          : canSwitchDevice // ignore: cast_nullable_to_non_nullable
+              as bool,
+      message: freezed == message
+          ? _value.message
+          : message // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -374,7 +402,9 @@ class __$$ValidateResponseModelImplCopyWithImpl<$Res>
 class _$ValidateResponseModelImpl implements _ValidateResponseModel {
   const _$ValidateResponseModelImpl(
       {@JsonKey(name: 'isDuplicateLogin') required this.isDuplicateLogin,
-      @JsonKey(name: 'existingDeviceToken') required this.existingDeviceToken});
+      @JsonKey(name: 'existingDeviceToken') required this.existingDeviceToken,
+      @JsonKey(name: 'canSwitchDevice') this.canSwitchDevice = true,
+      @JsonKey(name: 'message') this.message});
 
   factory _$ValidateResponseModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$ValidateResponseModelImplFromJson(json);
@@ -385,10 +415,16 @@ class _$ValidateResponseModelImpl implements _ValidateResponseModel {
   @override
   @JsonKey(name: 'existingDeviceToken')
   final String? existingDeviceToken;
+  @override
+  @JsonKey(name: 'canSwitchDevice')
+  final bool canSwitchDevice;
+  @override
+  @JsonKey(name: 'message')
+  final String? message;
 
   @override
   String toString() {
-    return 'ValidateResponseModel(isDuplicateLogin: $isDuplicateLogin, existingDeviceToken: $existingDeviceToken)';
+    return 'ValidateResponseModel(isDuplicateLogin: $isDuplicateLogin, existingDeviceToken: $existingDeviceToken, canSwitchDevice: $canSwitchDevice, message: $message)';
   }
 
   @override
@@ -399,13 +435,16 @@ class _$ValidateResponseModelImpl implements _ValidateResponseModel {
             (identical(other.isDuplicateLogin, isDuplicateLogin) ||
                 other.isDuplicateLogin == isDuplicateLogin) &&
             (identical(other.existingDeviceToken, existingDeviceToken) ||
-                other.existingDeviceToken == existingDeviceToken));
+                other.existingDeviceToken == existingDeviceToken) &&
+            (identical(other.canSwitchDevice, canSwitchDevice) ||
+                other.canSwitchDevice == canSwitchDevice) &&
+            (identical(other.message, message) || other.message == message));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, isDuplicateLogin, existingDeviceToken);
+  int get hashCode => Object.hash(runtimeType, isDuplicateLogin,
+      existingDeviceToken, canSwitchDevice, message);
 
   @JsonKey(ignore: true)
   @override
@@ -426,8 +465,10 @@ abstract class _ValidateResponseModel implements ValidateResponseModel {
   const factory _ValidateResponseModel(
       {@JsonKey(name: 'isDuplicateLogin') required final bool isDuplicateLogin,
       @JsonKey(name: 'existingDeviceToken')
-      required final String?
-          existingDeviceToken}) = _$ValidateResponseModelImpl;
+      required final String? existingDeviceToken,
+      @JsonKey(name: 'canSwitchDevice') final bool canSwitchDevice,
+      @JsonKey(name: 'message')
+      final String? message}) = _$ValidateResponseModelImpl;
 
   factory _ValidateResponseModel.fromJson(Map<String, dynamic> json) =
       _$ValidateResponseModelImpl.fromJson;
@@ -438,6 +479,12 @@ abstract class _ValidateResponseModel implements ValidateResponseModel {
   @override
   @JsonKey(name: 'existingDeviceToken')
   String? get existingDeviceToken;
+  @override
+  @JsonKey(name: 'canSwitchDevice')
+  bool get canSwitchDevice;
+  @override
+  @JsonKey(name: 'message')
+  String? get message;
   @override
   @JsonKey(ignore: true)
   _$$ValidateResponseModelImplCopyWith<_$ValidateResponseModelImpl>
@@ -457,6 +504,7 @@ mixin _$LoginModel {
   String get scope => throw _privateConstructorUsedError;
   @JsonKey(name: 'grant_type')
   String get grantType => throw _privateConstructorUsedError;
+  String? get deviceId => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -476,7 +524,8 @@ abstract class $LoginModelCopyWith<$Res> {
       String userType,
       String tenantId,
       String scope,
-      @JsonKey(name: 'grant_type') String grantType});
+      @JsonKey(name: 'grant_type') String grantType,
+      String? deviceId});
 }
 
 /// @nodoc
@@ -498,6 +547,7 @@ class _$LoginModelCopyWithImpl<$Res, $Val extends LoginModel>
     Object? tenantId = null,
     Object? scope = null,
     Object? grantType = null,
+    Object? deviceId = freezed,
   }) {
     return _then(_value.copyWith(
       username: null == username
@@ -524,6 +574,10 @@ class _$LoginModelCopyWithImpl<$Res, $Val extends LoginModel>
           ? _value.grantType
           : grantType // ignore: cast_nullable_to_non_nullable
               as String,
+      deviceId: freezed == deviceId
+          ? _value.deviceId
+          : deviceId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -542,7 +596,8 @@ abstract class _$$LoginModelImplCopyWith<$Res>
       String userType,
       String tenantId,
       String scope,
-      @JsonKey(name: 'grant_type') String grantType});
+      @JsonKey(name: 'grant_type') String grantType,
+      String? deviceId});
 }
 
 /// @nodoc
@@ -562,6 +617,7 @@ class __$$LoginModelImplCopyWithImpl<$Res>
     Object? tenantId = null,
     Object? scope = null,
     Object? grantType = null,
+    Object? deviceId = freezed,
   }) {
     return _then(_$LoginModelImpl(
       username: null == username
@@ -588,6 +644,10 @@ class __$$LoginModelImplCopyWithImpl<$Res>
           ? _value.grantType
           : grantType // ignore: cast_nullable_to_non_nullable
               as String,
+      deviceId: freezed == deviceId
+          ? _value.deviceId
+          : deviceId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -601,7 +661,8 @@ class _$LoginModelImpl implements _LoginModel {
       this.userType = 'EMPLOYEE',
       required this.tenantId,
       this.scope = 'read',
-      @JsonKey(name: 'grant_type') this.grantType = 'password'});
+      @JsonKey(name: 'grant_type') this.grantType = 'password',
+      this.deviceId});
 
   factory _$LoginModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$LoginModelImplFromJson(json);
@@ -621,10 +682,12 @@ class _$LoginModelImpl implements _LoginModel {
   @override
   @JsonKey(name: 'grant_type')
   final String grantType;
+  @override
+  final String? deviceId;
 
   @override
   String toString() {
-    return 'LoginModel(username: $username, password: $password, userType: $userType, tenantId: $tenantId, scope: $scope, grantType: $grantType)';
+    return 'LoginModel(username: $username, password: $password, userType: $userType, tenantId: $tenantId, scope: $scope, grantType: $grantType, deviceId: $deviceId)';
   }
 
   @override
@@ -642,13 +705,15 @@ class _$LoginModelImpl implements _LoginModel {
                 other.tenantId == tenantId) &&
             (identical(other.scope, scope) || other.scope == scope) &&
             (identical(other.grantType, grantType) ||
-                other.grantType == grantType));
+                other.grantType == grantType) &&
+            (identical(other.deviceId, deviceId) ||
+                other.deviceId == deviceId));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, username, password, userType, tenantId, scope, grantType);
+  int get hashCode => Object.hash(runtimeType, username, password, userType,
+      tenantId, scope, grantType, deviceId);
 
   @JsonKey(ignore: true)
   @override
@@ -671,7 +736,8 @@ abstract class _LoginModel implements LoginModel {
       final String userType,
       required final String tenantId,
       final String scope,
-      @JsonKey(name: 'grant_type') final String grantType}) = _$LoginModelImpl;
+      @JsonKey(name: 'grant_type') final String grantType,
+      final String? deviceId}) = _$LoginModelImpl;
 
   factory _LoginModel.fromJson(Map<String, dynamic> json) =
       _$LoginModelImpl.fromJson;
@@ -689,6 +755,8 @@ abstract class _LoginModel implements LoginModel {
   @override
   @JsonKey(name: 'grant_type')
   String get grantType;
+  @override
+  String? get deviceId;
   @override
   @JsonKey(ignore: true)
   _$$LoginModelImplCopyWith<_$LoginModelImpl> get copyWith =>

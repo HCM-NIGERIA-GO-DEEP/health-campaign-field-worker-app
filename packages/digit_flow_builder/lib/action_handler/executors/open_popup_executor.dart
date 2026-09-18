@@ -174,8 +174,16 @@ class OpenPopupExecutor extends ActionExecutor {
               : footerActions
                   .whereType<Map<String, dynamic>>()
                   .map((actionJson) {
+                    final resolvedAction =
+                        Map<String, dynamic>.from(actionJson);
+                    final rawLabel = resolvedAction['label'];
+                    if (rawLabel is String && rawLabel.trim().isNotEmpty) {
+                      resolvedAction['label'] =
+                          localization?.translate(rawLabel) ?? rawLabel;
+                    }
+
                     return FlowWidgetFactory.build(
-                      actionJson,
+                      resolvedAction,
                       popupContext,
                       (popupAction) {
                         final enrichedAction = _withParentScreenKey(

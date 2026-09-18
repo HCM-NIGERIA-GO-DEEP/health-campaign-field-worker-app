@@ -22,6 +22,10 @@ class ValidateResponseModel with _$ValidateResponseModel {
   const factory ValidateResponseModel({
     @JsonKey(name: 'isDuplicateLogin') required bool isDuplicateLogin,
     @JsonKey(name: 'existingDeviceToken') required String? existingDeviceToken,
+    // Whether the backend allows resolving the duplicate login via the
+    // device-switch flow. When false, login must be hard-blocked instead.
+    @JsonKey(name: 'canSwitchDevice') @Default(true) bool canSwitchDevice,
+    @JsonKey(name: 'message') String? message,
   }) = _ValidateResponseModel;
 
   factory ValidateResponseModel.fromJson(Map<String, dynamic> json) =>
@@ -37,6 +41,7 @@ class LoginModel with _$LoginModel {
     required String tenantId,
     @Default('read') String scope,
     @JsonKey(name: 'grant_type') @Default('password') String grantType,
+    String? deviceId,
   }) = _LoginModel;
 
   factory LoginModel.fromJson(Map<String, dynamic> json) =>

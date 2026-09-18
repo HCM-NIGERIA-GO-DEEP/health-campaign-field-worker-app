@@ -1018,8 +1018,10 @@ final jsonConfig = {
           "campaignNumber": "__context:selectedProject.referenceID",
           "transactionType": "__value:RECEIVED",
           "transactionReason": "lessExcessDetails.reasonForLessExcess",
-          "senderId": "lessExcessDetails.facilityFromWhich",
-          "senderType": "__value:WAREHOUSE",
+          "senderId":
+              "__switch:lessExcessDetails.facilityFromWhich:{DELIVERY_TEAM:__context:loggedInUserUuid,default:lessExcessDetails.facilityFromWhich}",
+          "senderType":
+              "__switch:lessExcessDetails.facilityFromWhich:{DELIVERY_TEAM:__value:STAFF,default:__value:WAREHOUSE}",
           "receiverId": "warehouseDetails.facilityToWhich",
           "receiverType": "__value:WAREHOUSE",
           "nonRecoverableError": "errors.nonRecoverable",

@@ -9,14 +9,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:isar/isar.dart';
 
-import '../blocs/auth/auth.dart';
 import '../blocs/localization/localization.dart';
 import '../blocs/project/project.dart';
 import '../data/local_store/app_shared_preferences.dart';
-import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../router/app_router.dart';
 import '../utils/environment_config.dart';
 import '../utils/i18_key_constants.dart' as i18;
+import '../utils/runtime_hierarchy.dart';
 import '../utils/utils.dart';
 import '../widgets/header/back_navigation_help_header.dart';
 import '../widgets/localized.dart';
@@ -33,11 +32,6 @@ class ProjectSelectionPage extends LocalizedStatefulWidget {
 }
 
 class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
-  /// [_selectedProject] is to keep track of the project the user selected.
-  /// Primary intention is to use this project during the retry mechanism of a
-  /// failing down-sync. At this point, the [ProjectState] has not persisted the
-  /// selected project yet
-  ProjectModel? _selectedProject;
   DialogRoute? syncDialogRoute;
 
   @override
@@ -79,7 +73,8 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
               final projectSelected = state.selectedProject;
 
               if (syncDialogRoute?.isActive ?? false) {
-                Navigator.of(context, rootNavigator: true).removeRoute(syncDialogRoute!);
+                Navigator.of(context, rootNavigator: true)
+                    .removeRoute(syncDialogRoute!);
               }
 
               if (error != null) {
@@ -99,7 +94,8 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
                           ? (cxt) {
                               if (syncDialogRoute != null &&
                                   syncDialogRoute!.isActive) {
-                                Navigator.of(cxt, rootNavigator: true).removeRoute(syncDialogRoute!);
+                                Navigator.of(cxt, rootNavigator: true)
+                                    .removeRoute(syncDialogRoute!);
                               }
                               context
                                   .read<ProjectBloc>()
@@ -108,7 +104,8 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
                           : (cxt) {
                               if (syncDialogRoute != null &&
                                   syncDialogRoute!.isActive) {
-                                Navigator.of(cxt, rootNavigator: true).removeRoute(syncDialogRoute!);
+                                Navigator.of(cxt, rootNavigator: true)
+                                    .removeRoute(syncDialogRoute!);
                               }
                               cxt.read<ProjectBloc>().add(
                                     ProjectSelectProjectEvent(
@@ -123,14 +120,16 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
                       ),
                       action: (context) {
                         if (syncDialogRoute?.isActive ?? false) {
-                          Navigator.of(context, rootNavigator: true).removeRoute(syncDialogRoute!);
+                          Navigator.of(context, rootNavigator: true)
+                              .removeRoute(syncDialogRoute!);
                         }
                       },
                     ),
                   ),
                 );
 
-                Navigator.of(context, rootNavigator: true).push(syncDialogRoute!);
+                Navigator.of(context, rootNavigator: true)
+                    .push(syncDialogRoute!);
 
                 return;
               } else if (state.loading) {
@@ -145,7 +144,8 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
                   ),
                 );
 
-                Navigator.of(context, rootNavigator: true).push(syncDialogRoute!);
+                Navigator.of(context, rootNavigator: true)
+                    .push(syncDialogRoute!);
               }
 
               final selectedProject = state.selectedProject;
@@ -198,11 +198,13 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
                               type: DigitButtonType.primary,
                               size: DigitButtonSize.large,
                               mainAxisSize: MainAxisSize.max,
-                              onPressed: () {
-                                context
-                                    .read<AuthBloc>()
-                                    .add(const AuthLogoutEvent());
-                              },                            ),
+                              onPressed: () async {
+                                await performAppLogout(
+                                  context,
+                                  requireConfirmation: true,
+                                );
+                              },
+                            ),
                           ),
                         ),
                       ],
@@ -220,8 +222,6 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
                           icon: Icons.article,
                           heading: element.name,
                           onTap: () {
-                            _selectedProject = element;
-
                             context.read<ProjectBloc>().add(
                                   ProjectSelectProjectEvent(element),
                                 );
@@ -239,12 +239,31 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
   }
 
   void navigateToBoundary(String boundary) async {
+    // Boundary-hierarchy localization was deferred from app-boot until now
+    // because hierarchyType only becomes known after project selection. The
+    // module key uses the stripped hierarchy (e.g. `CONSOLEHCM`, not
+    // `CONSOLEHCM_NI`) to match the server-side module naming.
+    //
+    // Await the load before continuing so boundary labels are present by the
+    // time the boundary picker renders.
+    final localizationBloc = context.read<LocalizationBloc>();
+    localizationBloc.add(
+      LocalizationEvent.onLoadLocalization(
+        module: 'hcm-boundary-${runtimeHierarchyType().toLowerCase()}',
+        tenantId: envConfig.variables.tenantId,
+        locale: AppSharedPreferences().getSelectedLocale!,
+        path: Constants.localizationApiPath,
+      ),
+    );
+    await localizationBloc.stream.firstWhere((s) => !s.loading);
+
     // todo : will change module name later with dynamic keys and add a try catch to throw error if api fails
     await triggerLocalizationIfUpdated(
       context: context,
       locale: AppSharedPreferences().getSelectedLocale!,
       moduleKey:
           'INVENTORY,REGISTRATION,COMPLAINTS,HFREFERRAL,CLOSEHOUSEHOLD,COMPLAINTS,STOCKREPORTS,STOCKRECONCILIATION,PERMISSIONHANDLER,CHECKLIST',
+
       /// TODO: NEED TO MOVE CONSTANT FILE
       projectReferenceId: context.selectedProject.referenceID ?? '',
     );
@@ -298,7 +317,8 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
           }
         }
       } catch (e) {
-        debugPrint('project_selection: locality localization fetch skipped: $e');
+        debugPrint(
+            'project_selection: locality localization fetch skipped: $e');
       }
 
       final boundaryCodes = <String>{
@@ -350,7 +370,6 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
           project.startDateTime!.isBefore(now) ? now : project.startDateTime!;
       DateTime endAfterTimestamp = project.endDateTime!;
       Isar isar = await Constants().isar;
-      final appConfiguration = await isar.appConfigurations.where().findAll();
 
       if (endAfterTimestamp.isAfter(now)) {
         triggerLocationTracker(

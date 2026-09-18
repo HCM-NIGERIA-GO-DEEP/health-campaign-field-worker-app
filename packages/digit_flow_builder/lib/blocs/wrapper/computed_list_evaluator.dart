@@ -139,6 +139,25 @@ class ComputedListEvaluator {
     }
   }
 
+  /// Keeps computed-list context compatible with formula math operations.
+  static dynamic _normalizeContextValue(String key, dynamic value) {
+    if (key != 'memberCount') return value;
+
+    if (value is num) return value;
+    if (value is String) {
+      final trimmed = value.trim();
+      final unwrapped = (trimmed.length >= 2 &&
+              ((trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+                  (trimmed.startsWith("'") && trimmed.endsWith("'"))))
+          ? trimmed.substring(1, trimmed.length - 1).trim()
+          : trimmed;
+      final parsed = num.tryParse(unwrapped);
+      if (parsed != null) return parsed;
+    }
+
+    return value;
+  }
+
   static int calculateAgeInMonths(String dob) {
     final dateOfBirth = parseDate(dob);
     final age = DigitDateUtils.calculateAge(dateOfBirth);
@@ -242,11 +261,11 @@ class ComputedListEvaluator {
           if (sourceField != null && contextAsMap.containsKey(sourceField)) {
             final transformedValue =
                 applyTransformation(contextAsMap, transform);
-            contextMap[key] = transformedValue;
+            contextMap[key] = _normalizeContextValue(key, transformedValue);
           }
         } else if (contextAsMap.containsKey(key)) {
           // Direct mapping for keys that don't need transformation
-          contextMap[key] = contextAsMap[key];
+          contextMap[key] = _normalizeContextValue(key, contextAsMap[key]);
         }
       }
     }
@@ -256,7 +275,7 @@ class ComputedListEvaluator {
       if (!contextMap.containsKey(key)) {
         final defaultValue =
             _getDefaultValueForMissingKey(key, resolvedCondition);
-        contextMap[key] = defaultValue;
+        contextMap[key] = _normalizeContextValue(key, defaultValue);
         debugPrint(
             'Missing key "$key" in context, using default: $defaultValue');
       }

@@ -8,10 +8,10 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
-import 'package:path/path.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
 import 'package:transit_post/data/repositories/remote/user_action.dart';
 
+import '../../data/local_store/app_shared_preferences.dart';
 import '../../data/local_store/no_sql/schema/app_configuration.dart';
 import '../../data/local_store/secure_store/secure_store.dart';
 import '../../data/repositories/remote/bandwidth_check.dart';
@@ -19,6 +19,7 @@ import '../../utils/stock_calculation_utils.dart';
 import '../../models/downsync/downsync.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/background_service.dart';
+import '../../utils/stock_downsync_cursor.dart';
 import '../../utils/utils.dart';
 
 part 'stock_downsync.freezed.dart';
@@ -92,15 +93,6 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
       return facilityLevel == null || facilityLevel == 'current';
     }).toList();
 
-    final projectResources = await projectResourceLocalRepository.search(
-      ProjectResourceSearchModel(projectId: [project.id]),
-    );
-    final productVariantIds = projectResources
-        .map((pr) => pr.resource.productVariantId)
-        .whereType<String>()
-        .toSet()
-        .toList();
-
     List<String> receiverIds = [];
 
     if (userRoles.contains(RolesType.healthFacilitySupervisor.toValue())) {
@@ -156,12 +148,41 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
 
   String _getLocalityKey(String projectId) => 'stock_$projectId';
 
+  /// Resolves the current cycle's startDate and index (id) from the stored
+  /// project type, falling back to the project model's cycles. Both may be
+  /// absent (date outside campaign, fresh config) — returns nulls/0 then.
+  Future<MapEntry<int?, int>> _getCurrentCycleInfo(
+      ProjectModel projectModel) async {
+    final selectedProjectType = await localSecureStore.selectedProjectType;
+    final now = DateTime.now().millisecondsSinceEpoch;
+
+    final storedCycle = selectedProjectType?.cycles
+        ?.where(
+          (cycle) =>
+              (cycle.startDate ?? 0) <= now && (cycle.endDate ?? 0) >= now,
+        )
+        .firstOrNull;
+    if (storedCycle != null) {
+      return MapEntry(storedCycle.startDate, storedCycle.id);
+    }
+
+    final projectCycle = projectModel.additionalDetails?.projectType?.cycles
+        ?.where(
+          (cycle) => cycle.startDate <= now && cycle.endDate >= now,
+        )
+        .firstOrNull;
+
+    return MapEntry(projectCycle?.startDate, projectCycle?.id ?? 0);
+  }
+
   FutureOr<void> _handleCheckTotalCount(
     StockDownSyncCheckTotalCountEvent event,
     StockDownSyncEmitter emit,
   ) async {
     emit(const StockDownSyncState.loading(true));
     try {
+      final cycleInfo = await _getCurrentCycleInfo(event.projectModel);
+
       final stockSearchModel = await _buildStockSearchModel(event.projectModel);
 
       if (stockSearchModel == null) {
@@ -169,15 +190,19 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
         return;
       }
 
-      // Check existing downsync data for stock
-      final existingDownSyncData =
-          await downSyncLocalRepository.search(DownsyncSearchModel(
-        locality: _getLocalityKey(event.projectModel.id),
-      ));
+      // Cursor is per user + cycle so a second user on the same device
+      // still downloads their own stock from cycle start.
+      final userObject = await localSecureStore.userRequestModel;
+      final cursorKey = StockDownsyncCursor.key(
+        event.projectModel.id,
+        userObject?.uuid ?? '',
+        cycleInfo.value,
+      );
 
-      int? lastSyncedTime = existingDownSyncData.isEmpty
-          ? null
-          : existingDownSyncData.first.lastSyncedTime;
+      int? lastSyncedTime = StockDownsyncCursor.resolveCutoff(
+        storedTime: AppSharedPreferences().getStockDownsyncTime(cursorKey),
+        cycleStartDate: cycleInfo.key,
+      );
 
       // Always start from offset 0 for total count check since
       // lastChangedSince already scopes the query to new/modified records
@@ -223,15 +248,26 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
 
         final localityKey = _getLocalityKey(event.projectModel.id);
 
+        // Per-user + per-cycle cursor; falls back to the current cycle's
+        // startDate for a user who has never downsynced on this device.
+        final cycleInfo = await _getCurrentCycleInfo(event.projectModel);
+        final userObject = await localSecureStore.userRequestModel;
+        final cursorKey = StockDownsyncCursor.key(
+          event.projectModel.id,
+          userObject?.uuid ?? '',
+          cycleInfo.value,
+        );
+
+        int? lastSyncedTime = StockDownsyncCursor.resolveCutoff(
+          storedTime: AppSharedPreferences().getStockDownsyncTime(cursorKey),
+          cycleStartDate: cycleInfo.key,
+        );
+
         // Check existing downsync data for stock
         final existingDownSyncData =
             await downSyncLocalRepository.search(DownsyncSearchModel(
           locality: localityKey,
         ));
-
-        int? lastSyncedTime = existingDownSyncData.isEmpty
-            ? null
-            : existingDownSyncData.first.lastSyncedTime;
 
         // Create initial downsync record if not exists
         if (existingDownSyncData.isEmpty) {
@@ -248,6 +284,15 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
         int syncedCount = 0;
         final downsyncedStocks = <String, StockModel>{};
 
+        // Preserve unsynced local stock changes during downsync.
+        // For any clientReferenceId with pending stock oplog entries, keep the
+        // local DB version and skip replacing it with stale backend data.
+        final pendingLocalStockClientRefs =
+            await _getPendingLocalStockClientReferences(userObject?.uuid ?? '');
+        final pendingLocalStocksByClientRef =
+            await _getLocalStockByClientReferenceIds(
+                pendingLocalStockClientRefs);
+
         emit(StockDownSyncState.inProgress(syncedCount, totalCount));
 
         // Fetch stock entries in batches to allow progress updates
@@ -262,8 +307,23 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
 
           if (stockEntries.isEmpty) break;
 
-          await stockLocalRepository.bulkCreate(stockEntries);
-          for (final stock in stockEntries) {
+          final mergedStockEntries = stockEntries.where((remoteStock) {
+            final clientRef = remoteStock.clientReferenceId;
+            if (clientRef.isEmpty) return true;
+
+            final hasPendingLocalChange =
+                pendingLocalStockClientRefs.contains(clientRef);
+            final hasLocalVersion =
+                pendingLocalStocksByClientRef.containsKey(clientRef);
+
+            return !(hasPendingLocalChange && hasLocalVersion);
+          }).toList();
+
+          if (mergedStockEntries.isNotEmpty) {
+            await stockLocalRepository.bulkCreate(mergedStockEntries);
+          }
+
+          for (final stock in mergedStockEntries) {
             downsyncedStocks[stock.clientReferenceId] = stock;
           }
 
@@ -463,14 +523,15 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
     if (existing.isEmpty) return;
 
     final balanceAction = existing.first;
-    final balanceFieldIndex = balanceAction.additionalFields?.fields
-            ?.indexWhere((field) => field.key == 'balance') ??
+    final balanceFieldIndex = balanceAction.additionalFields?.fields.indexWhere(
+          (field) => field.key == 'balance',
+        ) ??
         -1;
 
     if (balanceFieldIndex < 0) return;
 
     final currentBalance = double.tryParse(
-          balanceAction.additionalFields?.fields?[balanceFieldIndex].value ??
+          balanceAction.additionalFields?.fields[balanceFieldIndex].value ??
               '0',
         ) ??
         0;
@@ -503,6 +564,35 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
       }
     }
     return '';
+  }
+
+  Future<Set<String>> _getPendingLocalStockClientReferences(
+    String createdBy,
+  ) async {
+    if (createdBy.isEmpty) return {};
+
+    final pendingOpLogs =
+        await stockLocalRepository.getItemsToBeSyncedUp(createdBy);
+
+    return pendingOpLogs
+        .map((opLog) => opLog.clientReferenceId)
+        .whereType<String>()
+        .where((id) => id.isNotEmpty)
+        .toSet();
+  }
+
+  Future<Map<String, StockModel>> _getLocalStockByClientReferenceIds(
+    Set<String> clientReferenceIds,
+  ) async {
+    if (clientReferenceIds.isEmpty) return {};
+
+    final localStocks = await stockLocalRepository.search(
+      StockSearchModel(clientReferenceId: clientReferenceIds.toList()),
+    );
+
+    return {
+      for (final stock in localStocks) stock.clientReferenceId: stock,
+    };
   }
 }
 

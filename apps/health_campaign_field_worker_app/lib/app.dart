@@ -12,7 +12,8 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:isar/isar.dart';
-import 'package:location/location.dart';
+import 'data/local_store/server_summary_report_storage.dart';
+import 'data/services/server_summary_report_service.dart';
 import 'services/location_service.dart';
 import 'package:survey_form/survey_form.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
@@ -115,6 +116,11 @@ class MainApplicationState extends State<MainApplication>
       providers: [
         RepositoryProvider<LocalSqlDataStore>.value(value: widget.sql),
         RepositoryProvider<Isar>.value(value: widget.isar),
+        RepositoryProvider<ServerSummaryReportService>(
+          create: (_) => ServerSummaryReportService(
+            storage: ServerSummaryReportStorage.instance,
+          ),
+        ),
         RepositoryProvider<SearchEntityRepository>(
           create: (context) => SearchEntityRepository(
             widget.sql,
@@ -153,9 +159,9 @@ class MainApplicationState extends State<MainApplication>
                   // Use the single shared Location client so all consumers
                   // stream from one native request (no GPS churn); start
                   // continuous balanced tracking once permission is granted.
-                  final bloc = LocationBloc(
-                      location: LocationService.instance.location)
-                    ..add(const LoadLocationEvent());
+                  final bloc =
+                      LocationBloc(location: LocationService.instance.location)
+                        ..add(const LoadLocationEvent());
                   bloc.stream
                       .firstWhere((s) => s.hasPermissions)
                       .then((_) => LocationService.instance.ensureTracking())
@@ -189,6 +195,7 @@ class MainApplicationState extends State<MainApplication>
                       RemoteRepository<IndividualModel,
                           IndividualSearchModel>>(),
                   isar: ctx.read<Isar>(),
+                  sql: ctx.read<LocalSqlDataStore>(),
                 )..add(
                     AuthAutoLoginEvent(
                       tenantId: envConfig.variables.tenantId,
@@ -300,14 +307,10 @@ class MainApplicationState extends State<MainApplication>
                                     widget.sql)
                                   ..add(
                                     LocalizationEvent.onLoadLocalization(
-                                      // Boundary localizations (hcm-boundary-*)
-                                      // are a very large dataset and loading
-                                      // them here blocks startup/login (black
-                                      // screen). They are loaded on demand by
-                                      // the screens that need them (home,
-                                      // current boundary, language selection),
-                                      // so they are intentionally excluded from
-                                      // the initial load.
+                                      // Hierarchy-keyed boundary module is
+                                      // deferred to post-project-selection;
+                                      // pre-login load only fetches the
+                                      // non-hierarchy modules.
                                       module: localizationModulesList.interfaces
                                           .where((element) =>
                                               element.type ==
@@ -365,6 +368,8 @@ class MainApplicationState extends State<MainApplication>
                               projectRemoteRepository: ctx.read<
                                   RemoteRepository<ProjectModel,
                                       ProjectSearchModel>>(),
+                              serverSummaryReportService:
+                                  ctx.read<ServerSummaryReportService>(),
                               serviceDefinitionRemoteRepository: ctx.read<
                                   RemoteRepository<ServiceDefinitionModel,
                                       ServiceDefinitionSearchModel>>(),

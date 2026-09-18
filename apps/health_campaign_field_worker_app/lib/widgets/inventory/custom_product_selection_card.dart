@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:digit_crud_bloc/digit_crud_bloc.dart';
@@ -7,14 +8,15 @@ import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
 import 'package:digit_flow_builder/utils/interpolation.dart';
 import 'package:digit_forms_engine/blocs/forms/forms.dart';
+import 'package:digit_forms_engine/helper/validator_helper.dart';
 import 'package:digit_forms_engine/models/property_schema/property_schema.dart';
 import 'package:digit_forms_engine/widgets/base_reactive_field_wrapper.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
-import 'package:transit_post/data/repositories/local/user_action.dart';
 
+import '../../data/services/server_summary_report_service.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/extensions/extensions.dart';
 import '../../utils/stock_calculation_utils.dart';
@@ -47,13 +49,65 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
   // Stock calculation state
   List<ProductVariantModel> _selectedProducts = [];
   Map<String, double> _stockInHandMap = {};
-  bool _stockSearchTriggered = false;
+  StreamSubscription<dynamic>? _recordTypeSubscription;
+  String? _lastRecordType;
+
+  List<ValidationRule> _normalizeValidationRules(dynamic validations) {
+    if (validations == null) return const [];
+
+    final normalized = <ValidationRule>[];
+
+    if (validations is List) {
+      for (final rule in validations) {
+        if (rule is ValidationRule) {
+          normalized.add(rule);
+        } else if (rule is Map) {
+          try {
+            normalized.add(
+              ValidationRule.fromJson(
+                Map<String, dynamic>.from(rule as Map),
+              ),
+            );
+          } catch (_) {
+            // Ignore malformed validation entries from dynamic schema payloads.
+          }
+        }
+      }
+    }
+
+    return normalized;
+  }
+
+  String _buildDynamicMaxMessage(
+    int maxValue, {
+    String messageKey = 'QUANTITY_CANNOT_EXCEED_STOCK_IN_HAND_VALUE',
+  }) {
+    var message = localizations.translate(messageKey);
+
+    if (message.contains('{maxValue}')) {
+      return message.replaceAll('{maxValue}', maxValue.toString());
+    }
+    if (message.contains('{max}')) {
+      return message.replaceAll('{max}', maxValue.toString());
+    }
+    if (message.contains('10000000')) {
+      return message.replaceAll('10000000', maxValue.toString());
+    }
+
+    return '$message ($maxValue)';
+  }
 
   @override
   void initState() {
     super.initState();
     // Don't call _initializeFromFormData here - localizations is not available yet
     // It will be called in build() when localizations is ready
+  }
+
+  @override
+  void dispose() {
+    _recordTypeSubscription?.cancel();
+    super.dispose();
   }
 
   /// Gets the facility ID from the previous page's form data (warehouseDetails.facilityToWhich)
@@ -184,6 +238,30 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       // Calculate stock in hand for selected products
       final loggedInUserUuid = FlowBuilderSingleton().loggedInUserUuid;
       final productIds = _selectedProducts.map((p) => p.id).toList();
+      final selectedCycle = context.selectedCycle;
+
+      final summaryReportService = context.read<ServerSummaryReportService>();
+      int? serverReportTimestamp = await summaryReportService.timestamp();
+      final serverReportStockConsumedMap =
+          await summaryReportService.stockConsumedMap();
+
+      final filteredStockList = stockList.where((stock) {
+        final cycleStartDate = selectedCycle?.startDate;
+        final cycleEndDate = selectedCycle?.endDate;
+
+        if (cycleStartDate == null || cycleEndDate == null) {
+          return true;
+        }
+
+        final stockEntryDate = stock.dateOfEntryTime?.millisecondsSinceEpoch ??
+            stock.auditDetails?.lastModifiedTime ??
+            stock.clientAuditDetails?.lastModifiedTime;
+
+        if (stockEntryDate == null) return false;
+
+        return stockEntryDate >= cycleStartDate &&
+            stockEntryDate <= cycleEndDate;
+      }).toList();
 
       final taskRepo =
           context.read<LocalRepository<TaskModel, TaskSearchModel>>()
@@ -196,28 +274,47 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       var _isDistributor = context.loggedInUserRoles
           .any((role) => role.code == RolesType.distributor.toValue());
 
+      List<TaskModel> filteredTasks = tasks;
+      if (serverReportTimestamp != null) {
+        filteredTasks = filteredTasks.where((e) {
+          final lastModified = e.clientAuditDetails?.lastModifiedTime ??
+              e.auditDetails?.lastModifiedTime ??
+              e.clientAuditDetails?.createdTime ??
+              e.auditDetails?.createdTime;
+          if (lastModified == null) return false;
+          return lastModified >= serverReportTimestamp;
+        }).toList();
+      }
+
       final stockTransactionBalance =
           StockCalculationUtils.calculateStockInHandForProducts(
-        stockList: stockList,
+        stockList: filteredStockList,
         facilityId: facilityId,
         productIds: productIds,
         loggedInUserUuid: loggedInUserUuid,
         isDistributor: _isDistributor,
-        tasks: tasks,
+        tasks: filteredTasks,
       );
 
       // Merge: UserAction balances take precedence (they include delivery deductions)
       _stockInHandMap = stockTransactionBalance;
+
+      // Apply server report stock consumption adjustments
+      for (final entry in serverReportStockConsumedMap.entries) {
+        final productVariantId = entry.key;
+        final consumedQuantity = entry.value;
+
+        // Deduct the consumed quantity from the calculated balance
+        final currentBalance = _stockInHandMap[productVariantId] ?? 0.0;
+        _stockInHandMap[productVariantId] =
+            max(currentBalance - consumedQuantity, 0.0);
+      }
 
       debugPrint(
           'ProductSelectionCard: Calculated stockInHand: $_stockInHandMap');
 
       // Update FormsBloc with stock in hand data
       _updateStockInHandInFormsBloc();
-
-      setState(() {
-        _stockSearchTriggered = true;
-      });
     } catch (e, stackTrace) {
       debugPrint('ProductSelectionCard: ERROR in stock search: $e');
       debugPrint('Stack trace: $stackTrace');
@@ -289,6 +386,10 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
     }
 
     if (multiEntityPageKey == null || multiEntityPage?.properties == null) {
+      if (widget.pageSchema == 'RECORDLESSEXCESS') {
+        _updateLessExcessQuantityValidation(formsBloc, schema);
+        return;
+      }
       debugPrint(
           'ProductSelectionCard: ERROR - No page with multiEntityConfig found');
       return;
@@ -381,8 +482,11 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         ];
 
         // Create the entity-specific field schema with validation
-        updatedProperties[entityFieldName] =
-            baseFieldSchema.copyWith(validations: newValidations);
+        updatedProperties[entityFieldName] = baseFieldSchema.copyWith(
+          validations: newValidations,
+          max: maxValue,
+          maxValue: maxValue,
+        );
       }
     }
 
@@ -432,6 +536,31 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       schema: updatedSchema,
     ));
 
+    // Keep existing form controls in sync with updated schema validators.
+    // Without this, controls can continue enforcing stale max values.
+    try {
+      final form = ReactiveForm.of(context, listen: false);
+      if (form is FormGroup) {
+        for (final entry in updatedProperties.entries) {
+          final fieldName = entry.key;
+          if (!fieldName.startsWith('quantity') ||
+              !form.controls.containsKey(fieldName)) {
+            continue;
+          }
+          final control = form.control(fieldName);
+          control.setValidators(
+            buildValidators(
+              entry.value,
+              schemaKey: widget.pageSchema,
+            ),
+          );
+          control.updateValueAndValidity();
+        }
+      }
+    } catch (_) {
+      // Ignore if controls are not mounted yet.
+    }
+
     debugPrint(
         'ProductSelectionCard: Updated quantity field validations for ${_selectedProducts.length} entities');
 
@@ -446,6 +575,206 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
             'ProductSelectionCard: ERROR - quantitySent_item_$i not found in updatedProperties');
       }
     }
+  }
+
+  void _updateLessExcessQuantityValidation(
+    FormsBloc formsBloc,
+    dynamic schema,
+  ) {
+    final page = schema.pages['lessExcessDetails'];
+    final properties = page?.properties;
+    if (properties == null) {
+      debugPrint(
+          'ProductSelectionCard: lessExcessDetails page/properties not found');
+      return;
+    }
+
+    final quantityField = properties['quantity'];
+    if (quantityField == null) {
+      debugPrint(
+          'ProductSelectionCard: quantity field not found for less/excess');
+      return;
+    }
+
+    final selectedProduct =
+        _selectedProducts.isNotEmpty ? _selectedProducts.first : null;
+    final hasSelectedProduct = selectedProduct != null;
+    final stockInHand = selectedProduct == null
+        ? 0.0
+        : (_stockInHandMap[selectedProduct.id] ?? 0.0);
+
+    final initialSchema = formsBloc.state.initialSchemas[widget.pageSchema];
+    final initialQuantityField =
+        initialSchema?.pages['lessExcessDetails']?.properties?['quantity'];
+    final existingValidations =
+        _normalizeValidationRules(initialQuantityField?.validations);
+    final configuredMax = existingValidations
+        .firstWhere(
+          (v) => v.type == 'max' || v.type == 'maxValue',
+          orElse: () => ValidationRule(
+            type: 'max',
+            value: quantityField.max ?? quantityField.maxValue ?? 5,
+          ),
+        )
+        .value;
+    final int configuredMaxInt = configuredMax is int
+        ? configuredMax
+        : int.tryParse(configuredMax?.toString() ?? '') ??
+            (quantityField.max ?? quantityField.maxValue ?? 5);
+
+    String? currentRecordType;
+    try {
+      final form = ReactiveForm.of(context, listen: false);
+      if (form is FormGroup && form.contains('recordType')) {
+        currentRecordType = form.control('recordType').value?.toString();
+      }
+    } catch (_) {
+      // Ignore if form is not mounted yet.
+    }
+    currentRecordType ??= properties['recordType']?.value?.toString();
+
+    final normalizedType = currentRecordType?.toUpperCase();
+    final shouldApplyStockCap =
+        normalizedType == 'LOSS' || normalizedType == 'LESS';
+
+    final boundedStock = max(0, stockInHand.floor());
+    final maxValue = shouldApplyStockCap && hasSelectedProduct
+        ? min(configuredMaxInt, boundedStock)
+        : configuredMaxInt;
+    final isConfiguredCapApplied = maxValue == configuredMaxInt;
+
+    final filteredValidations = existingValidations
+        .where((v) => v.type != 'max' && v.type != 'maxValue')
+        .toList();
+
+    final newValidations = [
+      ...filteredValidations,
+      ValidationRule(
+        type: 'max',
+        value: maxValue,
+        message: maxValue > 0
+            ? (isConfiguredCapApplied
+                ? _buildDynamicMaxMessage(
+                    maxValue,
+                    messageKey: 'QUANTITY_CANNOT_EXCEED',
+                  )
+                : _buildDynamicMaxMessage(
+                    maxValue,
+                    messageKey: 'QUANTITY_CANNOT_EXCEED_STOCK_IN_HAND_VALUE',
+                  ))
+            : localizations.translate('NO_STOCK_AVAILABLE_IN_HAND'),
+      ),
+    ];
+
+    final updatedQuantityField = quantityField.copyWith(
+      validations: newValidations,
+      max: configuredMaxInt,
+      maxValue: configuredMaxInt,
+    );
+    final updatedProperties = Map<String, PropertySchema>.from(properties);
+    updatedProperties['quantity'] = updatedQuantityField;
+
+    final updatedPage = page.copyWith(properties: updatedProperties);
+    final updatedPages = Map<String, PropertySchema>.from(schema.pages);
+    updatedPages['lessExcessDetails'] = updatedPage;
+
+    final updatedSchema = schema.copyWith(pages: updatedPages);
+    formsBloc.add(
+      FormsEvent.update(
+        schemaKey: widget.pageSchema,
+        schema: updatedSchema,
+      ),
+    );
+
+    try {
+      final form = ReactiveForm.of(context, listen: false);
+      if (form is! FormGroup) return;
+      final quantityControl = form.control('quantity');
+      quantityControl.setValidators(
+        buildValidators(
+          updatedQuantityField,
+          schemaKey: widget.pageSchema,
+        ),
+      );
+      quantityControl.updateValueAndValidity();
+
+      final currentValue =
+          int.tryParse(quantityControl.value?.toString() ?? '');
+      if (currentValue != null && currentValue > maxValue) {
+        quantityControl.value = null;
+        formsBloc.add(
+          FormsEvent.updateField(
+            schemaKey: widget.pageSchema,
+            context: context,
+            key: 'quantity',
+            value: null,
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      debugPrint('ProductSelectionCard: ERROR in stock search: $e');
+      debugPrint('Stack trace: $stackTrace');
+    }
+  }
+
+  void _setupLessExcessRecordTypeListener() {
+    if (widget.pageSchema != 'RECORDLESSEXCESS' ||
+        _recordTypeSubscription != null) {
+      return;
+    }
+
+    try {
+      final form = ReactiveForm.of(context, listen: false);
+      if (form is! FormGroup) return;
+      final recordTypeControl = form.control('recordType');
+      _lastRecordType = recordTypeControl.value?.toString();
+
+      _recordTypeSubscription = recordTypeControl.valueChanges.listen((value) {
+        final currentType = value?.toString();
+        final hasTypeSwitched = _lastRecordType != null &&
+            currentType != null &&
+            currentType != _lastRecordType;
+
+        if (hasTypeSwitched) {
+          _clearLessExcessQuantityForSafety();
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            final formsBloc = context.read<FormsBloc>();
+            final schema = formsBloc.state.cachedSchemas[widget.pageSchema];
+            if (schema != null) {
+              _updateLessExcessQuantityValidation(formsBloc, schema);
+            }
+          });
+        }
+
+        _lastRecordType = currentType;
+      });
+    } catch (_) {
+      // Ignore if controls are not mounted yet; build() will retry.
+    }
+  }
+
+  void _clearLessExcessQuantityForSafety() {
+    final formsBloc = context.read<FormsBloc>();
+    try {
+      final form = ReactiveForm.of(context, listen: false);
+      if (form is! FormGroup) return;
+      final quantityControl = form.control('quantity');
+      quantityControl.value = null;
+      quantityControl.markAsTouched();
+      quantityControl.markAsDirty();
+    } catch (_) {
+      // Ignore if controls are not available yet.
+    }
+
+    formsBloc.add(
+      FormsEvent.updateField(
+        schemaKey: widget.pageSchema,
+        context: context,
+        key: 'quantity',
+        value: null,
+      ),
+    );
   }
 
   void _initializeFromFormData(List<dynamic>? productVariants) {
@@ -597,6 +926,8 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
 
   @override
   Widget build(BuildContext context) {
+    _setupLessExcessRecordTypeListener();
+
     // Get schema from FormsBloc
     final pages =
         context.read<FormsBloc>().state.cachedSchemas[widget.pageSchema]?.pages;
@@ -718,7 +1049,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
 
               // Find selected models from productVariants
               final selectedModels = selectedValues
-                  .map((v) => productVariants!
+                  .map((v) => productVariants
                       .map((e) => e as ProductVariantModel)
                       .firstWhere((m) => m.id == v.code))
                   .toList();
@@ -726,7 +1057,6 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
               // Update selected products for stock calculation
               setState(() {
                 _selectedProducts = selectedModels;
-                _stockSearchTriggered = false; // Reset to trigger new search
               });
 
               // Update form control with list of models

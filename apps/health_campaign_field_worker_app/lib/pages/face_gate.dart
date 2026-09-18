@@ -14,7 +14,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../blocs/auth/auth.dart';
 import '../blocs/face_auth/face_gate_bloc.dart';
 import '../blocs/project/project.dart';
 import '../data/local_store/secure_store/secure_store.dart';
@@ -24,6 +23,7 @@ import '../services/face_auth_feature_flag.dart';
 import '../services/worker_registry_service.dart';
 import '../utils/environment_config.dart';
 import '../utils/extensions/extensions.dart';
+import '../utils/utils.dart';
 import '../widgets/face_auth/reverification_popup.dart';
 
 /// Face identity gate page — shown after login/boundary selection.
@@ -399,30 +399,9 @@ class _EnrollmentWrapper extends StatelessWidget {
     required this.onCancel,
   });
 
-  /// Confirms and logs the user out from the enrollment screen. Uses the app's
-  /// AuthBloc so logout behaves exactly like elsewhere (clears session and
-  /// returns to the login flow).
+  /// Runs the same centralized logout flow used across the app.
   void _confirmLogout(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Logout'),
-        content: const Text('Are you sure you want to logout?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(),
-            child: const Text('No'),
-          ),
-          TextButton(
-            onPressed: () {
-              Navigator.of(dialogContext).pop();
-              context.read<AuthBloc>().add(const AuthLogoutEvent());
-            },
-            child: const Text('Yes'),
-          ),
-        ],
-      ),
-    );
+    performAppLogout(context, requireConfirmation: true);
   }
 
   @override
