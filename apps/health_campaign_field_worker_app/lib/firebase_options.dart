@@ -57,6 +57,6 @@ class DefaultFirebaseOptions {
     appId: '1:397617237644:android:ef1103344485f51af6b5a9',
     messagingSenderId: '397617237644',
     projectId: 'digit-health-75ed0',
-    storageBucket: 'digit-health-75ed0.appspot.com',
+    storageBucket: 'digit-health-75ed0.firebasestorage.app',
   );
 }
