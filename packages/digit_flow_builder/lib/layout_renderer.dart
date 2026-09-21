@@ -72,18 +72,14 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
   DateTime? _loadingStartTime;
   Timer? _minDurationTimer;
 
-  // Whether the modal loader dialog is currently on screen. Tracked so we
-  // only push/pop it on true state transitions, not on every rebuild.
-  bool _isLoaderDialogShowing = false;
-
   // The FlowCrudState notifier this page is attached to. We listen to it
   // directly (not just via ValueListenableBuilder in build()) because a
   // fast isLoading:true->false round trip can resolve inside a single
   // Flutter frame: build() only ever sees the *coalesced* final value, so
-  // a build()-driven dialog would never see the "true" moment at all. A
-  // raw addListener callback fires synchronously on every individual
-  // notifyListeners() call, so it can't miss a transition the way a
-  // rebuild can.
+  // a build()-only min-duration guard would never see the "true" moment
+  // at all. A raw addListener callback fires synchronously on every
+  // individual notifyListeners() call, so it can't miss a transition the
+  // way a rebuild can.
   ValueNotifier<FlowCrudState?>? _crudNotifier;
 
   // Track the last wrapper reference to detect when new data arrives.
@@ -154,12 +150,13 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
   }
 
   /// Fires synchronously on every FlowCrudState change, including ones a
-  /// rebuild would coalesce away. Keeps the modal loader dialog in sync
-  /// with the real isLoading transitions for both the initial data load
-  /// and every scroll-triggered pagination load.
+  /// rebuild would coalesce away. Feeds the min-duration guard so the
+  /// inline loader still gets its minimum visible time for both the
+  /// initial data load and every scroll-triggered pagination load, even
+  /// when the fetch resolves before build() ever sees isLoading == true.
   void _onCrudStateChanged() {
     final isLoading = _crudNotifier?.value?.isLoading ?? false;
-    _syncLoaderDialog(_resolveDisplayLoading(isLoading));
+    _resolveDisplayLoading(isLoading);
   }
 
   @override
@@ -206,30 +203,6 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
       });
     });
     return true;
-  }
-
-  /// Shows/hides a modal loader dialog in sync with [shouldShow], covering
-  /// both the screen's initial data load and every scroll-triggered
-  /// pagination load. Only acts on true->false/false->true transitions
-  /// (guarded by [_isLoaderDialogShowing]).
-  ///
-  /// Calls `showDialog`/`Navigator.pop` directly rather than deferring to
-  /// addPostFrameCallback: this runs from [_onCrudStateChanged], a raw
-  /// ValueNotifier listener, not from build(), so there's no "don't touch
-  /// Navigator during build" concern. Deferring was actively harmful here —
-  /// a fast show-then-hide pair (e.g. a sub-second fetch) would both land in
-  /// the *same* post-frame callback batch and fire back-to-back before the
-  /// dialog route ever got a chance to paint, so the loader never appeared.
-  void _syncLoaderDialog(bool shouldShow) {
-    if (shouldShow == _isLoaderDialogShowing) return;
-    _isLoaderDialogShowing = shouldShow;
-    if (!mounted) return;
-
-    if (shouldShow) {
-      DigitLoaders.overlayLoader(context: context, barrierDismissible: false);
-    } else {
-      DigitLoaders.hideLoaderDialog(context);
-    }
   }
 
   /// Handles scroll notifications from the page
@@ -423,11 +396,6 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
         final stateData = extractCrudStateData(compositeKey);
         final isLoading = flowState?.isLoading ?? false;
         final displayLoading = _resolveDisplayLoading(isLoading);
-        // Not just a rebuild-driven mirror of _onCrudStateChanged: this is
-        // what actually hides the dialog once the min-duration timer fires
-        // (that timer's own callback only calls setState(), it doesn't
-        // touch the dialog directly).
-        _syncLoaderDialog(displayLoading);
         final currentWrapper = flowState?.stateWrapper;
         final currentWrapperLength = currentWrapper?.length ?? 0;
 
