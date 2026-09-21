@@ -245,6 +245,7 @@ class StockCalculationUtils {
     required void Function(double) stockLost,
     required void Function(double) stockDamaged,
   }) {
+    if (status == 'REJECTED') return;
     if (transactionType == 'RECEIVED') {
       if (stockEntryType == 'RETURNED') {
         stockReturned(quantity);

@@ -59,14 +59,11 @@ android {
     }
 
     signingConfigs {
-        if (keystoreProperties['storeFile'] != null
-                && file(keystoreProperties['storeFile']).exists()) {
-            release {
-                storeFile file(keystoreProperties['storeFile'])
-                storePassword keystoreProperties['storePassword']
-                keyAlias keystoreProperties['keyAlias']
-                keyPassword keystoreProperties['keyPassword']
-            }
+        release {
+            storeFile file(keystoreProperties['storeFile'])
+            storePassword keystoreProperties['storePassword']
+            keyAlias keystoreProperties['keyAlias']
+            keyPassword keystoreProperties['keyPassword']
         }
     }
 
@@ -82,7 +79,7 @@ android {
             // 1. Generate keystore: keytool -genkey -v -keystore my-release-key.jks -keyalg RSA -keysize 2048 -validity 10000 -alias my-key-alias
             // 2. Create android/key.properties with storePassword, keyPassword, keyAlias, storeFile
             // 3. Add signingConfigs.release block and reference it here
-            signingConfig signingConfigs.debug
+            signingConfig signingConfigs.release
         }
     }
 
