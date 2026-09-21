@@ -25,6 +25,7 @@ class LocalSecureStore {
   static const userVsDeviceTokenMapKey = 'userVsDeviceTokenMapKey';
   static const deviceSwitchReasonKey = 'deviceSwitchReasonKey';
   static const existingDeviceTokenKey = 'existingDeviceTokenKey';
+  static const teamCodeKey = 'teamCodeKey';
 
   final storage = const FlutterSecureStorage();
 
@@ -76,6 +77,10 @@ class LocalSecureStore {
     } catch (_) {
       return null;
     }
+  }
+
+  Future<String?> get teamCode {
+    return storage.read(key: teamCodeKey);
   }
 
   Future<ProjectModel?> get selectedProject async {
@@ -251,6 +256,14 @@ class LocalSecureStore {
       key: selectedIndividualKey,
       value: individualId,
     );
+  }
+
+  Future<void> setTeamCode(String? teamCode) async {
+    if (teamCode == null) {
+      await storage.delete(key: teamCodeKey);
+    } else {
+      await storage.write(key: teamCodeKey, value: teamCode);
+    }
   }
 
   // Note TO the app  as Trigger Manual Sync or Not

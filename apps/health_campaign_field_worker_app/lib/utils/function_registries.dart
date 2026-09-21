@@ -6,6 +6,7 @@ import 'package:digit_crud_bloc/digit_crud_bloc.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
+import 'package:digit_flow_builder/utils/team_ownership.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -29,6 +30,28 @@ class FunctionRegistries {
     _registerViewTransactionFunctions();
     _registerWorkingHoursFunctions();
     _registerDailyDeliveryLimitFunctions();
+    _registerTeamOwnershipFunctions();
+  }
+
+  void _registerTeamOwnershipFunctions() {
+    // Gates DELIVERY / UNABLE TO DELIVER / REDOSE / RECORD_CYCLE_DOSE on the
+    // beneficiary's registered_by_team. Used from the flow JSON as
+    //   "disabled": "{{fn:isOwnedByMyTeam(item.projectBeneficiary)}}==false"
+    // Untagged records, a missing own team code, or malformed input all
+    // resolve to true (allowed). Edit uses disableEdit's third argument instead.
+    FunctionRegistry.register('isOwnedByMyTeam', (args, stateData) {
+      try {
+        return isOwnedByMyTeam(
+          args.isNotEmpty ? args[0] : null,
+          FlowBuilderSingleton().teamCode,
+          projectId: FlowBuilderSingleton().projectId,
+        );
+      } catch (_) {
+        // Safety net: allow, so a code bug can never blank the TEMPLATE
+        // screen or block fieldwork.
+        return true;
+      }
+    });
   }
 
   void _registerDailyDeliveryLimitFunctions() {

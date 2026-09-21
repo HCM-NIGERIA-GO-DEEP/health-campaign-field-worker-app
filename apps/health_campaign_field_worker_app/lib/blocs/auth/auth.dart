@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/user_action.dart';
+import 'package:digit_flow_builder/utils/team_ownership.dart';
 import 'package:digit_ui_components/utils/app_logger.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -14,6 +15,7 @@ import '../../models/auth/auth_model.dart';
 import '../../models/entities/roles_type.dart';
 import '../../models/role_actions/role_actions_model.dart';
 import '../../utils/environment_config.dart';
+import '../../utils/utils.dart' show getIsConnected;
 
 // part 'auth.freezed.dart' need to be added to auto generate the files for freezed model
 part 'auth.freezed.dart';
@@ -57,18 +59,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final refreshToken = await localSecureStore.refreshToken;
       final userObject = await localSecureStore.userRequestModel;
       final actionsList = await localSecureStore.savedActions;
-      final userIndividualId = await localSecureStore.userIndividualId;
       if (accessToken == null ||
           refreshToken == null ||
           userObject == null ||
           actionsList == null) {
         emit(const AuthUnauthenticatedState());
       } else {
+        await _refreshOwnIndividualIfOnline(userObject);
         emit(AuthAuthenticatedState(
           accessToken: accessToken,
           refreshToken: refreshToken,
           userModel: userObject,
-          individualId: userIndividualId,
+          individualId: await localSecureStore.userIndividualId,
+          teamCode: await localSecureStore.teamCode,
           actionsWrapper: actionsList,
         ));
       }
@@ -105,22 +108,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await localSecureStore.setBoundaryRefetch(true);
 
       await localSecureStore.setRoleActions(actionsWrapper);
-      if (result.userRequestModel.roles
-          .where((role) =>
-              role.code == RolesType.districtSupervisor.toValue() ||
-              role.code ==
-                  RolesType.distributor
-                      .toValue()) // NOTE: Savings distributor user details for fetching non mobile users
-          .toList()
-          .isNotEmpty) {
-        final loggedInIndividual = await individualRemoteRepository.search(
-          IndividualSearchModel(
-            userUuid: [result.userRequestModel.uuid],
-          ),
-        );
-        await localSecureStore
-            .setSelectedIndividual(loggedInIndividual.firstOrNull?.id);
-      }
+      await _fetchAndStoreOwnIndividual(result.userRequestModel);
 
       emit(
         AuthAuthenticatedState(
@@ -129,6 +117,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           userModel: result.userRequestModel,
           actionsWrapper: actionsWrapper,
           individualId: await localSecureStore.userIndividualId,
+          teamCode: await localSecureStore.teamCode,
         ),
       );
     } on DioException catch (error) {
@@ -143,6 +132,44 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       emit(const AuthErrorState());
       emit(const AuthUnauthenticatedState());
       rethrow;
+    }
+  }
+
+  /// Caches the logged-in user's own Individual id (distributors and district
+  /// supervisors, as before — needed to look up non-mobile users) and, for
+  /// distributors, the team_code the server assigned to that Individual.
+  /// Errors propagate so login keeps its existing failure handling.
+  Future<void> _fetchAndStoreOwnIndividual(UserRequestModel user) async {
+    final roleCodes = user.roles.map((role) => role.code).toSet();
+    final isDistributor = roleCodes.contains(RolesType.distributor.toValue());
+    final isDistrictSupervisor =
+        roleCodes.contains(RolesType.districtSupervisor.toValue());
+    if (!isDistributor && !isDistrictSupervisor) return;
+
+    final loggedInIndividual = await individualRemoteRepository.search(
+      IndividualSearchModel(userUuid: [user.uuid]),
+    );
+    final individual = loggedInIndividual.firstOrNull;
+    await localSecureStore.setSelectedIndividual(individual?.id);
+    await localSecureStore.setTeamCode(
+      isDistributor
+          ? readAdditionalField(individual?.additionalFields, kTeamCodeKey)
+          : null,
+    );
+  }
+
+  /// Best-effort refresh on app start so a team code assigned server-side
+  /// while the user stayed logged in reaches the device without a re-login.
+  /// Offline, slow or failing servers leave the cached values untouched.
+  Future<void> _refreshOwnIndividualIfOnline(UserRequestModel user) async {
+    try {
+      final online = await getIsConnected()
+          .timeout(const Duration(seconds: 5), onTimeout: () => false);
+      if (!online) return;
+      await _fetchAndStoreOwnIndividual(user)
+          .timeout(const Duration(seconds: 15));
+    } catch (_) {
+      // Keep the cached individualId / teamCode; never block auto-login.
     }
   }
 
@@ -197,22 +224,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       await localSecureStore.setBoundaryRefetch(true);
 
       await localSecureStore.setRoleActions(actionsWrapper);
-      if (result.userRequestModel.roles
-          .where((role) =>
-              role.code == RolesType.districtSupervisor.toValue() ||
-              role.code ==
-                  RolesType.distributor
-                      .toValue()) // NOTE: Savings distributor user details for fetching non mobile users
-          .toList()
-          .isNotEmpty) {
-        final loggedInIndividual = await individualRemoteRepository.search(
-          IndividualSearchModel(
-            userUuid: [result.userRequestModel.uuid],
-          ),
-        );
-        await localSecureStore
-            .setSelectedIndividual(loggedInIndividual.firstOrNull?.id);
-      }
+      await _fetchAndStoreOwnIndividual(result.userRequestModel);
 
       emit(
         AuthAuthenticatedState(
@@ -221,6 +233,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           userModel: result.userRequestModel,
           actionsWrapper: actionsWrapper,
           individualId: await localSecureStore.userIndividualId,
+          teamCode: await localSecureStore.teamCode,
         ),
       );
     } on DioException catch (error) {
@@ -336,6 +349,7 @@ class AuthState with _$AuthState {
     required UserRequestModel userModel,
     required RoleActionsWrapperModel actionsWrapper,
     String? individualId,
+    String? teamCode,
   }) = AuthAuthenticatedState;
 
   const factory AuthState.error([String? error]) = AuthErrorState;

@@ -163,7 +163,7 @@ final jsonConfig = {
           /// Note: Generate uuid
           "rowVersion": "meta.rowVersion",
           "dateOfRegistration": "householdDetails.dateOfRegistration",
-          "additionalFields": "additionalInfo.fields",
+          "additionalFields": {"registered_by_team": "__context:teamCode"},
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
         }
@@ -219,6 +219,7 @@ final jsonConfig = {
           "clientReferenceId": "__generate:uuid",
           "dateOfRegistration": "__value:DATETIME.NOW",
           "rowVersion": "meta.rowVersion",
+          "additionalFields": {"registered_by_team": "__context:teamCode"},
           "auditDetails": "__generate:audit",
           "clientAuditDetails": "__generate:clientAudit",
         }
@@ -395,7 +396,7 @@ final jsonConfig = {
           /// Note: Generate uuid
           "rowVersion": "meta.rowVersion",
           "dateOfRegistration": "__value:DATETIME.NOW",
-          "additionalFields": "additionalInfo.fields",
+          "additionalFields": {"registered_by_team": "__context:teamCode"},
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
         }
@@ -1318,7 +1319,7 @@ final jsonConfig = {
           /// Note: Generate uuid
           "rowVersion": "meta.rowVersion",
           "dateOfRegistration": "__value:DATETIME.NOW",
-          "additionalFields": "additionalInfo.fields",
+          "additionalFields": {"registered_by_team": "__context:teamCode"},
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
         }

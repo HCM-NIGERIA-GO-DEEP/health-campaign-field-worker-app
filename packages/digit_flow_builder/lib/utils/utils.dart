@@ -35,6 +35,7 @@ class FlowBuilderSingleton {
   List<Map<String, dynamic>>?
       _userRoles; // User roles from app level (e.g., [{"code": "WAREHOUSE_MANAGER", "name": "Warehouse Manager"}])
   int? _beneficiaryIdMinCount;
+  String? _teamCode;
 
   void setBoundary({required BoundaryModel boundary}) {
     _boundaryModel = boundary;
@@ -55,6 +56,7 @@ class FlowBuilderSingleton {
     required UserModel? loggedInUser,
     List<Map<String, dynamic>>? userRoles,
     int? beneficiaryIdMinCount,
+    String? teamCode,
   }) {
     _loggedInUserUuid = loggedInUserUuid;
     _maxRadius = maxRadius;
@@ -65,10 +67,17 @@ class FlowBuilderSingleton {
     _loggedInUser = loggedInUser;
     _userRoles = userRoles;
     _beneficiaryIdMinCount = beneficiaryIdMinCount;
+    // Assigned even when null so a user without a team never inherits the
+    // previous user's code on a shared device (the singleton outlives logout).
+    _teamCode = teamCode;
   }
 
   void setUserRoles(List<Map<String, dynamic>>? userRoles) {
     _userRoles = userRoles;
+  }
+
+  void setTeamCode(String? teamCode) {
+    _teamCode = teamCode;
   }
 
   void setTenantId(String tenantId) {
@@ -105,6 +114,8 @@ class FlowBuilderSingleton {
   List<Map<String, dynamic>>? get userRoles => _userRoles;
 
   int? get beneficiaryIdMinCount => _beneficiaryIdMinCount;
+
+  String? get teamCode => _teamCode;
 }
 
 /// TODO: WILL REMOVE THIS FUNCTION ALSO : TEMPORARY

@@ -455,9 +455,9 @@ class MainApplicationState extends State<MainApplication>
                                     orElse: () => [
                                       const UnauthenticatedRouteWrapper(),
                                     ],
-                                    authenticated: (_, __, ___, ____, _____) =>
-                                        [
-                                      AuthenticatedRouteWrapper(),
+                                    authenticated:
+                                        (_, __, ___, ____, _____, ______) => [
+                                      const AuthenticatedRouteWrapper(),
                                     ],
                                   ),
                                 ),

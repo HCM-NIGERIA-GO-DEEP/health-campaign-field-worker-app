@@ -139,8 +139,8 @@ extension ContextUtilityExtensions on BuildContext {
   List<UserRoleModel> get loggedInUserRoles {
     final authBloc = _get<AuthBloc>();
     final userRequestObject = authBloc.state.whenOrNull(
-      authenticated:
-          (accessToken, refreshToken, userModel, actionsWrapper, individualId) {
+      authenticated: (accessToken, refreshToken, userModel, actionsWrapper,
+          individualId, teamCode) {
         return userModel.roles;
       },
     );
@@ -155,8 +155,8 @@ extension ContextUtilityExtensions on BuildContext {
   String? get loggedInIndividualId {
     final authBloc = _get<AuthBloc>();
     final individualUUID = authBloc.state.whenOrNull(
-      authenticated:
-          (accessToken, refreshToken, userModel, actionsWrapper, individualId) {
+      authenticated: (accessToken, refreshToken, userModel, actionsWrapper,
+          individualId, teamCode) {
         return individualId;
       },
     );
@@ -166,6 +166,16 @@ extension ContextUtilityExtensions on BuildContext {
     }
 
     return individualUUID;
+  }
+
+  String? get loggedInTeamCode {
+    final authBloc = _get<AuthBloc>();
+    return authBloc.state.whenOrNull(
+      authenticated: (accessToken, refreshToken, userModel, actionsWrapper,
+          individualId, teamCode) {
+        return teamCode;
+      },
+    );
   }
 
   int? get currentCycleIndex => selectedCycle?.id;
@@ -205,8 +215,8 @@ extension ContextUtilityExtensions on BuildContext {
   UserRequestModel get loggedInUser {
     final authBloc = _get<AuthBloc>();
     final userRequestObject = authBloc.state.whenOrNull(
-      authenticated:
-          (accessToken, refreshToken, userModel, actions, individualId) {
+      authenticated: (accessToken, refreshToken, userModel, actions,
+          individualId, teamCode) {
         return userModel;
       },
     );

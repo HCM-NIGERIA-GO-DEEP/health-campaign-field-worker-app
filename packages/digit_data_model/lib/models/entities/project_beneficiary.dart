@@ -137,3 +137,16 @@ class ProjectBeneficiaryAdditionalFields extends AdditionalFields
     super.fields,
   });
 }
+
+/// Decodes the JSON blob written by [ProjectBeneficiaryModel.companion].
+/// Null for empty or unreadable columns so one corrupt row cannot break search.
+ProjectBeneficiaryAdditionalFields? decodeProjectBeneficiaryAdditionalFields(
+  String? raw,
+) {
+  if (raw == null || raw.trim().isEmpty) return null;
+  try {
+    return ProjectBeneficiaryAdditionalFieldsMapper.fromJson(raw);
+  } catch (_) {
+    return null;
+  }
+}
