@@ -1,5 +1,16 @@
 # Changelog
 
+## 2.2.113 — 2026-09-21
+
+_(single functional commit: `packages/digit_flow_builder/lib/layout_renderer.dart`, plus the version bump)_
+
+**Modal loader dialog removed from `LayoutRendererPage`**
+
+- The full-screen, non-dismissible loader dialog that 2.2.105 added to the dynamic layout renderer — pushed via `DigitLoaders.overlayLoader(barrierDismissible: false)` on every `isLoading` true transition and popped via `DigitLoaders.hideLoaderDialog` on the false transition, for both the initial data load and every scroll-triggered pagination load — has been removed, along with `_syncLoaderDialog`, the `_isLoaderDialogShowing` transition guard, and the `_syncLoaderDialog(displayLoading)` call inside `build()`. The commit message ("refactor: simplify loader dialog management") undersells it: this is a user-visible change. Since 2.2.105 every list-view screen showed *two* loaders during a fetch — the modal dialog on top and the pre-existing inline spinner underneath — and the modal blocked all interaction (including scrolling and back navigation) until the fetch finished. Only the inline indicators remain: the `DigitLoaders.inlineLoader()` stacked over the body while `displayLoading` is true, and the sliver footer spinner shown when the `scrollListener.showLoadingIndicator` config (default `true`) is on.
+- The raw `ValueNotifier` listener (`_onCrudStateChanged`) introduced alongside the dialog is kept, but now only feeds `_resolveDisplayLoading`. That preserves the 350ms minimum-visible floor for the inline loader on fetches that resolve inside a single frame — the listener still catches the `isLoading: true` moment that a coalesced rebuild would miss, so `_loadingStartTime` is stamped and the hide is deferred via `_minDurationTimer` as before. Doc comments on the listener and notifier field were rewritten to describe the min-duration role rather than the dialog.
+- Two latent problems in the removed code go away with it. `hideLoaderDialog` is implemented in `digit_ui_components` as `Navigator.of(context, rootNavigator: true).popUntil((route) => route is! PopupRoute)`, so a pagination fetch completing while *any* other dialog or bottom sheet was open on the root navigator would have dismissed that too. And `_syncLoaderDialog` set `_isLoaderDialogShowing` before its `mounted` check, and `dispose()` never popped the dialog, so a page torn down mid-fetch could leave the modal loader stranded on screen with no code path left to close it. Neither was reported as a bug in this repo; both are simply no longer reachable.
+- No configs, function registry entries, or other packages changed in this release. The `pubspec.lock` under `apps/health_campaign_field_worker_app` is modified in the working tree but not part of any 2.2.113 commit.
+
 ## 2.2.112 — 2026-09-18
 
 _(includes 2.2.111; both releases are `packages/digit_flow_builder/lib/utils/function_registry.dart` changes plus an Android app-identity change)_
