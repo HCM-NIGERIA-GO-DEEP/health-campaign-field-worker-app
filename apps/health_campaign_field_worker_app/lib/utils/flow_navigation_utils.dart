@@ -77,9 +77,9 @@ class FlowNavigationUtils {
       // Initialize widget registry
       WidgetRegistry.initialize();
 
-      // Get schema from shared preferences
-      final prefs = await SharedPreferences.getInstance();
-      final schemaJsonRaw = prefs.getString('app_config_schemas');
+      // // Get schema from shared preferences
+      // final prefs = await SharedPreferences.getInstance();
+      // final schemaJsonRaw = prefs.getString('app_config_schemas');
 
       // if (schemaJsonRaw != null && config.schemaKey != "ATTENDANCE") {
       //   final allSchemas = json.decode(schemaJsonRaw) as Map<String, dynamic>;
@@ -92,10 +92,10 @@ class FlowNavigationUtils {
       //   }
       // }
 
-      if (config.sampleFlows != null) {
-        await _navigate(context, config.sampleFlows);
-        return;
-      }
+      // if (config.sampleFlows != null) {
+      //   await _navigate(context, config.sampleFlows);
+      //   return;
+      // }
 
       Map<String, dynamic> localConfig =
           await FlowModuleUtils.loadLocalFlows(config.schemaKey);
