@@ -24,7 +24,7 @@ class DedupEngine {
   final bool useBlocking;
 
   DedupEngine({
-    this.matchThreshold = 0.85,
+    this.matchThreshold = 0.70,
     MatchingService? matchingService,
     BlockingStrategy? blockingStrategy,
     this.useBlocking = true,
@@ -161,6 +161,10 @@ class DedupEngine {
   }
 
   /// Index pairs worth scoring, deduplicated across blocks.
+  ///
+  /// Pairs are drawn from shared blocks only, so two records whose given and
+  /// family names are swapped relative to each other are not paired here;
+  /// that widening applies to probe lookups ([findMatchesFor]) only.
   Iterable<(int, int)> _candidatePairs(List<Map<String, dynamic>> records) {
     if (!useBlocking) {
       return [

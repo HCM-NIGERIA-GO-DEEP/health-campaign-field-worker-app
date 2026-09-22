@@ -43,9 +43,10 @@ class DedupIndex {
   int get largestBlock =>
       _blocks.values.fold(0, (a, b) => b.length > a ? b.length : a);
 
-  /// Corpus indices sharing at least one block key with [record].
+  /// Corpus indices sharing at least one block key with [record], including
+  /// the keys [record] would carry with its given and family names swapped.
   Set<int> candidatesFor(Map<String, dynamic> record) {
-    final keys = blockingStrategy.blockKeysFor(record);
+    final keys = blockingStrategy.probeKeysFor(record);
     if (keys.isEmpty) return const {};
 
     final candidates = <int>{};

@@ -64,7 +64,7 @@ the records already on the device.
 ```dart
 import 'package:digit_dedup_engine/digit_dedup_engine.dart';
 
-final engine = DedupEngine(matchThreshold: 0.85);
+final engine = DedupEngine(matchThreshold: 0.70);
 
 final matches = engine.findMatchesFor(
   {'givenName': 'Pitr', 'familyName': 'Okafor'},

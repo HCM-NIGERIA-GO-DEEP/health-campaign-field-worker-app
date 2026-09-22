@@ -37,11 +37,11 @@ class DedupCheckUtils {
 
   /// Entry point for [DedupCheckRegistry].
   ///
-  /// Never throws: a failed check returns [DedupCheckOutcome.proceed] so a
-  /// database or config problem cannot stop a field worker from registering a
+  /// Never throws: a failed check returns a proceed result so a database or
+  /// config problem cannot stop a field worker from registering a
   /// beneficiary. The trade-off is deliberate -- this is a warning, not a
   /// gate.
-  static Future<DedupCheckOutcome> run(
+  static Future<DedupCheckResult> run(
     BuildContext context,
     DedupCheckRequest request,
   ) async {
@@ -51,11 +51,11 @@ class DedupCheckUtils {
       debugPrint('DedupCheckUtils: check failed, allowing submission.\n'
           'Error: $e\n'
           'StackTrace: $stackTrace');
-      return DedupCheckOutcome.proceed;
+      return const DedupCheckResult.proceed();
     }
   }
 
-  static Future<DedupCheckOutcome> _run(
+  static Future<DedupCheckResult> _run(
     BuildContext context,
     DedupCheckRequest request,
   ) async {
@@ -66,7 +66,7 @@ class DedupCheckUtils {
       debugPrint(
           'DedupCheckUtils: no probe attributes for ${request.pageName}, '
           'skipping the check.');
-      return DedupCheckOutcome.proceed;
+      return const DedupCheckResult.proceed();
     }
 
     final filters = resolveFilters(config, request);
@@ -75,7 +75,7 @@ class DedupCheckUtils {
       // whole device would be wrong anyway.
       debugPrint('DedupCheckUtils: no scoping filters resolved for '
           '${request.pageName}, skipping the check.');
-      return DedupCheckOutcome.proceed;
+      return const DedupCheckResult.proceed();
     }
 
     // translate() echoes the code back when the string is missing from the
@@ -89,28 +89,52 @@ class DedupCheckUtils {
       task: () => findMatches(config, probe, filters),
     );
 
-    if (matches.isEmpty) return DedupCheckOutcome.proceed;
-    if (!context.mounted) return DedupCheckOutcome.proceed;
+    if (matches.isEmpty) return const DedupCheckResult.proceed();
+    if (!context.mounted) return const DedupCheckResult.proceed();
 
     // Prefer the page's own dialog config. The built-in dialog stays as the
     // fallback so a page that has not declared `dedupAlertPopUp` still warns.
     final alert = request.alert;
+    final DedupCheckOutcome outcome;
     if (alert != null && alert.body.isNotEmpty) {
-      return showConfigDedupAlert(
+      outcome = await showConfigDedupAlert(
         context: context,
         alert: alert,
         matches: matches,
         stateKey: '${request.schemaKey}::${request.pageName}',
         onBackToSearch: () => _navigateToSearch(config),
       );
+    } else {
+      outcome = await showDedupMatchDialog(
+        context: context,
+        alert: alert,
+        matches: matches,
+        onBackToSearch: () => _navigateToSearch(config),
+      );
     }
 
-    return showDedupMatchDialog(
-      context: context,
-      alert: alert,
-      matches: matches,
-      onBackToSearch: () => _navigateToSearch(config),
+    return describeDecision(outcome, matches);
+  }
+
+  /// Pairs the user's answer with what the dialog showed. Matches arrive
+  /// highest score first, so the first one is the best match.
+  static DedupCheckResult describeDecision(
+    DedupCheckOutcome outcome,
+    List<DedupMatch> matches,
+  ) {
+    final top = matches.first;
+    final result = DedupCheckResult.decided(
+      outcome: outcome,
+      matchCount: matches.length,
+      topScore: top.score,
+      topMatchClientReferenceId:
+          top.record[DedupRecordKeys.clientReferenceId]?.toString(),
     );
+
+    debugPrint('DedupCheckUtils: user ${result.decision!.name} the duplicate '
+        'warning (matches: ${result.matchCount}, top: ${top.scorePercentage}% '
+        '${result.topMatchClientReferenceId})');
+    return result;
   }
 
   /// Runs [task], showing a blocking loader only once it has run long enough

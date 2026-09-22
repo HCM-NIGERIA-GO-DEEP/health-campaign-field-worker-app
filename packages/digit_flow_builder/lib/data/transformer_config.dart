@@ -85,7 +85,13 @@ final jsonConfig = {
           "additionalFields": {
             "weight": "beneficiaryDetails.weight",
             "height": "beneficiaryDetails.height",
-            "isPregnant": "beneficiaryDetails.isPregnant"
+            "isPregnant": "beneficiaryDetails.isPregnant",
+            // Hidden fields forms_render adds when the user skips the
+            // duplicate warning (DedupStampFields); absent otherwise.
+            "dedup_decision": "beneficiaryDetails.dedupDecision",
+            "dedup_top_score": "beneficiaryDetails.dedupTopScore",
+            "dedup_match_count": "beneficiaryDetails.dedupMatchCount",
+            "dedup_top_match_id": "beneficiaryDetails.dedupTopMatchId",
           },
           "bloodGroup": "health.bloodGroup",
           "gender": "beneficiaryDetails.gender",
@@ -318,7 +324,13 @@ final jsonConfig = {
           "additionalFields": {
             "weight": "beneficiaryDetails.weight",
             "height": "beneficiaryDetails.height",
-            "isPregnant": "beneficiaryDetails.isPregnant"
+            "isPregnant": "beneficiaryDetails.isPregnant",
+            // Hidden fields forms_render adds when the user skips the
+            // duplicate warning (DedupStampFields); absent otherwise.
+            "dedup_decision": "beneficiaryDetails.dedupDecision",
+            "dedup_top_score": "beneficiaryDetails.dedupTopScore",
+            "dedup_match_count": "beneficiaryDetails.dedupMatchCount",
+            "dedup_top_match_id": "beneficiaryDetails.dedupTopMatchId",
           },
           "bloodGroup": "health.bloodGroup",
           "gender": "beneficiaryDetails.gender",

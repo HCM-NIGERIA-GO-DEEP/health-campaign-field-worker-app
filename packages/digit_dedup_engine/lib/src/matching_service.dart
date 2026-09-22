@@ -37,11 +37,15 @@ class MatchingService {
     'mobileNumber': 0.20,
   };
 
+  static const String _givenName = 'givenName';
+  static const String _familyName = 'familyName';
+  static const String _fatherName = 'fatherName';
+
   /// Attributes scored with fuzzy string similarity.
   static const List<String> _nameAttributes = [
-    'givenName',
-    'familyName',
-    'fatherName',
+    _givenName,
+    _familyName,
+    _fatherName,
   ];
 
   static final RegExp _nonDigits = RegExp(r'[^0-9]');
@@ -106,14 +110,23 @@ class MatchingService {
   ) {
     final scores = <String, double>{};
 
+    final pairing = _namePairing(record1, record2);
+    if (pairing != null) {
+      scores[_givenName] = pairing.given;
+      scores[_familyName] = pairing.family;
+    }
+
     for (final attribute in _nameAttributes) {
+      // Given and family names were scored together above.
+      if (pairing != null && attribute != _fatherName) continue;
       final a = _comparisonForms(record1[attribute]);
       final b = _comparisonForms(record2[attribute]);
       if (a == null || b == null) continue;
       scores[attribute] = _nameSimilarity(a, b);
     }
 
-    final phonetic = _phoneticScore(record1, record2);
+    final phonetic =
+        _phoneticScore(record1, record2, swapped: pairing?.swapped ?? false);
     if (phonetic != null) scores['phoneticMatch'] = phonetic;
 
     final dob =
@@ -155,19 +168,70 @@ class MatchingService {
     return best;
   }
 
-  /// Fraction of the compared name attributes whose Soundex codes agree.
+  /// The given and family names of two records scored through whichever
+  /// assignment fits better: given↔given / family↔family, or the two names
+  /// exchanged. A registrant's names are routinely entered the other way
+  /// round, and compared positionally such a pair scores as two strangers.
   ///
-  /// Returns null when no name attribute is present on both records.
-  double? _phoneticScore(
+  /// The choice is made jointly, never per attribute, so one shared name can
+  /// only ever count once. Returns null unless both records carry both names;
+  /// the caller then falls back to positional scoring of whatever is present.
+  ({double given, double family, bool swapped})? _namePairing(
     Map<String, dynamic> record1,
     Map<String, dynamic> record2,
   ) {
+    final given1 = _comparisonForms(record1[_givenName]);
+    final family1 = _comparisonForms(record1[_familyName]);
+    final given2 = _comparisonForms(record2[_givenName]);
+    final family2 = _comparisonForms(record2[_familyName]);
+    if (given1 == null ||
+        family1 == null ||
+        given2 == null ||
+        family2 == null) {
+      return null;
+    }
+
+    final directGiven = _nameSimilarity(given1, given2);
+    final directFamily = _nameSimilarity(family1, family2);
+    final swappedGiven = _nameSimilarity(given1, family2);
+    final swappedFamily = _nameSimilarity(family1, given2);
+
+    // Compare the two assignments the way [computeScore] will weigh them, so
+    // the pairing chosen is the one that yields the higher overall score.
+    final givenWeight = weights[_givenName] ?? 0;
+    final familyWeight = weights[_familyName] ?? 0;
+    final weighted = givenWeight + familyWeight > 0;
+    double total(double given, double family) => weighted
+        ? given * givenWeight + family * familyWeight
+        : given + family;
+
+    if (total(swappedGiven, swappedFamily) > total(directGiven, directFamily)) {
+      return (given: swappedGiven, family: swappedFamily, swapped: true);
+    }
+    return (given: directGiven, family: directFamily, swapped: false);
+  }
+
+  /// Fraction of the compared name attributes whose Soundex codes agree.
+  ///
+  /// With [swapped] the given name is compared against the other record's
+  /// family name and vice versa, following the assignment [_namePairing]
+  /// chose. Returns null when no name attribute is present on both records.
+  double? _phoneticScore(
+    Map<String, dynamic> record1,
+    Map<String, dynamic> record2, {
+    required bool swapped,
+  }) {
     var compared = 0;
     var agreed = 0;
 
     for (final attribute in _nameAttributes) {
+      final counterpart = switch (attribute) {
+        _givenName when swapped => _familyName,
+        _familyName when swapped => _givenName,
+        _ => attribute,
+      };
       final a = _comparisonForms(record1[attribute]);
-      final b = _comparisonForms(record2[attribute]);
+      final b = _comparisonForms(record2[counterpart]);
       if (a == null || b == null) continue;
       compared++;
 

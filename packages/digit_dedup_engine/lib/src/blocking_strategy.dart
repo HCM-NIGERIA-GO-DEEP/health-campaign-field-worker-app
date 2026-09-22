@@ -65,4 +65,27 @@ class BlockingStrategy {
 
     return keys;
   }
+
+  /// The keys to look up when searching for [record]: its own block keys plus
+  /// the same keys with the given and family name prefixes exchanged, so a
+  /// record whose two names were entered the other way round is still a
+  /// candidate. Index building stays on [blockKeysFor], so block shapes and
+  /// build cost are unchanged; only the probe's candidate set widens.
+  Set<String> probeKeysFor(Map<String, dynamic> record) {
+    final keys = blockKeysFor(record);
+    final swapped = <String>{};
+
+    for (final key in keys) {
+      if (key.startsWith(_givenPrefix)) {
+        swapped.add('$_familyPrefix${key.substring(_givenPrefix.length)}');
+      } else if (key.startsWith(_familyPrefix)) {
+        swapped.add('$_givenPrefix${key.substring(_familyPrefix.length)}');
+      }
+    }
+
+    return {...keys, ...swapped};
+  }
+
+  static const String _givenPrefix = 'givenName:';
+  static const String _familyPrefix = 'familyName:';
 }

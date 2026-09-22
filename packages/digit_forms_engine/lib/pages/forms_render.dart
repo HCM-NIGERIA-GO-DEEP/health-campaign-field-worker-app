@@ -21,6 +21,7 @@ import '../helper/form_builder_helper.dart';
 import '../helper/validator_helper.dart';
 import '../models/property_schema/property_schema.dart';
 import '../models/schema_object/schema_object.dart';
+import '../utils/dedup_stamp.dart';
 import '../utils/screen_protection_manager.dart';
 import '../utils/utils.dart';
 import '../widgets/dedup_check_provider.dart';
@@ -107,22 +108,24 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
   /// Runs the page's configured duplicate check before anything is written.
   ///
-  /// Returns [DedupCheckOutcome.proceed] whenever the page opts out, the check
-  /// does not apply, or no callback is registered, so a submission is only ever
-  /// halted by an explicit user decision. The search itself lives outside this
+  /// Returns a proceed result whenever the page opts out, the check does not
+  /// apply, or no callback is registered, so a submission is only ever halted
+  /// by an explicit user decision. The search itself lives outside this
   /// package -- see [DedupCheckRegistry].
-  Future<DedupCheckOutcome> _runDedupCheck(
+  Future<DedupCheckResult> _runDedupCheck(
     PropertySchema schema,
     FormGroup formGroup,
   ) async {
     final config = schema.dedupCheck;
-    if (config == null) return DedupCheckOutcome.proceed;
+    if (config == null) return const DedupCheckResult.proceed();
 
     // Editing an existing record would match that record against itself.
-    if (config.skipOnEdit && widget.isEdit) return DedupCheckOutcome.proceed;
+    if (config.skipOnEdit && widget.isEdit) {
+      return const DedupCheckResult.proceed();
+    }
 
     final checkFn = DedupCheckRegistry().checkFn;
-    if (checkFn == null) return DedupCheckOutcome.proceed;
+    if (checkFn == null) return const DedupCheckResult.proceed();
 
     // A mapped field may live on an earlier page of the same flow -- the
     // location fix is captured before these details -- in which case it is
@@ -149,15 +152,15 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     final formValues = <String, dynamic>{};
     for (final fieldName in config.fields.values) {
       final value = readField(fieldName);
-      if (value == null) return DedupCheckOutcome.proceed;
+      if (value == null) return const DedupCheckResult.proceed();
 
       final asText = value.toString().trim();
       if (asText.length < config.effectiveMinFieldLength) {
-        return DedupCheckOutcome.proceed;
+        return const DedupCheckResult.proceed();
       }
       formValues[fieldName] = value;
     }
-    if (formValues.isEmpty) return DedupCheckOutcome.proceed;
+    if (formValues.isEmpty) return const DedupCheckResult.proceed();
 
     // Optional fields are included when filled and dropped when not, rather
     // than cancelling the check. The matcher ignores an attribute that is
@@ -374,10 +377,10 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                 // is not interrupted over an incomplete form,
                                 // and before step 4 so nothing is written when
                                 // they back out.
-                                final dedupOutcome =
+                                final dedupResult =
                                     await _runDedupCheck(schema, formGroup);
 
-                                if (dedupOutcome == DedupCheckOutcome.abort) {
+                                if (dedupResult.isAbort) {
                                   _isSubmitting = false;
                                   if (mounted) setState(() {});
                                   return;
@@ -424,6 +427,11 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                     );
                                   }
                                 }
+
+                                // Record a "Skip and Proceed" on the duplicate
+                                // warning as hidden fields, so the transformer
+                                // can stamp it onto the registered record.
+                                applyDedupStamp(updatedProperties, dedupResult);
 
                                 final updatedPropertySchema = schema.copyWith(
                                   properties: updatedProperties,

@@ -11,6 +11,57 @@ enum DedupCheckOutcome {
   abort,
 }
 
+/// How the user answered the duplicate warning, when one was shown.
+enum DedupDecision {
+  /// "Skip and Proceed": registered despite the listed matches.
+  skipped,
+
+  /// "Back to Search" (or any other dismissal): abandoned the registration.
+  backToSearch,
+}
+
+/// The outcome of a dedup check together with what the user was shown.
+///
+/// [decision] and the match figures are null/zero whenever no dialog appeared
+/// -- the page opted out, nothing similar was found, or the check failed --
+/// so a consumer can tell "nothing to warn about" from "warned and skipped".
+class DedupCheckResult {
+  final DedupCheckOutcome outcome;
+  final DedupDecision? decision;
+
+  /// How many matches the dialog listed.
+  final int matchCount;
+
+  /// Score (0.0-1.0) of the best match listed.
+  final double? topScore;
+
+  /// Client reference id of the best match listed.
+  final String? topMatchClientReferenceId;
+
+  const DedupCheckResult({
+    required this.outcome,
+    this.decision,
+    this.matchCount = 0,
+    this.topScore,
+    this.topMatchClientReferenceId,
+  });
+
+  /// A check that found nothing to warn about, or did not run.
+  const DedupCheckResult.proceed() : this(outcome: DedupCheckOutcome.proceed);
+
+  /// The user answered a dialog: [outcome] follows the button pressed.
+  DedupCheckResult.decided({
+    required this.outcome,
+    required this.matchCount,
+    required this.topScore,
+    required this.topMatchClientReferenceId,
+  }) : decision = outcome == DedupCheckOutcome.proceed
+            ? DedupDecision.skipped
+            : DedupDecision.backToSearch;
+
+  bool get isAbort => outcome == DedupCheckOutcome.abort;
+}
+
 /// Everything a dedup check needs to score the form against existing records.
 class DedupCheckRequest {
   /// The page's dedup config, straight from the form schema.
@@ -49,7 +100,7 @@ class DedupCheckRequest {
 /// Runs the similarity search and, when it finds something, asks the user how
 /// to proceed. Implemented outside this package because the search needs
 /// database access.
-typedef DedupCheckCallback = Future<DedupCheckOutcome> Function(
+typedef DedupCheckCallback = Future<DedupCheckResult> Function(
   DedupCheckRequest request,
 );
 

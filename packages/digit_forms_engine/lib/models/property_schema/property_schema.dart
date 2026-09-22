@@ -417,7 +417,7 @@ class DedupCheck with _$DedupCheck {
   factory DedupCheck.fromJson(Map<String, dynamic> json) =>
       _$DedupCheckFromJson(json);
 
-  static const double defaultMatchThreshold = 0.85;
+  static const double defaultMatchThreshold = 0.70;
   static const int defaultMaxResults = 5;
   static const int defaultMinFieldLength = 2;
   static const int defaultMaxCandidates = 5000;
