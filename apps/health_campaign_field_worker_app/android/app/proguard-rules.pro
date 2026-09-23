@@ -384,3 +384,7 @@
 
 # Keep annotations and signatures
 -keepattributes *Annotation*,Signature,Exceptions
+
+# flutter_appauth / AppAuth-Android (Azure SSO)
+-keep class net.openid.appauth.** { *; }
+-keep class io.crossingthestreams.flutterappauth.** { *; }

@@ -60,6 +60,10 @@ android {
         // queryable runtime flag, so the value has to be injected at build time.
         buildConfigField "boolean", "IS_MINIFIED", "false"
         targetSdk = flutter.targetSdkVersion
+        // Custom scheme that Azure Entra ID redirects back to after SSO.
+        // Must match the scheme of AZURE_REDIRECT_URI in .env; consumed by
+        // flutter_appauth's RedirectUriReceiverActivity intent-filter.
+        manifestPlaceholders += [appAuthRedirectScheme: 'com.digit.hcm']
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
     }

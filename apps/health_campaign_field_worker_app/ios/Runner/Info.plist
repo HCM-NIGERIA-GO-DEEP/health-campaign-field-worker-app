@@ -2,6 +2,20 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+<key>CFBundleURLTypes</key>
+<array>
+  <dict>
+    <key>CFBundleTypeRole</key>
+    <string>Editor</string>
+    <key>CFBundleURLName</key>
+    <string>com.digit.hcm.sso</string>
+    <key>CFBundleURLSchemes</key>
+    <array>
+      <!-- Azure Entra ID redirect scheme; must match AZURE_REDIRECT_URI in .env -->
+      <string>com.digit.hcm</string>
+    </array>
+  </dict>
+</array>
 <key>LSApplicationQueriesSchemes</key>
 <array>
   <string>sms</string>

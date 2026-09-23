@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+**Azure Entra ID single sign-on (`AUTH_MODE`, `AzureSsoService`, `AuthEvent.ssoLogin`)**
+
+- The login page now has two modes selected by a new `AUTH_MODE` key in `.env`. `PASSWORD` (the default, and the behaviour when the key is absent or unrecognised) keeps the existing DIGIT user ID / password form. `SSO` replaces the form, the forgot-password action and the single-device check with one *Sign in with Microsoft* button.
+- SSO runs the OpenID Connect authorization-code flow with PKCE against Entra ID v2.0 through `flutter_appauth` 9.0.1 (system browser; `prompt=select_account` is always sent because field devices are shared). The resulting Azure access token (audience `api://<client id>/access_as_user`) and ID token are posted to a new DIGIT endpoint (`SSO_TOKEN_EXCHANGE_PATH`, default `user/oauth/sso/_exchange`) via `AuthRepository.exchangeSsoToken`, whose response must match the password-grant token response. From there `AuthBloc` follows the same path as a password login (`_completeLogin`, extracted from `_onLogin`): secure-store the DIGIT tokens, load role actions, resolve the linked individual, emit `authenticated`. Azure tokens are not persisted. **The exchange endpoint does not exist on the backend yet**; its contract is documented in `apps/health_campaign_field_worker_app/AZURE_SSO.md`.
+- Under SSO the single-device check and the device-switch flow are skipped entirely (both post the raw password, which SSO never has). Logout after an SSO session first runs the Entra RP-initiated logout (best effort, `id_token_hint` from a new `ssoIdTokenKey` secure-store entry, `post_logout_redirect_uri` = the app redirect) and then clears local state; `AZURE_END_SESSION_ON_LOGOUT=false` disables the browser step.
+- New `.env` keys: `AUTH_MODE`, `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_REDIRECT_URI`, `AZURE_SCOPES`, `AZURE_END_SESSION_ON_LOGOUT`, `SSO_TOKEN_EXCHANGE_PATH`. Because the repository is public, no tenant, client or API scope is committed: tenant and client default to empty (SSO then fails safe with a configuration error), scopes to `openid profile`, and each deployment supplies its values through the gitignored `.env` and GitHub repository variables, which the APK build workflow forwards. A key that is present but blank keeps its default. The redirect scheme `com.digit.hcm` is registered as the `appAuthRedirectScheme` manifest placeholder on Android and as a `CFBundleURLTypes` scheme on iOS; ProGuard keeps `net.openid.appauth.**`.
+- `AuthBloc` now honours its `localSecureStore` constructor parameter (previously accepted and ignored in favour of the singleton), which is what makes the new bloc tests possible. New i18n keys `LOGIN_SSO_MICROSOFT_ACTION_LABEL` and `LOGIN_SSO_DESCRIPTION` need localisation entries in MDMS; until then the raw keys are displayed.
+- Certificate pinning is unaffected: the Microsoft endpoints are reached by the native AppAuth SDKs, not by the pinned Dio client.
+
+
 ## 2.2.110 — 2026-09-01
 
 _(includes 2.2.107 and 2.2.109; 2.2.108 was never cut — the version bump went straight from `2.2.107+107` to `2.2.109+109` in a single commit)_

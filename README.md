@@ -1439,6 +1439,14 @@ Installation
     HIERARCHY_TYPE="MICROPLAN"
     CHECK_BANDWIDTH_API="/project/check/bandwidth"
     ENV_NAME="DEMO"
+    # Optional - Azure Entra ID single sign-on (see apps/health_campaign_field_worker_app/AZURE_SSO.md)
+    AUTH_MODE="PASSWORD"          # PASSWORD (default) or SSO
+    AZURE_TENANT_ID=              # required when AUTH_MODE=SSO
+    AZURE_CLIENT_ID=              # required when AUTH_MODE=SSO
+    AZURE_REDIRECT_URI="com.digit.hcm://oauth/callback"
+    AZURE_SCOPES="openid profile api://<client id>/access_as_user"
+    AZURE_END_SESSION_ON_LOGOUT="true"
+    SSO_TOKEN_EXCHANGE_PATH="user/oauth/sso/_exchange"
     ```
 
 5.  Run the app:
