@@ -695,6 +695,239 @@ abstract class _LoginModel implements LoginModel {
       throw _privateConstructorUsedError;
 }
 
+SsoExchangeRequestModel _$SsoExchangeRequestModelFromJson(
+    Map<String, dynamic> json) {
+  return _SsoExchangeRequestModel.fromJson(json);
+}
+
+/// @nodoc
+mixin _$SsoExchangeRequestModel {
+  String get idToken => throw _privateConstructorUsedError;
+  String? get accessToken => throw _privateConstructorUsedError;
+  String get tenantId => throw _privateConstructorUsedError;
+  String get userType => throw _privateConstructorUsedError;
+  String get provider => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $SsoExchangeRequestModelCopyWith<SsoExchangeRequestModel> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $SsoExchangeRequestModelCopyWith<$Res> {
+  factory $SsoExchangeRequestModelCopyWith(SsoExchangeRequestModel value,
+          $Res Function(SsoExchangeRequestModel) then) =
+      _$SsoExchangeRequestModelCopyWithImpl<$Res, SsoExchangeRequestModel>;
+  @useResult
+  $Res call(
+      {String idToken,
+      String? accessToken,
+      String tenantId,
+      String userType,
+      String provider});
+}
+
+/// @nodoc
+class _$SsoExchangeRequestModelCopyWithImpl<$Res,
+        $Val extends SsoExchangeRequestModel>
+    implements $SsoExchangeRequestModelCopyWith<$Res> {
+  _$SsoExchangeRequestModelCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? idToken = null,
+    Object? accessToken = freezed,
+    Object? tenantId = null,
+    Object? userType = null,
+    Object? provider = null,
+  }) {
+    return _then(_value.copyWith(
+      idToken: null == idToken
+          ? _value.idToken
+          : idToken // ignore: cast_nullable_to_non_nullable
+              as String,
+      accessToken: freezed == accessToken
+          ? _value.accessToken
+          : accessToken // ignore: cast_nullable_to_non_nullable
+              as String?,
+      tenantId: null == tenantId
+          ? _value.tenantId
+          : tenantId // ignore: cast_nullable_to_non_nullable
+              as String,
+      userType: null == userType
+          ? _value.userType
+          : userType // ignore: cast_nullable_to_non_nullable
+              as String,
+      provider: null == provider
+          ? _value.provider
+          : provider // ignore: cast_nullable_to_non_nullable
+              as String,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$SsoExchangeRequestModelImplCopyWith<$Res>
+    implements $SsoExchangeRequestModelCopyWith<$Res> {
+  factory _$$SsoExchangeRequestModelImplCopyWith(
+          _$SsoExchangeRequestModelImpl value,
+          $Res Function(_$SsoExchangeRequestModelImpl) then) =
+      __$$SsoExchangeRequestModelImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call(
+      {String idToken,
+      String? accessToken,
+      String tenantId,
+      String userType,
+      String provider});
+}
+
+/// @nodoc
+class __$$SsoExchangeRequestModelImplCopyWithImpl<$Res>
+    extends _$SsoExchangeRequestModelCopyWithImpl<$Res,
+        _$SsoExchangeRequestModelImpl>
+    implements _$$SsoExchangeRequestModelImplCopyWith<$Res> {
+  __$$SsoExchangeRequestModelImplCopyWithImpl(
+      _$SsoExchangeRequestModelImpl _value,
+      $Res Function(_$SsoExchangeRequestModelImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? idToken = null,
+    Object? accessToken = freezed,
+    Object? tenantId = null,
+    Object? userType = null,
+    Object? provider = null,
+  }) {
+    return _then(_$SsoExchangeRequestModelImpl(
+      idToken: null == idToken
+          ? _value.idToken
+          : idToken // ignore: cast_nullable_to_non_nullable
+              as String,
+      accessToken: freezed == accessToken
+          ? _value.accessToken
+          : accessToken // ignore: cast_nullable_to_non_nullable
+              as String?,
+      tenantId: null == tenantId
+          ? _value.tenantId
+          : tenantId // ignore: cast_nullable_to_non_nullable
+              as String,
+      userType: null == userType
+          ? _value.userType
+          : userType // ignore: cast_nullable_to_non_nullable
+              as String,
+      provider: null == provider
+          ? _value.provider
+          : provider // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$SsoExchangeRequestModelImpl implements _SsoExchangeRequestModel {
+  const _$SsoExchangeRequestModelImpl(
+      {required this.idToken,
+      this.accessToken,
+      required this.tenantId,
+      this.userType = 'EMPLOYEE',
+      this.provider = 'MICROSOFT'});
+
+  factory _$SsoExchangeRequestModelImpl.fromJson(Map<String, dynamic> json) =>
+      _$$SsoExchangeRequestModelImplFromJson(json);
+
+  @override
+  final String idToken;
+  @override
+  final String? accessToken;
+  @override
+  final String tenantId;
+  @override
+  @JsonKey()
+  final String userType;
+  @override
+  @JsonKey()
+  final String provider;
+
+  @override
+  String toString() {
+    return 'SsoExchangeRequestModel(idToken: $idToken, accessToken: $accessToken, tenantId: $tenantId, userType: $userType, provider: $provider)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$SsoExchangeRequestModelImpl &&
+            (identical(other.idToken, idToken) || other.idToken == idToken) &&
+            (identical(other.accessToken, accessToken) ||
+                other.accessToken == accessToken) &&
+            (identical(other.tenantId, tenantId) ||
+                other.tenantId == tenantId) &&
+            (identical(other.userType, userType) ||
+                other.userType == userType) &&
+            (identical(other.provider, provider) ||
+                other.provider == provider));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(
+      runtimeType, idToken, accessToken, tenantId, userType, provider);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$SsoExchangeRequestModelImplCopyWith<_$SsoExchangeRequestModelImpl>
+      get copyWith => __$$SsoExchangeRequestModelImplCopyWithImpl<
+          _$SsoExchangeRequestModelImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$SsoExchangeRequestModelImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _SsoExchangeRequestModel implements SsoExchangeRequestModel {
+  const factory _SsoExchangeRequestModel(
+      {required final String idToken,
+      final String? accessToken,
+      required final String tenantId,
+      final String userType,
+      final String provider}) = _$SsoExchangeRequestModelImpl;
+
+  factory _SsoExchangeRequestModel.fromJson(Map<String, dynamic> json) =
+      _$SsoExchangeRequestModelImpl.fromJson;
+
+  @override
+  String get idToken;
+  @override
+  String? get accessToken;
+  @override
+  String get tenantId;
+  @override
+  String get userType;
+  @override
+  String get provider;
+  @override
+  @JsonKey(ignore: true)
+  _$$SsoExchangeRequestModelImplCopyWith<_$SsoExchangeRequestModelImpl>
+      get copyWith => throw _privateConstructorUsedError;
+}
+
 UserRequestModel _$UserRequestModelFromJson(Map<String, dynamic> json) {
   return _UserRequestModel.fromJson(json);
 }

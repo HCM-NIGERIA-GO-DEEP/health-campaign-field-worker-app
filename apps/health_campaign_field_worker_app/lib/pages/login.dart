@@ -110,8 +110,6 @@ class _LoginPageState extends LocalizedState<LoginPage> {
   }
 
   Widget _buildLoginBody(BuildContext context) {
-    final theme = Theme.of(context);
-    final textTheme = theme.digitTextTheme(context);
     return BlocListener<AuthBloc, AuthState>(
       listener: (context, state) {
         state.maybeWhen(
@@ -150,157 +148,202 @@ class _LoginPageState extends LocalizedState<LoginPage> {
       },
       child: ScrollableContent(
         children: [
-          ReactiveFormBuilder(
-            form: buildForm,
-            builder: (context, form, child) {
-              return DigitCard(
-                margin: const EdgeInsets.all(spacer2),
-                children: [
-                  Text(
-                    localizations.translate(
-                      i18.login.labelText,
-                    ),
-                    style: textTheme.headingXl.copyWith(
-                      color: theme.colorTheme.primary.primary2,
-                    ),
-                  ),
-                  ReactiveWrapperField(
-                    formControlName: _userId,
-                    validationMessages: {
-                      "required": (control) {
-                        return localizations.translate(
-                          '${i18.login.userIdPlaceholder}_IS_REQUIRED',
-                        );
-                      },
-                    },
-                    builder: (field) => LabeledField(
-                      label: localizations.translate(
-                        i18.login.userIdPlaceholder,
-                      ),
-                      capitalizedFirstLetter: false,
-                      isRequired: true,
-                      child: DigitTextFormInput(
-                        keyboardType: TextInputType.text,
-                        initialValue: form.control(_userId).value,
-                        errorMessage: field.errorText,
-                        onChange: (value) {
-                          form.control(_userId).value = value;
-                        },
-                      ),
-                    ),
-                  ),
-                  ReactiveWrapperField(
-                    formControlName: _password,
-                    validationMessages: {
-                      "required": (control) {
-                        return localizations.translate(
-                          '${i18.login.passwordPlaceholder}_IS_REQUIRED',
-                        );
-                      },
-                    },
-                    builder: (field) => LabeledField(
-                      label: localizations.translate(
-                        i18.login.passwordPlaceholder,
-                      ),
-                      isRequired: true,
-                      child: DigitPasswordFormInput(
-                        initialValue: form.control(_password).value,
-                        errorMessage: field.errorText,
-                        onChange: (value) {
-                          form.control(_password).value = value;
-                        },
-                        keyboardType: TextInputType.text,
-                      ),
-                    ),
-                  ),
-                  BlocBuilder<AppInitializationBloc, AppInitializationState>(
-                    builder: (context, state) {
-                      return DigitButton(
-                        label: localizations.translate(i18.login.actionLabel),
-                        type: DigitButtonType.primary,
-                        onPressed: () {
-                          form.markAllAsTouched();
-                          if (!form.valid) return;
-
-                          FocusManager.instance.primaryFocus?.unfocus();
-
-                          _pendingUserId =
-                              (form.control(_userId).value as String).trim();
-                          _pendingPassword =
-                              (form.control(_password).value as String).trim();
-
-                          final bool singleUserLogin = state.maybeWhen(
-                            initialized: (appConfiguration, _, __) {
-                              final list =
-                                  appConfiguration.singleUserLogin ?? [];
-                              if (list.isEmpty) return false;
-                              final config = list.first;
-                              return config.enabled;
-                            },
-                            orElse: () => false,
-                          );
-
-                          if (singleUserLogin) {
-                            _checkOtherDeviceLogin(
-                                context, _pendingUserId as String);
-                          } else {
-                            context.read<AuthBloc>().add(
-                                  AuthLoginEvent(
-                                    userId: _pendingUserId as String,
-                                    password: _pendingPassword as String,
-                                    tenantId: envConfig.variables.tenantId,
-                                  ),
-                                );
-                          }
-                        },
-                        size: DigitButtonSize.large,
-                        mainAxisSize: MainAxisSize.max,
-                      );
-                    },
-                  ),
-                  DigitButton(
-                    label: localizations.translate(
-                      i18.forgotPassword.actionLabel,
-                    ),
-                    capitalizeLetters: false,
-                    mainAxisSize: MainAxisSize.max,
-                    type: DigitButtonType.tertiary,
-                    size: DigitButtonSize.medium,
-                    onPressed: () => showCustomPopup(
-                      context: context,
-                      builder: (ctx) => Popup(
-                        title: localizations.translate(
-                          i18.forgotPassword.labelText,
-                        ),
-                        description: localizations.translate(
-                          i18.forgotPassword.contentText,
-                        ),
-                        onOutsideTap: () {
-                          Navigator.of(ctx).pop();
-                        },
-                        type: PopUpType.simple,
-                        actions: [
-                          DigitButton(
-                            label: localizations.translate(
-                              i18.forgotPassword.primaryActionLabel,
-                            ),
-                            onPressed: () {
-                              Navigator.of(ctx).pop();
-                              context.router.popUntilRoot();
-                            },
-                            type: DigitButtonType.primary,
-                            size: DigitButtonSize.large,
-                          )
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
+          if (envConfig.variables.authMode == AuthMode.sso)
+            _buildSsoCard(context)
+          else
+            _buildPasswordForm(context),
         ],
       ),
+    );
+  }
+
+  /// SSO mode: a single "Sign in with Microsoft" action. The single-device
+  /// check and device-switch flow are password based and are skipped here.
+  Widget _buildSsoCard(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.digitTextTheme(context);
+    return DigitCard(
+      margin: const EdgeInsets.all(spacer2),
+      children: [
+        Text(
+          localizations.translate(i18.login.labelText),
+          style: textTheme.headingXl.copyWith(
+            color: theme.colorTheme.primary.primary2,
+          ),
+        ),
+        Text(
+          localizations.translate(i18.login.ssoDescription),
+          style: textTheme.bodyL,
+        ),
+        DigitButton(
+          label: localizations.translate(i18.login.ssoActionLabel),
+          type: DigitButtonType.primary,
+          size: DigitButtonSize.large,
+          mainAxisSize: MainAxisSize.max,
+          prefixIcon: Icons.login,
+          onPressed: () {
+            FocusManager.instance.primaryFocus?.unfocus();
+            context.read<AuthBloc>().add(
+                  AuthEvent.ssoLogin(
+                    tenantId: envConfig.variables.tenantId,
+                  ),
+                );
+          },
+        ),
+      ],
+    );
+  }
+
+  /// Password mode: the original DIGIT user ID / password form.
+  Widget _buildPasswordForm(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.digitTextTheme(context);
+    return ReactiveFormBuilder(
+      form: buildForm,
+      builder: (context, form, child) {
+        return DigitCard(
+          margin: const EdgeInsets.all(spacer2),
+          children: [
+            Text(
+              localizations.translate(
+                i18.login.labelText,
+              ),
+              style: textTheme.headingXl.copyWith(
+                color: theme.colorTheme.primary.primary2,
+              ),
+            ),
+            ReactiveWrapperField(
+              formControlName: _userId,
+              validationMessages: {
+                "required": (control) {
+                  return localizations.translate(
+                    '${i18.login.userIdPlaceholder}_IS_REQUIRED',
+                  );
+                },
+              },
+              builder: (field) => LabeledField(
+                label: localizations.translate(
+                  i18.login.userIdPlaceholder,
+                ),
+                capitalizedFirstLetter: false,
+                isRequired: true,
+                child: DigitTextFormInput(
+                  keyboardType: TextInputType.text,
+                  initialValue: form.control(_userId).value,
+                  errorMessage: field.errorText,
+                  onChange: (value) {
+                    form.control(_userId).value = value;
+                  },
+                ),
+              ),
+            ),
+            ReactiveWrapperField(
+              formControlName: _password,
+              validationMessages: {
+                "required": (control) {
+                  return localizations.translate(
+                    '${i18.login.passwordPlaceholder}_IS_REQUIRED',
+                  );
+                },
+              },
+              builder: (field) => LabeledField(
+                label: localizations.translate(
+                  i18.login.passwordPlaceholder,
+                ),
+                isRequired: true,
+                child: DigitPasswordFormInput(
+                  initialValue: form.control(_password).value,
+                  errorMessage: field.errorText,
+                  onChange: (value) {
+                    form.control(_password).value = value;
+                  },
+                  keyboardType: TextInputType.text,
+                ),
+              ),
+            ),
+            BlocBuilder<AppInitializationBloc, AppInitializationState>(
+              builder: (context, state) {
+                return DigitButton(
+                  label: localizations.translate(i18.login.actionLabel),
+                  type: DigitButtonType.primary,
+                  onPressed: () {
+                    form.markAllAsTouched();
+                    if (!form.valid) return;
+
+                    FocusManager.instance.primaryFocus?.unfocus();
+
+                    _pendingUserId =
+                        (form.control(_userId).value as String).trim();
+                    _pendingPassword =
+                        (form.control(_password).value as String).trim();
+
+                    final bool singleUserLogin = state.maybeWhen(
+                      initialized: (appConfiguration, _, __) {
+                        final list = appConfiguration.singleUserLogin ?? [];
+                        if (list.isEmpty) return false;
+                        final config = list.first;
+                        return config.enabled;
+                      },
+                      orElse: () => false,
+                    );
+
+                    if (singleUserLogin) {
+                      _checkOtherDeviceLogin(context, _pendingUserId as String);
+                    } else {
+                      context.read<AuthBloc>().add(
+                            AuthLoginEvent(
+                              userId: _pendingUserId as String,
+                              password: _pendingPassword as String,
+                              tenantId: envConfig.variables.tenantId,
+                            ),
+                          );
+                    }
+                  },
+                  size: DigitButtonSize.large,
+                  mainAxisSize: MainAxisSize.max,
+                );
+              },
+            ),
+            DigitButton(
+              label: localizations.translate(
+                i18.forgotPassword.actionLabel,
+              ),
+              capitalizeLetters: false,
+              mainAxisSize: MainAxisSize.max,
+              type: DigitButtonType.tertiary,
+              size: DigitButtonSize.medium,
+              onPressed: () => showCustomPopup(
+                context: context,
+                builder: (ctx) => Popup(
+                  title: localizations.translate(
+                    i18.forgotPassword.labelText,
+                  ),
+                  description: localizations.translate(
+                    i18.forgotPassword.contentText,
+                  ),
+                  onOutsideTap: () {
+                    Navigator.of(ctx).pop();
+                  },
+                  type: PopUpType.simple,
+                  actions: [
+                    DigitButton(
+                      label: localizations.translate(
+                        i18.forgotPassword.primaryActionLabel,
+                      ),
+                      onPressed: () {
+                        Navigator.of(ctx).pop();
+                        context.router.popUntilRoot();
+                      },
+                      type: DigitButtonType.primary,
+                      size: DigitButtonSize.large,
+                    )
+                  ],
+                ),
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 

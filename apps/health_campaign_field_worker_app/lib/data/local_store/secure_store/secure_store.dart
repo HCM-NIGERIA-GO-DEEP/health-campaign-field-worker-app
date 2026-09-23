@@ -26,6 +26,7 @@ class LocalSecureStore {
   static const userVsDeviceTokenMapKey = 'userVsDeviceTokenMapKey';
   static const deviceSwitchReasonKey = 'deviceSwitchReasonKey';
   static const existingDeviceTokenKey = 'existingDeviceTokenKey';
+  static const ssoIdTokenKey = 'ssoIdTokenKey';
 
   // SECURITY: Use EncryptedSharedPreferences (Android Keystore-backed AES-256)
   // explicitly. Without this option some older flutter_secure_storage versions
@@ -334,6 +335,15 @@ class LocalSecureStore {
       default:
         return false;
     }
+  }
+
+  /// Azure ID token from the last SSO login, kept only as the
+  /// `id_token_hint` for the Entra end-session call. Null after a password
+  /// login or once the user has logged out.
+  Future<String?> get ssoIdToken => storage.read(key: ssoIdTokenKey);
+
+  Future<void> setSsoIdToken(String idToken) async {
+    await storage.write(key: ssoIdTokenKey, value: idToken);
   }
 
   Future<void> deleteAll() async {

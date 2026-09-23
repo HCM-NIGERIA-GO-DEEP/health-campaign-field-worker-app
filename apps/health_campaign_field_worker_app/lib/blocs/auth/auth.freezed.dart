@@ -20,6 +20,7 @@ mixin _$AuthEvent {
   TResult when<TResult extends Object?>({
     required TResult Function(String userId, String password, String tenantId)
         login,
+    required TResult Function(String tenantId) ssoLogin,
     required TResult Function(String tenantId) autoLogin,
     required TResult Function() logout,
     required TResult Function(
@@ -43,6 +44,7 @@ mixin _$AuthEvent {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String userId, String password, String tenantId)? login,
+    TResult? Function(String tenantId)? ssoLogin,
     TResult? Function(String tenantId)? autoLogin,
     TResult? Function()? logout,
     TResult? Function(String username, String tenantId, String apiEndPoint)?
@@ -64,6 +66,7 @@ mixin _$AuthEvent {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String userId, String password, String tenantId)? login,
+    TResult Function(String tenantId)? ssoLogin,
     TResult Function(String tenantId)? autoLogin,
     TResult Function()? logout,
     TResult Function(String username, String tenantId, String apiEndPoint)?
@@ -86,6 +89,7 @@ mixin _$AuthEvent {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(AuthLoginEvent value) login,
+    required TResult Function(AuthSsoLoginEvent value) ssoLogin,
     required TResult Function(AuthAutoLoginEvent value) autoLogin,
     required TResult Function(AuthLogoutEvent value) logout,
     required TResult Function(AuthCheckOtherDeviceLoginEvent value)
@@ -101,6 +105,7 @@ mixin _$AuthEvent {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(AuthLoginEvent value)? login,
+    TResult? Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult? Function(AuthAutoLoginEvent value)? autoLogin,
     TResult? Function(AuthLogoutEvent value)? logout,
     TResult? Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -115,6 +120,7 @@ mixin _$AuthEvent {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(AuthLoginEvent value)? login,
+    TResult Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult Function(AuthAutoLoginEvent value)? autoLogin,
     TResult Function(AuthLogoutEvent value)? logout,
     TResult Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -232,6 +238,7 @@ class _$AuthLoginEventImpl implements AuthLoginEvent {
   TResult when<TResult extends Object?>({
     required TResult Function(String userId, String password, String tenantId)
         login,
+    required TResult Function(String tenantId) ssoLogin,
     required TResult Function(String tenantId) autoLogin,
     required TResult Function() logout,
     required TResult Function(
@@ -258,6 +265,7 @@ class _$AuthLoginEventImpl implements AuthLoginEvent {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String userId, String password, String tenantId)? login,
+    TResult? Function(String tenantId)? ssoLogin,
     TResult? Function(String tenantId)? autoLogin,
     TResult? Function()? logout,
     TResult? Function(String username, String tenantId, String apiEndPoint)?
@@ -282,6 +290,7 @@ class _$AuthLoginEventImpl implements AuthLoginEvent {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String userId, String password, String tenantId)? login,
+    TResult Function(String tenantId)? ssoLogin,
     TResult Function(String tenantId)? autoLogin,
     TResult Function()? logout,
     TResult Function(String username, String tenantId, String apiEndPoint)?
@@ -310,6 +319,7 @@ class _$AuthLoginEventImpl implements AuthLoginEvent {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(AuthLoginEvent value) login,
+    required TResult Function(AuthSsoLoginEvent value) ssoLogin,
     required TResult Function(AuthAutoLoginEvent value) autoLogin,
     required TResult Function(AuthLogoutEvent value) logout,
     required TResult Function(AuthCheckOtherDeviceLoginEvent value)
@@ -328,6 +338,7 @@ class _$AuthLoginEventImpl implements AuthLoginEvent {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(AuthLoginEvent value)? login,
+    TResult? Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult? Function(AuthAutoLoginEvent value)? autoLogin,
     TResult? Function(AuthLogoutEvent value)? logout,
     TResult? Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -345,6 +356,7 @@ class _$AuthLoginEventImpl implements AuthLoginEvent {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(AuthLoginEvent value)? login,
+    TResult Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult Function(AuthAutoLoginEvent value)? autoLogin,
     TResult Function(AuthLogoutEvent value)? logout,
     TResult Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -374,6 +386,221 @@ abstract class AuthLoginEvent implements AuthEvent {
   String get tenantId;
   @JsonKey(ignore: true)
   _$$AuthLoginEventImplCopyWith<_$AuthLoginEventImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$AuthSsoLoginEventImplCopyWith<$Res> {
+  factory _$$AuthSsoLoginEventImplCopyWith(_$AuthSsoLoginEventImpl value,
+          $Res Function(_$AuthSsoLoginEventImpl) then) =
+      __$$AuthSsoLoginEventImplCopyWithImpl<$Res>;
+  @useResult
+  $Res call({String tenantId});
+}
+
+/// @nodoc
+class __$$AuthSsoLoginEventImplCopyWithImpl<$Res>
+    extends _$AuthEventCopyWithImpl<$Res, _$AuthSsoLoginEventImpl>
+    implements _$$AuthSsoLoginEventImplCopyWith<$Res> {
+  __$$AuthSsoLoginEventImplCopyWithImpl(_$AuthSsoLoginEventImpl _value,
+      $Res Function(_$AuthSsoLoginEventImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? tenantId = null,
+  }) {
+    return _then(_$AuthSsoLoginEventImpl(
+      tenantId: null == tenantId
+          ? _value.tenantId
+          : tenantId // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+
+class _$AuthSsoLoginEventImpl implements AuthSsoLoginEvent {
+  const _$AuthSsoLoginEventImpl({required this.tenantId});
+
+  @override
+  final String tenantId;
+
+  @override
+  String toString() {
+    return 'AuthEvent.ssoLogin(tenantId: $tenantId)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$AuthSsoLoginEventImpl &&
+            (identical(other.tenantId, tenantId) ||
+                other.tenantId == tenantId));
+  }
+
+  @override
+  int get hashCode => Object.hash(runtimeType, tenantId);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$AuthSsoLoginEventImplCopyWith<_$AuthSsoLoginEventImpl> get copyWith =>
+      __$$AuthSsoLoginEventImplCopyWithImpl<_$AuthSsoLoginEventImpl>(
+          this, _$identity);
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(String userId, String password, String tenantId)
+        login,
+    required TResult Function(String tenantId) ssoLogin,
+    required TResult Function(String tenantId) autoLogin,
+    required TResult Function() logout,
+    required TResult Function(
+            String username, String tenantId, String apiEndPoint)
+        checkOtherDeviceLogin,
+    required TResult Function(
+            String selectedReason,
+            String? deviceSwitchComment,
+            String username,
+            String password,
+            String tenantId,
+            String apiEndPoint)
+        switchDevice,
+    required TResult Function() reset,
+    required TResult Function() allow,
+    required TResult Function(
+            UserActionModel userActionModel, String apiEndPoint)
+        switchDeviceUserAction,
+  }) {
+    return ssoLogin(tenantId);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(String userId, String password, String tenantId)? login,
+    TResult? Function(String tenantId)? ssoLogin,
+    TResult? Function(String tenantId)? autoLogin,
+    TResult? Function()? logout,
+    TResult? Function(String username, String tenantId, String apiEndPoint)?
+        checkOtherDeviceLogin,
+    TResult? Function(
+            String selectedReason,
+            String? deviceSwitchComment,
+            String username,
+            String password,
+            String tenantId,
+            String apiEndPoint)?
+        switchDevice,
+    TResult? Function()? reset,
+    TResult? Function()? allow,
+    TResult? Function(UserActionModel userActionModel, String apiEndPoint)?
+        switchDeviceUserAction,
+  }) {
+    return ssoLogin?.call(tenantId);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(String userId, String password, String tenantId)? login,
+    TResult Function(String tenantId)? ssoLogin,
+    TResult Function(String tenantId)? autoLogin,
+    TResult Function()? logout,
+    TResult Function(String username, String tenantId, String apiEndPoint)?
+        checkOtherDeviceLogin,
+    TResult Function(
+            String selectedReason,
+            String? deviceSwitchComment,
+            String username,
+            String password,
+            String tenantId,
+            String apiEndPoint)?
+        switchDevice,
+    TResult Function()? reset,
+    TResult Function()? allow,
+    TResult Function(UserActionModel userActionModel, String apiEndPoint)?
+        switchDeviceUserAction,
+    required TResult orElse(),
+  }) {
+    if (ssoLogin != null) {
+      return ssoLogin(tenantId);
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(AuthLoginEvent value) login,
+    required TResult Function(AuthSsoLoginEvent value) ssoLogin,
+    required TResult Function(AuthAutoLoginEvent value) autoLogin,
+    required TResult Function(AuthLogoutEvent value) logout,
+    required TResult Function(AuthCheckOtherDeviceLoginEvent value)
+        checkOtherDeviceLogin,
+    required TResult Function(AuthSwitchDeviceEventSwitchDevice value)
+        switchDevice,
+    required TResult Function(AuthResetEvent value) reset,
+    required TResult Function(AuthAllowEvent value) allow,
+    required TResult Function(AuthSwitchDeviceUserActionEvent value)
+        switchDeviceUserAction,
+  }) {
+    return ssoLogin(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(AuthLoginEvent value)? login,
+    TResult? Function(AuthSsoLoginEvent value)? ssoLogin,
+    TResult? Function(AuthAutoLoginEvent value)? autoLogin,
+    TResult? Function(AuthLogoutEvent value)? logout,
+    TResult? Function(AuthCheckOtherDeviceLoginEvent value)?
+        checkOtherDeviceLogin,
+    TResult? Function(AuthSwitchDeviceEventSwitchDevice value)? switchDevice,
+    TResult? Function(AuthResetEvent value)? reset,
+    TResult? Function(AuthAllowEvent value)? allow,
+    TResult? Function(AuthSwitchDeviceUserActionEvent value)?
+        switchDeviceUserAction,
+  }) {
+    return ssoLogin?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(AuthLoginEvent value)? login,
+    TResult Function(AuthSsoLoginEvent value)? ssoLogin,
+    TResult Function(AuthAutoLoginEvent value)? autoLogin,
+    TResult Function(AuthLogoutEvent value)? logout,
+    TResult Function(AuthCheckOtherDeviceLoginEvent value)?
+        checkOtherDeviceLogin,
+    TResult Function(AuthSwitchDeviceEventSwitchDevice value)? switchDevice,
+    TResult Function(AuthResetEvent value)? reset,
+    TResult Function(AuthAllowEvent value)? allow,
+    TResult Function(AuthSwitchDeviceUserActionEvent value)?
+        switchDeviceUserAction,
+    required TResult orElse(),
+  }) {
+    if (ssoLogin != null) {
+      return ssoLogin(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class AuthSsoLoginEvent implements AuthEvent {
+  const factory AuthSsoLoginEvent({required final String tenantId}) =
+      _$AuthSsoLoginEventImpl;
+
+  String get tenantId;
+  @JsonKey(ignore: true)
+  _$$AuthSsoLoginEventImplCopyWith<_$AuthSsoLoginEventImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -445,6 +672,7 @@ class _$AuthAutoLoginEventImpl implements AuthAutoLoginEvent {
   TResult when<TResult extends Object?>({
     required TResult Function(String userId, String password, String tenantId)
         login,
+    required TResult Function(String tenantId) ssoLogin,
     required TResult Function(String tenantId) autoLogin,
     required TResult Function() logout,
     required TResult Function(
@@ -471,6 +699,7 @@ class _$AuthAutoLoginEventImpl implements AuthAutoLoginEvent {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String userId, String password, String tenantId)? login,
+    TResult? Function(String tenantId)? ssoLogin,
     TResult? Function(String tenantId)? autoLogin,
     TResult? Function()? logout,
     TResult? Function(String username, String tenantId, String apiEndPoint)?
@@ -495,6 +724,7 @@ class _$AuthAutoLoginEventImpl implements AuthAutoLoginEvent {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String userId, String password, String tenantId)? login,
+    TResult Function(String tenantId)? ssoLogin,
     TResult Function(String tenantId)? autoLogin,
     TResult Function()? logout,
     TResult Function(String username, String tenantId, String apiEndPoint)?
@@ -523,6 +753,7 @@ class _$AuthAutoLoginEventImpl implements AuthAutoLoginEvent {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(AuthLoginEvent value) login,
+    required TResult Function(AuthSsoLoginEvent value) ssoLogin,
     required TResult Function(AuthAutoLoginEvent value) autoLogin,
     required TResult Function(AuthLogoutEvent value) logout,
     required TResult Function(AuthCheckOtherDeviceLoginEvent value)
@@ -541,6 +772,7 @@ class _$AuthAutoLoginEventImpl implements AuthAutoLoginEvent {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(AuthLoginEvent value)? login,
+    TResult? Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult? Function(AuthAutoLoginEvent value)? autoLogin,
     TResult? Function(AuthLogoutEvent value)? logout,
     TResult? Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -558,6 +790,7 @@ class _$AuthAutoLoginEventImpl implements AuthAutoLoginEvent {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(AuthLoginEvent value)? login,
+    TResult Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult Function(AuthAutoLoginEvent value)? autoLogin,
     TResult Function(AuthLogoutEvent value)? logout,
     TResult Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -626,6 +859,7 @@ class _$AuthLogoutEventImpl implements AuthLogoutEvent {
   TResult when<TResult extends Object?>({
     required TResult Function(String userId, String password, String tenantId)
         login,
+    required TResult Function(String tenantId) ssoLogin,
     required TResult Function(String tenantId) autoLogin,
     required TResult Function() logout,
     required TResult Function(
@@ -652,6 +886,7 @@ class _$AuthLogoutEventImpl implements AuthLogoutEvent {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String userId, String password, String tenantId)? login,
+    TResult? Function(String tenantId)? ssoLogin,
     TResult? Function(String tenantId)? autoLogin,
     TResult? Function()? logout,
     TResult? Function(String username, String tenantId, String apiEndPoint)?
@@ -676,6 +911,7 @@ class _$AuthLogoutEventImpl implements AuthLogoutEvent {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String userId, String password, String tenantId)? login,
+    TResult Function(String tenantId)? ssoLogin,
     TResult Function(String tenantId)? autoLogin,
     TResult Function()? logout,
     TResult Function(String username, String tenantId, String apiEndPoint)?
@@ -704,6 +940,7 @@ class _$AuthLogoutEventImpl implements AuthLogoutEvent {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(AuthLoginEvent value) login,
+    required TResult Function(AuthSsoLoginEvent value) ssoLogin,
     required TResult Function(AuthAutoLoginEvent value) autoLogin,
     required TResult Function(AuthLogoutEvent value) logout,
     required TResult Function(AuthCheckOtherDeviceLoginEvent value)
@@ -722,6 +959,7 @@ class _$AuthLogoutEventImpl implements AuthLogoutEvent {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(AuthLoginEvent value)? login,
+    TResult? Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult? Function(AuthAutoLoginEvent value)? autoLogin,
     TResult? Function(AuthLogoutEvent value)? logout,
     TResult? Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -739,6 +977,7 @@ class _$AuthLogoutEventImpl implements AuthLogoutEvent {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(AuthLoginEvent value)? login,
+    TResult Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult Function(AuthAutoLoginEvent value)? autoLogin,
     TResult Function(AuthLogoutEvent value)? logout,
     TResult Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -854,6 +1093,7 @@ class _$AuthCheckOtherDeviceLoginEventImpl
   TResult when<TResult extends Object?>({
     required TResult Function(String userId, String password, String tenantId)
         login,
+    required TResult Function(String tenantId) ssoLogin,
     required TResult Function(String tenantId) autoLogin,
     required TResult Function() logout,
     required TResult Function(
@@ -880,6 +1120,7 @@ class _$AuthCheckOtherDeviceLoginEventImpl
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String userId, String password, String tenantId)? login,
+    TResult? Function(String tenantId)? ssoLogin,
     TResult? Function(String tenantId)? autoLogin,
     TResult? Function()? logout,
     TResult? Function(String username, String tenantId, String apiEndPoint)?
@@ -904,6 +1145,7 @@ class _$AuthCheckOtherDeviceLoginEventImpl
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String userId, String password, String tenantId)? login,
+    TResult Function(String tenantId)? ssoLogin,
     TResult Function(String tenantId)? autoLogin,
     TResult Function()? logout,
     TResult Function(String username, String tenantId, String apiEndPoint)?
@@ -932,6 +1174,7 @@ class _$AuthCheckOtherDeviceLoginEventImpl
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(AuthLoginEvent value) login,
+    required TResult Function(AuthSsoLoginEvent value) ssoLogin,
     required TResult Function(AuthAutoLoginEvent value) autoLogin,
     required TResult Function(AuthLogoutEvent value) logout,
     required TResult Function(AuthCheckOtherDeviceLoginEvent value)
@@ -950,6 +1193,7 @@ class _$AuthCheckOtherDeviceLoginEventImpl
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(AuthLoginEvent value)? login,
+    TResult? Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult? Function(AuthAutoLoginEvent value)? autoLogin,
     TResult? Function(AuthLogoutEvent value)? logout,
     TResult? Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -967,6 +1211,7 @@ class _$AuthCheckOtherDeviceLoginEventImpl
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(AuthLoginEvent value)? login,
+    TResult Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult Function(AuthAutoLoginEvent value)? autoLogin,
     TResult Function(AuthLogoutEvent value)? logout,
     TResult Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -1132,6 +1377,7 @@ class _$AuthSwitchDeviceEventSwitchDeviceImpl
   TResult when<TResult extends Object?>({
     required TResult Function(String userId, String password, String tenantId)
         login,
+    required TResult Function(String tenantId) ssoLogin,
     required TResult Function(String tenantId) autoLogin,
     required TResult Function() logout,
     required TResult Function(
@@ -1159,6 +1405,7 @@ class _$AuthSwitchDeviceEventSwitchDeviceImpl
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String userId, String password, String tenantId)? login,
+    TResult? Function(String tenantId)? ssoLogin,
     TResult? Function(String tenantId)? autoLogin,
     TResult? Function()? logout,
     TResult? Function(String username, String tenantId, String apiEndPoint)?
@@ -1184,6 +1431,7 @@ class _$AuthSwitchDeviceEventSwitchDeviceImpl
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String userId, String password, String tenantId)? login,
+    TResult Function(String tenantId)? ssoLogin,
     TResult Function(String tenantId)? autoLogin,
     TResult Function()? logout,
     TResult Function(String username, String tenantId, String apiEndPoint)?
@@ -1213,6 +1461,7 @@ class _$AuthSwitchDeviceEventSwitchDeviceImpl
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(AuthLoginEvent value) login,
+    required TResult Function(AuthSsoLoginEvent value) ssoLogin,
     required TResult Function(AuthAutoLoginEvent value) autoLogin,
     required TResult Function(AuthLogoutEvent value) logout,
     required TResult Function(AuthCheckOtherDeviceLoginEvent value)
@@ -1231,6 +1480,7 @@ class _$AuthSwitchDeviceEventSwitchDeviceImpl
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(AuthLoginEvent value)? login,
+    TResult? Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult? Function(AuthAutoLoginEvent value)? autoLogin,
     TResult? Function(AuthLogoutEvent value)? logout,
     TResult? Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -1248,6 +1498,7 @@ class _$AuthSwitchDeviceEventSwitchDeviceImpl
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(AuthLoginEvent value)? login,
+    TResult Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult Function(AuthAutoLoginEvent value)? autoLogin,
     TResult Function(AuthLogoutEvent value)? logout,
     TResult Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -1328,6 +1579,7 @@ class _$AuthResetEventImpl implements AuthResetEvent {
   TResult when<TResult extends Object?>({
     required TResult Function(String userId, String password, String tenantId)
         login,
+    required TResult Function(String tenantId) ssoLogin,
     required TResult Function(String tenantId) autoLogin,
     required TResult Function() logout,
     required TResult Function(
@@ -1354,6 +1606,7 @@ class _$AuthResetEventImpl implements AuthResetEvent {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String userId, String password, String tenantId)? login,
+    TResult? Function(String tenantId)? ssoLogin,
     TResult? Function(String tenantId)? autoLogin,
     TResult? Function()? logout,
     TResult? Function(String username, String tenantId, String apiEndPoint)?
@@ -1378,6 +1631,7 @@ class _$AuthResetEventImpl implements AuthResetEvent {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String userId, String password, String tenantId)? login,
+    TResult Function(String tenantId)? ssoLogin,
     TResult Function(String tenantId)? autoLogin,
     TResult Function()? logout,
     TResult Function(String username, String tenantId, String apiEndPoint)?
@@ -1406,6 +1660,7 @@ class _$AuthResetEventImpl implements AuthResetEvent {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(AuthLoginEvent value) login,
+    required TResult Function(AuthSsoLoginEvent value) ssoLogin,
     required TResult Function(AuthAutoLoginEvent value) autoLogin,
     required TResult Function(AuthLogoutEvent value) logout,
     required TResult Function(AuthCheckOtherDeviceLoginEvent value)
@@ -1424,6 +1679,7 @@ class _$AuthResetEventImpl implements AuthResetEvent {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(AuthLoginEvent value)? login,
+    TResult? Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult? Function(AuthAutoLoginEvent value)? autoLogin,
     TResult? Function(AuthLogoutEvent value)? logout,
     TResult? Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -1441,6 +1697,7 @@ class _$AuthResetEventImpl implements AuthResetEvent {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(AuthLoginEvent value)? login,
+    TResult Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult Function(AuthAutoLoginEvent value)? autoLogin,
     TResult Function(AuthLogoutEvent value)? logout,
     TResult Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -1503,6 +1760,7 @@ class _$AuthAllowEventImpl implements AuthAllowEvent {
   TResult when<TResult extends Object?>({
     required TResult Function(String userId, String password, String tenantId)
         login,
+    required TResult Function(String tenantId) ssoLogin,
     required TResult Function(String tenantId) autoLogin,
     required TResult Function() logout,
     required TResult Function(
@@ -1529,6 +1787,7 @@ class _$AuthAllowEventImpl implements AuthAllowEvent {
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String userId, String password, String tenantId)? login,
+    TResult? Function(String tenantId)? ssoLogin,
     TResult? Function(String tenantId)? autoLogin,
     TResult? Function()? logout,
     TResult? Function(String username, String tenantId, String apiEndPoint)?
@@ -1553,6 +1812,7 @@ class _$AuthAllowEventImpl implements AuthAllowEvent {
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String userId, String password, String tenantId)? login,
+    TResult Function(String tenantId)? ssoLogin,
     TResult Function(String tenantId)? autoLogin,
     TResult Function()? logout,
     TResult Function(String username, String tenantId, String apiEndPoint)?
@@ -1581,6 +1841,7 @@ class _$AuthAllowEventImpl implements AuthAllowEvent {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(AuthLoginEvent value) login,
+    required TResult Function(AuthSsoLoginEvent value) ssoLogin,
     required TResult Function(AuthAutoLoginEvent value) autoLogin,
     required TResult Function(AuthLogoutEvent value) logout,
     required TResult Function(AuthCheckOtherDeviceLoginEvent value)
@@ -1599,6 +1860,7 @@ class _$AuthAllowEventImpl implements AuthAllowEvent {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(AuthLoginEvent value)? login,
+    TResult? Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult? Function(AuthAutoLoginEvent value)? autoLogin,
     TResult? Function(AuthLogoutEvent value)? logout,
     TResult? Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -1616,6 +1878,7 @@ class _$AuthAllowEventImpl implements AuthAllowEvent {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(AuthLoginEvent value)? login,
+    TResult Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult Function(AuthAutoLoginEvent value)? autoLogin,
     TResult Function(AuthLogoutEvent value)? logout,
     TResult Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -1720,6 +1983,7 @@ class _$AuthSwitchDeviceUserActionEventImpl
   TResult when<TResult extends Object?>({
     required TResult Function(String userId, String password, String tenantId)
         login,
+    required TResult Function(String tenantId) ssoLogin,
     required TResult Function(String tenantId) autoLogin,
     required TResult Function() logout,
     required TResult Function(
@@ -1746,6 +2010,7 @@ class _$AuthSwitchDeviceUserActionEventImpl
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
     TResult? Function(String userId, String password, String tenantId)? login,
+    TResult? Function(String tenantId)? ssoLogin,
     TResult? Function(String tenantId)? autoLogin,
     TResult? Function()? logout,
     TResult? Function(String username, String tenantId, String apiEndPoint)?
@@ -1770,6 +2035,7 @@ class _$AuthSwitchDeviceUserActionEventImpl
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
     TResult Function(String userId, String password, String tenantId)? login,
+    TResult Function(String tenantId)? ssoLogin,
     TResult Function(String tenantId)? autoLogin,
     TResult Function()? logout,
     TResult Function(String username, String tenantId, String apiEndPoint)?
@@ -1798,6 +2064,7 @@ class _$AuthSwitchDeviceUserActionEventImpl
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(AuthLoginEvent value) login,
+    required TResult Function(AuthSsoLoginEvent value) ssoLogin,
     required TResult Function(AuthAutoLoginEvent value) autoLogin,
     required TResult Function(AuthLogoutEvent value) logout,
     required TResult Function(AuthCheckOtherDeviceLoginEvent value)
@@ -1816,6 +2083,7 @@ class _$AuthSwitchDeviceUserActionEventImpl
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(AuthLoginEvent value)? login,
+    TResult? Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult? Function(AuthAutoLoginEvent value)? autoLogin,
     TResult? Function(AuthLogoutEvent value)? logout,
     TResult? Function(AuthCheckOtherDeviceLoginEvent value)?
@@ -1833,6 +2101,7 @@ class _$AuthSwitchDeviceUserActionEventImpl
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(AuthLoginEvent value)? login,
+    TResult Function(AuthSsoLoginEvent value)? ssoLogin,
     TResult Function(AuthAutoLoginEvent value)? autoLogin,
     TResult Function(AuthLogoutEvent value)? logout,
     TResult Function(AuthCheckOtherDeviceLoginEvent value)?

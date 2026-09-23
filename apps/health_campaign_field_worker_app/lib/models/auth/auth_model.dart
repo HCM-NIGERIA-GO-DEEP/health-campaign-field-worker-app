@@ -43,6 +43,25 @@ class LoginModel with _$LoginModel {
       _$LoginModelFromJson(json);
 }
 
+/// Body posted to the DIGIT SSO exchange endpoint. The backend validates the
+/// Azure [accessToken] (signature, issuer, `aud` = client ID, `scp` contains
+/// `access_as_user`, expiry), resolves the DIGIT employee from its claims
+/// (or from [idToken]) and responds with the standard OAuth token payload
+/// parsed by [AuthModel].
+@freezed
+class SsoExchangeRequestModel with _$SsoExchangeRequestModel {
+  const factory SsoExchangeRequestModel({
+    required String idToken,
+    String? accessToken,
+    required String tenantId,
+    @Default('EMPLOYEE') String userType,
+    @Default('MICROSOFT') String provider,
+  }) = _SsoExchangeRequestModel;
+
+  factory SsoExchangeRequestModel.fromJson(Map<String, dynamic> json) =>
+      _$SsoExchangeRequestModelFromJson(json);
+}
+
 @freezed
 class UserRequestModel with _$UserRequestModel {
   const factory UserRequestModel({

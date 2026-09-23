@@ -20,6 +20,7 @@ import 'package:transit_post/data/repositories/remote/user_action.dart';
 
 import 'blocs/app_initialization/app_initialization.dart';
 import 'blocs/auth/auth.dart';
+import 'data/services/azure_sso_service.dart';
 import 'blocs/error/error.dart';
 import 'blocs/push_notification/push_notification.dart';
 import 'blocs/localization/localization.dart';
@@ -167,6 +168,9 @@ class MainApplicationState extends State<MainApplication>
                   individualRemoteRepository: ctx.read<
                       RemoteRepository<IndividualModel,
                           IndividualSearchModel>>(),
+                  ssoAuthenticator: envConfig.variables.authMode == AuthMode.sso
+                      ? AzureSsoService.fromEnvironment(envConfig.variables)
+                      : null,
                 )..add(
                     AuthAutoLoginEvent(
                       tenantId: envConfig.variables.tenantId,

@@ -10,6 +10,7 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import '../../data/local_store/secure_store/secure_store.dart';
 import '../../data/repositories/remote/auth.dart';
 import '../../data/repositories/remote/mdms.dart';
+import '../../data/services/azure_sso_service.dart';
 import '../../models/auth/auth_model.dart';
 import '../../models/entities/roles_type.dart';
 import '../../models/role_actions/role_actions_model.dart';
@@ -28,14 +29,20 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final RemoteRepository<IndividualModel, IndividualSearchModel>
       individualRemoteRepository;
 
+  /// Interactive single sign-on provider used by [AuthSsoLoginEvent].
+  /// Null when the build runs in password mode.
+  final SsoAuthenticator? ssoAuthenticator;
+
   AuthBloc({
     required this.authRepository,
     required this.mdmsRepository,
     required this.individualRemoteRepository,
+    this.ssoAuthenticator,
     LocalSecureStore? localSecureStore,
-  })  : localSecureStore = LocalSecureStore.instance,
+  })  : localSecureStore = localSecureStore ?? LocalSecureStore.instance,
         super(const AuthUnauthenticatedState()) {
     on(_onLogin);
+    on(_onSsoLogin);
     on(_onLogout);
     on(_onAutoLogin);
     on(_onCheckOtherDeviceLogin);
@@ -91,46 +98,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           tenantId: event.tenantId,
         ),
       );
-      await localSecureStore.setAuthCredentials(result);
-      await localSecureStore.setBoundaryRefetch(true);
-
-      final actionsWrapper = await mdmsRepository
-          .searchRoleActions(envConfig.variables.actionMapApiPath, {
-        "roleCodes": result.userRequestModel.roles.map((e) => e.code).toList(),
-        "tenantId": envConfig.variables.tenantId,
-        "actionMaster": "actions-test",
-        "enabled": true,
-      });
-
-      await localSecureStore.setBoundaryRefetch(true);
-
-      await localSecureStore.setRoleActions(actionsWrapper);
-      if (result.userRequestModel.roles
-          .where((role) =>
-              role.code == RolesType.districtSupervisor.toValue() ||
-              role.code ==
-                  RolesType.distributor
-                      .toValue()) // NOTE: Savings distributor user details for fetching non mobile users
-          .toList()
-          .isNotEmpty) {
-        final loggedInIndividual = await individualRemoteRepository.search(
-          IndividualSearchModel(
-            userUuid: [result.userRequestModel.uuid],
-          ),
-        );
-        await localSecureStore
-            .setSelectedIndividual(loggedInIndividual.firstOrNull?.id);
-      }
-
-      emit(
-        AuthAuthenticatedState(
-          accessToken: result.accessToken,
-          refreshToken: result.refreshToken,
-          userModel: result.userRequestModel,
-          actionsWrapper: actionsWrapper,
-          individualId: await localSecureStore.userIndividualId,
-        ),
-      );
+      await _completeLogin(result, emit);
     } on DioException catch (error) {
       emit(const AuthErrorState());
       emit(const AuthUnauthenticatedState());
@@ -146,11 +114,138 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
+  //_onSsoLogin runs the external single sign-on flow (Azure Entra ID), then
+  // exchanges the resulting ID token for a DIGIT session. From that point on
+  // the app behaves exactly as after a password login.
+  FutureOr<void> _onSsoLogin(AuthSsoLoginEvent event, AuthEmitter emit) async {
+    final authenticator = ssoAuthenticator;
+    if (authenticator == null) {
+      emit(const AuthErrorState('SSO is not available in this build'));
+      emit(const AuthUnauthenticatedState());
+      return;
+    }
+
+    emit(const AuthLoadingState());
+
+    try {
+      final identity = await authenticator.signIn();
+
+      final AuthModel result = await authRepository.exchangeSsoToken(
+        request: SsoExchangeRequestModel(
+          idToken: identity.idToken,
+          accessToken: identity.accessToken,
+          tenantId: event.tenantId,
+        ),
+        exchangePath: envConfig.variables.ssoTokenExchangePath,
+      );
+      await _completeLogin(result, emit);
+      // Kept after _completeLogin so a failed exchange leaves nothing behind.
+      await localSecureStore.setSsoIdToken(identity.idToken);
+    } on SsoCancelledException {
+      // The user closed the browser sheet; nothing to report.
+      emit(const AuthUnauthenticatedState());
+    } on SsoConfigurationException catch (error) {
+      AppLogger.instance.error(
+        title: 'SSO configuration error',
+        message: error.message,
+      );
+      emit(AuthErrorState(error.message));
+      emit(const AuthUnauthenticatedState());
+    } on SsoException catch (error) {
+      AppLogger.instance.error(
+        title: 'SSO login error',
+        message: '${error.message} ${error.cause ?? ''}'.trim(),
+      );
+      emit(const AuthErrorState());
+      emit(const AuthUnauthenticatedState());
+    } on DioException catch (error) {
+      emit(const AuthErrorState());
+      emit(const AuthUnauthenticatedState());
+
+      AppLogger.instance.error(
+        title: 'SSO token exchange error',
+        message: error.response?.data.toString(),
+      );
+    } catch (_) {
+      emit(const AuthErrorState());
+      emit(const AuthUnauthenticatedState());
+      rethrow;
+    }
+  }
+
+  /// Shared tail of every successful token acquisition (password, SSO):
+  /// persists credentials, loads role actions, resolves the linked individual
+  /// for supervisor/distributor roles and emits [AuthAuthenticatedState].
+  Future<void> _completeLogin(AuthModel result, AuthEmitter emit) async {
+    await localSecureStore.setAuthCredentials(result);
+    await localSecureStore.setBoundaryRefetch(true);
+
+    final actionsWrapper = await mdmsRepository
+        .searchRoleActions(envConfig.variables.actionMapApiPath, {
+      "roleCodes": result.userRequestModel.roles.map((e) => e.code).toList(),
+      "tenantId": envConfig.variables.tenantId,
+      "actionMaster": "actions-test",
+      "enabled": true,
+    });
+
+    await localSecureStore.setBoundaryRefetch(true);
+
+    await localSecureStore.setRoleActions(actionsWrapper);
+    if (result.userRequestModel.roles
+        .where((role) =>
+            role.code == RolesType.districtSupervisor.toValue() ||
+            role.code ==
+                RolesType.distributor
+                    .toValue()) // NOTE: Savings distributor user details for fetching non mobile users
+        .toList()
+        .isNotEmpty) {
+      final loggedInIndividual = await individualRemoteRepository.search(
+        IndividualSearchModel(
+          userUuid: [result.userRequestModel.uuid],
+        ),
+      );
+      await localSecureStore
+          .setSelectedIndividual(loggedInIndividual.firstOrNull?.id);
+    }
+
+    emit(
+      AuthAuthenticatedState(
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken,
+        userModel: result.userRequestModel,
+        actionsWrapper: actionsWrapper,
+        individualId: await localSecureStore.userIndividualId,
+      ),
+    );
+  }
+
   //_onLogout event logs out the user and deletes the saved user details from local storage
   FutureOr<void> _onLogout(AuthLogoutEvent event, AuthEmitter emit) async {
+    await _endSsoSession();
     await localSecureStore.deleteAll();
     await localSecureStore.setBoundaryRefetch(true);
     emit(const AuthUnauthenticatedState());
+  }
+
+  /// If the current session came from SSO, also sign the user out of Entra ID
+  /// so a shared device does not silently reuse the browser session. Failures
+  /// are logged and never block the local logout.
+  Future<void> _endSsoSession() async {
+    final authenticator = ssoAuthenticator;
+    if (authenticator == null || !envConfig.variables.azureEndSessionOnLogout) {
+      return;
+    }
+
+    try {
+      final idToken = await localSecureStore.ssoIdToken;
+      if (idToken == null || idToken.isEmpty) return;
+      await authenticator.signOut(idTokenHint: idToken);
+    } catch (error) {
+      AppLogger.instance.error(
+        title: 'SSO end-session error',
+        message: '$error',
+      );
+    }
   }
 
   FutureOr<void> _onReset(AuthResetEvent event, AuthEmitter emit) async {
@@ -292,6 +387,12 @@ class AuthEvent with _$AuthEvent {
     required String password,
     required String tenantId,
   }) = AuthLoginEvent;
+
+  /// Interactive single sign-on (Azure Entra ID) followed by a DIGIT token
+  /// exchange. Requires [AuthBloc.ssoAuthenticator].
+  const factory AuthEvent.ssoLogin({
+    required String tenantId,
+  }) = AuthSsoLoginEvent;
 
   const factory AuthEvent.autoLogin({
     required String tenantId,

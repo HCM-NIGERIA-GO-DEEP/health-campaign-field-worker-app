@@ -634,6 +634,10 @@ class Login {
 
   String get unableToLoginText => 'UNABLE_TO_LOGIN';
 
+  String get ssoActionLabel => 'LOGIN_SSO_MICROSOFT_ACTION_LABEL';
+
+  String get ssoDescription => 'LOGIN_SSO_DESCRIPTION';
+
   String get qrLogin => 'QR_LOGIN';
 
   String get switchMobileDialogTitle => 'SWITCH_MOBILE_DIALOG_TITLE';

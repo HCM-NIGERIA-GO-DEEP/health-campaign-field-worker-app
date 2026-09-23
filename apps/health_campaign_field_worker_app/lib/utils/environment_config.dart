@@ -140,6 +140,60 @@ class Variables {
     '',
   );
 
+  // Selects how the login page authenticates. PASSWORD keeps the DIGIT
+  // username/password form; SSO shows only a Microsoft sign-in button that
+  // runs an Azure Entra ID authorization-code flow and exchanges the resulting
+  // ID token for a DIGIT session via [ssoTokenExchangePath].
+  static const _authMode = EnvEntry(
+    'AUTH_MODE',
+    'PASSWORD',
+  );
+
+  // Entra ID directory (tenant) ID, or `common` / `organizations` for
+  // multi-tenant registrations.
+  // Deployment specific: supplied via .env / CI variables, never committed.
+  static const _azureTenantId = EnvEntry(
+    'AZURE_TENANT_ID',
+    '',
+  );
+
+  // Application (client) ID of the Entra ID app registration.
+  // Deployment specific: supplied via .env / CI variables, never committed.
+  static const _azureClientId = EnvEntry(
+    'AZURE_CLIENT_ID',
+    '',
+  );
+
+  // Must match a redirect URI registered on the Entra app and the
+  // `appAuthRedirectScheme` manifest placeholder / iOS URL scheme.
+  static const _azureRedirectUri = EnvEntry(
+    'AZURE_REDIRECT_URI',
+    'com.digit.hcm://oauth/callback',
+  );
+
+  // Space-separated scopes requested from Entra ID. Deployments should add
+  // their `api://<client id>/access_as_user` scope so Entra issues an access
+  // token whose audience is the app registration, which is what the DIGIT
+  // exchange endpoint validates.
+  static const _azureScopes = EnvEntry(
+    'AZURE_SCOPES',
+    'openid profile',
+  );
+
+  // When true, logging out in SSO mode also opens the Entra ID end-session
+  // endpoint so the browser session is cleared for the next user.
+  static const _azureEndSessionOnLogout = EnvEntry(
+    'AZURE_END_SESSION_ON_LOGOUT',
+    'true',
+  );
+
+  // DIGIT endpoint (relative to BASE_URL) that accepts an Azure ID token and
+  // returns the standard DIGIT OAuth token response.
+  static const _ssoTokenExchangePath = EnvEntry(
+    'SSO_TOKEN_EXCHANGE_PATH',
+    'user/oauth/sso/_exchange',
+  );
+
   const Variables({
     this.useFallbackValues = false,
     required DotEnv dotEnv,
@@ -236,6 +290,45 @@ class Variables {
           fallback: _orsZincCampaignId.value,
         );
 
+  /// Reads [entry] from `.env`, treating a missing *or blank* value as
+  /// "use the shipped default". The build workflow writes every key even when
+  /// the repository variable is unset, which would otherwise yield ''.
+  String _valueOrDefault(EnvEntry entry) {
+    if (useFallbackValues) return entry.value;
+    final raw = _dotEnv.get(entry.key, fallback: entry.value).trim();
+    return raw.isEmpty ? entry.value : raw;
+  }
+
+  AuthMode get authMode {
+    final raw = _valueOrDefault(_authMode);
+
+    return AuthMode.values.firstWhereOrNull(
+          (mode) => mode.name.toUpperCase() == raw.trim().toUpperCase(),
+        ) ??
+        AuthMode.password;
+  }
+
+  String get azureTenantId => _valueOrDefault(_azureTenantId);
+
+  String get azureClientId => _valueOrDefault(_azureClientId);
+
+  String get azureRedirectUri => _valueOrDefault(_azureRedirectUri);
+
+  bool get azureEndSessionOnLogout =>
+      _valueOrDefault(_azureEndSessionOnLogout).toLowerCase() != 'false';
+
+  List<String> get azureScopes {
+    final raw = _valueOrDefault(_azureScopes);
+
+    return raw
+        .split(RegExp(r'[\s,]+'))
+        .map((scope) => scope.trim())
+        .where((scope) => scope.isNotEmpty)
+        .toList();
+  }
+
+  String get ssoTokenExchangePath => _valueOrDefault(_ssoTokenExchangePath);
+
   EnvType get envType {
     final envName = useFallbackValues
         ? _envName.value
@@ -251,6 +344,15 @@ class EnvEntry {
   final String value;
 
   const EnvEntry(this.key, this.value);
+}
+
+/// How the login page authenticates the user. See `AUTH_MODE` in `.env`.
+enum AuthMode {
+  /// DIGIT username/password form (default).
+  password,
+
+  /// Azure Entra ID single sign-on via the system browser.
+  sso,
 }
 
 enum EnvType {
