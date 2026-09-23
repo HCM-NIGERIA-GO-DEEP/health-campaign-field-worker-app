@@ -180,12 +180,12 @@ Future<void> _executeLogout(BuildContext context) async {
   if (!await ensureOnlineOrAlert(context)) return;
   if (!context.mounted) return;
 
-  final authBloc = _readBlocOrNull<AuthBloc>(context);
+  final authBloc = _readOrNull<AuthBloc>(context);
   if (authBloc == null) return;
 
-  final pushBloc = _readBlocOrNull<PushNotificationBloc>(context);
-  final boundaryBloc = _readBlocOrNull<BoundaryBloc>(context);
-  final localizationBloc = _readBlocOrNull<LocalizationBloc>(context);
+  final pushBloc = _readOrNull<PushNotificationBloc>(context);
+  final boundaryBloc = _readOrNull<BoundaryBloc>(context);
+  final localizationBloc = _readOrNull<LocalizationBloc>(context);
 
   if (pushBloc != null) {
     try {
@@ -220,7 +220,7 @@ Future<void> _executeLogout(BuildContext context) async {
   authBloc.add(const AuthLogoutEvent());
 }
 
-T? _readBlocOrNull<T>(BuildContext context) {
+T? _readOrNull<T>(BuildContext context) {
   try {
     return context.read<T>();
   } catch (_) {
@@ -725,6 +725,16 @@ void attemptSyncUp(BuildContext context) async {
   }
 
   if (context.mounted) {
+    // The FaceAuthEvent remote repository is only provided when the service
+    // registry exposes the FaceAuthEvent entity, so read both sides optionally
+    // and pass them only as a pair — the sync service throws if a local
+    // repository has pending entries but no matching remote repository.
+    final faceAuthLocalRepository = _readOrNull<
+        LocalRepository<FaceAuthEventModel, FaceAuthEventSearchModel>>(context);
+    final faceAuthRemoteRepository = _readOrNull<
+            RemoteRepository<FaceAuthEventModel, FaceAuthEventSearchModel>>(
+        context);
+
     context.read<SyncBloc>().add(
           SyncSyncUpEvent(
             userId: context.loggedInUserUuid,
@@ -758,9 +768,9 @@ void attemptSyncUp(BuildContext context) async {
                   LocalRepository<AttendanceLogModel,
                       AttendanceLogSearchModel>>(),
               context.read<UserActionLocalRepository>(),
-              context.read<
-                  LocalRepository<FaceAuthEventModel,
-                      FaceAuthEventSearchModel>>(),
+              if (faceAuthLocalRepository != null &&
+                  faceAuthRemoteRepository != null)
+                faceAuthLocalRepository,
             ],
             remoteRepositories: [
               // INFO : Need to add repo repo of package Here
@@ -793,9 +803,9 @@ void attemptSyncUp(BuildContext context) async {
                   RemoteRepository<AttendanceLogModel,
                       AttendanceLogSearchModel>>(),
               context.read<UserActionRemoteRepository>(),
-              context.read<
-                  RemoteRepository<FaceAuthEventModel,
-                      FaceAuthEventSearchModel>>(),
+              if (faceAuthLocalRepository != null &&
+                  faceAuthRemoteRepository != null)
+                faceAuthRemoteRepository,
             ],
           ),
         );

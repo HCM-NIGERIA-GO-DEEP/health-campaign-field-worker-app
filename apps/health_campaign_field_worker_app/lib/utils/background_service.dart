@@ -257,6 +257,19 @@ void onStart(ServiceInstance service) async {
                       getActionMap(serviceRegistryList),
                     );
 
+                    // The FaceAuthEvent remote repository exists only when the
+                    // service registry exposes the FaceAuthEvent entity. Drop
+                    // the local side too when it is missing — sync throws if a
+                    // local repository has pending entries but no remote.
+                    final hasFaceAuthRemote = remoteRepos.any(
+                      (e) => e.type == DataModelType.faceAuthEvent,
+                    );
+                    if (!hasFaceAuthRemote) {
+                      localRepos.removeWhere(
+                        (e) => e.type == DataModelType.faceAuthEvent,
+                      );
+                    }
+
                     // Re-check lock right before sync since bandwidth
                     // checks may have taken significant time.
                     final isLockedBeforeSync = await SyncLock.isLocked();
