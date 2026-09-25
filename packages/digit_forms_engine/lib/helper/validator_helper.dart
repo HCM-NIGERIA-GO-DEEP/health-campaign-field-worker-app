@@ -1,3 +1,4 @@
+import 'package:digit_forms_engine/helper/date_bound_resolver.dart';
 import 'package:digit_forms_engine/helper/form_builder_helper.dart';
 import 'package:flutter/foundation.dart';
 import 'package:reactive_forms/reactive_forms.dart';
@@ -181,6 +182,30 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
               final value = control.value?.toString();
               if (value == null || value.isEmpty) return null;
               return pattern.hasMatch(value) ? null : {'regex': true};
+            }) as Validator<T>);
+          }
+          break;
+
+        case 'startDate':
+        case 'endDate':
+          // The date picker's firstDate/lastDate only grey out calendar days.
+          // Enforce the same bound on the stored value so a date that arrives
+          // by any other path (prefill, an editable input, a picker that lets
+          // a boundary day through) is rejected with the rule's message.
+          // Bound values may be epoch millis or the keyword `today`
+          // (see date_bound_resolver.dart).
+          final isEndBound = rule.type == 'endDate';
+          final bound =
+              resolveDateBoundMillis(rule.value, endOfDay: isEndBound);
+          if (bound != null) {
+            validators.add(Validators.delegate((control) {
+              final value = control.value;
+              if (value is! DateTime) {
+                return null; // empty values are the required rule's job
+              }
+              final millis = value.millisecondsSinceEpoch;
+              final violates = isEndBound ? millis > bound : millis < bound;
+              return violates ? {rule.type: true} : null;
             }) as Validator<T>);
           }
           break;

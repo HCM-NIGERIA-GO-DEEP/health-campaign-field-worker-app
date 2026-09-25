@@ -509,7 +509,18 @@ final jsonConfig = {
             "ec2Value": "__context:ec2",
             "ec3Value": "__context:ec3",
             "ec4Value": "__context:ec4",
-            "ec5Value": "__context:ec5"
+            "ec5Value": "__context:ec5",
+            // Other child health interventions asked on the eligibility
+            // checklist (Yes/No + last date received per intervention).
+            // Null-skipped on paths that never went through the checklist.
+            "malariaVaccineReceived": "__context:malariaVaccine",
+            "malariaVaccineLastDate": "__context:malariaVaccineDate",
+            "smcReceived": "__context:smc",
+            "smcLastDate": "__context:smcDate",
+            "polioReceived": "__context:polio",
+            "polioLastDate": "__context:polioDate",
+            "measlesRubellaReceived": "__context:measlesRubella",
+            "measlesRubellaLastDate": "__context:measlesRubellaDate"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -619,7 +630,18 @@ final jsonConfig = {
             "ec2Value": "__context:ec2",
             "ec3Value": "__context:ec3",
             "ec4Value": "__context:ec4",
-            "ec5Value": "__context:ec5"
+            "ec5Value": "__context:ec5",
+            // Other child health interventions asked on the eligibility
+            // checklist (Yes/No + last date received per intervention).
+            // Null-skipped on paths that never went through the checklist.
+            "malariaVaccineReceived": "__context:malariaVaccine",
+            "malariaVaccineLastDate": "__context:malariaVaccineDate",
+            "smcReceived": "__context:smc",
+            "smcLastDate": "__context:smcDate",
+            "polioReceived": "__context:polio",
+            "polioLastDate": "__context:polioDate",
+            "measlesRubellaReceived": "__context:measlesRubella",
+            "measlesRubellaLastDate": "__context:measlesRubellaDate"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -719,7 +741,18 @@ final jsonConfig = {
             "ec2Value": "__context:ec2",
             "ec3Value": "__context:ec3",
             "ec4Value": "__context:ec4",
-            "ec5Value": "__context:ec5"
+            "ec5Value": "__context:ec5",
+            // Other child health interventions asked on the eligibility
+            // checklist (Yes/No + last date received per intervention).
+            // Null-skipped on paths that never went through the checklist.
+            "malariaVaccineReceived": "__context:malariaVaccine",
+            "malariaVaccineLastDate": "__context:malariaVaccineDate",
+            "smcReceived": "__context:smc",
+            "smcLastDate": "__context:smcDate",
+            "polioReceived": "__context:polio",
+            "polioLastDate": "__context:polioDate",
+            "measlesRubellaReceived": "__context:measlesRubella",
+            "measlesRubellaLastDate": "__context:measlesRubellaDate"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -797,7 +830,18 @@ final jsonConfig = {
             "ec2Value": "__context:ec2",
             "ec3Value": "__context:ec3",
             "ec4Value": "__context:ec4",
-            "ec5Value": "__context:ec5"
+            "ec5Value": "__context:ec5",
+            // Other child health interventions asked on the eligibility
+            // checklist (Yes/No + last date received per intervention).
+            // Null-skipped on paths that never went through the checklist.
+            "malariaVaccineReceived": "__context:malariaVaccine",
+            "malariaVaccineLastDate": "__context:malariaVaccineDate",
+            "smcReceived": "__context:smc",
+            "smcLastDate": "__context:smcDate",
+            "polioReceived": "__context:polio",
+            "polioLastDate": "__context:polioDate",
+            "measlesRubellaReceived": "__context:measlesRubella",
+            "measlesRubellaLastDate": "__context:measlesRubellaDate"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -1034,7 +1078,18 @@ final jsonConfig = {
             "ec2Value": "__context:ec2",
             "ec3Value": "__context:ec3",
             "ec4Value": "__context:ec4",
-            "ec5Value": "__context:ec5"
+            "ec5Value": "__context:ec5",
+            // Other child health interventions asked on the eligibility
+            // checklist (Yes/No + last date received per intervention).
+            // Null-skipped on paths that never went through the checklist.
+            "malariaVaccineReceived": "__context:malariaVaccine",
+            "malariaVaccineLastDate": "__context:malariaVaccineDate",
+            "smcReceived": "__context:smc",
+            "smcLastDate": "__context:smcDate",
+            "polioReceived": "__context:polio",
+            "polioLastDate": "__context:polioDate",
+            "measlesRubellaReceived": "__context:measlesRubella",
+            "measlesRubellaLastDate": "__context:measlesRubellaDate"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -1839,6 +1894,16 @@ final jsonConfig = {
             "ec3Value": "__context:ec3",
             "ec4Value": "__context:ec4",
             "ec5Value": "__context:ec5",
+            // Other child health interventions asked on the eligibility
+            // checklist (Yes/No + last date received per intervention).
+            "malariaVaccineReceived": "__context:malariaVaccine",
+            "malariaVaccineLastDate": "__context:malariaVaccineDate",
+            "smcReceived": "__context:smc",
+            "smcLastDate": "__context:smcDate",
+            "polioReceived": "__context:polio",
+            "polioLastDate": "__context:polioDate",
+            "measlesRubellaReceived": "__context:measlesRubella",
+            "measlesRubellaLastDate": "__context:measlesRubellaDate",
             "chcSeen": "__context:chcSeen",
             "fullyImmunized": "__context:fullyImmunized",
             "partiallyImmunized": "__context:partiallyImmunized",
