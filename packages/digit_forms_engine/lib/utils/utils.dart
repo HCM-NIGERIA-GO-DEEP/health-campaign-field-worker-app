@@ -515,10 +515,17 @@ final functionRegistry = {
 
   // Calculates wastage for a returned stock entry.
   //
-  // Rule: wastage = stockBalance - (returned bottles * 30ml + partial ml),
-  // where `returned` is the count of full/unused bottles (30 ml each) and
-  // `partial` is the ml entered by the user. The current product's balance is
-  // resolved via the host-app hook (see [FormsFunctionConfig]).
+  // Rule: wastage = stockBalance - (returned * multiplier + partial),
+  // where `returned` is the count of full/unused base units (bottles), the
+  // multiplier is how many display units fit in one base unit (30 ml per
+  // bottle for a liquid campaign, 1 for a campaign counting whole units), and
+  // `partial` is the leftover in the part-used base unit. Both the balance and
+  // the result are in display units. The balance and the multiplier are
+  // resolved via host-app hooks (see [FormsFunctionConfig]).
+  //
+  // Note: the `partial` argument acts as a flag. The leftover is derived as
+  // `balance % multiplier` -- the part-used unit is assumed to hold exactly
+  // the remainder of the balance -- rather than taking the typed value.
   //
   // args: [returned, partial, productVariantId]
   'calculateWastage': (List<dynamic> args) {
@@ -539,8 +546,9 @@ final functionRegistry = {
             0
         : 0;
 
-    final partialInMl = partial > 0 ? balance % 30 : 0;
-    final wastage = balance - ((returned * 30) + partialInMl);
+    final multiplier = FormsFunctionConfig.instance.unitMultiplier;
+    final partialInMl = partial > 0 ? balance % multiplier : 0;
+    final wastage = balance - ((returned * multiplier) + partialInMl);
     final result = wastage < 0 ? 0 : wastage;
     return result == result.roundToDouble() ? result.toInt() : result;
   },
@@ -563,7 +571,7 @@ final functionRegistry = {
             0
         : 0;
 
-    final partialInMl = partial > 0 ? balance % 30 : 0;
-    return partialInMl;
+    final multiplier = FormsFunctionConfig.instance.unitMultiplier;
+    return partial > 0 ? balance % multiplier : 0;
   },
 };

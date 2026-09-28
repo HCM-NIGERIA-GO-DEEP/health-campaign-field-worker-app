@@ -96,6 +96,9 @@ class StockCalculationUtils {
     bool calculatePartial = false,
     double multiplier = 1.0,
   }) {
+    // `multiplier` converts base units (as persisted on `stock.quantity`) to
+    // the campaign's display units -- 30 for bottles -> ml, 1 for a campaign
+    // counting whole units. Callers pass `StockConstants.multiplier`.
     final filteredStock = stockList.where((stock) {
       if (stock.productVariantId != productId) return false;
       return stock.receiverId == facilityId || stock.senderId == facilityId;
@@ -197,8 +200,9 @@ class StockCalculationUtils {
     stockLess *= multiplier;
 
     // Add delivery task quantities to issued stock if in current cycle.
-    // These are already recorded in ml, so add them after unit conversion
-    // to avoid scaling them by the bottle-to-ml multiplier.
+    // Task quantities are recorded in display units (ml on a liquid
+    // campaign), so they are added after unit conversion rather than being
+    // scaled by the multiplier.
     if (tasks.isNotEmpty) {
       stockIssued += _getDeliveryTaskValue(tasks, productId);
     }

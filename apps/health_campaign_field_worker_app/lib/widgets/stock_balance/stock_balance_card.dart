@@ -296,6 +296,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       loggedInUserUuid: context.loggedInUserUuid,
       isDistributor: _isDistributor,
       tasks: filteredTasks,
+      multiplier: StockConstants.multiplier,
+      calculatePartial: StockConstants.deductPartialUsed,
     );
 
     if (mounted) {
@@ -313,6 +315,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
         }
       });
     }
+    // Cached in display units (ml on a liquid campaign), which is what
+    // `calculateWastage` and the stock-in-hand validations expect.
     StockBalanceCache.instance.setCache(effectiveFacilityId, _stockBalances);
   }
 

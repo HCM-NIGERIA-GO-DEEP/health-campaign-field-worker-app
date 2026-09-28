@@ -186,9 +186,6 @@ class Constants {
   static const String downloadSuccessAnimation =
       'assets/animated_json/download_success.json';
 
-  // Conversion factor for stock quantities shown in ml.
-  static const double stockBottleToMlMultiplier = 30.0;
-
   static List<LocalRepository> getLocalRepositories(
     LocalSqlDataStore sql,
     Isar isar,

@@ -54,6 +54,7 @@ import 'i18_key_constants.dart' as i18;
 
 export 'app_exception.dart';
 export 'constants.dart';
+export 'stock_constants.dart';
 export 'extensions/extensions.dart';
 
 class CustomValidator {

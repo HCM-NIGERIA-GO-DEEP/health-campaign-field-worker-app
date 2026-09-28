@@ -485,6 +485,8 @@ class _StockReconciliationCardState
       facilityId: facilityId,
       productId: productId,
       loggedInUserUuid: loggedInUserUuid,
+      multiplier: StockConstants.multiplier,
+      calculatePartial: StockConstants.deductPartialUsed,
     );
 
     setState(() {

@@ -20,6 +20,7 @@ import '../../models/entities/roles_type.dart';
 import '../../utils/constants.dart';
 import '../../utils/extensions/extensions.dart';
 import '../../utils/stock_calculation_utils.dart';
+import '../../utils/stock_constants.dart';
 import '../localized.dart';
 
 class ProductSelectionCard extends LocalizedStatefulWidget {
@@ -239,6 +240,8 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         loggedInUserUuid: loggedInUserUuid,
         isDistributor: _isDistributor,
         tasks: filteredTasks,
+        multiplier: StockConstants.multiplier,
+        calculatePartial: StockConstants.deductPartialUsed,
       );
 
       // Merge: UserAction balances take precedence (they include delivery deductions)
@@ -387,8 +390,9 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         entityIndex++) {
       final product = _selectedProducts[entityIndex];
       final stockInHand = _stockInHandMap[product.id] ?? 0.0;
-      final maxValue = stockInHand
-          .toInt(); // Convert back to bottle count for validation message
+      // Balances are held in display units but the worker types base units
+      // (bottles), so the cap has to come back down to base units.
+      final maxValue = StockConstants.toBaseUnit(stockInHand).toInt();
 
       debugPrint(
           'ProductSelectionCard: Entity $entityIndex - product=${product.id}, stockInHand=$stockInHand, maxValue=$maxValue');

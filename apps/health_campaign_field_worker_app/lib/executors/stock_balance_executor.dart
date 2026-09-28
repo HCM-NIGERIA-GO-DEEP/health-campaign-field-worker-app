@@ -145,11 +145,11 @@ class StockBalanceExecutor extends ActionExecutor {
                   .value ??
               '0') ??
           0;
-      quantity = quantity -
-          (wastage / Constants.stockBottleToMlMultiplier) -
-          (partial /
-              Constants
-                  .stockBottleToMlMultiplier); // Subtract wastage and partial from total quantity
+      // `quantity` is in base units; wastage and partial are recorded in
+      // display units, so bring them down before subtracting. On a campaign
+      // counting whole units the multiplier is 1 and this is a no-op.
+      const multiplier = StockConstants.multiplier;
+      quantity = quantity - (wastage / multiplier) - (partial / multiplier);
       final transactionType = stock.transactionType?.toUpperCase() ?? '';
       final stockEntryType = _getStockEntryType(stock);
       final isReceiver = stock.receiverId == facilityId;

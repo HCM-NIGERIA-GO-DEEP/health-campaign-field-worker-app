@@ -11,12 +11,16 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models/entities/roles_type.dart';
+import 'stock_constants.dart';
 import 'extensions/extensions.dart';
 
 class FunctionRegistries {
   final BuildContext context;
 
   FunctionRegistries(this.context);
+
+  static num _toNum(dynamic value) =>
+      value is num ? value : num.tryParse(value?.toString() ?? '') ?? 0;
 
   void registerAll() {
     _registerGenerateFunctions();
@@ -30,10 +34,13 @@ class FunctionRegistries {
 
   /// Wires app-side data into the forms engine's built-in functions.
   /// Lets `calculateWastage` read the current product's stock balance from
-  /// the in-memory [StockBalanceCache].
+  /// the in-memory [StockBalanceCache], and scale it by the campaign's stock
+  /// unit (see [StockConstants]).
   void _registerFormsEngineHooks() {
     FormsFunctionConfig.instance.stockBalanceResolver = (productVariantId) =>
         StockBalanceCache.instance.cache[productVariantId] ?? 0;
+    FormsFunctionConfig.instance.unitMultiplierResolver =
+        () => StockConstants.multiplier;
   }
 
   void _registerGenerateFunctions() {
@@ -60,21 +67,22 @@ class FunctionRegistries {
   }
 
   void _registerInventoryFunctions() {
+    // Base unit (as persisted on the stock record) -> display unit.
+    // A no-op for a campaign counting whole units, x30 for bottles -> ml.
     FunctionRegistry.register('bottlesToMl', (args, stateData) {
       if (args.isEmpty) return 0;
-      final raw = args.first;
-      final bottles =
-          (raw is num) ? raw : num.tryParse(raw?.toString() ?? '') ?? 0;
-      return bottles * 30;
+      final base = _toNum(args.first);
+      return StockConstants.toDisplayUnit(base);
     });
 
+    // Display unit -> base unit. Kept whole where it divides exactly, so the
+    // common case still renders as "4" rather than "4.0".
     FunctionRegistry.register('mlToBottles', (args, stateData) {
       if (args.isEmpty) return 0;
-      final raw = args.first;
-      final ml = (raw is num) ? raw : num.tryParse(raw?.toString() ?? '') ?? 0;
-      final bottles = ml / 30;
-      final rounded = bottles.roundToDouble();
-      return bottles == rounded ? rounded.toInt() : bottles;
+      final display = _toNum(args.first);
+      final base = StockConstants.toBaseUnit(display);
+      final rounded = base.roundToDouble();
+      return base == rounded ? rounded.toInt() : base;
     });
 
     FunctionRegistry.register('getQuantityLabel', (args, stateData) {
