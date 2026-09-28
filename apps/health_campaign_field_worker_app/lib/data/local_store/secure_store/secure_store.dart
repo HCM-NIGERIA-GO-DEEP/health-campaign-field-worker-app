@@ -27,6 +27,7 @@ class LocalSecureStore {
   static const deviceSwitchReasonKey = 'deviceSwitchReasonKey';
   static const existingDeviceTokenKey = 'existingDeviceTokenKey';
   static const ssoIdTokenKey = 'ssoIdTokenKey';
+  static const ssoRefreshTokenKey = 'ssoRefreshTokenKey';
 
   // SECURITY: Use EncryptedSharedPreferences (Android Keystore-backed AES-256)
   // explicitly. Without this option some older flutter_secure_storage versions
@@ -337,13 +338,29 @@ class LocalSecureStore {
     }
   }
 
-  /// Azure ID token from the last SSO login, kept only as the
-  /// `id_token_hint` for the Entra end-session call. Null after a password
-  /// login or once the user has logged out.
+  /// Azure ID token from the current SSO session. Sent as the `x-id-token`
+  /// header on DIGIT calls and used as the `id_token_hint` on logout. Null
+  /// after a password login or once the user has logged out.
   Future<String?> get ssoIdToken => storage.read(key: ssoIdTokenKey);
 
-  Future<void> setSsoIdToken(String idToken) async {
+  /// Azure refresh token used to renew [ssoIdToken] silently.
+  Future<String?> get ssoRefreshToken => storage.read(key: ssoRefreshTokenKey);
+
+  /// Stores the SSO tokens. A null [refreshToken] leaves any stored one
+  /// untouched, since Entra does not always rotate it.
+  Future<void> setSsoTokens({
+    required String idToken,
+    String? refreshToken,
+  }) async {
     await storage.write(key: ssoIdTokenKey, value: idToken);
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      await storage.write(key: ssoRefreshTokenKey, value: refreshToken);
+    }
+  }
+
+  Future<void> deleteSsoTokens() async {
+    await storage.delete(key: ssoIdTokenKey);
+    await storage.delete(key: ssoRefreshTokenKey);
   }
 
   Future<void> deleteAll() async {

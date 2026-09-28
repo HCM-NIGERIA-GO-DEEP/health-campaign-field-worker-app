@@ -171,13 +171,14 @@ class Variables {
     'com.digit.hcm://oauth/callback',
   );
 
-  // Space-separated scopes requested from Entra ID. Deployments should add
-  // their `api://<client id>/access_as_user` scope so Entra issues an access
-  // token whose audience is the app registration, which is what the DIGIT
-  // exchange endpoint validates.
+  // Space-separated scopes requested from Entra ID. `offline_access` is
+  // required: it returns the refresh token used to renew the ~1 hour ID token
+  // sent as `x-id-token`. Deployments should add their
+  // `api://<client id>/access_as_user` scope so Entra issues an access token
+  // whose audience is the app registration.
   static const _azureScopes = EnvEntry(
     'AZURE_SCOPES',
-    'openid profile',
+    'openid profile offline_access',
   );
 
   // When true, logging out in SSO mode also opens the Entra ID end-session

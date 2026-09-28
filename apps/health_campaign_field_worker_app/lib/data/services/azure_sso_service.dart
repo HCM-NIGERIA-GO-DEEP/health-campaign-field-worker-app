@@ -5,17 +5,22 @@ import '../../utils/environment_config.dart';
 
 /// Identity returned by an external single sign-on provider.
 ///
-/// Both tokens are handed to the DIGIT exchange endpoint: the [accessToken]
-/// (audience = this app registration, scope `access_as_user`) is what the
-/// backend validates, the [idToken] carries the user claims and is kept only
-/// as the `id_token_hint` for the Entra end-session call on logout. Azure
-/// refresh tokens are never requested; the DIGIT tokens remain the app's
-/// single session source.
+/// [idToken] and [accessToken] are handed to the DIGIT exchange endpoint. The
+/// [idToken] is also sent as the `x-id-token` header on every DIGIT call and
+/// is the `id_token_hint` for the Entra end-session call on logout.
+/// [refreshToken] (requires the `offline_access` scope) lets the app obtain a
+/// fresh ID token when the ~1 hour one expires, including during background
+/// sync. The DIGIT tokens remain the app's session source.
 class SsoIdentity {
   final String idToken;
   final String? accessToken;
+  final String? refreshToken;
 
-  const SsoIdentity({required this.idToken, this.accessToken});
+  const SsoIdentity({
+    required this.idToken,
+    this.accessToken,
+    this.refreshToken,
+  });
 }
 
 /// Thrown when the user dismisses the provider's sign-in UI.
@@ -56,6 +61,12 @@ abstract class SsoAuthenticator {
   /// Throws [SsoCancelledException], [SsoConfigurationException] or
   /// [SsoException].
   Future<SsoIdentity> signIn();
+
+  /// Redeems [refreshToken] for a new identity without user interaction.
+  /// Must not require an Activity so it can run in the background isolate.
+  ///
+  /// Throws [SsoConfigurationException] or [SsoException].
+  Future<SsoIdentity> refresh({required String refreshToken});
 
   /// Ends the provider's browser session for the user identified by
   /// [idTokenHint]. Best effort: implementations must not throw when the
@@ -143,7 +154,58 @@ class AzureSsoService implements SsoAuthenticator {
       );
     }
 
-    return SsoIdentity(idToken: idToken, accessToken: response.accessToken);
+    return SsoIdentity(
+      idToken: idToken,
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken,
+    );
+  }
+
+  /// Refresh-token grant against the Entra token endpoint. AppAuth performs
+  /// it with the application context, so it works from the background
+  /// isolate. Entra rotates refresh tokens; the caller stores the new one.
+  @override
+  Future<SsoIdentity> refresh({required String refreshToken}) async {
+    if (!isConfigured) {
+      throw const SsoConfigurationException(
+        'AZURE_TENANT_ID, AZURE_CLIENT_ID and AZURE_REDIRECT_URI must be set '
+        'when AUTH_MODE=SSO',
+      );
+    }
+
+    final TokenResponse response;
+    try {
+      response = await _appAuth.token(
+        TokenRequest(
+          clientId,
+          redirectUri,
+          refreshToken: refreshToken,
+          discoveryUrl: discoveryUrl,
+          scopes: scopes,
+        ),
+      );
+    } on FlutterAppAuthPlatformException catch (error) {
+      throw SsoException(
+        error.platformErrorDetails.errorDescription ??
+            error.message ??
+            'Azure token refresh failed',
+        error,
+      );
+    }
+
+    final idToken = response.idToken;
+    if (idToken == null || idToken.isEmpty) {
+      throw const SsoException(
+        'Azure did not return an ID token on refresh; ensure the `openid` '
+        'scope is requested',
+      );
+    }
+
+    return SsoIdentity(
+      idToken: idToken,
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken,
+    );
   }
 
   /// RP-initiated logout against

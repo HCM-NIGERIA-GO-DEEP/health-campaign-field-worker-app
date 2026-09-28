@@ -20,7 +20,7 @@ void main() {
   AuthorizationTokenResponse response({String? idToken}) =>
       AuthorizationTokenResponse(
         'azure-access',
-        null,
+        'azure-refresh',
         DateTime(2030),
         idToken,
         'Bearer',
@@ -30,6 +30,14 @@ void main() {
       );
 
   setUpAll(() {
+    registerFallbackValue(
+      TokenRequest(
+        client,
+        redirect,
+        discoveryUrl:
+            'https://example.invalid/.well-known/openid-configuration',
+      ),
+    );
     registerFallbackValue(
       EndSessionRequest(
         discoveryUrl:
@@ -97,6 +105,7 @@ void main() {
 
       expect(identity.idToken, 'id.token.value');
       expect(identity.accessToken, 'azure-access');
+      expect(identity.refreshToken, 'azure-refresh');
 
       final request =
           verify(() => appAuth.authorizeAndExchangeCode(captureAny()))
@@ -202,6 +211,82 @@ void main() {
         ),
       );
       await expectLater(service().signOut(idTokenHint: 'x'), completes);
+    });
+  });
+
+  group('AzureSsoService.refresh', () {
+    TokenResponse tokenResponse({String? idToken, String? refreshToken}) =>
+        TokenResponse(
+          'azure-access-2',
+          refreshToken,
+          DateTime(2030),
+          idToken,
+          'Bearer',
+          scopes,
+          null,
+        );
+
+    test('redeems the refresh token with discovery and the same scopes',
+        () async {
+      when(() => appAuth.token(any())).thenAnswer(
+        (_) async =>
+            tokenResponse(idToken: 'id.token.2', refreshToken: 'refresh-2'),
+      );
+
+      final identity = await service().refresh(refreshToken: 'refresh-1');
+
+      expect(identity.idToken, 'id.token.2');
+      expect(identity.refreshToken, 'refresh-2');
+      final request = verify(() => appAuth.token(captureAny())).captured.single
+          as TokenRequest;
+      expect(request.refreshToken, 'refresh-1');
+      expect(request.clientId, client);
+      expect(request.redirectUrl, redirect);
+      expect(request.discoveryUrl, service().discoveryUrl);
+      expect(request.scopes, scopes);
+      expect(request.clientSecret, isNull);
+    });
+
+    test('fails with SsoConfigurationException when not configured', () async {
+      await expectLater(
+        service(clientId: '').refresh(refreshToken: 'r'),
+        throwsA(isA<SsoConfigurationException>()),
+      );
+      verifyNever(() => appAuth.token(any()));
+    });
+
+    test('maps a platform failure such as invalid_grant to SsoException',
+        () async {
+      when(() => appAuth.token(any())).thenThrow(
+        FlutterAppAuthPlatformException(
+          code: 'token_failed',
+          platformErrorDetails: FlutterAppAuthPlatformErrorDetails(
+            error: 'invalid_grant',
+            errorDescription: 'AADSTS700082: refresh token has expired',
+          ),
+        ),
+      );
+
+      await expectLater(
+        service().refresh(refreshToken: 'r'),
+        throwsA(
+          isA<SsoException>().having(
+            (e) => e.message,
+            'message',
+            contains('AADSTS700082'),
+          ),
+        ),
+      );
+    });
+
+    test('rejects a refresh response without an ID token', () async {
+      when(() => appAuth.token(any()))
+          .thenAnswer((_) async => tokenResponse(idToken: null));
+
+      await expectLater(
+        service().refresh(refreshToken: 'r'),
+        throwsA(isA<SsoException>()),
+      );
     });
   });
 }

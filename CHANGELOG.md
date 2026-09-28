@@ -12,6 +12,15 @@
 - Certificate pinning is unaffected: the Microsoft endpoints are reached by the native AppAuth SDKs, not by the pinned Dio client.
 
 
+**`x-id-token` header on DIGIT calls (`AuthTokenInterceptor`, new `SsoIdTokenProvider`)**
+
+- During an SSO session every request on the shared Dio client to the `BASE_URL` host now carries the raw Azure ID token as `x-id-token`, in addition to the unchanged `RequestInfo.authToken`. That covers background sync, which uses the same client in its own isolate. Other hosts, password mode and pre-login calls never get it.
+- ID tokens last about an hour, so `offline_access` joins the default `AZURE_SCOPES` and the Azure refresh token is stored alongside the ID token (`ssoRefreshTokenKey`). `SsoIdTokenProvider` renews the token through AppAuth's refresh grant when less than 5 minutes remain. Concurrent requests share one refresh, because the plugin rejects parallel token calls. After a logout during a refresh, the tokens are not written back.
+- If renewal fails, the stale token is still sent and the next attempt waits one minute, so an unreachable Microsoft endpoint does not stall sync. The app has no handling for a backend rejection of an expired token.
+- SSO login now stores the Azure tokens *before* the DIGIT exchange, so the exchange and the post-login role-action and individual calls carry the header, and deletes them if any of those calls fail. Previously the ID token was stored only after a successful login.
+- Request logging masks `idToken`, `accessToken` and `refreshToken` fields. The SSO exchange body had been writing both Azure tokens to logcat, in release builds too.
+- SSO sessions started before this change have an ID token but no refresh token, so their header goes stale after about an hour until the user signs in again. Custom `AZURE_SCOPES` values must add `offline_access`.
+
 ## 2.2.110 — 2026-09-01
 
 _(includes 2.2.107 and 2.2.109; 2.2.108 was never cut — the version bump went straight from `2.2.107+107` to `2.2.109+109` in a single commit)_

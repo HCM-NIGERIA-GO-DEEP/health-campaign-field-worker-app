@@ -130,17 +130,27 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final identity = await authenticator.signIn();
 
-      final AuthModel result = await authRepository.exchangeSsoToken(
-        request: SsoExchangeRequestModel(
-          idToken: identity.idToken,
-          accessToken: identity.accessToken,
-          tenantId: event.tenantId,
-        ),
-        exchangePath: envConfig.variables.ssoTokenExchangePath,
+      // Stored before the exchange so the exchange and every call made by
+      // _completeLogin already carry the `x-id-token` header. Removed again
+      // if anything below fails, so a failed login leaves nothing behind.
+      await localSecureStore.setSsoTokens(
+        idToken: identity.idToken,
+        refreshToken: identity.refreshToken,
       );
-      await _completeLogin(result, emit);
-      // Kept after _completeLogin so a failed exchange leaves nothing behind.
-      await localSecureStore.setSsoIdToken(identity.idToken);
+      try {
+        final AuthModel result = await authRepository.exchangeSsoToken(
+          request: SsoExchangeRequestModel(
+            idToken: identity.idToken,
+            accessToken: identity.accessToken,
+            tenantId: event.tenantId,
+          ),
+          exchangePath: envConfig.variables.ssoTokenExchangePath,
+        );
+        await _completeLogin(result, emit);
+      } catch (_) {
+        await localSecureStore.deleteSsoTokens();
+        rethrow;
+      }
     } on SsoCancelledException {
       // The user closed the browser sheet; nothing to report.
       emit(const AuthUnauthenticatedState());

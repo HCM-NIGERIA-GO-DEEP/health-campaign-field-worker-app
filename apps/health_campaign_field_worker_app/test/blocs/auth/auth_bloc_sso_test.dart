@@ -45,6 +45,7 @@ void main() {
   late MockIndividualRepository individualRepository;
   late MockSsoAuthenticator sso;
   late MockLocalSecureStore store;
+  late List<String> calls;
 
   setUpAll(() async {
     await envConfig.initialize();
@@ -62,11 +63,17 @@ void main() {
     individualRepository = MockIndividualRepository();
     sso = MockSsoAuthenticator();
     store = MockLocalSecureStore();
+    calls = [];
 
-    when(() => store.setAuthCredentials(any())).thenAnswer((_) async {});
+    when(() => store.setAuthCredentials(any()))
+        .thenAnswer((_) async => calls.add('setAuthCredentials'));
     when(() => store.setBoundaryRefetch(any())).thenAnswer((_) async {});
     when(() => store.setRoleActions(any())).thenAnswer((_) async {});
-    when(() => store.setSsoIdToken(any())).thenAnswer((_) async {});
+    when(() => store.setSsoTokens(
+          idToken: any(named: 'idToken'),
+          refreshToken: any(named: 'refreshToken'),
+        )).thenAnswer((_) async => calls.add('setSsoTokens'));
+    when(() => store.deleteSsoTokens()).thenAnswer((_) async {});
     when(() => store.deleteAll()).thenAnswer((_) async {});
     when(() => store.userIndividualId).thenAnswer((_) async => null);
     when(() => sso.signOut(idTokenHint: any(named: 'idTokenHint')))
@@ -91,12 +98,16 @@ void main() {
           (_) async => const SsoIdentity(
             idToken: idToken,
             accessToken: 'azure-access',
+            refreshToken: 'azure-refresh',
           ),
         );
         when(() => authRepository.exchangeSsoToken(
               request: any(named: 'request'),
               exchangePath: any(named: 'exchangePath'),
-            )).thenAnswer((_) async => authModel);
+            )).thenAnswer((_) async {
+          calls.add('exchange');
+          return authModel;
+        });
       },
       build: buildBloc,
       act: (bloc) => bloc.add(const AuthEvent.ssoLogin(tenantId: tenantId)),
@@ -124,7 +135,14 @@ void main() {
 
         verify(() => store.setAuthCredentials(authModel)).called(1);
         verify(() => store.setRoleActions(actions)).called(1);
-        verify(() => store.setSsoIdToken(idToken)).called(1);
+        // Stored before the exchange so the exchange itself and the calls
+        // made while completing login carry the x-id-token header.
+        expect(calls, ['setSsoTokens', 'exchange', 'setAuthCredentials']);
+        verify(() => store.setSsoTokens(
+              idToken: idToken,
+              refreshToken: 'azure-refresh',
+            )).called(1);
+        verifyNever(() => store.deleteSsoTokens());
         verifyNever(() => individualRepository.search(any()));
       },
     );
@@ -146,6 +164,10 @@ void main() {
               exchangePath: any(named: 'exchangePath'),
             ));
         verifyNever(() => store.setAuthCredentials(any()));
+        verifyNever(() => store.setSsoTokens(
+              idToken: any(named: 'idToken'),
+              refreshToken: any(named: 'refreshToken'),
+            ));
       },
     );
 
@@ -192,7 +214,8 @@ void main() {
       ],
       verify: (_) {
         verifyNever(() => store.setAuthCredentials(any()));
-        verifyNever(() => store.setSsoIdToken(any()));
+        // Stored for the exchange call, then removed because it failed.
+        verify(() => store.deleteSsoTokens()).called(1);
       },
     );
 

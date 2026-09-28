@@ -25,8 +25,12 @@ token. Azure tokens are never persisted on the device.
    registration, scope `access_as_user`) and the **ID token** to the app.
 4. `AuthRepository.exchangeSsoToken` POSTs both to the DIGIT exchange
    endpoint through the app's pinned Dio client.
-5. The response is parsed as the usual `AuthModel` and login completes. The
-   ID token is kept in secure storage only as the `id_token_hint` for logout.
+5. The response is parsed as the usual `AuthModel` and login completes.
+
+The Azure ID token and refresh token are written to secure storage *before*
+step 4, so the exchange and every later DIGIT call carry the `x-id-token`
+header (see below). If the exchange or the post-login calls fail, both are
+removed again.
 
 The browser and the Microsoft token endpoint are reached by the native AppAuth
 SDKs, not by Dio, so certificate pinning (which trusts only the DIGIT
@@ -39,14 +43,16 @@ AUTH_MODE=SSO
 AZURE_TENANT_ID=<directory (tenant) id>
 AZURE_CLIENT_ID=<application (client) id>
 AZURE_REDIRECT_URI=com.digit.hcm://oauth/callback
-AZURE_SCOPES=openid profile api://<client id>/access_as_user
+AZURE_SCOPES=openid profile offline_access api://<client id>/access_as_user
 AZURE_END_SESSION_ON_LOGOUT=true
 SSO_TOKEN_EXCHANGE_PATH=user/oauth/sso/_exchange
 ```
 
 This repository is public, so **no tenant, client or API scope is committed**:
 `AZURE_TENANT_ID` and `AZURE_CLIENT_ID` default to empty and the scopes to
-`openid profile`. Each deployment supplies its own values through the
+`openid profile offline_access`. `offline_access` must stay in any custom
+`AZURE_SCOPES`: without it Entra returns no refresh token and the
+`x-id-token` header goes stale after about an hour. Each deployment supplies its own values through the
 gitignored `.env` locally and through GitHub repository *variables* of the same
 names in CI (they are identifiers, not secrets, so variables rather than
 Secrets are appropriate; a client secret must never be added, see below).
@@ -56,6 +62,39 @@ build workflow produces when a variable is unset. If `AUTH_MODE=SSO` and the
 tenant or client is blank, the button shows a configuration error instead of
 opening the browser. `AZURE_END_SESSION_ON_LOGOUT=false` turns the Entra
 logout round-trip off and makes logout local-only.
+
+## `x-id-token` header
+
+During an SSO session every request on the shared Dio client to the
+`BASE_URL` host carries the raw Azure ID token:
+
+```
+x-id-token: eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIs...
+```
+
+- It is **in addition to** the DIGIT token in `RequestInfo.authToken`; nothing
+  about the DIGIT session changes.
+- It is added by `AuthTokenInterceptor`, so it covers foreground calls and
+  background sync, which runs in its own isolate on the same client.
+- It is **never** sent to any other host, and not at all in password mode or
+  before sign-in. Image downloads use a separate client and never carry it.
+- **Renewal.** Entra ID tokens live about one hour. `SsoIdTokenProvider`
+  reads the token's `exp` claim and, when less than 5 minutes remain, redeems
+  the stored refresh token through AppAuth (no Activity needed, so this works
+  in background sync too). Concurrent requests share a single refresh, and
+  a rotated refresh token is stored.
+- **When renewal fails** (device offline, Microsoft unreachable, refresh
+  token revoked or expired after 90 days of inactivity) the stale token is
+  still sent, so the call goes out and the backend decides. The app waits one
+  minute before trying again. The app has no handling for a backend
+  rejection; the user signs in again after logging out.
+- Tokens are not logged: headers are never logged, and the SSO exchange body
+  has `idToken` and `accessToken` masked in the request log.
+
+What the backend should check on `x-id-token`: signature against the tenant
+JWKS, `iss` = `https://login.microsoftonline.com/<tenant>/v2.0`, `aud` = the
+client ID, `exp`/`nbf`, and optionally that the `oid` or `preferred_username`
+claim matches the DIGIT user behind `RequestInfo.authToken`.
 
 ## Security notes for a public repository
 
@@ -175,6 +214,8 @@ toast and logged with the response body.
   the local logout. Set `AZURE_END_SESSION_ON_LOGOUT=false` to skip it.
   `prompt=select_account` is sent on every sign-in regardless.
 - **Auto-login** on app start is unchanged: it uses the stored DIGIT tokens.
+  The stored Azure refresh token renews `x-id-token` on the first call.
+- **Logout** also deletes the stored Azure ID and refresh tokens.
 
 ## Troubleshooting
 
@@ -185,3 +226,5 @@ toast and logged with the response body.
 | Browser shows `AADSTS7000218` | *Allow public client flows* is off on the registration |
 | Sign-in completes, then "unable to login" toast | DIGIT exchange endpoint rejected the ID token; check backend logs |
 | Browser never returns to the app on Android | Redirect scheme placeholder missing from `build.gradle`, or another app claims the same scheme |
+| Calls work for about an hour, then the backend rejects `x-id-token` | `offline_access` missing from `AZURE_SCOPES`, or the session predates the refresh support, so there is no refresh token (sign in again); or the refresh fails (logcat: `SSO token refresh failed`) |
+| `x-id-token` missing on a call | The request is not to the `BASE_URL` host, or the build is in password mode |
