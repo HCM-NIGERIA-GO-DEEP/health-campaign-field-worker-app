@@ -18,17 +18,18 @@ import 'package:digit_ui_components/utils/component_utils.dart';
 import 'package:digit_ui_components/widgets/atoms/digit_loader.dart';
 import 'package:digit_ui_components/widgets/atoms/pop_up_card.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
-import 'package:digit_ui_components/widgets/molecules/infinite_date_scroll.dart';
 import 'package:digit_ui_components/widgets/molecules/show_pop_up.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 import 'package:location/location.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import 'package:digit_data_model/models/entities/face_auth_event.dart';
 
 import '../../utils/i18_key_constants.dart' as i18;
-import '../../widgets/custom_attendance_info_card.dart' show FaceEventDot, FaceEventLegend;
+import '../../widgets/custom_attendance_info_card.dart'
+    show FaceEventDot, FaceEventLegend;
 import '../../widgets/localized.dart';
 import '../blocs/attendance_individual_bloc.dart';
 import '../router/attendance_router.gm.dart';
@@ -79,6 +80,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
   void initState() {
     controller = TextEditingController();
     dateController = TextEditingController();
+    dateController.text = currentSelectedDate;
     controller.addListener(searchByName);
     individualLogBloc = AttendanceIndividualBloc(
       const AttendanceIndividualState.loading(),
@@ -126,10 +128,12 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
   /// window (entryTime..exitTime) and caches them as colored dots.
   Future<void> _loadFaceEvents() async {
     try {
-      final repo = context.repository<FaceAuthEventModel, FaceAuthEventSearchModel>(context);
+      final repo = context
+          .repository<FaceAuthEventModel, FaceAuthEventSearchModel>(context);
       final projectId = AttendanceSingleton().project?.id;
 
-      debugPrint('[FaceDots] _loadFaceEvents: entry=$entryTime exit=$exitTime, projectId=$projectId');
+      debugPrint(
+          '[FaceDots] _loadFaceEvents: entry=$entryTime exit=$exitTime, projectId=$projectId');
 
       if (projectId == null) {
         debugPrint('[FaceDots] projectId is null — skipping face event load');
@@ -139,7 +143,8 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
       final allEvents = await repo.search(
         FaceAuthEventSearchModel(projectId: projectId),
       );
-      debugPrint('[FaceDots] total events for project=$projectId: ${allEvents.length}');
+      debugPrint(
+          '[FaceDots] total events for project=$projectId: ${allEvents.length}');
       // Dump a few sample events so we can see what's actually in the DB
       // and compare timestamps against the entry/exit window.
       for (final e in allEvents.take(5)) {
@@ -178,16 +183,31 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
           final typeLabel = _abbreviateEventType(e.eventType);
           switch (e.outcome) {
             case 'FACE_SUCCESS':
-              return FaceEventDot(color: Colors.green, confidence: e.confidence, eventType: typeLabel);
+              return FaceEventDot(
+                  color: Colors.green,
+                  confidence: e.confidence,
+                  eventType: typeLabel);
             case 'PIN_FALLBACK':
             case 'HCM_FALLBACK':
-              return FaceEventDot(color: Colors.orange, confidence: 0.0, label: 'PIN', eventType: typeLabel);
+              return FaceEventDot(
+                  color: Colors.orange,
+                  confidence: 0.0,
+                  label: 'PIN',
+                  eventType: typeLabel);
             case 'MISSED':
-              return FaceEventDot(color: Colors.red, confidence: 0.0, label: '–', eventType: typeLabel);
+              return FaceEventDot(
+                  color: Colors.red,
+                  confidence: 0.0,
+                  label: '–',
+                  eventType: typeLabel);
             case 'FACE_REJECTED':
-              return FaceEventDot(color: Colors.red, confidence: e.confidence, eventType: typeLabel);
+              return FaceEventDot(
+                  color: Colors.red,
+                  confidence: e.confidence,
+                  eventType: typeLabel);
             default:
-              return FaceEventDot(color: Colors.grey, confidence: 0.0, eventType: typeLabel);
+              return FaceEventDot(
+                  color: Colors.grey, confidence: 0.0, eventType: typeLabel);
           }
         }).toList();
       }
@@ -203,7 +223,178 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
   void dispose() {
     _debounce?.cancel();
     controller.dispose();
+    dateController.dispose();
     super.dispose();
+  }
+
+  DateTime _attendanceFirstDate() {
+    final first =
+        DateTime.fromMillisecondsSinceEpoch(widget.registerModel.startDate!);
+    return DateTime(first.year, first.month, first.day);
+  }
+
+  DateTime _attendanceLastDate() {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final registerEnd =
+        DateTime.fromMillisecondsSinceEpoch(widget.registerModel.endDate!);
+    final end = DateTime(registerEnd.year, registerEnd.month, registerEnd.day);
+    return today.isAfter(end) ? end : today;
+  }
+
+  DateTime _selectedDateTime() {
+    final parsed = AttendanceDateTimeManagement.getFormattedDateToDateTime(
+        currentSelectedDate);
+    return parsed ?? _attendanceLastDate();
+  }
+
+  void _handleDateSelection(DateTime date) {
+    final normalized = DateTime(date.year, date.month, date.day);
+    final formatted = DateFormat('dd MMM yyyy').format(normalized);
+
+    setState(() {
+      currentSelectedDate = formatted;
+      dateController.text = formatted;
+      markManualAttendance = !AttendanceDateTimeManagement.isToday(normalized);
+    });
+
+    controller.clear();
+    setRegisterData();
+    _loadFaceEvents();
+  }
+
+  Widget _buildHorizontalDateSelector(ThemeData theme) {
+    final textTheme = theme.digitTextTheme(context);
+    final firstDate = _attendanceFirstDate();
+    final lastDate = _attendanceLastDate();
+    final selectedDate = _selectedDateTime();
+    final dayCount = lastDate.difference(firstDate).inDays;
+    final dates = List.generate(
+      dayCount < 0 ? 1 : dayCount + 1,
+      (index) => firstDate.add(Duration(days: index)),
+    );
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: spacer3),
+          child: DigitDateFormInput(
+            controller: dateController,
+            initialValue: currentSelectedDate,
+            initialDate: selectedDate,
+            firstDate: firstDate,
+            lastDate: lastDate,
+            onChange: (String value) {
+              final parsed =
+                  AttendanceDateTimeManagement.getFormattedDateToDateTime(
+                      value);
+              if (parsed == null) return;
+              _handleDateSelection(parsed);
+            },
+          ),
+        ),
+        const SizedBox(height: spacer2),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: spacer2),
+          child: SizedBox(
+            height: 108,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: EdgeInsets.zero,
+              itemCount: dates.length,
+              separatorBuilder: (_, __) => const SizedBox(width: spacer1),
+              itemBuilder: (context, index) {
+                final date = dates[index];
+                final isSelected = DateUtils.isSameDay(date, selectedDate);
+
+                return InkWell(
+                  borderRadius: BorderRadius.circular(spacer2),
+                  onTap: () => _handleDateSelection(date),
+                  child: Container(
+                    width: 80,
+                    margin: const EdgeInsets.all(spacer1),
+                    decoration: BoxDecoration(
+                      color: theme.colorTheme.paper.primary,
+                      borderRadius: BorderRadius.circular(spacer2),
+                      border: Border.all(
+                        color: isSelected
+                            ? theme.colorTheme.primary.primary1
+                            : Colors.grey.shade300,
+                        width: 1.5,
+                      ),
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: theme.colorTheme.primary.primary1,
+                                offset: const Offset(0, 2),
+                                blurRadius: 4,
+                              )
+                            ]
+                          : [],
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: spacer1,
+                      vertical: spacer1,
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            DateFormat('EEE').format(date),
+                            maxLines: 1,
+                            style:
+                                (isSelected ? textTheme.bodyL : textTheme.bodyS)
+                                    .copyWith(
+                              color: isSelected
+                                  ? theme.colorTheme.primary.primary1
+                                  : Colors.black87,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: spacer1),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            DateFormat('dd').format(date),
+                            maxLines: 1,
+                            style: (isSelected
+                                    ? textTheme.headingL
+                                    : textTheme.headingS)
+                                .copyWith(
+                              color: isSelected
+                                  ? theme.colorTheme.primary.primary1
+                                  : Colors.black87,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: spacer1),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            DateFormat('MMM').format(date),
+                            maxLines: 1,
+                            style:
+                                (isSelected ? textTheme.bodyL : textTheme.bodyS)
+                                    .copyWith(
+                              color: isSelected
+                                  ? theme.colorTheme.primary.primary1
+                                  : Colors.black87,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
   }
 
   /// Section header shown above each team's group of attendee cards on the
@@ -530,207 +721,180 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                                       .textTheme.displayMedium,
                                 ),
                               ),
-                              InfiniteDateScrollInput(
-                                controller: dateController,
-                                disableScroll: false,
-                                initialValue: DateTime.now().isAfter(
-                                        DateTime.fromMillisecondsSinceEpoch(
-                                            widget.registerModel.endDate!))
-                                    ? AttendanceDateTimeManagement
-                                        .getDateFromTimestamp(
-                                            widget.registerModel.endDate!)
-                                    : DateTime.now().getFormattedDate('dd MMM yyyy'),
-                                firstDate: DateTime.fromMillisecondsSinceEpoch(
-                                    widget.registerModel.startDate!),
-                                lastDate: DateTime.now().isAfter(
-                                            DateTime.fromMillisecondsSinceEpoch(
-                                                widget
-                                                    .registerModel.endDate!)) ||
-                                        DateTime.now().isAtSameMomentAs(
-                                            DateTime.fromMillisecondsSinceEpoch(
-                                                widget.registerModel.endDate!))
-                                    ? DateTime.fromMillisecondsSinceEpoch(
-                                        widget.registerModel.endDate!)
-                                    : DateTime.now(),
-                                onChange: (String date) {
-                                  currentSelectedDate = date;
-                                  controller.clear();
-                                  if (AttendanceDateTimeManagement.isToday(
-                                      AttendanceDateTimeManagement
-                                          .getFormattedDateToDateTime(
-                                              currentSelectedDate)!)) {
-                                    setState(() {
-                                      markManualAttendance = false;
-                                    });
-                                  } else {
-                                    setState(() {
-                                      markManualAttendance = true;
-                                    });
-                                  }
-                                  setRegisterData();
-                                  _loadFaceEvents();
-                                },
-                              ),
-                              DigitCard(
-                                margin: EdgeInsets.only(
-                                  top: theme.spacerTheme.spacer4,
-                                  bottom: theme.spacerTheme.spacer4,
-                                ),
-                                children: [
-                                  Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: spacer2),
-                                    child: Row(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.center,
-                                      children: [
-                                        Expanded(
-                                          flex: 3,
-                                          child: SizedBox(
-                                            height: 44,
-                                            child: DigitSearchFormInput(
-                                              controller: controller,
-                                              innerLabel:
-                                                  localizations.translate(i18
-                                                      .common.searchByNameOrID),
+                              _buildHorizontalDateSelector(theme),
+                              Padding(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: spacer3),
+                                child: DigitCard(
+                                  margin: EdgeInsets.only(
+                                    top: theme.spacerTheme.spacer4,
+                                    bottom: theme.spacerTheme.spacer4,
+                                  ),
+                                  children: [
+                                    Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: spacer2),
+                                      child: Row(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.center,
+                                        children: [
+                                          Expanded(
+                                            flex: 3,
+                                            child: SizedBox(
+                                              height: 44,
+                                              child: DigitSearchFormInput(
+                                                controller: controller,
+                                                innerLabel:
+                                                    localizations.translate(i18
+                                                        .common
+                                                        .searchByNameOrID),
+                                              ),
                                             ),
                                           ),
-                                        ),
-                                        const SizedBox(width: spacer2),
-                                        SizedBox(
-                                          height: 40,
-                                          width: 40,
-                                          child: Builder(
-                                            builder: (context) {
-                                              return Container(
-                                                decoration: BoxDecoration(
-                                                  color: theme
-                                                      .colorTheme.paper.primary,
-                                                  border: Border.all(
-                                                      color: theme.colorTheme
-                                                          .generic.inputBorder),
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          spacer1),
-                                                ),
-                                                child: IconButton(
-                                                  icon: Icon(
-                                                    Icons.swap_vert,
+                                          const SizedBox(width: spacer2),
+                                          SizedBox(
+                                            height: 40,
+                                            width: 40,
+                                            child: Builder(
+                                              builder: (context) {
+                                                return Container(
+                                                  decoration: BoxDecoration(
                                                     color: theme.colorTheme
-                                                        .generic.inputBorder,
+                                                        .paper.primary,
+                                                    border: Border.all(
+                                                        color: theme
+                                                            .colorTheme
+                                                            .generic
+                                                            .inputBorder),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            spacer1),
                                                   ),
-                                                  onPressed: () async {
-                                                    final RenderBox button =
-                                                        context.findRenderObject()
-                                                            as RenderBox;
-                                                    final RenderBox overlay =
-                                                        Overlay.of(context)
-                                                                .context
-                                                                .findRenderObject()
-                                                            as RenderBox;
-                                                    final Offset offset =
-                                                        button.localToGlobal(
-                                                            Offset.zero,
-                                                            ancestor: overlay);
-                                                    final Size size =
-                                                        button.size;
-
-                                                    final selected =
-                                                        await showMenu<String>(
-                                                      context: context,
-                                                      position:
-                                                          RelativeRect.fromLTRB(
-                                                        offset.dx,
-                                                        offset.dy + size.height,
-                                                        offset.dx + size.width,
-                                                        offset.dy,
-                                                      ),
+                                                  child: IconButton(
+                                                    icon: Icon(
+                                                      Icons.swap_vert,
                                                       color: theme.colorTheme
-                                                          .paper.primary,
-                                                      items: [
-                                                        PopupMenuItem(
-                                                          value:
-                                                              AttendanceSortType
-                                                                  .presentFirst
-                                                                  .name,
-                                                          child: Row(
-                                                            children: [
-                                                              const SizedBox(
-                                                                  width:
-                                                                      spacer2),
-                                                              Text(localizations
-                                                                  .translate(i18
-                                                                      .attendance
-                                                                      .present)),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                        PopupMenuItem(
-                                                          value:
-                                                              AttendanceSortType
-                                                                  .absentFirst
-                                                                  .name,
-                                                          child: Row(
-                                                            children: [
-                                                              const SizedBox(
-                                                                  width:
-                                                                      spacer2),
-                                                              Text(localizations
-                                                                  .translate(i18
-                                                                      .attendance
-                                                                      .absent)),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    );
+                                                          .generic.inputBorder,
+                                                    ),
+                                                    onPressed: () async {
+                                                      final RenderBox button =
+                                                          context.findRenderObject()
+                                                              as RenderBox;
+                                                      final RenderBox overlay =
+                                                          Overlay.of(context)
+                                                                  .context
+                                                                  .findRenderObject()
+                                                              as RenderBox;
+                                                      final Offset offset =
+                                                          button.localToGlobal(
+                                                              Offset.zero,
+                                                              ancestor:
+                                                                  overlay);
+                                                      final Size size =
+                                                          button.size;
 
-                                                    if (selected != null) {
-                                                      final sortType =
-                                                          AttendanceSortType
-                                                              .values
-                                                              .firstWhere((e) =>
-                                                                  e.name ==
-                                                                  selected);
-                                                      context
-                                                          .read<
-                                                              AttendanceIndividualBloc>()
-                                                          .add(
-                                                            ToggleSortTypeEvent(
-                                                                sortType:
-                                                                    sortType),
-                                                          );
-                                                    }
-                                                  },
-                                                ),
-                                              );
-                                            },
+                                                      final selected =
+                                                          await showMenu<
+                                                              String>(
+                                                        context: context,
+                                                        position: RelativeRect
+                                                            .fromLTRB(
+                                                          offset.dx,
+                                                          offset.dy +
+                                                              size.height,
+                                                          offset.dx +
+                                                              size.width,
+                                                          offset.dy,
+                                                        ),
+                                                        color: theme.colorTheme
+                                                            .paper.primary,
+                                                        items: [
+                                                          PopupMenuItem(
+                                                            value:
+                                                                AttendanceSortType
+                                                                    .presentFirst
+                                                                    .name,
+                                                            child: Row(
+                                                              children: [
+                                                                const SizedBox(
+                                                                    width:
+                                                                        spacer2),
+                                                                Text(localizations
+                                                                    .translate(i18
+                                                                        .attendance
+                                                                        .present)),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                          PopupMenuItem(
+                                                            value:
+                                                                AttendanceSortType
+                                                                    .absentFirst
+                                                                    .name,
+                                                            child: Row(
+                                                              children: [
+                                                                const SizedBox(
+                                                                    width:
+                                                                        spacer2),
+                                                                Text(localizations
+                                                                    .translate(i18
+                                                                        .attendance
+                                                                        .absent)),
+                                                              ],
+                                                            ),
+                                                          ),
+                                                        ],
+                                                      );
+
+                                                      if (selected != null) {
+                                                        final sortType =
+                                                            AttendanceSortType
+                                                                .values
+                                                                .firstWhere((e) =>
+                                                                    e.name ==
+                                                                    selected);
+                                                        context
+                                                            .read<
+                                                                AttendanceIndividualBloc>()
+                                                            .add(
+                                                              ToggleSortTypeEvent(
+                                                                  sortType:
+                                                                      sortType),
+                                                            );
+                                                      }
+                                                    },
+                                                  ),
+                                                );
+                                              },
+                                            ),
                                           ),
-                                        ),
-                                      ],
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                  widget.registerModel.additionalDetails?[
-                                              EnumValues.sessions.toValue()] !=
-                                          2
-                                      ? const SizedBox.shrink()
-                                      : DigitLabeledToggle(
-                                          value: isMorning,
-                                          onChanged: (val) {
-                                            setState(() {
-                                              isMorning = val;
-                                            });
-                                            setRegisterData();
-                                            searchByName();
-                                            _loadFaceEvents();
-                                          },
-                                          activeLabel: localizations.translate(
-                                              i18.attendance.morningSession),
-                                          inactiveLabel:
-                                              localizations.translate(i18
-                                                  .attendance.eveningSession),
-                                        ),
-                                ],
+                                    widget.registerModel.additionalDetails?[
+                                                EnumValues.sessions
+                                                    .toValue()] !=
+                                            2
+                                        ? const SizedBox.shrink()
+                                        : DigitLabeledToggle(
+                                            value: isMorning,
+                                            onChanged: (val) {
+                                              setState(() {
+                                                isMorning = val;
+                                              });
+                                              setRegisterData();
+                                              searchByName();
+                                              _loadFaceEvents();
+                                            },
+                                            activeLabel:
+                                                localizations.translate(i18
+                                                    .attendance.morningSession),
+                                            inactiveLabel:
+                                                localizations.translate(i18
+                                                    .attendance.eveningSession),
+                                          ),
+                                  ],
+                                ),
                               ),
                               if (!AttendanceDateTimeManagement.isToday(
                                   AttendanceDateTimeManagement
@@ -782,8 +946,8 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                                             <String, List<dynamic>>{};
                                         for (final a in sortedAttendees) {
                                           teamGroups
-                                              .putIfAbsent(
-                                                  (a.tag ?? '').trim(), () => [])
+                                              .putIfAbsent((a.tag ?? '').trim(),
+                                                  () => [])
                                               .add(a);
                                         }
                                         Widget buildAttendeeCard(
@@ -805,9 +969,11 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                                                       i18.attendance.userId,
                                                     ),
                                             status: individual.status,
-                                            faceEventDots: individual.individualId != null
-                                                ? _faceEventDots[individual.individualId]
-                                                : null,
+                                            faceEventDots:
+                                                individual.individualId != null
+                                                    ? _faceEventDots[
+                                                        individual.individualId]
+                                                    : null,
                                             markManualAttendance:
                                                 AttendanceDateTimeManagement.isToday(
                                                             AttendanceDateTimeManagement
@@ -838,8 +1004,9 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                                               // attendance logs.
                                               final referenceSignature =
                                                   _signatures[individualId] ??
-                                                      _extractSignature(individual
-                                                          .additionalFields);
+                                                      _extractSignature(
+                                                          individual
+                                                              .additionalFields);
 
                                               final captured =
                                                   await showSignatureCaptureDialog(
@@ -887,7 +1054,8 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                                               context
                                                   .read<
                                                       AttendanceIndividualBloc>()
-                                                  .add(_buildMarkEvent(individual,
+                                                  .add(_buildMarkEvent(
+                                                      individual,
                                                       signature: captured,
                                                       isFirstSignature:
                                                           referenceSignature ==
@@ -926,6 +1094,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                                             viewOnly: viewOnly,
                                           );
                                         }
+
                                         final sections = <Widget>[];
                                         teamGroups.forEach((team, members) {
                                           // Outer Team card: holds the team
@@ -956,8 +1125,8 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                                                   padding:
                                                       const EdgeInsets.all(8),
                                                   decoration: BoxDecoration(
-                                                    color: const Color(
-                                                        0xFFF7F7F7),
+                                                    color:
+                                                        const Color(0xFFF7F7F7),
                                                     borderRadius:
                                                         BorderRadius.circular(
                                                             8),
@@ -1356,11 +1525,16 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
 
   String _abbreviateEventType(String eventType) {
     switch (eventType) {
-      case 'LOGIN':       return 'L';
-      case 'CHECK_IN':    return 'CI';
-      case 'RE_VERIFY':   return 'RV';
-      case 'ENROLLMENT':  return 'EN';
-      default:            return eventType.isNotEmpty ? eventType[0] : '';
+      case 'LOGIN':
+        return 'L';
+      case 'CHECK_IN':
+        return 'CI';
+      case 'RE_VERIFY':
+        return 'RV';
+      case 'ENROLLMENT':
+        return 'EN';
+      default:
+        return eventType.isNotEmpty ? eventType[0] : '';
     }
   }
 

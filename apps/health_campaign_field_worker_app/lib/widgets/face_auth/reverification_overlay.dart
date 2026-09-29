@@ -107,7 +107,8 @@ class _ReVerificationOverlayState extends State<ReVerificationOverlay> {
 
 class _ScanView extends StatelessWidget {
   final int remainingSeconds;
-  final void Function(List<double>, double, {Uint8List? faceImageBytes}) onCaptured;
+  final void Function(List<double>, double, {Uint8List? faceImageBytes})
+      onCaptured;
   final VoidCallback onUsePinInstead;
 
   const _ScanView({

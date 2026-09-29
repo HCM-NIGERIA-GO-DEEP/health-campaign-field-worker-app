@@ -42,8 +42,8 @@ class _FaceAuthSessionCardState extends State<FaceAuthSessionCard> {
       );
       events.sort((a, b) => b.timestamp.compareTo(a.timestamp));
       final last = events
-          .where((e) =>
-              e.outcome == 'FACE_SUCCESS' || e.outcome == 'PIN_FALLBACK')
+          .where(
+              (e) => e.outcome == 'FACE_SUCCESS' || e.outcome == 'PIN_FALLBACK')
           .firstOrNull;
       if (mounted) {
         setState(() {
@@ -103,8 +103,7 @@ class _FaceAuthSessionCardState extends State<FaceAuthSessionCard> {
               ),
               const Spacer(),
               InkWell(
-                onTap: () =>
-                    context.router.push(const FaceAuthHistoryRoute()),
+                onTap: () => context.router.push(const FaceAuthHistoryRoute()),
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -161,9 +160,7 @@ class _FaceAuthSessionCardState extends State<FaceAuthSessionCard> {
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
-                    _lastEvent!.outcome == 'FACE_SUCCESS'
-                        ? 'Face'
-                        : 'PIN',
+                    _lastEvent!.outcome == 'FACE_SUCCESS' ? 'Face' : 'PIN',
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w600,

@@ -3,6 +3,7 @@ import 'package:digit_forms_engine/blocs/forms/forms.dart';
 import 'package:digit_forms_engine/json_forms.dart';
 import 'package:digit_forms_engine/router/forms_router.gm.dart';
 import 'package:digit_forms_engine/widgets/back_header/back_navigation_help_header.dart';
+import 'package:digit_scanner/utils/scanner_utils.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/atoms/label_value_list.dart';

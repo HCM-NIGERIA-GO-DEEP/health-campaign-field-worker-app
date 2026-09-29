@@ -22,8 +22,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_portal/flutter_portal.dart';
 import 'package:isar/isar.dart';
+import '../data/local_store/app_shared_preferences.dart';
+import '../data/local_store/no_sql/schema/service_registry.dart';
 import '../services/location_service.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:survey_form/survey_form.dart';
 import 'package:sync_service/sync_service_lib.dart';
 import 'package:transit_post/data/repositories/local/user_action.dart';
@@ -38,12 +41,11 @@ import '../blocs/localization/app_localization.dart';
 import '../blocs/localization/localization.dart';
 import '../blocs/projects_beneficiary_downsync/project_beneficiaries_downsync.dart';
 import '../blocs/stock_downsync/stock_downsync.dart';
-import '../data/local_store/no_sql/schema/service_registry.dart';
 import '../data/local_store/secure_store/secure_store.dart';
 import '../blocs/push_notification/push_notification.dart';
-import '../data/local_store/app_shared_preferences.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../data/remote_client.dart';
+import '../data/repositories/local/localization.dart';
 import '../data/repositories/remote/bandwidth_check.dart';
 import '../models/downsync/downsync.dart';
 import '../models/entities/notification_data.dart';
@@ -58,7 +60,6 @@ import '../services/worker_registry_service.dart';
 import '../services/face_auth_feature_flag.dart';
 import '../widgets/face_auth/face_verification_dialog.dart';
 import '../widgets/face_auth/reverification_popup.dart';
-import '../utils/analytics_sync_service.dart';
 import '../utils/environment_config.dart';
 import '../utils/i18_key_constants.dart' as i18;
 import '../utils/utils.dart';
@@ -83,7 +84,6 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
 
   late StreamSubscription<List<ConnectivityResult>> _connectivitySubscription;
   bool _isOfflineDialogShowing = false;
-  bool _isPrivacyNoticeDialogShowing = false;
 
   // ── Face-auth / re-verification state ──
   FaceAuthConfig _faceAuthConfig = const FaceAuthConfig();
@@ -118,9 +118,6 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
     // the schedule so prompts are relative to enrollment end, not app launch.
     if (FaceAuthFeatureFlag.enabled) {
       faceEnrollmentActiveNotifier.addListener(_onEnrollmentActiveChanged);
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        _showPrivacyNoticeIfRequired();
-      });
     }
   }
 
@@ -159,14 +156,11 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
       _dismissNoInternetDialog();
     }
 
-    if (isOnline) {
-      unawaited(AnalyticsSyncService().flushPendingEvents());
-      // Retry the worker-registry queue on every offline → online transition.
-      if (!_lastConnectivityOnline && mounted) {
-        debugPrint(
-            'AuthenticatedPage: connectivity restored — retrying pending worker registry sync');
-        _retryPendingWorkerRegistrySync();
-      }
+    // Retry the worker-registry queue on every offline → online transition.
+    if (isOnline && !_lastConnectivityOnline && mounted) {
+      debugPrint(
+          'AuthenticatedPage: connectivity restored — retrying pending worker registry sync');
+      _retryPendingWorkerRegistrySync();
     }
     _lastConnectivityOnline = isOnline;
   }
@@ -1350,17 +1344,8 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
                       context.router.push(const BeneficiariesReportRoute());
                     },
                   ),
-                  if (FaceAuthFeatureFlag.enabled)
-                    SidebarItem(
-                      title: AppLocalizations.of(context).translate(
-                        i18.nonMobileUser.nonMobileUserLabel,
-                      ),
-                      icon: Icons.people_outline,
-                      onPressed: () {
-                        Navigator.of(context, rootNavigator: true).pop();
-                        context.router.navigate(const NonMobileUserListRoute());
-                      },
-                    ),
+
+                  // TODO: Non system user
                 ],
               ],
               logOutDigitButtonLabel: AppLocalizations.of(context)
@@ -1566,238 +1551,365 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
   }
 }
 
-class _PrivacyNoticeFullscreenPopup extends StatefulWidget {
-  final Map<String, dynamic> flow;
-  final Future<void> Function() onProceed;
+// ── Face-auth role helpers (file-private; mirror context extensions) ──
+bool _faceIsSupervisor(BuildContext context) {
+  try {
+    return context.loggedInUserRoles.any((r) =>
+        r.code == RolesType.teamSupervisor.toValue() ||
+        r.code == RolesType.districtSupervisor.toValue());
+  } catch (_) {
+    return false;
+  }
+}
 
-  const _PrivacyNoticeFullscreenPopup({
-    required this.flow,
-    required this.onProceed,
+bool _faceIsTeamSupervisor(BuildContext context) {
+  try {
+    return context.loggedInUserRoles
+        .any((r) => r.code == RolesType.teamSupervisor.toValue());
+  } catch (_) {
+    return false;
+  }
+}
+
+class _ReVerificationCountdownBanner extends StatelessWidget {
+  const _ReVerificationCountdownBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    if (_faceIsTeamSupervisor(context)) return const SizedBox.shrink();
+
+    final currentRoute = context.router.topRoute.name;
+    final isOnFaceGate = currentRoute == FaceGateRoute.name;
+
+    return BlocBuilder<ReVerificationBloc, ReVerificationState>(
+      builder: (context, state) {
+        final isPrompted =
+            state is ReVerificationPromptedState && !isOnFaceGate;
+
+        return AnimatedSwitcher(
+          duration: const Duration(milliseconds: 400),
+          switchInCurve: Curves.easeOutCubic,
+          switchOutCurve: Curves.easeInCubic,
+          transitionBuilder: (child, animation) {
+            return SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, -1),
+                end: Offset.zero,
+              ).animate(animation),
+              child: SizeTransition(
+                sizeFactor: animation,
+                axisAlignment: -1,
+                child: child,
+              ),
+            );
+          },
+          child: isPrompted
+              ? _CountdownContent(
+                  key: const ValueKey('countdown_active'),
+                  remainingSeconds:
+                      (state as ReVerificationPromptedState).remainingSeconds,
+                  totalSeconds: context
+                      .read<ReVerificationBloc>()
+                      .config
+                      .countdownDuration
+                      .inSeconds,
+                  iteration: (state as ReVerificationPromptedState).iteration,
+                  maxIterations:
+                      (state as ReVerificationPromptedState).maxIterations,
+                )
+              : const SizedBox.shrink(key: ValueKey('countdown_hidden')),
+        );
+      },
+    );
+  }
+}
+
+class _CountdownContent extends StatefulWidget {
+  final int remainingSeconds;
+  final int totalSeconds;
+  final int? iteration;
+  final int? maxIterations;
+
+  const _CountdownContent({
+    super.key,
+    required this.remainingSeconds,
+    required this.totalSeconds,
+    this.iteration,
+    this.maxIterations,
   });
 
   @override
-  State<_PrivacyNoticeFullscreenPopup> createState() =>
-      _PrivacyNoticeFullscreenPopupState();
+  State<_CountdownContent> createState() => _CountdownContentState();
 }
 
-class _PrivacyNoticeFullscreenPopupState
-    extends State<_PrivacyNoticeFullscreenPopup> {
-  final ScrollController _scrollController = ScrollController();
-  bool _hasReachedEnd = false;
-
-  Future<void> _openExternalUrl(String value) async {
-    final uri = Uri.tryParse(value);
-    if (uri == null) return;
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  }
-
-  Widget _buildTextWithOptionalLink({
-    required String value,
-    required TextStyle style,
-  }) {
-    final urlRegex = RegExp(r'https?:\/\/[^\s]+');
-    final match = urlRegex.firstMatch(value);
-
-    if (match == null) {
-      return Text(value, style: style);
-    }
-
-    final before = value.substring(0, match.start);
-    final url = value.substring(match.start, match.end);
-    final after = value.substring(match.end);
-
-    return RichText(
-      text: TextSpan(
-        style: style,
-        children: [
-          TextSpan(text: before),
-          WidgetSpan(
-            alignment: PlaceholderAlignment.baseline,
-            baseline: TextBaseline.alphabetic,
-            child: GestureDetector(
-              onTap: () => _openExternalUrl(url),
-              child: Text(
-                url,
-                style: style.copyWith(
-                  color: Colors.blue,
-                  decoration: TextDecoration.underline,
-                ),
-              ),
-            ),
-          ),
-          TextSpan(text: after),
-        ],
-      ),
-    );
-  }
+class _CountdownContentState extends State<_CountdownContent>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+  bool _processing = false;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scrollController.hasClients) return;
-      if (_scrollController.position.maxScrollExtent <= 0) {
-        setState(() {
-          _hasReachedEnd = true;
-        });
-      }
-    });
+    _pulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1000),
+    )..repeat(reverse: true);
+    _pulseAnimation = Tween<double>(begin: 0.6, end: 1.0).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
+    coWorkerPendingNotifier.addListener(_onCoWorkerPendingChanged);
+  }
+
+  void _onCoWorkerPendingChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _scrollController
-      ..removeListener(_onScroll)
-      ..dispose();
+    coWorkerPendingNotifier.removeListener(_onCoWorkerPendingChanged);
+    _pulseController.dispose();
     super.dispose();
   }
 
-  void _onScroll() {
-    if (!_scrollController.hasClients || _hasReachedEnd) return;
-    final position = _scrollController.position;
-    if (position.pixels >= (position.maxScrollExtent - 16)) {
-      setState(() {
-        _hasReachedEnd = true;
-      });
-    }
+  String _formatCountdown(int totalSeconds) {
+    final m = totalSeconds ~/ 60;
+    final s = totalSeconds % 60;
+    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocBuilder<LocalizationBloc, LocalizationState>(
-      buildWhen: (previous, current) {
-        // Rebuild only after localization load settles to avoid showing keys.
-        if (previous.loading != current.loading) {
-          return current.loading == false;
-        }
+    final theme = Theme.of(context);
+    final colorTheme = theme.colorTheme;
+    final progress = widget.remainingSeconds / widget.totalSeconds;
+    final isUrgent = widget.remainingSeconds < 60;
+    final accentColor = colorTheme.primary.primary1;
+    final urgentColor = const Color(0xFFE53935);
 
-        return previous.index != current.index && current.loading == false;
-      },
-      builder: (context, _) {
-        final theme = Theme.of(context);
-        final textTheme = theme.digitTextTheme(context);
-        final bodyItems = widget.flow['body'] as List<dynamic>? ?? const [];
+    final barColor = isUrgent ? urgentColor : accentColor;
 
-        return PopScope(
-          canPop: false,
-          child: Material(
-            color: theme.colorTheme.generic.background,
-            child: SafeArea(
-              child: Column(
+    return Container(
+      width: double.infinity,
+      height: 48,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            colorTheme.primary.primary2,
+            colorTheme.primary.primary2.withOpacity(0.95),
+          ],
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
                 children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(spacer2),
-                      child: DigitCard(
-                        margin: EdgeInsets.zero,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context).translate(
-                                widget.flow['heading'] as String? ??
-                                    'PRIVACY_NOTICE'),
-                            style: textTheme.headingXl.copyWith(
-                              color: theme.colorTheme.primary.primary2,
-                            ),
-                          ),
-                          ...bodyItems.map((item) {
-                            final content = item is Map
-                                ? Map<String, dynamic>.from(item)
-                                : <String, dynamic>{};
-                            final format =
-                                content['format'] as String? ?? 'text';
-                            final value = content['value'] as String? ?? '';
-                            final isBold = content['bold'] as bool? ?? false;
-                            final isCompact =
-                                content['compact'] as bool? ?? false;
-
-                            if (format == 'heading') {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 0),
-                                child: Text(
-                                  value,
-                                  style: isCompact
-                                      ? textTheme.bodyS.copyWith(
-                                          color:
-                                              theme.colorTheme.primary.primary2,
-                                          fontWeight: FontWeight.w700,
-                                          height: 1.0,
-                                        )
-                                      : textTheme.headingM.copyWith(
-                                          color:
-                                              theme.colorTheme.primary.primary2,
-                                          height: 1.0,
-                                        ),
-                                ),
-                              );
-                            }
-
-                            if (format == 'bullet') {
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: 0),
-                                child: Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      '• ',
-                                      style: textTheme.bodyS.copyWith(
-                                        color:
-                                            theme.colorTheme.primary.primary2,
-                                      ),
-                                    ),
-                                    Expanded(
-                                      child: Text(
-                                        value,
-                                        style: textTheme.bodyS.copyWith(
-                                          color:
-                                              theme.colorTheme.primary.primary2,
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              );
-                            }
-
-                            return Padding(
-                              padding: const EdgeInsets.only(bottom: spacer1),
-                              child: _buildTextWithOptionalLink(
-                                value: value,
-                                style: textTheme.bodyS.copyWith(
-                                  color: theme.colorTheme.primary.primary2,
-                                  fontWeight: isBold ? FontWeight.w700 : null,
-                                ),
-                              ),
-                            );
-                          }),
-                        ],
+                  FadeTransition(
+                    opacity: _pulseAnimation,
+                    child: Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: barColor.withOpacity(0.2),
+                      ),
+                      child: Icon(
+                        Icons.face_rounded,
+                        size: 16,
+                        color: barColor,
                       ),
                     ),
                   ),
-                  DigitCard(
-                    margin: const EdgeInsets.only(top: spacer2),
-                    children: [
-                      DigitButton(
-                        mainAxisSize: MainAxisSize.max,
-                        isDisabled: !_hasReachedEnd,
-                        label: AppLocalizations.of(context).translate(
-                          widget.flow['proceedLabel'] as String? ?? 'PROCEED',
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Face Verification Required',
+                          style: TextStyle(
+                            color: colorTheme.paper.primary,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.2,
+                          ),
                         ),
-                        type: DigitButtonType.primary,
-                        size: DigitButtonSize.large,
-                        onPressed: () {
-                          widget.onProceed();
-                        },
+                        const SizedBox(height: 1),
+                        Text(
+                          isUrgent
+                              ? 'Hurry! Time running out'
+                              : coWorkerPendingNotifier.value
+                                  ? 'Co-worker verification pending'
+                                  : 'System user must verify face first',
+                          style: TextStyle(
+                            color: colorTheme.paper.primary.withOpacity(0.6),
+                            fontSize: 9,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: barColor.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: barColor.withOpacity(0.4),
+                        width: 1,
                       ),
-                    ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.timer_outlined, size: 13, color: barColor),
+                        const SizedBox(width: 4),
+                        Text(
+                          _formatCountdown(widget.remainingSeconds),
+                          style: TextStyle(
+                            color: barColor,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            fontFeatures: const [
+                              FontFeature.tabularFigures(),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (widget.iteration != null &&
+                      widget.maxIterations != null) ...[
+                    const SizedBox(width: 6),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: colorTheme.paper.primary.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: colorTheme.paper.primary.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      child: Text(
+                        '${widget.iteration}/${widget.maxIterations}',
+                        style: TextStyle(
+                          color: colorTheme.paper.primary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                  ] else
+                    const SizedBox(width: 8),
+                  GestureDetector(
+                    onTap: _processing
+                        ? null
+                        : () async {
+                            if (reVerificationInProgressNotifier.value) return;
+                            setState(() => _processing = true);
+                            reVerificationInProgressNotifier.value = true;
+                            try {
+                              if (coWorkerPendingNotifier.value) {
+                                await verifyCoWorkersPending(context);
+                                return;
+                              }
+                              final result =
+                                  await showFaceVerificationDialog(context);
+                              if (!context.mounted) return;
+                              if (result.passed) {
+                                await logAndCompleteReVerification(
+                                    context, result);
+                              }
+                            } finally {
+                              reVerificationInProgressNotifier.value = false;
+                              if (mounted) setState(() => _processing = false);
+                            }
+                          },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _processing
+                            ? accentColor.withOpacity(0.6)
+                            : accentColor,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: _processing
+                            ? null
+                            : [
+                                BoxShadow(
+                                  color: accentColor.withOpacity(0.3),
+                                  blurRadius: 4,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                      ),
+                      child: _processing
+                          ? SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: colorTheme.paper.primary,
+                              ),
+                            )
+                          : Text(
+                              'VERIFY',
+                              style: TextStyle(
+                                color: colorTheme.paper.primary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                    ),
                   ),
                 ],
               ),
             ),
           ),
-        );
-      },
+          TweenAnimationBuilder<double>(
+            tween: Tween<double>(begin: progress, end: progress),
+            duration: const Duration(milliseconds: 900),
+            curve: Curves.linear,
+            builder: (context, value, _) {
+              return Container(
+                height: 3,
+                width: double.infinity,
+                color: Colors.black.withOpacity(0.2),
+                alignment: Alignment.centerLeft,
+                child: FractionallySizedBox(
+                  widthFactor: value.clamp(0.0, 1.0),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(2),
+                      gradient: LinearGradient(
+                        colors: isUrgent
+                            ? [urgentColor.withOpacity(0.7), urgentColor]
+                            : [accentColor.withOpacity(0.7), accentColor],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: barColor.withOpacity(0.5),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }

@@ -107,9 +107,9 @@ class _FaceVerificationScreenState extends State<_FaceVerificationScreen> {
   void initState() {
     super.initState();
     context.read<FaceGateBloc>().add(FaceGateEvent.checkEnrollment(
-      skipWorkerCheck: true,
-      individualId: widget.individualId,
-    ));
+          skipWorkerCheck: true,
+          individualId: widget.individualId,
+        ));
   }
 
   void _close(FaceVerificationResult result) =>
@@ -132,7 +132,8 @@ class _FaceVerificationScreenState extends State<_FaceVerificationScreen> {
         body: BlocConsumer<FaceGateBloc, FaceGateState>(
           listener: (context, state) {
             state.maybeWhen(
-              notEnrolled: () => _close(const FaceVerificationResult(passed: true)),
+              notEnrolled: () =>
+                  _close(const FaceVerificationResult(passed: true)),
               passed: (_, method, confidence, faceImageBytes) {
                 if (!_autoClosePending) {
                   _autoClosePending = true;
@@ -151,10 +152,11 @@ class _FaceVerificationScreenState extends State<_FaceVerificationScreen> {
                 // Bloc emits error then immediately pinEntry — builder skips
                 // the error state entirely. Capture it here so the PIN screen
                 // can show the inline error message.
-                if (mounted) setState(() {
-                  _pinErrorMessage = message;
-                  _pinAttemptCount++;
-                });
+                if (mounted)
+                  setState(() {
+                    _pinErrorMessage = message;
+                    _pinAttemptCount++;
+                  });
               },
               // No-op: prevent orElse from clearing _pinErrorMessage when
               // pinEntry fires immediately after error.
@@ -175,14 +177,16 @@ class _FaceVerificationScreenState extends State<_FaceVerificationScreen> {
                 faceImageBytes: faceImageBytes,
               ),
               scanning: () => _buildCamera(context),
-              rejected: (attempt, max, confidence, faceImageBytes) => _buildCamera(
+              rejected: (attempt, max, confidence, faceImageBytes) =>
+                  _buildCamera(
                 context,
                 attemptNumber: attempt,
                 maxAttempts: max,
                 lastConfidence: confidence,
               ),
               fallbackRequired: (reason) => _buildFallback(context, reason),
-              pinEntry: () => _buildPinEntry(context, errorMessage: _pinErrorMessage),
+              pinEntry: () =>
+                  _buildPinEntry(context, errorMessage: _pinErrorMessage),
               error: (msg) => _buildError(context, msg),
               orElse: () => const Center(
                 child: CircularProgressIndicator(),
@@ -227,8 +231,7 @@ class _FaceVerificationScreenState extends State<_FaceVerificationScreen> {
           top: MediaQuery.of(context).padding.top + 8,
           left: 8,
           child: IconButton(
-            icon: Icon(Icons.close,
-                color: colorTheme.text.primary, size: 28),
+            icon: Icon(Icons.close, color: colorTheme.text.primary, size: 28),
             onPressed: _closeFailed,
           ),
         ),
@@ -240,8 +243,7 @@ class _FaceVerificationScreenState extends State<_FaceVerificationScreen> {
             left: 24,
             right: 24,
             child: Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
                 color: colorTheme.alert.error.withOpacity(0.85),
                 borderRadius: BorderRadius.circular(12),
@@ -407,9 +409,7 @@ class _FaceVerificationScreenState extends State<_FaceVerificationScreen> {
               reason,
               textAlign: TextAlign.center,
               style: TextStyle(
-                  fontSize: 15,
-                  color: colorTheme.text.secondary,
-                  height: 1.4),
+                  fontSize: 15, color: colorTheme.text.secondary, height: 1.4),
             ),
             const SizedBox(height: 40),
             DigitButton(
@@ -483,9 +483,7 @@ class _FaceVerificationScreenState extends State<_FaceVerificationScreen> {
               message,
               textAlign: TextAlign.center,
               style: TextStyle(
-                  fontSize: 15,
-                  color: colorTheme.text.secondary,
-                  height: 1.4),
+                  fontSize: 15, color: colorTheme.text.secondary, height: 1.4),
             ),
             const SizedBox(height: 40),
             DigitButton(
@@ -599,4 +597,3 @@ class _PinEntryView extends StatelessWidget {
     );
   }
 }
-

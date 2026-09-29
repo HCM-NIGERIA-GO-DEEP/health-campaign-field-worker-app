@@ -1,6 +1,13 @@
 import 'dart:async';
 
-import 'package:attendance_management/attendance_management.dart';
+import 'package:attendance_management/attendance_management.dart'
+    hide
+        AttendanceRegisterModel,
+        AttendanceRegisterSearchModel,
+        AttendanceLogModel,
+        AttendanceLogSearchModel,
+        AttendeeModel,
+        AttendeeSearchModel;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:digit_data_model/data_model.dart';
@@ -35,7 +42,8 @@ final ValueNotifier<bool> faceEnrollmentActiveNotifier = ValueNotifier(false);
 
 /// True while the banner VERIFY button is handling a verification flow.
 /// Prevents the listener from opening a duplicate sheet in the background.
-final ValueNotifier<bool> reVerificationInProgressNotifier = ValueNotifier(false);
+final ValueNotifier<bool> reVerificationInProgressNotifier =
+    ValueNotifier(false);
 
 /// Co-worker IDs that have already been verified in the current cycle.
 /// A ValueNotifier so that NonMobileUserListPage can react to changes made
@@ -76,7 +84,7 @@ Future<void> verifyCoWorkersPending(BuildContext context) async {
 
 /// A pending co-worker that needs face re-verification.
 class _PendingCoWorker {
-  final String id;   // UUID used for face matching
+  final String id; // UUID used for face matching
   final String name; // display name (may be empty)
   const _PendingCoWorker({required this.id, required this.name});
 }
@@ -223,14 +231,16 @@ Future<bool> _checkAndShowCoWorkerPending(BuildContext context) async {
 
     final allCoWorkerEmbeddings = await repository.getNonSystemUserEmbeddings();
     if (allCoWorkerEmbeddings.isEmpty) {
-      debugPrint('_checkAndShowCoWorkerPending: no non-system embeddings found');
+      debugPrint(
+          '_checkAndShowCoWorkerPending: no non-system embeddings found');
       return true;
     }
 
     // Filter to only co-workers in the current register so embeddings synced
     // from other registers or past sessions are not included.
     final registerAttendeeIds = await _getRegisterAttendeeIds(context);
-    debugPrint('_checkAndShowCoWorkerPending: registerAttendeeIds=$registerAttendeeIds, allEmbeddings=${allCoWorkerEmbeddings.map((e) => e.individualId).toList()}');
+    debugPrint(
+        '_checkAndShowCoWorkerPending: registerAttendeeIds=$registerAttendeeIds, allEmbeddings=${allCoWorkerEmbeddings.map((e) => e.individualId).toList()}');
     var coWorkerEmbeddings = registerAttendeeIds.isEmpty
         ? allCoWorkerEmbeddings
         : allCoWorkerEmbeddings
@@ -239,11 +249,13 @@ Future<bool> _checkAndShowCoWorkerPending(BuildContext context) async {
     // If the register filter excluded everything (likely an ID format mismatch),
     // fall back to all non-system embeddings so co-workers are never silently skipped.
     if (coWorkerEmbeddings.isEmpty && allCoWorkerEmbeddings.isNotEmpty) {
-      debugPrint('_checkAndShowCoWorkerPending: register filter yielded empty — falling back to all ${allCoWorkerEmbeddings.length} non-system embeddings');
+      debugPrint(
+          '_checkAndShowCoWorkerPending: register filter yielded empty — falling back to all ${allCoWorkerEmbeddings.length} non-system embeddings');
       coWorkerEmbeddings = allCoWorkerEmbeddings;
     }
     if (coWorkerEmbeddings.isEmpty) {
-      debugPrint('_checkAndShowCoWorkerPending: all embeddings filtered out (register filter + fallback exhausted)');
+      debugPrint(
+          '_checkAndShowCoWorkerPending: all embeddings filtered out (register filter + fallback exhausted)');
       return true;
     }
 
@@ -256,7 +268,8 @@ Future<bool> _checkAndShowCoWorkerPending(BuildContext context) async {
         .where((id) => !coWorkersVerifiedThisCycleNotifier.value.contains(id))
         .toList();
     if (pendingIds.isEmpty || !context.mounted) {
-      debugPrint('_checkAndShowCoWorkerPending: pendingIds=${pendingIds.isEmpty ? "empty (all verified this cycle)" : "non-empty"}, mounted=${context.mounted}');
+      debugPrint(
+          '_checkAndShowCoWorkerPending: pendingIds=${pendingIds.isEmpty ? "empty (all verified this cycle)" : "non-empty"}, mounted=${context.mounted}');
       return true;
     }
 
@@ -265,9 +278,10 @@ Future<bool> _checkAndShowCoWorkerPending(BuildContext context) async {
     // Look up display names from local individual repository
     final pendingUsers = <_PendingCoWorker>[];
     try {
-      final individualRepo =
-          context.read<LocalRepository<IndividualModel, IndividualSearchModel>>();
-      final allIndividuals = await individualRepo.search(IndividualSearchModel());
+      final individualRepo = context
+          .read<LocalRepository<IndividualModel, IndividualSearchModel>>();
+      final allIndividuals =
+          await individualRepo.search(IndividualSearchModel());
       final idToName = {
         for (final i in allIndividuals)
           if (i.id != null) i.id!: i.name?.givenName ?? '',
@@ -308,7 +322,8 @@ Future<bool> _checkAndShowCoWorkerPending(BuildContext context) async {
       if (!context.mounted) return true;
       // Re-check: if any co-workers are still unverified today (user closed
       // the face camera without scanning them), keep the ticker alive.
-      if (!coWorkerIds.every((id) => coWorkersVerifiedThisCycleNotifier.value.contains(id))) {
+      if (!coWorkerIds.every(
+          (id) => coWorkersVerifiedThisCycleNotifier.value.contains(id))) {
         coWorkerPendingNotifier.value = true;
         return false;
       }
@@ -318,7 +333,8 @@ Future<bool> _checkAndShowCoWorkerPending(BuildContext context) async {
       if (!context.mounted) return true;
       // Re-check after returning — complete only if all co-workers are now verified.
       // If any are still pending, keep the ticker alive so the user can finish.
-      if (!coWorkerIds.every((id) => coWorkersVerifiedThisCycleNotifier.value.contains(id))) {
+      if (!coWorkerIds.every(
+          (id) => coWorkersVerifiedThisCycleNotifier.value.contains(id))) {
         coWorkerPendingNotifier.value = true;
         return false;
       }
@@ -384,8 +400,8 @@ Future<void> _runCoWorkerVerificationSequence(
   FaceModelService faceModelService,
 ) async {
   // Capture context-dependent values before async gaps
-  final faceAuthEventRepo =
-      context.read<LocalRepository<FaceAuthEventModel, FaceAuthEventSearchModel>>();
+  final faceAuthEventRepo = context
+      .read<LocalRepository<FaceAuthEventModel, FaceAuthEventSearchModel>>();
   final distributorUuid = context.loggedInUserUuid;
   final projectId = context.projectId;
   final boundaryCode = context.boundaryOrNull?.code ?? '';
@@ -494,8 +510,10 @@ class ReVerificationListener extends StatefulWidget {
 class _ReVerificationListenerState extends State<ReVerificationListener> {
   bool _isBusy = false; // true when sheet or dialog is open
   bool _lastVerifiedViaDialog = false; // prevents double-logging
-  bool _dismissedThisCycle = false; // true after "Remind me later" — resets on new iteration
-  int _lastShownIteration = 0; // tracks which iteration we last showed the sheet for
+  bool _dismissedThisCycle =
+      false; // true after "Remind me later" — resets on new iteration
+  int _lastShownIteration =
+      0; // tracks which iteration we last showed the sheet for
   bool _routerListenerAdded = false;
   // True once the distributor passed their own face scan this cycle.
   // Prevents logging a false "missed" for the distributor when "Later" was
@@ -509,7 +527,8 @@ class _ReVerificationListenerState extends State<ReVerificationListener> {
   void initState() {
     super.initState();
     faceEnrollmentActiveNotifier.addListener(_onEnrollmentActiveChanged);
-    reVerificationInProgressNotifier.addListener(_onVerificationInProgressChanged);
+    reVerificationInProgressNotifier
+        .addListener(_onVerificationInProgressChanged);
     coWorkersVerifiedThisCycleNotifier.addListener(_onCoWorkerVerifiedFromList);
     _audioPlayer.setAudioContext(AudioContext(
       android: AudioContextAndroid(
@@ -547,8 +566,10 @@ class _ReVerificationListenerState extends State<ReVerificationListener> {
   @override
   void dispose() {
     faceEnrollmentActiveNotifier.removeListener(_onEnrollmentActiveChanged);
-    reVerificationInProgressNotifier.removeListener(_onVerificationInProgressChanged);
-    coWorkersVerifiedThisCycleNotifier.removeListener(_onCoWorkerVerifiedFromList);
+    reVerificationInProgressNotifier
+        .removeListener(_onVerificationInProgressChanged);
+    coWorkersVerifiedThisCycleNotifier
+        .removeListener(_onCoWorkerVerifiedFromList);
     if (_routerListenerAdded) {
       try {
         context.router.removeListener(_onRouteChanged);
@@ -655,7 +676,8 @@ class _ReVerificationListenerState extends State<ReVerificationListener> {
   FaceAuthEventLogger? _createLogger(BuildContext context) {
     try {
       return FaceAuthEventLogger(
-        repository: context.read<LocalRepository<FaceAuthEventModel, FaceAuthEventSearchModel>>(),
+        repository: context.read<
+            LocalRepository<FaceAuthEventModel, FaceAuthEventSearchModel>>(),
         userId: context.loggedInIndividualIdOrNull ?? '',
         userUuid: context.loggedInUserUuid,
         projectId: context.projectId,
@@ -669,7 +691,8 @@ class _ReVerificationListenerState extends State<ReVerificationListener> {
 
   /// Logs a MISSED re-verify event for every enrolled co-worker who has not
   /// been verified today. Called whenever the distributor's countdown expires.
-  Future<void> _logCoWorkersMissed(BuildContext context, {int? popupTime}) async {
+  Future<void> _logCoWorkersMissed(BuildContext context,
+      {int? popupTime}) async {
     if (!mounted) return;
     try {
       final repository = context.read<FaceEmbeddingRepository>();
@@ -679,7 +702,8 @@ class _ReVerificationListenerState extends State<ReVerificationListener> {
       final projectId = context.projectId;
       final boundaryCode = context.boundaryOrNull?.code ?? '';
 
-      final allCoWorkerEmbeddings = await repository.getNonSystemUserEmbeddings();
+      final allCoWorkerEmbeddings =
+          await repository.getNonSystemUserEmbeddings();
       if (allCoWorkerEmbeddings.isEmpty) return;
 
       // Scope to the current register so extra synced embeddings are excluded.
@@ -727,7 +751,8 @@ class _ReVerificationListenerState extends State<ReVerificationListener> {
         if (state is ReVerificationPromptedState) {
           // Supervisors (team / district) do not need periodic face checks —
           // silently complete the cycle so the scheduler stays healthy.
-          if (context.isTeamSupervisorRole || context.isDistrictSupervisorRole) {
+          if (context.isTeamSupervisorRole ||
+              context.isDistrictSupervisorRole) {
             context
                 .read<ReVerificationBloc>()
                 .add(const ReVerificationEvent.externalVerified());
@@ -787,7 +812,8 @@ class _ReVerificationListenerState extends State<ReVerificationListener> {
           if (!_lastVerifiedViaDialog && !_externalVerificationLogged) {
             final logger = _createLogger(context);
             if (logger == null) {
-              debugPrint('ReVerificationListener: logger is null, skipping verified log');
+              debugPrint(
+                  'ReVerificationListener: logger is null, skipping verified log');
             } else if (state.confidence > 0) {
               await logger.logFaceSuccess(
                 eventType: FaceAuthEventType.reVerify,
@@ -811,7 +837,8 @@ class _ReVerificationListenerState extends State<ReVerificationListener> {
           if (!_distributorVerifiedThisCycle) {
             final logger = _createLogger(context);
             if (logger == null) {
-              debugPrint('ReVerificationListener: logger is null, skipping missed log');
+              debugPrint(
+                  'ReVerificationListener: logger is null, skipping missed log');
             }
             await logger?.logMissed(popupTime: state.popupTime);
           }
@@ -880,7 +907,8 @@ class _ReVerificationListenerState extends State<ReVerificationListener> {
         } finally {
           reVerificationInProgressNotifier.value = false;
         }
-        _isBusy = false; // release after entire sequence (distributor + co-workers)
+        _isBusy =
+            false; // release after entire sequence (distributor + co-workers)
       } else {
         // "Remind me later" — stop sound so it doesn't interrupt critical flows.
         _stopAlertSound();
@@ -944,8 +972,7 @@ class _ReVerificationSheetState extends State<_ReVerificationSheet> {
           padding: EdgeInsets.fromLTRB(24, 20, 24, bottomPadding),
           decoration: BoxDecoration(
             color: colorTheme.paper.primary,
-            borderRadius:
-                const BorderRadius.vertical(top: Radius.circular(24)),
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -1004,7 +1031,11 @@ class _ReVerificationSheetState extends State<_ReVerificationSheet> {
               if (state is ReVerificationPromptedState) ...[
                 _CountdownRing(
                   remainingSeconds: state.remainingSeconds,
-                  totalSeconds: context.read<ReVerificationBloc>().config.countdownDuration.inSeconds,
+                  totalSeconds: context
+                      .read<ReVerificationBloc>()
+                      .config
+                      .countdownDuration
+                      .inSeconds,
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -1020,7 +1051,8 @@ class _ReVerificationSheetState extends State<_ReVerificationSheet> {
               // Instruction callout
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
                   color: Colors.orange.shade50,
                   borderRadius: BorderRadius.circular(10),
@@ -1111,9 +1143,7 @@ class _CountdownRing extends StatelessWidget {
               strokeWidth: 4,
               backgroundColor: colorTheme.generic.divider,
               valueColor: AlwaysStoppedAnimation<Color>(
-                isUrgent
-                    ? colorTheme.alert.error
-                    : colorTheme.primary.primary1,
+                isUrgent ? colorTheme.alert.error : colorTheme.primary.primary1,
               ),
             ),
           ),
@@ -1122,9 +1152,8 @@ class _CountdownRing extends StatelessWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
-              color: isUrgent
-                  ? colorTheme.alert.error
-                  : colorTheme.text.primary,
+              color:
+                  isUrgent ? colorTheme.alert.error : colorTheme.text.primary,
             ),
           ),
         ],
@@ -1222,8 +1251,8 @@ class _CoWorkerPendingSheet extends StatelessWidget {
               value: total > 0 ? verified / total : 0,
               minHeight: 8,
               backgroundColor: colorTheme.generic.divider,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                  colorTheme.alert.success),
+              valueColor:
+                  AlwaysStoppedAnimation<Color>(colorTheme.alert.success),
             ),
           ),
           const SizedBox(height: 6),

@@ -44,7 +44,8 @@ class FaceAuthEventModel extends EntityModel with FaceAuthEventModelMappable {
   final String individualId;
   final String deviceId;
   final String eventType; // LOGIN, CHECK_IN, RE_VERIFY, ENROLLMENT
-  final String outcome; // FACE_SUCCESS, FACE_REJECTED, PIN_FALLBACK, HCM_FALLBACK, MISSED
+  final String
+      outcome; // FACE_SUCCESS, FACE_REJECTED, PIN_FALLBACK, HCM_FALLBACK, MISSED
   final double confidence;
   final double latitude;
   final double longitude;
