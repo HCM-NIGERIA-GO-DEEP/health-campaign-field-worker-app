@@ -99,10 +99,20 @@ final jsonConfig = {
         },
         "listMappings": {
           "IdentifierModel": {
+            // listSource points at extraContext['identifierEntries'], built in
+            // transformer_executor.dart from (1) the existing hidden
+            // "identifiers" idPopulator field (unchanged Beneficiary ID
+            // capture) and (2) the new identificationType/identificationNumber
+            // fields, when both are filled in. Each entry is a
+            // {identifierType, identifierId} map, so the mappings below read
+            // plain keys off that per-item map rather than the old
+            // "householdDetails.identifiers[0]/[1]" comma-split of a single
+            // combined string.
+            "listSource": "__context:identifierEntries",
             "mappings": {
               "id": "id",
-              "identifierType": "householdDetails.identifiers[0]",
-              "identifierId": "householdDetails.identifiers[1]",
+              "identifierType": "identifierType",
+              "identifierId": "identifierId",
               "boundaryCode": "__context:selectedBoundaryCode",
               "nonRecoverableError": "error.nonRecoverable",
               "individualClientReferenceId":
@@ -330,10 +340,16 @@ final jsonConfig = {
         },
         "listMappings": {
           "IdentifierModel": {
+            // See the matching comment in the beneficiaryRegistration config
+            // above: listSource reads extraContext['identifierEntries'],
+            // which preserves the existing hidden "identifiers" field's
+            // behavior as entry 1 and adds the new
+            // identificationType/identificationNumber pair as entry 2.
+            "listSource": "__context:identifierEntries",
             "mappings": {
               "id": "id",
-              "identifierType": "householdDetails.identifiers[0]",
-              "identifierId": "householdDetails.identifiers[1]",
+              "identifierType": "identifierType",
+              "identifierId": "identifierId",
               "boundaryCode": "__context:selectedBoundaryCode",
               "nonRecoverableError": "error.nonRecoverable",
               "individualClientReferenceId":

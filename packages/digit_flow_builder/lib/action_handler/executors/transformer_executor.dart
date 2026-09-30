@@ -183,6 +183,11 @@ class TransformerExecutor extends ActionExecutor {
     debugPrint(
         'TRANSFORMER: isEdit=$isEdit, forceCreate=$forceCreate, existingModels=${existingModels?.length ?? 0}');
 
+    extraContext['identifierEntries'] = TransformerExecutor.buildIdentifierEntries(
+      formValuesToUse ?? {},
+      formEntityMapper,
+    );
+
     final contextMap = {
       "selectedProject": FlowBuilderSingleton().selectedProject,
       "projectId": FlowBuilderSingleton().selectedProject?.id,
@@ -441,5 +446,62 @@ class TransformerExecutor extends ActionExecutor {
     }
 
     return result;
+  }
+
+  /// Builds the `identifierEntries` list consumed by `IdentifierModel`'s
+  /// `listMappings` (see `transformer_config.dart`) via
+  /// `listSource: __context:identifierEntries`.
+  ///
+  /// Entry 1 is whatever the existing, unchanged, hidden "identifiers"
+  /// idPopulator field resolved to (the auto-generated Beneficiary ID, or a
+  /// scanned `UNIQUE_BENEFICIARY_ID`) - this preserves that field's capture
+  /// behavior exactly. Entry 2 is the separately-captured Identification
+  /// Type/Number pair, added only when both are filled in.
+  ///
+  /// Falls back to a single all-null entry when neither source resolves,
+  /// exactly matching the single-item mapping this replaces, so any other
+  /// caller of this transformer config that doesn't have these fields sees no
+  /// behavior change.
+  static List<Map<String, dynamic>> buildIdentifierEntries(
+    Map<String, dynamic> formValues,
+    FormEntityMapper formEntityMapper,
+  ) {
+    final identifierEntries = <Map<String, dynamic>>[];
+
+    final existingIdentifier = formEntityMapper.getStrictValueFromFormDataOnly(
+        'householdDetails.identifiers', formValues);
+    if (existingIdentifier is String && existingIdentifier.contains(',')) {
+      final parts = existingIdentifier.split(',');
+      identifierEntries.add({
+        'identifierType': parts[0].trim(),
+        'identifierId': parts.sublist(1).join(',').trim(),
+      });
+    } else if (existingIdentifier != null) {
+      identifierEntries.add({
+        'identifierType': existingIdentifier,
+        'identifierId': null,
+      });
+    }
+
+    final identificationType = formEntityMapper.getStrictValueFromFormDataOnly(
+        'householdDetails.identificationType', formValues);
+    final identificationNumber =
+        formEntityMapper.getStrictValueFromFormDataOnly(
+            'householdDetails.identificationNumber', formValues);
+    if (identificationType is String &&
+        identificationType.trim().isNotEmpty &&
+        identificationNumber is String &&
+        identificationNumber.trim().isNotEmpty) {
+      identifierEntries.add({
+        'identifierType': identificationType.trim(),
+        'identifierId': identificationNumber.trim(),
+      });
+    }
+
+    if (identifierEntries.isEmpty) {
+      identifierEntries.add({'identifierType': null, 'identifierId': null});
+    }
+
+    return identifierEntries;
   }
 }
