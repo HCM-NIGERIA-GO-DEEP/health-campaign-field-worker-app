@@ -146,7 +146,7 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
 
   /// The `schemaVersion` getter returns the schema version of the database.
   @override
-  int get schemaVersion => 12; // Increment schema version
+  int get schemaVersion => 13; // Increment schema version
 
   Future<void> _createTaskSearchIndexes() async {
     await customStatement('''
@@ -163,11 +163,28 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
     ''');
   }
 
+  /// Covers the National/Voter/Beneficiary ID searches on the identifier
+  /// table (identifier_id equality seek, identifier_type as a secondary
+  /// predicate within the same subquery). Without this, those searches fall
+  /// back to a full table scan that grows up to 3x individual count as more
+  /// identifier types are added per person.
+  Future<void> _createIdentifierSearchIndexes() async {
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS identifier_identifierid
+      ON identifier (identifier_id);
+    ''');
+    await customStatement('''
+      CREATE INDEX IF NOT EXISTS identifier_identifiertype
+      ON identifier (identifier_type);
+    ''');
+  }
+
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (migrator) async {
           await migrator.createAll();
           await _createTaskSearchIndexes();
+          await _createIdentifierSearchIndexes();
         },
         onUpgrade: (migrator, from, to) async {
           if (from < 5) {
@@ -376,6 +393,16 @@ class LocalSqlDataStore extends _$LocalSqlDataStore {
             } catch (e) {
               if (kDebugMode) {
                 print("Failed to create faceAuthEvent table");
+              }
+            }
+          }
+
+          if (from < 13) {
+            try {
+              await _createIdentifierSearchIndexes();
+            } catch (e) {
+              if (kDebugMode) {
+                print("Failed to create identifier search indexes");
               }
             }
           }

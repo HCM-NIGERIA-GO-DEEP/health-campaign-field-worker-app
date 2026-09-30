@@ -190,6 +190,9 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
     const linkedSearchWidgetKeys = [
       'searchBar',
       'idSearchBar',
+      'nationalIdSearchBar',
+      'voterIdSearchBar',
+      'phoneNumberSearchBar',
     ];
 
     _clearWidgetValues(linkedSearchWidgetKeys);
@@ -203,6 +206,8 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
           'filterKeys': [
             'givenName,familyName',
             'identifierId',
+            'identifierType',
+            'mobileNumber',
           ],
           'triggerSearch': false,
         },
