@@ -283,11 +283,20 @@ class TransformerExecutor extends ActionExecutor {
           // Map entity-specific fields (with _item_N suffix) to base field names
           modifiedFormValues = _mapEntityFieldsToBase(modifiedFormValues, i);
 
+          // `perEntity` data entries depend on this item's own fields, so
+          // resolve them again now that the item's fields have base names.
+          final itemContextMap = resolvePerEntityContext(
+            extraData: extraData,
+            baseContext: contextMap,
+            contextData: contextData,
+            entityFormValues: modifiedFormValues,
+          );
+
           try {
             final itemEntities = formEntityMapper.mapFormToEntities(
               formValues: modifiedFormValues,
               modelsConfig: transformerConfig,
-              context: contextMap,
+              context: itemContextMap,
               fallbackFormDataString: fallBackModel,
             );
             entities.addAll(itemEntities);
@@ -394,6 +403,48 @@ class TransformerExecutor extends ActionExecutor {
     }
 
     current[keys.last] = value;
+  }
+
+  /// Resolves the `data` entries marked `"perEntity": true` against a single
+  /// entity's form values and layers them over [baseContext].
+  ///
+  /// Every `data` entry is first resolved once against the whole form, where
+  /// a multi-entity form only holds suffixed keys (`quantityReturned_item_0`),
+  /// so an item-dependent value such as
+  /// `{{formData.stockProductDetails.quantityWastage}}` cannot resolve there.
+  /// [entityFormValues] carries one item's fields under their base names.
+  ///
+  /// A key that resolves to null for this item is dropped rather than left
+  /// holding the whole-form value. Returns [baseContext] itself when no entry
+  /// is marked `perEntity`.
+  @visibleForTesting
+  static Map<String, dynamic> resolvePerEntityContext({
+    required List<dynamic>? extraData,
+    required Map<String, dynamic> baseContext,
+    required Map<String, dynamic> contextData,
+    required Map<String, dynamic> entityFormValues,
+  }) {
+    final perEntityData = extraData
+        ?.where((entry) =>
+            entry is Map && entry['perEntity'] == true && entry['key'] is String)
+        .toList();
+    if (perEntityData == null || perEntityData.isEmpty) return baseContext;
+
+    final entityContextData = {...contextData, 'formData': entityFormValues};
+    final result = Map<String, dynamic>.from(baseContext);
+    for (final entry in perEntityData) {
+      final key = entry['key'] as String;
+      final valuePath = entry['value'];
+      final resolvedValue = valuePath is String
+          ? resolveValue(valuePath, entityContextData)
+          : valuePath;
+      if (resolvedValue != null) {
+        result[key] = resolvedValue;
+      } else {
+        result.remove(key);
+      }
+    }
+    return result;
   }
 
   /// Maps entity-specific fields (with _item_N suffix) to base field names.

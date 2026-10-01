@@ -1045,6 +1045,19 @@ Every flow configuration must have the following root structure:
 
 **Use Case:** Fetch external configuration/data transformers
 
+**Per-entity data:** Each `data` entry is resolved once against the whole form
+and exposed to the transformer as `__context:<key>`. When the transformer
+config has a `multiEntityField` (e.g. one stock record per selected product),
+add `"perEntity": true` to an entry whose value depends on the item's own
+fields. It is then resolved again for each item, with `formData` holding that
+item's fields under their base names (`quantityReturned`, not
+`quantityReturned_item_0`). A key that resolves to null for an item is left
+out of that item's context.
+
+```json
+{"key": "quantityWastage", "perEntity": true, "value": "{{formData.stockProductDetails.quantityWastage}}"}
+```
+
 ### 6.5 Init Actions
 
 **Purpose:** Actions that execute when screen loads

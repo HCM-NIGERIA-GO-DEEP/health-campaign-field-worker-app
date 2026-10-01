@@ -7,6 +7,7 @@ import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
 import 'package:digit_forms_engine/forms_engine.dart';
+import 'package:digit_forms_engine/utils/utils.dart' as forms_utils;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -83,6 +84,15 @@ class FunctionRegistries {
       final base = StockConstants.toBaseUnit(display);
       final rounded = base.roundToDouble();
       return base == rounded ? rounded.toInt() : base;
+    });
+
+    // Leftover in the part-used base unit, in display units, for a return.
+    // Delegates to the forms engine's `calculatePartial` so a submit action
+    // stores the same value the form computes (it reads the balance and
+    // multiplier through the hooks in [_registerFormsEngineHooks]).
+    // args: [returned, partial, productVariantId]
+    FunctionRegistry.register('calculatePartial', (args, stateData) {
+      return forms_utils.functionRegistry['calculatePartial']?.call(args) ?? 0;
     });
 
     FunctionRegistry.register('getQuantityLabel', (args, stateData) {
