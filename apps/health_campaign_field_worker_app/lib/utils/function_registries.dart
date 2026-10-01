@@ -7,6 +7,7 @@ import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
 import 'package:digit_flow_builder/utils/team_ownership.dart';
+import 'package:digit_flow_builder/utils/team_record_visibility.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -34,14 +35,22 @@ class FunctionRegistries {
   }
 
   void _registerTeamOwnershipFunctions() {
-    // Gates DELIVERY / UNABLE TO DELIVER / REDOSE / RECORD_CYCLE_DOSE on the
-    // beneficiary's registered_by_team. Used from the flow JSON as
+    // Other teams' beneficiaries (registered_by_team on the ProjectBeneficiary)
+    // are filtered by the REGISTRATION config's teamRecordVisibility switch
+    // (TeamRecordVisibility): SHOW = every result shown; HIDE = results
+    // filtered to my team. The disable gate below is on in both modes. A user
+    // without a team code sees and may act on everything.
+
+    // Gate on DELIVERY / UNABLE TO DELIVER / REDOSE / RECORD_CYCLE_DOSE and
+    // the NOT_REGISTERED_BY_YOU tag:
     //   "disabled": "{{fn:isOwnedByMyTeam(item.projectBeneficiary)}}==false"
-    // Untagged records, a missing own team code, or malformed input all
-    // resolve to true (allowed). Edit uses disableEdit's third argument instead.
+    // SHOW disables only other teams' records; HIDE disables anything its
+    // filter would hide (other teams, untagged, no record), in case it reaches
+    // the screen anyway (proximity search is never team-filtered). Edit uses
+    // disableEdit's third argument, which applies the same rule.
     FunctionRegistry.register('isOwnedByMyTeam', (args, stateData) {
       try {
-        return isOwnedByMyTeam(
+        return TeamRecordVisibility.mayActOn(
           args.isNotEmpty ? args[0] : null,
           FlowBuilderSingleton().teamCode,
           projectId: FlowBuilderSingleton().projectId,
@@ -50,6 +59,64 @@ class FunctionRegistries {
         // Safety net: allow, so a code bug can never blank the TEMPLATE
         // screen or block fieldwork.
         return true;
+      }
+    });
+
+    // HIDE-mode result filters. Each fn below scopes by
+    // TeamRecordVisibility.visibilityTeamCode, which is null in SHOW mode, and
+    // null means "no filter, show everything".
+    //
+    // Search / dedup filter value, added to each SEARCH_EVENT and to
+    // dedupCheck.filters as
+    //   {"key":"additionalFields","root":"projectBeneficiary",
+    //    "value":"{{fn:myTeamFilterValue()}}","operation":"matches"}
+    // Null (filter dropped) without a team code or in SHOW mode.
+    FunctionRegistry.register('myTeamFilterValue', (args, stateData) {
+      try {
+        return teamFilterValue(
+          TeamRecordVisibility.visibilityTeamCode(
+            FlowBuilderSingleton().teamCode,
+          ),
+        );
+      } catch (_) {
+        return null;
+      }
+    });
+
+    // Household overview member card:
+    //   "visible": "{{fn:isVisibleToMyTeam(item.projectBeneficiary)}}==true"
+    FunctionRegistry.register('isVisibleToMyTeam', (args, stateData) {
+      try {
+        return isVisibleToMyTeam(
+          args.isNotEmpty ? args[0] : null,
+          TeamRecordVisibility.visibilityTeamCode(
+            FlowBuilderSingleton().teamCode,
+          ),
+        );
+      } catch (e) {
+        // Show rather than throw: a throw in a fn: blanks the TEMPLATE screen,
+        // and the search filter has already scoped the household.
+        debugPrint('isVisibleToMyTeam failed, showing member: $e');
+        return true;
+      }
+    });
+
+    // Search-result member table rows:
+    //   "rows": "{{fn:individualsVisibleToMyTeam(currentItem.individuals,
+    //            currentItem.projectBeneficiaries)}}"
+    FunctionRegistry.register('individualsVisibleToMyTeam', (args, stateData) {
+      final individuals = args.isNotEmpty ? args[0] : null;
+      try {
+        return individualsVisibleToMyTeam(
+          individuals,
+          args.length > 1 ? args[1] : null,
+          TeamRecordVisibility.visibilityTeamCode(
+            FlowBuilderSingleton().teamCode,
+          ),
+        );
+      } catch (e) {
+        debugPrint('individualsVisibleToMyTeam failed, showing all: $e');
+        return individuals;
       }
     });
   }

@@ -4,7 +4,7 @@ import 'package:digit_data_model/models/entities/attendance_log.dart';
 import 'package:digit_data_model/models/entities/project_type.dart';
 import 'package:digit_flow_builder/blocs/flow_crud_bloc.dart';
 import 'package:digit_flow_builder/utils/delivered_in_cycle.dart';
-import 'package:digit_flow_builder/utils/team_ownership.dart';
+import 'package:digit_flow_builder/utils/team_record_visibility.dart';
 import 'package:digit_flow_builder/utils/utils.dart';
 import 'package:digit_flow_builder/widget_registry.dart';
 import 'package:digit_ui_components/utils/date_utils.dart';
@@ -1781,8 +1781,9 @@ void initializeFunctionRegistry() {
   /// 1. Any task has a success status (ADMINISTRATION_SUCCESS or DELIVERED)
   /// 2. Any task is not eligible (INELIGIBLE status)
   /// 3. A referral exists (not null/empty)
-  /// 4. The beneficiary carries a `registered_by_team` that differs from the
-  ///    logged-in user's team code (both must be present to block)
+  /// 4. The logged-in team may not act on the beneficiary
+  ///    (TeamRecordVisibility.mayActOn: SHOW blocks another team's record,
+  ///    HIDE blocks anything its filter would hide)
   FunctionRegistry.register("disableEdit", (args, stateData) {
     // Check task statuses - if ANY task is delivered or ineligible, disable
     if (args.isNotEmpty && args.first != null) {
@@ -1876,11 +1877,12 @@ void initializeFunctionRegistry() {
       }
     }
 
-    // Disable if the beneficiary was registered by another team. Kept as an
-    // optional argument so a config without it behaves exactly as before.
+    // Disable if the logged-in team may not act on the beneficiary (same gate
+    // as fn:isOwnedByMyTeam, on in both SHOW and HIDE). Kept as an optional
+    // argument so a config without it behaves exactly as before.
     if (args.length > 2) {
       try {
-        final owned = isOwnedByMyTeam(
+        final owned = TeamRecordVisibility.mayActOn(
           args[2],
           FlowBuilderSingleton().teamCode,
           projectId: FlowBuilderSingleton().projectId,
