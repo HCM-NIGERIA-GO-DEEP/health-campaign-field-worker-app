@@ -778,6 +778,10 @@ void initializeFunctionRegistry() {
       final currentRunningCycle =
           args.length > 2 ? int.tryParse(args[2]?.toString() ?? '') : null;
 
+      // Aged-out continuation is only applied after the loop, so a blocking
+      // task later in the list still wins over an earlier-cycle success.
+      bool deliveredInEarlierCycle = false;
+
       for (final item in tasks) {
         Map<String, dynamic> task;
 
@@ -852,7 +856,7 @@ void initializeFunctionRegistry() {
           if (taskCycleIndex != currentRunningCycle) {
             if (isWithinAge == false &&
                 task['status'] == TaskStatus.administrationSuccess) {
-              return true;
+              deliveredInEarlierCycle = true;
             }
             continue;
           }
@@ -863,6 +867,8 @@ void initializeFunctionRegistry() {
             task['status'] == TaskStatus.beneficiaryAbsent ||
             task['status'] == TaskStatus.beneficiaryRefused) return false;
       }
+
+      if (deliveredInEarlierCycle) return true;
     }
 
     if (tasks.isNotEmpty && sideEffects.isNotEmpty) {
