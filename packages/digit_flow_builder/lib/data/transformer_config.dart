@@ -641,7 +641,14 @@ final jsonConfig = {
             "polioReceived": "__context:polio",
             "polioLastDate": "__context:polioDate",
             "measlesRubellaReceived": "__context:measlesRubella",
-            "measlesRubellaLastDate": "__context:measlesRubellaDate"
+            "measlesRubellaLastDate": "__context:measlesRubellaDate",
+            // How long the administration took: device-local epoch millis
+            // taken on entry to the delivery screen and at submit, plus a
+            // flag when the device clock changed in between (see the app's
+            // AdministrationTimer). Null-skipped on paths that don't pass them.
+            "administrationStartTime": "__context:administrationStartTime",
+            "administrationEndTime": "__context:administrationEndTime",
+            "administrationTimeFlag": "__context:administrationTimeFlag"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"

@@ -12,6 +12,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models/entities/roles_type.dart';
+import 'administration_timer.dart';
 import 'stock_constants.dart';
 import 'extensions/extensions.dart';
 
@@ -30,7 +31,31 @@ class FunctionRegistries {
     _registerFacilityFunctions();
     _registerStockFunctions();
     _registerViewTransactionFunctions();
+    _registerAdministrationTimerFunctions();
     _registerFormsEngineHooks();
+  }
+
+  /// Start/end timestamps for one administration (see [AdministrationTimer]).
+  /// `startAdministrationTimer` runs when the delivery screen is opened;
+  /// `administrationEndTime` and `administrationTimeFlag` run at submit.
+  void _registerAdministrationTimerFunctions() {
+    final timer = AdministrationTimer.instance;
+
+    FunctionRegistry.register('startAdministrationTimer', (args, stateData) {
+      return timer.start();
+    });
+
+    FunctionRegistry.register('administrationEndTime', (args, stateData) {
+      return timer.end();
+    });
+
+    // args: [startTime] - the value startAdministrationTimer returned.
+    FunctionRegistry.register('administrationTimeFlag', (args, stateData) {
+      final startTime =
+          args.isEmpty ? null : int.tryParse(args.first?.toString() ?? '');
+      if (startTime == null) return null;
+      return timer.flag(startTime);
+    });
   }
 
   /// Wires app-side data into the forms engine's built-in functions.
