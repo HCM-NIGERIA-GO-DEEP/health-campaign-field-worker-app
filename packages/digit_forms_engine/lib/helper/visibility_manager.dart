@@ -5,6 +5,15 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 typedef FormData = Map<String, dynamic>;
 
+/// Visibility last applied to each control.
+///
+/// `toggleControlVisibility` runs from the form builder's `build()` for every
+/// field with a `visibilityCondition`. Acting only when the visibility
+/// changes keeps `updateValueAndValidity` (whose status event rebuilds the
+/// `ReactiveFormConsumer` that called us) from re-triggering the same build
+/// on every frame. Keyed on the control object, so a fresh form starts clean.
+final Expando<bool> _appliedVisibility = Expando<bool>('appliedVisibility');
+
 class VisibilityManager {
   final Map<String, PropertySchema> schemaMap;
   final FormGroup form;
@@ -68,6 +77,11 @@ class VisibilityManager {
     if (!form.contains(key)) return;
 
     final control = form.control(key);
+
+    // Same visibility as last time: nothing to apply, and emitting a status
+    // event here would rebuild the page that is evaluating us.
+    if (_appliedVisibility[control] == isVisible) return;
+    _appliedVisibility[control] = isVisible;
 
     if (isVisible) {
       control.setValidators(buildValidators(schema));

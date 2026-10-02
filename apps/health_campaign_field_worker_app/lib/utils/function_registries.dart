@@ -95,6 +95,14 @@ class FunctionRegistries {
       return forms_utils.functionRegistry['calculatePartial']?.call(args) ?? 0;
     });
 
+    // Wastage, in display units, for a return. Delegates to the forms
+    // engine's `calculateWastage` so a submit action stores the same value
+    // the form auto-fills.
+    // args: [returned, partial, productVariantId]
+    FunctionRegistry.register('calculateWastage', (args, stateData) {
+      return forms_utils.functionRegistry['calculateWastage']?.call(args) ?? 0;
+    });
+
     FunctionRegistry.register('getQuantityLabel', (args, stateData) {
       if (args.isEmpty) return 'APPONE_INVENTORY_QUANTITY_RECEIVED_LABEL';
       final sku = args.first?.toString() ?? '';
@@ -653,6 +661,10 @@ class FunctionRegistries {
     // stock_balance_executor.dart), so unaccepted/in-transit records should
     // not show as received stock. Other report types (dispatch/returned/
     // damaged/loss) never carry an ACCEPTED status and are left unfiltered.
+    //
+    // Cycle handling mirrors the stock reconciliation screen so both show the
+    // same stock: with no active cycle every record is kept, and a record
+    // without the date field falls back to its audit lastModifiedTime.
     // args: [records, dateFieldKey, reportType?] e.g. (StockModel, 'dateOfEntry', navigation.reportType)
     FunctionRegistry.register('filterRecordsWithinCurrentCycle',
         (args, stateData) {
@@ -674,7 +686,11 @@ class FunctionRegistries {
         (cycle) => cycle.startDate <= now && cycle.endDate >= now,
       );
 
-      if (currentCycle == null) return <dynamic>[];
+      int? toMillis(dynamic value) =>
+          value is int ? value : int.tryParse(value?.toString() ?? '');
+      int? auditTime(dynamic auditDetails) => auditDetails is Map
+          ? toMillis(auditDetails['lastModifiedTime'])
+          : null;
 
       return records.where((record) {
         // Rows sourced from contextData (e.g. StockModel/StockReconciliationModel)
@@ -689,21 +705,20 @@ class FunctionRegistries {
           return false;
         }
 
-        final rawDate = recordMap[dateField];
-        final dateValue =
-            rawDate is int ? rawDate : int.tryParse(rawDate?.toString() ?? '');
-        if (dateValue == null) return false;
-        if (dateValue < currentCycle.startDate ||
-            dateValue > currentCycle.endDate) {
-          return false;
-        }
-
         if (requireAccepted &&
             getAdditionalFieldValue(recordMap, 'status') != 'ACCEPTED') {
           return false;
         }
 
-        return true;
+        if (currentCycle == null) return true;
+
+        final dateValue = toMillis(recordMap[dateField]) ??
+            auditTime(recordMap['auditDetails']) ??
+            auditTime(recordMap['clientAuditDetails']);
+        if (dateValue == null) return false;
+
+        return dateValue >= currentCycle.startDate &&
+            dateValue <= currentCycle.endDate;
       }).toList();
     });
   }

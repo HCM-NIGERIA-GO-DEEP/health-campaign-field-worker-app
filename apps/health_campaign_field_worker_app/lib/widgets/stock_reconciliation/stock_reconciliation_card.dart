@@ -479,7 +479,10 @@ class _StockReconciliationCardState
       return stockEntryDate >= cycleStartDate && stockEntryDate <= cycleEndDate;
     }).toList();
 
-    // Calculate metrics using common utility
+    // Calculate metrics using common utility. The balance is worked out in
+    // display units (ml on a liquid campaign), where partial-used and wastage
+    // are recorded, then reconciled in base units (bottles), the unit stock
+    // is physically counted and persisted in.
     final calculatedMetrics = StockCalculationUtils.calculateStockMetrics(
       stockList: filteredStocks,
       facilityId: facilityId,
@@ -487,7 +490,7 @@ class _StockReconciliationCardState
       loggedInUserUuid: loggedInUserUuid,
       multiplier: StockConstants.multiplier,
       calculatePartial: StockConstants.deductPartialUsed,
-    );
+    ).map((key, value) => MapEntry(key, StockConstants.toBaseUnit(value)));
 
     setState(() {
       _stockMetrics = calculatedMetrics;

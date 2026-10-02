@@ -380,15 +380,15 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
     }
   }
 
+  /// Epoch millis for a `startDate` / `endDate` validation rule, or null when
+  /// the rule is absent or unresolvable. Accepts integer epochs and the
+  /// keyword `today` (see date_bound_resolver.dart).
   int? _safeTimestamp(String type) {
     final v = widget.schema.validations
         ?.firstWhereOrNull((item) => item.type == type)
         ?.value;
 
-    if (v == null) return null;
-    if (v is! int) return null; // avoid type mismatch
-
-    return v;
+    return resolveDateBoundMillis(v, endOfDay: type == 'endDate');
   }
 
   /// Handle `string` type formats
