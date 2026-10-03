@@ -654,7 +654,49 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
                             },
                           )
                         : const SizedBox.shrink(),
-                    actions: null,
+                    actions: [
+                      if (showDrawer)
+                        BlocBuilder<BoundaryBloc, BoundaryState>(
+                          builder: (context, state) {
+                            bool isDistributor = context.loggedInUserRoles
+                                .where(
+                                  (role) =>
+                                      role.code ==
+                                      RolesType.distributor.toValue(),
+                                )
+                                .toList()
+                                .isNotEmpty;
+
+                            final selectedBoundary = isDistributor
+                                ? (state.selectedBoundaryMap.values.lastOrNull
+                                        ?.code ??
+                                    state.allSelectedLastLevelBoundaries
+                                        .firstOrNull?.code)
+                                : state.boundaryList.firstOrNull?.code;
+
+                            return selectedBoundary != null
+                                ? DigitButton(
+                                    label: AppLocalizations.of(context)
+                                        .translate(selectedBoundary),
+                                    suffixIcon: Icons.arrow_drop_down,
+                                    type: DigitButtonType.tertiary,
+                                    size: DigitButtonSize.large,
+                                    onPressed: () {
+                                      if (context.router.topRoute.name !=
+                                          CurrentBoundaryRoute.name) {
+                                        context.router
+                                            .push(CurrentBoundaryRoute());
+                                      }
+                                    },
+                                    iconColor:
+                                        theme.colorTheme.generic.background,
+                                    textColor:
+                                        theme.colorTheme.generic.background,
+                                  )
+                                : const SizedBox.shrink();
+                          },
+                        ),
+                    ],
                   ),
                   drawer: showDrawer ? drawerWidget(context) : null,
                   body: MultiRepositoryProvider(
