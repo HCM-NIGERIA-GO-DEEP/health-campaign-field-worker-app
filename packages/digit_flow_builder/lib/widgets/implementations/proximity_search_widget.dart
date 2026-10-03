@@ -191,7 +191,6 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
       'searchBar',
       'idSearchBar',
       'nationalIdSearchBar',
-      'voterIdSearchBar',
       'phoneNumberSearchBar',
     ];
 

@@ -96,7 +96,6 @@ void main() {
           'searchBar': 'John',
           'idSearchBar': '123456789012',
           'nationalIdSearchBar': '98765432109',
-          'voterIdSearchBar': 'V1234567890123456789',
           'phoneNumberSearchBar': '76123456',
         },
       ),
@@ -138,7 +137,7 @@ void main() {
   }
 
   testWidgets(
-    'enabling Proximity clears every search bar (Name, Beneficiary/National/Voter ID, Phone Number)',
+    'enabling Proximity clears every search bar (Name, Beneficiary/National ID, Phone Number)',
     (tester) async {
       await pumpWidget(tester);
 
@@ -155,7 +154,6 @@ void main() {
         'searchBar',
         'idSearchBar',
         'nationalIdSearchBar',
-        'voterIdSearchBar',
         'phoneNumberSearchBar',
       ]) {
         expect(widgetData![key], '', reason: '$key should be cleared');

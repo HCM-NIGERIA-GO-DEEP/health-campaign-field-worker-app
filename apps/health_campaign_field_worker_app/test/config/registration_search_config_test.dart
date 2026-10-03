@@ -4,8 +4,9 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Structural lint for the Search Households screen's searchBeneficiary
-/// widgets in REGISTRATION.json (National ID / Voter ID / Phone Number
-/// search, modeled on the existing Beneficiary ID search).
+/// widgets in REGISTRATION.json: Name, an explicit Beneficiary ID toggle,
+/// a National ID toggle covering any of National ID/Voter ID/Passport/
+/// Driver's License, and Phone Number.
 ///
 /// This does not exercise digit_flow_builder's runtime - it only guards the
 /// invariants that runtime depends on but does not itself validate, so a
@@ -58,7 +59,7 @@ void main() {
   }
 
   group('search bars', () {
-    const idBars = ['idSearchBar', 'nationalIdSearchBar', 'voterIdSearchBar'];
+    const idBars = ['idSearchBar', 'nationalIdSearchBar'];
 
     for (final fieldName in idBars) {
       test('$fieldName has identifierId at data[0] (search_bar_widget.dart only injects into index 0)', () {
@@ -85,22 +86,25 @@ void main() {
       expect(typeFilter['operation'], 'equals');
     });
 
-    test('nationalIdSearchBar is scoped to identifierType=NATIONAL_ID with minSearchChars 11', () {
+    test('nationalIdSearchBar matches any of National ID/Voter ID/Passport/Driver\'s License', () {
       final bar = widgetNamed('nationalIdSearchBar');
       final data = onActionDataFor(bar);
+      final idFilter = data.firstWhere((d) => d['key'] == 'identifierId');
       final typeFilter = data.firstWhere((d) => d['key'] == 'identifierType');
 
-      expect(typeFilter['value'], 'NATIONAL_ID');
-      expect(bar['minSearchChars'], 11);
-    });
-
-    test('voterIdSearchBar is scoped to identifierType=VOTER_ID with minSearchChars 19', () {
-      final bar = widgetNamed('voterIdSearchBar');
-      final data = onActionDataFor(bar);
-      final typeFilter = data.firstWhere((d) => d['key'] == 'identifierType');
-
-      expect(typeFilter['value'], 'VOTER_ID');
-      expect(bar['minSearchChars'], 19);
+      // "in" (not "equals") so any of the 4 ID types match the same box,
+      // and "contains" (not "equals") so short/partial test values still
+      // trigger a search instead of requiring the full exact ID upfront.
+      expect(idFilter['operation'], 'contains');
+      expect(typeFilter['operation'], 'in');
+      expect(
+        typeFilter['value'],
+        containsAll(['NATIONAL_ID', 'VOTER_ID', 'PASSPORT', 'DRIVERS_LICENSE']),
+      );
+      // Low enough that short test IDs (e.g. 6 chars) still fire a search -
+      // a minSearchChars mismatched to real ID lengths silently no-ops the
+      // whole search bar.
+      expect(bar['minSearchChars'], lessThanOrEqualTo(3));
     });
 
     test('phoneNumberSearchBar requires 8 digits and roots on individual', () {
@@ -110,13 +114,28 @@ void main() {
       expect(bar['minSearchChars'], 8);
       expect(data.first['root'], 'individual');
     });
+
+    test('searchBar (Name) matches both first and last name, not just a givenName prefix', () {
+      final data = onActionDataFor(widgetNamed('searchBar'));
+      final nameFilter = data.first;
+
+      // A single-column "contains" on givenName only ever does a prefix
+      // match (col LIKE 'value%'), so typing "John Smith" against a
+      // givenName column that only holds "John" never matches once the
+      // family name is typed. "containsAll" on the combined
+      // "givenName,familyName" key requires each whitespace-separated
+      // token to match either column, so first-name-only and
+      // first-plus-last-name both find the household.
+      expect(nameFilter['key'], 'givenName,familyName');
+      expect(nameFilter['operation'], 'containsAll');
+    });
   });
 
   group('toggles', () {
     const toggles = [
       'nameSearch',
+      'beneficiaryIdSearch',
       'nationalIdSearch',
-      'voterIdSearch',
       'phoneNumberSearch',
     ];
 
@@ -137,13 +156,16 @@ void main() {
         );
       });
 
-      test('$fieldName toggle clears identifierType and mobileNumber filterKeys', () {
+      test('$fieldName toggle clears identifierType, mobileNumber and the combined name filterKeys', () {
         final toggle = widgetNamed(fieldName);
         final action = (toggle['onAction'] as List).first as Map<String, dynamic>;
         final filterKeys =
             (action['properties']['filterKeys'] as List).cast<String>();
 
-        expect(filterKeys, containsAll(['identifierType', 'mobileNumber']));
+        expect(
+          filterKeys,
+          containsAll(['givenName,familyName', 'identifierId', 'identifierType', 'mobileNumber']),
+        );
       });
 
       test('$fieldName toggle clears every search bar widgetKey', () {
@@ -158,7 +180,6 @@ void main() {
             'searchBar',
             'idSearchBar',
             'nationalIdSearchBar',
-            'voterIdSearchBar',
             'phoneNumberSearchBar',
           ]),
         );
