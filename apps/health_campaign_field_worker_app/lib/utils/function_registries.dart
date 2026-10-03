@@ -11,7 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models/entities/roles_type.dart';
-import 'extensions/extensions.dart';
+import 'utils.dart';
 
 class FunctionRegistries {
   final BuildContext context;
@@ -39,6 +39,29 @@ class FunctionRegistries {
 
       if (number == null) return raw.toString();
       return number == number.roundToDouble() ? number.toInt() : number;
+    });
+
+    // Clamps a dose-criteria-configured number to a maximum (defaulting to
+    // maxDeliveryQuantityPerHousehold), formatting it the same way
+    // trimTrailingZero does. Used anywhere a displayed ITN quantity is read
+    // directly from project config, bypassing the ResourceCard widget that
+    // enforces this same cap on the quantity actually entered for delivery.
+    // Usage: "{{fn:capNumber(path.to.quantity, 3)}}"
+    FunctionRegistry.register('capNumber', (args, stateData) {
+      if (args.isEmpty || args.first == null) return '';
+
+      final raw = args.first;
+      final number = raw is num ? raw : num.tryParse(raw.toString().trim());
+      if (number == null) return raw.toString();
+
+      final maxArg = args.length > 1 ? args[1] : null;
+      final max = maxArg is num
+          ? maxArg
+          : num.tryParse(maxArg?.toString() ?? '') ??
+              maxDeliveryQuantityPerHousehold;
+
+      final capped = number > max ? max : number;
+      return capped == capped.roundToDouble() ? capped.toInt() : capped;
     });
 
     FunctionRegistry.register('safeString', (args, stateData) {
@@ -626,8 +649,15 @@ class FunctionRegistries {
           final productName =
               variant['name']?.toString() ?? productId ?? 'Unknown';
           if (productId == null || productId.isEmpty) continue;
-          final quantity =
+          final rawQuantity =
               double.tryParse(variant['quantity']?.toString() ?? '1') ?? 1.0;
+          // Cap to the same per-household maximum ResourceCard enforces on
+          // the quantity actually entered, so this check (and the "required"
+          // figure shown in the insufficient-stock message) never demands
+          // more stock than a delivery could ever actually use.
+          final quantity = rawQuantity > maxDeliveryQuantityPerHousehold
+              ? maxDeliveryQuantityPerHousehold.toDouble()
+              : rawQuantity;
           final key = productId;
           final balance = cache.cache[key] ?? 0.0;
           if (balance < quantity) {
@@ -695,8 +725,14 @@ class FunctionRegistries {
         final productId = resource['productVariantId']?.toString();
         if (productId == null || productId.isEmpty) continue;
 
-        final quantity =
+        final rawQuantity =
             double.tryParse(resource['quantity']?.toString() ?? '1') ?? 1.0;
+        // A redose must never ask for more than the per-household cap
+        // either, even for a historical task recorded before this cap
+        // existed.
+        final quantity = rawQuantity > maxDeliveryQuantityPerHousehold
+            ? maxDeliveryQuantityPerHousehold.toDouble()
+            : rawQuantity;
         final balance = cache.cache[productId] ?? 0.0;
         if (balance < quantity) {
           insufficientProducts.add({

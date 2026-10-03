@@ -3,6 +3,7 @@ library app_utils;
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math' as math;
 
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:crypto/crypto.dart';
@@ -280,6 +281,16 @@ String maskString(String input) {
 
   return maskedString;
 }
+
+/// The hard cap on how many ITN units a single household may be offered for
+/// delivery, regardless of what the project's dose criteria configure.
+const maxDeliveryQuantityPerHousehold = 3;
+
+/// Clamps a dose-criteria-configured quantity to [maxDeliveryQuantityPerHousehold].
+/// Null (no quantity configured) stays null.
+int? capDeliveryQuantity(int? quantity,
+        {int maxQuantity = maxDeliveryQuantityPerHousehold}) =>
+    quantity == null ? null : math.min(quantity, maxQuantity);
 
 /// Counts how many entries in [epochMillis] fall on each calendar date, per
 /// [epochToDateString]. Used for the Summary Report's "Tokens Used" column:
