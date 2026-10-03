@@ -1147,7 +1147,7 @@ final jsonConfig = {
           "additionalDetail": {
             "supervisorName": "complaintDetails.supervisorName",
             "supervisorContactNumber":
-                "complaintDetails.supervisorContactNumber ",
+                "complaintDetails.supervisorContactNumber",
             "otherComplaintDescription": "complaintType.otherReason"
           },
           "clientAuditDetails": "__generate:clientAudit"
