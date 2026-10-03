@@ -450,8 +450,13 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     final isDistributor = context.loggedInUserRoles.any(
       (role) => role.code == RolesType.distributor.toValue(),
     );
+    final isRegistrar = context.loggedInUserRoles.any(
+      (role) => role.code == RolesType.registrar.toValue(),
+    );
 
-    if (isDistributor == false) return;
+    // Summary report is shown to both roles, so both need their
+    // server-side stats synced down (previously distributor-only).
+    if (!isDistributor && !isRegistrar) return;
     final facilityId = userObject.uuid;
 
     if (facilityId.isEmpty) return;

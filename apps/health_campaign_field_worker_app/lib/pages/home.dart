@@ -2938,7 +2938,8 @@ class _HomePageState extends LocalizedState<HomePage> {
     final userRoleCodes = state.userModel.roles.map((e) => e.code).toList();
     final isDistributor =
         userRoleCodes.contains(RolesType.distributor.toValue());
-    if (isDistributor) {
+    final isRegistrar = userRoleCodes.contains(RolesType.registrar.toValue());
+    if (isDistributor || isRegistrar) {
       if (!filteredLabels.contains(i18.home.summaryReportLabel)) {
         filteredLabels.add(i18.home.summaryReportLabel);
       }

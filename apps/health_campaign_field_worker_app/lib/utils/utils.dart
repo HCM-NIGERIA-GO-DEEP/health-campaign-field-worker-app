@@ -281,6 +281,39 @@ String maskString(String input) {
   return maskedString;
 }
 
+/// Counts how many entries in [epochMillis] fall on each calendar date, per
+/// [epochToDateString]. Used for the Summary Report's "Tokens Used" column:
+/// one count per Beneficiary ID pool token actually assigned that day.
+/// Callers are expected to have already filtered out null timestamps.
+Map<String, int> countByDate(
+  Iterable<int> epochMillis,
+  String Function(int) epochToDateString,
+) {
+  final result = <String, int>{};
+  for (final epochMs in epochMillis) {
+    final date = epochToDateString(epochMs);
+    result[date] = (result[date] ?? 0) + 1;
+  }
+  return result;
+}
+
+/// Groups [keyedByEpoch] (a key, e.g. a beneficiary reference, paired with
+/// its epoch millis) by the calendar date derived from each entry's epoch,
+/// collecting the distinct set of keys seen per date. Used for the Summary
+/// Report's "Tokens Redeemed" column: distinct households/beneficiaries
+/// delivered to on each day, as opposed to total units distributed.
+Map<String, Set<String>> groupDistinctKeysByDate(
+  List<MapEntry<String, int>> keyedByEpoch,
+  String Function(int) epochToDateString,
+) {
+  final result = <String, Set<String>>{};
+  for (final entry in keyedByEpoch) {
+    final date = epochToDateString(entry.value);
+    (result[date] ??= <String>{}).add(entry.key);
+  }
+  return result;
+}
+
 List<MdmsMasterDetailModel> getMasterDetailsModel(List<String> masterNames) {
   return masterNames.map((e) => MdmsMasterDetailModel(e)).toList();
 }

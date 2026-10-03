@@ -94,24 +94,33 @@ class UpdateIdentifierStatusExecutor extends ActionExecutor {
             final currentUserUuid =
                 FlowBuilderSingleton().loggedInUserUuid ?? '';
 
-            final updatedClientAudit =
-                uniqueIdPoolModel.clientAuditDetails != null
-                    ? uniqueIdPoolModel.clientAuditDetails!.copyWith(
-                        lastModifiedBy: currentUserUuid,
-                        lastModifiedTime: now,
-                      )
-                    : ClientAuditDetails(
-                        createdBy: uniqueIdPoolModel.auditDetails?.createdBy ??
+            // UniqueIdPool's table has no client-audit columns (only
+            // audit_created_time/audit_modified_time - see
+            // tables/unique_id_pool.dart), and UniqueIdPoolModel.companion
+            // only ever reads `auditDetails` into them, never
+            // `clientAuditDetails`. Setting clientAuditDetails here (as a
+            // prior version of this code did) gets silently dropped on
+            // write, leaving this row's modified time stuck at whatever it
+            // was before - so `auditDetails` is updated instead.
+            final updatedAuditDetails = uniqueIdPoolModel.auditDetails != null
+                ? uniqueIdPoolModel.auditDetails!.copyWith(
+                    lastModifiedBy: currentUserUuid,
+                    lastModifiedTime: now,
+                  )
+                : AuditDetails(
+                    createdBy:
+                        uniqueIdPoolModel.clientAuditDetails?.createdBy ??
                             currentUserUuid,
-                        createdTime:
-                            uniqueIdPoolModel.auditDetails?.createdTime ?? now,
-                        lastModifiedBy: currentUserUuid,
-                        lastModifiedTime: now,
-                      );
+                    createdTime:
+                        uniqueIdPoolModel.clientAuditDetails?.createdTime ??
+                            now,
+                    lastModifiedBy: currentUserUuid,
+                    lastModifiedTime: now,
+                  );
 
             final updatedUniqueId = uniqueIdPoolModel.copyWith(
               status: IdStatus.assigned.toValue(),
-              clientAuditDetails: updatedClientAudit,
+              auditDetails: updatedAuditDetails,
             );
 
             uniqueIdPoolToUpdate.add(updatedUniqueId);
