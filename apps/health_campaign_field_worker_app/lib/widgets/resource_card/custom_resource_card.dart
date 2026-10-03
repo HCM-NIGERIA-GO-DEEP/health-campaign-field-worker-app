@@ -43,6 +43,7 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
   static const _resourceDeliveredKey = 'resourceDelivered';
   static const _quantityDistributedKey = 'quantityDistributed';
   static const _resourceCardKey = 'resourceCard';
+
   late List<int?> _maxQuantities;
 
   bool _toastShown = false;
@@ -276,7 +277,8 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
                                 variants: productVariants,
                                 onProductChanged: (index, product) {
                                   setState(() {
-                                    _maxQuantities[index] = product.quantity;
+                                    _maxQuantities[index] =
+                                        capDeliveryQuantity(product.quantity);
                                   });
                                 },
                                 onDelete: (index) {
@@ -511,7 +513,7 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
     _maxQuantities = List<int?>.generate(
       _controllers.length,
       (index) => (productVariants != null && index < productVariants.length)
-          ? productVariants[index].quantity
+          ? capDeliveryQuantity(productVariants[index].quantity)
           : null,
     );
 
@@ -538,9 +540,12 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
           final index = _controllers.indexOf(e);
           return FormControl<int>(
             value: (productVariants != null && index < productVariants.length)
-                ? productVariants[index].quantity
+                ? capDeliveryQuantity(productVariants[index].quantity)
                 : 0,
-            validators: [Validators.min(1)],
+            validators: [
+              Validators.min(1),
+              Validators.max(maxDeliveryQuantityPerHousehold),
+            ],
           );
         }).toList(),
       ),
