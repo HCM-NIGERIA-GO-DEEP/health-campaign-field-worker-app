@@ -154,6 +154,22 @@ class ReverseFormMapper {
       final listModelConfig = listModelEntry.value;
       final mappings = listModelConfig['mappings'] ?? {};
 
+      // IdentifierModel's forward mapping for "listSource:
+      // __context:identifierEntries" (see transformer_config.dart) reads
+      // its two slots - the hidden Beneficiary ID and the separately
+      // captured Identification Type/Number pair - from a pre-built
+      // {identifierType, identifierId} map, not from form field paths, so
+      // its "mappings" values ("identifierType", "identifierId") are item
+      // keys, not form paths - reusing them below via _setNestedValue would
+      // write into meaningless top-level "identifierType"/"identifierId"
+      // form keys instead of the real fields, so this case needs its own
+      // reversal back to which of the two real form fields each existing
+      // identifier belongs to.
+      if (listModelConfig['listSource'] == '__context:identifierEntries') {
+        _applyIdentifierEntriesReverseMapping(formData, modelInstance, listKey);
+        continue;
+      }
+
       // Find the actual field name in the model instance
       String? listFieldName = listModelConfig['field'];
 
@@ -198,6 +214,46 @@ class ReverseFormMapper {
 
           _setNestedValue(formData, formFieldPath, modelValue);
         }
+      }
+    }
+  }
+
+  /// Reverses an existing entity's identifier list back into the two real
+  /// form fields `identifierEntries` is built from on submit (see
+  /// TransformerExecutor.buildIdentifierEntries): the hidden Beneficiary ID
+  /// slot (type UNIQUE_BENEFICIARY_ID/DEFAULT) goes back into the combined
+  /// "type,value" `identifiers` field it originally came from, while any
+  /// other identifier (a real captured National ID/Voter ID/Passport/
+  /// Driver's License) goes into `identificationType`/`identificationNumber`
+  /// so editing a household doesn't drop it for having come back blank.
+  void _applyIdentifierEntriesReverseMapping(
+      Map<String, dynamic> formData,
+      Map<String, dynamic> modelInstance,
+      String listKey,
+      ) {
+    final baseNameWithModel = listKey.replaceAll('Model', '');
+    final baseName =
+        baseNameWithModel[0].toLowerCase() + baseNameWithModel.substring(1);
+    final listFieldName = '${baseName}s';
+
+    final List<dynamic> listItems = modelInstance[listFieldName] ?? [];
+    const hiddenIdentifierTypes = {'UNIQUE_BENEFICIARY_ID', 'DEFAULT'};
+
+    for (final item in listItems) {
+      if (item is! Map<String, dynamic>) continue;
+
+      final identifierType = item['identifierType'];
+      final identifierId = item['identifierId'];
+      if (identifierType == null || identifierId == null) continue;
+
+      if (hiddenIdentifierTypes.contains(identifierType)) {
+        _setNestedValue(
+            formData, 'householdDetails.identifiers', '$identifierType,$identifierId');
+      } else {
+        _setNestedValue(
+            formData, 'householdDetails.identificationType', identifierType);
+        _setNestedValue(
+            formData, 'householdDetails.identificationNumber', identifierId);
       }
     }
   }

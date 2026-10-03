@@ -550,6 +550,31 @@ class FunctionRegistries {
       return false;
     });
 
+    // Distinguishes a household marked closed (via Mark Closed Household or
+    // a declined consent) from a normal not-yet-delivered one, so search can
+    // show "Closed Household" instead of "Delivery Pending" for it. Once the
+    // household is reopened and its details are filled in, its task status
+    // moves off CLOSED_HOUSEHOLD (see the HOUSEHOLD flow's isEdit &&
+    // isClosedHousehold branch in REGISTRATION.json), so this naturally
+    // stops matching and it falls back to the normal pending display.
+    FunctionRegistry.register("isHouseholdMarkedClosed", (args, stateData) {
+      if (args.isEmpty || args.first == null) return false;
+      final tasks = args.first;
+
+      if (tasks is! List || tasks.isEmpty) return false;
+
+      String? getStatus(dynamic task) {
+        if (task is Map) return task['status']?.toString()?.toUpperCase();
+        try {
+          return (task as dynamic).status?.toString()?.toUpperCase();
+        } catch (_) {
+          return null;
+        }
+      }
+
+      return getStatus(tasks.last) == 'CLOSED_HOUSEHOLD';
+    });
+
     // Returns a formatted message listing each product's available balance.
     FunctionRegistry.register('getRegistrationInsufficientStockMessage',
         (args, stateData) {

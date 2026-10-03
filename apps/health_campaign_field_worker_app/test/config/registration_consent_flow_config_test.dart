@@ -5,13 +5,15 @@ import 'package:flutter_test/flutter_test.dart';
 
 /// Structural lint for the Household Head Consent flow in REGISTRATION.json.
 ///
-/// Per the latest product decision, a "No" consent answer must NOT invoke
-/// the real, existing CLOSEDHOUSEHOLD feature (CLOSEHOUSEHOLD.json). Instead
-/// it reuses the pre-existing (unmodified) "householdConsentRegistration"
-/// transformer config to create a minimal, self-contained "household noted,
-/// consent declined" HouseholdModel record, then shows a dedicated
-/// acknowledgement screen. A "Yes" answer must fall through to the existing,
-/// unmodified Household Registration flow.
+/// A "No" consent answer must NOT navigate into the real, existing
+/// CLOSEDHOUSEHOLD feature's own screens (CLOSEHOUSEHOLD.json). It does,
+/// however, intentionally reuse that feature's entity-complete creation
+/// pattern (Household/Individual placeholder/Identifier placeholder/Address/
+/// HouseholdMember/ProjectBeneficiary/Task with status CLOSED_HOUSEHOLD) via
+/// a dedicated "householdConsentDeclinedRegistration" transformer config, so
+/// the household is never left without the entities the existing isEdit
+/// reopen path already expects to find and update. A "Yes" answer must fall
+/// through to the existing, unmodified Household Registration flow.
 void main() {
   late Map<String, dynamic> config;
   late Map<String, dynamic> householdFlow;
@@ -98,7 +100,7 @@ void main() {
     expect(consentIndex, lessThan(defaultIndex));
   });
 
-  test('consent-declined branch reuses the existing householdConsentRegistration transformer config, unmodified', () {
+  test('consent-declined branch creates a full entity-complete placeholder household via householdConsentDeclinedRegistration', () {
     final onAction =
         (householdFlow['onAction'] as List).cast<Map<String, dynamic>>();
     final consentBranch = onAction.firstWhere((c) =>
@@ -111,19 +113,21 @@ void main() {
     expect(actionTypes, ['FETCH_TRANSFORMER_CONFIG', 'CREATE_EVENT', 'NAVIGATION']);
     expect(
       actions[0]['properties']['configName'],
-      'householdConsentRegistration',
+      'householdConsentDeclinedRegistration',
     );
     expect(actions[2]['properties']['name'], 'caregiverAcknowledgement');
   });
 
-  test('consent-declined branch does not reference the real Closed Household feature', () {
+  test('consent-declined branch does not navigate into the real Closed Household feature\'s own screens', () {
     final serialized = jsonEncode(householdFlow);
 
     expect(serialized.contains('CLOSEDHOUSEHOLD'), isFalse);
     expect(serialized.contains('CLOSEHOUSEHOLD'), isFalse);
   });
 
-  test('caregiverAcknowledgement screen exists with safe navigation actions back to search', () {
+  test(
+      'caregiverAcknowledgement goes straight back to search - no "View Household Details" '
+      'option, since the declined household has no captured details worth showing', () {
     final flows = (config['flows'] as List).cast<Map<String, dynamic>>();
     final ackFlow =
         flows.firstWhere((f) => f['name'] == 'caregiverAcknowledgement');
@@ -132,19 +136,15 @@ void main() {
 
     final panelCard =
         (ackFlow['body'] as List).cast<Map<String, dynamic>>().first;
-    final primaryAction = panelCard['primaryAction'] as Map<String, dynamic>;
-    final secondaryAction = panelCard['secondaryAction'] as Map<String, dynamic>;
 
+    expect(panelCard.containsKey('secondaryAction'), isFalse);
+
+    final primaryAction = panelCard['primaryAction'] as Map<String, dynamic>;
     final primaryNavProps = (primaryAction['onAction'] as List)
         .cast<Map<String, dynamic>>()
         .first['properties'] as Map<String, dynamic>;
-    final secondaryNavProps = (secondaryAction['onAction'] as List)
-        .cast<Map<String, dynamic>>()
-        .first['properties'] as Map<String, dynamic>;
 
-    expect(primaryNavProps['name'], 'householdOverview');
-    expect(secondaryNavProps['name'], 'searchBeneficiary');
+    expect(primaryNavProps['name'], 'searchBeneficiary');
     expect(primaryNavProps['popUntilPageName'], 'searchBeneficiary');
-    expect(secondaryNavProps['popUntilPageName'], 'searchBeneficiary');
   });
 }
