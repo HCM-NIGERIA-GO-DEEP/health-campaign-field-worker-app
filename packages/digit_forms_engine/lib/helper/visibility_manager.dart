@@ -1,3 +1,4 @@
+import 'package:collection/collection.dart';
 import 'package:digit_forms_engine/forms_engine.dart';
 import 'package:digit_forms_engine/helper/validator_helper.dart';
 import 'package:digit_forms_engine/utils/utils.dart';
@@ -5,14 +6,31 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 typedef FormData = Map<String, dynamic>;
 
-/// Visibility last applied to each control.
+/// Visibility and validation rules last applied to each control.
 ///
 /// `toggleControlVisibility` runs from the form builder's `build()` for every
-/// field with a `visibilityCondition`. Acting only when the visibility
+/// field with a `visibilityCondition`. Acting only when either of them
 /// changes keeps `updateValueAndValidity` (whose status event rebuilds the
 /// `ReactiveFormConsumer` that called us) from re-triggering the same build
 /// on every frame. Keyed on the control object, so a fresh form starts clean.
-final Expando<bool> _appliedVisibility = Expando<bool>('appliedVisibility');
+///
+/// The rules are part of the key because a schema can gain rules after its
+/// controls exist, e.g. the stock-in-hand `max` on a quantity field that
+/// arrives once an async stock search finishes. Those must still reach the
+/// control even though its visibility never changed.
+final Expando<_AppliedVisibility> _appliedVisibility =
+    Expando<_AppliedVisibility>('appliedVisibility');
+
+class _AppliedVisibility {
+  final bool isVisible;
+  final List<ValidationRule>? validations;
+
+  const _AppliedVisibility(this.isVisible, this.validations);
+
+  bool matches(bool visible, List<ValidationRule>? rules) =>
+      isVisible == visible &&
+      const DeepCollectionEquality().equals(validations, rules);
+}
 
 class VisibilityManager {
   final Map<String, PropertySchema> schemaMap;
@@ -78,10 +96,14 @@ class VisibilityManager {
 
     final control = form.control(key);
 
-    // Same visibility as last time: nothing to apply, and emitting a status
-    // event here would rebuild the page that is evaluating us.
-    if (_appliedVisibility[control] == isVisible) return;
-    _appliedVisibility[control] = isVisible;
+    // Same visibility and rules as last time: nothing to apply, and emitting
+    // a status event here would rebuild the page that is evaluating us.
+    if (_appliedVisibility[control]?.matches(isVisible, schema.validations) ==
+        true) {
+      return;
+    }
+    _appliedVisibility[control] =
+        _AppliedVisibility(isVisible, schema.validations);
 
     if (isVisible) {
       control.setValidators(buildValidators(schema));
