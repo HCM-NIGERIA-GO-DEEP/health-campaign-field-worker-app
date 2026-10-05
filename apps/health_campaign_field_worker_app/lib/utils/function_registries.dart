@@ -33,6 +33,14 @@ class FunctionRegistries {
     _registerViewTransactionFunctions();
     _registerAdministrationTimerFunctions();
     _registerFormsEngineHooks();
+
+    // args: [date] - a picked date, as epoch millis.
+    FunctionRegistry.register('toTimestamp', (args, stateData) {
+      final value = args.isEmpty ? null : args.first;
+      if (value is DateTime) return value.millisecondsSinceEpoch;
+      if (value is int) return value;
+      return DateTime.tryParse(value?.toString() ?? '')?.millisecondsSinceEpoch;
+    });
   }
 
   /// Start/end timestamps for one administration (see [AdministrationTimer]).
