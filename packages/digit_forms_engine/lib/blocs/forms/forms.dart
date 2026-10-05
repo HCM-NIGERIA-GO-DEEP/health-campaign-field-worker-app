@@ -244,6 +244,7 @@ class FormsBloc extends Bloc<FormsEvent, FormsState> {
         final rawValue = prop.value;
 
         if (prop.hidden == true && prop.includeInForm != true) continue;
+        if (prop.format == PropertySchemaFormat.heading) continue;
 
         pageValues[propEntry.key] =
             (rawValue is String && rawValue.trim().isEmpty) ? null : rawValue;

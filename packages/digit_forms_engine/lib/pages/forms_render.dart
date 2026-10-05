@@ -1349,6 +1349,9 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
         final fieldName = entry.key;
         final fieldSchema = entry.value;
 
+        // Headings are display-only and have no control
+        if (isHeading(fieldSchema)) continue;
+
         // Skip fields that have any entity suffix (e.g., _item_0, _item_1)
         // These are pre-created entity-specific fields handled separately
         if (RegExp(r'_item_\d+$').hasMatch(fieldName)) {
@@ -1500,7 +1503,9 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
     return properties.entries
         .where((entry) =>
-            entry.value.includeInSummary != false && entry.value.hidden != true)
+            entry.value.includeInSummary != false &&
+            entry.value.hidden != true &&
+            !isHeading(entry.value))
         .map((entry) {
       final label = localizations.translate(entry.value.label ?? entry.key);
       final rawValue = entry.value.value;

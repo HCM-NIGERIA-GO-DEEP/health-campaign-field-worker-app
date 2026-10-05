@@ -216,6 +216,11 @@ bool isHidden(PropertySchema property) {
   return property.hidden == true;
 }
 
+/// Whether the field is a display-only heading line (no control, no value).
+bool isHeading(PropertySchema property) {
+  return property.format == PropertySchemaFormat.heading;
+}
+
 /// Checks if the string can be parsed as a DateTime
 bool isDateTime(String input) {
   if (RegExp(r'^\d{4}-\d{2}-\d{2}').hasMatch(input)) {

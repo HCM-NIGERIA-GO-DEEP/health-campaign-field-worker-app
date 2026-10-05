@@ -395,7 +395,12 @@ enum PropertySchemaFormat {
   idPopulator,
   mobileNumber,
   textArea,
-  text;
+  text,
+
+  /// Display-only heading line (its `label`), e.g. a parent question shown
+  /// above a group of sub-questions. Gets no form control and no value, so it
+  /// is never validated, submitted or listed on the summary page.
+  heading;
 }
 
 enum PropertySchemaType { object, string, integer, boolean, dynamic }

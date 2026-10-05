@@ -38,6 +38,7 @@ class JsonForms extends StatelessWidget {
     final Map<String, AbstractControl<dynamic>> controls = {
       for (final entry in schema.properties!.entries)
         if (entry.value.displayOnly != true &&
+            !isHeading(entry.value) &&
             (!isHidden(entry.value) || entry.value.includeInForm == true))
           entry.key: buildFormControl(
             entry.key,

@@ -366,6 +366,11 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
 
   /// Dispatch to builder based on property type
   Widget _buildByType(FormGroup form) {
+    // A heading renders the same whatever `type` the config gives it
+    if (widget.schema.format == PropertySchemaFormat.heading) {
+      return _buildHeading();
+    }
+
     switch (widget.schema.type) {
       case PropertySchemaType.string:
         return _buildStringType(form);
@@ -378,6 +383,21 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
       case PropertySchemaType.dynamic:
         return _buildCustomComponent() ?? const SizedBox.shrink();
     }
+  }
+
+  /// Handle `heading` format: the field's label as a standalone line, e.g. a
+  /// parent question above its sub-questions. Has no form control.
+  Widget _buildHeading() {
+    final text = translateIfPresent(widget.schema.label, localizations);
+    if (text == null || text.trim().isEmpty) return const SizedBox.shrink();
+
+    final theme = Theme.of(context);
+    return Text(
+      text,
+      style: theme.digitTextTheme(context).headingS.copyWith(
+            color: theme.colorTheme.text.primary,
+          ),
+    );
   }
 
   /// Epoch millis for a `startDate` / `endDate` validation rule, or null when
