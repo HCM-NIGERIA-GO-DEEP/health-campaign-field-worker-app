@@ -31,7 +31,7 @@ class StockConstants {
 
   /// Whether partially used stock counts against stock in hand. A part-used
   /// bottle cannot be re-issued, so a liquid campaign deducts it.
-  static const bool deductPartialUsed = isLiquid;
+  static const bool deductPartialUsed = false;
 
   /// Converts a base-unit amount (as persisted) to display units.
   static double toDisplayUnit(num baseValue) => baseValue * multiplier;
