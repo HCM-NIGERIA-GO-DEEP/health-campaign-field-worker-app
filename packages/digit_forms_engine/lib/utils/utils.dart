@@ -541,7 +541,7 @@ final functionRegistry = {
     final partial = args.length > 1 ? toNum(args[1]) : 0;
     final productVariantId = args.length > 2 ? args[2]?.toString() : null;
 
-    if (returned <= 0) {
+    if (returned < 0) {
       return 0; // Invalid input, return 0 wastage
     }
     final balance = (productVariantId != null && productVariantId.isNotEmpty)
