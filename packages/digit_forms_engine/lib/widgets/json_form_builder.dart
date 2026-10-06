@@ -521,6 +521,17 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
           enums: widget.schema.enums ?? [],
         );
 
+      case PropertySchemaFormat.checkbox:
+        return JsonSchemaCheckboxGroupBuilder(
+          form: form,
+          formControlName: widget.formControlName,
+          enums: widget.schema.enums ?? [],
+          validations: widget.schema.validations,
+          readOnly: _isReadOnly,
+          tooltipText: translateIfPresent(widget.schema.tooltip, localizations),
+          label: translateIfPresent(widget.schema.label, localizations),
+        );
+
       case PropertySchemaFormat.custom:
         return _buildCustomComponent() ?? const SizedBox.shrink();
 
