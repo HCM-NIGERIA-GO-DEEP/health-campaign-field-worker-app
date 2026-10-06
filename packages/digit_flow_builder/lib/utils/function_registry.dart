@@ -465,6 +465,41 @@ bool _isEligibleAge(ProjectTypeModel? projectType, int totalAgeMonths) {
   return false;
 }
 
+/// Checks a member's recorded height against the `height` clauses of the
+/// cycle's dose criteria (e.g. `49<=height && height<=75`). Used alongside
+/// [_isEligibleAge], with the same clause semantics as
+/// [_isEligibleFromDoseCriteria]:
+///   * When no height is recorded on the member, the check passes so
+///     eligibility falls back to the age check.
+///   * Conditions without a `height` clause are ignored; if no condition in
+///     the cycle mentions height, the check passes.
+///   * Otherwise the member is eligible when all `height` clauses of at least
+///     one condition are satisfied.
+bool _isEligibleHeight(ProjectCycle? currentCycle, dynamic individual) {
+  if (currentCycle == null) return false;
+
+  final height = _readAdditionalFieldNumber(individual, 'height');
+  if (height == null) return true;
+
+  final heightClausesPerCondition = (currentCycle.deliveries ??
+          <ProjectCycleDelivery>[])
+      .expand((delivery) => delivery.doseCriteria ?? <DeliveryDoseCriteria>[])
+      .map((criteria) => (criteria.condition?.toLowerCase() ?? '')
+          .replaceAll(' ', '')
+          .replaceAll('&&', 'and')
+          .split('and')
+          .where((clause) => clause.contains('height'))
+          .toList())
+      .where((clauses) => clauses.isNotEmpty)
+      .toList();
+
+  if (heightClausesPerCondition.isEmpty) return true;
+
+  final variables = <String, num>{'height': height};
+  return heightClausesPerCondition.any((clauses) =>
+      clauses.every((clause) => _evaluateClause(clause, variables)));
+}
+
 /// Returns the [doseCriteria] entries that the member matches, as raw maps
 /// (each including its `ProductVariants`) suitable for populating the resource
 /// card.
@@ -792,7 +827,9 @@ void initializeFunctionRegistry() {
     if (currentCycle == null) return false;
 
 // --- Check eligibility (age, plus weight/height when recorded) ---
-    final isWithinAge = _isEligibleAge(projectType, totalAgeMonths);
+    final isWithinAgeAndHeightAndHeight =
+        _isEligibleAge(projectType, totalAgeMonths) &&
+            _isEligibleHeight(currentCycle, individual);
 
 // --- Eligibility logic ---
     bool recordedSideEffect = false;
@@ -856,7 +893,7 @@ void initializeFunctionRegistry() {
           int? taskCycleIndex = getTaskCycleIndex(task, projectType);
 
           if (taskCycleIndex != currentRunningCycle) {
-            if (isWithinAge == false &&
+            if (isWithinAgeAndHeightAndHeight == false &&
                 task['status'] == TaskStatus.administrationSuccess) {
               return true;
             }
@@ -878,16 +915,19 @@ void initializeFunctionRegistry() {
           (lastTaskTime >= currentCycle.startDate &&
               lastTaskTime <= currentCycle.endDate);
 
-      final isWithinAge = _isEligibleAge(projectType, totalAgeMonths);
+      final isWithinAgeAndHeight =
+          _isEligibleAge(projectType, totalAgeMonths) &&
+              _isEligibleHeight(currentCycle, individual);
 
-      if (!isWithinAge) return false;
+      if (!isWithinAgeAndHeight) return false;
 
       final checkStatusFn = FunctionRegistry.get('checkStatus');
       final statusOk = checkStatusFn?.call([], stateData) as bool? ?? false;
 
       return recordedSideEffect && !statusOk ? false : true;
     } else {
-      return _isEligibleAge(projectType, totalAgeMonths);
+      return _isEligibleAge(projectType, totalAgeMonths) &&
+          _isEligibleHeight(currentCycle, individual);
     }
   });
 
@@ -1222,9 +1262,10 @@ void initializeFunctionRegistry() {
     if (currentCycle == null) return false;
 
     // --- Check eligibility (age, plus weight/height when recorded) ---
-    final isWithinAge = _isEligibleAge(projectType, totalAgeMonths);
+    final isWithinAgeAndHeight = _isEligibleAge(projectType, totalAgeMonths) &&
+        _isEligibleHeight(currentCycle, individual);
 
-    return isWithinAge;
+    return isWithinAgeAndHeight;
   });
 
   /// Registers a function to check if all doses have been delivered for a member.
@@ -2226,9 +2267,10 @@ void initializeFunctionRegistry() {
     if (currentCycle == null) return false;
 
     // --- Check eligibility (age, plus weight/height when recorded) ---
-    final isWithinAge = _isEligibleAge(projectType, totalAgeMonths);
+    final isWithinAgeAndHeight = _isEligibleAge(projectType, totalAgeMonths) &&
+        _isEligibleHeight(currentCycle, individual);
 
-    return isWithinAge;
+    return isWithinAgeAndHeight;
   });
 
   FunctionRegistry.register("orsWithinTheAge", (args, stateData) {
@@ -2257,9 +2299,10 @@ void initializeFunctionRegistry() {
     if (currentCycle == null) return false;
 
     // --- Check eligibility (age, plus weight/height when recorded) ---
-    final isWithinAge = _isEligibleAge(projectType, totalAgeMonths);
+    final isWithinAgeAndHeight = _isEligibleAge(projectType, totalAgeMonths) &&
+        _isEligibleHeight(currentCycle, individual);
 
-    return isWithinAge;
+    return isWithinAgeAndHeight;
   });
 
   /// Resolves the eligibility-checklist answers carried in [navigationData] into
