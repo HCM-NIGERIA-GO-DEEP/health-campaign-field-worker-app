@@ -38,6 +38,7 @@ import '../utils/utils.dart';
 import 'localized.dart';
 
 part 'checkbox_builder.dart';
+part 'checkbox_group_builder.dart';
 part 'date_picker_builder.dart';
 part 'dob_builder.dart';
 part 'dropdown_builder.dart';
