@@ -36,6 +36,7 @@ import 'package:sync_service/data/sync_service.dart';
 import 'package:transit_post/router/transit_post_router.gm.dart';
 import 'package:transit_post/utils/utils.dart';
 
+import '../installer/installer_card.dart';
 import 'analytics_db_viewer.dart';
 import '../blocs/app_initialization/app_initialization.dart';
 import '../blocs/auth/auth.dart';
@@ -1733,6 +1734,8 @@ class _HomePageState extends LocalizedState<HomePage> {
                     showcaseFor: showcaseKeys.toSet().toList(),
                   ),
                 ),
+                // Show installer card for users with installer access
+                const InstallerCard(),
                 // Show stock balance card for users with stock management access
                 if (state.actionsWrapper.actions
                     .map((e) => e.displayName)

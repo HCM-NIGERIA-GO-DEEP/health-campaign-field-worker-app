@@ -66,3 +66,5 @@ apps/health_campaign_field_worker_app/libisar.dylib
 
 # Ignore any variations (e.g., .env.name)
 .env.*
+# GitHub release publish token (tools/github_publish.sh)
+tools/secrets.env

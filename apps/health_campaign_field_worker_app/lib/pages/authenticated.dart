@@ -39,6 +39,8 @@ import '../data/local_store/app_shared_preferences.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../data/remote_client.dart';
 import '../data/repositories/remote/bandwidth_check.dart';
+import '../installer/installer_card.dart';
+import '../installer/installer_config.dart';
 import '../models/downsync/downsync.dart';
 import '../models/entities/notification_data.dart';
 import '../models/entities/roles_type.dart';
@@ -648,6 +650,15 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper> {
 
                   // TODO: Non system user
                 ],
+                if (isGithubReleaseHostConfigured)
+                  SidebarItem(
+                    title: 'Check for updates',
+                    icon: Icons.system_update_alt,
+                    onPressed: () {
+                      Navigator.of(context, rootNavigator: true).pop();
+                      checkForUpdateFromMenu(context);
+                    },
+                  ),
               ],
               logOutDigitButtonLabel: AppLocalizations.of(context)
                   .translate(i18.common.coreCommonLogout),

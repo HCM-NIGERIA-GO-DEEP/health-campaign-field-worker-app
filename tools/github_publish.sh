@@ -55,7 +55,7 @@ cat > "$MANIFEST_PATH" <<EOF
   "downloadUrl": "https://github.com/$OWNER_REPO/releases/latest/download/$ASSET_NAME",
   "sha256": "$SHA256",
   "size": $SIZE,
-  "releaseNotes": "Test Release Note",
+  "releaseNotes": "- In-app updates: download and install new versions from the home screen\n- The update card now appears only when a new version is available\n- Added Check for updates to the side menu\n- Update checks run automatically during background sync\n- Long release notes can be expanded with Show more",
   "mandatory": false
 }
 EOF
@@ -82,7 +82,7 @@ RELEASE_JSON=$(curl -s -X POST \
   -H "Accept: application/vnd.github+json" \
   -H "User-Agent: digit-installer-showcase-publish" \
   "https://api.github.com/repos/$OWNER_REPO/releases" \
-  -d "{\"tag_name\":\"$TAG\",\"name\":\"$TAG\",\"body\":\"digit_installer showcase $VERSION (versionCode $VERSION_CODE)\",\"draft\":false,\"prerelease\":$IS_PRERELEASE}")
+  -d "{\"tag_name\":\"$TAG\",\"name\":\"$TAG\",\"body\":\"HCM Installer showcase $VERSION (versionCode $VERSION_CODE)\",\"draft\":false,\"prerelease\":$IS_PRERELEASE}")
 
 RELEASE_ID=$(echo "$RELEASE_JSON" | grep -o '"id":[0-9]*' | head -1 | cut -d: -f2)
 if [[ -z "$RELEASE_ID" ]]; then
