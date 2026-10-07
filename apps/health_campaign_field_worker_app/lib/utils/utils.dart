@@ -292,6 +292,35 @@ int? capDeliveryQuantity(int? quantity,
         {int maxQuantity = maxDeliveryQuantityPerHousehold}) =>
     quantity == null ? null : math.min(quantity, maxQuantity);
 
+/// How many household members share a single ITN, per the Bednet/LLIN
+/// project type's taskProcedure ("1 bednet is to be distributed per 2
+/// household members").
+const householdMembersPerItn = 2;
+
+/// ITN units a household is entitled to, derived from its member count.
+///
+/// The project type's dose criteria configure a flat `quantity: 1` per
+/// ProductVariant - it is a per-unit figure, not a per-household total - so
+/// reading that number straight out of the config (as the household overview
+/// used to) showed "1" for every household regardless of size. The real
+/// entitlement is one net per [householdMembersPerItn] members, rounded up,
+/// and never more than [maxDeliveryQuantityPerHousehold]. This matches the
+/// worked examples in the project type's own taskProcedure: 4 members -> 2
+/// nets, 5 members -> 3 nets.
+///
+/// Returns null when the member count is unknown, so callers can render a
+/// blank rather than a misleading zero.
+int? itnQuantityForMemberCount(int? memberCount,
+    {int membersPerUnit = householdMembersPerItn,
+    int maxQuantity = maxDeliveryQuantityPerHousehold}) {
+  if (memberCount == null || memberCount <= 0) return null;
+
+  // Round up: an odd member still needs a net of their own.
+  final entitled = (memberCount + membersPerUnit - 1) ~/ membersPerUnit;
+
+  return math.min(entitled, maxQuantity);
+}
+
 /// Groups ProjectBeneficiaryModel clientReferenceIds by the household they
 /// belong to (beneficiaryClientReferenceId), for resolving a household's own
 /// task chain (household -> projectBeneficiary -> task).

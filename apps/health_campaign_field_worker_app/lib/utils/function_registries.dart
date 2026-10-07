@@ -64,6 +64,28 @@ class FunctionRegistries {
       return capped == capped.roundToDouble() ? capped.toInt() : capped;
     });
 
+    // Resolves the ITN entitlement for a household from its member count,
+    // per the project type's taskProcedure ("1 bednet per 2 household
+    // members", capped at maxDeliveryQuantityPerHousehold).
+    //
+    // This deliberately does NOT read the dose criteria's `quantity`: that
+    // is a flat per-unit "1" in the project type config, so using it showed
+    // the same figure for a 1-member and a 7-member household - and it
+    // resolved to an empty string entirely whenever no cycle was currently
+    // running, since the whole targetCycle lookup collapsed to null.
+    // Usage: "{{fn:itnsForMemberCount(path.to.memberCount)}}"
+    FunctionRegistry.register('itnsForMemberCount', (args, stateData) {
+      if (args.isEmpty || args.first == null) return '';
+
+      final raw = args.first;
+      final memberCount =
+          raw is num ? raw.toInt() : int.tryParse(raw.toString().trim());
+
+      final quantity = itnQuantityForMemberCount(memberCount);
+
+      return quantity?.toString() ?? '';
+    });
+
     FunctionRegistry.register('safeString', (args, stateData) {
       if (args.isEmpty || args.first == null) return '';
 

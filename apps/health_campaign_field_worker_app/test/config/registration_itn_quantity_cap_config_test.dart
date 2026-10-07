@@ -3,22 +3,26 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
-/// Guards the per-household ITN delivery cap (3) everywhere REGISTRATION.json
-/// displays or forwards a quantity read directly from the project's dose
-/// criteria (bypassing the ResourceCard widget, which separately enforces
-/// the same cap on the quantity actually entered for delivery -
-/// see custom_resource_card.dart / capDeliveryQuantity in utils.dart).
+/// Guards the per-household ITN figure everywhere REGISTRATION.json displays
+/// or forwards it, so it never contradicts the capped quantity the field
+/// worker is actually allowed to enter (the ResourceCard widget separately
+/// enforces the same cap - see custom_resource_card.dart /
+/// capDeliveryQuantity in utils.dart).
 ///
-/// Without this, the "NUMBER_OF_ITN_FOR_DELIVERY" label on householdOverview
-/// and previewScreen would show a raw, unbounded MDMS-configured number that
-/// contradicts the capped quantity the field worker is actually allowed to
-/// enter.
+/// The figure is derived from the household's member count via
+/// fn:itnsForMemberCount (see itnQuantityForMemberCount in utils.dart), which
+/// applies the cap internally. It must never go back to reading the project's
+/// dose-criteria quantity directly: that value is a flat per-unit "1" that
+/// ignores household size, and the targetCycle lookup it hangs off resolves
+/// to null whenever no cycle is currently running - rendering the field
+/// blank.
 void main() {
   late Map<String, dynamic> config;
 
   const rawQuantityPath =
       'contextData.0.targetCycle.0.deliveries.0.doseCriteria.0.ProductVariants.0.quantity';
-  const cappedExpression = '{{fn:capNumber($rawQuantityPath, 3)}}';
+  const cappedExpression =
+      '{{fn:itnsForMemberCount(contextData.0.household.HouseholdModel.memberCount)}}';
 
   setUpAll(() {
     final file = File(
