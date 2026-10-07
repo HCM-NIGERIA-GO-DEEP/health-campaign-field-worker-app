@@ -60,6 +60,14 @@ class SearchBarWidget extends ResolvedFlowWidget {
             '')
         : '';
 
+    // Optional character whitelist, given as a regex character-class body
+    // (e.g. "a-zA-Z0-9"). Anything outside it is stripped as the user types,
+    // on top of the always-on non-ASCII/emoji strip below. Omit it to keep
+    // the previous behaviour of allowing any ASCII character - names need
+    // spaces, hyphens and apostrophes, so only ID-style fields should set
+    // this.
+    final allowedCharacters = json['allowedCharacters'] as String?;
+
     return _ReactiveSearchBar(
       key: ValueKey('${compositeKey}_$fieldName'),
       json: json,
@@ -67,6 +75,7 @@ class SearchBarWidget extends ResolvedFlowWidget {
       fieldName: fieldName,
       compositeKey: compositeKey,
       minSearchChars: minSearchChars,
+      allowedCharacters: allowedCharacters,
       initialValue: initialValue,
       onAction: onAction,
       resolved: resolved,
@@ -80,6 +89,7 @@ class _ReactiveSearchBar extends StatefulWidget {
   final String fieldName;
   final String? compositeKey;
   final int minSearchChars;
+  final String? allowedCharacters;
   final String initialValue;
   final void Function(ActionConfig) onAction;
   final ResolvedWidgetContext resolved;
@@ -91,6 +101,7 @@ class _ReactiveSearchBar extends StatefulWidget {
     required this.fieldName,
     required this.compositeKey,
     required this.minSearchChars,
+    required this.allowedCharacters,
     required this.initialValue,
     required this.onAction,
     required this.resolved,
@@ -107,12 +118,31 @@ class _ReactiveSearchBarState extends State<_ReactiveSearchBar> {
   String _lastHandledValue = '';
   bool _syncingExternalValue = false;
 
+  /// Built from the optional `allowedCharacters` config; matches anything
+  /// NOT in that whitelist so it can be stripped. Null when unconfigured,
+  /// leaving only the non-ASCII strip in effect.
+  RegExp? _disallowedRegex;
+
   String _sanitizeInput(String value) {
-    return value.replaceAll(_nonAsciiRegex, '');
+    final withoutNonAscii = value.replaceAll(_nonAsciiRegex, '');
+    final disallowed = _disallowedRegex;
+    if (disallowed == null) return withoutNonAscii;
+
+    return withoutNonAscii.replaceAll(disallowed, '');
   }
 
   @override
   void initState() {
+    final allowed = widget.allowedCharacters;
+    if (allowed != null && allowed.isNotEmpty) {
+      try {
+        _disallowedRegex = RegExp('[^$allowed]');
+      } on FormatException catch (e) {
+        // A malformed character class in config must not break the whole
+        // search screen - fall back to non-ASCII-only stripping.
+        debugPrint('SearchBar: invalid allowedCharacters "$allowed": $e');
+      }
+    }
     super.initState();
     final sanitizedInitialValue = _sanitizeInput(widget.initialValue);
     _controller = TextEditingController(text: sanitizedInitialValue);

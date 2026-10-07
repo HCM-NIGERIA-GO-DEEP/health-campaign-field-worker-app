@@ -38,7 +38,12 @@ void main() {
     final data = (widget['data'] as List).cast<Map<String, dynamic>>().first;
 
     expect(widget['format'], 'labelPairList');
-    expect(data['key'], 'NATIONAL_ID');
+    // The label is driven by the identifier's own type rather than
+    // hardcoded: Sierra Leone captures National ID, Voter ID, Passport and
+    // Driver's License through this same slot, so a Passport must not be
+    // displayed under a "NATIONAL_ID" label.
+    expect(data['key'],
+        '{{ item.headIndividual.0.identifiers.1.identifierType }}');
     expect(data['value'], '{{ item.headIndividual.0.identifiers.1.identifierId }}');
   });
 
