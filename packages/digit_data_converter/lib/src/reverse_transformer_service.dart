@@ -220,12 +220,22 @@ class ReverseFormMapper {
 
   /// Reverses an existing entity's identifier list back into the two real
   /// form fields `identifierEntries` is built from on submit (see
-  /// TransformerExecutor.buildIdentifierEntries): the hidden Beneficiary ID
-  /// slot (type UNIQUE_BENEFICIARY_ID/DEFAULT) goes back into the combined
+  /// TransformerExecutor.buildIdentifierEntries): a real, already-assigned
+  /// Beneficiary ID (type UNIQUE_BENEFICIARY_ID) goes back into the combined
   /// "type,value" `identifiers` field it originally came from, while any
   /// other identifier (a real captured National ID/Voter ID/Passport/
   /// Driver's License) goes into `identificationType`/`identificationNumber`
   /// so editing a household doesn't drop it for having come back blank.
+  ///
+  /// A DEFAULT-type identifier (the placeholder a closed/declined household
+  /// is created with, since no real ID was ever assigned) is deliberately
+  /// NOT reversed into `identifiers` here: JsonSchemaIdPopulatorBuilder
+  /// (id_populator_builder.dart) prioritizes a comma-containing value already
+  /// in form data over the fresh Beneficiary ID passed in via navigation, so
+  /// reversing the placeholder back would permanently block that household
+  /// from ever being assigned a real ID on edit. Leaving it unset lets the
+  /// navigation-provided token populate it instead, exactly as a brand new
+  /// registration would.
   void _applyIdentifierEntriesReverseMapping(
       Map<String, dynamic> formData,
       Map<String, dynamic> modelInstance,
@@ -237,7 +247,6 @@ class ReverseFormMapper {
     final listFieldName = '${baseName}s';
 
     final List<dynamic> listItems = modelInstance[listFieldName] ?? [];
-    const hiddenIdentifierTypes = {'UNIQUE_BENEFICIARY_ID', 'DEFAULT'};
 
     for (final item in listItems) {
       if (item is! Map<String, dynamic>) continue;
@@ -245,8 +254,9 @@ class ReverseFormMapper {
       final identifierType = item['identifierType'];
       final identifierId = item['identifierId'];
       if (identifierType == null || identifierId == null) continue;
+      if (identifierType == 'DEFAULT') continue;
 
-      if (hiddenIdentifierTypes.contains(identifierType)) {
+      if (identifierType == 'UNIQUE_BENEFICIARY_ID') {
         _setNestedValue(
             formData, 'householdDetails.identifiers', '$identifierType,$identifierId');
       } else {

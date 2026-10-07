@@ -118,7 +118,9 @@ void main() {
     expect(formData['identificationNumber'], 'VOT999');
   });
 
-  test('a DEFAULT placeholder identifier (consent-declined household) reverses like a hidden ID', () {
+  test(
+      'a DEFAULT placeholder identifier (consent-declined/closed household) is '
+      'left unreversed, so a fresh Beneficiary ID can be assigned on edit', () {
     final individual = IndividualModel(
       clientReferenceId: 'ind-1',
       identifiers: [
@@ -136,7 +138,12 @@ void main() {
       modelInstances: [individual],
     ).buildFormData();
 
-    expect(formData['identifiers'], 'DEFAULT,c0ffee00-random-uuid');
+    // Deliberately NOT reversed: JsonSchemaIdPopulatorBuilder prioritizes an
+    // already-present comma-containing "identifiers" value over the fresh
+    // Beneficiary ID passed in via navigation, so reversing this placeholder
+    // back would permanently block the household from ever getting a real
+    // ID assigned on edit.
+    expect(formData.containsKey('identifiers'), isFalse);
     expect(formData.containsKey('identificationType'), isFalse);
   });
 }

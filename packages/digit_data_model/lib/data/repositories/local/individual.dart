@@ -465,6 +465,24 @@ class IndividualLocalRepository
 
         batch.replaceAll(sql.address, addressCompanions);
 
+        // Identifier's primary key is (individualClientReferenceId,
+        // identifierType), and every rebuilt identifier gets a fresh
+        // clientReferenceId. On edit, a placeholder DEFAULT identifier is
+        // replaced in-memory by UNIQUE_BENEFICIARY_ID/NATIONAL_ID entries -
+        // different identifierType values, so insertOrReplace never matches
+        // the old DEFAULT row's key and it was left behind as a stale
+        // zombie row instead of being removed, shifting every other
+        // identifier's list index and surfacing the stale placeholder as
+        // index 0 (e.g. E_TOKEN) wherever the UI reads by index. Clear out
+        // this individual's existing identifiers first so only the
+        // rebuilt set remains.
+        batch.deleteWhere(
+          sql.identifier,
+          (table) => table.individualClientReferenceId.equals(
+            entity.clientReferenceId,
+          ),
+        );
+
         for (final identifier in identifierCompanions) {
           batch.insert(
             sql.identifier,

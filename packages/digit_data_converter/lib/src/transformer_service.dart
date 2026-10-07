@@ -288,6 +288,19 @@ class FormEntityMapper {
               target[targetKey] = updatedList;
             }
           }
+        } else if (sourcePath is String && sourcePath.startsWith('list:')) {
+          // Rebuild the whole list fresh from its listMappings config (e.g.
+          // "identifiers": "list:IdentifierModel"), the same way _mapModel
+          // does during create. The plain-string branch below can't handle
+          // this: it treats sourcePath as a literal form-data path via
+          // containsPathInFormData, and "list:IdentifierModel" never
+          // resolves as one, so this field was silently left completely
+          // untouched on every edit - e.g. an individual's identifiers
+          // could never pick up a freshly-assigned Beneficiary ID or a
+          // newly-captured National ID on resubmit, no matter what the form
+          // actually submitted.
+          target[targetKey] =
+              _mapListModel(sourcePath, formData, modelType, modelConfig, context);
         } else if (sourcePath is String) {
           if (containsPathInFormData(sourcePath, formData)) {
             final formValue =
