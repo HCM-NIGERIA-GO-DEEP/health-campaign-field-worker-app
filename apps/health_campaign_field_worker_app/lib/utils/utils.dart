@@ -292,6 +292,67 @@ int? capDeliveryQuantity(int? quantity,
         {int maxQuantity = maxDeliveryQuantityPerHousehold}) =>
     quantity == null ? null : math.min(quantity, maxQuantity);
 
+/// Groups ProjectBeneficiaryModel clientReferenceIds by the household they
+/// belong to (beneficiaryClientReferenceId), for resolving a household's own
+/// task chain (household -> projectBeneficiary -> task).
+Map<String, List<String>> groupProjectBeneficiaryClientRefsByHousehold(
+    Iterable<ProjectBeneficiaryModel> projectBeneficiaries) {
+  final result = <String, List<String>>{};
+  for (final pb in projectBeneficiaries) {
+    final beneficiaryRef = pb.beneficiaryClientReferenceId;
+    if (beneficiaryRef == null || beneficiaryRef.isEmpty) continue;
+    (result[beneficiaryRef] ??= []).add(pb.clientReferenceId);
+  }
+  return result;
+}
+
+/// Groups tasks by their projectBeneficiaryClientReferenceId, for resolving
+/// a household's own task chain alongside
+/// [groupProjectBeneficiaryClientRefsByHousehold].
+Map<String, List<TaskModel>> groupTasksByProjectBeneficiaryClientRef(
+    Iterable<TaskModel> tasks) {
+  final result = <String, List<TaskModel>>{};
+  for (final task in tasks) {
+    final pbRef = task.projectBeneficiaryClientReferenceId;
+    if (pbRef == null || pbRef.isEmpty) continue;
+    (result[pbRef] ??= []).add(task);
+  }
+  return result;
+}
+
+/// Whether a household is still marked closed (via Mark Closed Household or
+/// a declined consent) - i.e. its own last task is still CLOSED_HOUSEHOLD
+/// status - meaning it's just a placeholder, not a real registration yet,
+/// and shouldn't count toward registration-progress metrics (Summary
+/// Report, the home page's Beneficiary Progress bar) until it's reopened
+/// and completed. Completing it moves the task off CLOSED_HOUSEHOLD status
+/// (see the HOUSEHOLD flow's isEdit && isClosedHousehold branch in
+/// REGISTRATION.json), so it naturally starts counting from then on.
+bool isHouseholdStillClosed({
+  required String householdClientReferenceId,
+  required Map<String, List<String>> projectBeneficiaryClientRefsByHousehold,
+  required Map<String, List<TaskModel>> tasksByProjectBeneficiaryClientRef,
+}) {
+  final pbRefs =
+      projectBeneficiaryClientRefsByHousehold[householdClientReferenceId];
+  if (pbRefs == null || pbRefs.isEmpty) return false;
+
+  final householdTasks = pbRefs
+      .expand((pbRef) => tasksByProjectBeneficiaryClientRef[pbRef] ?? [])
+      .toList();
+  if (householdTasks.isEmpty) return false;
+
+  householdTasks.sort((a, b) {
+    final aTime =
+        a.clientAuditDetails?.createdTime ?? a.auditDetails?.createdTime ?? 0;
+    final bTime =
+        b.clientAuditDetails?.createdTime ?? b.auditDetails?.createdTime ?? 0;
+    return aTime.compareTo(bTime);
+  });
+
+  return householdTasks.last.status == 'CLOSED_HOUSEHOLD';
+}
+
 /// Counts how many entries in [epochMillis] fall on each calendar date, per
 /// [epochToDateString]. Used for the Summary Report's "Tokens Used" column:
 /// one count per Beneficiary ID pool token actually assigned that day.

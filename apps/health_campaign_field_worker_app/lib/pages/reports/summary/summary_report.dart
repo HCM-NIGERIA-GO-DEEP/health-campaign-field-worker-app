@@ -69,6 +69,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           LocalRepository<ProjectFacilityModel, ProjectFacilitySearchModel>>();
       final facilityRepo =
           context.read<LocalRepository<FacilityModel, FacilitySearchModel>>();
+      final projectBeneficiaryRepo = context.read<
+          LocalRepository<ProjectBeneficiaryModel,
+              ProjectBeneficiarySearchModel>>();
       final summaryReportService = context.read<ServerSummaryReportService>();
 
       List<String> serverReportAllDates = await summaryReportService.allDates();
@@ -118,6 +121,24 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         projectId: projectId,
       ));
 
+      // A household marked closed (Mark Closed Household or a declined
+      // consent) isn't a real registration yet - just a placeholder with
+      // nothing captured. It should only start counting once reopened and
+      // completed, which moves its task off CLOSED_HOUSEHOLD status (see
+      // the HOUSEHOLD flow's isEdit && isClosedHousehold branch). Resolve
+      // each household's own task chain (household -> projectBeneficiary ->
+      // task) to check its current status.
+      final projectBeneficiaries = households.isEmpty
+          ? <ProjectBeneficiaryModel>[]
+          : await projectBeneficiaryRepo.search(ProjectBeneficiarySearchModel(
+              beneficiaryClientReferenceId:
+                  households.map((hh) => hh.clientReferenceId).toList(),
+            ));
+      final projectBeneficiaryClientRefsByHousehold =
+          groupProjectBeneficiaryClientRefsByHousehold(projectBeneficiaries);
+      final tasksByProjectBeneficiaryClientRef =
+          groupTasksByProjectBeneficiaryClientRef(tasks);
+
       // Fetch stock records (received + sent for facility)
       final receivedStocks = await stockRepo
           .search(StockSearchModel(receiverId: effectiveFacilityId));
@@ -150,6 +171,13 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
             hh.clientAuditDetails?.createdTime ?? hh.auditDetails?.createdTime;
         if (!isWithinCurrentCycle(epochMs)) continue;
         if (epochMs == null) continue;
+        if (isHouseholdStillClosed(
+          householdClientReferenceId: hh.clientReferenceId,
+          projectBeneficiaryClientRefsByHousehold:
+              projectBeneficiaryClientRefsByHousehold,
+          tasksByProjectBeneficiaryClientRef:
+              tasksByProjectBeneficiaryClientRef,
+        )) continue;
 
         final date = _epochToDateString(epochMs);
         localHouseholdsRegisteredByDate[date] =

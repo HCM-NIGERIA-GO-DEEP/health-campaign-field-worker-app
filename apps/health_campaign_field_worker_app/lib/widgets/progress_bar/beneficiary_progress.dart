@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:collection/collection.dart';
+import 'package:digit_data_model/data/repositories/package_repository/local/household.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/project_beneficiary.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
 import 'package:digit_data_model/data_model.dart';
@@ -96,6 +97,62 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
             date: DateFormat('yyyy-MM-dd').format(now),
           );
 
+          // The server-side snapshot above is a point-in-time baseline that
+          // doesn't get refreshed same-day once any local registration
+          // exists (see _loadSummaryReportData's hasHouseholdDataForCycle
+          // check), so a household registered - or a closed/declined one
+          // completed - today never shows up in it. Count today's local
+          // households directly instead, the same way the Summary Report
+          // page does, excluding ones still marked closed (a placeholder,
+          // not a real registration yet).
+          final householdRepository = context
+              .read<LocalRepository<HouseholdModel, HouseholdSearchModel>>();
+          final projectBeneficiaryRepository = context.read<
+              LocalRepository<ProjectBeneficiaryModel,
+                  ProjectBeneficiarySearchModel>>();
+
+          final todaysHouseholds =
+              await householdRepository.search(HouseholdSearchModel());
+          final localHouseholdsToday = todaysHouseholds.where((hh) {
+            final createdBy =
+                hh.clientAuditDetails?.createdBy ?? hh.auditDetails?.createdBy;
+            if (createdBy != loggedInUserUuid) return false;
+            final epochMs = hh.clientAuditDetails?.createdTime ??
+                hh.auditDetails?.createdTime;
+            if (epochMs == null) return false;
+            return epochMs >= gte.millisecondsSinceEpoch &&
+                epochMs <= lte.millisecondsSinceEpoch;
+          }).toList();
+
+          final todaysProjectBeneficiaries = localHouseholdsToday.isEmpty
+              ? <ProjectBeneficiaryModel>[]
+              : await projectBeneficiaryRepository.search(
+                  ProjectBeneficiarySearchModel(
+                    beneficiaryClientReferenceId: localHouseholdsToday
+                        .map((hh) => hh.clientReferenceId)
+                        .toList(),
+                  ),
+                );
+          final projectBeneficiaryClientRefsByHousehold =
+              groupProjectBeneficiaryClientRefsByHousehold(
+                  todaysProjectBeneficiaries);
+          final tasksByProjectBeneficiaryClientRefForToday =
+              groupTasksByProjectBeneficiaryClientRef(
+                  await taskRepository.search(TaskSearchModel(
+            createdBy: loggedInUserUuid,
+            projectId: projectId,
+          )));
+
+          final localHouseholdsRegisteredToday = localHouseholdsToday
+              .where((hh) => !isHouseholdStillClosed(
+                    householdClientReferenceId: hh.clientReferenceId,
+                    projectBeneficiaryClientRefsByHousehold:
+                        projectBeneficiaryClientRefsByHousehold,
+                    tasksByProjectBeneficiaryClientRef:
+                        tasksByProjectBeneficiaryClientRefForToday,
+                  ))
+              .length;
+
           List<TaskModel> allTasks =
               await taskRepository.search(taskSearchQuery);
 
@@ -120,7 +177,9 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
           if (mounted) {
             setState(() {
               if (mounted) {
-                current = houseHoldRegistered + groupedEntries.entries.length;
+                current = houseHoldRegistered +
+                    localHouseholdsRegisteredToday +
+                    groupedEntries.entries.length;
               }
             });
           }
