@@ -612,7 +612,16 @@ final jsonConfig = {
             "ageInMonths": "__context:ageInMonths",
             "gender": "__context:gender",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+
+            /// One GS1 barcode per ITN handed over, captured by the scanner
+            /// field on the DeliveryDetails page. TaskResourceModel carries
+            /// only an aggregate quantity and has no per-unit column, so the
+            /// serials live here instead - the same approach the stock flow
+            /// already uses for its own "scanResource". additionalFields is
+            /// serialised along with the rest of the task by the oplog, so
+            /// this syncs without any change to sync_service.
+            "scanResource": "DeliveryDetails.scanner"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
