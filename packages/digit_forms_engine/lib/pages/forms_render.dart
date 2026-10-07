@@ -1675,8 +1675,36 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     void Function({Map<String, dynamic>? popupData}) onConfirm,
   ) {
     final popUpConfig = schema.showSecondaryAlertPopUp!;
-    final commentController = TextEditingController();
     final bodyFields = popUpConfig.body ?? [];
+
+    // One value per field. This used to be a single shared
+    // TextEditingController, which only behaved correctly while every popup
+    // had exactly one body field: typing into any field overwrote the same
+    // buffer, and on confirm every fieldName was handed that one value. A
+    // popup declaring both a comment and a quantity would therefore save the
+    // comment text into both.
+    final values = <String, String>{
+      for (final field in bodyFields) field.fieldName: '',
+    };
+
+    bool isNumeric(SecondaryAlertBodyField field) =>
+        field.format?.toLowerCase() == 'numeric' ||
+        field.type.toLowerCase() == 'number' ||
+        field.type.toLowerCase() == 'integer';
+
+    /// Null when the field is acceptable, otherwise the reason it is not.
+    String? validate(SecondaryAlertBodyField field) {
+      final value = (values[field.fieldName] ?? '').trim();
+      final label = localizations.translate(field.label);
+
+      if (value.isEmpty) {
+        return field.mandatory ? '$label is required' : null;
+      }
+      if (isNumeric(field) && int.tryParse(value) == null) {
+        return '$label must be a number';
+      }
+      return null;
+    }
 
     bool showValidationError = false;
 
@@ -1692,27 +1720,32 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                   : null,
               additionalWidgets: [
                 ...bodyFields.map((field) {
-                  final hasError = showValidationError &&
-                      field.mandatory &&
-                      commentController.text.trim().isEmpty;
+                  final error =
+                      showValidationError ? validate(field) : null;
+
+                  void onChange(String value) {
+                    values[field.fieldName] = value;
+                    setPopupState(() {
+                      showValidationError = false;
+                    });
+                  }
 
                   return Padding(
                     padding: const EdgeInsets.only(top: spacer2),
                     child: LabeledField(
                       label: localizations.translate(field.label),
                       isRequired: field.mandatory,
-                      child: DigitTextAreaFormInput(
-                        initialValue: commentController.text,
-                        onChange: (value) {
-                          commentController.text = value;
-                          setPopupState(() {
-                            showValidationError = false;
-                          });
-                        },
-                        errorMessage: hasError
-                            ? '${localizations.translate(field.label)} is required'
-                            : null,
-                      ),
+                      child: isNumeric(field)
+                          ? DigitNumericFormInput(
+                              initialValue: values[field.fieldName] ?? '',
+                              onChange: onChange,
+                              errorMessage: error,
+                            )
+                          : DigitTextAreaFormInput(
+                              initialValue: values[field.fieldName] ?? '',
+                              onChange: onChange,
+                              errorMessage: error,
+                            ),
                     ),
                   );
                 }),
@@ -1722,20 +1755,19 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                   label:
                       localizations.translate(popUpConfig.primaryActionLabel),
                   onPressed: () {
-                    final hasEmptyMandatory = bodyFields.any((field) =>
-                        field.mandatory &&
-                        commentController.text.trim().isEmpty);
-                    if (hasEmptyMandatory) {
+                    final hasInvalid =
+                        bodyFields.any((field) => validate(field) != null);
+                    if (hasInvalid) {
                       setPopupState(() {
                         showValidationError = true;
                       });
                       return;
                     }
-                    final popupData = <String, dynamic>{};
-                    for (final field in bodyFields) {
-                      popupData[field.fieldName] =
-                          commentController.text.trim();
-                    }
+                    final popupData = <String, dynamic>{
+                      for (final field in bodyFields)
+                        field.fieldName:
+                            (values[field.fieldName] ?? '').trim(),
+                    };
                     Navigator.of(ctx, rootNavigator: true).pop();
                     onConfirm(popupData: popupData);
                   },
