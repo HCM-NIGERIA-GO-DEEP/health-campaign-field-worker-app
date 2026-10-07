@@ -273,10 +273,21 @@ class ProgressDialog {
   /// Closes the dialog safely
   void closeProgressDialog() {
     if (_isDialogShowing && _dialogContext != null) {
-      Navigator.of(_dialogContext!, rootNavigator: true).pop();
+      final dialogContext = _dialogContext!;
+      // Clear state first: if the pop below is skipped because the dialog's
+      // element is already gone, this singleton must not stay stuck
+      // believing a dialog is still open - that would suppress every future
+      // progress dialog app-wide.
       _isDialogShowing = false;
       _dialogContext = null;
       _setState = null;
+
+      // The dialog may already have been torn down (e.g. its route went away
+      // with the page that owned it), leaving a deactivated element whose
+      // Navigator lookup would throw.
+      if (dialogContext.mounted) {
+        Navigator.of(dialogContext, rootNavigator: true).pop();
+      }
     }
   }
 
