@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
 import androidx.core.app.ServiceCompat
+import androidx.core.content.ContextCompat
 import org.json.JSONObject
 import java.io.File
 import java.io.RandomAccessFile
@@ -267,7 +268,9 @@ class BackgroundDownloadService : Service() {
                 Intent(context, BackgroundDownloadService::class.java)
                     .putExtra(EXTRA_ACTION, ACTION_START)
                     .also { spec.applyTo(it) }
-            context.startForegroundService(intent)
+            // ContextCompat falls back to startService() below API 26, where
+            // Context.startForegroundService() doesn't exist.
+            ContextCompat.startForegroundService(context, intent)
         }
 
         fun enqueuePause(
@@ -399,7 +402,8 @@ class DownloadJob(
             file.parentFile?.mkdirs()
 
             val head = openConnection(url, "HEAD")
-            val totalBytes = head.getHeaderFieldLong("Content-Length", -1L)
+            // Parsed by hand: URLConnection.getHeaderFieldLong() is API 24+.
+            val totalBytes = head.getHeaderField("Content-Length")?.toLongOrNull() ?: -1L
             val etag = head.getHeaderField("ETag")
             val acceptsRanges = head.getHeaderField("Accept-Ranges") == "bytes"
             head.disconnect()
