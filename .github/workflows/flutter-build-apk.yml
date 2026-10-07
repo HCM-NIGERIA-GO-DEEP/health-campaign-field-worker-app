@@ -55,7 +55,6 @@ jobs:
           echo "AZURE_REDIRECT_URI=${{ vars.AZURE_REDIRECT_URI }}" >> apps/health_campaign_field_worker_app/.env
           echo "AZURE_SCOPES=${{ vars.AZURE_SCOPES }}" >> apps/health_campaign_field_worker_app/.env
           echo "AZURE_END_SESSION_ON_LOGOUT=${{ vars.AZURE_END_SESSION_ON_LOGOUT }}" >> apps/health_campaign_field_worker_app/.env
-          echo "SSO_TOKEN_EXCHANGE_PATH=${{ vars.SSO_TOKEN_EXCHANGE_PATH }}" >> apps/health_campaign_field_worker_app/.env
 
       - name: Verify .env file
         run: |

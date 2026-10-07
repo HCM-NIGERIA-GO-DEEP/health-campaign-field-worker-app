@@ -16,6 +16,10 @@ class AuthTokenInterceptor extends Interceptor {
   /// during an SSO session.
   static const idTokenHeader = 'x-id-token';
 
+  /// Cookie carrying the same token, as the DIGIT web UI sends it. Sent
+  /// alongside [idTokenHeader] on the same requests.
+  static const idTokenCookie = 'x-id-token';
+
   final LocalSecureStore localSecureStore;
   SsoIdTokenProvider? _ssoIdTokenProvider;
   bool _ssoResolved;
@@ -60,6 +64,7 @@ class AuthTokenInterceptor extends Interceptor {
       final idToken = await ssoProvider.currentIdToken();
       if (idToken != null) {
         options.headers[idTokenHeader] = idToken;
+        options.headers['cookie'] = '$idTokenCookie=$idToken';
       }
     }
 

@@ -5,7 +5,7 @@ The login page can run in one of two modes, selected per build through `.env`:
 | `AUTH_MODE` | Login page                                   | Session source                                   |
 |-------------|----------------------------------------------|--------------------------------------------------|
 | `PASSWORD`  | DIGIT user ID / password form (default)      | `user/oauth/token` password grant                |
-| `SSO`       | Single **Sign in with Microsoft** button     | Azure ID token exchanged at `SSO_TOKEN_EXCHANGE_PATH` |
+| `SSO`       | Single **Sign in with Microsoft** button     | `user/oauth/token` `jwt_exchange` grant (Azure ID token) |
 
 Everything after the token is obtained is identical in both modes: the DIGIT
 `access_token`, `refresh_token` and `UserRequest` are stored in secure storage,
@@ -23,14 +23,16 @@ token. Azure tokens are never persisted on the device.
 3. Entra ID redirects to `AZURE_REDIRECT_URI`; AppAuth exchanges the code for
    tokens natively and returns the **access token** (audience = this app
    registration, scope `access_as_user`) and the **ID token** to the app.
-4. `AuthRepository.exchangeSsoToken` POSTs both to the DIGIT exchange
-   endpoint through the app's pinned Dio client.
+4. `AuthRepository.exchangeSsoToken` POSTs the ID token as a `jwt_exchange`
+   grant to the DIGIT token endpoint through the app's pinned Dio client. This
+   is the same endpoint the password login uses (the MDMS login action path,
+   `user/oauth/token`). The access token is not sent.
 5. The response is parsed as the usual `AuthModel` and login completes.
 
 The Azure ID token and refresh token are written to secure storage *before*
 step 4, so the exchange and every later DIGIT call carry the `x-id-token`
-header (see below). If the exchange or the post-login calls fail, both are
-removed again.
+header and cookie (see below). If the exchange or the post-login calls fail,
+both are removed again.
 
 The browser and the Microsoft token endpoint are reached by the native AppAuth
 SDKs, not by Dio, so certificate pinning (which trusts only the DIGIT
@@ -45,7 +47,6 @@ AZURE_CLIENT_ID=<application (client) id>
 AZURE_REDIRECT_URI=org.egov.whoafro://oauth/callback
 AZURE_SCOPES=openid profile offline_access api://<client id>/access_as_user
 AZURE_END_SESSION_ON_LOGOUT=true
-SSO_TOKEN_EXCHANGE_PATH=user/oauth/sso/_exchange
 ```
 
 This repository is public, so **no tenant, client or API scope is committed**:
@@ -56,20 +57,21 @@ This repository is public, so **no tenant, client or API scope is committed**:
 gitignored `.env` locally and through GitHub repository *variables* of the same
 names in CI (they are identifiers, not secrets, so variables rather than
 Secrets are appropriate; a client secret must never be added, see below).
-The redirect URI, the exchange path and the logout flag have generic
-defaults. A key that is present but blank keeps its default, which is what the
+The redirect URI and the logout flag have generic defaults. A key that is present but blank keeps its default, which is what the
 build workflow produces when a variable is unset. If `AUTH_MODE=SSO` and the
 tenant or client is blank, the button shows a configuration error instead of
 opening the browser. `AZURE_END_SESSION_ON_LOGOUT=false` turns the Entra
 logout round-trip off and makes logout local-only.
 
-## `x-id-token` header
+## `x-id-token` header and cookie
 
 During an SSO session every request on the shared Dio client to the
-`BASE_URL` host carries the raw Azure ID token:
+`BASE_URL` host carries the raw Azure ID token twice: as a header, and as a
+cookie of the same name, which is how the DIGIT web UI sends it:
 
 ```
 x-id-token: eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIs...
+cookie: x-id-token=eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIs...
 ```
 
 - It is **in addition to** the DIGIT token in `RequestInfo.authToken`; nothing
@@ -88,8 +90,8 @@ x-id-token: eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIs...
   still sent, so the call goes out and the backend decides. The app waits one
   minute before trying again. The app has no handling for a backend
   rejection; the user signs in again after logging out.
-- Tokens are not logged: headers are never logged, and the SSO exchange body
-  has `idToken` and `accessToken` masked in the request log.
+- Tokens are not logged: headers are never logged, and the token request
+  body is form data, which the request log skips.
 
 What the backend should check on `x-id-token`: signature against the tenant
 JWKS, `iss` = `https://login.microsoftonline.com/<tenant>/v2.0`, `aud` = the
@@ -105,7 +107,7 @@ claim matches the DIGIT user behind `RequestInfo.authToken`.
 - **Never add a client secret.** A secret embedded in a mobile app is
   extractable and gives no protection; PKCE is the correct mechanism.
 - Because anyone with an account in the tenant can obtain a token for the
-  app's audience, **the DIGIT exchange endpoint is the real gatekeeper**: it
+  app's audience, **the DIGIT `jwt_exchange` grant is the real gatekeeper**: it
   must map the token to an existing, active DIGIT employee and reject all
   others, and it should be rate-limited.
 - On the Entra side set *Assignment required* = Yes on the Enterprise
@@ -146,21 +148,33 @@ The redirect scheme is also declared in the app:
 
 If you change the redirect scheme, change all three places together.
 
-## Backend exchange contract (to be implemented server-side)
+## Backend token exchange contract
 
-`POST {BASE_URL}{SSO_TOKEN_EXCHANGE_PATH}` with `Content-Type: application/json`
+The app uses the `jwt_exchange` grant that the DIGIT web UI already uses. It
+goes to the password grant's endpoint, the MDMS login action path
+(`user/oauth/token`), with the same `Basic` client credentials:
 
-Request body (`SsoExchangeRequestModel`):
-
-```json
-{
-  "idToken": "<Azure ID token (JWT)>",
-  "accessToken": "<Azure access token for api://<client id> (JWT)>",
-  "tenantId": "ng",
-  "userType": "EMPLOYEE",
-  "provider": "MICROSOFT"
-}
 ```
+POST {BASE_URL}user/oauth/token
+authorization: Basic ZWdvdi11c2VyLWNsaWVudDo=
+x-id-token: <Azure ID token>
+cookie: x-id-token=<Azure ID token>
+```
+
+Form fields (`SsoExchangeRequestModel`):
+
+| Field        | Value                         |
+|--------------|-------------------------------|
+| `grant_type` | `jwt_exchange`                |
+| `scope`      | `read`                        |
+| `userType`   | `EMPLOYEE`                    |
+| `assertion`  | Azure ID token (JWT)          |
+| `tenantId`   | `TENANT_ID` from `.env`       |
+
+The body is sent like the password grant's: Dio encodes `FormData` as
+`multipart/form-data`, while the web UI sends
+`application/x-www-form-urlencoded`. The app's password grant already reaches
+the same endpoint this way.
 
 Response body: identical to the DIGIT password grant response so the app
 needs no other change.
@@ -182,19 +196,16 @@ needs no other change.
 }
 ```
 
-The backend must:
+The backend is expected to:
 
 - fetch the tenant's JWKS from
   `https://login.microsoftonline.com/{tenant}/discovery/v2.0/keys` and verify
-  the **access token**: signature, `iss`
-  (`https://login.microsoftonline.com/{tenant}/v2.0` or the v1 `sts.windows.net`
-  issuer, depending on the registration's `accessTokenAcceptedVersion`),
-  `aud` (= the client ID or `api://` + the client ID),
-  `scp` containing `access_as_user`, `exp` and `nbf`;
+  the **ID token** in `assertion`: signature,
+  `iss` = `https://login.microsoftonline.com/{tenant}/v2.0`,
+  `aud` = the client ID, `exp` and `nbf`;
 - map the token's `oid` / `preferred_username` / `email` claim to a DIGIT
   employee of type `EMPLOYEE` in `tenantId` and reject unknown or inactive
-  users with `401`; the ID token is sent as well for backends that prefer to
-  read profile claims from it;
+  users with `401`;
 - issue DIGIT access/refresh tokens exactly as the password grant does.
 
 Non-2xx responses are shown to the user as the generic "unable to login"
@@ -224,7 +235,7 @@ toast and logged with the response body.
 | Button shows a configuration error immediately | `AZURE_TENANT_ID` / `AZURE_CLIENT_ID` blank in the `.env` baked into the build |
 | Browser shows `AADSTS50011` redirect URI mismatch | `AZURE_REDIRECT_URI` not registered on the app, or scheme differs from `appAuthRedirectScheme` / `CFBundleURLSchemes` |
 | Browser shows `AADSTS7000218` | *Allow public client flows* is off on the registration |
-| Sign-in completes, then "unable to login" toast | DIGIT exchange endpoint rejected the ID token; check backend logs |
+| Sign-in completes, then "unable to login" toast | DIGIT `jwt_exchange` grant rejected the ID token, or the MDMS login action path is missing; check backend logs |
 | Browser never returns to the app on Android | Redirect scheme placeholder missing from `build.gradle`, or another app claims the same scheme |
 | Calls work for about an hour, then the backend rejects `x-id-token` | `offline_access` missing from `AZURE_SCOPES`, or the session predates the refresh support, so there is no refresh token (sign in again); or the refresh fails (logcat: `SSO token refresh failed`) |
 | `x-id-token` missing on a call | The request is not to the `BASE_URL` host, or the build is in password mode |

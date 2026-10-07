@@ -50,7 +50,7 @@ void main() {
   setUpAll(() async {
     await envConfig.initialize();
     registerFallbackValue(
-      const SsoExchangeRequestModel(idToken: '', tenantId: ''),
+      const SsoExchangeRequestModel(assertion: '', tenantId: ''),
     );
     registerFallbackValue(authModel);
     registerFallbackValue(actions);
@@ -103,7 +103,6 @@ void main() {
         );
         when(() => authRepository.exchangeSsoToken(
               request: any(named: 'request'),
-              exchangePath: any(named: 'exchangePath'),
             )).thenAnswer((_) async {
           calls.add('exchange');
           return authModel;
@@ -123,20 +122,20 @@ void main() {
       verify: (_) {
         final captured = verify(() => authRepository.exchangeSsoToken(
               request: captureAny(named: 'request'),
-              exchangePath: captureAny(named: 'exchangePath'),
             )).captured;
-        final request = captured[0] as SsoExchangeRequestModel;
-        expect(request.idToken, idToken);
-        expect(request.accessToken, 'azure-access');
-        expect(request.tenantId, tenantId);
-        expect(request.userType, 'EMPLOYEE');
-        expect(request.provider, 'MICROSOFT');
-        expect(captured[1], envConfig.variables.ssoTokenExchangePath);
+        final request = captured.single as SsoExchangeRequestModel;
+        expect(request.toJson(), {
+          'assertion': idToken,
+          'tenantId': tenantId,
+          'userType': 'EMPLOYEE',
+          'scope': 'read',
+          'grant_type': 'jwt_exchange',
+        });
 
         verify(() => store.setAuthCredentials(authModel)).called(1);
         verify(() => store.setRoleActions(actions)).called(1);
         // Stored before the exchange so the exchange itself and the calls
-        // made while completing login carry the x-id-token header.
+        // made while completing login carry the x-id-token header and cookie.
         expect(calls, ['setSsoTokens', 'exchange', 'setAuthCredentials']);
         verify(() => store.setSsoTokens(
               idToken: idToken,
@@ -161,7 +160,6 @@ void main() {
       verify: (_) {
         verifyNever(() => authRepository.exchangeSsoToken(
               request: any(named: 'request'),
-              exchangePath: any(named: 'exchangePath'),
             ));
         verifyNever(() => store.setAuthCredentials(any()));
         verifyNever(() => store.setSsoTokens(
@@ -193,12 +191,11 @@ void main() {
             .thenAnswer((_) async => const SsoIdentity(idToken: idToken));
         when(() => authRepository.exchangeSsoToken(
               request: any(named: 'request'),
-              exchangePath: any(named: 'exchangePath'),
             )).thenThrow(
           DioException(
-            requestOptions: RequestOptions(path: 'user/oauth/sso/_exchange'),
+            requestOptions: RequestOptions(path: 'user/oauth/token'),
             response: Response(
-              requestOptions: RequestOptions(path: 'user/oauth/sso/_exchange'),
+              requestOptions: RequestOptions(path: 'user/oauth/token'),
               statusCode: 401,
               data: {'error': 'invalid_token'},
             ),

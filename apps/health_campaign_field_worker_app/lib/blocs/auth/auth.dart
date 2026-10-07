@@ -131,8 +131,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final identity = await authenticator.signIn();
 
       // Stored before the exchange so the exchange and every call made by
-      // _completeLogin already carry the `x-id-token` header. Removed again
-      // if anything below fails, so a failed login leaves nothing behind.
+      // _completeLogin already carry the `x-id-token` header and cookie.
+      // Removed again if anything below fails, so a failed login leaves
+      // nothing behind.
       await localSecureStore.setSsoTokens(
         idToken: identity.idToken,
         refreshToken: identity.refreshToken,
@@ -140,11 +141,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       try {
         final AuthModel result = await authRepository.exchangeSsoToken(
           request: SsoExchangeRequestModel(
-            idToken: identity.idToken,
-            accessToken: identity.accessToken,
+            assertion: identity.idToken,
             tenantId: event.tenantId,
           ),
-          exchangePath: envConfig.variables.ssoTokenExchangePath,
         );
         await _completeLogin(result, emit);
       } catch (_) {

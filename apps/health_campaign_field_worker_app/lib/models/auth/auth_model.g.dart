@@ -62,21 +62,21 @@ Map<String, dynamic> _$$LoginModelImplToJson(_$LoginModelImpl instance) =>
 _$SsoExchangeRequestModelImpl _$$SsoExchangeRequestModelImplFromJson(
         Map<String, dynamic> json) =>
     _$SsoExchangeRequestModelImpl(
-      idToken: json['idToken'] as String,
-      accessToken: json['accessToken'] as String?,
+      assertion: json['assertion'] as String,
       tenantId: json['tenantId'] as String,
       userType: json['userType'] as String? ?? 'EMPLOYEE',
-      provider: json['provider'] as String? ?? 'MICROSOFT',
+      scope: json['scope'] as String? ?? 'read',
+      grantType: json['grant_type'] as String? ?? 'jwt_exchange',
     );
 
 Map<String, dynamic> _$$SsoExchangeRequestModelImplToJson(
         _$SsoExchangeRequestModelImpl instance) =>
     <String, dynamic>{
-      'idToken': instance.idToken,
-      'accessToken': instance.accessToken,
+      'assertion': instance.assertion,
       'tenantId': instance.tenantId,
       'userType': instance.userType,
-      'provider': instance.provider,
+      'scope': instance.scope,
+      'grant_type': instance.grantType,
     };
 
 _$UserRequestModelImpl _$$UserRequestModelImplFromJson(

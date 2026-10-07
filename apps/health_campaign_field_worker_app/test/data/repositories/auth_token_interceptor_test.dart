@@ -53,13 +53,15 @@ void main() {
         data: <String, dynamic>{'x': 1},
       );
 
-  test('adds the raw ID token as x-id-token on DIGIT calls', () async {
+  test('adds the raw ID token as x-id-token header and cookie on DIGIT calls',
+      () async {
     when(() => sso.currentIdToken()).thenAnswer((_) async => 'eyJ.id.token');
 
     final sent = await send(digit('project/v1/_search'));
 
     expect(sent.headers[AuthTokenInterceptor.idTokenHeader], 'eyJ.id.token');
     expect(AuthTokenInterceptor.idTokenHeader, 'x-id-token');
+    expect(sent.headers['cookie'], 'x-id-token=eyJ.id.token');
     // The DIGIT token still travels in RequestInfo as before.
     final data = sent.data as Map;
     expect((data['RequestInfo'] as Map)['authToken'], 'digit-access');
@@ -74,6 +76,7 @@ void main() {
 
     expect(
         sent.headers.containsKey(AuthTokenInterceptor.idTokenHeader), isFalse);
+    expect(sent.headers.containsKey('cookie'), isFalse);
     verifyNever(() => sso.currentIdToken());
   });
 

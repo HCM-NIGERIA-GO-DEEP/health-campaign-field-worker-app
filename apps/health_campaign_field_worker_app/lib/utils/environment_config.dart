@@ -143,7 +143,7 @@ class Variables {
   // Selects how the login page authenticates. PASSWORD keeps the DIGIT
   // username/password form; SSO shows only a Microsoft sign-in button that
   // runs an Azure Entra ID authorization-code flow and exchanges the resulting
-  // ID token for a DIGIT session via [ssoTokenExchangePath].
+  // ID token for a DIGIT session at the login token endpoint.
   static const _authMode = EnvEntry(
     'AUTH_MODE',
     'PASSWORD',
@@ -186,13 +186,6 @@ class Variables {
   static const _azureEndSessionOnLogout = EnvEntry(
     'AZURE_END_SESSION_ON_LOGOUT',
     'true',
-  );
-
-  // DIGIT endpoint (relative to BASE_URL) that accepts an Azure ID token and
-  // returns the standard DIGIT OAuth token response.
-  static const _ssoTokenExchangePath = EnvEntry(
-    'SSO_TOKEN_EXCHANGE_PATH',
-    'user/oauth/sso/_exchange',
   );
 
   const Variables({
@@ -327,8 +320,6 @@ class Variables {
         .where((scope) => scope.isNotEmpty)
         .toList();
   }
-
-  String get ssoTokenExchangePath => _valueOrDefault(_ssoTokenExchangePath);
 
   EnvType get envType {
     final envName = useFallbackValues

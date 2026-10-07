@@ -6,8 +6,8 @@ import 'package:digit_ui_components/utils/app_logger.dart';
 import '../local_store/secure_store/secure_store.dart';
 import 'azure_sso_service.dart';
 
-/// Supplies the Azure ID token sent as the `x-id-token` header, renewing it
-/// with the stored refresh token when it is about to expire.
+/// Supplies the Azure ID token sent as the `x-id-token` header and cookie,
+/// renewing it with the stored refresh token when it is about to expire.
 ///
 /// Behaviour:
 /// - Returns null when there is no SSO session (password login, logged out).

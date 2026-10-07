@@ -40,19 +40,25 @@ class AuthRepository {
 
   /// Exchanges an Azure Entra ID token for a DIGIT session.
   ///
-  /// [exchangePath] is relative to the client's base URL and comes from
-  /// `SSO_TOKEN_EXCHANGE_PATH`. The response must match the shape returned by
-  /// the password grant so the rest of the auth stack is unchanged.
+  /// Posts the `jwt_exchange` grant to the same token endpoint ([loginPath])
+  /// and with the same client credentials as [fetchAuthToken], so the
+  /// response has the password grant's shape and the rest of the auth stack
+  /// is unchanged.
   Future<AuthModel> exchangeSsoToken({
     required SsoExchangeRequestModel request,
-    required String exchangePath,
   }) async {
+    final headers = <String, String>{
+      "content-type": 'application/x-www-form-urlencoded',
+      "Access-Control-Allow-Origin": "*",
+      "authorization": "Basic ZWdvdi11c2VyLWNsaWVudDo=",
+    };
+
+    final formData = FormData.fromMap(request.toJson());
+
     final response = await _client.post(
-      exchangePath,
-      data: request.toJson(),
-      options: Options(headers: const {
-        "content-type": 'application/json',
-      }),
+      loginPath,
+      data: formData,
+      options: Options(headers: headers),
     );
 
     final data = response.data;

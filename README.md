@@ -1446,7 +1446,6 @@ Installation
     AZURE_REDIRECT_URI="org.egov.whoafro://oauth/callback"
     AZURE_SCOPES="openid profile offline_access api://<client id>/access_as_user"
     AZURE_END_SESSION_ON_LOGOUT="true"
-    SSO_TOKEN_EXCHANGE_PATH="user/oauth/sso/_exchange"
     ```
 
 5.  Run the app:

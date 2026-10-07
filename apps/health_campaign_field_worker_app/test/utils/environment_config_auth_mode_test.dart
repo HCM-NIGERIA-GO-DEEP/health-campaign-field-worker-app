@@ -44,7 +44,6 @@ void main() {
       expect(v.azureClientId, isEmpty);
       expect(v.azureRedirectUri, 'org.egov.whoafro://oauth/callback');
       expect(v.azureScopes, ['openid', 'profile', 'offline_access']);
-      expect(v.ssoTokenExchangePath, 'user/oauth/sso/_exchange');
       expect(v.azureEndSessionOnLogout, isTrue);
     });
 

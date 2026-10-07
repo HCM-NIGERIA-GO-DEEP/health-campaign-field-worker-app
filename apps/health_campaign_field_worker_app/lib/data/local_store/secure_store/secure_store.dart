@@ -339,8 +339,8 @@ class LocalSecureStore {
   }
 
   /// Azure ID token from the current SSO session. Sent as the `x-id-token`
-  /// header on DIGIT calls and used as the `id_token_hint` on logout. Null
-  /// after a password login or once the user has logged out.
+  /// header and cookie on DIGIT calls and used as the `id_token_hint` on
+  /// logout. Null after a password login or once the user has logged out.
   Future<String?> get ssoIdToken => storage.read(key: ssoIdTokenKey);
 
   /// Azure refresh token used to renew [ssoIdToken] silently.

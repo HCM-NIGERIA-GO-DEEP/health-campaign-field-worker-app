@@ -702,11 +702,12 @@ SsoExchangeRequestModel _$SsoExchangeRequestModelFromJson(
 
 /// @nodoc
 mixin _$SsoExchangeRequestModel {
-  String get idToken => throw _privateConstructorUsedError;
-  String? get accessToken => throw _privateConstructorUsedError;
+  String get assertion => throw _privateConstructorUsedError;
   String get tenantId => throw _privateConstructorUsedError;
   String get userType => throw _privateConstructorUsedError;
-  String get provider => throw _privateConstructorUsedError;
+  String get scope => throw _privateConstructorUsedError;
+  @JsonKey(name: 'grant_type')
+  String get grantType => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -721,11 +722,11 @@ abstract class $SsoExchangeRequestModelCopyWith<$Res> {
       _$SsoExchangeRequestModelCopyWithImpl<$Res, SsoExchangeRequestModel>;
   @useResult
   $Res call(
-      {String idToken,
-      String? accessToken,
+      {String assertion,
       String tenantId,
       String userType,
-      String provider});
+      String scope,
+      @JsonKey(name: 'grant_type') String grantType});
 }
 
 /// @nodoc
@@ -742,21 +743,17 @@ class _$SsoExchangeRequestModelCopyWithImpl<$Res,
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? idToken = null,
-    Object? accessToken = freezed,
+    Object? assertion = null,
     Object? tenantId = null,
     Object? userType = null,
-    Object? provider = null,
+    Object? scope = null,
+    Object? grantType = null,
   }) {
     return _then(_value.copyWith(
-      idToken: null == idToken
-          ? _value.idToken
-          : idToken // ignore: cast_nullable_to_non_nullable
+      assertion: null == assertion
+          ? _value.assertion
+          : assertion // ignore: cast_nullable_to_non_nullable
               as String,
-      accessToken: freezed == accessToken
-          ? _value.accessToken
-          : accessToken // ignore: cast_nullable_to_non_nullable
-              as String?,
       tenantId: null == tenantId
           ? _value.tenantId
           : tenantId // ignore: cast_nullable_to_non_nullable
@@ -765,9 +762,13 @@ class _$SsoExchangeRequestModelCopyWithImpl<$Res,
           ? _value.userType
           : userType // ignore: cast_nullable_to_non_nullable
               as String,
-      provider: null == provider
-          ? _value.provider
-          : provider // ignore: cast_nullable_to_non_nullable
+      scope: null == scope
+          ? _value.scope
+          : scope // ignore: cast_nullable_to_non_nullable
+              as String,
+      grantType: null == grantType
+          ? _value.grantType
+          : grantType // ignore: cast_nullable_to_non_nullable
               as String,
     ) as $Val);
   }
@@ -783,11 +784,11 @@ abstract class _$$SsoExchangeRequestModelImplCopyWith<$Res>
   @override
   @useResult
   $Res call(
-      {String idToken,
-      String? accessToken,
+      {String assertion,
       String tenantId,
       String userType,
-      String provider});
+      String scope,
+      @JsonKey(name: 'grant_type') String grantType});
 }
 
 /// @nodoc
@@ -803,21 +804,17 @@ class __$$SsoExchangeRequestModelImplCopyWithImpl<$Res>
   @pragma('vm:prefer-inline')
   @override
   $Res call({
-    Object? idToken = null,
-    Object? accessToken = freezed,
+    Object? assertion = null,
     Object? tenantId = null,
     Object? userType = null,
-    Object? provider = null,
+    Object? scope = null,
+    Object? grantType = null,
   }) {
     return _then(_$SsoExchangeRequestModelImpl(
-      idToken: null == idToken
-          ? _value.idToken
-          : idToken // ignore: cast_nullable_to_non_nullable
+      assertion: null == assertion
+          ? _value.assertion
+          : assertion // ignore: cast_nullable_to_non_nullable
               as String,
-      accessToken: freezed == accessToken
-          ? _value.accessToken
-          : accessToken // ignore: cast_nullable_to_non_nullable
-              as String?,
       tenantId: null == tenantId
           ? _value.tenantId
           : tenantId // ignore: cast_nullable_to_non_nullable
@@ -826,9 +823,13 @@ class __$$SsoExchangeRequestModelImplCopyWithImpl<$Res>
           ? _value.userType
           : userType // ignore: cast_nullable_to_non_nullable
               as String,
-      provider: null == provider
-          ? _value.provider
-          : provider // ignore: cast_nullable_to_non_nullable
+      scope: null == scope
+          ? _value.scope
+          : scope // ignore: cast_nullable_to_non_nullable
+              as String,
+      grantType: null == grantType
+          ? _value.grantType
+          : grantType // ignore: cast_nullable_to_non_nullable
               as String,
     ));
   }
@@ -838,19 +839,17 @@ class __$$SsoExchangeRequestModelImplCopyWithImpl<$Res>
 @JsonSerializable()
 class _$SsoExchangeRequestModelImpl implements _SsoExchangeRequestModel {
   const _$SsoExchangeRequestModelImpl(
-      {required this.idToken,
-      this.accessToken,
+      {required this.assertion,
       required this.tenantId,
       this.userType = 'EMPLOYEE',
-      this.provider = 'MICROSOFT'});
+      this.scope = 'read',
+      @JsonKey(name: 'grant_type') this.grantType = 'jwt_exchange'});
 
   factory _$SsoExchangeRequestModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$SsoExchangeRequestModelImplFromJson(json);
 
   @override
-  final String idToken;
-  @override
-  final String? accessToken;
+  final String assertion;
   @override
   final String tenantId;
   @override
@@ -858,11 +857,14 @@ class _$SsoExchangeRequestModelImpl implements _SsoExchangeRequestModel {
   final String userType;
   @override
   @JsonKey()
-  final String provider;
+  final String scope;
+  @override
+  @JsonKey(name: 'grant_type')
+  final String grantType;
 
   @override
   String toString() {
-    return 'SsoExchangeRequestModel(idToken: $idToken, accessToken: $accessToken, tenantId: $tenantId, userType: $userType, provider: $provider)';
+    return 'SsoExchangeRequestModel(assertion: $assertion, tenantId: $tenantId, userType: $userType, scope: $scope, grantType: $grantType)';
   }
 
   @override
@@ -870,21 +872,21 @@ class _$SsoExchangeRequestModelImpl implements _SsoExchangeRequestModel {
     return identical(this, other) ||
         (other.runtimeType == runtimeType &&
             other is _$SsoExchangeRequestModelImpl &&
-            (identical(other.idToken, idToken) || other.idToken == idToken) &&
-            (identical(other.accessToken, accessToken) ||
-                other.accessToken == accessToken) &&
+            (identical(other.assertion, assertion) ||
+                other.assertion == assertion) &&
             (identical(other.tenantId, tenantId) ||
                 other.tenantId == tenantId) &&
             (identical(other.userType, userType) ||
                 other.userType == userType) &&
-            (identical(other.provider, provider) ||
-                other.provider == provider));
+            (identical(other.scope, scope) || other.scope == scope) &&
+            (identical(other.grantType, grantType) ||
+                other.grantType == grantType));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, idToken, accessToken, tenantId, userType, provider);
+  int get hashCode =>
+      Object.hash(runtimeType, assertion, tenantId, userType, scope, grantType);
 
   @JsonKey(ignore: true)
   @override
@@ -903,25 +905,27 @@ class _$SsoExchangeRequestModelImpl implements _SsoExchangeRequestModel {
 
 abstract class _SsoExchangeRequestModel implements SsoExchangeRequestModel {
   const factory _SsoExchangeRequestModel(
-      {required final String idToken,
-      final String? accessToken,
-      required final String tenantId,
-      final String userType,
-      final String provider}) = _$SsoExchangeRequestModelImpl;
+          {required final String assertion,
+          required final String tenantId,
+          final String userType,
+          final String scope,
+          @JsonKey(name: 'grant_type') final String grantType}) =
+      _$SsoExchangeRequestModelImpl;
 
   factory _SsoExchangeRequestModel.fromJson(Map<String, dynamic> json) =
       _$SsoExchangeRequestModelImpl.fromJson;
 
   @override
-  String get idToken;
-  @override
-  String? get accessToken;
+  String get assertion;
   @override
   String get tenantId;
   @override
   String get userType;
   @override
-  String get provider;
+  String get scope;
+  @override
+  @JsonKey(name: 'grant_type')
+  String get grantType;
   @override
   @JsonKey(ignore: true)
   _$$SsoExchangeRequestModelImplCopyWith<_$SsoExchangeRequestModelImpl>

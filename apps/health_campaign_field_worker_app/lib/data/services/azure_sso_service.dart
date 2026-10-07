@@ -5,9 +5,10 @@ import '../../utils/environment_config.dart';
 
 /// Identity returned by an external single sign-on provider.
 ///
-/// [idToken] and [accessToken] are handed to the DIGIT exchange endpoint. The
-/// [idToken] is also sent as the `x-id-token` header on every DIGIT call and
-/// is the `id_token_hint` for the Entra end-session call on logout.
+/// [idToken] is the `assertion` of the DIGIT `jwt_exchange` token grant, is
+/// sent as the `x-id-token` header and cookie on every DIGIT call and is the
+/// `id_token_hint` for the Entra end-session call on logout. [accessToken] is
+/// returned by Entra but not currently sent anywhere.
 /// [refreshToken] (requires the `offline_access` scope) lets the app obtain a
 /// fresh ID token when the ~1 hour one expires, including during background
 /// sync. The DIGIT tokens remain the app's session source.
