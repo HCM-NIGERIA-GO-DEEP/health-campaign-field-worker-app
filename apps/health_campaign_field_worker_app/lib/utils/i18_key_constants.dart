@@ -651,6 +651,8 @@ class Login {
   String get switchReasonHeader => 'SWITCH_REASON_HEADER_LABEL';
 
   String get switchReasonContinue => 'SWITCH_REASON_CONTINUE';
+
+  String get userAlreadyLoggedIn => 'USER_ALREADY_LOGGED_IN';
 }
 
 class SelectSurveyFormShowcase {

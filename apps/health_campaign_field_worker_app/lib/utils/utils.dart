@@ -35,13 +35,16 @@ import 'package:transit_post/data/repositories/local/user_action.dart';
 import 'package:transit_post/data/repositories/remote/user_action.dart';
 
 import '../blocs/app_initialization/app_initialization.dart';
+import '../blocs/auth/auth.dart';
 import '../blocs/hf_referral_downsync/hf_referral_downsync.dart';
 import '../blocs/localization/app_localization.dart';
 import '../blocs/localization/localization.dart';
 import '../blocs/projects_beneficiary_downsync/project_beneficiaries_downsync.dart';
+import '../blocs/push_notification/push_notification.dart';
 import '../data/local_store/app_shared_preferences.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../data/local_store/no_sql/schema/localization.dart';
+import '../data/local_store/no_sql/schema/service_registry.dart';
 import '../data/local_store/secure_store/secure_store.dart';
 import '../models/app_config/app_config_model.dart';
 import '../router/app_router.dart';
@@ -98,6 +101,157 @@ Future<void> requestDisableBatteryOptimization() async {
 setBgRunning(bool isBgRunning) async {
   final localSecureStore = LocalSecureStore.instance;
   await localSecureStore.setBackgroundService(isBgRunning);
+}
+
+/// Returns true when the device has a network and the internet is actually
+/// reachable; otherwise shows the "not connected" toast and returns false.
+/// Logout needs the backend (it closes the server session), so every logout
+/// entry point gates on this instead of logging out locally.
+Future<bool> ensureOnlineOrAlert(BuildContext context) async {
+  final connectivityResult = await Connectivity().checkConnectivity();
+  final hasNetwork = !connectivityResult.contains(ConnectivityResult.none);
+  final hasActiveInternet = hasNetwork ? await getIsConnected() : false;
+
+  if (!hasActiveInternet && context.mounted) {
+    Toast.showToast(
+      context,
+      message: AppLocalizations.of(context).translate(
+        i18.login.noInternetError,
+      ),
+      type: ToastType.error,
+    );
+  }
+
+  return hasActiveInternet;
+}
+
+bool _logoutInFlight = false;
+
+/// Runs the full app logout flow so every logout button behaves the same:
+/// optional confirmation popup → online check → push-token unregister (best
+/// effort) → backend logout through AuthBloc → on success, boundary reset and
+/// home-localization reload; on failure a toast, and the user stays logged in.
+Future<void> performAppLogout(
+  BuildContext context, {
+  bool requireConfirmation = true,
+}) async {
+  if (!context.mounted) return;
+
+  if (!requireConfirmation) {
+    await _executeLogout(context);
+    return;
+  }
+
+  await showCustomPopup(
+    context: context,
+    builder: (dialogContext) => Popup(
+      title: AppLocalizations.of(context).translate(
+        i18.common.coreCommonWarning,
+      ),
+      description: AppLocalizations.of(context).translate(
+        i18.common.logOutWarningMsg,
+      ),
+      onOutsideTap: () => Navigator.of(dialogContext).pop(),
+      type: PopUpType.simple,
+      actions: [
+        DigitButton(
+          label: AppLocalizations.of(context).translate(
+            i18.common.coreCommonOk,
+          ),
+          onPressed: () async {
+            Navigator.of(dialogContext).pop();
+            await _executeLogout(context);
+          },
+          type: DigitButtonType.secondary,
+          size: DigitButtonSize.large,
+        ),
+        DigitButton(
+          label: AppLocalizations.of(context).translate(
+            i18.common.coreCommonNo,
+          ),
+          onPressed: () => Navigator.of(dialogContext).pop(),
+          type: DigitButtonType.primary,
+          size: DigitButtonSize.large,
+        ),
+      ],
+    ),
+  );
+}
+
+Future<void> _executeLogout(BuildContext context) async {
+  // A second tap while the backend call is in flight is ignored.
+  if (_logoutInFlight) return;
+  _logoutInFlight = true;
+  try {
+    if (!await ensureOnlineOrAlert(context)) return;
+    if (!context.mounted) return;
+
+    final authBloc = _readBlocOrNull<AuthBloc>(context);
+    if (authBloc == null) return;
+
+    // Captured before any await: a successful logout flips the router and
+    // this context is gone, but these blocs live above the router (app.dart)
+    // so the post-logout events can still be delivered to them.
+    final pushBloc = _readBlocOrNull<PushNotificationBloc>(context);
+    final boundaryBloc = _readBlocOrNull<BoundaryBloc>(context);
+    final localizationBloc = _readBlocOrNull<LocalizationBloc>(context);
+    final isar = _readBlocOrNull<Isar>(context);
+
+    if (pushBloc != null && isar != null) {
+      try {
+        final serviceRegistry = await isar.serviceRegistrys.where().findAll();
+        final apiEndPoint = Constants.getNotificationEndPoint(
+          serviceRegistry: serviceRegistry,
+          service: 'NOTIFICATION',
+          action: ApiOperation.unRegister.toValue(),
+          entityName: 'NotificationToken',
+        );
+        if (apiEndPoint.isNotEmpty) {
+          pushBloc.add(PushNotificationEvent.logout(apiEndPoint: apiEndPoint));
+        }
+      } catch (_) {
+        // Best effort: logout continues even if the token unregister fails.
+      }
+    }
+
+    final done = Completer<bool>();
+    authBloc.add(AuthLogoutEvent(result: done));
+    final loggedOut = await done.future;
+
+    if (loggedOut) {
+      // Only once the session is really gone: a user who stays logged in
+      // after a failed backend call must keep their boundary and strings.
+      boundaryBloc?.add(const BoundaryResetEvent());
+      localizationBloc?.add(
+        LocalizationEvent.onLoadLocalization(
+          module: Constants.homeLocalizationModules.join(','),
+          tenantId: envConfig.variables.tenantId,
+          locale: AppSharedPreferences().getSelectedLocale ?? '',
+          path: Constants.localizationApiPath,
+        ),
+      );
+    } else if (context.mounted) {
+      Toast.showToast(
+        context,
+        message: AppLocalizations.of(context).translate(
+          i18.common.coreCommonError,
+        ),
+        type: ToastType.error,
+      );
+    }
+  } finally {
+    _logoutInFlight = false;
+  }
+}
+
+/// `context.read` throws when the bloc is not provided above this screen;
+/// logout entry points differ in what they have, so absence is a valid state.
+T? _readBlocOrNull<T>(BuildContext context) {
+  try {
+    return context.read<T>();
+  } catch (_) {
+    return null;
+  }
 }
 
 performBackgroundService({

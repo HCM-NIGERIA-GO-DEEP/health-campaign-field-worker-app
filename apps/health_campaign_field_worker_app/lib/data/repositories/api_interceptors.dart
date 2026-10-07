@@ -9,6 +9,20 @@ import '../../utils/constants.dart';
 import '../../utils/environment_config.dart';
 import '../local_store/secure_store/secure_store.dart';
 
+/// Keys for `RequestOptions.extra` that individual requests set to opt out of
+/// the shared interceptors. Per-request, so every other caller of the shared
+/// Dio instance keeps today's behaviour.
+class RequestExtras {
+  RequestExtras._();
+
+  /// Do not wrap the body in `RequestInfo` — the request already carries its
+  /// own auth (basic-auth login, or a hand-built RequestInfo for logout).
+  static const skipRequestInfo = 'skipRequestInfo';
+
+  /// Never print the body — it carries credentials.
+  static const redactBodyLog = 'redactBodyLog';
+}
+
 class AuthTokenInterceptor extends Interceptor {
   final LocalSecureStore localSecureStore;
 
@@ -21,6 +35,10 @@ class AuthTokenInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
+    if (options.extra[RequestExtras.skipRequestInfo] == true) {
+      return super.onRequest(options, handler);
+    }
+
     final authToken = await localSecureStore.accessToken;
     final userInfo = await localSecureStore.userRequestModel;
     if (options.data is Map) {
@@ -49,7 +67,12 @@ class ApiLoggerInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    if (options.data is Map || options.data is List) {
+    if (options.extra[RequestExtras.redactBodyLog] == true) {
+      AppLogger.instance.info(
+        '[body redacted]',
+        title: '[REQUEST] ${options.uri.toString()}',
+      );
+    } else if (options.data is Map || options.data is List) {
       AppLogger.instance.info(
         _getIndentedJson(json.encode(options.data)),
         title: '[REQUEST] ${options.uri.toString()}',

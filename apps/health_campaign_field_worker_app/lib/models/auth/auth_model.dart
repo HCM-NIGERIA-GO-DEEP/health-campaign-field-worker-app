@@ -37,6 +37,9 @@ class LoginModel with _$LoginModel {
     required String tenantId,
     @Default('read') String scope,
     @JsonKey(name: 'grant_type') @Default('password') String grantType,
+    // Stable per-device id (DeviceIdService) the backend keys the single
+    // active session on.
+    String? deviceId,
   }) = _LoginModel;
 
   factory LoginModel.fromJson(Map<String, dynamic> json) =>

@@ -9,7 +9,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:isar/isar.dart';
 
-import '../blocs/auth/auth.dart';
 import '../blocs/localization/localization.dart';
 import '../blocs/project/project.dart';
 import '../data/local_store/app_shared_preferences.dart';
@@ -198,11 +197,11 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
                               type: DigitButtonType.primary,
                               size: DigitButtonSize.large,
                               mainAxisSize: MainAxisSize.max,
-                              onPressed: () {
-                                context
-                                    .read<AuthBloc>()
-                                    .add(const AuthLogoutEvent());
-                              },                            ),
+                              onPressed: () => performAppLogout(
+                                context,
+                                requireConfirmation: false,
+                              ),
+                            ),
                           ),
                         ),
                       ],

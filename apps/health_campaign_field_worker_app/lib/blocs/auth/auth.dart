@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:bloc_concurrency/bloc_concurrency.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/user_action.dart';
 import 'package:digit_ui_components/utils/app_logger.dart';
@@ -13,7 +14,11 @@ import '../../data/repositories/remote/mdms.dart';
 import '../../models/auth/auth_model.dart';
 import '../../models/entities/roles_type.dart';
 import '../../models/role_actions/role_actions_model.dart';
+import '../../services/device_id_service.dart';
+import '../../utils/constants.dart';
 import '../../utils/environment_config.dart';
+import '../../utils/session/login_rejection.dart';
+import '../../utils/session/logout_payload.dart';
 
 // part 'auth.freezed.dart' need to be added to auto generate the files for freezed model
 part 'auth.freezed.dart';
@@ -33,10 +38,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     required this.mdmsRepository,
     required this.individualRemoteRepository,
     LocalSecureStore? localSecureStore,
-  })  : localSecureStore = LocalSecureStore.instance,
+  })  : localSecureStore = localSecureStore ?? LocalSecureStore.instance,
         super(const AuthUnauthenticatedState()) {
     on(_onLogin);
-    on(_onLogout);
+    // Logouts run one at a time, never dropped: a dropped event would leave
+    // its caller's [AuthLogoutEvent.result] waiting forever. A second logout
+    // queued behind a successful one finds no stored token and clears the
+    // local session again without a backend call; behind a failed one it is
+    // a legitimate retry.
+    on<AuthLogoutEvent>(_onLogout, transformer: sequential());
     on(_onAutoLogin);
     on(_onCheckOtherDeviceLogin);
     on(_onDeviceSwitch);
@@ -84,11 +94,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(const AuthLoadingState());
 
     try {
+      final deviceId = await DeviceIdService.getDeviceId();
       final AuthModel result = await authRepository.fetchAuthToken(
         loginModel: LoginModel(
           username: event.userId,
           password: event.password,
           tenantId: event.tenantId,
+          deviceId: deviceId,
         ),
       );
       await localSecureStore.setAuthCredentials(result);
@@ -132,7 +144,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         ),
       );
     } on DioException catch (error) {
-      emit(const AuthErrorState());
+      // Only the single-active-session rejection gets a distinct message;
+      // every other failure keeps the localized "unable to login" toast.
+      emit(AuthErrorState(
+        isActiveSessionRejection(error.response?.data)
+            ? activeSessionExistsCode
+            : null,
+      ));
       emit(const AuthUnauthenticatedState());
 
       AppLogger.instance.error(
@@ -146,11 +164,77 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     }
   }
 
-  //_onLogout event logs out the user and deletes the saved user details from local storage
+  //_onLogout event closes the backend session, then deletes the saved user
+  // details from local storage. Callers have already confirmed connectivity
+  // (performAppLogout → ensureOnlineOrAlert); if the backend still cannot be
+  // reached, the local session is left untouched so the user can retry, and
+  // the caller learns the result through [AuthLogoutEvent.result]. No state
+  // is emitted on failure: any non-authenticated state would flip the app
+  // router to the login route (app.dart, routes: maybeWhen orElse).
   FutureOr<void> _onLogout(AuthLogoutEvent event, AuthEmitter emit) async {
-    await localSecureStore.deleteAll();
-    await localSecureStore.setBoundaryRefetch(true);
-    emit(const AuthUnauthenticatedState());
+    final outcome = await _logoutOnServer();
+    if (outcome == LogoutServerOutcome.failed) {
+      event.result?.complete(false);
+      return;
+    }
+
+    try {
+      try {
+        await localSecureStore.deleteAll();
+        await localSecureStore.setBoundaryRefetch(true);
+      } catch (error) {
+        // The server session is already closed; leaving the user on the
+        // authenticated route with a dead token and a half-wiped store is
+        // the one outcome that must not happen, so sign out regardless.
+        AppLogger.instance.error(
+          title: 'Logout local clear error',
+          message: '$error',
+        );
+      }
+      emit(const AuthUnauthenticatedState());
+    } finally {
+      // Never leave the caller waiting.
+      event.result?.complete(true);
+    }
+  }
+
+  /// Never throws — the outcome decides what happens to the local session.
+  Future<LogoutServerOutcome> _logoutOnServer() async {
+    try {
+      final accessToken = await localSecureStore.accessToken;
+      if (accessToken == null || accessToken.isEmpty) {
+        AppLogger.instance.error(
+          title: 'Logout',
+          message: 'No access token stored; clearing the local session only',
+        );
+        return LogoutServerOutcome.sessionAlreadyInvalid;
+      }
+
+      final user = await localSecureStore.userRequestModel;
+      await authRepository.logOutUser(
+        logoutPath: Constants.logoutUserPath,
+        body: buildLogoutPayload(
+          accessToken: accessToken,
+          userTenantId: user?.tenantId,
+          envTenantId: envConfig.variables.tenantId,
+        ),
+      );
+      return LogoutServerOutcome.loggedOut;
+    } on DioException catch (error) {
+      final outcome = classifyLogoutStatus(error.response?.statusCode);
+      AppLogger.instance.error(
+        title: 'Logout API error',
+        message:
+            '${error.response?.statusCode}: ${error.response?.data} → $outcome',
+      );
+      return outcome;
+    } catch (error) {
+      AppLogger.instance.error(
+        title: 'Logout API error',
+        message: '$error',
+      );
+      return LogoutServerOutcome.failed;
+    }
   }
 
   FutureOr<void> _onReset(AuthResetEvent event, AuthEmitter emit) async {
@@ -297,7 +381,10 @@ class AuthEvent with _$AuthEvent {
     required String tenantId,
   }) = AuthAutoLoginEvent;
 
-  const factory AuthEvent.logout() = AuthLogoutEvent;
+  /// [result] completes with true once the local session is cleared (backend
+  /// session closed or already invalid) and false when the backend logout
+  /// failed and the user stays logged in.
+  const factory AuthEvent.logout({Completer<bool>? result}) = AuthLogoutEvent;
 
   const factory AuthEvent.checkOtherDeviceLogin({
     required String username,

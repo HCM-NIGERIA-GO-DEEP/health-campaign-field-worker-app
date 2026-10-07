@@ -22,6 +22,7 @@ import '../router/app_router.dart';
 import '../utils/constants.dart';
 import '../utils/environment_config.dart';
 import '../utils/i18_key_constants.dart' as i18;
+import '../utils/session/login_rejection.dart';
 import '../widgets/localized.dart';
 
 @RoutePage()
@@ -139,6 +140,35 @@ class _LoginPageState extends LocalizedState<LoginPage> {
           },
           error: (message) {
             Navigator.of(context, rootNavigator: true).pop();
+
+            if (message == activeSessionExistsCode) {
+              // Backend refused the login because this user is active on
+              // another device. No takeover flow: the user logs out there
+              // first (or an admin revokes the session).
+              showCustomPopup(
+                context: context,
+                builder: (ctx) => Popup(
+                  title: localizations.translate(i18.login.labelText),
+                  titleIcon: Icon(
+                    Icons.error_outline,
+                    color: theme.colorTheme.alert.error,
+                  ),
+                  description:
+                      localizations.translate(i18.login.userAlreadyLoggedIn),
+                  type: PopUpType.simple,
+                  actions: [
+                    DigitButton(
+                      label: localizations.translate(i18.common.coreCommonOk),
+                      onPressed: () => Navigator.of(ctx).pop(),
+                      type: DigitButtonType.primary,
+                      size: DigitButtonSize.large,
+                    ),
+                  ],
+                ),
+              );
+              return;
+            }
+
             Toast.showToast(
               context,
               message: message ??

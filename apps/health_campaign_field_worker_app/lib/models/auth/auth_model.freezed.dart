@@ -456,7 +456,10 @@ mixin _$LoginModel {
   String get tenantId => throw _privateConstructorUsedError;
   String get scope => throw _privateConstructorUsedError;
   @JsonKey(name: 'grant_type')
-  String get grantType => throw _privateConstructorUsedError;
+  String get grantType =>
+      throw _privateConstructorUsedError; // Stable per-device id (DeviceIdService) the backend keys the single
+// active session on.
+  String? get deviceId => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -476,7 +479,8 @@ abstract class $LoginModelCopyWith<$Res> {
       String userType,
       String tenantId,
       String scope,
-      @JsonKey(name: 'grant_type') String grantType});
+      @JsonKey(name: 'grant_type') String grantType,
+      String? deviceId});
 }
 
 /// @nodoc
@@ -498,6 +502,7 @@ class _$LoginModelCopyWithImpl<$Res, $Val extends LoginModel>
     Object? tenantId = null,
     Object? scope = null,
     Object? grantType = null,
+    Object? deviceId = freezed,
   }) {
     return _then(_value.copyWith(
       username: null == username
@@ -524,6 +529,10 @@ class _$LoginModelCopyWithImpl<$Res, $Val extends LoginModel>
           ? _value.grantType
           : grantType // ignore: cast_nullable_to_non_nullable
               as String,
+      deviceId: freezed == deviceId
+          ? _value.deviceId
+          : deviceId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -542,7 +551,8 @@ abstract class _$$LoginModelImplCopyWith<$Res>
       String userType,
       String tenantId,
       String scope,
-      @JsonKey(name: 'grant_type') String grantType});
+      @JsonKey(name: 'grant_type') String grantType,
+      String? deviceId});
 }
 
 /// @nodoc
@@ -562,6 +572,7 @@ class __$$LoginModelImplCopyWithImpl<$Res>
     Object? tenantId = null,
     Object? scope = null,
     Object? grantType = null,
+    Object? deviceId = freezed,
   }) {
     return _then(_$LoginModelImpl(
       username: null == username
@@ -588,6 +599,10 @@ class __$$LoginModelImplCopyWithImpl<$Res>
           ? _value.grantType
           : grantType // ignore: cast_nullable_to_non_nullable
               as String,
+      deviceId: freezed == deviceId
+          ? _value.deviceId
+          : deviceId // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -601,7 +616,8 @@ class _$LoginModelImpl implements _LoginModel {
       this.userType = 'EMPLOYEE',
       required this.tenantId,
       this.scope = 'read',
-      @JsonKey(name: 'grant_type') this.grantType = 'password'});
+      @JsonKey(name: 'grant_type') this.grantType = 'password',
+      this.deviceId});
 
   factory _$LoginModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$LoginModelImplFromJson(json);
@@ -621,10 +637,14 @@ class _$LoginModelImpl implements _LoginModel {
   @override
   @JsonKey(name: 'grant_type')
   final String grantType;
+// Stable per-device id (DeviceIdService) the backend keys the single
+// active session on.
+  @override
+  final String? deviceId;
 
   @override
   String toString() {
-    return 'LoginModel(username: $username, password: $password, userType: $userType, tenantId: $tenantId, scope: $scope, grantType: $grantType)';
+    return 'LoginModel(username: $username, password: $password, userType: $userType, tenantId: $tenantId, scope: $scope, grantType: $grantType, deviceId: $deviceId)';
   }
 
   @override
@@ -642,13 +662,15 @@ class _$LoginModelImpl implements _LoginModel {
                 other.tenantId == tenantId) &&
             (identical(other.scope, scope) || other.scope == scope) &&
             (identical(other.grantType, grantType) ||
-                other.grantType == grantType));
+                other.grantType == grantType) &&
+            (identical(other.deviceId, deviceId) ||
+                other.deviceId == deviceId));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, username, password, userType, tenantId, scope, grantType);
+  int get hashCode => Object.hash(runtimeType, username, password, userType,
+      tenantId, scope, grantType, deviceId);
 
   @JsonKey(ignore: true)
   @override
@@ -671,7 +693,8 @@ abstract class _LoginModel implements LoginModel {
       final String userType,
       required final String tenantId,
       final String scope,
-      @JsonKey(name: 'grant_type') final String grantType}) = _$LoginModelImpl;
+      @JsonKey(name: 'grant_type') final String grantType,
+      final String? deviceId}) = _$LoginModelImpl;
 
   factory _LoginModel.fromJson(Map<String, dynamic> json) =
       _$LoginModelImpl.fromJson;
@@ -689,6 +712,9 @@ abstract class _LoginModel implements LoginModel {
   @override
   @JsonKey(name: 'grant_type')
   String get grantType;
+  @override // Stable per-device id (DeviceIdService) the backend keys the single
+// active session on.
+  String? get deviceId;
   @override
   @JsonKey(ignore: true)
   _$$LoginModelImplCopyWith<_$LoginModelImpl> get copyWith =>

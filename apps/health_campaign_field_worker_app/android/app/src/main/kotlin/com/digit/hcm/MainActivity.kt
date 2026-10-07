@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.provider.Settings
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
@@ -13,6 +14,7 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.digit.location_tracker"
+    private val DEVICE_CHANNEL = "com.digit.hcm/device_id"
     private val locationReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val latitude = intent?.getDoubleExtra("latitude", 0.0)
@@ -69,6 +71,27 @@ class MainActivity : FlutterActivity() {
                 "stopLocationUpdates" -> {
                     stopService()
                     result.success(null)
+                }
+
+                else -> result.notImplemented()
+            }
+        }
+
+        MethodChannel(
+            flutterEngine!!.dartExecutor.binaryMessenger,
+            DEVICE_CHANNEL
+        ).setMethodCallHandler { call, result ->
+            when (call.method) {
+                "getAndroidId" -> {
+                    try {
+                        val androidId = Settings.Secure.getString(
+                            contentResolver,
+                            Settings.Secure.ANDROID_ID
+                        )
+                        result.success(androidId)
+                    } catch (e: Exception) {
+                        result.error("ANDROID_ID_ERROR", e.message, null)
+                    }
                 }
 
                 else -> result.notImplemented()

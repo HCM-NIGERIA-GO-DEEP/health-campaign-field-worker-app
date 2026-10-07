@@ -4,6 +4,7 @@ import 'package:digit_data_model/models/entities/user_action.dart';
 import 'package:dio/dio.dart';
 
 import '../../../models/auth/auth_model.dart';
+import '../api_interceptors.dart';
 
 class AuthRepository {
   final Dio _client;
@@ -18,12 +19,24 @@ class AuthRepository {
       "authorization": "Basic ZWdvdi11c2VyLWNsaWVudDo=",
     };
 
-    final formData = FormData.fromMap(loginModel.toJson());
-
+    // Form-url-encoded map (not multipart FormData) so the backend's session
+    // feature receives deviceId/clientType as plain params. A Map body would
+    // otherwise be wrapped in RequestInfo and logged with the password by the
+    // shared interceptors, hence both opt-outs.
     final response = await _client.post(
       loginPath,
-      data: formData,
-      options: Options(headers: headers),
+      data: {
+        ...loginModel.toJson(),
+        'clientType': 'mobile',
+      },
+      options: Options(
+        headers: headers,
+        contentType: Headers.formUrlEncodedContentType,
+        extra: {
+          RequestExtras.skipRequestInfo: true,
+          RequestExtras.redactBodyLog: true,
+        },
+      ),
     );
 
     final data = response.data;
@@ -48,6 +61,13 @@ class AuthRepository {
         logoutPath,
         queryParameters: queryParameters,
         data: body ?? {},
+        options: Options(
+          headers: {
+            "content-type": 'application/json',
+          },
+          // The body carries its own RequestInfo (see buildLogoutPayload).
+          extra: {RequestExtras.skipRequestInfo: true},
+        ),
       );
     } catch (error) {
       rethrow;
