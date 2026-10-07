@@ -214,17 +214,43 @@ class TransformerExecutor extends ActionExecutor {
       debugPrint(
           'TRANSFORMER: existingModels count before dedup: ${existingModels.length}');
 
-      // Deduplicate existingModels by type first (keep first occurrence)
-      final seenExistingTypes = <String>{};
-      final dedupedExistingModels = existingModels.where((model) {
+      // Deduplicate existingModels by type. For TaskModel, a household can
+      // genuinely have several rows (e.g. a Mark Closed Household/declined
+      // consent placeholder plus a later real delivery task) - keeping
+      // whichever happened to come first in the input list is arbitrary and
+      // can disagree with isHouseholdStillClosed (utils.dart), which always
+      // treats the task with the latest createdTime as "the current one".
+      // A mismatch here meant an edit could silently update the wrong task
+      // row while the household's actual closed/open classification kept
+      // reading from a different, untouched row. Keep the latest-createdTime
+      // row for TaskModel to agree with that definition; for every other
+      // type (normally only ever one instance anyway) keep first occurrence,
+      // unchanged from before.
+      final byType = <String, EntityModel>{};
+      for (final model in existingModels) {
         final type = getEntityTypeName(model);
-        if (seenExistingTypes.contains(type)) {
-          debugPrint('TRANSFORMER: Removing duplicate existingModel $type');
-          return false;
+        final existing = byType[type];
+        if (existing == null) {
+          byType[type] = model;
+          continue;
         }
-        seenExistingTypes.add(type);
-        return true;
-      }).toList();
+        if (type == 'TaskModel' && model is TaskModel && existing is TaskModel) {
+          final existingTime = existing.clientAuditDetails?.createdTime ??
+              existing.auditDetails?.createdTime ??
+              0;
+          final modelTime = model.clientAuditDetails?.createdTime ??
+              model.auditDetails?.createdTime ??
+              0;
+          if (modelTime > existingTime) {
+            byType[type] = model;
+          }
+          debugPrint('TRANSFORMER: Multiple TaskModel existingModels found, '
+              'keeping latest by createdTime');
+        } else {
+          debugPrint('TRANSFORMER: Removing duplicate existingModel $type');
+        }
+      }
+      final dedupedExistingModels = byType.values.toList();
       debugPrint(
           'TRANSFORMER: existingModels count after dedup: ${dedupedExistingModels.length}');
 

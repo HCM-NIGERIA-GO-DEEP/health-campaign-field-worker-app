@@ -76,8 +76,14 @@ void main() {
     expect(data.single['key'], 'HouseholdClientReferenceId');
   });
 
-  test('the editable HOUSEHOLD form branch is now Registrar-only (excludes Distributor)', () {
-    final branch = openButtonOnAction.firstWhere((b) {
+  test('the editable HOUSEHOLD form branches are Registrar-only (exclude Distributor)', () {
+    // There are two such branches - reopening a still-closed household vs
+    // plainly editing a registered one - split on fn:isHouseholdMarkedClosed
+    // so that only the latter skips ahead to householdDetails. Both must stay
+    // gated on stock / not-yet-delivered / not-a-Distributor. The clauses are
+    // asserted individually rather than as one exact string so that adding a
+    // further branch condition does not break this test.
+    final branches = openButtonOnAction.where((b) {
       final actions = (b['actions'] as List).cast<Map<String, dynamic>>();
       final nav = actions.firstWhere(
         (a) => a['actionType'] == 'NAVIGATION',
@@ -85,12 +91,17 @@ void main() {
       );
       final props = nav['properties'] as Map<String, dynamic>?;
       return props?['name'] == 'HOUSEHOLD' && props?['type'] == 'FORM';
-    });
+    }).toList();
 
-    expect(
-      branch['condition']['expression'],
-      "{{fn:hasStockForRegistration()}}==true && {{fn:isClosedHousehold(item.tasks)}} == false && {{fn:hasRole('DISTRIBUTOR')}} == false",
-    );
+    expect(branches, hasLength(2));
+
+    for (final branch in branches) {
+      final expression = branch['condition']['expression'] as String;
+      expect(expression, contains('{{fn:hasStockForRegistration()}}==true'));
+      expect(
+          expression, contains('{{fn:isClosedHousehold(item.tasks)}} == false'));
+      expect(expression, contains("{{fn:hasRole('DISTRIBUTOR')}} == false"));
+    }
   });
 
   test('the insufficient-stock-for-registration popup is now Registrar-only too', () {
