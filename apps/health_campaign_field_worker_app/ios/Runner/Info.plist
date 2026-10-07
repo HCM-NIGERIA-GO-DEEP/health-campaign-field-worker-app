@@ -12,7 +12,7 @@
     <key>CFBundleURLSchemes</key>
     <array>
       <!-- Azure Entra ID redirect scheme; must match AZURE_REDIRECT_URI in .env -->
-      <string>com.digit.hcm</string>
+      <string>org.egov.whoafro</string>
     </array>
   </dict>
 </array>

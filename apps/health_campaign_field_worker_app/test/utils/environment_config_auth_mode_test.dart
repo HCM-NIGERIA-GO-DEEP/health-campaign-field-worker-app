@@ -42,7 +42,7 @@ void main() {
       final v = fromEnv('');
       expect(v.azureTenantId, isEmpty);
       expect(v.azureClientId, isEmpty);
-      expect(v.azureRedirectUri, 'com.digit.hcm://oauth/callback');
+      expect(v.azureRedirectUri, 'org.egov.whoafro://oauth/callback');
       expect(v.azureScopes, ['openid', 'profile', 'offline_access']);
       expect(v.ssoTokenExchangePath, 'user/oauth/sso/_exchange');
       expect(v.azureEndSessionOnLogout, isTrue);
@@ -51,7 +51,7 @@ void main() {
     test('a blank .env value keeps the shipped default (CI writes empty keys)',
         () {
       final v = fromEnv('AZURE_REDIRECT_URI=\nAZURE_SCOPES=\nAUTH_MODE=');
-      expect(v.azureRedirectUri, 'com.digit.hcm://oauth/callback');
+      expect(v.azureRedirectUri, 'org.egov.whoafro://oauth/callback');
       expect(v.azureScopes, ['openid', 'profile', 'offline_access']);
       expect(v.authMode, AuthMode.password);
     });

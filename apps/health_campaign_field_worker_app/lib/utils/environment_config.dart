@@ -168,7 +168,7 @@ class Variables {
   // `appAuthRedirectScheme` manifest placeholder / iOS URL scheme.
   static const _azureRedirectUri = EnvEntry(
     'AZURE_REDIRECT_URI',
-    'com.digit.hcm://oauth/callback',
+    'org.egov.whoafro://oauth/callback',
   );
 
   // Space-separated scopes requested from Entra ID. `offline_access` is

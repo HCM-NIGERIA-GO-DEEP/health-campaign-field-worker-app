@@ -42,7 +42,7 @@ certificate) is unaffected and needs no Microsoft certificates.
 AUTH_MODE=SSO
 AZURE_TENANT_ID=<directory (tenant) id>
 AZURE_CLIENT_ID=<application (client) id>
-AZURE_REDIRECT_URI=com.digit.hcm://oauth/callback
+AZURE_REDIRECT_URI=org.egov.whoafro://oauth/callback
 AZURE_SCOPES=openid profile offline_access api://<client id>/access_as_user
 AZURE_END_SESSION_ON_LOGOUT=true
 SSO_TOKEN_EXCHANGE_PATH=user/oauth/sso/_exchange
@@ -111,7 +111,7 @@ claim matches the DIGIT user behind `RequestInfo.authToken`.
 - On the Entra side set *Assignment required* = Yes on the Enterprise
   application so only assigned users can sign in, and apply Conditional
   Access where licensed.
-- Custom-scheme redirects (`com.digit.hcm://`) can be claimed by another app
+- Custom-scheme redirects (`org.egov.whoafro://`) can be claimed by another app
   on Android; PKCE makes an intercepted code useless. For defence in depth,
   switch to an `https://` App Link with `assetlinks.json` later.
 
@@ -121,7 +121,7 @@ claim matches the DIGIT user behind `RequestInfo.authToken`.
    Supported account types: usually *Accounts in this organizational
    directory only*.
 2. **Authentication → Add a platform → Mobile and desktop applications.**
-   Add the custom redirect URI `com.digit.hcm://oauth/callback` (must equal
+   Add the custom redirect URI `org.egov.whoafro://oauth/callback` (must equal
    `AZURE_REDIRECT_URI`). No Android signature hash is needed for a custom
    scheme redirect; only the MSAL broker flow requires that.
 3. Under **Advanced settings** set *Allow public client flows* to **Yes**.
@@ -139,9 +139,9 @@ claim matches the DIGIT user behind `RequestInfo.authToken`.
 
 The redirect scheme is also declared in the app:
 
-- Android: `manifestPlaceholders += [appAuthRedirectScheme: 'com.digit.hcm']`
+- Android: `manifestPlaceholders += [appAuthRedirectScheme: 'org.egov.whoafro']`
   in `android/app/build.gradle`.
-- iOS: `CFBundleURLTypes` entry with scheme `com.digit.hcm` in
+- iOS: `CFBundleURLTypes` entry with scheme `org.egov.whoafro` in
   `ios/Runner/Info.plist`.
 
 If you change the redirect scheme, change all three places together.
