@@ -136,7 +136,11 @@ class BeneficiaryDownSyncBloc
           offset: existingDownSyncData.firstOrNull?.offset ?? 0,
           limit: 0,
           isDeleted: true,
-          // lastSyncedTime: lastSyncedTime,
+          // Always request the full set. A non-zero lastSyncedTime makes
+          // the server return only records changed since that instant, so
+          // beneficiaries created before the device last synced never
+          // arrive.
+          lastSyncedTime: 0,
           tenantId: envConfig.variables.tenantId,
           projectId: event.projectModel.id,
         ),
@@ -209,7 +213,11 @@ class BeneficiaryDownSyncBloc
                 totalCount: totalCount,
                 tenantId: envConfig.variables.tenantId,
                 projectId: event.projectModel.id,
-                // lastSyncedTime: lastSyncedTime,
+                // Always request the full set. A non-zero lastSyncedTime makes
+                // the server return only records changed since that instant, so
+                // beneficiaries created before the device last synced never
+                // arrive.
+                lastSyncedTime: 0,
                 isDeleted: true,
               ),
             );
@@ -316,7 +324,11 @@ class BeneficiaryDownSyncBloc
             offset: existingDownSyncData.firstOrNull?.offset ?? 0,
             limit: 0,
             isDeleted: true,
-            // lastSyncedTime: lastSyncedTime,
+            // Always request the full set. A non-zero lastSyncedTime makes
+            // the server return only records changed since that instant, so
+            // beneficiaries created before the device last synced never
+            // arrive.
+            lastSyncedTime: 0,
             tenantId: envConfig.variables.tenantId,
             projectId: event.projectModel.id,
           ),
@@ -413,7 +425,11 @@ class BeneficiaryDownSyncBloc
                 totalCount: totalCount,
                 tenantId: envConfig.variables.tenantId,
                 projectId: event.projectModel.id,
-                // lastSyncedTime: loopLastSyncedTime,
+                // Always request the full set. A non-zero lastSyncedTime makes
+                // the server return only records changed since that instant, so
+                // beneficiaries created before the device last synced never
+                // arrive.
+                lastSyncedTime: 0,
                 isDeleted: true,
               ),
             );
