@@ -270,7 +270,7 @@ class SyncServiceMapper extends SyncEntityMapperListener {
         break;
 
       case DataModelType.household:
-        responseEntities = await remote.search(HouseholdSearchModel(
+        final serverHouseholds = await remote.search(HouseholdSearchModel(
           clientReferenceId: entities
               .whereType<HouseholdModel>()
               .map((e) => e.clientReferenceId)
@@ -279,11 +279,13 @@ class SyncServiceMapper extends SyncEntityMapperListener {
           isDeleted: true,
         ));
 
+        final mergedHouseholds = <HouseholdModel>[];
+
         for (var element in operationGroupedEntity.value) {
           if (element.id == null) continue;
           final entity = element.entity as HouseholdModel;
           final responseEntity =
-              responseEntities.whereType<HouseholdModel>().firstWhereOrNull(
+              serverHouseholds.whereType<HouseholdModel>().firstWhereOrNull(
                     (e) => e.clientReferenceId == entity.clientReferenceId,
                   );
 
@@ -309,6 +311,27 @@ class SyncServiceMapper extends SyncEntityMapperListener {
                 nonRecoverableError: element.nonRecoverableError,
               ),
             );
+
+            // The server's Household response doesn't always echo back
+            // latitude/longitude (captured during registration, stored on
+            // both Household and its nested Address). local.update(), run
+            // on whatever this case returns, overwrites the full local row
+            // - so a server response missing these fields was silently
+            // wiping out an already-correct local value. Falls back to the
+            // locally-captured coordinates whenever the server's response
+            // doesn't have its own.
+            mergedHouseholds.add(responseEntity!.copyWith(
+              latitude: responseEntity.latitude ?? entity.latitude,
+              longitude: responseEntity.longitude ?? entity.longitude,
+              address: responseEntity.address != null
+                  ? responseEntity.address!.copyWith(
+                      latitude: responseEntity.address!.latitude ??
+                          entity.address?.latitude,
+                      longitude: responseEntity.address!.longitude ??
+                          entity.address?.longitude,
+                    )
+                  : entity.address,
+            ));
           } else {
             final bool markAsNonRecoverable = await local.opLogManager
                 .updateSyncDownRetry(entity.clientReferenceId);
@@ -324,6 +347,7 @@ class SyncServiceMapper extends SyncEntityMapperListener {
           }
         }
 
+        responseEntities = mergedHouseholds;
         break;
 
       case DataModelType.householdMember:
