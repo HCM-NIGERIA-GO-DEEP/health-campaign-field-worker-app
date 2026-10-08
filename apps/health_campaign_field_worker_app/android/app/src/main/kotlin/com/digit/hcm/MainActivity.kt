@@ -1,4 +1,4 @@
-package com.digit.hcm
+package org.egov.azm.adamawa
 
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -14,7 +14,7 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
     private val CHANNEL = "com.digit.location_tracker"
-    private val DEVICE_CHANNEL = "com.digit.hcm/device_id"
+    private val DEVICE_CHANNEL = "org.egov.azm.adamawa/device_id"
     private val locationReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             val latitude = intent?.getDoubleExtra("latitude", 0.0)

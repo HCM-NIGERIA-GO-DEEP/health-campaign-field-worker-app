@@ -17,7 +17,7 @@ import '../utils/session/device_id_resolution.dart';
 /// device_id_resolution.dart so they stay unit-testable.
 class DeviceIdService {
   static const MethodChannel _deviceIdChannel =
-      MethodChannel('com.digit.hcm/device_id');
+      MethodChannel('org.egov.azm.adamawa/device_id');
 
   static Future<String> getDeviceId() async {
     final cached = await LocalSecureStore.instance.deviceId;
