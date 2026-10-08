@@ -183,7 +183,8 @@ class TransformerExecutor extends ActionExecutor {
     debugPrint(
         'TRANSFORMER: isEdit=$isEdit, forceCreate=$forceCreate, existingModels=${existingModels?.length ?? 0}');
 
-    extraContext['identifierEntries'] = TransformerExecutor.buildIdentifierEntries(
+    extraContext['identifierEntries'] =
+        TransformerExecutor.buildIdentifierEntries(
       formValuesToUse ?? {},
       formEntityMapper,
     );
@@ -234,7 +235,9 @@ class TransformerExecutor extends ActionExecutor {
           byType[type] = model;
           continue;
         }
-        if (type == 'TaskModel' && model is TaskModel && existing is TaskModel) {
+        if (type == 'TaskModel' &&
+            model is TaskModel &&
+            existing is TaskModel) {
           final existingTime = existing.clientAuditDetails?.createdTime ??
               existing.auditDetails?.createdTime ??
               0;
@@ -353,9 +356,9 @@ class TransformerExecutor extends ActionExecutor {
 
     // TEMP DEBUG (latlng): trace where the delivery task's lat/long comes from.
     if (configName == 'delivery') {
-      final deliveryDetails =
-          (formValuesToUse ?? const {})['DeliveryDetails'];
-      final latLngInForm = deliveryDetails is Map ? deliveryDetails['latLng'] : null;
+      final deliveryDetails = (formValuesToUse ?? const {})['DeliveryDetails'];
+      final latLngInForm =
+          deliveryDetails is Map ? deliveryDetails['latLng'] : null;
       debugPrint('LATLNG-DEBUG: configName=$configName, '
           'DeliveryDetails.latLng in formData = "$latLngInForm"');
       for (final e in entities) {
@@ -494,8 +497,8 @@ class TransformerExecutor extends ActionExecutor {
   ) {
     final identifierEntries = <Map<String, dynamic>>[];
 
-    final existingIdentifier = formEntityMapper.getStrictValueFromFormDataOnly(
-        'householdDetails.identifiers', formValues);
+    final existingIdentifier =
+        _resolveIdentifierField('identifiers', formValues, formEntityMapper);
     if (existingIdentifier is String && existingIdentifier.contains(',')) {
       final parts = existingIdentifier.split(',');
       identifierEntries.add({
@@ -509,11 +512,10 @@ class TransformerExecutor extends ActionExecutor {
       });
     }
 
-    final identificationType = formEntityMapper.getStrictValueFromFormDataOnly(
-        'householdDetails.identificationType', formValues);
-    final identificationNumber =
-        formEntityMapper.getStrictValueFromFormDataOnly(
-            'householdDetails.identificationNumber', formValues);
+    final identificationType = _resolveIdentifierField(
+        'identificationType', formValues, formEntityMapper);
+    final identificationNumber = _resolveIdentifierField(
+        'identificationNumber', formValues, formEntityMapper);
     if (identificationType is String &&
         identificationType.trim().isNotEmpty &&
         identificationNumber is String &&
@@ -529,5 +531,56 @@ class TransformerExecutor extends ActionExecutor {
     }
 
     return identifierEntries;
+  }
+
+  /// The page the identifier fields have always been read from. Flows that keep
+  /// them here (HOUSEHOLD registration, in every campaign) resolve on the
+  /// primary lookup in [_resolveIdentifierField] and never reach the scan.
+  static const String _identifierPageHint = 'householdDetails';
+
+  /// Form data is keyed by page name, so a field's path is
+  /// `<pageName>.<fieldName>` - and `getStrictValueFromFormDataOnly` is a
+  /// literal path walk that returns null as soon as one segment is missing.
+  /// Reading the identifier fields from a hard-coded `householdDetails.` prefix
+  /// therefore silently dropped them for any flow that captures them on a
+  /// differently-named page: ADD_MEMBER puts them on `beneficiaryDetails`, so
+  /// every added member fell through to the all-null fallback entry and synced
+  /// with an identifier carrying no type and no Beneficiary ID at all (which
+  /// also left its pool id stuck at UNASSIGNED, since
+  /// UPDATE_IDENTIFIER_STATUS matches on identifierType).
+  ///
+  /// The hard-coded page is still tried first so flows that already worked
+  /// resolve exactly as before, byte for byte; only a null result falls through
+  /// to locating the field on whichever page actually carries it.
+  static dynamic _resolveIdentifierField(
+    String fieldName,
+    Map<String, dynamic> formValues,
+    FormEntityMapper formEntityMapper,
+  ) {
+    final fromHintedPage = formEntityMapper.getStrictValueFromFormDataOnly(
+        '$_identifierPageHint.$fieldName', formValues);
+    if (fromHintedPage != null) return fromHintedPage;
+
+    for (final entry in formValues.entries) {
+      // Not a page: execute() merges the navigation params into form values so
+      // __switch:navigation.* directives can resolve, and a nav param sharing
+      // one of these field names must not be mistaken for form input.
+      if (entry.key == 'navigation') continue;
+
+      final page = entry.value;
+      if (page is Map<String, dynamic> && page.containsKey(fieldName)) {
+        return page[fieldName];
+      }
+      // Mirrors the single-item-list unwrapping getStrictValueFromFormDataOnly
+      // does, so a page held as a one-element list resolves the same way.
+      if (page is List &&
+          page.length == 1 &&
+          page.first is Map<String, dynamic> &&
+          (page.first as Map<String, dynamic>).containsKey(fieldName)) {
+        return (page.first as Map<String, dynamic>)[fieldName];
+      }
+    }
+
+    return null;
   }
 }

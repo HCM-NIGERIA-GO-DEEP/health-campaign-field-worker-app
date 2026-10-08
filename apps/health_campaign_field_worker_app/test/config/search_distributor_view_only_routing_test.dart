@@ -73,7 +73,13 @@ void main() {
         actions.first['properties'] as Map<String, dynamic>;
     expect(navProps['type'], 'TEMPLATE');
     final data = (navProps['data'] as List).cast<Map<String, dynamic>>();
-    expect(data.single['key'], 'HouseholdClientReferenceId');
+    final keys = data.map((d) => d['key']).toSet();
+    expect(keys, contains('HouseholdClientReferenceId'));
+    // The project beneficiary must travel with the household: the delivery
+    // task hangs its projectBeneficiaryClientReferenceId off this nav param,
+    // and without it the created task never joins back to the household, so
+    // the search card stays on "Delivery Pending" forever.
+    expect(keys, contains('ProjectBeneficiaryClientReferenceId'));
   });
 
   test('the editable HOUSEHOLD form branches are Registrar-only (exclude Distributor)', () {

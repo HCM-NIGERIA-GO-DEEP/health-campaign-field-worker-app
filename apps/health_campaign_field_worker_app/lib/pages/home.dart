@@ -2258,17 +2258,16 @@ class _HomePageState extends LocalizedState<HomePage> {
                 await triggerLocalization(module: moduleName);
                 isTriggerLocalisation = false;
 
-                final prefs = await SharedPreferences.getInstance();
-                final schemaJsonRaw = prefs.getString('app_config_schemas');
-
                 FlowBuilderSingleton().setPersistenceConfiguration(
                     persistenceConfiguration:
                         PersistenceConfiguration.offlineFirst);
-                WidgetRegistry.initialize();
-                CrudBlocSingleton().setData(
-                  crudService: DigitCrudService(
-                    context: ctx,
-                    relationshipMap: [
+
+                await FlowNavigationUtils.navigateToFlowModule(
+                  context: ctx,
+                  config: FlowModuleConfig(
+                    schemaKey: 'CLOSEHOUSEHOLD',
+                    sampleFlows: sampleCloseHouseholdFlows,
+                    relationshipMappings: [
                       const RelationshipMapping(
                           from: 'name',
                           to: 'individual',
@@ -2321,8 +2320,8 @@ class _HomePageState extends LocalizedState<HomePage> {
                           foreignKey: 'clientReferenceId',
                         ),
                     ],
-                    nestedModelMappings: [
-                      const NestedModelMapping(
+                    nestedModelMappings: const [
+                      NestedModelMapping(
                         rootModel: 'individual',
                         fields: {
                           'name': NestedFieldMapping(
@@ -2345,7 +2344,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                           ),
                         },
                       ),
-                      const NestedModelMapping(
+                      NestedModelMapping(
                         rootModel: 'household',
                         fields: {
                           'address': NestedFieldMapping(
@@ -2356,7 +2355,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                           ),
                         },
                       ),
-                      const NestedModelMapping(
+                      NestedModelMapping(
                         rootModel: 'task',
                         fields: {
                           'resource': NestedFieldMapping(
@@ -2368,41 +2367,8 @@ class _HomePageState extends LocalizedState<HomePage> {
                         },
                       ),
                     ],
-                    searchEntityRepository: ctx.read<SearchEntityRepository>(),
                   ),
-                  dynamicEntityModelListener: EntityModelMapMapper(),
                 );
-                try {
-                  if (isRemoteCloseHouseholdFlows) {
-                    final allSchemas =
-                        json.decode(schemaJsonRaw!) as Map<String, dynamic>;
-                    final data = allSchemas['CLOSEHOUSEHOLD'];
-
-                    final closeHouseholdData = data?['data'];
-                    final flowsData = (closeHouseholdData['flows']
-                                as List<dynamic>?)
-                            ?.map((e) => Map<String, dynamic>.from(e as Map))
-                            .toList() ??
-                        [];
-                    FlowRegistry.setConfig(flowsData);
-                    NavigationRegistry.setupNavigation(ctx);
-
-                    ctx.router.push(
-                      FlowBuilderHomeRoute(
-                          pageName: closeHouseholdData["initialPage"]),
-                    );
-                  } else {
-                    FlowRegistry.setConfig(sampleCloseHouseholdFlows["flows"]
-                        as List<Map<String, dynamic>>);
-                    NavigationRegistry.setupNavigation(ctx);
-                    ctx.router.push(
-                      FlowBuilderHomeRoute(
-                          pageName: sampleCloseHouseholdFlows["initialPage"]),
-                    );
-                  }
-                } catch (e) {
-                  debugPrint('error $e');
-                }
               },
             ));
           },

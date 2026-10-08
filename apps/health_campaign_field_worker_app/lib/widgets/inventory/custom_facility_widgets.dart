@@ -194,6 +194,11 @@ class _FacilityCardContent extends StatelessWidget {
         stockEntryType == 'LOSS' ||
         stockEntryType == 'DAMAGED';
     final isLessExcessFlow = stockEntryType == 'LESS_EXCESS';
+    // Every stockEntryType in INVENTORY.json spells the receive flow
+    // 'RECEIPT'; 'RECEIVED' is only ever a transactionType. Comparing against
+    // 'RECEIVED' here made this flag permanently false.
+    final isReceivedFlow =
+        stockEntryType == 'RECEIPT' || transactionType == 'RECEIVED';
     final currentUserBoundaryType =
         context.selectedProject.address?.boundaryType?.toString();
 
@@ -266,7 +271,7 @@ class _FacilityCardContent extends StatelessWidget {
         if (isFromField) return facilityLevel == 'current';
       } else if (transactionType == 'RECEIVED' ||
           transactionType == 'RECEIPT') {
-        if (isToField) return facilityLevel == 'parent';
+        if (isToField) return facilityLevel == 'current';
         if (isFromField) return facilityLevel == 'parent';
       } else if (stockEntryType == 'LOSS' || stockEntryType == 'DAMAGED') {
         // For loss and damaged, to field should show parent facility
@@ -286,12 +291,29 @@ class _FacilityCardContent extends StatelessWidget {
     // Build facility dropdown items
     var facilities = <DropdownItem>[];
 
+    // A distributor receiving stock takes delivery into their own team, so the
+    // destination facility has to offer DELIVERY_TEAM - that is what reveals
+    // the teamCode field, whose visibilityCondition is
+    // `warehouseDetails.facilityToWhich==DELIVERY_TEAM`. Without the receive
+    // flow here the option never appeared and the team could not be captured.
+    //
+    // Warehouse managers are unaffected: hasNoChildFacilities is only ever true
+    // for a DISPATCHED/ISSUED transaction, so `!isWareHouseMgr ||
+    // hasNoChildFacilities` stays false for them on a receipt, exactly as
+    // before. Roles that are neither distributor nor warehouse manager are
+    // still excluded by hasDeliveryTeamInConfig, since no hierarchy level lists
+    // DELIVERY_TEAM under forReceipt.
+    //
+    // isReceivedFlow is deliberately NOT added to the isFromField branch: it
+    // was a no-op term there while the flag was permanently false, and dropping
+    // it keeps the source-facility dropdown behaving exactly as it does today.
     final showDeliveryTeam = (hasDeliveryTeamInConfig ||
             (isToField && hasDeliveryTeamInValidation)) &&
         ((isToField &&
                 !isReturnFlow &&
                 (transactionType == 'DISPATCHED' ||
-                    transactionType == 'ISSUED') &&
+                    transactionType == 'ISSUED' ||
+                    isReceivedFlow) &&
                 (!isWareHouseMgr || hasNoChildFacilities)) ||
             (isFromField &&
                 !isWareHouseMgr &&
@@ -405,6 +427,28 @@ class _FacilityCardContent extends StatelessWidget {
           });
         }
 
+        // For Received, auto-prefill the from field with current facility
+        if (isFromField &&
+            (transactionType == 'RECEIVED' || transactionType == 'RECEIPT') &&
+            (selectedValue == null || selectedValue.isEmpty) &&
+            facilities.isNotEmpty) {
+          final currentFacility = facilities.first.code;
+          selectedValue = currentFacility;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            field.control.value = currentFacility;
+            field.control.markAsTouched();
+            field.control.markAsDirty();
+            context.read<FormsBloc>().add(
+                  FormsEvent.updateField(
+                    schemaKey: pageSchema,
+                    context: context,
+                    key: formKey,
+                    value: currentFacility,
+                  ),
+                );
+          });
+        }
+
         final selectedOption =
             (selectedValue != null && selectedValue.isNotEmpty)
                 ? DropdownItem(
@@ -440,6 +484,29 @@ class _FacilityCardContent extends StatelessWidget {
                       value: value.code,
                     ),
                   );
+
+              // Picking DELIVERY_TEAM satisfies teamCode's visibilityCondition,
+              // which makes a required field active that nothing can fill:
+              // teamCode is format "custom" with no component registered for
+              // it, so it renders an empty box and the page blocks on a
+              // mandatory field the user cannot see. The delivery team is the
+              // distributor themselves, so derive it here - the same thing the
+              // return and less-excess branches above already do with
+              // dependantFormKey. Clearing it on any other selection keeps a
+              // stale team from surviving a change of destination, and the
+              // field goes back to being hidden and unvalidated.
+              if (isToField) {
+                context.read<FormsBloc>().add(
+                      FormsEvent.updateField(
+                        schemaKey: pageSchema,
+                        context: context,
+                        key: dependantFormKey,
+                        value: value.code == deliveryTeamCode
+                            ? context.loggedInUserUuid
+                            : null,
+                      ),
+                    );
+              }
             },
           ),
         );

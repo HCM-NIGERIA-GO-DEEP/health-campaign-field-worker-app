@@ -97,4 +97,81 @@ void main() {
 
     expect(entries.single['identifierId'], 'part-a,part-b');
   });
+
+  /// Form data is keyed by page name. These fields were read from a hard-coded
+  /// `householdDetails.` prefix, so the ADD_MEMBER flow - which captures them
+  /// on its `beneficiaryDetails` page - resolved nothing and every added member
+  /// synced with an identifier carrying no type and no Beneficiary ID.
+  group('resolves the identifier fields off whichever page carries them', () {
+    test('reads the Beneficiary ID from ADD_MEMBER\'s beneficiaryDetails page', () {
+      final entries = TransformerExecutor.buildIdentifierEntries(
+        {
+          'beneficiaryDetails': {
+            'identifiers': 'UNIQUE_BENEFICIARY_ID, 00000-1700afd1',
+          },
+        },
+        mapper,
+      );
+
+      expect(entries, hasLength(1));
+      expect(entries.single['identifierType'], 'UNIQUE_BENEFICIARY_ID');
+      expect(entries.single['identifierId'], '00000-1700afd1');
+    });
+
+    test('reads the Identification Type/Number pair off a non-household page too', () {
+      final entries = TransformerExecutor.buildIdentifierEntries(
+        {
+          'beneficiaryDetails': {
+            'identifiers': 'UNIQUE_BENEFICIARY_ID, 998877665',
+            'identificationType': 'NATIONAL_ID',
+            'identificationNumber': '98765432101',
+          },
+        },
+        mapper,
+      );
+
+      expect(entries, hasLength(2));
+      expect(entries[0]['identifierId'], '998877665');
+      expect(entries[1], {
+        'identifierType': 'NATIONAL_ID',
+        'identifierId': '98765432101',
+      });
+    });
+
+    test('still prefers householdDetails when both pages are present, so existing flows are untouched', () {
+      final entries = TransformerExecutor.buildIdentifierEntries(
+        {
+          'householdDetails': {'identifiers': 'UNIQUE_BENEFICIARY_ID, from-household'},
+          'beneficiaryDetails': {'identifiers': 'UNIQUE_BENEFICIARY_ID, from-member'},
+        },
+        mapper,
+      );
+
+      expect(entries.single['identifierId'], 'from-household');
+    });
+
+    test('ignores the navigation params that execute() merges into form values', () {
+      final entries = TransformerExecutor.buildIdentifierEntries(
+        {
+          'navigation': {'identifiers': 'UNIQUE_BENEFICIARY_ID, from-navigation'},
+        },
+        mapper,
+      );
+
+      expect(entries.single, {'identifierType': null, 'identifierId': null});
+    });
+
+    test('scans past pages that do not carry the field', () {
+      final entries = TransformerExecutor.buildIdentifierEntries(
+        {
+          'beneficiaryLocation': {'addressLine1': 'somewhere'},
+          'caregiverConsent': {'consent': true},
+          'beneficiaryDetails': {'identifiers': 'DEFAULT, uuid-9'},
+        },
+        mapper,
+      );
+
+      expect(entries.single['identifierId'], 'uuid-9');
+    });
+  });
 }

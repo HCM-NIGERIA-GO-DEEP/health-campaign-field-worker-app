@@ -295,6 +295,41 @@ class FunctionRegistries {
       return teamCode;
     });
 
+    // Resolves the delivery team a stock transaction is addressed to.
+    //
+    // The "stock" transformer config maps
+    //   receiverId -> __switch:receiverPartyType{STAFF: __context:teamCode, ...}
+    // so whenever the receiving party is a delivery team, receiverId is exactly
+    // whatever this returns. INVENTORY.json called this function but it was
+    // never registered, and FunctionRegistry.call returns null for an unknown
+    // name (rendered as ''), so every delivery-team receipt was saved with no
+    // receiver at all.
+    //
+    // The destination team (warehouseDetails.teamCode) is the one receiverId
+    // needs. stockDetails.deliveryTeam is the team on the *sending* side
+    // (returns / less-excess) and is only used as a fallback, so a flow that
+    // populates just that field still resolves to a team rather than nothing.
+    // stockEntryType and primaryRole are passed by the config but not needed:
+    // which field is populated already identifies the side the team is on.
+    //
+    // args: [stockEntryType, primaryRole, warehouseDetails.teamCode,
+    //        stockDetails.deliveryTeam]
+    FunctionRegistry.register('getStockTeamCode', (args, stateData) {
+      String argAt(int index) =>
+          args.length > index ? (args[index]?.toString().trim() ?? '') : '';
+
+      final destinationTeam = argAt(2);
+      final rawTeam = destinationTeam.isNotEmpty ? destinationTeam : argAt(3);
+      if (rawTeam.isEmpty) return '';
+
+      // A scanned team QR arrives as "userName||userUuid" (see getTeamCode), so
+      // strip the name - receiverId has to be the bare uuid. A team code filled
+      // in from the logged-in distributor has no separator and passes through.
+      return rawTeam.contains('||')
+          ? rawTeam.split('||').last.trim()
+          : rawTeam;
+    });
+
     // Extracts the userName (part before "||") from the scanned team QR
     // ("userName||userUuid"). Returns '' when no userName is present
     // (e.g. when the scanned QR only contains the userUuid).

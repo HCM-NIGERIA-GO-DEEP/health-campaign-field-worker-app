@@ -319,8 +319,16 @@ final jsonConfig = {
           "name": {
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
-            // "givenName": "beneficiaryDetails.nameOfIndividual",
-            "givenName": "householdDetails.nameOfIndividual",
+            // This config drives the ADD_MEMBER flow, whose only page is
+            // `beneficiaryDetails` - and form paths are `<pageName>.<field>`.
+            // Pointing givenName at `householdDetails` (a page that flow does
+            // not have) resolved to null in both directions: members synced
+            // with no given name, their overview card rendered "--" for the
+            // first name, and editing one left the name field blank because
+            // the reverse mapper wrote the value back under the same
+            // non-existent page key. Every sibling field here is already
+            // `beneficiaryDetails.*`.
+            "givenName": "beneficiaryDetails.nameOfIndividual",
             "familyName": "beneficiaryDetails.familyname",
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit",
@@ -936,8 +944,17 @@ final jsonConfig = {
             "stockEntryType": "__context:stockEntryType",
             "primaryRole": "__context:primaryRole",
             "secondaryRole": "__context:secondaryRole",
+            // A __switch with no matching case and no `default` throws, and
+            // mapFormToEntities aborts the whole model on a throw - so a
+            // RECEIPT (the only stockEntryType absent here) produced no
+            // StockModel at all. The executor's multi-entity branch swallows
+            // that exception, so receiving stock looked like it succeeded:
+            // the MRN was issued and the success screen shown, with nothing
+            // written. What RECEIPT must not resolve to is IN_TRANSIT - that
+            // is what the incomingTransactions query filters on, and received
+            // stock has by definition already arrived.
             "status":
-                "__switch:__context:stockEntryType:{ISSUED:__value:IN_TRANSIT,RETURNED:__value:IN_TRANSIT,LOSS:__value:LOST,DAMAGED:__value:DAMAGED}",
+                "__switch:__context:stockEntryType:{ISSUED:__value:IN_TRANSIT,RETURNED:__value:IN_TRANSIT,LOSS:__value:LOST,DAMAGED:__value:DAMAGED,default:__value:RECEIVED}",
             "scanResource": "stockProductDetails.scanResource",
             "quantityWastage": "stockProductDetails.quantityWastage",
             "quantityPartialUsed": "stockProductDetails.quantityPartialUsed"
