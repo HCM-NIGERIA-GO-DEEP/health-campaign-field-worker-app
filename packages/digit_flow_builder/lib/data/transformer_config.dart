@@ -90,7 +90,7 @@ final jsonConfig = {
             "lastName": "householdDetails.lastName"
           },
           "bloodGroup": "health.bloodGroup",
-          "gender": "beneficiaryDetails.gender",
+          "gender": "householdDetails.gender",
           "address": "list:AddressModel",
           "identifiers": "list:IdentifierModel",
           "clientAuditDetails": "__generate:clientAudit",
@@ -199,7 +199,7 @@ final jsonConfig = {
           "additionalFields": {
             "name":
                 "__concatName:beneficiaryDetails.nameOfIndividual,beneficiaryDetails.familyname",
-            "gender": "beneficiaryDetails.gender",
+            "gender": "householdDetails.gender",
             "dateOfBirth": "beneficiaryDetails.dobPicker",
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
@@ -1270,6 +1270,20 @@ final jsonConfig = {
           "IdentifierModel": {
             "mappings": {
               "id": "id",
+              // Still a hard-coded DEFAULT + uuid, so a closed household shows
+              // a 36-char uuid on the search card where a normally-registered
+              // one shows its short Beneficiary ID.
+              //
+              // Switching this to the registration configs'
+              // "listSource": "__context:identifierEntries" is necessary but
+              // NOT sufficient: the hidden `identifiers` idPopulator it would
+              // read is built from `availableIDs` during the first form build,
+              // while LOAD_UNIQUE_ID_POOL only runs in a post-frame callback
+              // afterwards - so the form has already settled on DEFAULT by the
+              // time the pool id exists, and the mapping faithfully carries
+              // that DEFAULT through. The id has to be resolved after the pool
+              // load (e.g. at submit time off __context:latestBeneficiaryId)
+              // before this mapping is worth changing.
               "identifierType": "__value:DEFAULT",
               "identifierId": "__generate:uuid",
 

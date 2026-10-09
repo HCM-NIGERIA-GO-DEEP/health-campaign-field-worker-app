@@ -3164,15 +3164,15 @@ final dynamic sampleFlows = {
               "schemaCode": null,
               "systemDate": false,
               "lengthRange": {
-                "maxLength": 11,
-                "minLength": 11,
-                "errorMessage": "MOBILE_LENGTH_11_DIGIT_ERROR"
+                "maxLength": 9,
+                "minLength": 9,
+                "errorMessage": "MOBILE_LENGTH_9_DIGIT_ERROR"
               },
               "validations": [
                 {
                   "type": "required",
                   "value": true,
-                  "message": "MOBILE_LENGTH_11_DIGIT_ERROR"
+                  "message": "MOBILE_LENGTH_9_DIGIT_ERROR"
                 },
                 {
                   "type": "pattern",
@@ -3181,18 +3181,18 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "minLength",
-                  "value": 11,
-                  "message": "MOBILE_LENGTH_11_DIGIT_ERROR"
+                  "value": 9,
+                  "message": "MOBILE_LENGTH_9_DIGIT_ERROR"
                 },
                 {
                   "type": "maxLength",
-                  "value": 11,
-                  "message": "MOBILE_LENGTH_11_DIGIT_ERROR"
+                  "value": 9,
+                  "message": "MOBILE_LENGTH_9_DIGIT_ERROR"
                 }
               ],
               "errorMessage": "",
               "isMultiSelect": false,
-              "required.message": "MOBILE_LENGTH_11_DIGIT_ERROR",
+              "required.message": "MOBILE_LENGTH_9_DIGIT_ERROR",
               "pattern.message": "MB_ONLY_NUMBER"
             },
             {

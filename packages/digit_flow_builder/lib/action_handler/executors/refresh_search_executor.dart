@@ -40,6 +40,15 @@ class RefreshSearchExecutor extends ActionExecutor {
     Map<String, dynamic> contextData,
   ) async {
     final data = action.properties;
+    final targetScreen = data['screenName'] as String?;
+    if (targetScreen != null && targetScreen.isNotEmpty) {
+      final refreshed = SearchStateManager().refreshScreen(targetScreen);
+      debugPrint(
+        'REFRESH_SEARCH: targetScreen=$targetScreen refreshed=$refreshed',
+      );
+      return contextData;
+    }
+
     final direction = data['direction'] as String? ?? 'down';
     final paginationConfig = data['pagination'] as Map<String, dynamic>?;
 

@@ -179,6 +179,19 @@ class SearchStateManager {
     debugPrint('SearchStateManager: Unregistered callback for $key');
   }
 
+  /// Re-runs all registered searches for the current instance of a screen.
+  /// Useful when an action on another screen changes data shown by a retained
+  /// route, such as returning to household search after recording a delivery.
+  bool refreshScreen(String screenKey) {
+    final prefix = _screenKeyPrefix(screenKey);
+    final callbackKeys =
+        _searchCallbacks.keys.where((key) => key.startsWith(prefix)).toList();
+    for (final key in callbackKeys) {
+      _searchCallbacks[key]?.call();
+    }
+    return callbackKeys.isNotEmpty;
+  }
+
   /// Get or create ValueNotifier for listening to changes
   ValueNotifier<int> listen(String screenKey, String searchName) {
     final key = _compositeKey(screenKey, searchName);

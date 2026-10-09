@@ -25,7 +25,9 @@ void main() {
   List<Map<String, dynamic>> flows() =>
       (config['flows'] as List).cast<Map<String, dynamic>>();
 
-  test('registerNewBeneficiary (searchBeneficiary footer) is hidden from Distributor', () {
+  test(
+      'registerNewBeneficiary (searchBeneficiary footer) is hidden from Distributor',
+      () {
     final search = flows().firstWhere((f) => f['name'] == 'searchBeneficiary');
     final btn = (search['footer'] as List)
         .cast<Map<String, dynamic>>()
@@ -34,20 +36,34 @@ void main() {
     expect(btn['visible'], "{{fn:hasRole('DISTRIBUTOR')}} == false");
   });
 
-  test('skip (insufficient-beneficiary-ID popup) is hidden from Distributor', () {
+  test('skip (insufficient-beneficiary-ID popup) is hidden from Distributor',
+      () {
     final search = flows().firstWhere((f) => f['name'] == 'searchBeneficiary');
     final minCheck = (search['footer'] as List)
         .cast<Map<String, dynamic>>()
         .firstWhere((w) => w['fieldName'] == 'beneficiaryIdMinCheck');
-    final footerActions = (minCheck['properties']['popupConfig']['footerActions']
-            as List)
-        .cast<Map<String, dynamic>>();
+    final footerActions =
+        (minCheck['properties']['popupConfig']['footerActions'] as List)
+            .cast<Map<String, dynamic>>();
     final skipBtn = footerActions.firstWhere((a) => a['fieldName'] == 'skip');
 
     expect(skipBtn['visible'], "{{fn:hasRole('DISTRIBUTOR')}} == false");
   });
 
-  test('registerNewBeneficiary and skip share the same destination, so they must share the same gate', () {
+  test(
+      'Register New Beneficiary on the post-delivery preview is hidden from Distributor',
+      () {
+    final preview = flows().firstWhere((f) => f['name'] == 'previewScreen');
+    final btn = (preview['footer'] as List)
+        .cast<Map<String, dynamic>>()
+        .firstWhere((w) => w['fieldName'] == 'registerBeneficiary');
+
+    expect(btn['visible'], "{{fn:hasRole('DISTRIBUTOR')}} == false");
+  });
+
+  test(
+      'registerNewBeneficiary and skip share the same destination, so they must share the same gate',
+      () {
     final search = flows().firstWhere((f) => f['name'] == 'searchBeneficiary');
     final btn = (search['footer'] as List)
         .cast<Map<String, dynamic>>()
@@ -55,19 +71,22 @@ void main() {
     final minCheck = (search['footer'] as List)
         .cast<Map<String, dynamic>>()
         .firstWhere((w) => w['fieldName'] == 'beneficiaryIdMinCheck');
-    final footerActions = (minCheck['properties']['popupConfig']['footerActions']
-            as List)
-        .cast<Map<String, dynamic>>();
+    final footerActions =
+        (minCheck['properties']['popupConfig']['footerActions'] as List)
+            .cast<Map<String, dynamic>>();
     final skipBtn = footerActions.firstWhere((a) => a['fieldName'] == 'skip');
 
     expect(btn['visible'], skipBtn['visible']);
   });
 
-  test('registerBeneficiary (householdOverview footer, the Deliver ITN entry point) is hidden from Registrar', () {
+  test(
+      'registerBeneficiary (householdOverview footer, the Deliver ITN entry point) is hidden from Registrar',
+      () {
     final householdOverview =
         flows().firstWhere((f) => f['name'] == 'householdOverview');
-    final deliverBtn =
-        (householdOverview['footer'] as List).cast<Map<String, dynamic>>().first;
+    final deliverBtn = (householdOverview['footer'] as List)
+        .cast<Map<String, dynamic>>()
+        .first;
 
     expect(deliverBtn['fieldName'], 'registerBeneficiary');
     expect(deliverBtn['visible'], "{{fn:hasRole('REGISTRAR')}} == false");

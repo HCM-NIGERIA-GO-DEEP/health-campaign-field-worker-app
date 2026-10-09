@@ -43,6 +43,37 @@ class StockCalculationUtils {
     return _getAdditionalFieldValue(stock, 'stockEntryType');
   }
 
+  static double? getNumericAdditionalFieldValue(StockModel stock, String key) {
+    final fields = stock.additionalFields?.fields;
+    if (fields == null) return null;
+    for (final field in fields) {
+      if (field.key == key) {
+        return double.tryParse(field.value?.toString() ?? '');
+      }
+    }
+    return null;
+  }
+
+  static double getSenderShortfall(StockModel stock) {
+    final status = _getAdditionalFieldValue(stock, 'status');
+    final quantity = double.tryParse(stock.quantity ?? '0') ?? 0;
+    final originalQuantity =
+        getNumericAdditionalFieldValue(stock, 'originalQuantityReceived') ??
+            quantity;
+    final actualQuantity =
+        getNumericAdditionalFieldValue(stock, 'actualQuantityReceived');
+
+    if (status == 'REJECTED' && actualQuantity == null) {
+      return originalQuantity > 0 ? originalQuantity : 0;
+    }
+    if ((status == 'REJECTED' || status == 'ACCEPTED') &&
+        actualQuantity != null) {
+      final shortfall = originalQuantity - actualQuantity;
+      return shortfall > 0 ? shortfall : 0;
+    }
+    return 0;
+  }
+
   static double _getDeliveryTaskValue(
     List<TaskModel> tasks,
     String productVariantId,
@@ -115,8 +146,13 @@ class StockCalculationUtils {
     for (final stock in filteredStock) {
       final transactionType = stock.transactionType?.toUpperCase() ?? '';
       final transactionReason = stock.transactionReason?.toUpperCase() ?? '';
-      final quantity = double.tryParse(stock.quantity ?? '0') ?? 0.0;
+      final dispatchedQuantity = double.tryParse(stock.quantity ?? '0') ?? 0.0;
       final status = _getAdditionalFieldValue(stock, 'status');
+      final actualQuantity =
+          getNumericAdditionalFieldValue(stock, 'actualQuantityReceived');
+      final quantity = status == 'ACCEPTED' && actualQuantity != null
+          ? actualQuantity
+          : dispatchedQuantity;
       final stockEntryType = _getStockEntryType(stock);
       final wastage =
           double.tryParse(_getAdditionalFieldValue(stock, 'quantityWastage')) ??

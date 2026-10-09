@@ -285,6 +285,39 @@ bool _hasLogWithType(attendanceLog, DateTime date, String type) {
 /// This function should be called at application startup to populate the
 /// registry with all necessary business logic functions.
 void initializeFunctionRegistry() {
+  /// Formats a GPS accuracy reading for display.
+  ///
+  /// The capture widget (`JsonSchemaLatLngBuilder`) shows accuracy as
+  /// `toStringAsFixed(2)`, but it persists the raw double. Any screen that
+  /// reads the stored value back through a template - the closed-household
+  /// summary and preview render
+  /// `{{HouseholdModel.address.locationAccuracy}}` - therefore printed the
+  /// full double (e.g. `4.7299999999999995`) where capture had shown `4.73`.
+  /// Rounding at save time would not help: those screens read a household
+  /// registered earlier, whose stored value already has full precision.
+  ///
+  /// - **Function Name**: `'formatAccuracy'`
+  /// - **Arguments**: `[value]`, or `[value, decimals]` (defaults to 2).
+  /// - **Returns**: the value at the requested precision, or `'--'` when it is
+  ///   absent or not a number - matching what `formatDate` returns so a blank
+  ///   reading renders the same way across the summary.
+  FunctionRegistry.register('formatAccuracy', (args, stateData) {
+    if (args.isEmpty) return '--';
+
+    final raw = args.first;
+    // Templates resolve to strings before reaching here, and an unresolved
+    // placeholder arrives as the literal "null" (see resolveTemplate), so a
+    // plain null check is not enough.
+    final asString = raw?.toString().trim() ?? '';
+    if (asString.isEmpty || asString == 'null') return '--';
+
+    final value = raw is num ? raw : num.tryParse(asString);
+    if (value == null) return '--';
+
+    final decimals = args.length > 1 ? int.tryParse(args[1].toString()) : null;
+    return value.toStringAsFixed(decimals ?? 2);
+  });
+
   /// Registers a function to calculate age from a date of birth.
   ///
   /// - **Function Name**: `'calculateAge'`

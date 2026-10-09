@@ -34,8 +34,16 @@ void main() {
         screenKey,
         'identifier',
         [
-          {'key': 'identifierId', 'value': '98765432109', 'operation': 'equals'},
-          {'key': 'identifierType', 'value': 'NATIONAL_ID', 'operation': 'equals'},
+          {
+            'key': 'identifierId',
+            'value': '98765432109',
+            'operation': 'equals'
+          },
+          {
+            'key': 'identifierType',
+            'value': 'NATIONAL_ID',
+            'operation': 'equals'
+          },
         ],
         triggerSearch: false,
       );
@@ -56,7 +64,9 @@ void main() {
   });
 
   group('removeFiltersByKeysForScreen', () {
-    test('purges identifierId/identifierType across every searchName for the screen', () {
+    test(
+        'purges identifierId/identifierType across every searchName for the screen',
+        () {
       final manager = SearchStateManager();
 
       // "identifier" searchName holds the active ID-mode filters.
@@ -64,8 +74,16 @@ void main() {
         screenKey,
         'identifier',
         [
-          {'key': 'identifierId', 'value': '11111111111', 'operation': 'equals'},
-          {'key': 'identifierType', 'value': 'NATIONAL_ID', 'operation': 'equals'},
+          {
+            'key': 'identifierId',
+            'value': '11111111111',
+            'operation': 'equals'
+          },
+          {
+            'key': 'identifierType',
+            'value': 'NATIONAL_ID',
+            'operation': 'equals'
+          },
         ],
         triggerSearch: false,
       );
@@ -76,7 +94,11 @@ void main() {
         'name',
         [
           {'key': 'givenName', 'value': 'John', 'operation': 'contains'},
-          {'key': 'identifierType', 'value': 'NATIONAL_ID', 'operation': 'equals'},
+          {
+            'key': 'identifierType',
+            'value': 'NATIONAL_ID',
+            'operation': 'equals'
+          },
         ],
         triggerSearch: false,
       );
@@ -102,7 +124,11 @@ void main() {
         screenKey,
         'identifier',
         [
-          {'key': 'identifierId', 'value': '11111111111', 'operation': 'equals'},
+          {
+            'key': 'identifierId',
+            'value': '11111111111',
+            'operation': 'equals'
+          },
         ],
         triggerSearch: false,
       );
@@ -110,7 +136,11 @@ void main() {
         otherScreenKey,
         'identifier',
         [
-          {'key': 'identifierId', 'value': '22222222222', 'operation': 'equals'},
+          {
+            'key': 'identifierId',
+            'value': '22222222222',
+            'operation': 'equals'
+          },
         ],
         triggerSearch: false,
       );
@@ -127,15 +157,25 @@ void main() {
   });
 
   group('getAllFilters', () {
-    test('deduplicates by filter key across searchNames, never yielding duplicate identifierId entries', () {
+    test(
+        'deduplicates by filter key across searchNames, never yielding duplicate identifierId entries',
+        () {
       final manager = SearchStateManager();
 
       manager.updateFilters(
         screenKey,
         'identifier',
         [
-          {'key': 'identifierId', 'value': '11111111111', 'operation': 'equals'},
-          {'key': 'identifierType', 'value': 'NATIONAL_ID', 'operation': 'equals'},
+          {
+            'key': 'identifierId',
+            'value': '11111111111',
+            'operation': 'equals'
+          },
+          {
+            'key': 'identifierType',
+            'value': 'NATIONAL_ID',
+            'operation': 'equals'
+          },
         ],
         triggerSearch: false,
       );
@@ -143,7 +183,11 @@ void main() {
         screenKey,
         'address',
         [
-          {'key': 'localityBoundaryCode', 'value': 'SL_KAMBIA', 'operation': 'equals'},
+          {
+            'key': 'localityBoundaryCode',
+            'value': 'SL_KAMBIA',
+            'operation': 'equals'
+          },
         ],
         triggerSearch: false,
       );
@@ -156,14 +200,19 @@ void main() {
       expect(all, hasLength(3));
     });
 
-    test('a later searchName update for the same key overrides the earlier one', () {
+    test('a later searchName update for the same key overrides the earlier one',
+        () {
       final manager = SearchStateManager();
 
       manager.updateFilters(
         screenKey,
         'identifier',
         [
-          {'key': 'localityBoundaryCode', 'value': 'FIRST', 'operation': 'equals'},
+          {
+            'key': 'localityBoundaryCode',
+            'value': 'FIRST',
+            'operation': 'equals'
+          },
         ],
         triggerSearch: false,
       );
@@ -171,7 +220,11 @@ void main() {
         screenKey,
         'address',
         [
-          {'key': 'localityBoundaryCode', 'value': 'SECOND', 'operation': 'equals'},
+          {
+            'key': 'localityBoundaryCode',
+            'value': 'SECOND',
+            'operation': 'equals'
+          },
         ],
         triggerSearch: false,
       );
@@ -179,6 +232,33 @@ void main() {
       final all = manager.getAllFilters(screenKey);
       expect(all, hasLength(1));
       expect(all.first['value'], 'SECOND');
+    });
+  });
+
+  group('refreshScreen', () {
+    test('invokes registered callbacks for the current screen instance only',
+        () {
+      final manager = SearchStateManager();
+      var currentScreenRefreshes = 0;
+      var otherScreenRefreshes = 0;
+
+      manager.registerInstance('searchBeneficiary', 'test-instance');
+      manager.registerInstance('otherScreen', 'test-instance');
+      manager.registerSearchCallback(
+        'searchBeneficiary',
+        'name',
+        () => currentScreenRefreshes++,
+      );
+      manager.registerSearchCallback(
+        'otherScreen',
+        'name',
+        () => otherScreenRefreshes++,
+      );
+
+      expect(manager.refreshScreen('searchBeneficiary'), isTrue);
+      expect(currentScreenRefreshes, 1);
+      expect(otherScreenRefreshes, 0);
+      expect(manager.refreshScreen('missingScreen'), isFalse);
     });
   });
 }

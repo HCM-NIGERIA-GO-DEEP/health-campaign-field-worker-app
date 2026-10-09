@@ -588,6 +588,10 @@ final dynamic sampleInventoryFlows = {
                       "Distribution Hub": {
                         "forReceipt": ["State Facility"],
                         "forIssue": ["DELIVERY_TEAM"]
+                      },
+                      "Distribution Point": {
+                        "forReceipt": ["PHU Facility"],
+                        "forIssue": ["DELIVERY_TEAM"]
                       }
                     },
                     "useTransactionType": true
@@ -1567,6 +1571,10 @@ final dynamic sampleInventoryFlows = {
                       },
                       "Distribution Hub": {
                         "forReceipt": ["LGA Facility"],
+                        "forIssue": ["DELIVERY_TEAM"]
+                      },
+                      "Distribution Point": {
+                        "forReceipt": ["PHU Facility"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
                     },

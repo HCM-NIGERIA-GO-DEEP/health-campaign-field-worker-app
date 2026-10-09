@@ -2243,137 +2243,139 @@ class _HomePageState extends LocalizedState<HomePage> {
       //   ),
       // ),
 
-      i18.home.closedHouseHoldLabel: homeShowcaseData.closedHouseHold.buildWith(
-        child: HomeItemCard(
-          icon: Icons.home,
-          enableCustomIcon: true,
-          customIconSize: 40,
-          customIcon: Constants.closedHouseholdSvg,
-          label: i18.home.closedHouseHoldLabel,
-          onPressed: () async {
-            context.router.push(CurrentBoundaryRoute(
-              onBoundarySelected: (ctx) async {
-                final moduleName =
-                    'hcm-closehousehold-${context.selectedProject.referenceID}';
-                await triggerLocalization(module: moduleName);
-                isTriggerLocalisation = false;
+      if (context.isRegistrarRole)
+        i18.home.closedHouseHoldLabel:
+            homeShowcaseData.closedHouseHold.buildWith(
+          child: HomeItemCard(
+            icon: Icons.home,
+            enableCustomIcon: true,
+            customIconSize: 40,
+            customIcon: Constants.closedHouseholdSvg,
+            label: i18.home.closedHouseHoldLabel,
+            onPressed: () async {
+              context.router.push(CurrentBoundaryRoute(
+                onBoundarySelected: (ctx) async {
+                  final moduleName =
+                      'hcm-closehousehold-${context.selectedProject.referenceID}';
+                  await triggerLocalization(module: moduleName);
+                  isTriggerLocalisation = false;
 
-                FlowBuilderSingleton().setPersistenceConfiguration(
-                    persistenceConfiguration:
-                        PersistenceConfiguration.offlineFirst);
+                  FlowBuilderSingleton().setPersistenceConfiguration(
+                      persistenceConfiguration:
+                          PersistenceConfiguration.offlineFirst);
 
-                await FlowNavigationUtils.navigateToFlowModule(
-                  context: ctx,
-                  config: FlowModuleConfig(
-                    schemaKey: 'CLOSEHOUSEHOLD',
-                    sampleFlows: sampleCloseHouseholdFlows,
-                    relationshipMappings: [
-                      const RelationshipMapping(
-                          from: 'name',
-                          to: 'individual',
-                          localKey: 'individualClientReferenceId',
-                          foreignKey: 'clientReferenceId'),
-                      const RelationshipMapping(
-                          from: 'identifier',
-                          to: 'individual',
-                          localKey: 'individualClientReferenceId',
-                          foreignKey: 'clientReferenceId'),
-                      const RelationshipMapping(
-                          from: 'householdMember',
-                          to: 'individual',
-                          localKey: 'individualClientReferenceId',
-                          foreignKey: 'clientReferenceId'),
-                      const RelationshipMapping(
-                          from: 'address',
-                          to: 'household',
-                          localKey: 'relatedClientReferenceId',
-                          foreignKey: 'clientReferenceId'),
-                      const RelationshipMapping(
-                          from: 'householdMember',
-                          to: 'household',
-                          localKey: 'householdClientReferenceId',
-                          foreignKey: 'clientReferenceId'),
-                      const RelationshipMapping(
-                          from: 'projectBeneficiary',
-                          to: 'task',
-                          localKey: 'clientReferenceId',
-                          foreignKey: 'projectBeneficiaryClientReferenceId'),
-                      const RelationshipMapping(
-                          from: 'identifier',
-                          to: 'hFReferral',
-                          localKey: 'identifierId',
-                          foreignKey: 'beneficiaryId'),
-                      // Conditional mapping
-                      if (FlowBuilderSingleton().beneficiaryType ==
-                          BeneficiaryType.household)
+                  await FlowNavigationUtils.navigateToFlowModule(
+                    context: ctx,
+                    config: FlowModuleConfig(
+                      schemaKey: 'CLOSEHOUSEHOLD',
+                      sampleFlows: sampleCloseHouseholdFlows,
+                      relationshipMappings: [
                         const RelationshipMapping(
-                          from: 'projectBeneficiary',
-                          to: 'household',
-                          localKey: 'beneficiaryClientReferenceId',
-                          foreignKey: 'clientReferenceId',
-                        )
-                      else
+                            from: 'name',
+                            to: 'individual',
+                            localKey: 'individualClientReferenceId',
+                            foreignKey: 'clientReferenceId'),
                         const RelationshipMapping(
-                          from: 'projectBeneficiary',
-                          to: 'individual',
-                          localKey: 'beneficiaryClientReferenceId',
-                          foreignKey: 'clientReferenceId',
-                        ),
-                    ],
-                    nestedModelMappings: const [
-                      NestedModelMapping(
-                        rootModel: 'individual',
-                        fields: {
-                          'name': NestedFieldMapping(
-                            table: 'name',
+                            from: 'identifier',
+                            to: 'individual',
+                            localKey: 'individualClientReferenceId',
+                            foreignKey: 'clientReferenceId'),
+                        const RelationshipMapping(
+                            from: 'householdMember',
+                            to: 'individual',
+                            localKey: 'individualClientReferenceId',
+                            foreignKey: 'clientReferenceId'),
+                        const RelationshipMapping(
+                            from: 'address',
+                            to: 'household',
+                            localKey: 'relatedClientReferenceId',
+                            foreignKey: 'clientReferenceId'),
+                        const RelationshipMapping(
+                            from: 'householdMember',
+                            to: 'household',
+                            localKey: 'householdClientReferenceId',
+                            foreignKey: 'clientReferenceId'),
+                        const RelationshipMapping(
+                            from: 'projectBeneficiary',
+                            to: 'task',
                             localKey: 'clientReferenceId',
-                            foreignKey: 'individualClientReferenceId',
-                            type: NestedMappingType.one,
-                          ),
-                          'address': NestedFieldMapping(
-                            table: 'address',
-                            localKey: 'clientReferenceId',
-                            foreignKey: 'relatedClientReferenceId',
-                            type: NestedMappingType.many,
-                          ),
-                          'identifiers': NestedFieldMapping(
-                            table: 'identifier',
-                            localKey: 'clientReferenceId',
-                            foreignKey: 'individualClientReferenceId',
-                            type: NestedMappingType.many,
-                          ),
-                        },
-                      ),
-                      NestedModelMapping(
-                        rootModel: 'household',
-                        fields: {
-                          'address': NestedFieldMapping(
-                            table: 'address',
-                            localKey: 'clientReferenceId',
-                            foreignKey: 'relatedClientReferenceId',
-                            type: NestedMappingType.one,
-                          ),
-                        },
-                      ),
-                      NestedModelMapping(
-                        rootModel: 'task',
-                        fields: {
-                          'resource': NestedFieldMapping(
-                            table: 'resource',
-                            localKey: 'taskclientReferenceId',
+                            foreignKey: 'projectBeneficiaryClientReferenceId'),
+                        const RelationshipMapping(
+                            from: 'identifier',
+                            to: 'hFReferral',
+                            localKey: 'identifierId',
+                            foreignKey: 'beneficiaryId'),
+                        // Conditional mapping
+                        if (FlowBuilderSingleton().beneficiaryType ==
+                            BeneficiaryType.household)
+                          const RelationshipMapping(
+                            from: 'projectBeneficiary',
+                            to: 'household',
+                            localKey: 'beneficiaryClientReferenceId',
                             foreignKey: 'clientReferenceId',
-                            type: NestedMappingType.many,
+                          )
+                        else
+                          const RelationshipMapping(
+                            from: 'projectBeneficiary',
+                            to: 'individual',
+                            localKey: 'beneficiaryClientReferenceId',
+                            foreignKey: 'clientReferenceId',
                           ),
-                        },
-                      ),
-                    ],
-                  ),
-                );
-              },
-            ));
-          },
+                      ],
+                      nestedModelMappings: const [
+                        NestedModelMapping(
+                          rootModel: 'individual',
+                          fields: {
+                            'name': NestedFieldMapping(
+                              table: 'name',
+                              localKey: 'clientReferenceId',
+                              foreignKey: 'individualClientReferenceId',
+                              type: NestedMappingType.one,
+                            ),
+                            'address': NestedFieldMapping(
+                              table: 'address',
+                              localKey: 'clientReferenceId',
+                              foreignKey: 'relatedClientReferenceId',
+                              type: NestedMappingType.many,
+                            ),
+                            'identifiers': NestedFieldMapping(
+                              table: 'identifier',
+                              localKey: 'clientReferenceId',
+                              foreignKey: 'individualClientReferenceId',
+                              type: NestedMappingType.many,
+                            ),
+                          },
+                        ),
+                        NestedModelMapping(
+                          rootModel: 'household',
+                          fields: {
+                            'address': NestedFieldMapping(
+                              table: 'address',
+                              localKey: 'clientReferenceId',
+                              foreignKey: 'relatedClientReferenceId',
+                              type: NestedMappingType.one,
+                            ),
+                          },
+                        ),
+                        NestedModelMapping(
+                          rootModel: 'task',
+                          fields: {
+                            'resource': NestedFieldMapping(
+                              table: 'resource',
+                              localKey: 'taskclientReferenceId',
+                              foreignKey: 'clientReferenceId',
+                              type: NestedMappingType.many,
+                            ),
+                          },
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ));
+            },
+          ),
         ),
-      ),
 
       i18.home.manageStockLabel:
           homeShowcaseData.warehouseManagerManageStock.buildWith(
@@ -2898,7 +2900,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.beneficiaryLabel,
       // i18.home.clfLabel, // TODO: Uncomment when CLF is implemented
       i18.home.transitPostLabel,
-      i18.home.closedHouseHoldLabel,
+      if (context.isRegistrarRole) i18.home.closedHouseHoldLabel,
       i18.home.manageStockLabel,
       i18.home.stockReconciliationLabel,
       i18.home.mySurveyForm,
@@ -2963,15 +2965,39 @@ class _HomePageState extends LocalizedState<HomePage> {
     // re-fetch, no cache rebuild -- so the tile navigates instantly. Real work
     // only happens in the rare case a module is genuinely missing.
     if (loadOnline != true && module != null && module.trim().isNotEmpty) {
-      final firstModule = module.split(',').first.trim();
+      // Every module in the list has to be checked, not just the first.
+      // Cards pass a comma-separated list -- house-to-house sends
+      // "hcm-registration-<ref>,hcm-beneficiary,hcm-inventory-<ref>" -- and
+      // this used to cache-check only "hcm-registration-<ref>". That module is
+      // cached on the first entry, so from then on the method returned here
+      // and the remaining modules were never fetched at all. Codes that live
+      // only in hcm-beneficiary (DOWNLOAD_BENEFICIARY_IDS) therefore never
+      // reached the device through this path, however many times the card was
+      // tapped, and rendered as the raw key.
+      //
+      // Dispatching when ANY module is missing is cheap: _onLoadLocalization
+      // cache-checks each module individually and fetches only the missing
+      // ones, so an already-cached module costs nothing.
+      final modules = module
+          .split(',')
+          .map((m) => m.trim())
+          .where((m) => m.isNotEmpty)
+          .toList();
       final localeStr = AppSharedPreferences().getSelectedLocale ??
           'en_${envConfig.variables.tenantId.toUpperCase()}';
       final sqlStore = context.read<LocalSqlDataStore>();
       try {
-        final cached = await LocalizationLocalRepository().fetchLocalization(
-            sql: sqlStore, locale: localeStr, module: firstModule);
-        if (!mounted) return;
-        if (cached.isNotEmpty) return;
+        var allCached = true;
+        for (final m in modules) {
+          final cached = await LocalizationLocalRepository()
+              .fetchLocalization(sql: sqlStore, locale: localeStr, module: m);
+          if (!mounted) return;
+          if (cached.isEmpty) {
+            allCached = false;
+            break;
+          }
+        }
+        if (allCached) return;
       } catch (_) {}
     }
     if (!mounted) return;

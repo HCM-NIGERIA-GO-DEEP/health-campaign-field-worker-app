@@ -176,6 +176,16 @@ extension ContextUtilityExtensions on BuildContext {
     }
   }
 
+  /// True when the logged-in user holds the registrar role.
+  bool get isRegistrarRole {
+    try {
+      return loggedInUserRoles
+          .any((r) => r.code == RolesType.registrar.toValue());
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// True when the logged-in user holds the team-supervisor role (face-auth
   /// re-verification of non-mobile co-workers).
   bool get isTeamSupervisorRole {

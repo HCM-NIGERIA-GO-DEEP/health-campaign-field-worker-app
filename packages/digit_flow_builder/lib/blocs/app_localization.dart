@@ -34,7 +34,18 @@ class FlowBuilderLocalization {
     for (var element in await localizedStrings) {
       if (element.locale == '${locale.languageCode}_${locale.countryCode}') {
         _localizedStrings.add(element);
-        _localizedMap[element.code as String] = element.message as String;
+        final code = element.code as String;
+        final message = element.message as String;
+        // Rows arrive from every module at once in no guaranteed order, and
+        // this map is keyed by code alone - so a code defined in two modules
+        // resolves to whichever row is read last. An empty message carries no
+        // information and must never displace one that has text (see the
+        // matching comment in the app's AppLocalizations.load).
+        if (message.trim().isEmpty &&
+            (_localizedMap[code]?.trim().isNotEmpty ?? false)) {
+          continue;
+        }
+        _localizedMap[code] = message;
       }
     }
 

@@ -41,23 +41,43 @@ void main() {
           .cast<Map<String, dynamic>>();
 
   Map<String, dynamic> modifyEntries() {
-    final update = onSecondaryAction
+    final validBranch = onSecondaryAction
         .cast<Map<String, dynamic>>()
-        .firstWhere((a) => a['actionType'] == 'UPDATE_EVENT');
-    final modify = (update['properties']['modify'] as List)
-        .cast<Map<String, dynamic>>();
+        .firstWhere(
+            (action) => action['condition']?['expression'] != 'DEFAULT');
+    final update = (validBranch['actions'] as List)
+        .cast<Map<String, dynamic>>()
+        .firstWhere((action) => action['actionType'] == 'UPDATE_EVENT');
+    final modify =
+        (update['properties']['modify'] as List).cast<Map<String, dynamic>>();
     return {for (final m in modify) m['key'] as String: m['value']};
   }
 
   test('the secondary action reads as a partial acceptance, not a rejection',
       () {
-    expect(page['secondaryActionLabel'], 'INVENTORY_PARTIALLY_ACCEPT_STOCK_LABEL');
+    expect(
+        page['secondaryActionLabel'], 'INVENTORY_PARTIALLY_ACCEPT_STOCK_LABEL');
+  });
+
+  test(
+      'partial acceptance only proceeds for a positive quantity no greater than dispatched',
+      () {
+    final validBranch = onSecondaryAction
+        .cast<Map<String, dynamic>>()
+        .firstWhere(
+            (action) => action['condition']?['expression'] != 'DEFAULT');
+
+    expect(
+      validBranch['condition']['expression'],
+      'actualQuantityReceived > 0 && actualQuantityReceived <= quantity',
+    );
   });
 
   test('the popup captures both a quantity and a comment', () {
     final byName = {for (final f in bodyFields()) f['fieldName']: f};
 
-    expect(byName.keys, containsAll(['actualQuantityReceived', 'rejectComment']));
+    expect(
+        byName.keys, containsAll(['actualQuantityReceived', 'rejectComment']));
     expect(byName['actualQuantityReceived']!['format'], 'numeric');
     expect(byName['rejectComment']!['format'], 'textArea');
   });
@@ -84,6 +104,18 @@ void main() {
       '{{fn:safeString(formData.actualQuantityReceived)}}',
     );
     expect(
+      modify['StockModel.additionalFields.fields.status'],
+      'ACCEPTED',
+    );
+    expect(
+      modify['StockModel.additionalFields.fields.originalQuantityReceived'],
+      '{{fn:safeString(navigation.quantity)}}',
+    );
+    expect(
+      modify['StockModel.additionalFields.fields.comments'],
+      '{{fn:safeString(formData.rejectComment)}}',
+    );
+    expect(
       modify['StockModel.additionalFields.fields.comments'],
       '{{fn:safeString(formData.rejectComment)}}',
     );
@@ -97,5 +129,33 @@ void main() {
       expect(persisted, contains('formData.${field['fieldName']}'),
           reason: '${field['fieldName']} is captured but never persisted');
     }
+  });
+
+  test(
+      'partial accept creates a receiver receipt for the entered amount and updates stock balance',
+      () {
+    final validBranch = onSecondaryAction
+        .cast<Map<String, dynamic>>()
+        .firstWhere(
+            (action) => action['condition']?['expression'] != 'DEFAULT');
+    final actions =
+        (validBranch['actions'] as List).cast<Map<String, dynamic>>();
+    final fetch = actions.firstWhere(
+      (action) => action['actionType'] == 'FETCH_TRANSFORMER_CONFIG',
+    );
+    final fetchProperties = fetch['properties'] as Map<String, dynamic>;
+    final quantityData = (fetchProperties['data'] as List)
+        .cast<Map<String, dynamic>>()
+        .firstWhere((entry) => entry['key'] == 'quantity');
+
+    expect(fetchProperties['configName'], 'stockReceipt');
+    expect(quantityData['value'], '{{formData.actualQuantityReceived}}');
+    expect(actions.map((action) => action['actionType']), [
+      'FETCH_TRANSFORMER_CONFIG',
+      'UPDATE_EVENT',
+      'UPDATE_STOCK_BALANCE',
+      'SHOW_TOAST',
+      'NAVIGATION',
+    ]);
   });
 }

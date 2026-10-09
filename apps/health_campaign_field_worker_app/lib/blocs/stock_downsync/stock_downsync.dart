@@ -53,7 +53,6 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
 
   final BuildContext context;
 
-  static const String _rejectedStatus = 'REJECTED';
   static const String _dispatchedTransaction = 'DISPATCHED';
 
   StockDownSyncBloc({
@@ -343,7 +342,7 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
 
         // After stock download, downsync stock balance user actions
         await downSyncStockBalances(event.projectModel.id);
-        await _reconcileRejectedOutgoingStocks(
+        await _reconcileSenderShortfalls(
           projectId: event.projectModel.id,
           stockEntries: downsyncedStocks.values.toList(),
         );
@@ -445,7 +444,7 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
     }
   }
 
-  Future<void> _reconcileRejectedOutgoingStocks({
+  Future<void> _reconcileSenderShortfalls({
     required String projectId,
     required List<StockModel> stockEntries,
   }) async {
@@ -480,36 +479,34 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
       facilityIds.removeWhere((element) => element.isEmpty);
       if (facilityIds.isEmpty) return;
 
-      final rejectedDeltas = <String, double>{};
+      final senderShortfallDeltas = <String, double>{};
 
       for (final stock in stockEntries) {
         final senderId = stock.senderId;
         final productVariantId = stock.productVariantId;
-        final status = _getAdditionalFieldValue(stock, 'status');
         final transactionType = stock.transactionType?.toUpperCase() ?? '';
 
         if (senderId == null ||
             productVariantId == null ||
             !facilityIds.contains(senderId) ||
-            transactionType != _dispatchedTransaction ||
-            status != _rejectedStatus) {
+            transactionType != _dispatchedTransaction) {
           continue;
         }
 
-        final quantity = double.tryParse(stock.quantity ?? '0') ?? 0;
-        if (quantity <= 0) continue;
+        final shortfall = StockCalculationUtils.getSenderShortfall(stock);
+        if (shortfall <= 0) continue;
 
         final balanceKey = generateBalanceKey(senderId, productVariantId,
             context.selectedProject.referenceID, userObject?.id);
-        rejectedDeltas[balanceKey] =
-            (rejectedDeltas[balanceKey] ?? 0) + quantity;
+        senderShortfallDeltas[balanceKey] =
+            (senderShortfallDeltas[balanceKey] ?? 0) + shortfall;
       }
 
-      for (final entry in rejectedDeltas.entries) {
+      for (final entry in senderShortfallDeltas.entries) {
         await _increaseBalance(entry.key, entry.value);
       }
     } catch (e) {
-      debugPrint('Rejected stock balance reconciliation error: $e');
+      debugPrint('Sender stock shortfall reconciliation error: $e');
     }
   }
 
@@ -553,17 +550,6 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
       ),
       createOpLog: false,
     );
-  }
-
-  String _getAdditionalFieldValue(StockModel stock, String key) {
-    final fields = stock.additionalFields?.fields;
-    if (fields == null) return '';
-    for (final field in fields) {
-      if (field.key == key) {
-        return field.value?.toString().toUpperCase() ?? '';
-      }
-    }
-    return '';
   }
 
   Future<Set<String>> _getPendingLocalStockClientReferences(

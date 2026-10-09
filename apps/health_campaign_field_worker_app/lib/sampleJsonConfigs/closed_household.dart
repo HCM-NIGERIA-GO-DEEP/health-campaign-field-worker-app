@@ -446,7 +446,7 @@ final dynamic sampleCloseHouseholdFlows = {
                   "key":
                       "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_GPS_ACCURACY_LABEL",
                   "value":
-                      "{{contextData.0.HouseholdModel.address.locationAccuracy}}",
+                      "{{fn:formatAccuracy(contextData.0.HouseholdModel.address.locationAccuracy)}}",
                   "isActive": true
                 }
               ],
@@ -677,7 +677,7 @@ final dynamic sampleCloseHouseholdFlows = {
                   "key":
                       "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_GPS_ACCURACY_LABEL",
                   "value":
-                      "{{contextData.0.HouseholdModel.address.locationAccuracy}}",
+                      "{{fn:formatAccuracy(contextData.0.HouseholdModel.address.locationAccuracy)}}",
                   "isActive": true
                 }
               ],

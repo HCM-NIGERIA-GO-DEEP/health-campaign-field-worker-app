@@ -485,23 +485,36 @@ class _FacilityCardContent extends StatelessWidget {
                     ),
                   );
 
-              // Picking DELIVERY_TEAM satisfies teamCode's visibilityCondition,
-              // which makes a required field active that nothing can fill:
-              // teamCode is format "custom" with no component registered for
-              // it, so it renders an empty box and the page blocks on a
-              // mandatory field the user cannot see. The delivery team is the
-              // distributor themselves, so derive it here - the same thing the
-              // return and less-excess branches above already do with
-              // dependantFormKey. Clearing it on any other selection keeps a
-              // stale team from surviving a change of destination, and the
-              // field goes back to being hidden and unvalidated.
+              // Picking DELIVERY_TEAM reveals teamCode, whose value becomes
+              // receiverId (the stock transformer maps receiverId to teamCode
+              // whenever receiverPartyType is STAFF).
+              //
+              // Who that team is depends on which side the user is on:
+              //
+              // - A distributor receiving stock takes delivery into their own
+              //   team, so the team is the logged-in user and is derived here.
+              //   teamCode is mandatory once visible, and there is nothing for
+              //   them to scan.
+              // - A warehouse manager issuing stock is sending it to someone
+              //   else's team, which has to come from scanning that team's QR.
+              //   Deriving it here addressed every issue to the issuer's own
+              //   uuid, so the receiving distributor never saw the stock - and
+              //   because the field came up pre-filled, there was no prompt to
+              //   scan. Leave it empty and let the scanner fill it.
+              //
+              // Clearing on any other selection keeps a stale team from
+              // surviving a change of destination, and the field goes back to
+              // being hidden and unvalidated.
               if (isToField) {
+                final receivesIntoOwnTeam =
+                    hasDeliveryTeamInConfig && !isWareHouseMgr;
                 context.read<FormsBloc>().add(
                       FormsEvent.updateField(
                         schemaKey: pageSchema,
                         context: context,
                         key: dependantFormKey,
-                        value: value.code == deliveryTeamCode
+                        value: value.code == deliveryTeamCode &&
+                                receivesIntoOwnTeam
                             ? context.loggedInUserUuid
                             : null,
                       ),

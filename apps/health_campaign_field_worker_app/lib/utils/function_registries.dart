@@ -9,7 +9,9 @@ import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../blocs/app_initialization/app_initialization.dart';
 import '../models/entities/roles_type.dart';
 import 'utils.dart';
 
@@ -295,6 +297,22 @@ class FunctionRegistries {
       return teamCode;
     });
 
+    // Returns the code of the first delivery comment option from app config.
+    // Used to auto-select the first product detail option in stock details.
+    FunctionRegistry.register('getFirstDeliveryCommentCode', (args, stateData) {
+      try {
+        final appConfigState = context.read<AppInitializationBloc>().state;
+        if (appConfigState is! AppInitialized) return '';
+        final deliveryCommentOptions =
+            appConfigState.appConfiguration.deliveryCommentOptions;
+        if (deliveryCommentOptions == null || deliveryCommentOptions.isEmpty)
+          return '';
+        return deliveryCommentOptions.first.code;
+      } catch (_) {
+        return '';
+      }
+    });
+
     // Resolves the delivery team a stock transaction is addressed to.
     //
     // The "stock" transformer config maps
@@ -325,9 +343,7 @@ class FunctionRegistries {
       // A scanned team QR arrives as "userName||userUuid" (see getTeamCode), so
       // strip the name - receiverId has to be the bare uuid. A team code filled
       // in from the logged-in distributor has no separator and passes through.
-      return rawTeam.contains('||')
-          ? rawTeam.split('||').last.trim()
-          : rawTeam;
+      return rawTeam.contains('||') ? rawTeam.split('||').last.trim() : rawTeam;
     });
 
     // Extracts the userName (part before "||") from the scanned team QR
@@ -384,6 +400,38 @@ class FunctionRegistries {
   }
 
   void _registerRoleFunctions() {
+    // True when an identifier is a real Beneficiary ID taken from the pool,
+    // false when it is the DEFAULT placeholder (a generated uuid).
+    //
+    // The configs already branch on this in four places - the member card
+    // shows the id when true and a "NO_BENEFICIARY_ID" tag when false - but
+    // the function was never registered. FunctionRegistry.call returns null
+    // for an unknown name, which renders as '', so BOTH `==true` and `==false`
+    // were false and neither branch ever showed. Closed households, which only
+    // ever get a DEFAULT identifier, therefore fell through to displaying the
+    // raw 36-char uuid.
+    //
+    // Usage: "visible": "{{fn:hasBeneficiaryId(item.individual.0.identifiers.0)}}==true"
+    FunctionRegistry.register('hasBeneficiaryId', (args, stateData) {
+      final identifier = args.isNotEmpty ? args.first : null;
+      if (identifier == null) return false;
+
+      // The arg resolves to the IdentifierModel as a map (or the model itself
+      // when it comes straight off an entity), so read the type off either.
+      String? identifierType;
+      if (identifier is Map) {
+        identifierType = identifier['identifierType']?.toString();
+      } else {
+        try {
+          identifierType = (identifier as dynamic).identifierType?.toString();
+        } catch (_) {
+          return false;
+        }
+      }
+
+      return identifierType?.trim().toUpperCase() == 'UNIQUE_BENEFICIARY_ID';
+    });
+
     // True when the logged-in user holds any of the given role codes.
     // Codes are matched case-insensitively against RolesType values.
     // Usage: "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true"
@@ -624,8 +672,12 @@ class FunctionRegistries {
         }
       }
 
-      final lastStatus = getStatus(tasks.last);
-      if (lastStatus == 'ADMINISTRATION_SUCCESS') return true;
+      // Check if ANY task has ADMINISTRATION_SUCCESS or VISITED status (not just the last one)
+      for (final task in tasks) {
+        final status = getStatus(task);
+        if (status == 'ADMINISTRATION_SUCCESS' || status == 'VISITED')
+          return true;
+      }
 
       return false;
     });
