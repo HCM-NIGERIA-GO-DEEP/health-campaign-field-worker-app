@@ -334,6 +334,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           final totalReceived = metrics['stockReceived'] ?? 0.0;
           final totalReturned = metrics['stockReturned'] ?? 0.0;
           final totalWastage = metrics['stockWastage'] ?? 0.0;
+          // Part-used ml handed back on returns; the home card deducts it
+          // too (0 unless StockConstants.deductPartialUsed).
+          final totalPartialUsed = metrics['stockPartialUsed'] ?? 0.0;
 
           // Daily consumed (for this day only)
           final key = '$date|${pv.id}';
@@ -345,8 +348,11 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
               (cumulativeConsumed[pv.id] ?? 0.0) + dailyConsumed;
           final totalConsumed = cumulativeConsumed[pv.id]!;
 
-          final balance =
-              totalReceived - totalConsumed - totalReturned - totalWastage;
+          final balance = totalReceived -
+              totalConsumed -
+              totalReturned -
+              totalWastage -
+              totalPartialUsed;
 
           stockData[pv.id] = _ProductStockData(
             received: totalReceived,

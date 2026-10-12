@@ -558,6 +558,12 @@ final functionRegistry = {
     return result == result.roundToDouble() ? result.toInt() : result;
   },
 
+  // Display units left in the part-used base unit of a returned stock entry,
+  // taken as `balance % multiplier` -- the same leftover `calculateWastage`
+  // excludes from wastage. Applies whenever a part-used unit is reported,
+  // including when no full unit comes back (a balance under one bottle).
+  //
+  // args: [returned, partial, productVariantId]
   'calculatePartial': (List<dynamic> args) {
     num toNum(dynamic v) =>
         v is num ? v : num.tryParse(v?.toString() ?? '') ?? 0;
@@ -566,8 +572,8 @@ final functionRegistry = {
     final partial = args.length > 1 ? toNum(args[1]) : 0;
     final productVariantId = args.length > 2 ? args[2]?.toString() : null;
 
-    if (returned <= 0) {
-      return 0; // Invalid input, return 0 wastage
+    if (returned < 0) {
+      return 0; // Invalid input, no part-used leftover
     }
     final balance = (productVariantId != null && productVariantId.isNotEmpty)
         ? FormsFunctionConfig.instance.stockBalanceResolver?.call(
@@ -575,6 +581,10 @@ final functionRegistry = {
             ) ??
             0
         : 0;
+
+    // Dart's % is never negative (-10 % 30 == 20), so a non-positive
+    // balance has no leftover to report.
+    if (balance <= 0) return 0;
 
     final multiplier = FormsFunctionConfig.instance.unitMultiplier;
     return partial > 0 ? balance % multiplier : 0;
