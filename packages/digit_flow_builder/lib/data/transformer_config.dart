@@ -85,7 +85,13 @@ final jsonConfig = {
           "additionalFields": {
             "weight": "beneficiaryDetails.weight",
             "height": "beneficiaryDetails.height",
-            "isPregnant": "beneficiaryDetails.isPregnant"
+            "isPregnant": "beneficiaryDetails.isPregnant",
+            // Hidden fields forms_render adds when the user skips the
+            // duplicate warning (DedupStampFields); absent otherwise.
+            "dedup_decision": "beneficiaryDetails.dedupDecision",
+            "dedup_top_score": "beneficiaryDetails.dedupTopScore",
+            "dedup_match_count": "beneficiaryDetails.dedupMatchCount",
+            "dedup_top_match_id": "beneficiaryDetails.dedupTopMatchId",
           },
           "bloodGroup": "health.bloodGroup",
           "gender": "beneficiaryDetails.gender",
@@ -163,7 +169,7 @@ final jsonConfig = {
           /// Note: Generate uuid
           "rowVersion": "meta.rowVersion",
           "dateOfRegistration": "householdDetails.dateOfRegistration",
-          "additionalFields": "additionalInfo.fields",
+          "additionalFields": {"registered_by_team": "__context:teamCode"},
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
         }
@@ -219,6 +225,7 @@ final jsonConfig = {
           "clientReferenceId": "__generate:uuid",
           "dateOfRegistration": "__value:DATETIME.NOW",
           "rowVersion": "meta.rowVersion",
+          "additionalFields": {"registered_by_team": "__context:teamCode"},
           "auditDetails": "__generate:audit",
           "clientAuditDetails": "__generate:clientAudit",
         }
@@ -317,7 +324,13 @@ final jsonConfig = {
           "additionalFields": {
             "weight": "beneficiaryDetails.weight",
             "height": "beneficiaryDetails.height",
-            "isPregnant": "beneficiaryDetails.isPregnant"
+            "isPregnant": "beneficiaryDetails.isPregnant",
+            // Hidden fields forms_render adds when the user skips the
+            // duplicate warning (DedupStampFields); absent otherwise.
+            "dedup_decision": "beneficiaryDetails.dedupDecision",
+            "dedup_top_score": "beneficiaryDetails.dedupTopScore",
+            "dedup_match_count": "beneficiaryDetails.dedupMatchCount",
+            "dedup_top_match_id": "beneficiaryDetails.dedupTopMatchId",
           },
           "bloodGroup": "health.bloodGroup",
           "gender": "beneficiaryDetails.gender",
@@ -395,7 +408,7 @@ final jsonConfig = {
           /// Note: Generate uuid
           "rowVersion": "meta.rowVersion",
           "dateOfRegistration": "__value:DATETIME.NOW",
-          "additionalFields": "additionalInfo.fields",
+          "additionalFields": {"registered_by_team": "__context:teamCode"},
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
         }
@@ -1318,7 +1331,7 @@ final jsonConfig = {
           /// Note: Generate uuid
           "rowVersion": "meta.rowVersion",
           "dateOfRegistration": "__value:DATETIME.NOW",
-          "additionalFields": "additionalInfo.fields",
+          "additionalFields": {"registered_by_team": "__context:teamCode"},
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
         }

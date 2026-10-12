@@ -1,7 +1,7 @@
 name: health_campaign_field_worker_app
 description: A new Flutter project.
 publish_to: "none"
-version: 2.2.85+85
+version: 2.2.88+88
 
 environment:
   sdk: ">=3.0.0 <=4.0.0"
@@ -84,6 +84,10 @@ dependencies:
   jailbreak_root_detection: ^1.1.6
 
 dev_dependencies:
+  digit_dedup_engine: ^0.0.1-dev
+  # Used only by test/performance to open a real database off-device.
+  path_provider_platform_interface: ^2.1.0
+  sqlite3: ^2.4.0
   flutter_test:
     sdk: flutter
   integration_test:

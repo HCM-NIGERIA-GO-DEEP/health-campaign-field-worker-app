@@ -137,6 +137,25 @@ class WidgetParsers {
     }
   }
 
+  /// Parses a cross-axis alignment, defaulting to `center` so a row that does
+  /// not specify one keeps Flutter's own default.
+  static CrossAxisAlignment parseCrossAxisAlignment(String? alignment) {
+    switch (alignment) {
+      case 'start':
+        return CrossAxisAlignment.start;
+      case 'center':
+        return CrossAxisAlignment.center;
+      case 'end':
+        return CrossAxisAlignment.end;
+      case 'stretch':
+        return CrossAxisAlignment.stretch;
+      case 'baseline':
+        return CrossAxisAlignment.baseline;
+      default:
+        return CrossAxisAlignment.center;
+    }
+  }
+
   // ============================================================================
   // Spacing/Padding helpers
   // ============================================================================

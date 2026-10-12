@@ -99,8 +99,6 @@ class WrapperBuilder {
       EnhancedEntityFieldAccessor.clearCache();
     }
 
-    debugPrint(wrappers.toString());
-
     return wrappers;
   }
 

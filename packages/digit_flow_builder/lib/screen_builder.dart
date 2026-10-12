@@ -346,67 +346,74 @@ class _FormScreenWrapperState extends LocalizedState<_FormScreenWrapper> {
             // Get formData from FlowCrudStateRegistry (set by REVERSE_TRANSFORM action)
             final registryFormData = flowState?.formData ?? {};
 
-            return ScannerComparisonProvider(
-              duplicateCheckFn: (fieldName, scannedValue, formValues) async {
-                // Read the latest cached schema at call time (not build time)
-                // to ensure cross-page field values are up to date. Read
-                // before any await so the BuildContext is not used across an
-                // async gap.
-                final latestSchema = context
-                    .read<FormsBloc>()
-                    .state
-                    .cachedSchemas[widget.schemaKey];
-                // App-registered scope check for delivery-team QR fields:
-                // the scanned payload's boundary/tenant must match the
-                // scanning user. Runs before the duplicate check and fails
-                // closed (out-of-scope or unparseable => scan rejected).
-                final scopeRegistry = TeamQrScopeRegistry();
-                if (scopeRegistry.appliesTo(fieldName)) {
-                  final inScope = await scopeRegistry.isInScope(scannedValue);
-                  if (!inScope) return true;
-                }
-                return ScannerComparisonUtils.executeDuplicateCheck(
-                  latestSchema ?? schemaObject,
-                  widget.compositeKey,
-                  fieldName,
-                  scannedValue,
-                  formValues,
-                  mergedNavParams,
-                );
-              },
-              duplicateErrorMessage: (fieldName) =>
-                  TeamQrScopeRegistry().errorMessageFor(fieldName) ??
-                  ScannerComparisonUtils.getDuplicateErrorMessage(
-                      schemaObject, fieldName),
-              child: FormsRenderPage(
-                pageName: pageName,
-                navigationParams: mergedNavParams,
-                currentSchemaKey: widget.schemaKey,
-                isEdit: isEdit,
-                onSecondaryAction: widget.onSecondaryAction,
-                // Pass custom components from registry with enhanced state access
-                customComponents: _buildCustomComponents(
-                  context,
-                  flowState,
-                ),
-                // defaultValues priority (lowest to highest):
-                // 1. widget.defaultValues - config-defined defaults
-                // 2. mergedNavParams - navigation data merged from widget and registry
-                // 3. registryFormData - data from REVERSE_TRANSFORM action (highest priority for prefill)
-                // 4. System values like administrativeArea, availableIDs
-                defaultValues: {
-                  ...?widget.defaultValues,
-                  ...mergedNavParams,
-                  if (isEdit) ...registryFormData,
-                  // System values always present
-                  'administrativeArea': localizations
-                      .translate(FlowBuilderSingleton().boundary?.code ?? ''),
-                  'availableIDs': {'DEFAULT': IdGen.instance.identifier},
-                  'loggedInUserName': FlowBuilderSingleton().loggedInUser?.name,
-                  'loggedInUserUuid': FlowBuilderSingleton().loggedInUser?.uuid,
-                  'loggedInUserMobileNumber':
-                      FlowBuilderSingleton().loggedInUser?.mobileNumber,
+            return DedupCheckProvider(
+              // Reads the page's dedupCheck at call time and runs the
+              // similarity search against the local database.
+              checkFn: (request) => DedupCheckUtils.run(context, request),
+              child: ScannerComparisonProvider(
+                duplicateCheckFn: (fieldName, scannedValue, formValues) async {
+                  // Read the latest cached schema at call time (not build time)
+                  // to ensure cross-page field values are up to date. Read
+                  // before any await so the BuildContext is not used across an
+                  // async gap.
+                  final latestSchema = context
+                      .read<FormsBloc>()
+                      .state
+                      .cachedSchemas[widget.schemaKey];
+                  // App-registered scope check for delivery-team QR fields:
+                  // the scanned payload's boundary/tenant must match the
+                  // scanning user. Runs before the duplicate check and fails
+                  // closed (out-of-scope or unparseable => scan rejected).
+                  final scopeRegistry = TeamQrScopeRegistry();
+                  if (scopeRegistry.appliesTo(fieldName)) {
+                    final inScope = await scopeRegistry.isInScope(scannedValue);
+                    if (!inScope) return true;
+                  }
+                  return ScannerComparisonUtils.executeDuplicateCheck(
+                    latestSchema ?? schemaObject,
+                    widget.compositeKey,
+                    fieldName,
+                    scannedValue,
+                    formValues,
+                    mergedNavParams,
+                  );
                 },
+                duplicateErrorMessage: (fieldName) =>
+                    TeamQrScopeRegistry().errorMessageFor(fieldName) ??
+                    ScannerComparisonUtils.getDuplicateErrorMessage(
+                        schemaObject, fieldName),
+                child: FormsRenderPage(
+                  pageName: pageName,
+                  navigationParams: mergedNavParams,
+                  currentSchemaKey: widget.schemaKey,
+                  isEdit: isEdit,
+                  onSecondaryAction: widget.onSecondaryAction,
+                  // Pass custom components from registry with enhanced state access
+                  customComponents: _buildCustomComponents(
+                    context,
+                    flowState,
+                  ),
+                  // defaultValues priority (lowest to highest):
+                  // 1. widget.defaultValues - config-defined defaults
+                  // 2. mergedNavParams - navigation data merged from widget and registry
+                  // 3. registryFormData - data from REVERSE_TRANSFORM action (highest priority for prefill)
+                  // 4. System values like administrativeArea, availableIDs
+                  defaultValues: {
+                    ...?widget.defaultValues,
+                    ...mergedNavParams,
+                    if (isEdit) ...registryFormData,
+                    // System values always present
+                    'administrativeArea': localizations
+                        .translate(FlowBuilderSingleton().boundary?.code ?? ''),
+                    'availableIDs': {'DEFAULT': IdGen.instance.identifier},
+                    'loggedInUserName':
+                        FlowBuilderSingleton().loggedInUser?.name,
+                    'loggedInUserUuid':
+                        FlowBuilderSingleton().loggedInUser?.uuid,
+                    'loggedInUserMobileNumber':
+                        FlowBuilderSingleton().loggedInUser?.mobileNumber,
+                  },
+                ),
               ),
             );
           }

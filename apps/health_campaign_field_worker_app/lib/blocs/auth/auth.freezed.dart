@@ -1876,7 +1876,8 @@ mixin _$AuthState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)
+            String? individualId,
+            String? teamCode)
         authenticated,
     required TResult Function(String? error) error,
     required TResult Function() otherDevice,
@@ -1892,7 +1893,8 @@ mixin _$AuthState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            String? teamCode)?
         authenticated,
     TResult? Function(String? error)? error,
     TResult? Function()? otherDevice,
@@ -1908,7 +1910,8 @@ mixin _$AuthState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            String? teamCode)?
         authenticated,
     TResult Function(String? error)? error,
     TResult Function()? otherDevice,
@@ -2014,7 +2017,8 @@ class _$AuthUnauthenticatedStateImpl implements AuthUnauthenticatedState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)
+            String? individualId,
+            String? teamCode)
         authenticated,
     required TResult Function(String? error) error,
     required TResult Function() otherDevice,
@@ -2033,7 +2037,8 @@ class _$AuthUnauthenticatedStateImpl implements AuthUnauthenticatedState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            String? teamCode)?
         authenticated,
     TResult? Function(String? error)? error,
     TResult? Function()? otherDevice,
@@ -2052,7 +2057,8 @@ class _$AuthUnauthenticatedStateImpl implements AuthUnauthenticatedState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            String? teamCode)?
         authenticated,
     TResult Function(String? error)? error,
     TResult Function()? otherDevice,
@@ -2158,7 +2164,8 @@ class _$AuthLoadingStateImpl implements AuthLoadingState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)
+            String? individualId,
+            String? teamCode)
         authenticated,
     required TResult Function(String? error) error,
     required TResult Function() otherDevice,
@@ -2177,7 +2184,8 @@ class _$AuthLoadingStateImpl implements AuthLoadingState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            String? teamCode)?
         authenticated,
     TResult? Function(String? error)? error,
     TResult? Function()? otherDevice,
@@ -2196,7 +2204,8 @@ class _$AuthLoadingStateImpl implements AuthLoadingState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            String? teamCode)?
         authenticated,
     TResult Function(String? error)? error,
     TResult Function()? otherDevice,
@@ -2269,7 +2278,8 @@ abstract class _$$AuthAuthenticatedStateImplCopyWith<$Res> {
       String refreshToken,
       UserRequestModel userModel,
       RoleActionsWrapperModel actionsWrapper,
-      String? individualId});
+      String? individualId,
+      String? teamCode});
 
   $UserRequestModelCopyWith<$Res> get userModel;
   $RoleActionsWrapperModelCopyWith<$Res> get actionsWrapper;
@@ -2292,6 +2302,7 @@ class __$$AuthAuthenticatedStateImplCopyWithImpl<$Res>
     Object? userModel = null,
     Object? actionsWrapper = null,
     Object? individualId = freezed,
+    Object? teamCode = freezed,
   }) {
     return _then(_$AuthAuthenticatedStateImpl(
       accessToken: null == accessToken
@@ -2313,6 +2324,10 @@ class __$$AuthAuthenticatedStateImplCopyWithImpl<$Res>
       individualId: freezed == individualId
           ? _value.individualId
           : individualId // ignore: cast_nullable_to_non_nullable
+              as String?,
+      teamCode: freezed == teamCode
+          ? _value.teamCode
+          : teamCode // ignore: cast_nullable_to_non_nullable
               as String?,
     ));
   }
@@ -2343,7 +2358,8 @@ class _$AuthAuthenticatedStateImpl implements AuthAuthenticatedState {
       required this.refreshToken,
       required this.userModel,
       required this.actionsWrapper,
-      this.individualId});
+      this.individualId,
+      this.teamCode});
 
   @override
   final String accessToken;
@@ -2355,10 +2371,12 @@ class _$AuthAuthenticatedStateImpl implements AuthAuthenticatedState {
   final RoleActionsWrapperModel actionsWrapper;
   @override
   final String? individualId;
+  @override
+  final String? teamCode;
 
   @override
   String toString() {
-    return 'AuthState.authenticated(accessToken: $accessToken, refreshToken: $refreshToken, userModel: $userModel, actionsWrapper: $actionsWrapper, individualId: $individualId)';
+    return 'AuthState.authenticated(accessToken: $accessToken, refreshToken: $refreshToken, userModel: $userModel, actionsWrapper: $actionsWrapper, individualId: $individualId, teamCode: $teamCode)';
   }
 
   @override
@@ -2375,12 +2393,14 @@ class _$AuthAuthenticatedStateImpl implements AuthAuthenticatedState {
             (identical(other.actionsWrapper, actionsWrapper) ||
                 other.actionsWrapper == actionsWrapper) &&
             (identical(other.individualId, individualId) ||
-                other.individualId == individualId));
+                other.individualId == individualId) &&
+            (identical(other.teamCode, teamCode) ||
+                other.teamCode == teamCode));
   }
 
   @override
   int get hashCode => Object.hash(runtimeType, accessToken, refreshToken,
-      userModel, actionsWrapper, individualId);
+      userModel, actionsWrapper, individualId, teamCode);
 
   @JsonKey(ignore: true)
   @override
@@ -2399,14 +2419,15 @@ class _$AuthAuthenticatedStateImpl implements AuthAuthenticatedState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)
+            String? individualId,
+            String? teamCode)
         authenticated,
     required TResult Function(String? error) error,
     required TResult Function() otherDevice,
     required TResult Function() allow,
   }) {
-    return authenticated(
-        accessToken, refreshToken, userModel, actionsWrapper, individualId);
+    return authenticated(accessToken, refreshToken, userModel, actionsWrapper,
+        individualId, teamCode);
   }
 
   @override
@@ -2419,14 +2440,15 @@ class _$AuthAuthenticatedStateImpl implements AuthAuthenticatedState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            String? teamCode)?
         authenticated,
     TResult? Function(String? error)? error,
     TResult? Function()? otherDevice,
     TResult? Function()? allow,
   }) {
-    return authenticated?.call(
-        accessToken, refreshToken, userModel, actionsWrapper, individualId);
+    return authenticated?.call(accessToken, refreshToken, userModel,
+        actionsWrapper, individualId, teamCode);
   }
 
   @override
@@ -2439,7 +2461,8 @@ class _$AuthAuthenticatedStateImpl implements AuthAuthenticatedState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            String? teamCode)?
         authenticated,
     TResult Function(String? error)? error,
     TResult Function()? otherDevice,
@@ -2447,8 +2470,8 @@ class _$AuthAuthenticatedStateImpl implements AuthAuthenticatedState {
     required TResult orElse(),
   }) {
     if (authenticated != null) {
-      return authenticated(
-          accessToken, refreshToken, userModel, actionsWrapper, individualId);
+      return authenticated(accessToken, refreshToken, userModel, actionsWrapper,
+          individualId, teamCode);
     }
     return orElse();
   }
@@ -2503,13 +2526,15 @@ abstract class AuthAuthenticatedState implements AuthState {
       required final String refreshToken,
       required final UserRequestModel userModel,
       required final RoleActionsWrapperModel actionsWrapper,
-      final String? individualId}) = _$AuthAuthenticatedStateImpl;
+      final String? individualId,
+      final String? teamCode}) = _$AuthAuthenticatedStateImpl;
 
   String get accessToken;
   String get refreshToken;
   UserRequestModel get userModel;
   RoleActionsWrapperModel get actionsWrapper;
   String? get individualId;
+  String? get teamCode;
   @JsonKey(ignore: true)
   _$$AuthAuthenticatedStateImplCopyWith<_$AuthAuthenticatedStateImpl>
       get copyWith => throw _privateConstructorUsedError;
@@ -2587,7 +2612,8 @@ class _$AuthErrorStateImpl implements AuthErrorState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)
+            String? individualId,
+            String? teamCode)
         authenticated,
     required TResult Function(String? error) error,
     required TResult Function() otherDevice,
@@ -2606,7 +2632,8 @@ class _$AuthErrorStateImpl implements AuthErrorState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            String? teamCode)?
         authenticated,
     TResult? Function(String? error)? error,
     TResult? Function()? otherDevice,
@@ -2625,7 +2652,8 @@ class _$AuthErrorStateImpl implements AuthErrorState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            String? teamCode)?
         authenticated,
     TResult Function(String? error)? error,
     TResult Function()? otherDevice,
@@ -2737,7 +2765,8 @@ class _$AuthOtherDeviceStateImpl implements AuthOtherDeviceState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)
+            String? individualId,
+            String? teamCode)
         authenticated,
     required TResult Function(String? error) error,
     required TResult Function() otherDevice,
@@ -2756,7 +2785,8 @@ class _$AuthOtherDeviceStateImpl implements AuthOtherDeviceState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            String? teamCode)?
         authenticated,
     TResult? Function(String? error)? error,
     TResult? Function()? otherDevice,
@@ -2775,7 +2805,8 @@ class _$AuthOtherDeviceStateImpl implements AuthOtherDeviceState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            String? teamCode)?
         authenticated,
     TResult Function(String? error)? error,
     TResult Function()? otherDevice,
@@ -2881,7 +2912,8 @@ class _$AuthAllowStateImpl implements AuthAllowState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)
+            String? individualId,
+            String? teamCode)
         authenticated,
     required TResult Function(String? error) error,
     required TResult Function() otherDevice,
@@ -2900,7 +2932,8 @@ class _$AuthAllowStateImpl implements AuthAllowState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            String? teamCode)?
         authenticated,
     TResult? Function(String? error)? error,
     TResult? Function()? otherDevice,
@@ -2919,7 +2952,8 @@ class _$AuthAllowStateImpl implements AuthAllowState {
             String refreshToken,
             UserRequestModel userModel,
             RoleActionsWrapperModel actionsWrapper,
-            String? individualId)?
+            String? individualId,
+            String? teamCode)?
         authenticated,
     TResult Function(String? error)? error,
     TResult Function()? otherDevice,

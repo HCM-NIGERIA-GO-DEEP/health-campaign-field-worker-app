@@ -46,16 +46,33 @@ class TextWidget extends ResolvedFlowWidget {
     final displayValue = (resolvedValue)
         .replaceAll(RegExp(r'\bnull\b', caseSensitive: false), '--');
 
+    final text = displayValue.isEmpty ? '--' : displayValue;
+    final style = textStyle?.copyWith(
+      color: _parseTextColor(context, properties['color']?.toString()),
+    );
+    final maxLines = json["maxLines"] ?? 2;
+
+    // Selectable text cannot ellipsize, so it wraps to maxLines instead. Opt
+    // in per widget for values a user may want to lift out, e.g. an ID.
+    final selectable = properties['selectable'] == true;
+
     return WidgetParsers.wrapWithBottomGap(
-      Text(
-        displayValue.isEmpty ? '--' : displayValue,
-        style: textStyle?.copyWith(
-          color:
-              _parseTextColor(context, properties['color']?.toString()) ?? null,
-        ),
-        overflow: TextOverflow.ellipsis,
-        maxLines: json["maxLines"] ?? 2,
-      ),
+      selectable
+          ? SelectableText(
+              text,
+              style: style,
+              // Only when the config asks for it: SelectableText *reserves*
+              // maxLines of height rather than treating it as a ceiling, so
+              // the default of 2 leaves a single line sitting in a
+              // double-height box and drags anything centred beside it low.
+              maxLines: json['maxLines'] as int?,
+            )
+          : Text(
+              text,
+              style: style,
+              overflow: TextOverflow.ellipsis,
+              maxLines: maxLines,
+            ),
       properties,
     );
   }

@@ -11,8 +11,11 @@ export 'navigation_service/navigation_service.dart';
 export 'router/flow_builder_routes.dart';
 export 'screen_builder.dart';
 export 'utils/context_utility.dart';
+export 'utils/dedup_check_utils.dart';
 export 'utils/utils.dart' hide resolveValue, flattenFormData;
 export 'widget_registry.dart';
+export 'widgets/dedup_alert_popup.dart';
+export 'widgets/dedup_match_dialog.dart';
 export 'widgets/localization_context.dart';
 
 class FlowRegistry {

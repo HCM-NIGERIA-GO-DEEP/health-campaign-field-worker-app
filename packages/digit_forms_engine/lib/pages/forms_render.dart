@@ -21,8 +21,10 @@ import '../helper/form_builder_helper.dart';
 import '../helper/validator_helper.dart';
 import '../models/property_schema/property_schema.dart';
 import '../models/schema_object/schema_object.dart';
+import '../utils/dedup_stamp.dart';
 import '../utils/screen_protection_manager.dart';
 import '../utils/utils.dart';
+import '../widgets/dedup_check_provider.dart';
 import '../widgets/multi_entity_tab_view.dart';
 
 @RoutePage()
@@ -103,6 +105,84 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
       _backDisabledSchemas.contains(widget.currentSchemaKey) ||
       widget.navigationParams?['disableBack'] == true ||
       widget.navigationParams?['disableBack'] == 'true';
+
+  /// Runs the page's configured duplicate check before anything is written.
+  ///
+  /// Returns a proceed result whenever the page opts out, the check does not
+  /// apply, or no callback is registered, so a submission is only ever halted
+  /// by an explicit user decision. The search itself lives outside this
+  /// package -- see [DedupCheckRegistry].
+  Future<DedupCheckResult> _runDedupCheck(
+    PropertySchema schema,
+    FormGroup formGroup,
+  ) async {
+    final config = schema.dedupCheck;
+    if (config == null) return const DedupCheckResult.proceed();
+
+    // Editing an existing record would match that record against itself.
+    if (config.skipOnEdit && widget.isEdit) {
+      return const DedupCheckResult.proceed();
+    }
+
+    final checkFn = DedupCheckRegistry().checkFn;
+    if (checkFn == null) return const DedupCheckResult.proceed();
+
+    // A mapped field may live on an earlier page of the same flow -- the
+    // location fix is captured before these details -- in which case it is
+    // not in this page's form group and has to come from the cached schema.
+    final cachedSchema =
+        context.read<FormsBloc>().state.cachedSchemas[widget.currentSchemaKey];
+
+    dynamic readField(String fieldName) {
+      if (formGroup.contains(fieldName)) {
+        return formGroup.control(fieldName).value;
+      }
+
+      final pages = cachedSchema?.pages.values ?? const <PropertySchema>[];
+      for (final page in pages) {
+        final property = page.properties?[fieldName];
+        if (property?.value != null) return property!.value;
+      }
+      return null;
+    }
+
+    // Required fields: each has to carry enough text to score against, since
+    // a single character would be similar to almost anything. A blank one
+    // means there is nothing to match on, so the check is skipped.
+    final formValues = <String, dynamic>{};
+    for (final fieldName in config.fields.values) {
+      final value = readField(fieldName);
+      if (value == null) return const DedupCheckResult.proceed();
+
+      final asText = value.toString().trim();
+      if (asText.length < config.effectiveMinFieldLength) {
+        return const DedupCheckResult.proceed();
+      }
+      formValues[fieldName] = value;
+    }
+    if (formValues.isEmpty) return const DedupCheckResult.proceed();
+
+    // Optional fields are included when filled and dropped when not, rather
+    // than cancelling the check. The matcher ignores an attribute that is
+    // absent on either side, so an empty one costs nothing.
+    for (final fieldName in config.optionalFields.values) {
+      final value = readField(fieldName);
+      if (value == null) continue;
+      if (value.toString().trim().isEmpty) continue;
+
+      formValues[fieldName] = value;
+    }
+
+    return checkFn(DedupCheckRequest(
+      config: config,
+      alert: config.dedupAlertPopUp,
+      schemaKey: widget.currentSchemaKey,
+      pageName: widget.pageName,
+      formValues: formValues,
+      navigationParams: widget.navigationParams ?? const {},
+      isEdit: widget.isEdit,
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -292,6 +372,22 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                   return;
                                 }
 
+                                // 3b. Warn about existing records similar to
+                                // this one. Runs after validation so the user
+                                // is not interrupted over an incomplete form,
+                                // and before step 4 so nothing is written when
+                                // they back out.
+                                final dedupResult =
+                                    await _runDedupCheck(schema, formGroup);
+
+                                if (dedupResult.isAbort) {
+                                  _isSubmitting = false;
+                                  if (mounted) setState(() {});
+                                  return;
+                                }
+
+                                if (!mounted) return;
+
                                 // 4. Proceed with value extraction and state update
                                 final values = JsonForms.getFormValues(
                                   formGroup,
@@ -331,6 +427,11 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                     );
                                   }
                                 }
+
+                                // Record a "Skip and Proceed" on the duplicate
+                                // warning as hidden fields, so the transformer
+                                // can stamp it onto the registered record.
+                                applyDedupStamp(updatedProperties, dedupResult);
 
                                 final updatedPropertySchema = schema.copyWith(
                                   properties: updatedProperties,

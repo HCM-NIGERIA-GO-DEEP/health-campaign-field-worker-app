@@ -2817,6 +2817,7 @@ void setPackagesSingleton(BuildContext context) {
               appConfiguration.beneficiaryIdConfig?.first.minCount.toInt(),
           loggedInUser: context.loggedInUserModel,
           loggedInUserUuid: context.loggedInUserUuid,
+          teamCode: context.loggedInTeamCode,
           maxRadius: appConfiguration.maxRadius!,
           projectId: context.projectId,
           selectedBeneficiaryType: context.beneficiaryType,

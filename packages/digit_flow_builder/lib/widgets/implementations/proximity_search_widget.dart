@@ -6,6 +6,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../action_handler/action_config.dart';
 import '../../blocs/flow_crud_bloc.dart';
+import '../../utils/proximity_filter_keys.dart';
 import '../../widget_registry.dart';
 import '../localization_context.dart';
 import '../resolved_flow_widget.dart';
@@ -85,6 +86,7 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
         return DigitSwitch(
           label: localization?.translate(widget.json['label'] ?? ''),
           value: _value,
+          mainAxisAlignment: MainAxisAlignment.start,
           onChanged: (newValue) {
             setState(() => _value = newValue);
 
@@ -195,15 +197,14 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
     _clearWidgetValues(linkedSearchWidgetKeys);
 
     if (value) {
+      // Also drop the filters the other searches left behind (config
+      // filterKeys); getAllFilters would otherwise AND them into this search.
       widget.onAction(ActionConfig.fromJson({
         'actionType': 'CLEAR_STATE',
         'properties': {
           'type': 'CLEAR_STATE',
           'name': 'address',
-          'filterKeys': [
-            'givenName,familyName',
-            'identifierId',
-          ],
+          'filterKeys': proximityEnableClearKeys(onActionList),
           'triggerSearch': false,
         },
       }));

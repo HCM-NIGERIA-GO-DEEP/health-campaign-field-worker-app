@@ -193,6 +193,7 @@ class TransformerExecutor extends ActionExecutor {
       'userUUID': FlowBuilderSingleton().loggedInUser?.uuid,
       'loggedInUserUuid': FlowBuilderSingleton().loggedInUserUuid,
       'householdType': HouseholdType.family.toValue(),
+      'teamCode': FlowBuilderSingleton().teamCode,
       ...extraContext,
       "beneficiaryType": FlowBuilderSingleton().beneficiaryType?.toValue(),
     };

@@ -11,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../router/app_router.dart';
 import '../utils/environment_config.dart';
 import '../utils/i18_key_constants.dart' as i18;
+import '../utils/team_code_merge.dart';
 import '../utils/utils.dart';
 import '../widgets/header/back_navigation_help_header.dart';
 import '../widgets/localized.dart';
@@ -381,6 +382,23 @@ class _SelectTeamMembersPageState
     }
   }
 
+  /// Server copy of the logged-in user's individual, or `reachable: false`
+  /// when it cannot be queried. Never writes to the local DB — the caller
+  /// merges only team_code so a pending, unsynced team_mapping_* is kept.
+  Future<({bool reachable, IndividualModel? individual})>
+      _fetchRemoteIndividual(
+    RemoteRepository<IndividualModel, IndividualSearchModel> remoteRepo,
+    String userUuid,
+  ) async {
+    try {
+      final individuals =
+          await remoteRepo.search(IndividualSearchModel(userUuid: [userUuid]));
+      return (reachable: true, individual: individuals.firstOrNull);
+    } catch (_) {
+      return (reachable: false, individual: null);
+    }
+  }
+
   // ─── Submit ───────────────────────────────────────────────────────────────
 
   Future<void> _submitSelection() async {
@@ -399,6 +417,8 @@ class _SelectTeamMembersPageState
       // Read context values before any await
       final localRepo = context
           .read<LocalRepository<IndividualModel, IndividualSearchModel>>();
+      final remoteRepo = context
+          .read<RemoteRepository<IndividualModel, IndividualSearchModel>>();
       final loggedInUuid = context.loggedInUserUuid;
 
       var individuals = await localRepo
@@ -414,14 +434,20 @@ class _SelectTeamMembersPageState
         final existingFields =
             individual.additionalFields?.fields ?? <AdditionalField>[];
 
+        // The update below syncs the whole record, so a team_code assigned
+        // server-side after this copy was cached would otherwise be wiped.
+        final remote = await _fetchRemoteIndividual(remoteRepo, loggedInUuid);
+
         final nextIndex = _nextMappingIndex(existingFields);
         final newValue =
             '${_selectedMember2!.userUuid},${DateTime.now().millisecondsSinceEpoch}';
 
-        final updatedFields = [
-          ...existingFields,
-          AdditionalField('team_mapping_$nextIndex', newValue),
-        ];
+        final updatedFields = mergeTeamCodeIntoFields(
+          existing: existingFields,
+          remoteReachable: remote.reachable,
+          remoteFields: remote.individual?.additionalFields,
+          mapping: AdditionalField('team_mapping_$nextIndex', newValue),
+        );
 
         final now = DateTime.now().millisecondsSinceEpoch;
 

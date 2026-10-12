@@ -3,6 +3,7 @@ import 'package:digit_flow_builder/action_handler/executors/close_popup_executor
 import 'package:flutter/material.dart';
 import 'action_config.dart';
 import 'executors/action_executor.dart';
+import 'executors/copy_to_clipboard_executor.dart';
 import 'executors/custom_data_executor.dart';
 import 'executors/navigation_executor.dart';
 import 'executors/back_navigation_executor.dart';
@@ -46,6 +47,7 @@ class ActionExecutorRegistry {
     register('OPEN_POPUP', OpenPopupExecutor());
     register('CLOSE_POPUP', ClosePopupExecutor());
     register('CUSTOM_DATA', CustomDataExecutor());
+    register('COPY_TO_CLIPBOARD', CopyToClipboardExecutor());
   }
 
   /// Register a custom executor

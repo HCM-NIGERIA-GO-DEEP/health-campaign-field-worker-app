@@ -43,6 +43,8 @@ class ProjectBeneficiaryLocalRepository extends LocalRepository<
             rowVersion: e.rowVersion,
             isDeleted: e.isDeleted,
             beneficiaryId: e.beneficiaryId,
+            additionalFields:
+                decodeProjectBeneficiaryAdditionalFields(e.additionalFields),
           );
         }).toList();
 
@@ -132,6 +134,9 @@ class ProjectBeneficiaryLocalRepository extends LocalRepository<
               dateOfRegistration: projectBeneficiary.dateOfRegistration,
               projectId: projectBeneficiary.projectId,
               tag: projectBeneficiary.tag,
+              additionalFields: decodeProjectBeneficiaryAdditionalFields(
+                projectBeneficiary.additionalFields,
+              ),
               auditDetails: AuditDetails(
                 createdTime: projectBeneficiary.auditCreatedTime!,
                 createdBy: projectBeneficiary.auditCreatedBy!,

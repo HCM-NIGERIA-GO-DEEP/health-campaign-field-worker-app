@@ -6,6 +6,8 @@ import 'package:digit_crud_bloc/digit_crud_bloc.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
+import 'package:digit_flow_builder/utils/team_ownership.dart';
+import 'package:digit_flow_builder/utils/team_record_visibility.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -29,6 +31,94 @@ class FunctionRegistries {
     _registerViewTransactionFunctions();
     _registerWorkingHoursFunctions();
     _registerDailyDeliveryLimitFunctions();
+    _registerTeamOwnershipFunctions();
+  }
+
+  void _registerTeamOwnershipFunctions() {
+    // Other teams' beneficiaries (registered_by_team on the ProjectBeneficiary)
+    // are filtered by the REGISTRATION config's teamRecordVisibility switch
+    // (TeamRecordVisibility): SHOW = every result shown; HIDE = results
+    // filtered to my team. The disable gate below is on in both modes. A user
+    // without a team code sees and may act on everything.
+
+    // Gate on DELIVERY / UNABLE TO DELIVER / REDOSE / RECORD_CYCLE_DOSE and
+    // the NOT_REGISTERED_BY_YOU tag:
+    //   "disabled": "{{fn:isOwnedByMyTeam(item.projectBeneficiary)}}==false"
+    // SHOW disables only other teams' records; HIDE disables anything its
+    // filter would hide (other teams, untagged, no record), in case it reaches
+    // the screen anyway (proximity search is never team-filtered). Edit uses
+    // disableEdit's third argument, which applies the same rule.
+    FunctionRegistry.register('isOwnedByMyTeam', (args, stateData) {
+      try {
+        return TeamRecordVisibility.mayActOn(
+          args.isNotEmpty ? args[0] : null,
+          FlowBuilderSingleton().teamCode,
+          projectId: FlowBuilderSingleton().projectId,
+        );
+      } catch (_) {
+        // Safety net: allow, so a code bug can never blank the TEMPLATE
+        // screen or block fieldwork.
+        return true;
+      }
+    });
+
+    // HIDE-mode result filters. Each fn below scopes by
+    // TeamRecordVisibility.visibilityTeamCode, which is null in SHOW mode, and
+    // null means "no filter, show everything".
+    //
+    // Search / dedup filter value, added to each SEARCH_EVENT and to
+    // dedupCheck.filters as
+    //   {"key":"additionalFields","root":"projectBeneficiary",
+    //    "value":"{{fn:myTeamFilterValue()}}","operation":"matches"}
+    // Null (filter dropped) without a team code or in SHOW mode.
+    FunctionRegistry.register('myTeamFilterValue', (args, stateData) {
+      try {
+        return teamFilterValue(
+          TeamRecordVisibility.visibilityTeamCode(
+            FlowBuilderSingleton().teamCode,
+          ),
+        );
+      } catch (_) {
+        return null;
+      }
+    });
+
+    // Household overview member card:
+    //   "visible": "{{fn:isVisibleToMyTeam(item.projectBeneficiary)}}==true"
+    FunctionRegistry.register('isVisibleToMyTeam', (args, stateData) {
+      try {
+        return isVisibleToMyTeam(
+          args.isNotEmpty ? args[0] : null,
+          TeamRecordVisibility.visibilityTeamCode(
+            FlowBuilderSingleton().teamCode,
+          ),
+        );
+      } catch (e) {
+        // Show rather than throw: a throw in a fn: blanks the TEMPLATE screen,
+        // and the search filter has already scoped the household.
+        debugPrint('isVisibleToMyTeam failed, showing member: $e');
+        return true;
+      }
+    });
+
+    // Search-result member table rows:
+    //   "rows": "{{fn:individualsVisibleToMyTeam(currentItem.individuals,
+    //            currentItem.projectBeneficiaries)}}"
+    FunctionRegistry.register('individualsVisibleToMyTeam', (args, stateData) {
+      final individuals = args.isNotEmpty ? args[0] : null;
+      try {
+        return individualsVisibleToMyTeam(
+          individuals,
+          args.length > 1 ? args[1] : null,
+          TeamRecordVisibility.visibilityTeamCode(
+            FlowBuilderSingleton().teamCode,
+          ),
+        );
+      } catch (e) {
+        debugPrint('individualsVisibleToMyTeam failed, showing all: $e');
+        return individuals;
+      }
+    });
   }
 
   void _registerDailyDeliveryLimitFunctions() {
@@ -641,6 +731,89 @@ class FunctionRegistries {
         }
       }
       return 'INSUFFICIENT_STOCK';
+    });
+
+    // Reads the value for `key` out of a record's additionalFields.fields
+    // list. Works whether additionalFields has already been flattened to a
+    // plain Map (via EntityModel.toMap()) or is still the typed object.
+    String? getAdditionalFieldValue(Map<String, dynamic> recordMap, String key) {
+      final additionalFields = recordMap['additionalFields'];
+      final fields = additionalFields is Map ? additionalFields['fields'] : null;
+      if (fields is! List) return null;
+      for (final field in fields) {
+        if (field is Map && field['key'] == key) {
+          return field['value']?.toString();
+        }
+      }
+      return null;
+    }
+
+    // Filters a list of stock/stock-reconciliation records down to the ones
+    // whose date field falls within the currently active project cycle, so
+    // stock reports only show entries recorded during the ongoing campaign
+    // cycle. Reads cycles from the ProjectBloc's selected project type
+    // (context.selectedProjectType) rather than FlowBuilderSingleton, since
+    // the latter is only populated while a delivery flow (SMC/VAS/etc.) is
+    // executing and is not set when browsing Stock Reports from Home.
+    //
+    // When the report is the "Stock Received" report (reportType == 'ISSUED'),
+    // also requires additionalFields.status == 'ACCEPTED' - the receiver only
+    // confirms this once the incoming dispatch has been accepted (see
+    // stock_balance_executor.dart), so unaccepted/in-transit records should
+    // not show as received stock. Other report types (dispatch/returned/
+    // damaged/loss) never carry an ACCEPTED status and are left unfiltered.
+    // args: [records, dateFieldKey, reportType?] e.g. (StockModel, 'dateOfEntry', navigation.reportType)
+    FunctionRegistry.register('filterRecordsWithinCurrentCycle',
+        (args, stateData) {
+      if (args.isEmpty || args.first == null) return <dynamic>[];
+      final records = args.first;
+      if (records is! List) return <dynamic>[];
+
+      final dateField = args.length > 1 ? (args[1]?.toString() ?? '') : '';
+      if (dateField.isEmpty) return records;
+
+      final reportType = args.length > 2 ? (args[2]?.toString() ?? '') : '';
+      final requireAccepted = reportType == 'ISSUED';
+
+      final cycles =
+          context.selectedProjectType?.cycles ??
+              FlowBuilderSingleton().projectType?.cycles;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final currentCycle = cycles?.firstWhereOrNull(
+        (cycle) => cycle.startDate <= now && cycle.endDate >= now,
+      );
+
+      if (currentCycle == null) return <dynamic>[];
+
+      return records.where((record) {
+        // Rows sourced from contextData (e.g. StockModel/StockReconciliationModel)
+        // are typed EntityModel instances, not raw maps - go through toMap()
+        // so the date field can be read the same way regardless of shape.
+        Map<String, dynamic>? recordMap;
+        if (record is Map<String, dynamic>) {
+          recordMap = record;
+        } else if (record is EntityModel) {
+          recordMap = record.toMap();
+        } else {
+          return false;
+        }
+
+        final rawDate = recordMap[dateField];
+        final dateValue =
+            rawDate is int ? rawDate : int.tryParse(rawDate?.toString() ?? '');
+        if (dateValue == null) return false;
+        if (dateValue < currentCycle.startDate ||
+            dateValue > currentCycle.endDate) {
+          return false;
+        }
+
+        if (requireAccepted &&
+            getAdditionalFieldValue(recordMap, 'status') != 'ACCEPTED') {
+          return false;
+        }
+
+        return true;
+      }).toList();
     });
   }
 
