@@ -107,6 +107,14 @@ class _HomePageState extends LocalizedState<HomePage> {
   bool skipProgressBar = false;
   final storage = const FlutterSecureStorage();
   late StreamSubscription<List<ConnectivityResult>> subscription;
+  // build() below reads AuthBloc with context.read (one-time, not reactive).
+  // Routes that land here via context.router.replaceAll([HomeRoute()])
+  // (drawer "Home", several post-submit navigations) can rebuild this widget
+  // a frame before AuthBloc settles back into AuthAuthenticatedState - with
+  // no listener, build() would return an empty Container() forever and the
+  // page would never recover, since replaceAll also wipes the back stack.
+  // This subscription forces a rebuild once AuthBloc emits again.
+  StreamSubscription<AuthState>? _authSubscription;
   bool isTriggerLocalisation = true;
   final _syncDebouncer = Debouncer(seconds: 5);
   final StreamController<double> stockDownloadProgress =
@@ -147,6 +155,10 @@ class _HomePageState extends LocalizedState<HomePage> {
   @override
   initState() {
     super.initState();
+
+    _authSubscription = context.read<AuthBloc>().stream.listen((_) {
+      if (mounted) setState(() {});
+    });
 
     // If background service was killed with the app, release orphaned lock
     // and restart the service.
@@ -1526,6 +1538,7 @@ class _HomePageState extends LocalizedState<HomePage> {
   @override
   dispose() {
     subscription.cancel();
+    _authSubscription?.cancel();
     stockDownloadProgress.close();
     super.dispose();
   }
@@ -1536,7 +1549,12 @@ class _HomePageState extends LocalizedState<HomePage> {
     final state = context.read<AuthBloc>().state;
     final localSecureStore = LocalSecureStore.instance;
     if (state is! AuthAuthenticatedState) {
-      return Container();
+      // Transient (e.g. right after a full-stack replaceAll to HomeRoute,
+      // before AuthBloc re-settles into AuthAuthenticatedState) - the
+      // _authSubscription set up in initState() triggers a rebuild once it
+      // does. A loader here (instead of a bare Container()) keeps that
+      // interim frame from reading as a dead blank screen.
+      return const Center(child: CircularProgressIndicator());
     }
     final roles = state.userModel.roles.map((e) {
       return e.code;
@@ -2936,6 +2954,7 @@ class _HomePageState extends LocalizedState<HomePage> {
     if (envConfig.variables.envType == EnvType.demo && kReleaseMode) {
       filteredLabels.remove(i18.home.db);
     }
+    // filteredLabels.remove(i18.home.db);
 
     final userRoleCodes = state.userModel.roles.map((e) => e.code).toList();
     final isDistributor =
