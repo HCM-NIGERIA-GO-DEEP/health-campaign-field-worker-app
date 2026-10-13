@@ -257,12 +257,16 @@ class _FacilityCardContent extends StatelessWidget {
       if (facilityLevel == null) return true;
 
       if (isLessExcessFlow) {
-        if (isToField && !isWareHouseMgr) return facilityLevel == 'current';
+        // Deliver To is always the facility just above the user (their
+        // parent warehouse) for Loss/Excess, regardless of role - there is
+        // no sense in which a Distributor would "deliver to" themselves or
+        // to DELIVERY_TEAM when reporting loss/excess upward.
         if (isToField) return facilityLevel == 'parent';
-        if (isFromField && !isWareHouseMgr) return false;
         if (isFromField) return facilityLevel == 'current';
       } else if (isReturnFlow) {
-        if (isToField && !isWareHouseMgr) return facilityLevel == 'current';
+        // Same reasoning as isLessExcessFlow above: a return always goes up
+        // to the parent facility, never to DELIVERY_TEAM or the user's own
+        // (nonexistent) facility.
         if (isToField) return facilityLevel == 'parent';
         if (isFromField) return facilityLevel == 'current';
       } else if (transactionType == 'DISPATCHED' ||
@@ -275,7 +279,6 @@ class _FacilityCardContent extends StatelessWidget {
         if (isFromField) return facilityLevel == 'parent';
       } else if (stockEntryType == 'LOSS' || stockEntryType == 'DAMAGED') {
         // For loss and damaged, to field should show parent facility
-        if (isToField && !isWareHouseMgr) return facilityLevel == 'current';
         if (isToField) return facilityLevel == 'parent';
         if (isFromField) return facilityLevel == 'current';
       }
