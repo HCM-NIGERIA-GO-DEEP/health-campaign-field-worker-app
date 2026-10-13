@@ -41,11 +41,11 @@ class JsonSchemaSelectionBuilder extends JsonSchemaBuilder<String> {
           showParentContainer: true,
           initialSelection: field.value != null
               ? field.value!.split('.').map((code) {
-            return localizedOptions.firstWhere(
-                  (e) => e.code == code,
-              orElse: () => Option(code: code, name: code),
-            );
-          }).toList()
+                  return localizedOptions.firstWhere(
+                    (e) => e.code == code,
+                    orElse: () => Option(code: code, name: code),
+                  );
+                }).toList()
               : [],
           onSelectionChanged: (selected) {
             field.control.markAsTouched();

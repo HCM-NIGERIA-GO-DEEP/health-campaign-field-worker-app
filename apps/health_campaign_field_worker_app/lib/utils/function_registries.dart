@@ -9,9 +9,7 @@ import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../blocs/app_initialization/app_initialization.dart';
 import '../models/entities/roles_type.dart';
 import 'utils.dart';
 
@@ -316,24 +314,6 @@ class FunctionRegistries {
       return teamCode;
     });
 
-    // Returns the code of the first delivery comment option from app config.
-    // Used to auto-select the first product detail option in stock details.
-    // Returns as an array for multi-select fields.
-    FunctionRegistry.register('getFirstDeliveryCommentCode', (args, stateData) {
-      try {
-        final appConfigState = context.read<AppInitializationBloc>().state;
-        if (appConfigState is! AppInitialized) return [];
-        final deliveryCommentOptions =
-            appConfigState.appConfiguration.deliveryCommentOptions;
-        if (deliveryCommentOptions == null || deliveryCommentOptions.isEmpty)
-          return [];
-        // Return as array since the field is multi-select
-        return [deliveryCommentOptions.first.code];
-      } catch (_) {
-        return [];
-      }
-    });
-
     // Resolves the delivery team a stock transaction is addressed to.
     //
     // The "stock" transformer config maps
@@ -485,13 +465,11 @@ class FunctionRegistries {
           .toList()
           .isNotEmpty;
       if (isDistributor && !isWareHouseMgr) {
-        return context.loggedInUserUuid ?? '';
+        return context.loggedInUserUuid;
       }
       try {
         List<Map<String, dynamic>>? projectFacilities;
-        if (stateData?.modelMap != null) {
-          projectFacilities = stateData!.modelMap['ProjectFacilityModel'];
-        }
+        projectFacilities = stateData.modelMap['ProjectFacilityModel'];
         if (projectFacilities == null || projectFacilities.isEmpty) {
           final manageStockState = FlowCrudStateRegistry().get('manageStock');
           final base = manageStockState?.base;
@@ -526,8 +504,8 @@ class FunctionRegistries {
     FunctionRegistry.register('getProjectFacilities', (args, stateData) {
       try {
         List<Map<String, dynamic>>? projectFacilities;
-        if (stateData?.modelMap != null) {
-          projectFacilities = stateData!.modelMap['ProjectFacilityModel'];
+        if (stateData.modelMap != null) {
+          projectFacilities = stateData.modelMap['ProjectFacilityModel'];
         }
         if (projectFacilities == null || projectFacilities.isEmpty) {
           final manageStockState = FlowCrudStateRegistry().get('manageStock');
@@ -585,9 +563,7 @@ class FunctionRegistries {
     FunctionRegistry.register('getProjectProductVariantIds', (args, stateData) {
       try {
         List<Map<String, dynamic>>? productVariants;
-        if (stateData?.modelMap != null) {
-          productVariants = stateData!.modelMap['ProductVariantModel'];
-        }
+        productVariants = stateData.modelMap['ProductVariantModel'];
         if (productVariants == null || productVariants.isEmpty) {
           final manageStockState = FlowCrudStateRegistry().get('manageStock');
           final base = manageStockState?.base;
@@ -659,8 +635,8 @@ class FunctionRegistries {
     FunctionRegistry.register('hasResults', (args, stateData) {
       if (args.isEmpty) return false;
       final modelKey = args.first?.toString() ?? '';
-      if (modelKey.isEmpty || stateData?.modelMap == null) return false;
-      final results = stateData!.modelMap[modelKey];
+      if (modelKey.isEmpty) return false;
+      final results = stateData.modelMap[modelKey];
       return results != null && results.isNotEmpty;
     });
   }

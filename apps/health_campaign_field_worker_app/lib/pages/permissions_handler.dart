@@ -74,21 +74,12 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
           if (_isDisabled) return;
 
           bool granted = await _checkPermissions();
-          if (!granted) {
+          // Only auto-navigate if all permissions are granted
+          // Don't show error toast on initialization - only show when user taps Continue
+          if (granted) {
             if (mounted) {
-              Toast.showToast(
-                context,
-                message: localizations.translate(
-                  i18.common.permissionsAlert,
-                ),
-                type: ToastType.error,
-              );
+              context.router.replace(BoundarySelectionRoute());
             }
-            return;
-          }
-
-          if (mounted) {
-            context.router.replace(BoundarySelectionRoute());
           }
         });
       });

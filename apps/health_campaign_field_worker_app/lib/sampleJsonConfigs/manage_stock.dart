@@ -678,7 +678,7 @@ final dynamic sampleInventoryFlows = {
               "fieldName": "productdetail",
               "deleteFlag": false,
               "innerLabel": "",
-              "schemaCode": "HCM.DELIVERY_COMMENT_OPTIONS_POPULATOR",
+              "schemaCode": null,
               "systemDate": false,
               "validations": [
                 {
@@ -798,8 +798,13 @@ final dynamic sampleInventoryFlows = {
               "errorMessage": "",
               "isMultiSelect": false,
               "enums": [
-                {"code": "BUS", "name": "Bus"},
-                {"code": "TRUCK", "name": "Truck"}
+                {"code": "TRUCK", "name": "INVENTORY_TRANSPORT_TYPE_TRUCK"},
+                {"code": "VAN", "name": "INVENTORY_TRANSPORT_TYPE_VAN"},
+                {
+                  "code": "PICK_UP",
+                  "name": "INVENTORY_TRANSPORT_TYPE_PICK_UP"
+                },
+                {"code": "JEEP", "name": "INVENTORY_TRANSPORT_TYPE_JEEP"}
               ]
             },
             {
@@ -1700,7 +1705,7 @@ final dynamic sampleInventoryFlows = {
               "fieldName": "productVariant",
               "deleteFlag": false,
               "innerLabel": "",
-              "schemaCode": "HCM.DELIVERY_COMMENT_OPTIONS_POPULATOR",
+              "schemaCode": null,
               "systemDate": false,
               "validations": [
                 {

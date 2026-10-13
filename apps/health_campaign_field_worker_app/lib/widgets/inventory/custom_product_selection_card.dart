@@ -817,6 +817,19 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         }
       }
     }
+
+    if (!_initialized && productVariants?.length == 1) {
+      final onlyProduct = productVariants!.single;
+      if (onlyProduct is ProductVariantModel) {
+        _prefilledProductIds = {onlyProduct.id};
+        _prefilledOptions = _buildDropdownItemsFromProductVariants(
+          _prefilledProductIds!,
+          productVariants,
+        );
+        _initialized = _prefilledOptions!.isNotEmpty;
+        _formControlUpdated = false;
+      }
+    }
   }
 
   /// Extract product IDs from various value formats
@@ -883,11 +896,15 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
 
         // Find the ProductVariantModel instances that match the prefilled IDs
         final selectedModels = productVariants
-            .where((v) =>
-                _prefilledProductIds!.contains((v as ProductVariantModel).id))
+          .whereType<ProductVariantModel>()
+          .where((variant) => _prefilledProductIds!.contains(variant.id))
             .toList();
 
         if (selectedModels.isNotEmpty) {
+          setState(() {
+            _selectedProducts = selectedModels;
+          });
+
           // Update the form control value with ProductVariantModel instances
           field.control.value = selectedModels;
 
@@ -899,7 +916,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
                   key: _productVariantKey,
                   value: selectedModels
                       .map((m) => {
-                            "id": (m as ProductVariantModel).id,
+                            "id": m.id,
                             "sku": m.sku,
                           })
                       .toList(),
@@ -908,6 +925,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
 
           debugPrint(
               'ProductSelectionCard: Updated form control with ${selectedModels.length} products');
+              _triggerStockSearch(context);
         }
       });
       _formControlUpdated = true;
