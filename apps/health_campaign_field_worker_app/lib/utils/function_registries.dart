@@ -31,6 +31,19 @@ class FunctionRegistries {
   }
 
   void _registerGenerateFunctions() {
+    // For report fields that display a quantity while the stored sign is
+    // retained for stock calculations.
+    FunctionRegistry.register('absoluteValue', (args, stateData) {
+      if (args.isEmpty || args.first == null) return '';
+
+      final raw = args.first;
+      final number = raw is num ? raw : num.tryParse(raw.toString().trim());
+      if (number == null) return raw.toString();
+
+      final absolute = number.abs();
+      return absolute == absolute.roundToDouble() ? absolute.toInt() : absolute;
+    });
+
     // Displays whole-number decimals without the trailing .0 while
     // preserving non-whole values (e.g. 4.0 -> 4, 4.1 -> 4.1).
     FunctionRegistry.register('trimTrailingZero', (args, stateData) {

@@ -75,15 +75,8 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
 
           bool granted = await _checkPermissions();
           if (!granted) {
-            if (mounted) {
-              Toast.showToast(
-                context,
-                message: localizations.translate(
-                  i18.common.permissionsAlert,
-                ),
-                type: ToastType.error,
-              );
-            }
+            // Keep the page visible so the user can grant permissions. Show
+            // the validation message only after they press Continue.
             return;
           }
 

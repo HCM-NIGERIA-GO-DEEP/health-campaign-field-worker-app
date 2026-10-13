@@ -1326,8 +1326,13 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
     return BlocBuilder<AuthBloc, AuthState>(builder: (context, state) {
       return BlocListener<LocalizationBloc, LocalizationState>(
         listener: (context, state) {
-          if (state.loading == false) {
-            Navigator.of(context, rootNavigator: true).pop();
+          // Localization refreshes also run during logout. Popping the root
+          // navigator unconditionally here can remove the current page when
+          // the drawer is closed, leaving an authenticated user on a blank
+          // screen if logout is blocked by pending transactions.
+          final scaffold = Scaffold.maybeOf(context);
+          if (!state.loading && (scaffold?.isDrawerOpen ?? false)) {
+            scaffold!.closeDrawer();
           }
         },
         child: SafeArea(
