@@ -116,6 +116,7 @@ final dynamic inventoryReportFlows = {
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_ISSUED_DESCRIPTION",
           "icon": "Assessment",
           "fieldName": "stockIssued",
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == false",
           "properties": {
             "icon": "Assessment"
           },

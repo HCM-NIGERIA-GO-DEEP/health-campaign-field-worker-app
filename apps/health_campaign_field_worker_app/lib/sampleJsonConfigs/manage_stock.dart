@@ -115,6 +115,7 @@ final dynamic sampleInventoryFlows = {
           "format": "menu_card",
           "type": "template",
           "fieldName": "manageStockRecordStockIssuedCard",
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == false",
           "heading":
               "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_ISSUED_HEADING",
           "description":
@@ -1201,6 +1202,11 @@ final dynamic sampleInventoryFlows = {
                   "type": "required",
                   "value": true,
                   "message": "QUANTITY_RECEIVED_REQUIRED_ERROR_MESSAGE"
+                },
+                {
+                  "type": "max",
+                  "value": 10000000,
+                  "message": "QUANTITY_MAX_ERROR_MESSAGE"
                 },
                 {
                   "type": "regex",

@@ -50,6 +50,11 @@ class JsonSchemaSelectionBuilder extends JsonSchemaBuilder<String> {
           onSelectionChanged: (selected) {
             field.control.markAsTouched();
 
+            if (selected.isEmpty) {
+              field.didChange(null);
+              return;
+            }
+
             final selectedCodes = (isMultiSelect ?? false)
                 ? selected.map((e) => e.code).toList()
                 : [selected.first.code];

@@ -41,6 +41,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       final userUuid = context.loggedInUserUuid;
       final projectId = context.projectId;
       final currentCycle = context.selectedCycle;
+      final isDistributor = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.distributor.toValue());
       final currentCycleStartDate = currentCycle?.startDate;
       final currentCycleEndDate = currentCycle?.endDate;
 
@@ -73,12 +75,10 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           LocalRepository<ProjectBeneficiaryModel,
               ProjectBeneficiarySearchModel>>();
       final summaryReportService = context.read<ServerSummaryReportService>();
+      final uniqueIdPoolRepo = context
+          .read<LocalRepository<UniqueIdPoolModel, UniqueIdPoolSearchModel>>();
 
       List<String> serverReportAllDates = await summaryReportService.allDates();
-
-      // Determine facility ID (same logic as stock_balance_card)
-      final isDistributor = context.loggedInUserRoles
-          .any((role) => role.code == RolesType.distributor.toValue());
 
       final projectFacilities = await projectFacilityRepo
           .search(ProjectFacilitySearchModel(projectId: [projectId]));
@@ -189,22 +189,34 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // Local ITN distributed by date (same reasoning as households above).
       final localITNByDate = <String, int>{};
       for (final task in tasks) {
-        if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
+        if (task.status != 'ADMINISTRATION_SUCCESS' &&
+            task.status != 'VISITED') {
           continue;
+        }
         final createdBy =
             task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
-        if (createdBy != userUuid) continue;
+        if (createdBy != userUuid) {
+          continue;
+        }
         final epochMs = task.clientAuditDetails?.createdTime ??
             task.auditDetails?.createdTime;
-        if (!isWithinCurrentCycle(epochMs)) continue;
-        if (epochMs == null) continue;
+        if (!isWithinCurrentCycle(epochMs)) {
+          continue;
+        }
+        if (epochMs == null) {
+          continue;
+        }
         final date = _epochToDateString(epochMs);
 
         final resources = task.resources;
-        if (resources == null) continue;
+        if (resources == null) {
+          continue;
+        }
         for (final res in resources) {
           final pvId = res.productVariantId;
-          if (pvId == null || pvId.isEmpty) continue;
+          if (pvId == null || pvId.isEmpty) {
+            continue;
+          }
           final qty = (double.tryParse(res.quantity ?? '0') ?? 0).toInt();
           localITNByDate[date] = (localITNByDate[date] ?? 0) + qty;
         }
@@ -216,8 +228,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // sets auditDetails.lastModifiedTime to "now" the moment it flips a
       // row from UN_ASSIGNED to ASSIGNED, and only ever does this once per
       // row, so that timestamp reliably marks the day a token was consumed.
-      final uniqueIdPoolRepo = context
-          .read<LocalRepository<UniqueIdPoolModel, UniqueIdPoolSearchModel>>();
       final assignedIdPool = await uniqueIdPoolRepo.search(
         UniqueIdPoolSearchModel(
           userUuid: userUuid,
@@ -259,21 +269,33 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // Key: "date|productVariantId" -> sum of quantity
       final consumedByDateProduct = <String, double>{};
       for (final task in tasks) {
-        if (task.status != 'ADMINISTRATION_SUCCESS' && task.status != 'VISITED')
+        if (task.status != 'ADMINISTRATION_SUCCESS' &&
+            task.status != 'VISITED') {
           continue;
+        }
         final createdBy =
             task.clientAuditDetails?.createdBy ?? task.auditDetails?.createdBy;
-        if (createdBy != userUuid) continue;
+        if (createdBy != userUuid) {
+          continue;
+        }
         final epochMs = task.clientAuditDetails?.createdTime ??
             task.auditDetails?.createdTime;
-        if (!isWithinCurrentCycle(epochMs)) continue;
-        if (epochMs == null) continue;
+        if (!isWithinCurrentCycle(epochMs)) {
+          continue;
+        }
+        if (epochMs == null) {
+          continue;
+        }
         final date = _epochToDateString(epochMs);
         final resources = task.resources;
-        if (resources == null) continue;
+        if (resources == null) {
+          continue;
+        }
         for (final res in resources) {
           final pvId = res.productVariantId;
-          if (pvId == null || pvId.isEmpty) continue;
+          if (pvId == null || pvId.isEmpty) {
+            continue;
+          }
           final qty = double.tryParse(res.quantity ?? '0') ?? 0.0;
           final key = '$date|$pvId';
           consumedByDateProduct[key] =
@@ -402,10 +424,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
     final theme = Theme.of(context);
     final textTheme = theme.digitTextTheme(context);
 
-    // Distributor sees their own two figures (Tokens Redeemed, ITNs
-    // Distributed) plus the same household/people counts Registrar sees;
-    // Registrar sees those counts plus Tokens Used. A user holding both
-    // roles sees the richer Distributor set. Loss/Excess columns are
+    // Distributors see ITNs distributed plus household/people counts;
+    // Registrars see those counts plus tokens used. A user holding both
+    // roles sees the distributor set. Loss/Excess columns are
     // dropped for both roles - commented out below (not deleted) so they
     // can be restored without rebuilding the totalLess/totalExcess
     // computation in _loadData().
@@ -416,9 +437,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         ? <CustomTableColumn>[
             CustomTableColumn(
               header: localizations.translate(i18.summaryReport.dateColumn),
-            ),
-            CustomTableColumn(
-              header: localizations.translate(i18.summaryReport.tokensRedeemed),
             ),
             CustomTableColumn(
               header: localizations
@@ -458,7 +476,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         isDistributor
             ? [
                 _formatDisplayDate(row.date),
-                row.tokensRedeemed.toString(),
                 row.numberOfITNDistributed.toString(),
                 row.householdsRegistered.toString(),
                 row.numberOfPeopleInHouseholds.toString(),

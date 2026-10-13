@@ -182,14 +182,18 @@ class FunctionRegistries {
     // on its own (see _resolveHeading in layout_renderer.dart), so the
     // config resolves the final heading CODE here, while stockEntryType is
     // still in scope, and carries it through navigation as plain data.
-    FunctionRegistry.register('getViewTransactionHeadingCode', (args, stateData) {
+    FunctionRegistry.register('getViewTransactionHeadingCode',
+        (args, stateData) {
       if (args.isEmpty) return 'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
       final stockEntryType = args.first?.toString().toUpperCase() ?? '';
       const headings = {
         'ISSUED': 'INVENTORY_STOCK_ISSUE_DETAILS_HEADING',
         'RETURNED': 'INVENTORY_STOCK_RETURN_DETAILS_HEADING',
+        'DAMAGED': 'INVENTORY_STOCK_DAMAGED_DETAILS_HEADING',
+        'LOSS': 'INVENTORY_STOCK_LOSS_DETAILS_HEADING',
       };
-      return headings[stockEntryType] ?? 'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
+      return headings[stockEntryType] ??
+          'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
     });
 
     FunctionRegistry.register('getReportTitle', (args, stateData) {
@@ -251,15 +255,15 @@ class FunctionRegistries {
 
     FunctionRegistry.register('getTransactionReason', (args, stateData) {
       if (args.isEmpty) return [];
-      final reportType = args.first?.toString() ?? '';
+      final stockEntryType = args.first?.toString().toUpperCase() ?? '';
       const reasons = {
-        'receipt': ['RECEIVED'],
-        'dispatch': [],
-        'returned': ['RETURNED'],
-        'damage': ['DAMAGED_IN_STORAGE', 'DAMAGED_IN_TRANSIT'],
-        'loss': ['LOST_IN_STORAGE', 'LOST_IN_TRANSIT']
+        'RECEIPT': ['RECEIVED'],
+        'ISSUED': ['DISPATCHED'],
+        'RETURNED': ['RETURNED'],
+        'DAMAGED': ['DAMAGED_IN_STORAGE', 'DAMAGED_IN_TRANSIT'],
+        'LOSS': ['LOST_IN_STORAGE', 'LOST_IN_TRANSIT'],
       };
-      return reasons[reportType] ?? [];
+      return reasons[stockEntryType] ?? [];
     });
 
     FunctionRegistry.register('getStockEntryType', (args, stateData) {
@@ -314,17 +318,19 @@ class FunctionRegistries {
 
     // Returns the code of the first delivery comment option from app config.
     // Used to auto-select the first product detail option in stock details.
+    // Returns as an array for multi-select fields.
     FunctionRegistry.register('getFirstDeliveryCommentCode', (args, stateData) {
       try {
         final appConfigState = context.read<AppInitializationBloc>().state;
-        if (appConfigState is! AppInitialized) return '';
+        if (appConfigState is! AppInitialized) return [];
         final deliveryCommentOptions =
             appConfigState.appConfiguration.deliveryCommentOptions;
         if (deliveryCommentOptions == null || deliveryCommentOptions.isEmpty)
-          return '';
-        return deliveryCommentOptions.first.code;
+          return [];
+        // Return as array since the field is multi-select
+        return [deliveryCommentOptions.first.code];
       } catch (_) {
-        return '';
+        return [];
       }
     });
 
@@ -679,9 +685,9 @@ class FunctionRegistries {
       if (tasks is! List || tasks.isEmpty) return false;
 
       String? getStatus(dynamic task) {
-        if (task is Map) return task['status']?.toString()?.toUpperCase();
+        if (task is Map) return task['status']?.toString().toUpperCase();
         try {
-          return (task as dynamic).status?.toString()?.toUpperCase();
+          return (task as dynamic).status?.toString().toUpperCase();
         } catch (_) {
           return null;
         }
@@ -711,9 +717,9 @@ class FunctionRegistries {
       if (tasks is! List || tasks.isEmpty) return false;
 
       String? getStatus(dynamic task) {
-        if (task is Map) return task['status']?.toString()?.toUpperCase();
+        if (task is Map) return task['status']?.toString().toUpperCase();
         try {
-          return (task as dynamic).status?.toString()?.toUpperCase();
+          return (task as dynamic).status?.toString().toUpperCase();
         } catch (_) {
           return null;
         }

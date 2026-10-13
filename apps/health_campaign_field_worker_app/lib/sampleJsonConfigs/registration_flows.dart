@@ -1342,7 +1342,7 @@ final dynamic sampleFlows = {
                       {
                         "key": "identifierId",
                         "value": "field.value",
-                        "operation": "contains"
+                        "operation": "equals"
                       },
                       {
                         "key": "localityBoundaryCode",
