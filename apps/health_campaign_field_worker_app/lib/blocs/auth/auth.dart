@@ -161,6 +161,30 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   // ensureOnlineOrAlert) — if the API call still fails here, the local
   // session is left untouched so the user stays logged in.
   FutureOr<void> _onLogout(AuthLogoutEvent event, AuthEmitter emit) async {
+    // _deleteUserLocalDatabaseData() below wipes every SQL table plus the
+    // entire opLog outbox unconditionally - there was no check for records
+    // still waiting to be uploaded, so logging out before a sync completed
+    // permanently deleted that data with no way to recover it. Block the
+    // logout instead and tell the user to sync first.
+    final userObject = await localSecureStore.userRequestModel;
+    final currentUserUuid = userObject?.uuid;
+    if (currentUserUuid != null && currentUserUuid.isNotEmpty) {
+      final pendingCount = await isar.opLogs
+          .filter()
+          .createdByEqualTo(currentUserUuid)
+          .syncedUpEqualTo(false)
+          .not()
+          .operationEqualTo(DataOperation.search)
+          .count();
+      if (pendingCount > 0) {
+        _showLogoutFailureAlert(
+          'You have $pendingCount unsynced record(s) on this device. '
+          'Please sync before logging out, or they will be permanently lost.',
+        );
+        return;
+      }
+    }
+
     try {
       final payload = await _buildLogoutPayload();
       if (payload['access_token'] == null ||
