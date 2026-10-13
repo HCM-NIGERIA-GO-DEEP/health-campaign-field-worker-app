@@ -177,6 +177,21 @@ class FunctionRegistries {
       return labels[stockEntryType] ?? 'APPONE_INVENTORY_QUANTITY_LABEL';
     });
 
+    // The view-transaction-details screen's "heading" is only ever a plain
+    // {{navigation.x}} substitution followed by translate() - it can't branch
+    // on its own (see _resolveHeading in layout_renderer.dart), so the
+    // config resolves the final heading CODE here, while stockEntryType is
+    // still in scope, and carries it through navigation as plain data.
+    FunctionRegistry.register('getViewTransactionHeadingCode', (args, stateData) {
+      if (args.isEmpty) return 'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
+      final stockEntryType = args.first?.toString().toUpperCase() ?? '';
+      const headings = {
+        'ISSUED': 'INVENTORY_STOCK_ISSUE_DETAILS_HEADING',
+        'RETURNED': 'INVENTORY_STOCK_RETURN_DETAILS_HEADING',
+      };
+      return headings[stockEntryType] ?? 'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
+    });
+
     FunctionRegistry.register('getReportTitle', (args, stateData) {
       if (args.isEmpty) return '';
       final reportType = args.first?.toString() ?? '';

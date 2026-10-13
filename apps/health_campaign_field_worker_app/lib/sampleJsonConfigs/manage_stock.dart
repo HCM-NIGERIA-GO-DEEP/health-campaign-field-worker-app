@@ -1419,7 +1419,12 @@ final dynamic sampleInventoryFlows = {
               }
             ],
             "data": [
-              {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"}
+              {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
+              {
+                "key": "transactionDetailsHeading",
+                "value":
+                    "{{fn:getViewTransactionHeadingCode(navigation.stockEntryType)}}"
+              }
             ]
           }
         }
@@ -1937,7 +1942,12 @@ final dynamic sampleInventoryFlows = {
               }
             ],
             "data": [
-              {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"}
+              {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
+              {
+                "key": "transactionDetailsHeading",
+                "value":
+                    "{{fn:getViewTransactionHeadingCode(navigation.stockEntryType)}}"
+              }
             ]
           }
         }
@@ -1974,6 +1984,10 @@ final dynamic sampleInventoryFlows = {
                     {
                       "key": "clientReferenceId",
                       "value": "{{navigation.clientReferenceId}}"
+                    },
+                    {
+                      "key": "transactionDetailsHeading",
+                      "value": "{{navigation.transactionDetailsHeading}}"
                     }
                   ]
                 }
@@ -2001,7 +2015,7 @@ final dynamic sampleInventoryFlows = {
       "screenType": "TEMPLATE",
       "category": "INVENTORY",
       "name": "viewTransactionDetails",
-      "heading": "INVENTORY_STOCK_RECEIPT_DETAILS_HEADING",
+      "heading": "{{navigation.transactionDetailsHeading}}",
       "description": "",
       "header": [
         {
@@ -2096,6 +2110,18 @@ final dynamic sampleInventoryFlows = {
                     "key":
                         "{{fn:getQuantityLabel(item.additionalFields.fields.sku)}}",
                     "value": "{{item.quantity}}"
+                  },
+                  {
+                    "key": "INVENTORY_ORIGINAL_QUANTITY_RECEIVED_LABEL",
+                    "value":
+                        "{{item.additionalFields.fields.originalQuantityReceived}}",
+                    "hideIfNull": true
+                  },
+                  {
+                    "key": "INVENTORY_ACTUAL_QUANTITY_RECEIVED_LABEL",
+                    "value":
+                        "{{item.additionalFields.fields.actualQuantityReceived}}",
+                    "hideIfNull": true
                   },
                   {
                     "key": "INVENTORY_COMMENTS_LABEL",
@@ -2444,6 +2470,10 @@ final dynamic sampleInventoryFlows = {
                 "key": "StockModel.additionalFields.fields.comments",
                 "value":
                     "{{fn:safeString(formData.stockReceiptDetails.comment)}}"
+              },
+              {
+                "key": "StockModel.transactionReason",
+                "value": "RECEIVED"
               }
             ]
           }
@@ -2956,6 +2986,11 @@ final dynamic sampleInventoryFlows = {
                         {
                           "key": "clientReferenceId",
                           "value": "{{item.items[0].clientReferenceId}}"
+                        },
+                        {
+                          "key": "transactionDetailsHeading",
+                          "value":
+                              "{{fn:getViewTransactionHeadingCode(item.items[0].additionalFields.fields.stockEntryType)}}"
                         }
                       ]
                     }
