@@ -231,9 +231,22 @@ class ScannerComparisonUtils {
     debugPrint(
         'ScannerComparisonUtils: Found ${entities.length} matching entities');
 
-    // 6. For "column" match: any result = duplicate
+    final isMustMatch = config.mode == 'mustMatch';
+
+    // 6. For "column" match: any result = duplicate (or, in mustMatch mode,
+    // any result = valid match, so the scan is accepted).
     if (config.extractFrom == 'column') {
-      return entities.isNotEmpty;
+      final found = entities.isNotEmpty;
+      return isMustMatch ? !found : found;
+    }
+
+    // mustMatch has nothing to validate against if the filters (e.g. the
+    // specific household being delivered to) matched no entity at all -
+    // that is itself a rejection, not a pass-through.
+    if (isMustMatch && entities.isEmpty) {
+      debugPrint(
+          'ScannerComparisonUtils: mustMatch found no candidate entities - rejecting');
+      return true;
     }
 
     // 7. For "additionalFields" match: check entity-level filters then barcode
@@ -273,9 +286,12 @@ class ScannerComparisonUtils {
                 extractComparisonValues(field.value.toString());
             if (existingValues.contains(scannedValue) ||
                 existingValues.contains(normalizedScanned)) {
-              debugPrint(
-                  'ScannerComparisonUtils: DUPLICATE found in entity');
-              return true;
+              // duplicate mode: a match means reject (true).
+              // mustMatch mode: a match means accept (false).
+              debugPrint(isMustMatch
+                  ? 'ScannerComparisonUtils: mustMatch - scanned value matched, accepting'
+                  : 'ScannerComparisonUtils: DUPLICATE found in entity');
+              return !isMustMatch;
             }
           }
         }
@@ -284,7 +300,9 @@ class ScannerComparisonUtils {
         continue;
       }
     }
-    return false;
+    // duplicate mode: no match anywhere means accept (false).
+    // mustMatch mode: no match anywhere means reject (true).
+    return isMustMatch;
   }
 
   /// Resolves filter value, handling switchOn/cases for conditional values.

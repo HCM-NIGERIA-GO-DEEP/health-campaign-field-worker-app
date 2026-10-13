@@ -5,6 +5,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
   final DateTime? end;
   final bool summaryData;
   final Map<String, dynamic>? navigationParams;
+  final DynamicScanLimitConfig? dynamicScanLimit;
 
   const JsonSchemaScannerBuilder({
     required super.formControlName,
@@ -18,6 +19,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
     super.validations,
     this.summaryData = false,
     this.navigationParams,
+    this.dynamicScanLimit,
   });
 
   /// Converts ValidationRule list to ScannerValidation list
@@ -88,12 +90,40 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
     return total > 0 ? total : null;
   }
 
+  /// Reads dynamicScanLimit.sourceField from the live form (e.g.
+  /// "memberCount") and converts it to a required scan count -
+  /// ceil(sourceValue / perUnit), capped at maxQuantity. Returns null when
+  /// unconfigured, the sibling field is missing, or its value isn't numeric,
+  /// so the caller can fall back to the static scanLimit.
+  int? _quantityFromDynamicScanLimit(FormGroup form) {
+    final config = dynamicScanLimit;
+    if (config == null) return null;
+    if (!form.contains(config.sourceField)) return null;
+
+    final raw = form.control(config.sourceField).value;
+    final sourceValue = raw is num
+        ? raw.toInt()
+        : int.tryParse(raw?.toString().trim() ?? '');
+    if (sourceValue == null || sourceValue <= 0) return null;
+
+    final perUnit = config.perUnit > 0 ? config.perUnit : 1;
+    final entitled = (sourceValue + perUnit - 1) ~/ perUnit;
+
+    final maxQuantity = config.maxQuantity;
+    return (maxQuantity != null && entitled > maxQuantity)
+        ? maxQuantity
+        : entitled;
+  }
+
   int _effectiveRequiredScanCount(FormGroup form) {
     final configured = scanLimit ?? 1;
     if (!isGS1code) return configured;
 
     final fromResourceCard = _distributedQuantityFromResourceCard(form);
-    return fromResourceCard ?? configured;
+    if (fromResourceCard != null) return fromResourceCard;
+
+    final fromDynamicScanLimit = _quantityFromDynamicScanLimit(form);
+    return fromDynamicScanLimit ?? configured;
   }
 
   List<ScannerValidation>? _resolvedScannerValidations(int requiredScanCount) {

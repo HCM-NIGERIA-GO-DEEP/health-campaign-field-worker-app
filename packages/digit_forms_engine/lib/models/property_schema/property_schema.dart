@@ -79,6 +79,11 @@ class PropertySchema with _$PropertySchema {
     // Comparison config for scanner fields - enables duplicate detection against historical data
     @JsonKey(fromJson: _comparisonConfigOrNull)
     ComparisonConfig? comparisonConfig,
+    // Scanner fields: computes the required scan count from a sibling
+    // field's numeric value instead of (or capped by) a fixed scanLimit
+    // validation - e.g. bednets needed scales with household member count.
+    @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
+    DynamicScanLimitConfig? dynamicScanLimit,
   }) = _PropertySchema;
 
   factory PropertySchema.fromJson(Map<String, dynamic> json) =>
@@ -249,10 +254,34 @@ class ComparisonConfig with _$ComparisonConfig {
     String extractFrom, // "additionalFields" or "column"
     @Default([]) List<ComparisonFilter> filters,
     String? errorMessage, // Localization key for the error message
+    // 'duplicate' (default): a scan is rejected when a match IS found - the
+    // original use case (don't let the same resource get scanned twice).
+    // 'mustMatch': a scan is rejected when NO match is found - e.g. the
+    // delivery team must scan one of the exact codes captured at household
+    // registration, not an arbitrary/unregistered code.
+    @Default('duplicate') String mode,
   }) = _ComparisonConfig;
 
   factory ComparisonConfig.fromJson(Map<String, dynamic> json) =>
       _$ComparisonConfigFromJson(json);
+}
+
+@freezed
+class DynamicScanLimitConfig with _$DynamicScanLimitConfig {
+  @JsonSerializable(explicitToJson: true, includeIfNull: false)
+  const factory DynamicScanLimitConfig({
+    // Sibling form field holding the raw quantity (e.g. "memberCount").
+    required String sourceField,
+    // Required scans = ceil(sourceField value / perUnit).
+    @Default(1) int perUnit,
+    // Upper bound applied after the division above, regardless of how large
+    // sourceField's value is. Falls back to the field's static "scanLimit"
+    // validation (if any) when sourceField is missing/unparseable.
+    int? maxQuantity,
+  }) = _DynamicScanLimitConfig;
+
+  factory DynamicScanLimitConfig.fromJson(Map<String, dynamic> json) =>
+      _$DynamicScanLimitConfigFromJson(json);
 }
 
 @freezed
@@ -372,6 +401,13 @@ MultiEntityConfig? _multiEntityConfigOrNull(dynamic value) {
 ComparisonConfig? _comparisonConfigOrNull(dynamic value) {
   if (value is Map && value.isNotEmpty) {
     return ComparisonConfig.fromJson(Map<String, dynamic>.from(value));
+  }
+  return null;
+}
+
+DynamicScanLimitConfig? _dynamicScanLimitConfigOrNull(dynamic value) {
+  if (value is Map && value.isNotEmpty) {
+    return DynamicScanLimitConfig.fromJson(Map<String, dynamic>.from(value));
   }
   return null;
 }

@@ -156,6 +156,35 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     return true;
   }
 
+  /// Mirrors scanner_builder.dart's _quantityFromDynamicScanLimit - this is a
+  /// separate "is the page ready to submit" gate, not the scanner widget
+  /// itself, so it has to independently honor the same config or a
+  /// household sized for fewer than the static scanLimit (e.g. 4 members ->
+  /// 2 bednets) would correctly stop letting the user scan more at 2, yet
+  /// still block the Save button because this check kept expecting 3.
+  int? _quantityFromDynamicScanLimit(
+    PropertySchema schema,
+    FormGroup formGroup,
+  ) {
+    final config = schema.dynamicScanLimit;
+    if (config == null) return null;
+    if (!formGroup.contains(config.sourceField)) return null;
+
+    final raw = formGroup.control(config.sourceField).value;
+    final sourceValue = raw is num
+        ? raw.toInt()
+        : int.tryParse(raw?.toString().trim() ?? '');
+    if (sourceValue == null || sourceValue <= 0) return null;
+
+    final perUnit = config.perUnit > 0 ? config.perUnit : 1;
+    final entitled = (sourceValue + perUnit - 1) ~/ perUnit;
+
+    final maxQuantity = config.maxQuantity;
+    return (maxQuantity != null && entitled > maxQuantity)
+        ? maxQuantity
+        : entitled;
+  }
+
   int? _getEffectiveScannerRequiredCount(
     PropertySchema schema,
     FormGroup formGroup,
@@ -167,6 +196,12 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
       final distributed = _getResourceCardDistributedQuantity(formGroup);
       if (distributed != null && distributed > 0) {
         return distributed;
+      }
+
+      final fromDynamicScanLimit =
+          _quantityFromDynamicScanLimit(schema, formGroup);
+      if (fromDynamicScanLimit != null) {
+        return fromDynamicScanLimit;
       }
     }
 
@@ -1740,6 +1775,14 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                               initialValue: values[field.fieldName] ?? '',
                               onChange: onChange,
                               errorMessage: error,
+                              // Defaults to false, which makes the
+                              // underlying TextField readOnly - leaving only
+                              // the +/-step buttons usable. A quantity that
+                              // isn't a multiple of the step (e.g. 13 with a
+                              // step of 5) would then be unreachable, so
+                              // manual keyboard entry has to stay available
+                              // alongside the stepper.
+                              editable: true,
                             )
                           : DigitTextAreaFormInput(
                               initialValue: values[field.fieldName] ?? '',

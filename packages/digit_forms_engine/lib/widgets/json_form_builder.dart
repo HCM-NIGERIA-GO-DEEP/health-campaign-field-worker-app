@@ -414,6 +414,7 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
           validations: widget.schema.validations,
           summaryData: widget.schema.includeInSummary ?? true,
           navigationParams: widget.navigationParams,
+          dynamicScanLimit: widget.schema.dynamicScanLimit,
         );
 
       case PropertySchemaFormat.date:
