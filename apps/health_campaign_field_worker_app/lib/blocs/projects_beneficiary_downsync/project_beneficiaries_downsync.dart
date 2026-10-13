@@ -16,6 +16,7 @@ import '../../data/local_store/no_sql/schema/app_configuration.dart';
 import '../../data/local_store/secure_store/secure_store.dart';
 import '../../data/repositories/remote/bandwidth_check.dart';
 import '../../models/downsync/downsync.dart';
+import '../../services/beneficiary_file_downsync_importer.dart';
 import '../../utils/background_service.dart';
 import '../../utils/environment_config.dart';
 import '../../utils/utils.dart';
@@ -26,6 +27,14 @@ typedef BeneficiaryDownSyncEmitter = Emitter<BeneficiaryDownSyncState>;
 
 class BeneficiaryDownSyncBloc
     extends Bloc<BeneficiaryDownSyncEvent, BeneficiaryDownSyncState> {
+  static const int _paginatedDownsyncStorageKbPerRecord = 150;
+  static const int _fileDownsyncStorageKbPerRecord = 5;
+  static const int _storageSafetyMultiplier = 2;
+
+  /// `_t` type of the file currently being imported, for the progress label.
+  /// Blank during a paginated download.
+  String currentEntityType = '';
+
   final LocalRepository<IndividualModel, IndividualSearchModel>
       individualLocalRepository;
   final RemoteRepository<DownsyncModel, DownsyncSearchModel>
@@ -120,6 +129,19 @@ class BeneficiaryDownSyncBloc
     } else {
       emit(const BeneficiaryDownSyncState.loading(true));
       await LocalSecureStore.instance.setManualSyncTrigger(true);
+
+      final downloadLinks =
+          await _probeDownloadLinks(event.boundaryCode, event.projectModel);
+      if (downloadLinks.isNotEmpty) {
+        final serverTotalCount = downloadLinksRecordCount(downloadLinks);
+        emit(BeneficiaryDownSyncState.dataFound(
+          serverTotalCount,
+          event.batchSize,
+          {event.boundaryCode: serverTotalCount},
+        ));
+        return;
+      }
+
       final existingDownSyncData =
           await downSyncLocalRepository.search(DownsyncSearchModel(
         locality: event.boundaryCode,
@@ -164,13 +186,50 @@ class BeneficiaryDownSyncBloc
     BeneficiaryDownSyncEmitter emit,
   ) async {
     emit(const BeneficiaryDownSyncState.loading(true));
-    double? diskSpace = 0;
-    // [TODO: Move the function DiskSpace.getFreeDiskSpace to utils
-    diskSpace = await DiskSpace
-        .getFreeDiskSpace; // Returns the device available space in MB
-    // diskSpace in MB * 1000 comparison with serverTotalCount * 150KB * Number of entities * 2
-    if ((diskSpace ?? 0) * 1000 < (event.initialServerCount * 150 * 2)) {
+    currentEntityType = '';
+
+    try {
+      final downloadLinks =
+          await _probeDownloadLinks(event.boundaryCode, event.projectModel);
+      if (downloadLinks.isNotEmpty) {
+        if (await _hasInsufficientStorage(
+          downloadLinksRecordCount(downloadLinks),
+          kbPerRecord: _fileDownsyncStorageKbPerRecord,
+        )) {
+          emit(const BeneficiaryDownSyncState.insufficientStorage());
+          await LocalSecureStore.instance.setManualSyncTrigger(false);
+          return;
+        }
+
+        final result = await _importDownloadLinks(
+          links: downloadLinks,
+          projectModel: event.projectModel,
+          boundaryCode: event.boundaryCode,
+          boundaryName: event.boundaryName,
+          batchSize: event.batchSize,
+          emitProgress: (link, linkImported) {
+            emit(BeneficiaryDownSyncState.inProgress(
+              linkImported,
+              link.recordCount,
+            ));
+          },
+        );
+        await LocalSecureStore.instance.setManualSyncTrigger(false);
+        emit(BeneficiaryDownSyncState.success(result));
+        return;
+      }
+    } catch (e) {
+      await LocalSecureStore.instance.setManualSyncTrigger(false);
+      emit(const BeneficiaryDownSyncState.failed());
+      return;
+    }
+
+    if (await _hasInsufficientStorage(
+      event.initialServerCount,
+      kbPerRecord: _paginatedDownsyncStorageKbPerRecord,
+    )) {
       emit(const BeneficiaryDownSyncState.insufficientStorage());
+      await LocalSecureStore.instance.setManualSyncTrigger(false);
     } else {
       try {
         while (true) {
@@ -301,6 +360,15 @@ class BeneficiaryDownSyncBloc
       for (final boundary in event.boundaries) {
         final boundaryCode = boundary.code.toString();
 
+        final downloadLinks =
+            await _probeDownloadLinks(boundaryCode, event.projectModel);
+        if (downloadLinks.isNotEmpty) {
+          final count = downloadLinksRecordCount(downloadLinks);
+          boundaryCounts[boundaryCode] = count;
+          totalServerCount += count;
+          continue;
+        }
+
         final existingDownSyncData =
             await downSyncLocalRepository.search(DownsyncSearchModel(
           locality: boundaryCode,
@@ -348,6 +416,7 @@ class BeneficiaryDownSyncBloc
     BeneficiaryDownSyncEmitter emit,
   ) async {
     emit(const BeneficiaryDownSyncState.loading(true));
+    currentEntityType = '';
 
     // Only process boundaries that have data (count > 0) from the initial check
     final boundaries = event.boundaries
@@ -364,9 +433,41 @@ class BeneficiaryDownSyncBloc
         int boundaryTotalCount = event.boundaryCounts[boundaryCode] ?? 0;
         if (boundaryTotalCount == 0) continue;
 
-        // Check disk space
-        double? diskSpace = await DiskSpace.getFreeDiskSpace;
-        if ((diskSpace ?? 0) * 1000 < (boundaryTotalCount * 150 * 2)) {
+        final downloadLinks =
+            await _probeDownloadLinks(boundaryCode, event.projectModel);
+        if (downloadLinks.isNotEmpty) {
+          if (await _hasInsufficientStorage(
+            downloadLinksRecordCount(downloadLinks),
+            kbPerRecord: _fileDownsyncStorageKbPerRecord,
+          )) {
+            emit(const BeneficiaryDownSyncState.insufficientStorage());
+            await LocalSecureStore.instance.setManualSyncTrigger(false);
+            return;
+          }
+
+          completedResults.add(await _importDownloadLinks(
+            links: downloadLinks,
+            projectModel: event.projectModel,
+            boundaryCode: boundaryCode,
+            boundaryName: boundaryName,
+            batchSize: event.batchSize,
+            emitProgress: (link, linkImported) {
+              emit(BeneficiaryDownSyncState.multiBoundaryInProgress(
+                i,
+                boundaries.length,
+                boundaryName,
+                linkImported,
+                link.recordCount,
+              ));
+            },
+          ));
+          continue;
+        }
+
+        if (await _hasInsufficientStorage(
+          boundaryTotalCount,
+          kbPerRecord: _paginatedDownsyncStorageKbPerRecord,
+        )) {
           emit(const BeneficiaryDownSyncState.insufficientStorage());
           await LocalSecureStore.instance.setManualSyncTrigger(false);
           return;
@@ -480,6 +581,145 @@ class BeneficiaryDownSyncBloc
       await LocalSecureStore.instance.setManualSyncTrigger(false);
       emit(const BeneficiaryDownSyncState.failed());
     }
+  }
+
+  /// File links for [boundaryCode], or none — callers then run the paginated
+  /// downsync exactly as before. A failed or unexpected response also means
+  /// none, so a backend without the file API is never broken by this call.
+  Future<List<BeneficiaryDownloadLink>> _probeDownloadLinks(
+    String boundaryCode,
+    ProjectModel projectModel,
+  ) async {
+    try {
+      final response = await downSyncRemoteRepository.downSync(
+        DownsyncSearchModel(
+          locality: boundaryCode,
+          offset: 0,
+          limit: 0,
+          isDeleted: true,
+          tenantId: envConfig.variables.tenantId,
+          projectId: resolveDownsyncProjectId(
+            projectModel.projectHierarchy,
+            projectModel.id,
+          ),
+        ),
+      );
+      return parseDownloadLinks(response);
+    } catch (e) {
+      if (kDebugMode) {
+        print('File downsync probe failed, using paginated downsync: $e');
+      }
+      return [];
+    }
+  }
+
+  Future<bool> _hasInsufficientStorage(
+    int recordCount, {
+    required int kbPerRecord,
+  }) async {
+    final diskSpaceMb = await DiskSpace.getFreeDiskSpace;
+    return (diskSpaceMb ?? 0) * 1000 <
+        recordCount * kbPerRecord * _storageSafetyMultiplier;
+  }
+
+  /// Imports [links] into the local DB and returns the completed downsync
+  /// record. Progress is persisted per batch so a retry resumes; on
+  /// completion the offset goes back to 0 so the next sync is a full import
+  /// again (beneficiary downsync never sends a delta cursor).
+  Future<DownsyncModel> _importDownloadLinks({
+    required List<BeneficiaryDownloadLink> links,
+    required ProjectModel projectModel,
+    required String boundaryCode,
+    required String boundaryName,
+    required int batchSize,
+    required void Function(BeneficiaryDownloadLink link, int linkImported)
+        emitProgress,
+  }) async {
+    final totalCount = downloadLinksRecordCount(links);
+    final projectId = resolveDownsyncProjectId(
+      projectModel.projectHierarchy,
+      projectModel.id,
+    );
+
+    final existingDownSyncData =
+        await downSyncLocalRepository.search(DownsyncSearchModel(
+      locality: boundaryCode,
+    ));
+    final existing = existingDownSyncData.firstOrNull;
+    final startFromOffset = resolveResumeOffset(
+      storedOffset: existing?.offset,
+      storedLimit: existing?.limit,
+      storedTotalCount: existing?.totalCount,
+      linksTotal: totalCount,
+    );
+
+    if (existing == null) {
+      await downSyncLocalRepository.create(DownsyncModel(
+        offset: 0,
+        limit: 0,
+        totalCount: totalCount,
+        locality: boundaryCode,
+        boundaryName: boundaryName,
+        projectId: projectId,
+      ));
+    }
+
+    final importer = BeneficiaryFileDownsyncImporter(
+      dio: downSyncRemoteRepository.dio,
+      individualLocalRepository: individualLocalRepository,
+      householdLocalRepository: householdLocalRepository,
+      householdMemberLocalRepository: householdMemberLocalRepository,
+      projectBeneficiaryLocalRepository: projectBeneficiaryLocalRepository,
+      taskLocalRepository: taskLocalRepository,
+      sideEffectLocalRepository: sideEffectLocalRepository,
+      referralLocalRepository: referralLocalRepository,
+      hfReferralLocalRepository: hfReferralLocalRepository,
+      serviceLocalRepository: serviceLocalRepository,
+      batchSize: batchSize,
+    );
+
+    await importer.importLinks(
+      links,
+      startFromOffset: startFromOffset,
+      onProgress: (importedCount, _, link, linkImported, lastEntityType) async {
+        if (lastEntityType.isNotEmpty) {
+          currentEntityType = lastEntityType;
+        } else if (link.fileType.isNotEmpty) {
+          currentEntityType = link.fileType;
+        }
+        emitProgress(link, linkImported);
+        // limit 0 marks a file-mode row; resolveResumeOffset relies on it.
+        await downSyncLocalRepository.update(DownsyncModel(
+          offset: importedCount,
+          limit: 0,
+          totalCount: totalCount,
+          locality: boundaryCode,
+          boundaryName: boundaryName,
+          projectId: projectId,
+        ));
+      },
+    );
+
+    // lastSyncedTime is shown in the downsync report only — it is never sent
+    // to the server for beneficiary downsync.
+    final syncedTime = DateTime.now().millisecondsSinceEpoch;
+    await downSyncLocalRepository.update(DownsyncModel(
+      offset: 0,
+      limit: 0,
+      lastSyncedTime: syncedTime,
+      totalCount: totalCount,
+      locality: boundaryCode,
+      boundaryName: boundaryName,
+      projectId: projectId,
+    ));
+
+    return DownsyncModel(
+      offset: totalCount,
+      lastSyncedTime: syncedTime,
+      totalCount: totalCount,
+      locality: boundaryCode,
+      boundaryName: boundaryName,
+    );
   }
 
   writeToFile(

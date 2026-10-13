@@ -358,7 +358,13 @@ class IndividualLocalRepository
                 }).toList() ??
                 [])
             .toList();
-        final addressCompanions = addressList.expand((e) => [e[0]]).toList();
+        // One address row per individual (the table's key is
+        // relatedClientReferenceId + auditCreatedBy), so keep the first;
+        // individuals without an address contribute none.
+        final addressCompanions = addressList
+            .where((e) => e.isNotEmpty)
+            .map((e) => e.first)
+            .toList();
         final nameCompanions = entities.map((e) {
           if (e.name != null) {
             return e.name!
