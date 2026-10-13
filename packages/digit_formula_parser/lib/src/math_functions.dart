@@ -148,9 +148,22 @@ bool _areAllNumeric(List<dynamic> args) {
 
 // Update function maps with explicit types
 
+// Two numeric-looking strings (e.g. two text-formatted form fields holding
+// "5" and "23") must compare as numbers, not lexicographically - "5" > "23"
+// as strings, which silently inverted ordering comparisons wherever both
+// sides of a condition came from string-typed fields. Falls back to a plain
+// string compare only when at least one side isn't actually numeric, so
+// genuine string ordering (e.g. comparing enum codes) is unaffected.
+int _compareStrings(String a, String b) {
+  final parsedA = double.tryParse(a);
+  final parsedB = double.tryParse(b);
+  if (parsedA != null && parsedB != null) return parsedA.compareTo(parsedB);
+  return a.compareTo(b);
+}
+
 final Map<String, bool Function(dynamic, dynamic)> comparisonFunctions = {
   'lt': (a, b) {
-    if (a is String && b is String) return a.compareTo(b) < 0;
+    if (a is String && b is String) return _compareStrings(a, b) < 0;
     if (a is num && b is num) return a < b;
     if (a is String && b is num) {
       final parsedA = double.tryParse(a);
@@ -163,7 +176,7 @@ final Map<String, bool Function(dynamic, dynamic)> comparisonFunctions = {
     return a.toString().compareTo(b.toString()) < 0;
   },
   'gt': (a, b) {
-    if (a is String && b is String) return a.compareTo(b) > 0;
+    if (a is String && b is String) return _compareStrings(a, b) > 0;
     if (a is num && b is num) return a > b;
     if (a is String && b is num) {
       final parsedA = double.tryParse(a);
@@ -176,7 +189,7 @@ final Map<String, bool Function(dynamic, dynamic)> comparisonFunctions = {
     return a.toString().compareTo(b.toString()) > 0;
   },
   'lte': (a, b) {
-    if (a is String && b is String) return a.compareTo(b) <= 0;
+    if (a is String && b is String) return _compareStrings(a, b) <= 0;
     if (a is num && b is num) return a <= b;
     if (a is String && b is num) {
       final parsedA = double.tryParse(a);
@@ -189,7 +202,7 @@ final Map<String, bool Function(dynamic, dynamic)> comparisonFunctions = {
     return a.toString().compareTo(b.toString()) <= 0;
   },
   'gte': (a, b) {
-    if (a is String && b is String) return a.compareTo(b) >= 0;
+    if (a is String && b is String) return _compareStrings(a, b) >= 0;
     if (a is num && b is num) return a >= b;
     if (a is String && b is num) {
       final parsedA = double.tryParse(a);
