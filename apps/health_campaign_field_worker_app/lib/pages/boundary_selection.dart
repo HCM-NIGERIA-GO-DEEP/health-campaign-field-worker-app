@@ -23,6 +23,7 @@ import '../data/local_store/app_shared_preferences.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../models/entities/roles_type.dart';
 import '../router/app_router.dart';
+import '../services/beneficiary_file_downsync_importer.dart';
 import '../utils/environment_config.dart';
 import '../utils/i18_key_constants.dart' as i18;
 import '../utils/utils.dart';
@@ -295,16 +296,26 @@ class _BoundarySelectionPageState
                                       );
                                     },
                                     inProgress: (syncCount, totalCount) {
+                                      final entityLabel = downsyncEntityLabel(
+                                        context
+                                            .read<BeneficiaryDownSyncBloc>()
+                                            .currentEntityType,
+                                      );
                                       final progressData = DownloadProgressData(
                                         progress: min(
-                                          (syncCount) / (totalCount),
+                                          (syncCount) /
+                                              (totalCount == 0
+                                                  ? 1
+                                                  : totalCount),
                                           1,
                                         ),
-                                        boundaryName: localizations.translate(
-                                          state.selectedLastLevelBoundaries
-                                                  .firstOrNull?.code ??
-                                              '',
-                                        ),
+                                        boundaryName: entityLabel.isNotEmpty
+                                            ? entityLabel
+                                            : localizations.translate(
+                                                state.selectedLastLevelBoundaries
+                                                        .firstOrNull?.code ??
+                                                    '',
+                                              ),
                                         syncedCount: syncCount,
                                         totalCount: totalCount,
                                         currentIndex: 0,
@@ -479,6 +490,13 @@ class _BoundarySelectionPageState
                                       syncCount,
                                       totalCount,
                                     ) {
+                                      final entityLabel = downsyncEntityLabel(
+                                        context
+                                            .read<BeneficiaryDownSyncBloc>()
+                                            .currentEntityType,
+                                      );
+                                      final boundaryLabel =
+                                          localizations.translate(boundaryName);
                                       final progressData = DownloadProgressData(
                                         progress: min(
                                           (syncCount) /
@@ -487,9 +505,9 @@ class _BoundarySelectionPageState
                                                   : totalCount),
                                           1,
                                         ),
-                                        boundaryName: localizations.translate(
-                                          boundaryName,
-                                        ),
+                                        boundaryName: entityLabel.isNotEmpty
+                                            ? '$boundaryLabel • $entityLabel'
+                                            : boundaryLabel,
                                         syncedCount: syncCount,
                                         totalCount: totalCount,
                                         currentIndex: currentIndex,

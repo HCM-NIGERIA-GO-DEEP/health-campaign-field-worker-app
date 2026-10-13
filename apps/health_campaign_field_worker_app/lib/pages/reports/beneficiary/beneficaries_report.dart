@@ -16,6 +16,7 @@ import '../../../blocs/app_initialization/app_initialization.dart';
 import '../../../blocs/projects_beneficiary_downsync/project_beneficiaries_downsync.dart';
 import '../../../models/downsync/downsync.dart';
 import '../../../router/app_router.dart';
+import '../../../services/beneficiary_file_downsync_importer.dart';
 import '../../../utils/i18_key_constants.dart' as i18;
 import '../../../utils/utils.dart';
 import '../../../widgets/header/back_navigation_help_header.dart';
@@ -197,14 +198,21 @@ class BeneficiariesReportState extends LocalizedState<BeneficiariesReportPage> {
                         isPop: true,
                       ),
                       inProgress: (syncCount, totalCount) {
+                        final entityLabel = downsyncEntityLabel(
+                          context
+                              .read<BeneficiaryDownSyncBloc>()
+                              .currentEntityType,
+                        );
                         final progressData = DownloadProgressData(
                           progress: min(
-                            (syncCount) / (totalCount),
+                            (syncCount) / (totalCount == 0 ? 1 : totalCount),
                             1,
                           ),
-                          boundaryName: localizations.translate(
-                            selectedBoundary?.code ?? '',
-                          ),
+                          boundaryName: entityLabel.isNotEmpty
+                              ? entityLabel
+                              : localizations.translate(
+                                  selectedBoundary?.code ?? '',
+                                ),
                           syncedCount: syncCount,
                           totalCount: totalCount,
                           currentIndex: 0,
