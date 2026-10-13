@@ -919,7 +919,7 @@ final jsonConfig = {
           "wayBillNumber": "stockProductDetails.wayBillNumber",
           "transactionType": "__context:transactionType",
           "transactionReason":
-              "__switch:__context:stockEntryType:{RECEIPT:__value:RECEIVED,RETURNED:__value:RETURNED,ISSUED:__value:ISSUED,DAMAGED:stockDetails.transactionReason,LOSS:stockDetails.transactionReason}",
+              "__switch:__context:stockEntryType:{RECEIPT:__value:RECEIVED,RETURNED:__value:RETURNED,ISSUED:__value:ISSUED,DAMAGED:stockProductDetails.transactionReason,LOSS:stockProductDetails.transactionReason}",
           "transactingPartyId": "stockDetails.transactingPartyId",
           "senderId":
               "__switch:__context:senderPartyType:{STAFF:__context:loggedInUserUuid,default:stockDetails.facilityFromWhich}",
@@ -939,7 +939,7 @@ final jsonConfig = {
             "expiryDate": "stockProductDetails.expiryDate",
             "comments": "__context.comment",
             "transportType": "stockDetails.transportType",
-            "vehicle_number": "stockDetails.vehicleNumber",
+            "vehicleNumber": "stockDetails.vehicleNumber",
             "deliveryTeam": "stockDetails.deliveryTeam",
             "wayBillNumber": "stockProductDetails.wayBillNumber",
             "mrnNumber": "__context:mrnNumber",

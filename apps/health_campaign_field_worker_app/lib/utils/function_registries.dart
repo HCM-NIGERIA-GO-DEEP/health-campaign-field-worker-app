@@ -299,6 +299,28 @@ class FunctionRegistries {
       return reportType == 'receipt' ? 'clientModifiedBy' : 'clientCreatedBy';
     });
 
+    // Distributors have no one below them to issue stock to, so the
+    // Issued/Returned selection screen should only offer Returned for them.
+    FunctionRegistry.register('getIssueReturnOptions', (args, stateData) {
+      final isDistributor = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.distributor.toValue());
+
+      final options = [
+        {
+          'name': 'APP_CONFIG_INVENTORY_returnOrIssueSelection_OPTION_ISSUED',
+          'code': 'ISSUED',
+        },
+        {
+          'name': 'APP_CONFIG_INVENTORY_returnOrIssueSelection_OPTION_RETURNED',
+          'code': 'RETURNED',
+        },
+      ];
+
+      return isDistributor
+          ? options.where((o) => o['code'] == 'RETURNED').toList()
+          : options;
+    });
+
     FunctionRegistry.register('getSecondaryType', (args, stateData) {
       if (args.isEmpty) return 'WAREHOUSE';
       final facilityFromWhich = args.first?.toString() ?? '';
