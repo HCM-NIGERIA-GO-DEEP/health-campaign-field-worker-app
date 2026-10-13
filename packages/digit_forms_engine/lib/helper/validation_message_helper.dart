@@ -58,6 +58,26 @@ Map<String, String Function(Object)> buildValidationMessages(
       case 'isGS1':
         messages['isGS1'] = (_) => translated;
         break;
+      case 'conditionalPattern':
+        // The validator's error payload carries which case matched (and
+        // therefore which message applies), since a single field can have
+        // several possible expected formats depending on a sibling field -
+        // rule.message here is only the fallback if that lookup comes up
+        // empty.
+        messages['conditionalPattern'] = (error) {
+          if (error is Map) {
+            final key = error['messageKey'];
+            if (key is String && key.isNotEmpty) {
+              final caseTranslated = translateIfPresent(key, localize);
+              if (caseTranslated != null && caseTranslated.trim().isNotEmpty) {
+                return caseTranslated;
+              }
+              return key;
+            }
+          }
+          return finalMessage;
+        };
+        break;
       default:
         break;
     }

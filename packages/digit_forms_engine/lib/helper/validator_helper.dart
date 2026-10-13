@@ -200,6 +200,49 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
           }
           break;
 
+        // Validates against a different pattern depending on a sibling
+        // field's current value - e.g. identificationNumber's expected
+        // format depends on whichever identificationType was picked.
+        // rule.value: {"switchOn": "identificationType", "cases": {
+        //   "NATIONAL_ID": {"pattern": "...", "message": "..."}, ... }}
+        // Skips (passes) when empty, when the sibling field isn't found, or
+        // when the current switchOn value has no matching case.
+        case 'conditionalPattern':
+          if (rule.value is Map) {
+            final config = rule.value as Map;
+            final switchOnField = config['switchOn']?.toString();
+            final cases = config['cases'];
+            if (switchOnField != null && cases is Map) {
+              validators.add(Validators.delegate((control) {
+                final value = control.value?.toString();
+                if (value == null || value.isEmpty) return null;
+
+                final form = control.parent;
+                if (form is! FormGroup || !form.contains(switchOnField)) {
+                  return null;
+                }
+                final switchValue =
+                    form.control(switchOnField).value?.toString();
+                if (switchValue == null) return null;
+
+                final caseConfig = cases[switchValue];
+                if (caseConfig is! Map) return null;
+                final patternStr = caseConfig['pattern']?.toString();
+                if (patternStr == null || patternStr.isEmpty) return null;
+
+                if (!RegExp(patternStr).hasMatch(value)) {
+                  return {
+                    'conditionalPattern': {
+                      'messageKey': caseConfig['message']?.toString(),
+                    }
+                  };
+                }
+                return null;
+              }) as Validator<T>);
+            }
+          }
+          break;
+
         default:
           if (kDebugMode) {
             // print('Unknown validation type: ${rule.type}');
