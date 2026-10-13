@@ -347,8 +347,15 @@ class _StockReconciliationCardState
                       LabelValueItem(
                         label: localizations.translate(
                             i18.stockReconciliationMetrics.stockReturned),
-                        value:
-                            _stockMetrics['stockReturned']!.toStringAsFixed(0),
+                        // calculateStockMetrics nets sender-side returns as
+                        // negative (it subtracts them from the same
+                        // stockReturned bucket receiver-side returns add to,
+                        // so stockInHand comes out right) - correct for the
+                        // internal math, but a user-facing count should never
+                        // read negative.
+                        value: _stockMetrics['stockReturned']!
+                            .abs()
+                            .toStringAsFixed(0),
                         labelFlex: 5,
                       ),
                       const DigitDivider(),
