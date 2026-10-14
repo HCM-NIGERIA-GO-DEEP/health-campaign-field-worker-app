@@ -295,6 +295,7 @@ class BackgroundServiceConfig with _$BackgroundServiceConfig {
     @JsonKey(name: 'BATTERY_PERCENT_CUT_OFF') required int batteryPercentCutOff,
     @JsonKey(name: 'SERVICE_INTERVAL') required int serviceInterval,
     @JsonKey(name: 'API_CONCURRENCY') required int apiConcurrency,
+    @JsonKey(name: 'ENABLED') bool? enabled,
   }) = _BackgroundServiceConfig;
 
   factory BackgroundServiceConfig.fromJson(Map<String, dynamic> json) =>

@@ -103,17 +103,18 @@ class _HomePageState extends LocalizedState<HomePage> {
     super.initState();
 
     // If background service was killed with the app, release orphaned lock
-    // and restart the service.
+    // and restart the service. A running service is passed through too, so it
+    // gets stopped if background sync has been switched off in MDMS.
     FlutterBackgroundService().isRunning().then((isRunning) {
       if (!isRunning) {
         SyncLock.release();
-        if (context.mounted) {
-          performBackgroundService(
-            isBackground: false,
-            stopService: false,
-            context: context,
-          );
-        }
+      }
+      if (context.mounted) {
+        performBackgroundService(
+          isBackground: false,
+          stopService: false,
+          context: context,
+        );
       }
     });
 
@@ -2378,7 +2379,16 @@ class _HomePageState extends LocalizedState<HomePage> {
               icon: Icons.sync_alt,
               label: i18.home.syncDataLabel,
               onPressed: () async {
-                if (envConfig.variables.envType == EnvType.qa ||
+                // With background sync switched off, no service ever sends
+                // `enablesManualSync`, so the gate below would block sync.
+                final isBackgroundSyncEnabled =
+                    context.read<AppInitializationBloc>().state.maybeWhen(
+                          initialized: (appConfiguration, _, __) =>
+                              isBackgroundServiceEnabled(appConfiguration),
+                          orElse: () => true,
+                        );
+                if (!isBackgroundSyncEnabled ||
+                    envConfig.variables.envType == EnvType.qa ||
                     envConfig.variables.envType == EnvType.dev ||
                     envConfig.variables.envType == EnvType.uat) {
                   if (context.mounted) attemptSyncUp(context);

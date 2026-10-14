@@ -4492,6 +4492,8 @@ mixin _$BackgroundServiceConfig {
   int get serviceInterval => throw _privateConstructorUsedError;
   @JsonKey(name: 'API_CONCURRENCY')
   int get apiConcurrency => throw _privateConstructorUsedError;
+  @JsonKey(name: 'ENABLED')
+  bool? get enabled => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -4508,7 +4510,8 @@ abstract class $BackgroundServiceConfigCopyWith<$Res> {
   $Res call(
       {@JsonKey(name: 'BATTERY_PERCENT_CUT_OFF') int batteryPercentCutOff,
       @JsonKey(name: 'SERVICE_INTERVAL') int serviceInterval,
-      @JsonKey(name: 'API_CONCURRENCY') int apiConcurrency});
+      @JsonKey(name: 'API_CONCURRENCY') int apiConcurrency,
+      @JsonKey(name: 'ENABLED') bool? enabled});
 }
 
 /// @nodoc
@@ -4528,6 +4531,7 @@ class _$BackgroundServiceConfigCopyWithImpl<$Res,
     Object? batteryPercentCutOff = null,
     Object? serviceInterval = null,
     Object? apiConcurrency = null,
+    Object? enabled = freezed,
   }) {
     return _then(_value.copyWith(
       batteryPercentCutOff: null == batteryPercentCutOff
@@ -4542,6 +4546,10 @@ class _$BackgroundServiceConfigCopyWithImpl<$Res,
           ? _value.apiConcurrency
           : apiConcurrency // ignore: cast_nullable_to_non_nullable
               as int,
+      enabled: freezed == enabled
+          ? _value.enabled
+          : enabled // ignore: cast_nullable_to_non_nullable
+              as bool?,
     ) as $Val);
   }
 }
@@ -4558,7 +4566,8 @@ abstract class _$$BackgroundServiceConfigImplCopyWith<$Res>
   $Res call(
       {@JsonKey(name: 'BATTERY_PERCENT_CUT_OFF') int batteryPercentCutOff,
       @JsonKey(name: 'SERVICE_INTERVAL') int serviceInterval,
-      @JsonKey(name: 'API_CONCURRENCY') int apiConcurrency});
+      @JsonKey(name: 'API_CONCURRENCY') int apiConcurrency,
+      @JsonKey(name: 'ENABLED') bool? enabled});
 }
 
 /// @nodoc
@@ -4577,6 +4586,7 @@ class __$$BackgroundServiceConfigImplCopyWithImpl<$Res>
     Object? batteryPercentCutOff = null,
     Object? serviceInterval = null,
     Object? apiConcurrency = null,
+    Object? enabled = freezed,
   }) {
     return _then(_$BackgroundServiceConfigImpl(
       batteryPercentCutOff: null == batteryPercentCutOff
@@ -4591,6 +4601,10 @@ class __$$BackgroundServiceConfigImplCopyWithImpl<$Res>
           ? _value.apiConcurrency
           : apiConcurrency // ignore: cast_nullable_to_non_nullable
               as int,
+      enabled: freezed == enabled
+          ? _value.enabled
+          : enabled // ignore: cast_nullable_to_non_nullable
+              as bool?,
     ));
   }
 }
@@ -4602,7 +4616,8 @@ class _$BackgroundServiceConfigImpl implements _BackgroundServiceConfig {
       {@JsonKey(name: 'BATTERY_PERCENT_CUT_OFF')
       required this.batteryPercentCutOff,
       @JsonKey(name: 'SERVICE_INTERVAL') required this.serviceInterval,
-      @JsonKey(name: 'API_CONCURRENCY') required this.apiConcurrency});
+      @JsonKey(name: 'API_CONCURRENCY') required this.apiConcurrency,
+      @JsonKey(name: 'ENABLED') this.enabled});
 
   factory _$BackgroundServiceConfigImpl.fromJson(Map<String, dynamic> json) =>
       _$$BackgroundServiceConfigImplFromJson(json);
@@ -4616,10 +4631,13 @@ class _$BackgroundServiceConfigImpl implements _BackgroundServiceConfig {
   @override
   @JsonKey(name: 'API_CONCURRENCY')
   final int apiConcurrency;
+  @override
+  @JsonKey(name: 'ENABLED')
+  final bool? enabled;
 
   @override
   String toString() {
-    return 'BackgroundServiceConfig(batteryPercentCutOff: $batteryPercentCutOff, serviceInterval: $serviceInterval, apiConcurrency: $apiConcurrency)';
+    return 'BackgroundServiceConfig(batteryPercentCutOff: $batteryPercentCutOff, serviceInterval: $serviceInterval, apiConcurrency: $apiConcurrency, enabled: $enabled)';
   }
 
   @override
@@ -4632,13 +4650,14 @@ class _$BackgroundServiceConfigImpl implements _BackgroundServiceConfig {
             (identical(other.serviceInterval, serviceInterval) ||
                 other.serviceInterval == serviceInterval) &&
             (identical(other.apiConcurrency, apiConcurrency) ||
-                other.apiConcurrency == apiConcurrency));
+                other.apiConcurrency == apiConcurrency) &&
+            (identical(other.enabled, enabled) || other.enabled == enabled));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(
-      runtimeType, batteryPercentCutOff, serviceInterval, apiConcurrency);
+  int get hashCode => Object.hash(runtimeType, batteryPercentCutOff,
+      serviceInterval, apiConcurrency, enabled);
 
   @JsonKey(ignore: true)
   @override
@@ -4657,11 +4676,12 @@ class _$BackgroundServiceConfigImpl implements _BackgroundServiceConfig {
 
 abstract class _BackgroundServiceConfig implements BackgroundServiceConfig {
   factory _BackgroundServiceConfig(
-      {@JsonKey(name: 'BATTERY_PERCENT_CUT_OFF')
-      required final int batteryPercentCutOff,
-      @JsonKey(name: 'SERVICE_INTERVAL') required final int serviceInterval,
-      @JsonKey(name: 'API_CONCURRENCY')
-      required final int apiConcurrency}) = _$BackgroundServiceConfigImpl;
+          {@JsonKey(name: 'BATTERY_PERCENT_CUT_OFF')
+          required final int batteryPercentCutOff,
+          @JsonKey(name: 'SERVICE_INTERVAL') required final int serviceInterval,
+          @JsonKey(name: 'API_CONCURRENCY') required final int apiConcurrency,
+          @JsonKey(name: 'ENABLED') final bool? enabled}) =
+      _$BackgroundServiceConfigImpl;
 
   factory _BackgroundServiceConfig.fromJson(Map<String, dynamic> json) =
       _$BackgroundServiceConfigImpl.fromJson;
@@ -4675,6 +4695,9 @@ abstract class _BackgroundServiceConfig implements BackgroundServiceConfig {
   @override
   @JsonKey(name: 'API_CONCURRENCY')
   int get apiConcurrency;
+  @override
+  @JsonKey(name: 'ENABLED')
+  bool? get enabled;
   @override
   @JsonKey(ignore: true)
   _$$BackgroundServiceConfigImplCopyWith<_$BackgroundServiceConfigImpl>

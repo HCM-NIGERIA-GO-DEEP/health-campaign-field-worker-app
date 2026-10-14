@@ -204,6 +204,9 @@ class BackgroundServiceConfig {
 
   @Name("API_CONCURRENCY")
   late int? apiConcurrency;
+
+  @Name("ENABLED")
+  late bool? enabled;
 }
 
 @embedded

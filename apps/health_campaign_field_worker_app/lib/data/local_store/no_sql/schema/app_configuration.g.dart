@@ -9930,8 +9930,13 @@ const BackgroundServiceConfigSchema = Schema(
       name: r'BATTERY_PERCENT_CUT_OFF',
       type: IsarType.long,
     ),
-    r'SERVICE_INTERVAL': PropertySchema(
+    r'ENABLED': PropertySchema(
       id: 2,
+      name: r'ENABLED',
+      type: IsarType.bool,
+    ),
+    r'SERVICE_INTERVAL': PropertySchema(
+      id: 3,
       name: r'SERVICE_INTERVAL',
       type: IsarType.long,
     )
@@ -9959,7 +9964,8 @@ void _backgroundServiceConfigSerialize(
 ) {
   writer.writeLong(offsets[0], object.apiConcurrency);
   writer.writeLong(offsets[1], object.batteryPercentCutOff);
-  writer.writeLong(offsets[2], object.serviceInterval);
+  writer.writeBool(offsets[2], object.enabled);
+  writer.writeLong(offsets[3], object.serviceInterval);
 }
 
 BackgroundServiceConfig _backgroundServiceConfigDeserialize(
@@ -9971,7 +9977,8 @@ BackgroundServiceConfig _backgroundServiceConfigDeserialize(
   final object = BackgroundServiceConfig();
   object.apiConcurrency = reader.readLongOrNull(offsets[0]);
   object.batteryPercentCutOff = reader.readLongOrNull(offsets[1]);
-  object.serviceInterval = reader.readLongOrNull(offsets[2]);
+  object.enabled = reader.readBoolOrNull(offsets[2]);
+  object.serviceInterval = reader.readLongOrNull(offsets[3]);
   return object;
 }
 
@@ -9987,6 +9994,8 @@ P _backgroundServiceConfigDeserializeProp<P>(
     case 1:
       return (reader.readLongOrNull(offset)) as P;
     case 2:
+      return (reader.readBoolOrNull(offset)) as P;
+    case 3:
       return (reader.readLongOrNull(offset)) as P;
     default:
       throw IsarError('Unknown property with id $propertyId');
@@ -10139,6 +10148,34 @@ extension BackgroundServiceConfigQueryFilter on QueryBuilder<
         includeLower: includeLower,
         upper: upper,
         includeUpper: includeUpper,
+      ));
+    });
+  }
+
+  QueryBuilder<BackgroundServiceConfig, BackgroundServiceConfig,
+      QAfterFilterCondition> enabledIsNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNull(
+        property: r'ENABLED',
+      ));
+    });
+  }
+
+  QueryBuilder<BackgroundServiceConfig, BackgroundServiceConfig,
+      QAfterFilterCondition> enabledIsNotNull() {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(const FilterCondition.isNotNull(
+        property: r'ENABLED',
+      ));
+    });
+  }
+
+  QueryBuilder<BackgroundServiceConfig, BackgroundServiceConfig,
+      QAfterFilterCondition> enabledEqualTo(bool? value) {
+    return QueryBuilder.apply(this, (query) {
+      return query.addFilterCondition(FilterCondition.equalTo(
+        property: r'ENABLED',
+        value: value,
       ));
     });
   }

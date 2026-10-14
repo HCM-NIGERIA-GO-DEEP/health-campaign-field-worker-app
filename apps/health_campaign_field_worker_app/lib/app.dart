@@ -25,6 +25,7 @@ import 'blocs/push_notification/push_notification.dart';
 import 'blocs/localization/localization.dart';
 import 'blocs/project/project.dart';
 import 'data/local_store/app_shared_preferences.dart';
+import 'data/local_store/no_sql/schema/app_configuration.dart';
 import 'data/local_store/server_summary_report_storage.dart';
 import 'data/network_manager.dart';
 import 'data/remote_client.dart';
@@ -71,7 +72,11 @@ class MainApplicationState extends State<MainApplication>
   void initState() {
     LocalizationParams().setModule('boundary', true);
     super.initState();
-    requestDisableBatteryOptimization();
+    widget.isar.appConfigurations.where().findFirst().then((appConfiguration) {
+      if (isBackgroundServiceEnabled(appConfiguration)) {
+        requestDisableBatteryOptimization();
+      }
+    });
 
     // Register custom action executors
     ActionHandler.registry.register(

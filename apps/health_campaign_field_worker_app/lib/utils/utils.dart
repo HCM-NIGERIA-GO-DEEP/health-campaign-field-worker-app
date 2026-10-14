@@ -99,6 +99,11 @@ setBgRunning(bool isBgRunning) async {
   await localSecureStore.setBackgroundService(isBgRunning);
 }
 
+/// Background sync stays on unless MDMS BACKGROUND_SERVICE_CONFIG sets
+/// ENABLED to false, so configs without the flag keep the old behaviour.
+bool isBackgroundServiceEnabled(AppConfiguration? appConfiguration) =>
+    appConfiguration?.backgroundServiceConfig?.enabled ?? true;
+
 performBackgroundService({
   BuildContext? context,
   required bool stopService,
@@ -124,6 +129,15 @@ performBackgroundService({
       }
     }
   } else {
+    final isar = await Constants().isar;
+    final appConfiguration = await isar.appConfigurations.where().findFirst();
+    if (!isBackgroundServiceEnabled(appConfiguration)) {
+      // Switched off in MDMS: stop a service left over from an earlier
+      // session instead of starting one.
+      if (isRunning) service.invoke('stopService');
+      return;
+    }
+
     if (!isRunning && isOnline) {
       service.startService();
       if (context != null && context.mounted) {

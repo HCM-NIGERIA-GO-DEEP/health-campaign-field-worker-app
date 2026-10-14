@@ -170,7 +170,8 @@ class MdmsRepository {
       ..batteryPercentCutOff =
           element?.backgroundServiceConfig?.first.batteryPercentCutOff
       ..serviceInterval =
-          element?.backgroundServiceConfig?.first.serviceInterval;
+          element?.backgroundServiceConfig?.first.serviceInterval
+      ..enabled = element?.backgroundServiceConfig?.first.enabled;
 
     final firebaseConfig = FirebaseConfig()
       ..enableAnalytics = element?.firebaseConfig?.first.enableAnalytics

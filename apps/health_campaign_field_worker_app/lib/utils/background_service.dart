@@ -53,11 +53,19 @@ Future<void> initializeService(dio, isar) async {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  // The exact-alarm and battery-optimisation prompts only serve background
+  // sync, so skip them when it is switched off in MDMS.
+  final isBackgroundSyncEnabled = isBackgroundServiceEnabled(
+    await (await Constants().isar).appConfigurations.where().findFirst(),
+  );
+
   if (Platform.isAndroid) {
-    flutterLocalNotificationsPlugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestExactAlarmsPermission();
+    if (isBackgroundSyncEnabled) {
+      flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin>()
+          ?.requestExactAlarmsPermission();
+    }
     flutterLocalNotificationsPlugin
         .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin>()
@@ -67,7 +75,9 @@ Future<void> initializeService(dio, isar) async {
             AndroidFlutterLocalNotificationsPlugin>()
         ?.createNotificationChannel(channel);
   }
-  requestDisableBatteryOptimization();
+  if (isBackgroundSyncEnabled) {
+    requestDisableBatteryOptimization();
+  }
   await service.configure(
     androidConfiguration: AndroidConfiguration(
         // this will be executed when app is in foreground or background in separated isolate
@@ -122,6 +132,16 @@ void onStart(ServiceInstance service) async {
 
   _dio = DioClient().dio;
   final _isar = await isarFuture;
+
+  // Switched off in MDMS, e.g. the plugin's watchdog respawned the service
+  // after the app was swiped away. Must be stopSelf(): invoke('stopService')
+  // from this isolate only reaches the UI side and leaves the service running.
+  if (!isBackgroundServiceEnabled(
+    await _isar.appConfigurations.where().findFirst(),
+  )) {
+    service.stopSelf();
+    return;
+  }
 
   // Initialize encrypted database for background service
   final encryptionKey =

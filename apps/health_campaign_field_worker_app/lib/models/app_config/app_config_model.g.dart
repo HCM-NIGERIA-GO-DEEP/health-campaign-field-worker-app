@@ -431,6 +431,7 @@ _$BackgroundServiceConfigImpl _$$BackgroundServiceConfigImplFromJson(
       batteryPercentCutOff: (json['BATTERY_PERCENT_CUT_OFF'] as num).toInt(),
       serviceInterval: (json['SERVICE_INTERVAL'] as num).toInt(),
       apiConcurrency: (json['API_CONCURRENCY'] as num).toInt(),
+      enabled: json['ENABLED'] as bool?,
     );
 
 Map<String, dynamic> _$$BackgroundServiceConfigImplToJson(
@@ -439,6 +440,7 @@ Map<String, dynamic> _$$BackgroundServiceConfigImplToJson(
       'BATTERY_PERCENT_CUT_OFF': instance.batteryPercentCutOff,
       'SERVICE_INTERVAL': instance.serviceInterval,
       'API_CONCURRENCY': instance.apiConcurrency,
+      'ENABLED': instance.enabled,
     };
 
 _$BackendInterfaceImpl _$$BackendInterfaceImplFromJson(
