@@ -70,6 +70,12 @@ String _ndjson(List<Map<String, dynamic>> rows) =>
 Map<String, dynamic> _hh(String id) =>
     {'_t': 'HOUSEHOLD', 'clientReferenceId': id};
 
+Map<String, dynamic> _member(String id) => {
+      '_t': 'HOUSEHOLD_MEMBER',
+      'clientReferenceId': id,
+      'isHeadOfHousehold': false,
+    };
+
 Map<String, dynamic> _ind(String id) =>
     {'_t': 'INDIVIDUAL', 'clientReferenceId': id};
 
@@ -108,6 +114,9 @@ void main() {
   BeneficiaryFileDownsyncImporter importerFor(
     _ScriptedAdapter adapter, {
     int? batchSize,
+    Duration minLinkDuration = Duration.zero,
+    Future<void> Function(Duration)? wait,
+    DateTime Function()? now,
   }) {
     final dio = Dio()..httpClientAdapter = adapter;
     return BeneficiaryFileDownsyncImporter(
@@ -123,6 +132,9 @@ void main() {
       serviceLocalRepository: services,
       batchSize: batchSize,
       downloadRetryDelay: Duration.zero,
+      minLinkDuration: minLinkDuration,
+      wait: wait,
+      now: now,
     );
   }
 
@@ -311,14 +323,165 @@ void main() {
       expect(seen.first, (0, ''));
       expect(seen.last, (2, 'INDIVIDUAL'));
     });
+
+    // Kogo, 2026-10-13: the dialog showed "Household Members 0…9" while the
+    // INDIVIDUALS file was starting, because the start-of-link call carried
+    // the last `_t` of the previous file.
+    test('the progress call that starts a link carries no type from the '
+        'previous file', () async {
+      const hhFile = 'https://files.test/hh_members.ndjson';
+      const indFile = 'https://files.test/individuals.ndjson';
+      final adapter = _ScriptedAdapter({
+        hhFile: [() => _text(_ndjson([_hh('h1'), _member('m1')]))],
+        indFile: [() => _text(_ndjson([_ind('i1')]))],
+      });
+      final seen = <(String, int, String)>[];
+
+      await importerFor(adapter).importLinks(
+        [
+          link(hhFile, 2, type: 'HH_MEMBERS'),
+          link(indFile, 1, type: 'INDIVIDUALS'),
+        ],
+        onProgress: (total, _, currentLink, linkImported, type) =>
+            seen.add((currentLink.fileType, linkImported, type)),
+      );
+
+      expect(seen, [
+        ('HH_MEMBERS', 0, ''),
+        ('HH_MEMBERS', 2, 'HOUSEHOLD_MEMBER'),
+        ('INDIVIDUALS', 0, ''),
+        ('INDIVIDUALS', 1, 'INDIVIDUAL'),
+      ]);
+    });
+  });
+
+  // Kogo, 2026-10-13: 4 small files imported in ~4 s, one of them in 23 ms,
+  // so the progress dialog flashed past unreadably.
+  group('minLinkDuration', () {
+    const hhFile = 'https://files.test/hh_members.ndjson';
+    const indFile = 'https://files.test/individuals.ndjson';
+    final t0 = DateTime(2026, 10, 13, 16, 22);
+
+    _ScriptedAdapter twoFiles() => _ScriptedAdapter({
+          hhFile: [() => _text(_ndjson([_hh('h1')]))],
+          indFile: [() => _text(_ndjson([_ind('i1')]))],
+        });
+
+    List<BeneficiaryDownloadLink> twoLinks() => [
+          link(hhFile, 1, type: 'HH_MEMBERS'),
+          link(indFile, 1, type: 'INDIVIDUALS'),
+        ];
+
+    test('holds a fast link on screen before the next link starts', () async {
+      final events = <String>[];
+      final importer = importerFor(
+        twoFiles(),
+        minLinkDuration: const Duration(seconds: 1),
+        now: () => t0,
+        wait: (d) async => events.add('wait ${d.inMilliseconds}'),
+      );
+
+      await importer.importLinks(
+        twoLinks(),
+        onProgress: (_, __, current, linkImported, ___) =>
+            events.add('${current.fileType} $linkImported'),
+      );
+
+      expect(events, [
+        'HH_MEMBERS 0',
+        'HH_MEMBERS 1',
+        'wait 1000',
+        'INDIVIDUALS 0',
+        'INDIVIDUALS 1',
+        'wait 1000',
+      ]);
+    });
+
+    test('waits only for the part of the minimum the link has not used',
+        () async {
+      var clock = t0;
+      final waits = <Duration>[];
+      final importer = importerFor(
+        twoFiles(),
+        minLinkDuration: const Duration(seconds: 1),
+        now: () => clock,
+        wait: (d) async => waits.add(d),
+      );
+
+      await importer.importLinks(
+        twoLinks(),
+        onProgress: (_, __, ___, linkImported, ____) {
+          // Each link takes 400 ms between its first and last progress call.
+          if (linkImported > 0) {
+            clock = clock.add(const Duration(milliseconds: 400));
+          }
+        },
+      );
+
+      expect(waits, [
+        const Duration(milliseconds: 600),
+        const Duration(milliseconds: 600),
+      ]);
+    });
+
+    test('does not hold a link that took longer than the minimum', () async {
+      var clock = t0;
+      final waits = <Duration>[];
+      final importer = importerFor(
+        twoFiles(),
+        minLinkDuration: const Duration(seconds: 1),
+        now: () => clock,
+        wait: (d) async => waits.add(d),
+      );
+
+      await importer.importLinks(
+        twoLinks(),
+        onProgress: (_, __, ___, linkImported, ____) {
+          if (linkImported > 0) {
+            clock = clock.add(const Duration(milliseconds: 1500));
+          }
+        },
+      );
+
+      expect(waits, isEmpty);
+    });
+
+    test('does not hold a link a resume skips', () async {
+      final waits = <Duration>[];
+      final adapter = twoFiles();
+      final importer = importerFor(
+        adapter,
+        minLinkDuration: const Duration(seconds: 1),
+        now: () => t0,
+        wait: (d) async => waits.add(d),
+      );
+
+      await importer.importLinks(twoLinks(), startFromOffset: 1);
+
+      expect(adapter.calls[hhFile], isNull);
+      expect(waits, [const Duration(seconds: 1)]);
+    });
+
+    test('does not hold by default', () async {
+      final waits = <Duration>[];
+      final importer = importerFor(
+        twoFiles(),
+        now: () => t0,
+        wait: (d) async => waits.add(d),
+      );
+
+      await importer.importLinks(twoLinks());
+
+      expect(waits, isEmpty);
+    });
   });
 
   group('parseDownloadLinks', () {
     test('keeps links with a url and a positive record count', () {
       final links = parseDownloadLinks({
         'DownloadLinks': [
-          {'fileType': 'HOUSEHOLD', 'url': 'https://f/1', 'recordCount': 10},
-          {'fileType': 'TASK', 'url': 'https://f/2', 'recordCount': '4'},
+          {'fileType': 'HH_MEMBERS', 'url': 'https://f/1', 'recordCount': 10},
+          {'fileType': 'TASKS', 'url': 'https://f/2', 'recordCount': '4'},
           {'fileType': 'EMPTY', 'url': 'https://f/3', 'recordCount': 0},
           {'fileType': 'NOURL', 'url': '', 'recordCount': 5},
           'not-a-map',
@@ -428,6 +591,35 @@ void main() {
       expect(downsyncEntityLabel('PROJECT_TASK'), 'Tasks');
       expect(downsyncEntityLabel('USER_ACTION'), '');
       expect(downsyncEntityLabel(''), '');
+    });
+
+    test('names the file types the server sends', () {
+      expect(downsyncEntityLabel('HH_MEMBERS'), 'Households & Members');
+      expect(downsyncEntityLabel('INDIVIDUALS'), 'Individuals');
+      expect(downsyncEntityLabel('BENE_AE_REF'), 'Beneficiaries');
+      expect(downsyncEntityLabel('TASKS'), 'Tasks');
+    });
+  });
+
+  group('progressEntityType', () {
+    BeneficiaryDownloadLink file(String type) =>
+        BeneficiaryDownloadLink(fileType: type, url: 'u', recordCount: 15);
+
+    // The bar counts lines of the whole file (HH_MEMBERS = households +
+    // members), so a known file type names it, not the last line's `_t`.
+    test('a known file type wins over the last line type', () {
+      expect(progressEntityType(file('HH_MEMBERS'), 'HOUSEHOLD_MEMBER'),
+          'HH_MEMBERS');
+    });
+
+    test('an unknown file type falls back to the last line type', () {
+      expect(progressEntityType(file('NEW_FILE'), 'INDIVIDUAL'), 'INDIVIDUAL');
+      expect(progressEntityType(file(''), 'INDIVIDUAL'), 'INDIVIDUAL');
+    });
+
+    test('is blank when neither has a label', () {
+      expect(progressEntityType(file('NEW_FILE'), ''), '');
+      expect(progressEntityType(file(''), ''), '');
     });
   });
 }

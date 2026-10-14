@@ -197,12 +197,8 @@ class BeneficiariesReportState extends LocalizedState<BeneficiariesReportPage> {
                         dialogType: DigitProgressDialogType.dataFound,
                         isPop: true,
                       ),
-                      inProgress: (syncCount, totalCount) {
-                        final entityLabel = downsyncEntityLabel(
-                          context
-                              .read<BeneficiaryDownSyncBloc>()
-                              .currentEntityType,
-                        );
+                      inProgress: (syncCount, totalCount, entityType) {
+                        final entityLabel = downsyncEntityLabel(entityType);
                         final progressData = DownloadProgressData(
                           progress: min(
                             (syncCount) / (totalCount == 0 ? 1 : totalCount),

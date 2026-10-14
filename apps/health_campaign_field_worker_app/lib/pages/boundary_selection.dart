@@ -295,12 +295,13 @@ class _BoundarySelectionPageState
                                         isPop: true,
                                       );
                                     },
-                                    inProgress: (syncCount, totalCount) {
-                                      final entityLabel = downsyncEntityLabel(
-                                        context
-                                            .read<BeneficiaryDownSyncBloc>()
-                                            .currentEntityType,
-                                      );
+                                    inProgress: (
+                                      syncCount,
+                                      totalCount,
+                                      entityType,
+                                    ) {
+                                      final entityLabel =
+                                          downsyncEntityLabel(entityType);
                                       final progressData = DownloadProgressData(
                                         progress: min(
                                           (syncCount) /
@@ -489,12 +490,10 @@ class _BoundarySelectionPageState
                                       boundaryName,
                                       syncCount,
                                       totalCount,
+                                      entityType,
                                     ) {
-                                      final entityLabel = downsyncEntityLabel(
-                                        context
-                                            .read<BeneficiaryDownSyncBloc>()
-                                            .currentEntityType,
-                                      );
+                                      final entityLabel =
+                                          downsyncEntityLabel(entityType);
                                       final boundaryLabel =
                                           localizations.translate(boundaryName);
                                       final progressData = DownloadProgressData(

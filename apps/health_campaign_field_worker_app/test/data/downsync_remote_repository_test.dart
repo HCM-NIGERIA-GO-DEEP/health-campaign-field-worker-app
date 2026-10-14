@@ -50,7 +50,7 @@ void main() {
   test('returns the whole response when the server sends file links', () async {
     final adapter = _StubAdapter((_) => _json({
           'DownloadLinks': [
-            {'fileType': 'HOUSEHOLD', 'url': 'https://f/1', 'recordCount': 3},
+            {'fileType': 'HH_MEMBERS', 'url': 'https://f/1', 'recordCount': 3},
           ],
         }));
 

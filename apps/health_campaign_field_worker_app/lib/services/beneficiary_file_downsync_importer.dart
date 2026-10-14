@@ -88,9 +88,20 @@ int resolveResumeOffset({
   return storedOffset;
 }
 
-/// Progress-bar label for a downsync entity type; blank when unknown.
+/// Progress-bar label for a server file type or an entity type (`_t`);
+/// blank when unknown.
 String downsyncEntityLabel(String entityType) {
   switch (entityType) {
+    // File types of the DownloadLinks response.
+    case 'HH_MEMBERS':
+      return 'Households & Members';
+    case 'INDIVIDUALS':
+      return 'Individuals';
+    case 'BENE_AE_REF':
+      return 'Beneficiaries';
+    case 'TASKS':
+      return 'Tasks';
+    // Entity types (`_t`) of the lines inside a file.
     case 'HOUSEHOLD':
       return 'Households';
     case 'HOUSEHOLD_MEMBER':
@@ -113,6 +124,19 @@ String downsyncEntityLabel(String entityType) {
     default:
       return '';
   }
+}
+
+/// Type to label the progress of [link] with. The bar counts the lines of the
+/// whole file, and one file can hold several entity types (HH_MEMBERS =
+/// households + members), so a file type with a label wins; otherwise the
+/// `_t` of the last line read from this file; blank when neither has a label.
+String progressEntityType(
+  BeneficiaryDownloadLink link,
+  String lastTypeInLink,
+) {
+  if (downsyncEntityLabel(link.fileType).isNotEmpty) return link.fileType;
+  if (downsyncEntityLabel(lastTypeInLink).isNotEmpty) return lastTypeInLink;
+  return '';
 }
 
 class BeneficiaryFileDownsyncResult {
@@ -142,6 +166,12 @@ class BeneficiaryFileDownsyncImporter {
 
   final int batchSize;
   final Duration downloadRetryDelay;
+
+  /// Shortest time a link's progress stays on screen. A link imported faster
+  /// is held after its last progress call, so the dialog label is readable.
+  final Duration minLinkDuration;
+  final Future<void> Function(Duration) _wait;
+  final DateTime Function() _now;
 
   final Dio dio;
   final LocalRepository<IndividualModel, IndividualSearchModel>
@@ -175,8 +205,13 @@ class BeneficiaryFileDownsyncImporter {
     required this.serviceLocalRepository,
     int? batchSize,
     Duration? downloadRetryDelay,
+    this.minLinkDuration = Duration.zero,
+    Future<void> Function(Duration)? wait,
+    DateTime Function()? now,
   })  : batchSize = (batchSize ?? 0) > 0 ? batchSize! : _defaultBatchSize,
-        downloadRetryDelay = downloadRetryDelay ?? _defaultDownloadRetryDelay;
+        downloadRetryDelay = downloadRetryDelay ?? _defaultDownloadRetryDelay,
+        _wait = wait ?? Future<void>.delayed,
+        _now = now ?? DateTime.now;
 
   /// Imports every link in order. [startFromOffset] is the number of
   /// non-blank lines (across all links) already imported by an earlier
@@ -189,7 +224,6 @@ class BeneficiaryFileDownsyncImporter {
     final counters = <String, int>{};
     var totalImported = 0;
     var skipRemaining = startFromOffset;
-    var lastEntityType = '';
 
     for (final link in links) {
       if (link.url.isEmpty) continue;
@@ -202,6 +236,10 @@ class BeneficiaryFileDownsyncImporter {
       }
 
       var linkImported = 0;
+      // Per link: a link's progress must never carry the type of the previous
+      // file's last line.
+      var lastEntityType = '';
+      final linkStartedAt = _now();
       await onProgress?.call(
           totalImported, Map.of(counters), link, linkImported, lastEntityType);
 
@@ -237,6 +275,9 @@ class BeneficiaryFileDownsyncImporter {
       await _flush();
       await onProgress?.call(
           totalImported, Map.of(counters), link, linkImported, lastEntityType);
+
+      final remaining = minLinkDuration - _now().difference(linkStartedAt);
+      if (remaining > Duration.zero) await _wait(remaining);
     }
 
     return BeneficiaryFileDownsyncResult(

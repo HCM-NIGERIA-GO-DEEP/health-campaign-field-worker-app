@@ -31,9 +31,9 @@ class BeneficiaryDownSyncBloc
   static const int _fileDownsyncStorageKbPerRecord = 5;
   static const int _storageSafetyMultiplier = 2;
 
-  /// `_t` type of the file currently being imported, for the progress label.
-  /// Blank during a paginated download.
-  String currentEntityType = '';
+  /// Shortest time each downloaded file's progress stays on screen; small
+  /// files otherwise import in milliseconds and the dialog flashes past.
+  static const Duration _minFileProgressDuration = Duration(seconds: 1);
 
   final LocalRepository<IndividualModel, IndividualSearchModel>
       individualLocalRepository;
@@ -186,7 +186,6 @@ class BeneficiaryDownSyncBloc
     BeneficiaryDownSyncEmitter emit,
   ) async {
     emit(const BeneficiaryDownSyncState.loading(true));
-    currentEntityType = '';
 
     try {
       final downloadLinks =
@@ -207,10 +206,11 @@ class BeneficiaryDownSyncBloc
           boundaryCode: event.boundaryCode,
           boundaryName: event.boundaryName,
           batchSize: event.batchSize,
-          emitProgress: (link, linkImported) {
+          emitProgress: (link, linkImported, entityType) {
             emit(BeneficiaryDownSyncState.inProgress(
               linkImported,
               link.recordCount,
+              entityType,
             ));
           },
         );
@@ -258,7 +258,7 @@ class BeneficiaryDownSyncBloc
           }
 
           if (offset < totalCount) {
-            emit(BeneficiaryDownSyncState.inProgress(offset, totalCount));
+            emit(BeneficiaryDownSyncState.inProgress(offset, totalCount, ''));
             //Make the batch API call
             final downSyncResults = await downSyncRemoteRepository.downSync(
               DownsyncSearchModel(
@@ -273,7 +273,7 @@ class BeneficiaryDownSyncBloc
               ),
             );
             emit(BeneficiaryDownSyncState.inProgress(
-                offset, downSyncResults["DownsyncCriteria"]["totalCount"]));
+                offset, downSyncResults["DownsyncCriteria"]["totalCount"], ''));
 
             // check if the API response is there or it failed
             if (downSyncResults.isNotEmpty) {
@@ -416,7 +416,6 @@ class BeneficiaryDownSyncBloc
     BeneficiaryDownSyncEmitter emit,
   ) async {
     emit(const BeneficiaryDownSyncState.loading(true));
-    currentEntityType = '';
 
     // Only process boundaries that have data (count > 0) from the initial check
     final boundaries = event.boundaries
@@ -451,13 +450,14 @@ class BeneficiaryDownSyncBloc
             boundaryCode: boundaryCode,
             boundaryName: boundaryName,
             batchSize: event.batchSize,
-            emitProgress: (link, linkImported) {
+            emitProgress: (link, linkImported, entityType) {
               emit(BeneficiaryDownSyncState.multiBoundaryInProgress(
                 i,
                 boundaries.length,
                 boundaryName,
                 linkImported,
                 link.recordCount,
+                entityType,
               ));
             },
           ));
@@ -504,6 +504,7 @@ class BeneficiaryDownSyncBloc
               boundaryName,
               offset,
               totalCount,
+              '',
             ));
 
             final downSyncResults = await downSyncRemoteRepository.downSync(
@@ -632,8 +633,11 @@ class BeneficiaryDownSyncBloc
     required String boundaryCode,
     required String boundaryName,
     required int batchSize,
-    required void Function(BeneficiaryDownloadLink link, int linkImported)
-        emitProgress,
+    required void Function(
+      BeneficiaryDownloadLink link,
+      int linkImported,
+      String entityType,
+    ) emitProgress,
   }) async {
     final totalCount = downloadLinksRecordCount(links);
     final projectId = resolveDownsyncProjectId(
@@ -676,18 +680,20 @@ class BeneficiaryDownSyncBloc
       hfReferralLocalRepository: hfReferralLocalRepository,
       serviceLocalRepository: serviceLocalRepository,
       batchSize: batchSize,
+      minLinkDuration: _minFileProgressDuration,
     );
 
     await importer.importLinks(
       links,
       startFromOffset: startFromOffset,
       onProgress: (importedCount, _, link, linkImported, lastEntityType) async {
-        if (lastEntityType.isNotEmpty) {
-          currentEntityType = lastEntityType;
-        } else if (link.fileType.isNotEmpty) {
-          currentEntityType = link.fileType;
-        }
-        emitProgress(link, linkImported);
+        // The label travels in the state: the page reads states late
+        // (Future.delayed), after the next file may already have started.
+        emitProgress(
+          link,
+          linkImported,
+          progressEntityType(link, lastEntityType),
+        );
         // limit 0 marks a file-mode row; resolveResumeOffset relies on it.
         await downSyncLocalRepository.update(DownsyncModel(
           offset: importedCount,
@@ -859,9 +865,12 @@ class BeneficiaryDownSyncEvent with _$BeneficiaryDownSyncEvent {
 class BeneficiaryDownSyncState with _$BeneficiaryDownSyncState {
   const BeneficiaryDownSyncState._();
 
+  /// [entityType] names the file being imported (see [progressEntityType]);
+  /// blank during a paginated download.
   const factory BeneficiaryDownSyncState.inProgress(
     int syncedCount,
     int totalCount,
+    String entityType,
   ) = _DownSyncInProgressState;
 
   const factory BeneficiaryDownSyncState.success(
@@ -907,6 +916,7 @@ class BeneficiaryDownSyncState with _$BeneficiaryDownSyncState {
     String currentBoundaryName,
     int syncedCount,
     int totalCount,
+    String entityType,
   ) = _DownSyncMultiBoundaryInProgressState;
 
   const factory BeneficiaryDownSyncState.multiBoundarySuccess(

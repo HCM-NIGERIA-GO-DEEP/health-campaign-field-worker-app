@@ -1945,7 +1945,9 @@ abstract class DownSyncResetStateEvent implements BeneficiaryDownSyncEvent {
 mixin _$BeneficiaryDownSyncState {
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int syncedCount, int totalCount) inProgress,
+    required TResult Function(
+            int syncedCount, int totalCount, String entityType)
+        inProgress,
     required TResult Function(DownsyncModel downSyncResult) success,
     required TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)
@@ -1960,15 +1962,21 @@ mixin _$BeneficiaryDownSyncState {
     required TResult Function() failed,
     required TResult Function(List<DownsyncModel> downsyncCriteriaList) report,
     required TResult Function() pendingSync,
-    required TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)
+    required TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)
         multiBoundaryInProgress,
     required TResult Function(List<DownsyncModel> results) multiBoundarySuccess,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int syncedCount, int totalCount)? inProgress,
+    TResult? Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult? Function(DownsyncModel downSyncResult)? success,
     TResult? Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -1983,15 +1991,21 @@ mixin _$BeneficiaryDownSyncState {
     TResult? Function()? failed,
     TResult? Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult? Function()? pendingSync,
-    TResult? Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult? Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult? Function(List<DownsyncModel> results)? multiBoundarySuccess,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int syncedCount, int totalCount)? inProgress,
+    TResult Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult Function(DownsyncModel downSyncResult)? success,
     TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -2006,8 +2020,13 @@ mixin _$BeneficiaryDownSyncState {
     TResult Function()? failed,
     TResult Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult Function()? pendingSync,
-    TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult Function(List<DownsyncModel> results)? multiBoundarySuccess,
     required TResult orElse(),
@@ -2105,7 +2124,7 @@ abstract class _$$DownSyncInProgressStateImplCopyWith<$Res> {
           $Res Function(_$DownSyncInProgressStateImpl) then) =
       __$$DownSyncInProgressStateImplCopyWithImpl<$Res>;
   @useResult
-  $Res call({int syncedCount, int totalCount});
+  $Res call({int syncedCount, int totalCount, String entityType});
 }
 
 /// @nodoc
@@ -2123,6 +2142,7 @@ class __$$DownSyncInProgressStateImplCopyWithImpl<$Res>
   $Res call({
     Object? syncedCount = null,
     Object? totalCount = null,
+    Object? entityType = null,
   }) {
     return _then(_$DownSyncInProgressStateImpl(
       null == syncedCount
@@ -2133,6 +2153,10 @@ class __$$DownSyncInProgressStateImplCopyWithImpl<$Res>
           ? _value.totalCount
           : totalCount // ignore: cast_nullable_to_non_nullable
               as int,
+      null == entityType
+          ? _value.entityType
+          : entityType // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
@@ -2141,17 +2165,20 @@ class __$$DownSyncInProgressStateImplCopyWithImpl<$Res>
 
 class _$DownSyncInProgressStateImpl extends _DownSyncInProgressState
     with DiagnosticableTreeMixin {
-  const _$DownSyncInProgressStateImpl(this.syncedCount, this.totalCount)
+  const _$DownSyncInProgressStateImpl(
+      this.syncedCount, this.totalCount, this.entityType)
       : super._();
 
   @override
   final int syncedCount;
   @override
   final int totalCount;
+  @override
+  final String entityType;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'BeneficiaryDownSyncState.inProgress(syncedCount: $syncedCount, totalCount: $totalCount)';
+    return 'BeneficiaryDownSyncState.inProgress(syncedCount: $syncedCount, totalCount: $totalCount, entityType: $entityType)';
   }
 
   @override
@@ -2160,7 +2187,8 @@ class _$DownSyncInProgressStateImpl extends _DownSyncInProgressState
     properties
       ..add(DiagnosticsProperty('type', 'BeneficiaryDownSyncState.inProgress'))
       ..add(DiagnosticsProperty('syncedCount', syncedCount))
-      ..add(DiagnosticsProperty('totalCount', totalCount));
+      ..add(DiagnosticsProperty('totalCount', totalCount))
+      ..add(DiagnosticsProperty('entityType', entityType));
   }
 
   @override
@@ -2171,11 +2199,14 @@ class _$DownSyncInProgressStateImpl extends _DownSyncInProgressState
             (identical(other.syncedCount, syncedCount) ||
                 other.syncedCount == syncedCount) &&
             (identical(other.totalCount, totalCount) ||
-                other.totalCount == totalCount));
+                other.totalCount == totalCount) &&
+            (identical(other.entityType, entityType) ||
+                other.entityType == entityType));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, syncedCount, totalCount);
+  int get hashCode =>
+      Object.hash(runtimeType, syncedCount, totalCount, entityType);
 
   @JsonKey(ignore: true)
   @override
@@ -2187,7 +2218,9 @@ class _$DownSyncInProgressStateImpl extends _DownSyncInProgressState
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int syncedCount, int totalCount) inProgress,
+    required TResult Function(
+            int syncedCount, int totalCount, String entityType)
+        inProgress,
     required TResult Function(DownsyncModel downSyncResult) success,
     required TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)
@@ -2202,18 +2235,24 @@ class _$DownSyncInProgressStateImpl extends _DownSyncInProgressState
     required TResult Function() failed,
     required TResult Function(List<DownsyncModel> downsyncCriteriaList) report,
     required TResult Function() pendingSync,
-    required TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)
+    required TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)
         multiBoundaryInProgress,
     required TResult Function(List<DownsyncModel> results) multiBoundarySuccess,
   }) {
-    return inProgress(syncedCount, totalCount);
+    return inProgress(syncedCount, totalCount, entityType);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int syncedCount, int totalCount)? inProgress,
+    TResult? Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult? Function(DownsyncModel downSyncResult)? success,
     TResult? Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -2228,18 +2267,24 @@ class _$DownSyncInProgressStateImpl extends _DownSyncInProgressState
     TResult? Function()? failed,
     TResult? Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult? Function()? pendingSync,
-    TResult? Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult? Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult? Function(List<DownsyncModel> results)? multiBoundarySuccess,
   }) {
-    return inProgress?.call(syncedCount, totalCount);
+    return inProgress?.call(syncedCount, totalCount, entityType);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int syncedCount, int totalCount)? inProgress,
+    TResult Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult Function(DownsyncModel downSyncResult)? success,
     TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -2254,14 +2299,19 @@ class _$DownSyncInProgressStateImpl extends _DownSyncInProgressState
     TResult Function()? failed,
     TResult Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult Function()? pendingSync,
-    TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult Function(List<DownsyncModel> results)? multiBoundarySuccess,
     required TResult orElse(),
   }) {
     if (inProgress != null) {
-      return inProgress(syncedCount, totalCount);
+      return inProgress(syncedCount, totalCount, entityType);
     }
     return orElse();
   }
@@ -2345,12 +2395,14 @@ class _$DownSyncInProgressStateImpl extends _DownSyncInProgressState
 
 abstract class _DownSyncInProgressState extends BeneficiaryDownSyncState {
   const factory _DownSyncInProgressState(
-          final int syncedCount, final int totalCount) =
-      _$DownSyncInProgressStateImpl;
+      final int syncedCount,
+      final int totalCount,
+      final String entityType) = _$DownSyncInProgressStateImpl;
   const _DownSyncInProgressState._() : super._();
 
   int get syncedCount;
   int get totalCount;
+  String get entityType;
   @JsonKey(ignore: true)
   _$$DownSyncInProgressStateImplCopyWith<_$DownSyncInProgressStateImpl>
       get copyWith => throw _privateConstructorUsedError;
@@ -2433,7 +2485,9 @@ class _$DownSyncSuccessStateImpl extends _DownSyncSuccessState
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int syncedCount, int totalCount) inProgress,
+    required TResult Function(
+            int syncedCount, int totalCount, String entityType)
+        inProgress,
     required TResult Function(DownsyncModel downSyncResult) success,
     required TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)
@@ -2448,8 +2502,13 @@ class _$DownSyncSuccessStateImpl extends _DownSyncSuccessState
     required TResult Function() failed,
     required TResult Function(List<DownsyncModel> downsyncCriteriaList) report,
     required TResult Function() pendingSync,
-    required TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)
+    required TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)
         multiBoundaryInProgress,
     required TResult Function(List<DownsyncModel> results) multiBoundarySuccess,
   }) {
@@ -2459,7 +2518,8 @@ class _$DownSyncSuccessStateImpl extends _DownSyncSuccessState
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int syncedCount, int totalCount)? inProgress,
+    TResult? Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult? Function(DownsyncModel downSyncResult)? success,
     TResult? Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -2474,8 +2534,13 @@ class _$DownSyncSuccessStateImpl extends _DownSyncSuccessState
     TResult? Function()? failed,
     TResult? Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult? Function()? pendingSync,
-    TResult? Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult? Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult? Function(List<DownsyncModel> results)? multiBoundarySuccess,
   }) {
@@ -2485,7 +2550,8 @@ class _$DownSyncSuccessStateImpl extends _DownSyncSuccessState
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int syncedCount, int totalCount)? inProgress,
+    TResult Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult Function(DownsyncModel downSyncResult)? success,
     TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -2500,8 +2566,13 @@ class _$DownSyncSuccessStateImpl extends _DownSyncSuccessState
     TResult Function()? failed,
     TResult Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult Function()? pendingSync,
-    TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult Function(List<DownsyncModel> results)? multiBoundarySuccess,
     required TResult orElse(),
@@ -2723,7 +2794,9 @@ class _$DownSyncGetBatchSizeStateImpl extends _DownSyncGetBatchSizeState
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int syncedCount, int totalCount) inProgress,
+    required TResult Function(
+            int syncedCount, int totalCount, String entityType)
+        inProgress,
     required TResult Function(DownsyncModel downSyncResult) success,
     required TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)
@@ -2738,8 +2811,13 @@ class _$DownSyncGetBatchSizeStateImpl extends _DownSyncGetBatchSizeState
     required TResult Function() failed,
     required TResult Function(List<DownsyncModel> downsyncCriteriaList) report,
     required TResult Function() pendingSync,
-    required TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)
+    required TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)
         multiBoundaryInProgress,
     required TResult Function(List<DownsyncModel> results) multiBoundarySuccess,
   }) {
@@ -2749,7 +2827,8 @@ class _$DownSyncGetBatchSizeStateImpl extends _DownSyncGetBatchSizeState
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int syncedCount, int totalCount)? inProgress,
+    TResult? Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult? Function(DownsyncModel downSyncResult)? success,
     TResult? Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -2764,8 +2843,13 @@ class _$DownSyncGetBatchSizeStateImpl extends _DownSyncGetBatchSizeState
     TResult? Function()? failed,
     TResult? Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult? Function()? pendingSync,
-    TResult? Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult? Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult? Function(List<DownsyncModel> results)? multiBoundarySuccess,
   }) {
@@ -2776,7 +2860,8 @@ class _$DownSyncGetBatchSizeStateImpl extends _DownSyncGetBatchSizeState
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int syncedCount, int totalCount)? inProgress,
+    TResult Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult Function(DownsyncModel downSyncResult)? success,
     TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -2791,8 +2876,13 @@ class _$DownSyncGetBatchSizeStateImpl extends _DownSyncGetBatchSizeState
     TResult Function()? failed,
     TResult Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult Function()? pendingSync,
-    TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult Function(List<DownsyncModel> results)? multiBoundarySuccess,
     required TResult orElse(),
@@ -2974,7 +3064,9 @@ class _$DownSyncLoadingStateImpl extends _DownSyncLoadingState
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int syncedCount, int totalCount) inProgress,
+    required TResult Function(
+            int syncedCount, int totalCount, String entityType)
+        inProgress,
     required TResult Function(DownsyncModel downSyncResult) success,
     required TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)
@@ -2989,8 +3081,13 @@ class _$DownSyncLoadingStateImpl extends _DownSyncLoadingState
     required TResult Function() failed,
     required TResult Function(List<DownsyncModel> downsyncCriteriaList) report,
     required TResult Function() pendingSync,
-    required TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)
+    required TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)
         multiBoundaryInProgress,
     required TResult Function(List<DownsyncModel> results) multiBoundarySuccess,
   }) {
@@ -3000,7 +3097,8 @@ class _$DownSyncLoadingStateImpl extends _DownSyncLoadingState
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int syncedCount, int totalCount)? inProgress,
+    TResult? Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult? Function(DownsyncModel downSyncResult)? success,
     TResult? Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -3015,8 +3113,13 @@ class _$DownSyncLoadingStateImpl extends _DownSyncLoadingState
     TResult? Function()? failed,
     TResult? Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult? Function()? pendingSync,
-    TResult? Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult? Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult? Function(List<DownsyncModel> results)? multiBoundarySuccess,
   }) {
@@ -3026,7 +3129,8 @@ class _$DownSyncLoadingStateImpl extends _DownSyncLoadingState
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int syncedCount, int totalCount)? inProgress,
+    TResult Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult Function(DownsyncModel downSyncResult)? success,
     TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -3041,8 +3145,13 @@ class _$DownSyncLoadingStateImpl extends _DownSyncLoadingState
     TResult Function()? failed,
     TResult Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult Function()? pendingSync,
-    TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult Function(List<DownsyncModel> results)? multiBoundarySuccess,
     required TResult orElse(),
@@ -3191,7 +3300,9 @@ class _$DownSyncInsufficientStorageStateImpl
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int syncedCount, int totalCount) inProgress,
+    required TResult Function(
+            int syncedCount, int totalCount, String entityType)
+        inProgress,
     required TResult Function(DownsyncModel downSyncResult) success,
     required TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)
@@ -3206,8 +3317,13 @@ class _$DownSyncInsufficientStorageStateImpl
     required TResult Function() failed,
     required TResult Function(List<DownsyncModel> downsyncCriteriaList) report,
     required TResult Function() pendingSync,
-    required TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)
+    required TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)
         multiBoundaryInProgress,
     required TResult Function(List<DownsyncModel> results) multiBoundarySuccess,
   }) {
@@ -3217,7 +3333,8 @@ class _$DownSyncInsufficientStorageStateImpl
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int syncedCount, int totalCount)? inProgress,
+    TResult? Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult? Function(DownsyncModel downSyncResult)? success,
     TResult? Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -3232,8 +3349,13 @@ class _$DownSyncInsufficientStorageStateImpl
     TResult? Function()? failed,
     TResult? Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult? Function()? pendingSync,
-    TResult? Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult? Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult? Function(List<DownsyncModel> results)? multiBoundarySuccess,
   }) {
@@ -3243,7 +3365,8 @@ class _$DownSyncInsufficientStorageStateImpl
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int syncedCount, int totalCount)? inProgress,
+    TResult Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult Function(DownsyncModel downSyncResult)? success,
     TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -3258,8 +3381,13 @@ class _$DownSyncInsufficientStorageStateImpl
     TResult Function()? failed,
     TResult Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult Function()? pendingSync,
-    TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult Function(List<DownsyncModel> results)? multiBoundarySuccess,
     required TResult orElse(),
@@ -3462,7 +3590,9 @@ class _$DownSyncDataFoundStateImpl extends _DownSyncDataFoundState
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int syncedCount, int totalCount) inProgress,
+    required TResult Function(
+            int syncedCount, int totalCount, String entityType)
+        inProgress,
     required TResult Function(DownsyncModel downSyncResult) success,
     required TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)
@@ -3477,8 +3607,13 @@ class _$DownSyncDataFoundStateImpl extends _DownSyncDataFoundState
     required TResult Function() failed,
     required TResult Function(List<DownsyncModel> downsyncCriteriaList) report,
     required TResult Function() pendingSync,
-    required TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)
+    required TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)
         multiBoundaryInProgress,
     required TResult Function(List<DownsyncModel> results) multiBoundarySuccess,
   }) {
@@ -3488,7 +3623,8 @@ class _$DownSyncDataFoundStateImpl extends _DownSyncDataFoundState
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int syncedCount, int totalCount)? inProgress,
+    TResult? Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult? Function(DownsyncModel downSyncResult)? success,
     TResult? Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -3503,8 +3639,13 @@ class _$DownSyncDataFoundStateImpl extends _DownSyncDataFoundState
     TResult? Function()? failed,
     TResult? Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult? Function()? pendingSync,
-    TResult? Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult? Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult? Function(List<DownsyncModel> results)? multiBoundarySuccess,
   }) {
@@ -3514,7 +3655,8 @@ class _$DownSyncDataFoundStateImpl extends _DownSyncDataFoundState
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int syncedCount, int totalCount)? inProgress,
+    TResult Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult Function(DownsyncModel downSyncResult)? success,
     TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -3529,8 +3671,13 @@ class _$DownSyncDataFoundStateImpl extends _DownSyncDataFoundState
     TResult Function()? failed,
     TResult Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult Function()? pendingSync,
-    TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult Function(List<DownsyncModel> results)? multiBoundarySuccess,
     required TResult orElse(),
@@ -3680,7 +3827,9 @@ class _$DownSyncResetStateImpl extends _DownSyncResetState
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int syncedCount, int totalCount) inProgress,
+    required TResult Function(
+            int syncedCount, int totalCount, String entityType)
+        inProgress,
     required TResult Function(DownsyncModel downSyncResult) success,
     required TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)
@@ -3695,8 +3844,13 @@ class _$DownSyncResetStateImpl extends _DownSyncResetState
     required TResult Function() failed,
     required TResult Function(List<DownsyncModel> downsyncCriteriaList) report,
     required TResult Function() pendingSync,
-    required TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)
+    required TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)
         multiBoundaryInProgress,
     required TResult Function(List<DownsyncModel> results) multiBoundarySuccess,
   }) {
@@ -3706,7 +3860,8 @@ class _$DownSyncResetStateImpl extends _DownSyncResetState
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int syncedCount, int totalCount)? inProgress,
+    TResult? Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult? Function(DownsyncModel downSyncResult)? success,
     TResult? Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -3721,8 +3876,13 @@ class _$DownSyncResetStateImpl extends _DownSyncResetState
     TResult? Function()? failed,
     TResult? Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult? Function()? pendingSync,
-    TResult? Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult? Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult? Function(List<DownsyncModel> results)? multiBoundarySuccess,
   }) {
@@ -3732,7 +3892,8 @@ class _$DownSyncResetStateImpl extends _DownSyncResetState
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int syncedCount, int totalCount)? inProgress,
+    TResult Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult Function(DownsyncModel downSyncResult)? success,
     TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -3747,8 +3908,13 @@ class _$DownSyncResetStateImpl extends _DownSyncResetState
     TResult Function()? failed,
     TResult Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult Function()? pendingSync,
-    TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult Function(List<DownsyncModel> results)? multiBoundarySuccess,
     required TResult orElse(),
@@ -3891,7 +4057,9 @@ class _$DownSynnCountCheckFailedStateImpl extends _DownSynnCountCheckFailedState
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int syncedCount, int totalCount) inProgress,
+    required TResult Function(
+            int syncedCount, int totalCount, String entityType)
+        inProgress,
     required TResult Function(DownsyncModel downSyncResult) success,
     required TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)
@@ -3906,8 +4074,13 @@ class _$DownSynnCountCheckFailedStateImpl extends _DownSynnCountCheckFailedState
     required TResult Function() failed,
     required TResult Function(List<DownsyncModel> downsyncCriteriaList) report,
     required TResult Function() pendingSync,
-    required TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)
+    required TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)
         multiBoundaryInProgress,
     required TResult Function(List<DownsyncModel> results) multiBoundarySuccess,
   }) {
@@ -3917,7 +4090,8 @@ class _$DownSynnCountCheckFailedStateImpl extends _DownSynnCountCheckFailedState
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int syncedCount, int totalCount)? inProgress,
+    TResult? Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult? Function(DownsyncModel downSyncResult)? success,
     TResult? Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -3932,8 +4106,13 @@ class _$DownSynnCountCheckFailedStateImpl extends _DownSynnCountCheckFailedState
     TResult? Function()? failed,
     TResult? Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult? Function()? pendingSync,
-    TResult? Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult? Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult? Function(List<DownsyncModel> results)? multiBoundarySuccess,
   }) {
@@ -3943,7 +4122,8 @@ class _$DownSynnCountCheckFailedStateImpl extends _DownSynnCountCheckFailedState
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int syncedCount, int totalCount)? inProgress,
+    TResult Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult Function(DownsyncModel downSyncResult)? success,
     TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -3958,8 +4138,13 @@ class _$DownSynnCountCheckFailedStateImpl extends _DownSynnCountCheckFailedState
     TResult Function()? failed,
     TResult Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult Function()? pendingSync,
-    TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult Function(List<DownsyncModel> results)? multiBoundarySuccess,
     required TResult orElse(),
@@ -4101,7 +4286,9 @@ class _$DownSyncFailureStateImpl extends _DownSyncFailureState
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int syncedCount, int totalCount) inProgress,
+    required TResult Function(
+            int syncedCount, int totalCount, String entityType)
+        inProgress,
     required TResult Function(DownsyncModel downSyncResult) success,
     required TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)
@@ -4116,8 +4303,13 @@ class _$DownSyncFailureStateImpl extends _DownSyncFailureState
     required TResult Function() failed,
     required TResult Function(List<DownsyncModel> downsyncCriteriaList) report,
     required TResult Function() pendingSync,
-    required TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)
+    required TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)
         multiBoundaryInProgress,
     required TResult Function(List<DownsyncModel> results) multiBoundarySuccess,
   }) {
@@ -4127,7 +4319,8 @@ class _$DownSyncFailureStateImpl extends _DownSyncFailureState
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int syncedCount, int totalCount)? inProgress,
+    TResult? Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult? Function(DownsyncModel downSyncResult)? success,
     TResult? Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -4142,8 +4335,13 @@ class _$DownSyncFailureStateImpl extends _DownSyncFailureState
     TResult? Function()? failed,
     TResult? Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult? Function()? pendingSync,
-    TResult? Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult? Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult? Function(List<DownsyncModel> results)? multiBoundarySuccess,
   }) {
@@ -4153,7 +4351,8 @@ class _$DownSyncFailureStateImpl extends _DownSyncFailureState
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int syncedCount, int totalCount)? inProgress,
+    TResult Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult Function(DownsyncModel downSyncResult)? success,
     TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -4168,8 +4367,13 @@ class _$DownSyncFailureStateImpl extends _DownSyncFailureState
     TResult Function()? failed,
     TResult Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult Function()? pendingSync,
-    TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult Function(List<DownsyncModel> results)? multiBoundarySuccess,
     required TResult orElse(),
@@ -4348,7 +4552,9 @@ class _$DownSyncReportStateImpl extends _DownSyncReportState
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int syncedCount, int totalCount) inProgress,
+    required TResult Function(
+            int syncedCount, int totalCount, String entityType)
+        inProgress,
     required TResult Function(DownsyncModel downSyncResult) success,
     required TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)
@@ -4363,8 +4569,13 @@ class _$DownSyncReportStateImpl extends _DownSyncReportState
     required TResult Function() failed,
     required TResult Function(List<DownsyncModel> downsyncCriteriaList) report,
     required TResult Function() pendingSync,
-    required TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)
+    required TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)
         multiBoundaryInProgress,
     required TResult Function(List<DownsyncModel> results) multiBoundarySuccess,
   }) {
@@ -4374,7 +4585,8 @@ class _$DownSyncReportStateImpl extends _DownSyncReportState
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int syncedCount, int totalCount)? inProgress,
+    TResult? Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult? Function(DownsyncModel downSyncResult)? success,
     TResult? Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -4389,8 +4601,13 @@ class _$DownSyncReportStateImpl extends _DownSyncReportState
     TResult? Function()? failed,
     TResult? Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult? Function()? pendingSync,
-    TResult? Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult? Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult? Function(List<DownsyncModel> results)? multiBoundarySuccess,
   }) {
@@ -4400,7 +4617,8 @@ class _$DownSyncReportStateImpl extends _DownSyncReportState
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int syncedCount, int totalCount)? inProgress,
+    TResult Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult Function(DownsyncModel downSyncResult)? success,
     TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -4415,8 +4633,13 @@ class _$DownSyncReportStateImpl extends _DownSyncReportState
     TResult Function()? failed,
     TResult Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult Function()? pendingSync,
-    TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult Function(List<DownsyncModel> results)? multiBoundarySuccess,
     required TResult orElse(),
@@ -4566,7 +4789,9 @@ class _$DownSyncPendingSyncStateImpl extends _DownSyncPendingSyncState
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int syncedCount, int totalCount) inProgress,
+    required TResult Function(
+            int syncedCount, int totalCount, String entityType)
+        inProgress,
     required TResult Function(DownsyncModel downSyncResult) success,
     required TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)
@@ -4581,8 +4806,13 @@ class _$DownSyncPendingSyncStateImpl extends _DownSyncPendingSyncState
     required TResult Function() failed,
     required TResult Function(List<DownsyncModel> downsyncCriteriaList) report,
     required TResult Function() pendingSync,
-    required TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)
+    required TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)
         multiBoundaryInProgress,
     required TResult Function(List<DownsyncModel> results) multiBoundarySuccess,
   }) {
@@ -4592,7 +4822,8 @@ class _$DownSyncPendingSyncStateImpl extends _DownSyncPendingSyncState
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int syncedCount, int totalCount)? inProgress,
+    TResult? Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult? Function(DownsyncModel downSyncResult)? success,
     TResult? Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -4607,8 +4838,13 @@ class _$DownSyncPendingSyncStateImpl extends _DownSyncPendingSyncState
     TResult? Function()? failed,
     TResult? Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult? Function()? pendingSync,
-    TResult? Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult? Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult? Function(List<DownsyncModel> results)? multiBoundarySuccess,
   }) {
@@ -4618,7 +4854,8 @@ class _$DownSyncPendingSyncStateImpl extends _DownSyncPendingSyncState
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int syncedCount, int totalCount)? inProgress,
+    TResult Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult Function(DownsyncModel downSyncResult)? success,
     TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -4633,8 +4870,13 @@ class _$DownSyncPendingSyncStateImpl extends _DownSyncPendingSyncState
     TResult Function()? failed,
     TResult Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult Function()? pendingSync,
-    TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult Function(List<DownsyncModel> results)? multiBoundarySuccess,
     required TResult orElse(),
@@ -4739,7 +4981,8 @@ abstract class _$$DownSyncMultiBoundaryInProgressStateImplCopyWith<$Res> {
       int totalBoundaries,
       String currentBoundaryName,
       int syncedCount,
-      int totalCount});
+      int totalCount,
+      String entityType});
 }
 
 /// @nodoc
@@ -4760,6 +5003,7 @@ class __$$DownSyncMultiBoundaryInProgressStateImplCopyWithImpl<$Res>
     Object? currentBoundaryName = null,
     Object? syncedCount = null,
     Object? totalCount = null,
+    Object? entityType = null,
   }) {
     return _then(_$DownSyncMultiBoundaryInProgressStateImpl(
       null == currentBoundaryIndex
@@ -4782,6 +5026,10 @@ class __$$DownSyncMultiBoundaryInProgressStateImplCopyWithImpl<$Res>
           ? _value.totalCount
           : totalCount // ignore: cast_nullable_to_non_nullable
               as int,
+      null == entityType
+          ? _value.entityType
+          : entityType // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
@@ -4795,7 +5043,8 @@ class _$DownSyncMultiBoundaryInProgressStateImpl
       this.totalBoundaries,
       this.currentBoundaryName,
       this.syncedCount,
-      this.totalCount)
+      this.totalCount,
+      this.entityType)
       : super._();
 
   @override
@@ -4808,10 +5057,12 @@ class _$DownSyncMultiBoundaryInProgressStateImpl
   final int syncedCount;
   @override
   final int totalCount;
+  @override
+  final String entityType;
 
   @override
   String toString({DiagnosticLevel minLevel = DiagnosticLevel.info}) {
-    return 'BeneficiaryDownSyncState.multiBoundaryInProgress(currentBoundaryIndex: $currentBoundaryIndex, totalBoundaries: $totalBoundaries, currentBoundaryName: $currentBoundaryName, syncedCount: $syncedCount, totalCount: $totalCount)';
+    return 'BeneficiaryDownSyncState.multiBoundaryInProgress(currentBoundaryIndex: $currentBoundaryIndex, totalBoundaries: $totalBoundaries, currentBoundaryName: $currentBoundaryName, syncedCount: $syncedCount, totalCount: $totalCount, entityType: $entityType)';
   }
 
   @override
@@ -4824,7 +5075,8 @@ class _$DownSyncMultiBoundaryInProgressStateImpl
       ..add(DiagnosticsProperty('totalBoundaries', totalBoundaries))
       ..add(DiagnosticsProperty('currentBoundaryName', currentBoundaryName))
       ..add(DiagnosticsProperty('syncedCount', syncedCount))
-      ..add(DiagnosticsProperty('totalCount', totalCount));
+      ..add(DiagnosticsProperty('totalCount', totalCount))
+      ..add(DiagnosticsProperty('entityType', entityType));
   }
 
   @override
@@ -4841,12 +5093,20 @@ class _$DownSyncMultiBoundaryInProgressStateImpl
             (identical(other.syncedCount, syncedCount) ||
                 other.syncedCount == syncedCount) &&
             (identical(other.totalCount, totalCount) ||
-                other.totalCount == totalCount));
+                other.totalCount == totalCount) &&
+            (identical(other.entityType, entityType) ||
+                other.entityType == entityType));
   }
 
   @override
-  int get hashCode => Object.hash(runtimeType, currentBoundaryIndex,
-      totalBoundaries, currentBoundaryName, syncedCount, totalCount);
+  int get hashCode => Object.hash(
+      runtimeType,
+      currentBoundaryIndex,
+      totalBoundaries,
+      currentBoundaryName,
+      syncedCount,
+      totalCount,
+      entityType);
 
   @JsonKey(ignore: true)
   @override
@@ -4859,7 +5119,9 @@ class _$DownSyncMultiBoundaryInProgressStateImpl
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int syncedCount, int totalCount) inProgress,
+    required TResult Function(
+            int syncedCount, int totalCount, String entityType)
+        inProgress,
     required TResult Function(DownsyncModel downSyncResult) success,
     required TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)
@@ -4874,19 +5136,25 @@ class _$DownSyncMultiBoundaryInProgressStateImpl
     required TResult Function() failed,
     required TResult Function(List<DownsyncModel> downsyncCriteriaList) report,
     required TResult Function() pendingSync,
-    required TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)
+    required TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)
         multiBoundaryInProgress,
     required TResult Function(List<DownsyncModel> results) multiBoundarySuccess,
   }) {
     return multiBoundaryInProgress(currentBoundaryIndex, totalBoundaries,
-        currentBoundaryName, syncedCount, totalCount);
+        currentBoundaryName, syncedCount, totalCount, entityType);
   }
 
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int syncedCount, int totalCount)? inProgress,
+    TResult? Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult? Function(DownsyncModel downSyncResult)? success,
     TResult? Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -4901,19 +5169,25 @@ class _$DownSyncMultiBoundaryInProgressStateImpl
     TResult? Function()? failed,
     TResult? Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult? Function()? pendingSync,
-    TResult? Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult? Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult? Function(List<DownsyncModel> results)? multiBoundarySuccess,
   }) {
     return multiBoundaryInProgress?.call(currentBoundaryIndex, totalBoundaries,
-        currentBoundaryName, syncedCount, totalCount);
+        currentBoundaryName, syncedCount, totalCount, entityType);
   }
 
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int syncedCount, int totalCount)? inProgress,
+    TResult Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult Function(DownsyncModel downSyncResult)? success,
     TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -4928,15 +5202,20 @@ class _$DownSyncMultiBoundaryInProgressStateImpl
     TResult Function()? failed,
     TResult Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult Function()? pendingSync,
-    TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult Function(List<DownsyncModel> results)? multiBoundarySuccess,
     required TResult orElse(),
   }) {
     if (multiBoundaryInProgress != null) {
       return multiBoundaryInProgress(currentBoundaryIndex, totalBoundaries,
-          currentBoundaryName, syncedCount, totalCount);
+          currentBoundaryName, syncedCount, totalCount, entityType);
     }
     return orElse();
   }
@@ -5025,7 +5304,8 @@ abstract class _DownSyncMultiBoundaryInProgressState
       final int totalBoundaries,
       final String currentBoundaryName,
       final int syncedCount,
-      final int totalCount) = _$DownSyncMultiBoundaryInProgressStateImpl;
+      final int totalCount,
+      final String entityType) = _$DownSyncMultiBoundaryInProgressStateImpl;
   const _DownSyncMultiBoundaryInProgressState._() : super._();
 
   int get currentBoundaryIndex;
@@ -5033,6 +5313,7 @@ abstract class _DownSyncMultiBoundaryInProgressState
   String get currentBoundaryName;
   int get syncedCount;
   int get totalCount;
+  String get entityType;
   @JsonKey(ignore: true)
   _$$DownSyncMultiBoundaryInProgressStateImplCopyWith<
           _$DownSyncMultiBoundaryInProgressStateImpl>
@@ -5127,7 +5408,9 @@ class _$DownSyncMultiBoundarySuccessStateImpl
   @override
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
-    required TResult Function(int syncedCount, int totalCount) inProgress,
+    required TResult Function(
+            int syncedCount, int totalCount, String entityType)
+        inProgress,
     required TResult Function(DownsyncModel downSyncResult) success,
     required TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)
@@ -5142,8 +5425,13 @@ class _$DownSyncMultiBoundarySuccessStateImpl
     required TResult Function() failed,
     required TResult Function(List<DownsyncModel> downsyncCriteriaList) report,
     required TResult Function() pendingSync,
-    required TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)
+    required TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)
         multiBoundaryInProgress,
     required TResult Function(List<DownsyncModel> results) multiBoundarySuccess,
   }) {
@@ -5153,7 +5441,8 @@ class _$DownSyncMultiBoundarySuccessStateImpl
   @override
   @optionalTypeArgs
   TResult? whenOrNull<TResult extends Object?>({
-    TResult? Function(int syncedCount, int totalCount)? inProgress,
+    TResult? Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult? Function(DownsyncModel downSyncResult)? success,
     TResult? Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -5168,8 +5457,13 @@ class _$DownSyncMultiBoundarySuccessStateImpl
     TResult? Function()? failed,
     TResult? Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult? Function()? pendingSync,
-    TResult? Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult? Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult? Function(List<DownsyncModel> results)? multiBoundarySuccess,
   }) {
@@ -5179,7 +5473,8 @@ class _$DownSyncMultiBoundarySuccessStateImpl
   @override
   @optionalTypeArgs
   TResult maybeWhen<TResult extends Object?>({
-    TResult Function(int syncedCount, int totalCount)? inProgress,
+    TResult Function(int syncedCount, int totalCount, String entityType)?
+        inProgress,
     TResult Function(DownsyncModel downSyncResult)? success,
     TResult Function(int batchSize, ProjectModel projectModel,
             List<BoundaryModel> boundaries, int pendingSyncCount)?
@@ -5194,8 +5489,13 @@ class _$DownSyncMultiBoundarySuccessStateImpl
     TResult Function()? failed,
     TResult Function(List<DownsyncModel> downsyncCriteriaList)? report,
     TResult Function()? pendingSync,
-    TResult Function(int currentBoundaryIndex, int totalBoundaries,
-            String currentBoundaryName, int syncedCount, int totalCount)?
+    TResult Function(
+            int currentBoundaryIndex,
+            int totalBoundaries,
+            String currentBoundaryName,
+            int syncedCount,
+            int totalCount,
+            String entityType)?
         multiBoundaryInProgress,
     TResult Function(List<DownsyncModel> results)? multiBoundarySuccess,
     required TResult orElse(),
