@@ -417,9 +417,10 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
             CustomTableColumn(
               header: localizations.translate(i18.summaryReport.dateColumn),
             ),
-            CustomTableColumn(
-              header: localizations.translate(i18.summaryReport.tokensRedeemed),
-            ),
+            // Tokens Redeemed commented out for now.
+            // CustomTableColumn(
+            //   header: localizations.translate(i18.summaryReport.tokensRedeemed),
+            // ),
             CustomTableColumn(
               header: localizations
                   .translate(i18.summaryReport.numberOfITNDistributed),
@@ -453,7 +454,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         isDistributor
             ? [
                 _formatDisplayDate(row.date),
-                row.tokensRedeemed.toString(),
+                // row.tokensRedeemed.toString(), - commented out with the
+                // column above
                 row.numberOfITNDistributed.toString(),
               ]
             : [

@@ -66,12 +66,15 @@ class ValidationContextManager {
             print(
                 'ValidationContextManager: Field "$fieldName" depends on: ${deps.join(", ")}');
           }
-        } else if (rule.type == 'maxField' && value is String) {
-          // maxField's dependency is the sibling field name itself, e.g.
-          // childrenCount's maxField depends on memberCount - without this,
-          // editing memberCount after already entering childrenCount left
-          // the stale (possibly now-invalid) childrenCount validity cached
-          // until childrenCount itself was touched.
+        } else if ((rule.type == 'maxField' || rule.type == 'requiredIf') &&
+            value is String) {
+          // Both maxField and requiredIf declare their dependency as the
+          // sibling field name itself, e.g. childrenCount's maxField depends
+          // on memberCount, identificationNumber's requiredIf depends on
+          // identificationType - without this, editing the sibling after
+          // this field was already filled/left blank kept the stale
+          // (possibly now-invalid) validity cached until this field itself
+          // was touched.
           if (value.isNotEmpty) {
             _dependencyMap.putIfAbsent(value, () => {}).add(fieldName);
           }

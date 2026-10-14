@@ -221,6 +221,33 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
           }
           break;
 
+        // Validates that this field has a value whenever a sibling field
+        // does - e.g. identificationNumber must be filled in once
+        // identificationType is picked, even though neither field is
+        // unconditionally mandatory on its own (both optional otherwise,
+        // for households with no ID at all). rule.value: the sibling
+        // field's name. Passes when the sibling is empty (nothing triggers
+        // the requirement) or when this field already has a value.
+        case 'requiredIf':
+          if (rule.value is String) {
+            final otherFieldName = rule.value as String;
+            validators.add(Validators.delegate((control) {
+              final form = control.parent;
+              if (form is! FormGroup || !form.contains(otherFieldName)) {
+                return null;
+              }
+              final otherValue =
+                  form.control(otherFieldName).value?.toString() ?? '';
+              if (otherValue.isEmpty) return null;
+              final value = control.value?.toString() ?? '';
+              if (value.isEmpty) {
+                return {'requiredIf': otherFieldName};
+              }
+              return null;
+            }) as Validator<T>);
+          }
+          break;
+
         case 'notEqualTo':
           if (rule.value is String && schemaKey != null) {
             validators.add(Validators.delegate(

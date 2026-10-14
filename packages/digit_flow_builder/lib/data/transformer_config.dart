@@ -51,8 +51,7 @@ final jsonConfig = {
             "childrenCount": "householdDetails.childrenCount",
             "pregnantWomenCount": "householdDetails.pregnantWomenCount",
             "memberCount": "householdDetails.memberCount",
-            "caregiverConsent": "caregiverConsent.consentToParticipate",
-            "expectedBednetCodes": "householdDetails.expectedBednetCodes"
+            "caregiverConsent": "caregiverConsent.consentToParticipate"
           }
         }
       },
@@ -286,8 +285,7 @@ final jsonConfig = {
             "childrenCount": "householdDetails.childrenCount",
             "pregnantWomenCount": "householdDetails.pregnantWomenCount",
             "memberCount": "householdDetails.memberCount",
-            "caregiverConsent": "caregiverConsent.consentToParticipate",
-            "expectedBednetCodes": "householdDetails.expectedBednetCodes"
+            "caregiverConsent": "caregiverConsent.consentToParticipate"
           }
         }
       }

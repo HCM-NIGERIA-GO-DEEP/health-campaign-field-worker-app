@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:digit_data_model/data/repositories/package_repository/local/household.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/project_beneficiary.dart';
 import 'package:digit_data_model/data/repositories/package_repository/local/task.dart';
 import 'package:digit_data_model/data_model.dart';
@@ -33,38 +32,67 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
 
   @override
   void didChangeDependencies() {
-    final taskRepository =
-        context.read<LocalRepository<TaskModel, TaskSearchModel>>()
-            as TaskLocalRepository;
-
     final projectId = context.projectId;
     final loggedInUserUuid = context.loggedInUserUuid;
+    final isDistributor = context.isDistributorRole;
 
-    final now = DateTime.now();
-    final gte = DateTime(
-      now.year,
-      now.month,
-      now.day,
-    );
-    final lte = DateTime(
-      now.year,
-      now.month,
-      now.day,
-      23,
-      59,
-      59,
-      999,
-    );
+    // Registrar's count (households registered) never touches the task
+    // table - registering a household doesn't create a TaskModel row - so
+    // listening only to TaskLocalRepository (as this used to, unconditionally)
+    // meant a Registrar's bar only ever reflected whatever was true at the
+    // very first build and never recomputed afterwards. ProjectBeneficiary is
+    // created at registration time instead, and its own listenToChanges is a
+    // live Drift watch() stream, same as Task's - this fires on every new
+    // registration. Distributor keeps listening to Task, since delivering to
+    // a household does create one, and that path already updated live.
+    if (isDistributor) {
+      final taskRepository =
+          context.read<LocalRepository<TaskModel, TaskSearchModel>>()
+              as TaskLocalRepository;
 
-    taskRepository.listenToChanges(
-      query: TaskSearchModel(
-        status: 'ADMINISTRATION_SUCCESS',
-        projectId: projectId,
-        createdBy: loggedInUserUuid,
-        plannedEndDate: lte.millisecondsSinceEpoch,
-        plannedStartDate: gte.millisecondsSinceEpoch,
+      final now = DateTime.now();
+      final gte = DateTime(now.year, now.month, now.day);
+      final lte = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
+
+      taskRepository.listenToChanges(
+        query: TaskSearchModel(
+          status: 'ADMINISTRATION_SUCCESS',
+          projectId: projectId,
+          createdBy: loggedInUserUuid,
+          plannedEndDate: lte.millisecondsSinceEpoch,
+          plannedStartDate: gte.millisecondsSinceEpoch,
+        ),
+        listener: (taskData) async {
+          if (!mounted) return;
+          final results = taskData.where((task) {
+            final additionalFields = task.additionalFields?.fields;
+            return additionalFields != null && additionalFields.isNotEmpty;
+          }).toList();
+          final groupedEntries = results.groupListsBy(
+            (element) => element.projectBeneficiaryClientReferenceId,
+          );
+          if (mounted) {
+            setState(() {
+              // Distinct households delivered to today, NOT total ITN units
+              // distributed - a household receiving 2 nets still counts once.
+              current = groupedEntries.entries.length;
+            });
+          }
+        },
+      );
+      return;
+    }
+
+    final projectBeneficiaryRepository = context.read<
+            LocalRepository<ProjectBeneficiaryModel,
+                ProjectBeneficiarySearchModel>>()
+        as ProjectBeneficiaryLocalRepository;
+
+    projectBeneficiaryRepository.listenToChanges(
+      query: ProjectBeneficiarySearchModel(
+        projectId: [projectId],
       ),
-      listener: (taskData) async {
+      listener: (_) async {
         if (mounted) {
           final now = DateTime.now();
           final gte = DateTime(
@@ -81,35 +109,28 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
             59,
             999,
           );
-          TaskSearchModel taskSearchQuery = TaskSearchModel(
-            status: 'ADMINISTRATION_SUCCESS',
-            createdBy: loggedInUserUuid,
-            plannedEndDate: lte.millisecondsSinceEpoch,
-            plannedStartDate: gte.millisecondsSinceEpoch,
-            projectId: projectId,
-          );
 
           final summaryReportService =
               context.read<ServerSummaryReportService>();
-          int? serverReportTimestamp = await summaryReportService.timestamp();
           int? houseHoldRegistered =
               await summaryReportService.householdRegistration(
             date: DateFormat('yyyy-MM-dd').format(now),
           );
 
-          // The server-side snapshot above is a point-in-time baseline that
+          // The server-side snapshot above aggregates every device
+          // registering against this project (not just this one), and
           // doesn't get refreshed same-day once any local registration
           // exists (see _loadSummaryReportData's hasHouseholdDataForCycle
           // check), so a household registered - or a closed/declined one
-          // completed - today never shows up in it. Count today's local
-          // households directly instead, the same way the Summary Report
-          // page does, excluding ones still marked closed (a placeholder,
-          // not a real registration yet).
+          // completed - today on THIS device never shows up in it yet.
+          // Count today's local households on this device on top of that
+          // snapshot, the same way the Summary Report page does, excluding
+          // ones still marked closed (a placeholder, not a real
+          // registration yet).
           final householdRepository = context
               .read<LocalRepository<HouseholdModel, HouseholdSearchModel>>();
-          final projectBeneficiaryRepository = context.read<
-              LocalRepository<ProjectBeneficiaryModel,
-                  ProjectBeneficiarySearchModel>>();
+          final taskRepository =
+              context.read<LocalRepository<TaskModel, TaskSearchModel>>();
 
           final todaysHouseholds =
               await householdRepository.search(HouseholdSearchModel());
@@ -153,34 +174,9 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
                   ))
               .length;
 
-          List<TaskModel> allTasks =
-              await taskRepository.search(taskSearchQuery);
-
-          List<TaskModel> filteredTasks = allTasks;
-          if (serverReportTimestamp != null) {
-            filteredTasks = filteredTasks
-                .where((e) =>
-                    e.auditDetails != null &&
-                    e.auditDetails!.lastModifiedTime >= serverReportTimestamp)
-                .toList();
-          }
-          List<TaskModel> results = filteredTasks.where((task) {
-            final additionalFields = task?.additionalFields?.fields;
-            if (additionalFields == null || additionalFields.isEmpty) {
-              return false;
-            } else
-              return true;
-          }).toList();
-          final groupedEntries = results.groupListsBy(
-            (element) => element.projectBeneficiaryClientReferenceId,
-          );
           if (mounted) {
             setState(() {
-              if (mounted) {
-                current = houseHoldRegistered +
-                    localHouseholdsRegisteredToday +
-                    groupedEntries.entries.length;
-              }
+              current = houseHoldRegistered + localHouseholdsRegisteredToday;
             });
           }
         }
