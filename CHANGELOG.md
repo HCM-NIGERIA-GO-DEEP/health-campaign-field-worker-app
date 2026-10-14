@@ -1,5 +1,104 @@
 # Changelog
 
+## 2.2.119 — 2026-10-14
+
+_(includes 2.2.114–2.2.118. These are the 20 commits after the 2.2.113 changelog. The last one, the app-identity revert, sits after the `2.2.119+119` bump, so a build cut at the bump commit and a build cut at the branch head both report `2.2.119+119` but are different Android apps. See **Android app identity** below.)_
+
+| Version | What landed |
+|---|---|
+| 2.2.114 | `StockConstants` and ml stock balances; `perEntity` transformer data; `today` date bounds; VisibilityManager rebuild-loop fix; child-intervention checklist fields; `calculateWastage` registered in the app; `filterRecordsWithinCurrentCycle` changes; bundled-flows-only navigation; `pubspec.lock` sync |
+| 2.2.115 | Administration start/end time; bundled-flows-only navigation reverted |
+| 2.2.116 | Gombe-AZM app identity; validator-reapply fix; `heading` field format; `toTimestamp` |
+| 2.2.117 | Firebase Android `appId` corrected; redose window cut from 30 to 5 minutes |
+| 2.2.118 | `calculateWastage` zero-return change; checkbox-group field; height eligibility |
+| 2.2.119 | `deductPartialUsed` set to `false`; app identity reverted to `com.digit.hcm` with the label `AZM-MC` (after the bump) |
+
+**Stock units: `StockConstants` and ml balances — 2.2.114, 2.2.119**
+
+- A new `StockConstants` class (`lib/utils/stock_constants.dart`, re-exported from `utils.dart`) replaces `Constants.stockBottleToMlMultiplier`. `isLiquid` (`true`) is the switch. `mlPerBottle` (30), `multiplier`, `deductPartialUsed`, `toDisplayUnit` and `toBaseUnit` derive from it. The convention it documents is: `stock.quantity` is persisted and synced in bottles; the `quantityWastage`/`quantityPartialUsed` additional fields and delivery-task quantities are in ml; every balance the app computes, caches or shows is in ml.
+- **This changes what users see.** The four `calculateStockMetrics` callers are the stock balance card, the summary report, `ProductSelectionCard` (inventory Product Details) and the stock reconciliation card. Before this release none of them passed `multiplier` or `calculatePartial`, so they ran at the defaults (`1.0`, `false`). Stock records were therefore summed in bottles, and delivery-task quantities, already in ml, were added on top unscaled, mixing units. All four now pass `StockConstants.multiplier`:
+  - The stock balance card and summary report now show ml. For stock records that is 30× the figure 2.2.113 showed.
+  - `StockBalanceCache` now holds ml, which is what `calculateWastage`'s `balance % 30` had assumed all along. In 2.2.113 it ran that arithmetic on bottle counts.
+  - The stock-in-hand cap on Product Details converts back to bottles with `toBaseUnit`. A delivery now reduces the cap by ml/30 instead of one bottle per ml.
+  - The reconciliation card converts every metric back to bottles before display, because stock is physically counted in bottles.
+- `bottlesToMl`/`mlToBottles` and `StockBalanceExecutor` now read the factor from `StockConstants`. At 30 their results are unchanged.
+- Forms engine: a new `FormsFunctionConfig.unitMultiplierResolver` hook replaces the hard-coded 30 in `calculateWastage`/`calculatePartial`. When no resolver is registered, or it returns a value ≤ 0, it falls back to 1. The app registers it in `FunctionRegistries._registerFormsEngineHooks`.
+- `deductPartialUsed` was `true` (derived from `isLiquid`) from 2.2.114 to 2.2.118, so partial-used stock was deducted from stock in hand on all four screens. 2.2.119 hard-codes it to `false`, which matches 2.2.113's effective behaviour. Three things were left behind:
+  - `StockBalanceExecutor` never reads the flag. As in 2.2.113, it still subtracts `quantityPartialUsed / multiplier` from the stock record. The user-action balance path and the calculated-metrics path now disagree about partial-used stock.
+  - The field's doc comment ("a liquid campaign deducts it") and the class doc ("everything else derives from `isLiquid`") are now stale.
+  - `test/stock_constants_test.dart` › "everything derives from the one isLiquid flag" now fails.
+- Not addressed: `ProductSelectionCard` still subtracts the server summary report's `stockConsumedMap` from the now-ml balance with no conversion. Nothing in this repo establishes which unit the server reports that figure in, so it should be confirmed.
+
+**Per-product return partial/wastage (`perEntity` transformer data) — 2.2.114**
+
+- In `TransformerExecutor`, a `data` entry marked `"perEntity": true` is resolved again for each multi-entity item, against that item's fields under their base names (`quantityReturned`, not `quantityReturned_item_0`). If the key resolves to null for an item, it is dropped from that item's context instead of keeping the whole-form value. Non-multi-entity paths are untouched. The feature is documented in `DIGIT_FLOW_BUILDER_CONFIG_DOCUMENTATION.md` §6.4.
+- Before this, every `data` entry resolved once against the suffixed whole-form keys. An item-dependent value such as a return's wastage came out null/0 and could not differ between products.
+- The app now registers flow-builder `calculatePartial` and `calculateWastage` functions that delegate to the forms-engine versions, so a submit action stores the same value the form auto-filled.
+- These features need matching INVENTORY config (the `perEntity` data entries). That config is not in this repo.
+
+**`calculateWastage` with zero full bottles returned — 2.2.118**
+
+- The guard changed from `returned <= 0` to `returned < 0`. The commit message ("return 0 for negative input") undersells this: negative input already returned 0. The real change is `returned == 0`, which used to give 0 wastage and now gives `balance − leftover`. For example, 300 ml in hand with nothing returned now records 300 ml of wastage.
+- `calculatePartial` kept `returned <= 0`. So when a worker returns no full bottles plus one part-used bottle, wastage excludes the leftover (`balance % 30`) but partial-used records 0, and the leftover is recorded nowhere. Example: 35 ml in hand gives wastage 30 and partial 0, leaving 5 ml unaccounted for.
+- `packages/digit_forms_engine/test/stock_unit_functions_test.dart` › "returns 0 when nothing was returned" now fails (expected 0, got 300).
+
+**Administration start/end time on delivery — 2.2.115**
+
+- A new `AdministrationTimer` (`lib/utils/administration_timer.dart`) and three app functions (`startAdministrationTimer`, `administrationEndTime`, `administrationTimeFlag`) record device-local epoch millis when the delivery screen opens and when the task is submitted. A monotonic stopwatch runs alongside the wall clock:
+  - If the end time is earlier than the start time, the record is flagged `NEGATIVE_DURATION`.
+  - If the wall-clock and stopwatch durations differ by more than 60 s, it is flagged `CLOCK_CHANGED`.
+  - Reopening the screen restarts the timer.
+- Only the `delivery` transformer mapping gained `administrationStartTime`/`administrationEndTime`/`administrationTimeFlag`. Null values are skipped. `indirectBulkDelivery`, `redose`, `vasDelivery` and `orsDelivery` do not record them.
+- The timer is an in-memory, process-wide singleton. The stopwatch comparison only runs when the start time passed at submit matches the most recent `start()`. Otherwise, for example after the app restarts or another delivery screen opens in between, only the negative-duration check applies.
+- Nothing is recorded until config calls `startAdministrationTimer` on delivery-screen init and passes the three values as transformer `data`. No config in this repo does.
+
+**Height in eligibility checks — 2.2.118**
+
+- A new `_isEligibleHeight(currentCycle, individual)` check is ANDed with `_isEligibleAge` in `checkEligibilityForAgeAndSideEffect`, `isORSEligible`, `vasWithinTheAge` and `orsWithinTheAge`. It reads `height` from the individual's additional fields. If no height is recorded, or no dose-criteria condition in the current cycle mentions `height`, the check passes. Otherwise the child is eligible when every `height` clause of at least one condition is satisfied.
+- Height is checked **independently of age**. Clauses are collected from every condition across all of the cycle's deliveries, so a child can pass age through one bracket and height through another. Weight is still not checked, even though the functions' doc comments say "age, plus weight/height when recorded".
+- In `checkEligibilityForAgeAndSideEffect`, the continuation path for aged-out children ("not within age and an earlier-cycle SMC `administrationSuccess` → eligible") now tests "not (within age **and** within height)". A child who is within age but has an out-of-range recorded height, and who succeeded in an earlier cycle, is now returned as **eligible**: the height-ineligible case inherits the aged-out exemption. This path only runs when the third (`currentRunningCycle`) argument is passed. Confirm whether this is intended.
+- No tests were added.
+
+**Redose window 30 → 5 minutes — 2.2.117**
+
+- `isRedoseWindowExpired` now reports the window closed 5 minutes after the last SMC delivery completes, instead of 30, so the redose button is disabled after 5 minutes. The function's doc comment still says 30 minutes.
+
+**Forms engine**
+
+- **`today` date bounds (2.2.114).** A `startDate`/`endDate` validation value can now be the keyword `today`, resolved to the start or end of the current device day by the new `date_bound_resolver.dart`. Integer epochs still work. These bounds are now also enforced as validators on the stored value, with the rule's configured message. Previously they only greyed out days in the picker. This applies to existing epoch bounds as well, so a stored value outside such a bound, for example one prefilled on an edit screen, now fails validation where it used to pass. The `today` bound is computed when the validators are built, so a form left open past midnight keeps the previous day's bound.
+- **Validator reapply: rebuild-loop fix, regression and fix (2.2.114 → 2.2.116).** In 2.2.114, `VisibilityManager` started reapplying validators only when a field's visibility changed. That stopped a rebuild loop caused by `updateValueAndValidity` firing from `build()`. It also meant a rule added to the schema after the form was built never reached a field that stayed visible. On inventory Product Details, `ProductSelectionCard` adds the stock-in-hand `max` rule when its async stock search finishes. If the worker tapped Next before then, any quantity was accepted. 2.2.116 keys the check on visibility **and** the rule list, compared by value, which fixes this and keeps the loop fix. **Builds 2.2.114 and 2.2.115 have the regression.**
+- **`heading` field format (2.2.116).** A field with `"format": "heading"` renders its translated label as a heading line, whatever its `type`. It is used for a parent question above sub-questions (hddf-5595). It gets no form control, is excluded from submitted data and from the summary page, and is skipped by the multi-entity control builder. Its `visibilityCondition` works as usual. According to the commit, older builds decode the unknown format as `text` and show an empty text box, so config using it must ship only with 2.2.116+.
+- **Checkbox-group field (2.2.118).** A field with `type: string`, `format: checkbox` and `enums` now renders a vertical list of checkboxes bound to one string control. The value is the selected codes joined with `.` in enum order, or `null` when nothing is ticked, so `required` fails and the transformer omits the key. Codes not in `enums` render unchecked and are dropped on the next toggle. Previously this combination fell through to a plain text field. It was added for the AZM HF-referral checklists. An enum code containing `.` would break the encoding. No tests were added.
+
+**Transformer: child-intervention checklist fields — 2.2.114**
+
+- `malariaVaccineReceived`/`LastDate`, `smcReceived`/`LastDate`, `polioReceived`/`LastDate` and `measlesRubellaReceived`/`LastDate` (from `__context:malariaVaccine`, `…Date`, etc.) were added to the additional fields of every mapping that already records the ec1–ec5 values: `indirectBulkDelivery`, `delivery`, `ineligibleConfig`, `vasIneligibleConfig`, `redose` and `referralBeneficaryCreate`. Null values are skipped. Config must supply the context keys; none in this repo does.
+
+**App function registry**
+
+- **`filterRecordsWithinCurrentCycle` (2.2.114).** With no active cycle it now keeps every record; previously it returned an empty list. A record without the date field falls back to `auditDetails`/`clientAuditDetails.lastModifiedTime` instead of being dropped. This matches the stock reconciliation screen, so inventory reports and reconciliation show the same stock.
+- **`toTimestamp` (2.2.116).** It returns epoch millis: a `DateTime` is converted, an `int` passes through, anything else goes through `DateTime.tryParse`, and it returns `null` on failure. No in-repo config calls it.
+
+**Flow loading: bundled flows only — 2.2.114 only**
+
+- 2.2.114 commented out the `app_config_schemas` lookup in `FlowNavigationUtils`, so every module loaded its bundled `sampleFlows` and ignored the MDMS-delivered schema. 2.2.115 restored the lookup in its version-bump commit, so there is no net change. A 2.2.114 build does not pick up MDMS flow config.
+
+**Android app identity / Firebase**
+
+- 2.2.116 (commit `f1ea3fd61`, just after the 2.2.115 bump): `applicationId` changed from `com.digit.hcm` to `org.egov.azm.gombe` and the label from `SMC-MC` to `Gombe-AZM`. The Firebase Android `appId` became `1:630326133351:…`, whose project number does not match the unchanged `messagingSenderId`/`projectId` (`397617237644` / `digit-health-75ed0`).
+- 2.2.117: the `appId` changed to `1:397617237644:android:b8db4e45…`, which matches the project.
+- After the 2.2.119 bump (`1fc7ea862`, 2026-10-14): `applicationId` and `appId` reverted to their 2.2.113 values, and the label changed to `AZM-MC`.
+- Net change from 2.2.113 is the launcher label only (`SMC-MC` → `AZM-MC`). However, builds cut at the 2.2.116–2.2.119 bump commits are `org.egov.azm.gombe`, which Android treats as a separate app from `com.digit.hcm`. Installing a branch-head build on a device that has a Gombe build adds a second app; it does not upgrade the first, and the Gombe install's local, unsynced data stays behind. Devices should sync before switching. `google-services.json` is not tracked, so this repo cannot show whether the Gradle side matched each `applicationId`.
+
+**Dependencies — 2.2.114**
+
+- `apps/health_campaign_field_worker_app/pubspec.lock` was committed in sync with the local path dependencies. `digit_analytics` is a new direct dependency. `digit_firebase_services`, `digit_location_tracker` and `dart_mappable_builder` now resolve from `../../packages` instead of pub.dev or git. `firebase_analytics` 10.10.7 (with platform_interface 3.10.8 and web 0.5.7+7) was added transitively. This is the working-tree lockfile change the 2.2.113 entry noted as uncommitted.
+
+**Tests**
+
+- New tests: `stock_constants_test`, `utils/administration_timer_test` and `utils/return_stock_context_test` (app); `transformer_per_entity_context_test` (flow builder); `stock_unit_functions_test`, `visibility_manager_test`, `date_bound_test` and `heading_field_test` (forms engine).
+- At this release, running them with the pinned Flutter 3.22.2 (`--no-pub`) gives 46 passed and **2 failed**. The two failures are the ones above, caused by the 2.2.118 `calculateWastage` change and the 2.2.119 `deductPartialUsed` change, neither of which updated its test. The height-eligibility, checkbox-group, redose-window, `toTimestamp` and `filterRecordsWithinCurrentCycle` changes have no tests.
+
 ## 2.2.113 — 2026-09-21
 
 _(single functional commit: `packages/digit_flow_builder/lib/layout_renderer.dart`, plus the version bump)_
