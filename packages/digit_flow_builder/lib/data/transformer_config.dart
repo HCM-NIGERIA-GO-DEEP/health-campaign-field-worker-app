@@ -91,7 +91,6 @@ final jsonConfig = {
             "lastName": "householdDetails.lastName"
           },
           "bloodGroup": "health.bloodGroup",
-          "gender": "householdDetails.gender",
           "address": "list:AddressModel",
           "identifiers": "list:IdentifierModel",
           "clientAuditDetails": "__generate:clientAudit",
@@ -200,7 +199,6 @@ final jsonConfig = {
           "additionalFields": {
             "name":
                 "__concatName:beneficiaryDetails.nameOfIndividual,beneficiaryDetails.familyname",
-            "gender": "householdDetails.gender",
             "dateOfBirth": "beneficiaryDetails.dobPicker",
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
@@ -1048,6 +1046,72 @@ final jsonConfig = {
       },
     }
   },
+  // Shortfall Return / Reissue (Accept/Partial Accept PRD, Phase 2). Serves
+  // TWO call sites that share the same shape - sender/receiver swapped,
+  // context-driven, needs the dispatch to surface in the other side's
+  // incomingTransactions:
+  //   1. Partial Accept on stockReceiptDetails creates the Shortfall Return
+  //      itself (stockEntryType: RETURNED) sending the shortfall back to the
+  //      original sender.
+  //   2. Accepting that return as "stock in transit / miscount" creates a
+  //      brand-new dispatch (stockEntryType: ISSUED) re-sending the same
+  //      quantity on to the original receiver - a genuine new dispatch, not
+  //      a return, so stockEntryType is passed per call site rather than
+  //      hardcoded.
+  // Cloned from stockReject (which was unused - a leftover from before
+  // "Reject" was retired) with two additions: "status":IN_TRANSIT, which is
+  // what incomingTransactions filters on - without it neither call site's
+  // transaction would ever surface for the other side to resolve - and
+  // originalIssueClientReferenceId, a durable link back to the original
+  // dispatch, used by reconciliation to roll a dispatch -> return -> reissue
+  // chain up to one line instead of double-counting it as a fresh
+  // allocation. stockEntryType is passed as RETURNED or ISSUED (not a new
+  // enum value) so stock_balance_executor.dart's existing branches for both
+  // apply unchanged - introducing a new stockEntryType would need
+  // balance-calculation changes too.
+  "shortfallTransaction": {
+    "fallbackModel": "StockModel",
+    "models": {
+      "StockModel": {
+        "mappings": {
+          "clientReferenceId": "__generate:uuid",
+          "facilityId": "__context:userFacilityId",
+          "productVariantId": "__context:productVariantId",
+          "referenceId": "__context:projectId",
+          "referenceIdType": "__value:PROJECT",
+          "quantity": "__context:quantity",
+          "campaignNumber": "__context:selectedProject.referenceID",
+          "wayBillNumber": "stockReceiptDetails.wayBillNumber",
+          "transactionType": "__value:DISPATCHED",
+          "transactionReason": "__value:null",
+          "senderId": "__context:senderFacilityId",
+          "senderType": "__value:WAREHOUSE",
+          "receiverId": "__context:receiverFacilityId",
+          "receiverType": "__value:WAREHOUSE",
+          "nonRecoverableError": "errors.nonRecoverable",
+          "tenantId": "__context:tenantId",
+          "rowVersion": "meta.rowVersion",
+          "additionalFields": {
+            "sku": "__context:sku",
+            "batchNumber": "stockReceiptDetails.batchNumber",
+            "expiryDate": "stockReceiptDetails.expiryDate",
+            "comments": "__context:comment",
+            "mrnNumber": "__context:mrnNumber",
+            "stockEntryType": "__context:stockEntryType",
+            "status": "__value:IN_TRANSIT",
+            "originalIssueClientReferenceId":
+                "__context:originalIssueClientReferenceId",
+            "discrepancyReason": "__context:discrepancyReason",
+            "primaryRole": "__context:primaryRole",
+            "secondaryRole": "__context:secondaryRole"
+          },
+          "clientAuditDetails": "__generate:clientAudit",
+          "auditDetails": "__generate:audit",
+          "dateOfEntry": "__value:DATETIME.NOW"
+        }
+      },
+    }
+  },
   "stockLessExcess": {
     "fallbackModel": "StockModel",
     "models": {
@@ -1060,7 +1124,8 @@ final jsonConfig = {
           "referenceIdType": "__value:PROJECT",
           "quantity": "lessExcessDetails.quantity",
           "campaignNumber": "__context:selectedProject.referenceID",
-          "transactionType": "__value:RECEIVED",
+          "transactionType":
+              "__switch:__context:stockEntryType:{LESS:__value:DISPATCHED,default:__value:RECEIVED}",
           "transactionReason": "lessExcessDetails.reasonForLessExcess",
           "senderId":
               "__switch:lessExcessDetails.facilityFromWhich:{DELIVERY_TEAM:__context:loggedInUserUuid,default:lessExcessDetails.facilityFromWhich}",

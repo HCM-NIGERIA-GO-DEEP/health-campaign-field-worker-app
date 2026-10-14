@@ -69,6 +69,7 @@ _$PropertySchemaImpl _$$PropertySchemaImplFromJson(Map<String, dynamic> json) =>
       submitCondition: _visibilityConditionOrNull(json['submitCondition']),
       secondaryActionLabel: json['secondaryActionLabel'] as String?,
       comparisonConfig: _comparisonConfigOrNull(json['comparisonConfig']),
+      dynamicScanLimit: _dynamicScanLimitConfigOrNull(json['dynamicScanLimit']),
     );
 
 Map<String, dynamic> _$$PropertySchemaImplToJson(
@@ -132,6 +133,7 @@ Map<String, dynamic> _$$PropertySchemaImplToJson(
   writeNotNull('submitCondition', instance.submitCondition?.toJson());
   writeNotNull('secondaryActionLabel', instance.secondaryActionLabel);
   writeNotNull('comparisonConfig', instance.comparisonConfig?.toJson());
+  writeNotNull('dynamicScanLimit', instance.dynamicScanLimit?.toJson());
   return val;
 }
 
@@ -335,6 +337,11 @@ _$SecondaryAlertBodyFieldImpl _$$SecondaryAlertBodyFieldImplFromJson(
       format: json['format'] as String?,
       fieldName: json['fieldName'] as String,
       mandatory: json['mandatory'] as bool? ?? false,
+      enums: (json['enums'] as List<dynamic>?)
+          ?.map((e) => Option.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      revealsFreeTextOn: json['revealsFreeTextOn'] as String?,
+      revealedDetailLabel: json['revealedDetailLabel'] as String?,
     );
 
 Map<String, dynamic> _$$SecondaryAlertBodyFieldImplToJson(
@@ -345,6 +352,9 @@ Map<String, dynamic> _$$SecondaryAlertBodyFieldImplToJson(
       'format': instance.format,
       'fieldName': instance.fieldName,
       'mandatory': instance.mandatory,
+      'enums': instance.enums,
+      'revealsFreeTextOn': instance.revealsFreeTextOn,
+      'revealedDetailLabel': instance.revealedDetailLabel,
     };
 
 _$AlertConditionImpl _$$AlertConditionImplFromJson(Map<String, dynamic> json) =>
@@ -385,6 +395,7 @@ _$ComparisonConfigImpl _$$ComparisonConfigImplFromJson(
               .toList() ??
           const [],
       errorMessage: json['errorMessage'] as String?,
+      mode: json['mode'] as String? ?? 'duplicate',
     );
 
 Map<String, dynamic> _$$ComparisonConfigImplToJson(
@@ -403,6 +414,32 @@ Map<String, dynamic> _$$ComparisonConfigImplToJson(
   }
 
   writeNotNull('errorMessage', instance.errorMessage);
+  val['mode'] = instance.mode;
+  return val;
+}
+
+_$DynamicScanLimitConfigImpl _$$DynamicScanLimitConfigImplFromJson(
+        Map<String, dynamic> json) =>
+    _$DynamicScanLimitConfigImpl(
+      sourceField: json['sourceField'] as String,
+      perUnit: (json['perUnit'] as num?)?.toInt() ?? 1,
+      maxQuantity: (json['maxQuantity'] as num?)?.toInt(),
+    );
+
+Map<String, dynamic> _$$DynamicScanLimitConfigImplToJson(
+    _$DynamicScanLimitConfigImpl instance) {
+  final val = <String, dynamic>{
+    'sourceField': instance.sourceField,
+    'perUnit': instance.perUnit,
+  };
+
+  void writeNotNull(String key, dynamic value) {
+    if (value != null) {
+      val[key] = value;
+    }
+  }
+
+  writeNotNull('maxQuantity', instance.maxQuantity);
   return val;
 }
 

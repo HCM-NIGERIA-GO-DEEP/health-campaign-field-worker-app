@@ -19,6 +19,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import '../../widgets/localized.dart';
 import '../helper/form_builder_helper.dart';
+import '../helper/validation_context_manager.dart';
 import '../helper/validator_helper.dart';
 import '../models/property_schema/property_schema.dart';
 import '../models/schema_object/schema_object.dart';
@@ -57,6 +58,14 @@ class FormsRenderPage extends LocalizedStatefulWidget {
 class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
   bool _hasInitializedProtection = false;
   bool _isSubmitting = false;
+
+  // ValidationContextManager wires up cross-field revalidation (e.g.
+  // identificationNumber's pattern depends on identificationType) - without
+  // it, switching identificationType never re-ran identificationNumber's
+  // validators, so a value valid for the old type could pass submission
+  // silently. Built once per FormGroup instance (ReactiveFormBuilder's
+  // builder can rebuild many times on the same underlying FormGroup).
+  ValidationContextManager? _validationContextManager;
 
   /// GlobalKey to access MultiEntityTabViewState for programmatic tab navigation
   final GlobalKey<MultiEntityTabViewState> _multiEntityTabKey =
@@ -355,6 +364,13 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                         ),
                       ),
                   builder: (context, formGroup, child) {
+                    if (!identical(
+                        _validationContextManager?.formGroup, formGroup)) {
+                      _validationContextManager = ValidationContextManager(
+                        formGroup: formGroup,
+                        schemas: schema.properties ?? {},
+                      );
+                    }
                     return ScrollableContent(
                       enableFixedDigitButton: true,
                       header: Column(
@@ -1720,12 +1736,26 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     // comment text into both.
     final values = <String, String>{
       for (final field in bodyFields) field.fieldName: '',
+      // Pre-seeded so a dropdown's revealed free-text field always has a
+      // slot, even though it isn't one of the declared bodyFields itself.
+      for (final field in bodyFields)
+        if (field.revealsFreeTextOn != null) '${field.fieldName}Detail': '',
     };
 
     bool isNumeric(SecondaryAlertBodyField field) =>
         field.format?.toLowerCase() == 'numeric' ||
         field.type.toLowerCase() == 'number' ||
         field.type.toLowerCase() == 'integer';
+
+    bool isDropdown(SecondaryAlertBodyField field) =>
+        field.format?.toLowerCase() == 'dropdown' && field.enums != null;
+
+    // A dropdown field with revealsFreeTextOn set shows an extra, equally
+    // mandatory free-text field once that option is selected (e.g. "Others"
+    // on a reason dropdown needs its own detail, not just a code).
+    bool freeTextRevealed(SecondaryAlertBodyField field) =>
+        field.revealsFreeTextOn != null &&
+        values[field.fieldName] == field.revealsFreeTextOn;
 
     /// Null when the field is acceptable, otherwise the reason it is not.
     String? validate(SecondaryAlertBodyField field) {
@@ -1741,6 +1771,16 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
       return null;
     }
 
+    /// Validates the free-text detail revealed by a dropdown's
+    /// revealsFreeTextOn option - stored under "<fieldName>Detail".
+    String? validateRevealedDetail(SecondaryAlertBodyField field) {
+      if (!freeTextRevealed(field)) return null;
+      final detailKey = '${field.fieldName}Detail';
+      final value = (values[detailKey] ?? '').trim();
+      final label = localizations.translate(field.label);
+      return value.isEmpty ? '$label detail is required' : null;
+    }
+
     bool showValidationError = false;
 
     showCustomPopup(
@@ -1754,7 +1794,10 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                   ? localizations.translate(popUpConfig.description!)
                   : null,
               additionalWidgets: [
-                ...bodyFields.map((field) {
+                // expand (not map) because a dropdown with revealsFreeTextOn
+                // can contribute a second widget - its revealed detail field
+                // - beneath it, once that option is selected.
+                ...bodyFields.expand((field) {
                   final error =
                       showValidationError ? validate(field) : null;
 
@@ -1765,32 +1808,84 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                     });
                   }
 
-                  return Padding(
+                  final fieldWidget = Padding(
                     padding: const EdgeInsets.only(top: spacer2),
                     child: LabeledField(
                       label: localizations.translate(field.label),
                       isRequired: field.mandatory,
-                      child: isNumeric(field)
-                          ? DigitNumericFormInput(
-                              initialValue: values[field.fieldName] ?? '',
-                              onChange: onChange,
+                      child: isDropdown(field)
+                          ? DigitDropdown<String>(
+                              items: (field.enums ?? [])
+                                  .map((option) => DropdownItem(
+                                        name: localizations
+                                            .translate(option.name),
+                                        code: option.code,
+                                      ))
+                                  .toList(),
+                              selectedOption: (field.enums ?? [])
+                                  .where((option) =>
+                                      option.code == values[field.fieldName])
+                                  .map((option) => DropdownItem(
+                                        name: localizations
+                                            .translate(option.name),
+                                        code: option.code,
+                                      ))
+                                  .firstOrNull,
+                              onSelect: (item) => onChange(item.code),
                               errorMessage: error,
-                              // Defaults to false, which makes the
-                              // underlying TextField readOnly - leaving only
-                              // the +/-step buttons usable. A quantity that
-                              // isn't a multiple of the step (e.g. 13 with a
-                              // step of 5) would then be unreachable, so
-                              // manual keyboard entry has to stay available
-                              // alongside the stepper.
-                              editable: true,
+                              isSearchable: false,
                             )
-                          : DigitTextAreaFormInput(
-                              initialValue: values[field.fieldName] ?? '',
-                              onChange: onChange,
-                              errorMessage: error,
-                            ),
+                          : isNumeric(field)
+                              ? DigitNumericFormInput(
+                                  initialValue: values[field.fieldName] ?? '',
+                                  onChange: onChange,
+                                  errorMessage: error,
+                                  // Defaults to false, which makes the
+                                  // underlying TextField readOnly - leaving
+                                  // only the +/-step buttons usable. A
+                                  // quantity that isn't a multiple of the
+                                  // step (e.g. 13 with a step of 5) would
+                                  // then be unreachable, so manual keyboard
+                                  // entry has to stay available alongside
+                                  // the stepper.
+                                  editable: true,
+                                )
+                              : DigitTextAreaFormInput(
+                                  initialValue: values[field.fieldName] ?? '',
+                                  onChange: onChange,
+                                  errorMessage: error,
+                                ),
                     ),
                   );
+
+                  if (!freeTextRevealed(field)) return [fieldWidget];
+
+                  final detailKey = '${field.fieldName}Detail';
+                  final detailError = showValidationError
+                      ? validateRevealedDetail(field)
+                      : null;
+
+                  final detailWidget = Padding(
+                    padding: const EdgeInsets.only(top: spacer2),
+                    child: LabeledField(
+                      label: field.revealedDetailLabel != null
+                          ? localizations.translate(field.revealedDetailLabel!)
+                          : localizations.translate(field.label),
+                      isRequired: true,
+                      child: DigitTextAreaFormInput(
+                        initialValue: values[detailKey] ?? '',
+                        onChange: (value) {
+                          values[detailKey] = value;
+                          setPopupState(() {
+                            showValidationError = false;
+                          });
+                        },
+                        errorMessage: detailError,
+                      ),
+                    ),
+                  );
+
+                  return [fieldWidget, detailWidget];
                 }),
               ],
               actions: [
@@ -1798,8 +1893,9 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                   label:
                       localizations.translate(popUpConfig.primaryActionLabel),
                   onPressed: () {
-                    final hasInvalid =
-                        bodyFields.any((field) => validate(field) != null);
+                    final hasInvalid = bodyFields.any((field) =>
+                        validate(field) != null ||
+                        validateRevealedDetail(field) != null);
                     if (hasInvalid) {
                       setPopupState(() {
                         showValidationError = true;
@@ -1807,9 +1903,14 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                       return;
                     }
                     final popupData = <String, dynamic>{
-                      for (final field in bodyFields)
+                      for (final field in bodyFields) ...{
                         field.fieldName:
                             (values[field.fieldName] ?? '').trim(),
+                        if (freeTextRevealed(field))
+                          '${field.fieldName}Detail':
+                              (values['${field.fieldName}Detail'] ?? '')
+                                  .trim(),
+                      },
                     };
                     Navigator.of(ctx, rootNavigator: true).pop();
                     onConfirm(popupData: popupData);

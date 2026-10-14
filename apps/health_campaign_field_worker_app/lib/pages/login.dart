@@ -369,43 +369,44 @@ class _LoginPageState extends LocalizedState<LoginPage> {
                             );
                           },
                         ),
-                        DigitButton(
-                          label: localizations.translate(
-                            i18.forgotPassword.actionLabel,
-                          ),
-                          capitalizeLetters: false,
-                          mainAxisSize: MainAxisSize.max,
-                          type: DigitButtonType.tertiary,
-                          size: DigitButtonSize.medium,
-                          onPressed: () => showCustomPopup(
-                            context: context,
-                            builder: (ctx) => Popup(
-                              title: localizations.translate(
-                                i18.forgotPassword.labelText,
-                              ),
-                              description: localizations.translate(
-                                i18.forgotPassword.contentText,
-                              ),
-                              onOutsideTap: () {
-                                Navigator.of(ctx).pop();
-                              },
-                              type: PopUpType.simple,
-                              actions: [
-                                DigitButton(
-                                  label: localizations.translate(
-                                    i18.forgotPassword.primaryActionLabel,
-                                  ),
-                                  onPressed: () {
-                                    Navigator.of(ctx).pop();
-                                    context.router.popUntilRoot();
-                                  },
-                                  type: DigitButtonType.primary,
-                                  size: DigitButtonSize.large,
-                                )
-                              ],
-                            ),
-                          ),
-                        ),
+                        // Forgot Password - commented out for now.
+                        // DigitButton(
+                        //   label: localizations.translate(
+                        //     i18.forgotPassword.actionLabel,
+                        //   ),
+                        //   capitalizeLetters: false,
+                        //   mainAxisSize: MainAxisSize.max,
+                        //   type: DigitButtonType.tertiary,
+                        //   size: DigitButtonSize.medium,
+                        //   onPressed: () => showCustomPopup(
+                        //     context: context,
+                        //     builder: (ctx) => Popup(
+                        //       title: localizations.translate(
+                        //         i18.forgotPassword.labelText,
+                        //       ),
+                        //       description: localizations.translate(
+                        //         i18.forgotPassword.contentText,
+                        //       ),
+                        //       onOutsideTap: () {
+                        //         Navigator.of(ctx).pop();
+                        //       },
+                        //       type: PopUpType.simple,
+                        //       actions: [
+                        //         DigitButton(
+                        //           label: localizations.translate(
+                        //             i18.forgotPassword.primaryActionLabel,
+                        //           ),
+                        //           onPressed: () {
+                        //             Navigator.of(ctx).pop();
+                        //             context.router.popUntilRoot();
+                        //           },
+                        //           type: DigitButtonType.primary,
+                        //           size: DigitButtonSize.large,
+                        //         )
+                        //       ],
+                        //     ),
+                        //   ),
+                        // ),
                       ],
                     );
                   },

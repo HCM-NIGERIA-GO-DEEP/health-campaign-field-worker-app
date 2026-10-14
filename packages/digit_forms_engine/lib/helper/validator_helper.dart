@@ -191,6 +191,36 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
           }
           break;
 
+        // Validates that this field's numeric value does not exceed a
+        // sibling field's current value - e.g. childrenCount/
+        // pregnantWomenCount must not exceed memberCount, both on the same
+        // householdDetails page. rule.value: the sibling field's name.
+        // Passes when either value is null/empty/non-numeric (required/
+        // pattern validations handle those separately) so this only fires
+        // once both fields actually have a comparable number.
+        case 'maxField':
+          if (rule.value is String) {
+            final otherFieldName = rule.value as String;
+            validators.add(Validators.delegate((control) {
+              final form = control.parent;
+              if (form is! FormGroup || !form.contains(otherFieldName)) {
+                return null;
+              }
+              final currentValue =
+                  num.tryParse(control.value?.toString() ?? '');
+              final otherValue = num.tryParse(
+                  form.control(otherFieldName).value?.toString() ?? '');
+              if (currentValue == null || otherValue == null) return null;
+              if (currentValue > otherValue) {
+                return {
+                  'maxField': {'max': otherValue, 'actual': currentValue}
+                };
+              }
+              return null;
+            }) as Validator<T>);
+          }
+          break;
+
         case 'notEqualTo':
           if (rule.value is String && schemaKey != null) {
             validators.add(Validators.delegate(

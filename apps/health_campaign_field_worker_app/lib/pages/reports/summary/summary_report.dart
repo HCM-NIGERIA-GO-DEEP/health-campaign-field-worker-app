@@ -424,14 +424,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
               header: localizations
                   .translate(i18.summaryReport.numberOfITNDistributed),
             ),
-            CustomTableColumn(
-              header: localizations
-                  .translate(i18.summaryReport.householdsRegistered),
-            ),
-            CustomTableColumn(
-              header: localizations
-                  .translate(i18.summaryReport.numberOfPeopleInHouseholds),
-            ),
+            // Households Registered / Number of People in Households dropped
+            // for Distributor - those figures belong to the Registrar's
+            // registration flow, not distribution.
           ]
         : <CustomTableColumn>[
             CustomTableColumn(
@@ -460,8 +455,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
                 _formatDisplayDate(row.date),
                 row.tokensRedeemed.toString(),
                 row.numberOfITNDistributed.toString(),
-                row.householdsRegistered.toString(),
-                row.numberOfPeopleInHouseholds.toString(),
               ]
             : [
                 _formatDisplayDate(row.date),

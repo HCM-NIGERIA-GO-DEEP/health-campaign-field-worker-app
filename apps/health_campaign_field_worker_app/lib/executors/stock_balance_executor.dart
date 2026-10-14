@@ -183,7 +183,12 @@ class StockBalanceExecutor extends ActionExecutor {
         } else if (isSender && stockEntryType == 'LOSS') {
           delta = -quantity; // Subtract loss
         } else if (isSender && stockEntryType == 'DAMAGED') {
-          delta = -quantity; // Subtract damaged
+          // Shortfall Return PRD: damaged stock stays in hand (it's still
+          // physically there) rather than being written off like LOSS - it's
+          // a separate, non-issuable bucket. Screens that compute "available
+          // to issue" must subtract damaged-tagged quantity themselves;
+          // this balance total intentionally includes it.
+          delta = quantity;
         }
       }
 

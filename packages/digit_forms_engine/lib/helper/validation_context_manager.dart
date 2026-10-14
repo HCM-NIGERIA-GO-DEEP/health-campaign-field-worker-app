@@ -66,6 +66,31 @@ class ValidationContextManager {
             print(
                 'ValidationContextManager: Field "$fieldName" depends on: ${deps.join(", ")}');
           }
+        } else if (rule.type == 'maxField' && value is String) {
+          // maxField's dependency is the sibling field name itself, e.g.
+          // childrenCount's maxField depends on memberCount - without this,
+          // editing memberCount after already entering childrenCount left
+          // the stale (possibly now-invalid) childrenCount validity cached
+          // until childrenCount itself was touched.
+          if (value.isNotEmpty) {
+            _dependencyMap.putIfAbsent(value, () => {}).add(fieldName);
+          }
+        } else if (rule.type == 'conditionalPattern' && value is Map) {
+          // conditionalPattern declares its dependency as {"switchOn": "...",
+          // "cases": {...}} rather than a {{template}} string, so it was
+          // never picked up above - e.g. identificationNumber's pattern
+          // depends on identificationType, but switching from National ID to
+          // Voter's ID never re-ran identificationNumber's validators, so a
+          // value valid for the old type could pass submission unnoticed
+          // under the new one.
+          final switchOn = value['switchOn'];
+          if (switchOn is String && switchOn.isNotEmpty) {
+            _dependencyMap.putIfAbsent(switchOn, () => {}).add(fieldName);
+            if (kDebugMode) {
+              print(
+                  'ValidationContextManager: Field "$fieldName" depends on "$switchOn" (conditionalPattern)');
+            }
+          }
         }
       }
     });

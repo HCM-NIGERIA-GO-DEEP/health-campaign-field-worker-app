@@ -44,6 +44,25 @@ class FunctionRegistries {
       return absolute == absolute.roundToDouble() ? absolute.toInt() : absolute;
     });
 
+    // Shortfall Return (Accept/Partial Accept PRD): dispatched minus actual
+    // received, used both to size the auto-created return transaction and to
+    // display the shortfall on view-transaction-details.
+    FunctionRegistry.register('subtractQuantity', (args, stateData) {
+      if (args.length < 2) return '';
+
+      num? toNum(dynamic raw) =>
+          raw is num ? raw : num.tryParse(raw?.toString().trim() ?? '');
+
+      final a = toNum(args[0]);
+      final b = toNum(args[1]);
+      if (a == null || b == null) return '';
+
+      final difference = a - b;
+      return difference == difference.roundToDouble()
+          ? difference.toInt()
+          : difference;
+    });
+
     // Displays whole-number decimals without the trailing .0 while
     // preserving non-whole values (e.g. 4.0 -> 4, 4.1 -> 4.1).
     FunctionRegistry.register('trimTrailingZero', (args, stateData) {

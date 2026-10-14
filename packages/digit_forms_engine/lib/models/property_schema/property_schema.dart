@@ -215,6 +215,13 @@ class SecondaryAlertBodyField with _$SecondaryAlertBodyField {
     String? format,
     required String fieldName,
     @Default(false) bool mandatory,
+    // Dropdown options for format: "dropdown". When a dropdown field's
+    // selected value equals revealsFreeTextOn, an extra mandatory text field
+    // (fieldName + "Detail") is shown beneath it - used for an "Others"
+    // option that needs its own free-text reason.
+    List<Option>? enums,
+    String? revealsFreeTextOn,
+    String? revealedDetailLabel,
   }) = _SecondaryAlertBodyField;
 
   factory SecondaryAlertBodyField.fromJson(Map<String, dynamic> json) =>

@@ -93,7 +93,13 @@ mixin _$PropertySchema {
   String? get secondaryActionLabel =>
       throw _privateConstructorUsedError; // Comparison config for scanner fields - enables duplicate detection against historical data
   @JsonKey(fromJson: _comparisonConfigOrNull)
-  ComparisonConfig? get comparisonConfig => throw _privateConstructorUsedError;
+  ComparisonConfig? get comparisonConfig =>
+      throw _privateConstructorUsedError; // Scanner fields: computes the required scan count from a sibling
+// field's numeric value instead of (or capped by) a fixed scanLimit
+// validation - e.g. bednets needed scales with household member count.
+  @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
+  DynamicScanLimitConfig? get dynamicScanLimit =>
+      throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -161,7 +167,9 @@ abstract class $PropertySchemaCopyWith<$Res> {
       VisibilityCondition? submitCondition,
       String? secondaryActionLabel,
       @JsonKey(fromJson: _comparisonConfigOrNull)
-      ComparisonConfig? comparisonConfig});
+      ComparisonConfig? comparisonConfig,
+      @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
+      DynamicScanLimitConfig? dynamicScanLimit});
 
   $DisplayBehaviorCopyWith<$Res>? get displayBehavior;
   $NavigateToConfigCopyWith<$Res>? get navigateTo;
@@ -171,6 +179,7 @@ abstract class $PropertySchemaCopyWith<$Res> {
   $MultiEntityConfigCopyWith<$Res>? get multiEntityConfig;
   $VisibilityConditionCopyWith<$Res>? get submitCondition;
   $ComparisonConfigCopyWith<$Res>? get comparisonConfig;
+  $DynamicScanLimitConfigCopyWith<$Res>? get dynamicScanLimit;
 }
 
 /// @nodoc
@@ -231,6 +240,7 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
     Object? submitCondition = freezed,
     Object? secondaryActionLabel = freezed,
     Object? comparisonConfig = freezed,
+    Object? dynamicScanLimit = freezed,
   }) {
     return _then(_value.copyWith(
       type: null == type
@@ -413,6 +423,10 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
           ? _value.comparisonConfig
           : comparisonConfig // ignore: cast_nullable_to_non_nullable
               as ComparisonConfig?,
+      dynamicScanLimit: freezed == dynamicScanLimit
+          ? _value.dynamicScanLimit
+          : dynamicScanLimit // ignore: cast_nullable_to_non_nullable
+              as DynamicScanLimitConfig?,
     ) as $Val);
   }
 
@@ -513,6 +527,19 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
       return _then(_value.copyWith(comparisonConfig: value) as $Val);
     });
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $DynamicScanLimitConfigCopyWith<$Res>? get dynamicScanLimit {
+    if (_value.dynamicScanLimit == null) {
+      return null;
+    }
+
+    return $DynamicScanLimitConfigCopyWith<$Res>(_value.dynamicScanLimit!,
+        (value) {
+      return _then(_value.copyWith(dynamicScanLimit: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -577,7 +604,9 @@ abstract class _$$PropertySchemaImplCopyWith<$Res>
       VisibilityCondition? submitCondition,
       String? secondaryActionLabel,
       @JsonKey(fromJson: _comparisonConfigOrNull)
-      ComparisonConfig? comparisonConfig});
+      ComparisonConfig? comparisonConfig,
+      @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
+      DynamicScanLimitConfig? dynamicScanLimit});
 
   @override
   $DisplayBehaviorCopyWith<$Res>? get displayBehavior;
@@ -595,6 +624,8 @@ abstract class _$$PropertySchemaImplCopyWith<$Res>
   $VisibilityConditionCopyWith<$Res>? get submitCondition;
   @override
   $ComparisonConfigCopyWith<$Res>? get comparisonConfig;
+  @override
+  $DynamicScanLimitConfigCopyWith<$Res>? get dynamicScanLimit;
 }
 
 /// @nodoc
@@ -653,6 +684,7 @@ class __$$PropertySchemaImplCopyWithImpl<$Res>
     Object? submitCondition = freezed,
     Object? secondaryActionLabel = freezed,
     Object? comparisonConfig = freezed,
+    Object? dynamicScanLimit = freezed,
   }) {
     return _then(_$PropertySchemaImpl(
       type: null == type
@@ -835,6 +867,10 @@ class __$$PropertySchemaImplCopyWithImpl<$Res>
           ? _value.comparisonConfig
           : comparisonConfig // ignore: cast_nullable_to_non_nullable
               as ComparisonConfig?,
+      dynamicScanLimit: freezed == dynamicScanLimit
+          ? _value.dynamicScanLimit
+          : dynamicScanLimit // ignore: cast_nullable_to_non_nullable
+              as DynamicScanLimitConfig?,
     ));
   }
 }
@@ -893,7 +929,8 @@ class _$PropertySchemaImpl implements _PropertySchema {
       this.preventScreenCapture,
       @JsonKey(fromJson: _visibilityConditionOrNull) this.submitCondition,
       this.secondaryActionLabel,
-      @JsonKey(fromJson: _comparisonConfigOrNull) this.comparisonConfig})
+      @JsonKey(fromJson: _comparisonConfigOrNull) this.comparisonConfig,
+      @JsonKey(fromJson: _dynamicScanLimitConfigOrNull) this.dynamicScanLimit})
       : _properties = properties,
         _enums = enums,
         _conditions = conditions,
@@ -1071,10 +1108,16 @@ class _$PropertySchemaImpl implements _PropertySchema {
   @override
   @JsonKey(fromJson: _comparisonConfigOrNull)
   final ComparisonConfig? comparisonConfig;
+// Scanner fields: computes the required scan count from a sibling
+// field's numeric value instead of (or capped by) a fixed scanLimit
+// validation - e.g. bednets needed scales with household member count.
+  @override
+  @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
+  final DynamicScanLimitConfig? dynamicScanLimit;
 
   @override
   String toString() {
-    return 'PropertySchema(type: $type, readOnly: $readOnly, displayOnly: $displayOnly, hidden: $hidden, properties: $properties, enums: $enums, schemaCode: $schemaCode, systemDate: $systemDate, charCount: $charCount, format: $format, startDate: $startDate, endDate: $endDate, minValue: $minValue, maxValue: $maxValue, minLength: $minLength, maxLength: $maxLength, min: $min, max: $max, helpText: $helpText, tooltip: $tooltip, prefixText: $prefixText, suffixText: $suffixText, innerLabel: $innerLabel, label: $label, isMultiSelect: $isMultiSelect, value: $value, displayBehavior: $displayBehavior, conditions: $conditions, order: $order, actionLabel: $actionLabel, description: $description, validations: $validations, includeInForm: $includeInForm, includeInSummary: $includeInSummary, navigateTo: $navigateTo, visibilityCondition: $visibilityCondition, conditionalNavigateTo: $conditionalNavigateTo, autoFillCondition: $autoFillCondition, showAlertPopUp: $showAlertPopUp, showSecondaryAlertPopUp: $showSecondaryAlertPopUp, multiEntityConfig: $multiEntityConfig, preventScreenCapture: $preventScreenCapture, submitCondition: $submitCondition, secondaryActionLabel: $secondaryActionLabel, comparisonConfig: $comparisonConfig)';
+    return 'PropertySchema(type: $type, readOnly: $readOnly, displayOnly: $displayOnly, hidden: $hidden, properties: $properties, enums: $enums, schemaCode: $schemaCode, systemDate: $systemDate, charCount: $charCount, format: $format, startDate: $startDate, endDate: $endDate, minValue: $minValue, maxValue: $maxValue, minLength: $minLength, maxLength: $maxLength, min: $min, max: $max, helpText: $helpText, tooltip: $tooltip, prefixText: $prefixText, suffixText: $suffixText, innerLabel: $innerLabel, label: $label, isMultiSelect: $isMultiSelect, value: $value, displayBehavior: $displayBehavior, conditions: $conditions, order: $order, actionLabel: $actionLabel, description: $description, validations: $validations, includeInForm: $includeInForm, includeInSummary: $includeInSummary, navigateTo: $navigateTo, visibilityCondition: $visibilityCondition, conditionalNavigateTo: $conditionalNavigateTo, autoFillCondition: $autoFillCondition, showAlertPopUp: $showAlertPopUp, showSecondaryAlertPopUp: $showSecondaryAlertPopUp, multiEntityConfig: $multiEntityConfig, preventScreenCapture: $preventScreenCapture, submitCondition: $submitCondition, secondaryActionLabel: $secondaryActionLabel, comparisonConfig: $comparisonConfig, dynamicScanLimit: $dynamicScanLimit)';
   }
 
   @override
@@ -1161,7 +1204,9 @@ class _$PropertySchemaImpl implements _PropertySchema {
             (identical(other.secondaryActionLabel, secondaryActionLabel) ||
                 other.secondaryActionLabel == secondaryActionLabel) &&
             (identical(other.comparisonConfig, comparisonConfig) ||
-                other.comparisonConfig == comparisonConfig));
+                other.comparisonConfig == comparisonConfig) &&
+            (identical(other.dynamicScanLimit, dynamicScanLimit) ||
+                other.dynamicScanLimit == dynamicScanLimit));
   }
 
   @JsonKey(ignore: true)
@@ -1212,7 +1257,8 @@ class _$PropertySchemaImpl implements _PropertySchema {
         preventScreenCapture,
         submitCondition,
         secondaryActionLabel,
-        comparisonConfig
+        comparisonConfig,
+        dynamicScanLimit
       ]);
 
   @JsonKey(ignore: true)
@@ -1286,7 +1332,9 @@ abstract class _PropertySchema implements PropertySchema {
       final VisibilityCondition? submitCondition,
       final String? secondaryActionLabel,
       @JsonKey(fromJson: _comparisonConfigOrNull)
-      final ComparisonConfig? comparisonConfig}) = _$PropertySchemaImpl;
+      final ComparisonConfig? comparisonConfig,
+      @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
+      final DynamicScanLimitConfig? dynamicScanLimit}) = _$PropertySchemaImpl;
 
   factory _PropertySchema.fromJson(Map<String, dynamic> json) =
       _$PropertySchemaImpl.fromJson;
@@ -1400,6 +1448,11 @@ abstract class _PropertySchema implements PropertySchema {
   @override // Comparison config for scanner fields - enables duplicate detection against historical data
   @JsonKey(fromJson: _comparisonConfigOrNull)
   ComparisonConfig? get comparisonConfig;
+  @override // Scanner fields: computes the required scan count from a sibling
+// field's numeric value instead of (or capped by) a fixed scanLimit
+// validation - e.g. bednets needed scales with household member count.
+  @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
+  DynamicScanLimitConfig? get dynamicScanLimit;
   @override
   @JsonKey(ignore: true)
   _$$PropertySchemaImplCopyWith<_$PropertySchemaImpl> get copyWith =>
@@ -3236,7 +3289,14 @@ mixin _$SecondaryAlertBodyField {
   String get label => throw _privateConstructorUsedError;
   String? get format => throw _privateConstructorUsedError;
   String get fieldName => throw _privateConstructorUsedError;
-  bool get mandatory => throw _privateConstructorUsedError;
+  bool get mandatory =>
+      throw _privateConstructorUsedError; // Dropdown options for format: "dropdown". When a dropdown field's
+// selected value equals revealsFreeTextOn, an extra mandatory text field
+// (fieldName + "Detail") is shown beneath it - used for an "Others"
+// option that needs its own free-text reason.
+  List<Option>? get enums => throw _privateConstructorUsedError;
+  String? get revealsFreeTextOn => throw _privateConstructorUsedError;
+  String? get revealedDetailLabel => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -3255,7 +3315,10 @@ abstract class $SecondaryAlertBodyFieldCopyWith<$Res> {
       String label,
       String? format,
       String fieldName,
-      bool mandatory});
+      bool mandatory,
+      List<Option>? enums,
+      String? revealsFreeTextOn,
+      String? revealedDetailLabel});
 }
 
 /// @nodoc
@@ -3277,6 +3340,9 @@ class _$SecondaryAlertBodyFieldCopyWithImpl<$Res,
     Object? format = freezed,
     Object? fieldName = null,
     Object? mandatory = null,
+    Object? enums = freezed,
+    Object? revealsFreeTextOn = freezed,
+    Object? revealedDetailLabel = freezed,
   }) {
     return _then(_value.copyWith(
       type: null == type
@@ -3299,6 +3365,18 @@ class _$SecondaryAlertBodyFieldCopyWithImpl<$Res,
           ? _value.mandatory
           : mandatory // ignore: cast_nullable_to_non_nullable
               as bool,
+      enums: freezed == enums
+          ? _value.enums
+          : enums // ignore: cast_nullable_to_non_nullable
+              as List<Option>?,
+      revealsFreeTextOn: freezed == revealsFreeTextOn
+          ? _value.revealsFreeTextOn
+          : revealsFreeTextOn // ignore: cast_nullable_to_non_nullable
+              as String?,
+      revealedDetailLabel: freezed == revealedDetailLabel
+          ? _value.revealedDetailLabel
+          : revealedDetailLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
     ) as $Val);
   }
 }
@@ -3317,7 +3395,10 @@ abstract class _$$SecondaryAlertBodyFieldImplCopyWith<$Res>
       String label,
       String? format,
       String fieldName,
-      bool mandatory});
+      bool mandatory,
+      List<Option>? enums,
+      String? revealsFreeTextOn,
+      String? revealedDetailLabel});
 }
 
 /// @nodoc
@@ -3338,6 +3419,9 @@ class __$$SecondaryAlertBodyFieldImplCopyWithImpl<$Res>
     Object? format = freezed,
     Object? fieldName = null,
     Object? mandatory = null,
+    Object? enums = freezed,
+    Object? revealsFreeTextOn = freezed,
+    Object? revealedDetailLabel = freezed,
   }) {
     return _then(_$SecondaryAlertBodyFieldImpl(
       type: null == type
@@ -3360,6 +3444,18 @@ class __$$SecondaryAlertBodyFieldImplCopyWithImpl<$Res>
           ? _value.mandatory
           : mandatory // ignore: cast_nullable_to_non_nullable
               as bool,
+      enums: freezed == enums
+          ? _value._enums
+          : enums // ignore: cast_nullable_to_non_nullable
+              as List<Option>?,
+      revealsFreeTextOn: freezed == revealsFreeTextOn
+          ? _value.revealsFreeTextOn
+          : revealsFreeTextOn // ignore: cast_nullable_to_non_nullable
+              as String?,
+      revealedDetailLabel: freezed == revealedDetailLabel
+          ? _value.revealedDetailLabel
+          : revealedDetailLabel // ignore: cast_nullable_to_non_nullable
+              as String?,
     ));
   }
 }
@@ -3372,7 +3468,11 @@ class _$SecondaryAlertBodyFieldImpl implements _SecondaryAlertBodyField {
       required this.label,
       this.format,
       required this.fieldName,
-      this.mandatory = false});
+      this.mandatory = false,
+      final List<Option>? enums,
+      this.revealsFreeTextOn,
+      this.revealedDetailLabel})
+      : _enums = enums;
 
   factory _$SecondaryAlertBodyFieldImpl.fromJson(Map<String, dynamic> json) =>
       _$$SecondaryAlertBodyFieldImplFromJson(json);
@@ -3388,10 +3488,32 @@ class _$SecondaryAlertBodyFieldImpl implements _SecondaryAlertBodyField {
   @override
   @JsonKey()
   final bool mandatory;
+// Dropdown options for format: "dropdown". When a dropdown field's
+// selected value equals revealsFreeTextOn, an extra mandatory text field
+// (fieldName + "Detail") is shown beneath it - used for an "Others"
+// option that needs its own free-text reason.
+  final List<Option>? _enums;
+// Dropdown options for format: "dropdown". When a dropdown field's
+// selected value equals revealsFreeTextOn, an extra mandatory text field
+// (fieldName + "Detail") is shown beneath it - used for an "Others"
+// option that needs its own free-text reason.
+  @override
+  List<Option>? get enums {
+    final value = _enums;
+    if (value == null) return null;
+    if (_enums is EqualUnmodifiableListView) return _enums;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
+  @override
+  final String? revealsFreeTextOn;
+  @override
+  final String? revealedDetailLabel;
 
   @override
   String toString() {
-    return 'SecondaryAlertBodyField(type: $type, label: $label, format: $format, fieldName: $fieldName, mandatory: $mandatory)';
+    return 'SecondaryAlertBodyField(type: $type, label: $label, format: $format, fieldName: $fieldName, mandatory: $mandatory, enums: $enums, revealsFreeTextOn: $revealsFreeTextOn, revealedDetailLabel: $revealedDetailLabel)';
   }
 
   @override
@@ -3405,13 +3527,26 @@ class _$SecondaryAlertBodyFieldImpl implements _SecondaryAlertBodyField {
             (identical(other.fieldName, fieldName) ||
                 other.fieldName == fieldName) &&
             (identical(other.mandatory, mandatory) ||
-                other.mandatory == mandatory));
+                other.mandatory == mandatory) &&
+            const DeepCollectionEquality().equals(other._enums, _enums) &&
+            (identical(other.revealsFreeTextOn, revealsFreeTextOn) ||
+                other.revealsFreeTextOn == revealsFreeTextOn) &&
+            (identical(other.revealedDetailLabel, revealedDetailLabel) ||
+                other.revealedDetailLabel == revealedDetailLabel));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode =>
-      Object.hash(runtimeType, type, label, format, fieldName, mandatory);
+  int get hashCode => Object.hash(
+      runtimeType,
+      type,
+      label,
+      format,
+      fieldName,
+      mandatory,
+      const DeepCollectionEquality().hash(_enums),
+      revealsFreeTextOn,
+      revealedDetailLabel);
 
   @JsonKey(ignore: true)
   @override
@@ -3434,7 +3569,10 @@ abstract class _SecondaryAlertBodyField implements SecondaryAlertBodyField {
       required final String label,
       final String? format,
       required final String fieldName,
-      final bool mandatory}) = _$SecondaryAlertBodyFieldImpl;
+      final bool mandatory,
+      final List<Option>? enums,
+      final String? revealsFreeTextOn,
+      final String? revealedDetailLabel}) = _$SecondaryAlertBodyFieldImpl;
 
   factory _SecondaryAlertBodyField.fromJson(Map<String, dynamic> json) =
       _$SecondaryAlertBodyFieldImpl.fromJson;
@@ -3449,6 +3587,15 @@ abstract class _SecondaryAlertBodyField implements SecondaryAlertBodyField {
   String get fieldName;
   @override
   bool get mandatory;
+  @override // Dropdown options for format: "dropdown". When a dropdown field's
+// selected value equals revealsFreeTextOn, an extra mandatory text field
+// (fieldName + "Detail") is shown beneath it - used for an "Others"
+// option that needs its own free-text reason.
+  List<Option>? get enums;
+  @override
+  String? get revealsFreeTextOn;
+  @override
+  String? get revealedDetailLabel;
   @override
   @JsonKey(ignore: true)
   _$$SecondaryAlertBodyFieldImplCopyWith<_$SecondaryAlertBodyFieldImpl>
@@ -3786,7 +3933,14 @@ mixin _$ComparisonConfig {
   String get extractFrom =>
       throw _privateConstructorUsedError; // "additionalFields" or "column"
   List<ComparisonFilter> get filters => throw _privateConstructorUsedError;
-  String? get errorMessage => throw _privateConstructorUsedError;
+  String? get errorMessage =>
+      throw _privateConstructorUsedError; // Localization key for the error message
+// 'duplicate' (default): a scan is rejected when a match IS found - the
+// original use case (don't let the same resource get scanned twice).
+// 'mustMatch': a scan is rejected when NO match is found - e.g. the
+// delivery team must scan one of the exact codes captured at household
+// registration, not an arbitrary/unregistered code.
+  String get mode => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -3805,7 +3959,8 @@ abstract class $ComparisonConfigCopyWith<$Res> {
       String extractKey,
       String extractFrom,
       List<ComparisonFilter> filters,
-      String? errorMessage});
+      String? errorMessage,
+      String mode});
 }
 
 /// @nodoc
@@ -3826,6 +3981,7 @@ class _$ComparisonConfigCopyWithImpl<$Res, $Val extends ComparisonConfig>
     Object? extractFrom = null,
     Object? filters = null,
     Object? errorMessage = freezed,
+    Object? mode = null,
   }) {
     return _then(_value.copyWith(
       model: null == model
@@ -3848,6 +4004,10 @@ class _$ComparisonConfigCopyWithImpl<$Res, $Val extends ComparisonConfig>
           ? _value.errorMessage
           : errorMessage // ignore: cast_nullable_to_non_nullable
               as String?,
+      mode: null == mode
+          ? _value.mode
+          : mode // ignore: cast_nullable_to_non_nullable
+              as String,
     ) as $Val);
   }
 }
@@ -3865,7 +4025,8 @@ abstract class _$$ComparisonConfigImplCopyWith<$Res>
       String extractKey,
       String extractFrom,
       List<ComparisonFilter> filters,
-      String? errorMessage});
+      String? errorMessage,
+      String mode});
 }
 
 /// @nodoc
@@ -3884,6 +4045,7 @@ class __$$ComparisonConfigImplCopyWithImpl<$Res>
     Object? extractFrom = null,
     Object? filters = null,
     Object? errorMessage = freezed,
+    Object? mode = null,
   }) {
     return _then(_$ComparisonConfigImpl(
       model: null == model
@@ -3906,6 +4068,10 @@ class __$$ComparisonConfigImplCopyWithImpl<$Res>
           ? _value.errorMessage
           : errorMessage // ignore: cast_nullable_to_non_nullable
               as String?,
+      mode: null == mode
+          ? _value.mode
+          : mode // ignore: cast_nullable_to_non_nullable
+              as String,
     ));
   }
 }
@@ -3919,7 +4085,8 @@ class _$ComparisonConfigImpl implements _ComparisonConfig {
       required this.extractKey,
       this.extractFrom = 'additionalFields',
       final List<ComparisonFilter> filters = const [],
-      this.errorMessage})
+      this.errorMessage,
+      this.mode = 'duplicate'})
       : _filters = filters;
 
   factory _$ComparisonConfigImpl.fromJson(Map<String, dynamic> json) =>
@@ -3947,10 +4114,19 @@ class _$ComparisonConfigImpl implements _ComparisonConfig {
 
   @override
   final String? errorMessage;
+// Localization key for the error message
+// 'duplicate' (default): a scan is rejected when a match IS found - the
+// original use case (don't let the same resource get scanned twice).
+// 'mustMatch': a scan is rejected when NO match is found - e.g. the
+// delivery team must scan one of the exact codes captured at household
+// registration, not an arbitrary/unregistered code.
+  @override
+  @JsonKey()
+  final String mode;
 
   @override
   String toString() {
-    return 'ComparisonConfig(model: $model, extractKey: $extractKey, extractFrom: $extractFrom, filters: $filters, errorMessage: $errorMessage)';
+    return 'ComparisonConfig(model: $model, extractKey: $extractKey, extractFrom: $extractFrom, filters: $filters, errorMessage: $errorMessage, mode: $mode)';
   }
 
   @override
@@ -3965,13 +4141,14 @@ class _$ComparisonConfigImpl implements _ComparisonConfig {
                 other.extractFrom == extractFrom) &&
             const DeepCollectionEquality().equals(other._filters, _filters) &&
             (identical(other.errorMessage, errorMessage) ||
-                other.errorMessage == errorMessage));
+                other.errorMessage == errorMessage) &&
+            (identical(other.mode, mode) || other.mode == mode));
   }
 
   @JsonKey(ignore: true)
   @override
   int get hashCode => Object.hash(runtimeType, model, extractKey, extractFrom,
-      const DeepCollectionEquality().hash(_filters), errorMessage);
+      const DeepCollectionEquality().hash(_filters), errorMessage, mode);
 
   @JsonKey(ignore: true)
   @override
@@ -3994,7 +4171,8 @@ abstract class _ComparisonConfig implements ComparisonConfig {
       required final String extractKey,
       final String extractFrom,
       final List<ComparisonFilter> filters,
-      final String? errorMessage}) = _$ComparisonConfigImpl;
+      final String? errorMessage,
+      final String mode}) = _$ComparisonConfigImpl;
 
   factory _ComparisonConfig.fromJson(Map<String, dynamic> json) =
       _$ComparisonConfigImpl.fromJson;
@@ -4009,10 +4187,212 @@ abstract class _ComparisonConfig implements ComparisonConfig {
   List<ComparisonFilter> get filters;
   @override
   String? get errorMessage;
+  @override // Localization key for the error message
+// 'duplicate' (default): a scan is rejected when a match IS found - the
+// original use case (don't let the same resource get scanned twice).
+// 'mustMatch': a scan is rejected when NO match is found - e.g. the
+// delivery team must scan one of the exact codes captured at household
+// registration, not an arbitrary/unregistered code.
+  String get mode;
   @override
   @JsonKey(ignore: true)
   _$$ComparisonConfigImplCopyWith<_$ComparisonConfigImpl> get copyWith =>
       throw _privateConstructorUsedError;
+}
+
+DynamicScanLimitConfig _$DynamicScanLimitConfigFromJson(
+    Map<String, dynamic> json) {
+  return _DynamicScanLimitConfig.fromJson(json);
+}
+
+/// @nodoc
+mixin _$DynamicScanLimitConfig {
+// Sibling form field holding the raw quantity (e.g. "memberCount").
+  String get sourceField =>
+      throw _privateConstructorUsedError; // Required scans = ceil(sourceField value / perUnit).
+  int get perUnit =>
+      throw _privateConstructorUsedError; // Upper bound applied after the division above, regardless of how large
+// sourceField's value is. Falls back to the field's static "scanLimit"
+// validation (if any) when sourceField is missing/unparseable.
+  int? get maxQuantity => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $DynamicScanLimitConfigCopyWith<DynamicScanLimitConfig> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $DynamicScanLimitConfigCopyWith<$Res> {
+  factory $DynamicScanLimitConfigCopyWith(DynamicScanLimitConfig value,
+          $Res Function(DynamicScanLimitConfig) then) =
+      _$DynamicScanLimitConfigCopyWithImpl<$Res, DynamicScanLimitConfig>;
+  @useResult
+  $Res call({String sourceField, int perUnit, int? maxQuantity});
+}
+
+/// @nodoc
+class _$DynamicScanLimitConfigCopyWithImpl<$Res,
+        $Val extends DynamicScanLimitConfig>
+    implements $DynamicScanLimitConfigCopyWith<$Res> {
+  _$DynamicScanLimitConfigCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? sourceField = null,
+    Object? perUnit = null,
+    Object? maxQuantity = freezed,
+  }) {
+    return _then(_value.copyWith(
+      sourceField: null == sourceField
+          ? _value.sourceField
+          : sourceField // ignore: cast_nullable_to_non_nullable
+              as String,
+      perUnit: null == perUnit
+          ? _value.perUnit
+          : perUnit // ignore: cast_nullable_to_non_nullable
+              as int,
+      maxQuantity: freezed == maxQuantity
+          ? _value.maxQuantity
+          : maxQuantity // ignore: cast_nullable_to_non_nullable
+              as int?,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$DynamicScanLimitConfigImplCopyWith<$Res>
+    implements $DynamicScanLimitConfigCopyWith<$Res> {
+  factory _$$DynamicScanLimitConfigImplCopyWith(
+          _$DynamicScanLimitConfigImpl value,
+          $Res Function(_$DynamicScanLimitConfigImpl) then) =
+      __$$DynamicScanLimitConfigImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String sourceField, int perUnit, int? maxQuantity});
+}
+
+/// @nodoc
+class __$$DynamicScanLimitConfigImplCopyWithImpl<$Res>
+    extends _$DynamicScanLimitConfigCopyWithImpl<$Res,
+        _$DynamicScanLimitConfigImpl>
+    implements _$$DynamicScanLimitConfigImplCopyWith<$Res> {
+  __$$DynamicScanLimitConfigImplCopyWithImpl(
+      _$DynamicScanLimitConfigImpl _value,
+      $Res Function(_$DynamicScanLimitConfigImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? sourceField = null,
+    Object? perUnit = null,
+    Object? maxQuantity = freezed,
+  }) {
+    return _then(_$DynamicScanLimitConfigImpl(
+      sourceField: null == sourceField
+          ? _value.sourceField
+          : sourceField // ignore: cast_nullable_to_non_nullable
+              as String,
+      perUnit: null == perUnit
+          ? _value.perUnit
+          : perUnit // ignore: cast_nullable_to_non_nullable
+              as int,
+      maxQuantity: freezed == maxQuantity
+          ? _value.maxQuantity
+          : maxQuantity // ignore: cast_nullable_to_non_nullable
+              as int?,
+    ));
+  }
+}
+
+/// @nodoc
+
+@JsonSerializable(explicitToJson: true, includeIfNull: false)
+class _$DynamicScanLimitConfigImpl implements _DynamicScanLimitConfig {
+  const _$DynamicScanLimitConfigImpl(
+      {required this.sourceField, this.perUnit = 1, this.maxQuantity});
+
+  factory _$DynamicScanLimitConfigImpl.fromJson(Map<String, dynamic> json) =>
+      _$$DynamicScanLimitConfigImplFromJson(json);
+
+// Sibling form field holding the raw quantity (e.g. "memberCount").
+  @override
+  final String sourceField;
+// Required scans = ceil(sourceField value / perUnit).
+  @override
+  @JsonKey()
+  final int perUnit;
+// Upper bound applied after the division above, regardless of how large
+// sourceField's value is. Falls back to the field's static "scanLimit"
+// validation (if any) when sourceField is missing/unparseable.
+  @override
+  final int? maxQuantity;
+
+  @override
+  String toString() {
+    return 'DynamicScanLimitConfig(sourceField: $sourceField, perUnit: $perUnit, maxQuantity: $maxQuantity)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$DynamicScanLimitConfigImpl &&
+            (identical(other.sourceField, sourceField) ||
+                other.sourceField == sourceField) &&
+            (identical(other.perUnit, perUnit) || other.perUnit == perUnit) &&
+            (identical(other.maxQuantity, maxQuantity) ||
+                other.maxQuantity == maxQuantity));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode =>
+      Object.hash(runtimeType, sourceField, perUnit, maxQuantity);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$DynamicScanLimitConfigImplCopyWith<_$DynamicScanLimitConfigImpl>
+      get copyWith => __$$DynamicScanLimitConfigImplCopyWithImpl<
+          _$DynamicScanLimitConfigImpl>(this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$DynamicScanLimitConfigImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _DynamicScanLimitConfig implements DynamicScanLimitConfig {
+  const factory _DynamicScanLimitConfig(
+      {required final String sourceField,
+      final int perUnit,
+      final int? maxQuantity}) = _$DynamicScanLimitConfigImpl;
+
+  factory _DynamicScanLimitConfig.fromJson(Map<String, dynamic> json) =
+      _$DynamicScanLimitConfigImpl.fromJson;
+
+  @override // Sibling form field holding the raw quantity (e.g. "memberCount").
+  String get sourceField;
+  @override // Required scans = ceil(sourceField value / perUnit).
+  int get perUnit;
+  @override // Upper bound applied after the division above, regardless of how large
+// sourceField's value is. Falls back to the field's static "scanLimit"
+// validation (if any) when sourceField is missing/unparseable.
+  int? get maxQuantity;
+  @override
+  @JsonKey(ignore: true)
+  _$$DynamicScanLimitConfigImplCopyWith<_$DynamicScanLimitConfigImpl>
+      get copyWith => throw _privateConstructorUsedError;
 }
 
 ComparisonFilter _$ComparisonFilterFromJson(Map<String, dynamic> json) {
