@@ -30,6 +30,12 @@ class FlowBuilderSingleton {
   ProjectModel? _selectedProject;
   BoundaryModel? _boundaryModel;
   BoundaryModel? _stateBoundaryModel;
+  // The assigned boundary as resolved from the full boundary tree in
+  // project.dart's _loadProjectFacilities (materializedPath computed
+  // root-to-leaf against the complete hierarchy), as opposed to _boundaryModel
+  // which is whatever BoundaryModel the cascading picker UI last selected and
+  // may carry a materializedPath that's just its own code with no ancestors.
+  BoundaryModel? _fullBoundary;
   PersistenceConfiguration? _persistenceConfiguration = PersistenceConfiguration
       .offlineFirst; // Default to offline first persistence configuration
   Map<String, TemplateConfig>? _templateConfigs;
@@ -43,6 +49,10 @@ class FlowBuilderSingleton {
 
   void setStateBoundary({BoundaryModel? boundary}) {
     _stateBoundaryModel = boundary;
+  }
+
+  void setFullBoundary({BoundaryModel? boundary}) {
+    _fullBoundary = boundary;
   }
 
   void setPersistenceConfiguration(
@@ -101,6 +111,8 @@ class FlowBuilderSingleton {
   BoundaryModel? get boundary => _boundaryModel;
 
   BoundaryModel? get stateBoundary => _stateBoundaryModel;
+
+  BoundaryModel? get fullBoundary => _fullBoundary;
 
   PersistenceConfiguration? get persistenceConfiguration =>
       _persistenceConfiguration;
@@ -212,13 +224,12 @@ dynamic resolveNavigationDataValue({
   dynamic stateWrapperFirst,
   required Map<String, dynamic> contextData,
 }) {
-  // If the template references `contextData.*` or `navigation.*` (e.g. action
-  // entities, or the current page's navigation params like stockEntryType),
-  // try the action contextData first — stateFormData carries neither of
-  // those, and an fn: wrapper would otherwise short-circuit on the
-  // function's null-default return value before the fallback runs.
-  final preferActionContext = rawValue is String &&
-      (rawValue.contains('contextData.') || rawValue.contains('navigation.'));
+  // If the template references `contextData.*` (e.g. action entities), try the
+  // action contextData first — stateFormData does not carry `entities`, and an
+  // fn: wrapper would otherwise short-circuit on the function's null-default
+  // return value before the fallback runs.
+  final preferActionContext =
+      rawValue is String && rawValue.contains('contextData.');
 
   dynamic resolvedValue = preferActionContext
       ? resolveValue(rawValue, contextData)

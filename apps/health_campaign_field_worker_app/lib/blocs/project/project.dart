@@ -51,7 +51,7 @@ import '../../utils/stock_downsync_cursor.dart';
 import '../../utils/utils.dart';
 import '../auth/auth.dart';
 import '../push_notification/push_notification.dart';
-
+import 'package:digit_flow_builder/utils/utils.dart';
 part 'project.freezed.dart';
 
 typedef ProjectEmitter = Emitter<ProjectState>;
@@ -515,6 +515,7 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     final userObject = await localSecureStore.userRequestModel;
     final assignedBoundaryType = project.address?.boundaryType;
     final assignedBoundaryCode = project.address?.boundary;
+
     List<String>? boundaryTypes;
 
     if (assignedBoundaryType != null && assignedBoundaryCode != null) {
@@ -576,6 +577,12 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
         final assignedPath = assigned.materializedPath;
         final assignedNum = assigned.boundaryNum;
+        // Cache the authoritative, fully-resolved boundary (materializedPath
+        // computed root-to-leaf against the complete remote tree) so
+        // consumers elsewhere (e.g. local beneficiary id generation) don't
+        // have to trust whatever boundary the cascading picker UI handed
+        // them, which can carry a materializedPath that's just its own code.
+        FlowBuilderSingleton().setFullBoundary(boundary: assigned);
 
         String? parentType;
         String? childType;
