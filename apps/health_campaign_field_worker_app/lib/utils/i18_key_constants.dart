@@ -842,6 +842,8 @@ class Home {
 
   String get houseToHouse => 'HOME_HOUSE_TO_HOUSE_LABEL';
 
+  String get distributionLabel => 'HOME_DISTRIBUTION_LABEL';
+
   String get manageStockLabel => 'HOME_MANAGE_STOCK_LABEL';
 
   String get stockReconciliationLabel => 'HOME_STOCK_RECONCILIATION_LABEL';

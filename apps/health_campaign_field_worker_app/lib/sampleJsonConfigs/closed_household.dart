@@ -153,7 +153,7 @@ final dynamic sampleCloseHouseholdFlows = {
               "validations": [
                 {
                   "type": "minLength",
-                  "value": "1",
+                  "value": "3",
                   "message":
                       "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_lastName_MIN_LENGTH_ERROR"
                 }
@@ -341,7 +341,7 @@ final dynamic sampleCloseHouseholdFlows = {
                 "value": "{{entities.HouseholdModel.clientReferenceId}}"
               },
               {
-                "key": "test0012",
+                "key": "ProjectBeneficiaryClientReferenceId",
                 "value":
                     "{{entities.ProjectBeneficiaryModel.clientReferenceId}}"
               },
@@ -349,10 +349,6 @@ final dynamic sampleCloseHouseholdFlows = {
                 "key": "UNIQUE_BENEFICIARY_ID",
                 "value": "{{navigation.UNIQUE_BENEFICIARY_ID}}"
               }
-              // {
-              //   "key": "latestBeneficiaryId",
-              //   "value": "{{closeHouseholdDetails.identifiers[1]}}"
-              // },
             ]
           }
         }
@@ -416,7 +412,6 @@ final dynamic sampleCloseHouseholdFlows = {
               "data": [
                 {
                   "key": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_DATE_LABEL",
-                  // "value": "{{fn:getAdditionalFieldValue(contextData.0.HouseholdModel.additionalFields.fields, 'date')}}",
                   "value":
                       "{{fn:formatDate(contextData.0.HouseholdModel.additionalFields.fields.date, 'date', dd MMM yyyy)}}",
                   "isActive": true
@@ -473,7 +468,8 @@ final dynamic sampleCloseHouseholdFlows = {
                 "data": [
                   {
                     "key": "ProjectBeneficiaryClientReferenceId",
-                    "value": "{{navigation.test0012}}"
+                    "value":
+                        "{{navigation.ProjectBeneficiaryClientReferenceId}}"
                   },
                   {
                     "key": "HouseholdClientReferenceId",
@@ -868,5 +864,5 @@ final dynamic sampleCloseHouseholdFlows = {
       "submitCondition": null,
       "preventScreenCapture": false
     }
-  ],
+  ]
 };

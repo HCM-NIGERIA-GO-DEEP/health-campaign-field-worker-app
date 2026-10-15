@@ -239,7 +239,7 @@ class _BoundarySelectionPageState
                                         projectModel: context.selectedProject,
                                         appConfiguartion: appConfiguration,
                                         boundaries:
-                                            state.selectedLastLevelBoundaries,
+                                            getEffectiveBoundaries(state),
                                         content: localizations.translate(
                                           i18.syncDialog.pendingSyncContent,
                                         ),
@@ -282,7 +282,7 @@ class _BoundarySelectionPageState
                                           appConfiguartion: appConfiguration,
                                           projectModel: context.selectedProject,
                                           boundaries:
-                                              state.selectedLastLevelBoundaries,
+                                              getEffectiveBoundaries(state),
                                           batchSize: batchSize,
                                           totalCount: initialServerCount,
                                           boundaryCounts: boundaryCounts,
@@ -320,8 +320,9 @@ class _BoundarySelectionPageState
                                           1,
                                         ),
                                         boundaryName: localizations.translate(
-                                          state.selectedLastLevelBoundaries
-                                                  .firstOrNull?.code ??
+                                          getEffectiveBoundaries(state)
+                                                  .firstOrNull
+                                                  ?.code ??
                                               '',
                                         ),
                                         syncedCount: syncCount,
@@ -339,8 +340,8 @@ class _BoundarySelectionPageState
                                             ),
                                             projectModel:
                                                 context.selectedProject,
-                                            boundaries: state
-                                                .selectedLastLevelBoundaries,
+                                            boundaries:
+                                                getEffectiveBoundaries(state),
                                             appConfiguartion: appConfiguration,
                                             syncCount: syncCount,
                                             totalCount: totalCount,
@@ -419,7 +420,7 @@ class _BoundarySelectionPageState
                                         projectModel: context.selectedProject,
                                         pendingSyncCount: pendingSyncCount,
                                         boundaries:
-                                            state.selectedLastLevelBoundaries,
+                                            getEffectiveBoundaries(state),
                                         content: localizations.translate(
                                           i18.beneficiaryDetails
                                               .dataFoundContent,
@@ -524,8 +525,8 @@ class _BoundarySelectionPageState
                                             ),
                                             projectModel:
                                                 context.selectedProject,
-                                            boundaries: state
-                                                .selectedLastLevelBoundaries,
+                                            boundaries:
+                                                getEffectiveBoundaries(state),
                                             appConfiguartion: appConfiguration,
                                             syncCount: syncCount,
                                             totalCount: totalCount,
@@ -649,11 +650,13 @@ class _BoundarySelectionPageState
                                                             ],
                                                             projectModel: context
                                                                 .selectedProject,
-                                                            boundaries: context
-                                                                .read<
-                                                                    BoundaryBloc>()
-                                                                .state
-                                                                .selectedLastLevelBoundaries,
+                                                            boundaries:
+                                                                getEffectiveBoundaries(
+                                                              context
+                                                                  .read<
+                                                                      BoundaryBloc>()
+                                                                  .state,
+                                                            ),
                                                             pendingSyncCount:
                                                                 pendingSyncCount,
                                                           ),
@@ -749,13 +752,14 @@ class _BoundarySelectionPageState
                                           if (element.label != label)
                                             return false;
                                           if (labelIndex == 0) return true;
-                                          final parentIndex = labelIndex - 1;
-
-                                          final parentBoundaryEntry = state
-                                              .selectedBoundaryMap.entries
-                                              .elementAtOrNull(parentIndex);
+                                          final parentLabel = labelIndex > 0
+                                              ? labelList[labelIndex - 1]
+                                              : null;
                                           final parentBoundary =
-                                              parentBoundaryEntry?.value;
+                                              parentLabel == null
+                                                  ? null
+                                                  : state.selectedBoundaryMap[
+                                                      parentLabel];
                                           if (parentBoundary == null)
                                             return false;
 
@@ -769,6 +773,11 @@ class _BoundarySelectionPageState
 
                                         final isLastLevel =
                                             labelIndex == labelList.length - 1;
+                                        final isMultiSelectLevel =
+                                            usesMultiSelectForBoundary(
+                                          label,
+                                          isLastLevel,
+                                        );
 
                                         return Padding(
                                           padding: const EdgeInsets.symmetric(
@@ -786,8 +795,9 @@ class _BoundarySelectionPageState
                                               capitalizedFirstLetter: false,
                                               label: localizations.translate(
                                                   '${runtimeHierarchyType()}_$label'),
-                                              isRequired: true,
-                                              child: isLastLevel
+                                              isRequired:
+                                                  isLabelRequired(label),
+                                              child: isMultiSelectLevel
                                                   ? MultiSelectDropDown(
                                                       sentenceCaseEnabled:
                                                           false,
@@ -1084,6 +1094,37 @@ class _BoundarySelectionPageState
     return context.isWarehouseManager || context.isHealthFacilitySupervisor;
   }
 
+  /// Community is mandatory for Registrar-only and Registrar+Distributor
+  /// users (double-phase registration, and single-phase registration +
+  /// distribution), but not for Distributor-only users (double-phase
+  /// distribution, where only Health Facility + Distribution Point are mandatory).
+  /// Every other label (Health Facility, Distribution Point, etc.) stays
+  /// mandatory for everyone, matching existing behavior - including
+  /// Warehouse Manager, who never reaches this label anyway since
+  /// filterBoundaryLabelListBasedOnRole truncates their list to the first
+  /// level only.
+  bool isLabelRequired(String label) {
+    if (label.trim().toLowerCase() == 'community') {
+      return context.isRegistrarRole || !context.isDistributorRole;
+    }
+    return true;
+  }
+
+  /// Returns selectedLastLevelBoundaries if non-empty; otherwise falls back to
+  /// the deepest selected boundary from selectedBoundaryMap (e.g. Distribution Point
+  /// when Distributor does not select Community).
+  List<BoundaryModel> getEffectiveBoundaries(BoundaryState state) {
+    if (state.selectedLastLevelBoundaries.isNotEmpty) {
+      return state.selectedLastLevelBoundaries;
+    }
+    final lastSelected = state.selectedBoundaryMap.entries
+        .lastWhereOrNull((element) => element.value != null);
+    if (lastSelected?.value != null) {
+      return [lastSelected!.value!];
+    }
+    return [];
+  }
+
   dynamic filterBoundaryLabelListBasedOnRole(
       bool doFilter, BoundaryState state) {
     final labelList = state.selectedBoundaryMap.keys.toList();
@@ -1094,7 +1135,32 @@ class _BoundarySelectionPageState
       return filteredLabelList;
     }
 
+    if (context.isRegistrarRole || context.isDistributorRole) {
+      const allowedBoundaryLevels = {
+        'health facility',
+        'distribution point',
+        'community',
+      };
+
+      return labelList.where((label) {
+        final normalizedLabel = label.trim().toLowerCase();
+        if (!allowedBoundaryLevels.contains(normalizedLabel)) return false;
+
+        // Distribution-only users select a facility and distribution point.
+        // Registration and combined users also select a community.
+        return normalizedLabel != 'community' || context.isRegistrarRole;
+      }).toList();
+    }
+
     return labelList;
+  }
+
+  bool usesMultiSelectForBoundary(String label, bool isLastLevel) {
+    if (!isLastLevel) return false;
+
+    // The distribution-only flow ends at Distribution Point, which is a
+    // single selection. Other flows retain multi-select at their leaf level.
+    return !(context.isDistributorRole && !context.isRegistrarRole);
   }
 
   FormGroup buildForm(BoundaryState state, AppConfiguration appConfiguration) {
@@ -1125,7 +1191,7 @@ class _BoundarySelectionPageState
       final label = labelList[i];
       final isLastLevel = i == labelList.length - 1;
 
-      if (isLastLevel) {
+      if (usesMultiSelectForBoundary(label, isLastLevel)) {
         formControls[label] = FormControl<List<BoundaryModel>>(
           value: state.selectedLastLevelBoundaries.isNotEmpty
               ? state.selectedLastLevelBoundaries
@@ -1142,16 +1208,22 @@ class _BoundarySelectionPageState
   }
 
   bool validateAllBoundarySelection() {
+    bool hasError = false;
     for (final entry in formControls.entries) {
       final formControl = entry.value;
+      if (!isLabelRequired(entry.key)) {
+        formControl.removeError('');
+        continue;
+      }
 
-      if (formControl.value == null) {
+      if (formControl.value == null ||
+          (formControl.value is List && (formControl.value as List).isEmpty)) {
         formControl.setErrors({'': true});
-        return true;
+        hasError = true;
       }
     }
 
-    return false;
+    return hasError;
   }
 
   void listenToSyncCount() async {

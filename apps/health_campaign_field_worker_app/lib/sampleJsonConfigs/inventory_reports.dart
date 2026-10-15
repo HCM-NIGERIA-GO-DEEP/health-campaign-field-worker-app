@@ -95,8 +95,15 @@ final dynamic inventoryReportFlows = {
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_ISSUED_DESCRIPTION",
           "icon": "Assessment",
           "fieldName": "stockIssued",
-          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == false",
           "properties": {"icon": "Assessment"},
+          "visibilityCondition": {
+            "expression": [
+              {
+                "condition": "singleton.userRole != 'DISTRIBUTOR'",
+                "type": "custom"
+              }
+            ]
+          },
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -148,6 +155,14 @@ final dynamic inventoryReportFlows = {
           "format": "menu_card",
           "hidden": true,
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_HEADING",
+          "visibilityCondition": {
+            "expression": [
+              {
+                "condition": "singleton.userRole != 'DISTRIBUTOR'",
+                "type": "custom"
+              }
+            ]
+          },
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -173,6 +188,14 @@ final dynamic inventoryReportFlows = {
           "format": "menu_card",
           "hidden": true,
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_HEADING",
+          "visibilityCondition": {
+            "expression": [
+              {
+                "condition": "singleton.userRole != 'DISTRIBUTOR'",
+                "type": "custom"
+              }
+            ]
+          },
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -643,7 +666,8 @@ final dynamic inventoryReportFlows = {
               },
               {
                 "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_4_LABEL",
-                "cellValue": "{{item.additionalFields.fields.stockReturned}}"
+                "cellValue":
+                    "{{fn:absoluteValue(item.additionalFields.fields.stockReturned)}}"
               },
               {
                 "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_7_LABEL",

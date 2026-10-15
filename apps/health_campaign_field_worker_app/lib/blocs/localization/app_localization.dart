@@ -44,6 +44,11 @@ class AppLocalizations {
     'NO_BENEFICIARY_IDS_LABEL': 'No Beneficiary IDs',
     'BENEFICIARY_IDS_RE_FETCH': 'Retry download',
     'FAILED_BENEFICIARY_IDS': 'Failed to download Beneficiary IDs',
+    'HOME_DISTRIBUTION_LABEL': 'Distribution',
+    'APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount_max_message':
+        'Household member count cannot exceed 10',
+    'APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_maxField_message':
+        'Number of children cannot exceed total household members',
   };
 
   static LocalizationsDelegate<AppLocalizations> getDelegate(

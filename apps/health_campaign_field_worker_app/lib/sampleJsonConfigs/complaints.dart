@@ -57,7 +57,6 @@ final dynamic sampleComplaintFlows = {
                             "name": "pgrService",
                             "filterKeys": ["serviceRequestId", "mobileNumber"],
                             "widgetKeys": ["complaintNumber", "mobileNumber"],
-                            "filterKeys": ["serviceRequestId", "mobileNumber"],
                             "triggerSearch": true
                           }
                         }
@@ -100,6 +99,28 @@ final dynamic sampleComplaintFlows = {
                                 "root": "pgrComplainant",
                                 "value": "{{mobileNumber}}",
                                 "operation": "contains"
+                              },
+                              {
+                                "key": "name",
+                                "root": "pgrComplainant",
+                                "value": "{{singleton.loggedInUser.name}}",
+                                "applyIf": "{{ assignTo }} == ASSIGN_TO_ME",
+                                "operation": "equals"
+                              },
+                              {
+                                "key": "serviceCode",
+                                "value": "{{complaintType }}",
+                                "applyIf":
+                                    "{{complaintType }} !=null && {{complaintType }} !=null",
+                                "operation": "equals"
+                              },
+                              {
+                                "key": "localityBoundaryCode",
+                                "root": "address",
+                                "value": "{{ locality }}",
+                                "applyIf":
+                                    "{{locality }} !=null && {{locality }} !=null",
+                                "operation": "equals"
                               }
                             ],
                             "name": "pgrService"
@@ -152,7 +173,7 @@ final dynamic sampleComplaintFlows = {
                     {
                       "data": [
                         {"code": "ASSIGN_TO_ALL", "name": "ASSIGN_TO_ALL"},
-                        {"code": "ASSIGN_TO_ME", "name": "ASSIGN_TO_ME"},
+                        {"code": "ASSIGN_TO_ME", "name": "ASSIGN_TO_ME"}
                       ],
                       "type": "template",
                       "format": "radioList",
@@ -233,6 +254,18 @@ final dynamic sampleComplaintFlows = {
                           "actionType": "SEARCH_EVENT",
                           "properties": {
                             "data": [
+                              {
+                                "key": "serviceRequestId",
+                                "root": "pgrService",
+                                "value": "{{complaintNumber}}",
+                                "operation": "contains"
+                              },
+                              {
+                                "key": "mobileNumber",
+                                "root": "pgrComplainant",
+                                "value": "{{mobileNumber}}",
+                                "operation": "contains"
+                              },
                               {
                                 "key": "name",
                                 "root": "pgrComplainant",
@@ -345,6 +378,40 @@ final dynamic sampleComplaintFlows = {
                                 "key": "tenantId",
                                 "value":
                                     "{{singleton.selectedProject.tenantId}}",
+                                "operation": "equals"
+                              },
+                              {
+                                "key": "serviceRequestId",
+                                "root": "pgrService",
+                                "value": "{{complaintNumber}}",
+                                "operation": "contains"
+                              },
+                              {
+                                "key": "mobileNumber",
+                                "root": "pgrComplainant",
+                                "value": "{{mobileNumber}}",
+                                "operation": "contains"
+                              },
+                              {
+                                "key": "name",
+                                "root": "pgrComplainant",
+                                "value": "{{singleton.loggedInUser.name}}",
+                                "applyIf": "{{ assignTo }} == ASSIGN_TO_ME",
+                                "operation": "equals"
+                              },
+                              {
+                                "key": "serviceCode",
+                                "value": "{{complaintType }}",
+                                "applyIf":
+                                    "{{complaintType }} !=null && {{complaintType }} !=null",
+                                "operation": "equals"
+                              },
+                              {
+                                "key": "localityBoundaryCode",
+                                "root": "address",
+                                "value": "{{ locality }}",
+                                "applyIf":
+                                    "{{locality }} !=null && {{locality }} !=null",
                                 "operation": "equals"
                               }
                             ],
@@ -555,7 +622,7 @@ final dynamic sampleComplaintFlows = {
                   "name": "Data Reconciliation Issues"
                 },
                 {"code": "AttendanceIssues", "name": "Attendance Issues"},
-                {"code": "Other", "name": "Other"},
+                {"code": "Other", "name": "Other"}
               ],
               "innerLabel": "",
               "schemaCode": "RAINMAKER-PGR.ServiceDefs",
@@ -708,7 +775,7 @@ final dynamic sampleComplaintFlows = {
               "format": "mobileNumber",
               "hidden": false,
               "tooltip": "",
-              "pattern": "^\\d+\$",
+              "pattern": "^0\\d{9}\$",
               "helpText": "",
               "infoText": "",
               "readOnly": false,
@@ -731,12 +798,17 @@ final dynamic sampleComplaintFlows = {
                 },
                 {
                   "type": "maxLength",
-                  "value": 11,
-                  "message": "MOBILE_LENGTH_11_DIGIT"
+                  "value": 10,
+                  "message": "MOBILE_LENGTH_10_DIGIT"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^0\\d{9}\$",
+                  "message": "MOBILE_NUMBER_START_WITH_ZERO_ERROR"
                 }
               ],
               "errorMessage": "",
-              "pattern.message": "MB_ONLY_NUMBERS",
+              "pattern.message": "MOBILE_NUMBER_START_WITH_ZERO_ERROR",
               "isMultiSelect": false,
               "autoFillCondition": [
                 {
@@ -788,7 +860,7 @@ final dynamic sampleComplaintFlows = {
               "value": "",
               "format": "mobileNumber",
               "hidden": false,
-              "pattern": "^\\d+\$",
+              "pattern": "^0\\d{9}\$",
               "tooltip": "",
               "helpText": "",
               "infoText": "",
@@ -801,17 +873,22 @@ final dynamic sampleComplaintFlows = {
               "validations": [
                 {
                   "type": "minLength",
-                  "value": 11,
-                  "message": "MOBILE_LENGTH_11_DIGITS"
+                  "value": 10,
+                  "message": "MOBILE_LENGTH_10_DIGITS"
                 },
                 {
                   "type": "maxLength",
-                  "value": 11,
-                  "message": "MOBILE_LENGTH_11_DIGITS"
+                  "value": 10,
+                  "message": "MOBILE_LENGTH_10_DIGITS"
+                },
+                {
+                  "type": "pattern",
+                  "value": "^0\\d{9}\$",
+                  "message": "MOBILE_NUMBER_START_WITH_ZERO_ERROR"
                 }
               ],
               "errorMessage": "",
-              "pattern.message": "MB_ONLY_NUMBERS",
+              "pattern.message": "MOBILE_NUMBER_START_WITH_ZERO_ERROR",
               "isMultiSelect": false
             },
             {

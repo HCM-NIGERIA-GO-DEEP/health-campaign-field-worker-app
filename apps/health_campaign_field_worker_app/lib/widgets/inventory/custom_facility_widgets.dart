@@ -215,6 +215,9 @@ class _FacilityCardContent extends StatelessWidget {
 
     final isWareHouseMgr = context.loggedInUserRoles
         .any((role) => role.code == RolesType.warehouseManager.toValue());
+    final isDistributor = context.loggedInUserRoles.any((role) =>
+        role.code == RolesType.distributor.toValue() ||
+        role.code == RolesType.communityDistributor.toValue());
 
     // Get wrapper data for project facilities
     var wrapperData = stateData?.stateWrapper;
@@ -275,6 +278,10 @@ class _FacilityCardContent extends StatelessWidget {
         if (isFromField) return facilityLevel == 'current';
       } else if (transactionType == 'RECEIVED' ||
           transactionType == 'RECEIPT') {
+        // A distributor receives stock into their delivery team. Showing the
+        // mapped community warehouse here makes it look like a second valid
+        // destination even though the receipt belongs to the distributor.
+        if (isToField && isDistributor && isReceivedFlow) return false;
         if (isToField) return facilityLevel == 'current';
         if (isFromField) return facilityLevel == 'parent';
       } else if (stockEntryType == 'LOSS' || stockEntryType == 'DAMAGED') {

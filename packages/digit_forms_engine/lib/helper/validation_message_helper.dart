@@ -13,12 +13,20 @@ Map<String, String Function(Object)> buildValidationMessages(
   if (validations == null) return messages;
 
   for (final rule in validations) {
-    if (rule.message == null) continue;
+    // conditionalPattern carries its actual messages nested per-case
+    // (value.cases.<TYPE>.message), not as a top-level rule.message, so it
+    // has none here - skipping it like every other null-message rule meant
+    // its case below (which looks up that nested message) never ran, and
+    // the field showed the raw error key "conditionalPattern" instead of
+    // the format-specific message.
+    if (rule.message == null && rule.type != 'conditionalPattern') continue;
 
     // first translate the message, or use the message as-is if translation returns null
-    final translated = translateIfPresent(rule.message, localize) ??
-        rule.message ??
-        localize.translate("FIELD_VALIDATION_ERROR");
+    final translated = rule.message != null
+        ? (translateIfPresent(rule.message, localize) ??
+            rule.message ??
+            localize.translate("FIELD_VALIDATION_ERROR"))
+        : localize.translate("FIELD_VALIDATION_ERROR");
 
     // Ensure translated is not empty - if it is, use the rule type as fallback
     final finalMessage = (translated.trim().isNotEmpty)
@@ -51,6 +59,12 @@ Map<String, String Function(Object)> buildValidationMessages(
         break;
       case 'notEqualTo':
         messages['notEqualTo'] = (_) => finalMessage;
+        break;
+      case 'maxField':
+        messages['maxField'] = (_) => finalMessage;
+        break;
+      case 'requiredIf':
+        messages['requiredIf'] = (_) => finalMessage;
         break;
       case 'scanLimit':
         messages['scanLimit'] = (_) => translated;

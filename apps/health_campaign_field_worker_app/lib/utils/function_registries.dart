@@ -29,6 +29,180 @@ class FunctionRegistries {
   }
 
   void _registerGenerateFunctions() {
+    // For report fields that display a quantity while the stored sign is
+    // retained for stock calculations.
+    FunctionRegistry.register('absoluteValue', (args, stateData) {
+      if (args.isEmpty || args.first == null) return '';
+
+      final raw = args.first;
+      final number = raw is num ? raw : num.tryParse(raw.toString().trim());
+      if (number == null) return raw.toString();
+
+      final absolute = number.abs();
+      return absolute == absolute.roundToDouble() ? absolute.toInt() : absolute;
+    });
+
+    // Checks if the number of registered under-5 children in the household matches
+    // the expected children count (childrenCount) entered in household details.
+    // Returns true (mismatch) if counts differ (e.g. to disable the backToSearchRegistrar button),
+    // false if they match.
+    FunctionRegistry.register('isUnder5CountMismatch', (args, stateData) {
+      if (args.isEmpty) return false;
+
+      final membersArg = args.first;
+      List<dynamic> membersList = [];
+      if (membersArg is List) {
+        membersList = membersArg;
+      } else if (membersArg is Map) {
+        membersList = [membersArg];
+      }
+
+      int expectedCount = 0;
+      bool foundExpectedCount = false;
+
+      int? extractChildrenCount(dynamic obj) {
+        if (obj == null) return null;
+        if (obj is num) return obj.toInt();
+        if (obj is String) {
+          final parsed = int.tryParse(obj.trim());
+          if (parsed != null) return parsed;
+        }
+        if (obj is List && obj.isNotEmpty) {
+          for (final item in obj) {
+            final count = extractChildrenCount(item);
+            if (count != null) return count;
+          }
+          return null;
+        }
+
+        // Direct property check if it has childrenCount
+        if (obj is Map) {
+          if (obj.containsKey('childrenCount')) {
+            final val = obj['childrenCount'];
+            final parsed = val is num ? val.toInt() : int.tryParse(val?.toString().trim() ?? '');
+            if (parsed != null) return parsed;
+          }
+          if (obj.containsKey('HouseholdModel')) {
+            final parsed = extractChildrenCount(obj['HouseholdModel']);
+            if (parsed != null) return parsed;
+          }
+        } else {
+          try {
+            final val = (obj as dynamic).childrenCount;
+            if (val != null) {
+              final parsed = val is num ? val.toInt() : int.tryParse(val.toString().trim());
+              if (parsed != null) return parsed;
+            }
+          } catch (_) {}
+        }
+
+        // Check additionalFields
+        dynamic af;
+        try {
+          af = (obj as dynamic).additionalFields;
+        } catch (_) {}
+        if (af == null && obj is Map) {
+          af = obj['additionalFields'];
+        }
+
+        if (af != null) {
+          if (af is Map) {
+            if (af.containsKey('childrenCount')) {
+              final val = af['childrenCount'];
+              final parsed = val is num ? val.toInt() : int.tryParse(val?.toString().trim() ?? '');
+              if (parsed != null) return parsed;
+            }
+          } else {
+            try {
+              final val = (af as dynamic).childrenCount;
+              if (val != null) {
+                final parsed = val is num ? val.toInt() : int.tryParse(val.toString().trim());
+                if (parsed != null) return parsed;
+              }
+            } catch (_) {}
+          }
+
+          dynamic fields;
+          try {
+            fields = af.fields;
+          } catch (_) {}
+          if (fields == null && af is Map) {
+            fields = af['fields'];
+          }
+          if (fields is List) {
+            for (final f in fields) {
+              if (f == null) continue;
+              final key = f is Map ? f['key'] : (f as dynamic).key;
+              final val = f is Map ? f['value'] : (f as dynamic).value;
+              if (key == 'childrenCount') {
+                final parsed = val is num ? val.toInt() : int.tryParse(val?.toString().trim() ?? '');
+                if (parsed != null) return parsed;
+              }
+            }
+          }
+        }
+        return null;
+      }
+
+      if (args.length > 1) {
+        final parsed = extractChildrenCount(args[1]);
+        if (parsed != null) {
+          expectedCount = parsed;
+          foundExpectedCount = true;
+        }
+      }
+
+      // Fallback to stateData if expectedCount was not found from args
+      if (!foundExpectedCount && stateData != null) {
+        final hhFromState = stateData.modelMap['HouseholdModel'] ??
+            stateData.modelMap['household'] ??
+            (stateData.rawState is Map ? (stateData.rawState as Map)['household'] : null);
+        final parsed = extractChildrenCount(hhFromState);
+        if (parsed != null) {
+          expectedCount = parsed;
+          foundExpectedCount = true;
+        }
+      }
+
+      int registeredCount = 0;
+      for (final item in membersList) {
+        if (item == null) continue;
+        dynamic memberObj;
+        if (item is Map) {
+          memberObj = item['member'] ?? item['members'] ?? item['householdMember'] ?? item;
+        } else {
+          try {
+            memberObj = (item as dynamic).member ?? (item as dynamic).members ?? (item as dynamic).householdMember ?? item;
+          } catch (_) {
+            memberObj = item;
+          }
+        }
+
+        bool isHead = false;
+        if (memberObj is List) {
+          for (final m in memberObj) {
+            if (m == null) continue;
+            final headVal = m is Map ? m['isHeadOfHousehold'] : (m as dynamic).isHeadOfHousehold;
+            if (headVal == true || headVal?.toString().toLowerCase() == 'true' || headVal == 1) {
+              isHead = true;
+              break;
+            }
+          }
+        } else if (memberObj != null) {
+          final headVal = memberObj is Map ? memberObj['isHeadOfHousehold'] : (memberObj as dynamic).isHeadOfHousehold;
+          if (headVal == true || headVal?.toString().toLowerCase() == 'true' || headVal == 1) {
+            isHead = true;
+          }
+        }
+
+        if (!isHead) {
+          registeredCount++;
+        }
+      }
+
+      return registeredCount != expectedCount;
+    });
+
     // Displays whole-number decimals without the trailing .0 while
     // preserving non-whole values (e.g. 4.0 -> 4, 4.1 -> 4.1).
     FunctionRegistry.register('trimTrailingZero', (args, stateData) {
@@ -473,6 +647,20 @@ class FunctionRegistries {
       } catch (_) {
         return false;
       }
+    });
+
+    // True when the downloaded beneficiary ID pool (uniqueIdPoolCount, kept
+    // live by LOAD_UNIQUE_ID_POOL) meets or exceeds the configured minimum
+    // (singleton.beneficiaryIdMinCount). Gates the Registrar's "Register New
+    // Beneficiary" button so a household can't be started without enough
+    // beneficiary IDs downloaded to assign one.
+    // Usage: "{{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}"
+    FunctionRegistry.register('hasMinimumBeneficiaryId', (args, stateData) {
+      if (args.length < 2) return false;
+      final minCount = num.tryParse(args[0]?.toString() ?? '');
+      final actualCount = num.tryParse(args[1]?.toString() ?? '');
+      if (minCount == null || actualCount == null) return false;
+      return actualCount >= minCount;
     });
   }
 
