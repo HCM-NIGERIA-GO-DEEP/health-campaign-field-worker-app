@@ -403,6 +403,10 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       ),
     );
 
+    if (projects.length == 1 && selectedProject == null) {
+      add(ProjectSelectProjectEvent(projects.first));
+    }
+
     /* An empty BoundarySearchModel is sent to retrieve all boundaries from the repository.
     This ensures that the entire dataset is fetched, as no specific filters or constraints are applied.Facility
     The retrieved boundaries are then processed to find the least level boundaries and set them in the singleton.*/
@@ -554,17 +558,22 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
     if (assignedBoundaryType != null &&
         assignedBoundaryCode != null &&
         boundaryTypes == null) {
-      // Derive parent → current → child boundary types from the boundary
-      // search API response for the CURRENT hierarchy (multi-hierarchy
-      // safe). We fetch the full hierarchy tree with no `codes` filter;
-      // the remote client's
-      // `_flattenBoundaryMap` computes `materializedPath` and
-      // `boundaryNum` root-to-leaf, so once flattened we can locate the
-      // assigned code by materializedPath (which is unique) and take
-      // parent (boundaryNum-1) and child (boundaryNum+1) types.
+      // Derive parent → current → child boundary types from the scoped
+      // boundary response for the CURRENT hierarchy. The remote client's
+      // `_flattenBoundaryMap` computes `materializedPath` and `boundaryNum`
+      // root-to-leaf, so locate the assigned code and take its adjacent
+      // hierarchy levels.
       try {
+        // Keep this lookup scoped to the assigned boundary. An unfiltered
+        // search downloads the whole hierarchy just to discover one
+        // boundary's adjacent levels. `includeParents` asks the boundary
+        // service for the ancestor path while `codes` keeps the lookup tied
+        // to this project's assignment.
         final treeRows = await boundaryRemoteRepository.search(
-          BoundarySearchModel(),
+          BoundarySearchModel(
+            codes: assignedBoundaryCode,
+            includeParents: true,
+          ),
         );
 
         // Locate the assigned row anywhere in the tree by exact code
@@ -1130,13 +1139,20 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
           .firstOrNull
           ?.version;
       final boundaryRefetched = await localSecureStore.boundaryRefetched;
+      final needsBoundaryParents = context.loggedInUserRoles.any(
+        (role) =>
+            role.code == RolesType.registrar.toValue() ||
+            role.code == RolesType.distributor.toValue(),
+      );
 
       if (rowversionList.firstOrNull?.version != serverVersion ||
           boundaryRefetched) {
         boundaries = await boundaryRemoteRepository.search(
           BoundarySearchModel(
-            boundaryType: event.model.address?.boundaryType,
             codes: event.model.address?.boundary,
+            boundaryType:
+                needsBoundaryParents ? null : event.model.address?.boundaryType,
+            includeParents: needsBoundaryParents ? true : null,
           ),
         );
         await boundaryLocalRepository.bulkCreate(boundaries);
@@ -1169,11 +1185,39 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
             codes: event.model.address?.boundary,
           ),
         );
+        final hasRequiredParents = boundaries.any(
+              (boundary) => boundary.label?.toLowerCase() == 'health facility',
+            ) &&
+            boundaries.any(
+              (boundary) =>
+                  boundary.label?.toLowerCase() == 'distribution point',
+            );
+        if (needsBoundaryParents && !hasRequiredParents) {
+          try {
+            final boundaryWithParents = await boundaryRemoteRepository.search(
+              BoundarySearchModel(
+                codes: event.model.address?.boundary,
+                includeParents: true,
+              ),
+            );
+            boundaries = {
+              ...boundaries,
+              ...boundaryWithParents,
+            }.toList();
+          } catch (e) {
+            // Parent boundaries are an enhancement to the cached project
+            // scope. Keep the cached subtree usable when offline.
+            debugPrint('project boundary parent fetch failed: $e');
+          }
+        }
         if (boundaries.isEmpty) {
           boundaries = await boundaryRemoteRepository.search(
             BoundarySearchModel(
-              boundaryType: event.model.address?.boundaryType,
+              boundaryType: needsBoundaryParents
+                  ? null
+                  : event.model.address?.boundaryType,
               codes: event.model.address?.boundary,
+              includeParents: needsBoundaryParents ? true : null,
             ),
           );
           if (boundaries.isEmpty) {
