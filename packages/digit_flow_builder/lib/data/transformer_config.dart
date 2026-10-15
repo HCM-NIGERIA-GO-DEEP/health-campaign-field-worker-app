@@ -919,7 +919,7 @@ final jsonConfig = {
           "wayBillNumber": "stockProductDetails.wayBillNumber",
           "transactionType": "__context:transactionType",
           "transactionReason":
-              "__switch:__context:stockEntryType:{RECEIPT:__value:RECEIVED,RETURNED:__value:RETURNED,ISSUED:__value:ISSUED,DAMAGED:stockProductDetails.transactionReason,LOSS:stockProductDetails.transactionReason}",
+              "__switch:__context:stockEntryType:{RECEIPT:__value:RECEIVED,RETURNED:__value:RETURNED,ISSUED:__value:ISSUED,DAMAGED:stockProductDetails.transactionReason,LOSS:stockProductDetails.natureOfLoss}",
           "transactingPartyId": "stockDetails.transactingPartyId",
           "senderId":
               "__switch:__context:senderPartyType:{STAFF:__context:loggedInUserUuid,default:stockDetails.facilityFromWhich}",

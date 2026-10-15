@@ -2132,6 +2132,7 @@ class _HomePageState extends LocalizedState<HomePage> {
                   context: ctx,
                   config: FlowModuleConfig(
                     schemaKey: 'REGISTRATION',
+                    sampleFlows: sampleFlows,
                     relationshipMappings: [
                       const RelationshipMapping(
                           from: 'name',
@@ -2645,8 +2646,9 @@ class _HomePageState extends LocalizedState<HomePage> {
 
             await FlowNavigationUtils.navigateToFlowModule(
               context: context,
-              config: const FlowModuleConfig(
+              config: FlowModuleConfig(
                 schemaKey: 'STOCKREPORTS',
+                sampleFlows: inventoryReportFlows,
                 relationshipMappings: [
                   RelationshipMapping(
                       from: 'facility',

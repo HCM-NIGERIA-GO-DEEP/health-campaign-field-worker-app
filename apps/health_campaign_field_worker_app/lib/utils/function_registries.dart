@@ -501,6 +501,39 @@ class FunctionRegistries {
       return facilityFromWhich == 'DELIVERY_TEAM' ? 'STAFF' : 'WAREHOUSE';
     });
 
+    // INVENTORY.json calls fn:getStockSenderId / fn:getStockReceiverId when
+    // fetching the "stock" transformer context, but neither was registered,
+    // so FunctionRegistry.call returned null for both (same failure mode
+    // already documented above for getStockTeamCode). The actual StockModel
+    // senderId/receiverId mapping in transformer_config.dart doesn't consume
+    // these two context keys, so this wasn't the direct cause of the return
+    // quantity bug - but it's still a silently-failing config reference, so
+    // it's implemented here to mirror the real senderId/receiverId mapping
+    // (transformer_config.dart's senderPartyType/receiverPartyType switch)
+    // in case anything else starts depending on these context keys.
+    //
+    // args (sender): [stockEntryType, primaryRole, facilityFromWhich,
+    //                 warehouseTeamCode, deliveryTeam, loggedInUserUuid]
+    FunctionRegistry.register('getStockSenderId', (args, stateData) {
+      if (args.length < 6) return '';
+      final facilityFromWhich = args[2]?.toString() ?? '';
+      final loggedInUserUuid = args[5]?.toString() ?? '';
+      final senderPartyType =
+          facilityFromWhich == 'DELIVERY_TEAM' ? 'STAFF' : 'WAREHOUSE';
+      return senderPartyType == 'STAFF' ? loggedInUserUuid : facilityFromWhich;
+    });
+
+    // args (receiver): [stockEntryType, primaryRole, facilityToWhich,
+    //                    warehouseTeamCode, deliveryTeam]
+    FunctionRegistry.register('getStockReceiverId', (args, stateData) {
+      if (args.length < 4) return '';
+      final facilityToWhich = args[2]?.toString() ?? '';
+      final teamCode = args[3]?.toString() ?? '';
+      final receiverPartyType =
+          facilityToWhich == 'DELIVERY_TEAM' ? 'STAFF' : 'WAREHOUSE';
+      return receiverPartyType == 'STAFF' ? teamCode : facilityToWhich;
+    });
+
     FunctionRegistry.register('getTeamCode', (args, stateData) {
       if (args.isEmpty) return '';
       final teamCode = args.first?.toString() ?? '';

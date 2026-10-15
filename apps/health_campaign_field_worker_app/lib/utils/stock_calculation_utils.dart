@@ -177,7 +177,7 @@ class StockCalculationUtils {
           partialUsed: calculatePartial ? partialUsed : 0,
           status: status,
           stockReceived: (v) => stockReceived += v,
-          stockReturned: (v) => stockReturned -= v,
+          stockReturned: (v) => stockReturned += v,
           stockWastage: (v) => stockWastage += v,
           stockPartialUsed: (v) => stockPartialUsed += v,
           stockExcess: (v) => stockExcess += v,
