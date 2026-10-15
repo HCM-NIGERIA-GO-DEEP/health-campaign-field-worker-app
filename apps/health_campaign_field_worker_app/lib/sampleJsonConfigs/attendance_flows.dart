@@ -69,7 +69,7 @@ final dynamic attendanceFlows = {
             "name": "attendance",
             "type": "SEARCH_EVENT"
           }
-        },
+        }
       ],
       "wrapperConfig": {
         "filters": [],
@@ -77,13 +77,13 @@ final dynamic attendanceFlows = {
           {
             "name": "attendees",
             "entity": "AttendeeModel",
-            "match": {"field": "registerId", "equalsFrom": "id"},
+            "match": {"field": "registerId", "equalsFrom": "id"}
           },
           {
             "name": "attendanceLog",
             "entity": "AttendanceLogModel",
             "match": {"field": "registerId", "equalsFrom": "id"}
-          },
+          }
         ],
         "rootEntity": "AttendanceRegisterModel",
         "wrapperName": "AttendanceWrapper",
@@ -129,7 +129,7 @@ final dynamic attendanceFlows = {
           "data": "AttendanceWrapper",
           "type": "template",
           "format": "listView",
-          "visible": "{{fn:isNotEmpty(contextData)}}",
+          "hidden": "{{fn:isEmpty(contextData)}}",
           "fieldName": "listView",
           "properties": {"spacing": "spacer4"},
           "child": {
@@ -142,12 +142,12 @@ final dynamic attendanceFlows = {
                   {
                     "key": "CAMPAIGN_NAME_LABEL",
                     "value":
-                        "{{item.AttendanceRegisterModel.additionalDetails.campaignName}}",
+                        "{{item.AttendanceRegisterModel.additionalDetails.campaignName}}"
                   },
                   {
                     "key": "EVENT_TYPE_LABEL",
                     "value":
-                        "{{item.AttendanceRegisterModel.additionalDetails.eventType}}",
+                        "{{item.AttendanceRegisterModel.additionalDetails.eventType}}"
                   },
                   {
                     "key": "STAFF_COUNT_LABEL",
@@ -175,7 +175,7 @@ final dynamic attendanceFlows = {
                 ],
                 "type": "template",
                 "format": "labelPairList",
-                "fieldName": "labelPairAttendance",
+                "fieldName": "labelPairAttendance"
               },
               {
                 "type": "template",
@@ -195,7 +195,7 @@ final dynamic attendanceFlows = {
                           "value": "{{ item.AttendanceRegisterModel.id }}"
                         },
                         {"key": "entryTime", "value": "{{fn:entryTime()}}"},
-                        {"key": "exitTime", "value": "{{fn:exitTime()}}"},
+                        {"key": "exitTime", "value": "{{fn:exitTime()}}"}
                       ]
                     }
                   }
@@ -208,9 +208,9 @@ final dynamic attendanceFlows = {
                   "mainAxisAlignment": "center"
                 }
               }
-            ],
-          },
-        },
+            ]
+          }
+        }
       ]
     },
     {
@@ -248,7 +248,7 @@ final dynamic attendanceFlows = {
             "name": "attendanceRegister",
             "type": "SEARCH_EVENT"
           }
-        },
+        }
       ],
       "wrapperConfig": {
         "filters": [],
@@ -260,13 +260,13 @@ final dynamic attendanceFlows = {
             "mappedFields": {
               "name": "{{individual.0.name.givenName}}",
               "individualNumber": "{{individual.0.individualId}}",
-              "individualId": "{{individual.0.id}}",
+              "individualId": "{{individual.0.id}}"
             },
             "relations": [
               {
                 "name": "individual",
                 "entity": "IndividualModel",
-                "match": {"field": "id", "equalsFrom": "individualId"},
+                "match": {"field": "id", "equalsFrom": "individualId"}
               }
             ]
           },
@@ -284,7 +284,7 @@ final dynamic attendanceFlows = {
             "attendee",
             "individual",
             "name",
-            "attendance",
+            "attendance"
           ],
           "primary": "attendanceRegister"
         }
@@ -323,9 +323,9 @@ final dynamic attendanceFlows = {
                   "attendanceCollection",
                   "attendanceManualData",
                   "signatureCollection"
-                ],
+                ]
               }
-            },
+            }
           ]
         },
         {
@@ -390,8 +390,8 @@ final dynamic attendanceFlows = {
                   "format": "textInput",
                   "fieldName": "COMMENT",
                   "label": "COMMENT_KEY",
-                  "inputType": "multiline",
-                },
+                  "inputType": "multiline"
+                }
               ],
               "footerActions": [
                 {
@@ -439,12 +439,12 @@ final dynamic attendanceFlows = {
                     "mainAxisAlignment": "center"
                   },
                   "onAction": [
-                    {"actionType": "CLOSE_POPUP", "properties": {}},
+                    {"actionType": "CLOSE_POPUP", "properties": {}}
                   ]
-                },
+                }
               ]
             }
-          },
+          }
         }
       ],
       "body": [
@@ -464,7 +464,7 @@ final dynamic attendanceFlows = {
                   "attendanceCollection",
                   "attendanceManualData",
                   "signatureCollection"
-                ],
+                ]
               }
             },
             {
@@ -473,7 +473,7 @@ final dynamic attendanceFlows = {
                 "widgetData":
                     "{{fn:setAttendanceDate(widgetData.selectedDate, contextData.0.AttendanceRegisterModel, widgetData.sessionToggle)}}"
               }
-            },
+            }
           ]
         },
         {
@@ -492,7 +492,7 @@ final dynamic attendanceFlows = {
                   "attendanceCollection",
                   "attendanceManualData",
                   "signatureCollection"
-                ],
+                ]
               }
             },
             {
@@ -501,7 +501,7 @@ final dynamic attendanceFlows = {
                 "widgetData":
                     "{{fn:setAttendanceDate(widgetData.selectedDate, contextData.0.AttendanceRegisterModel, widgetData.sessionToggle)}}"
               }
-            },
+            }
           ]
         },
         {
@@ -541,13 +541,9 @@ final dynamic attendanceFlows = {
                   {"type": "minSearchChars", "value": 2}
                 ],
                 "minSearchChars": 2
-              },
+              }
             },
-            {
-              "type": "template",
-              "format": "sizedBox",
-              "width": 12.0,
-            },
+            {"type": "template", "format": "sizedBox", "width": 12.0},
             {
               "type": "template",
               "format": "actionPopup",
@@ -584,7 +580,7 @@ final dynamic attendanceFlows = {
                           "type": "template",
                           "format": "radioList",
                           "fieldName": "SORT_BY"
-                        },
+                        }
                       ]
                     },
                     {
@@ -599,15 +595,15 @@ final dynamic attendanceFlows = {
                               "type": "template",
                               "format": "checkbox",
                               "fieldKey": "checkboxValue",
-                              "value": false,
+                              "value": false
                             },
                             {
                               "type": "template",
                               "format": "textTemplate",
-                              "value": "UNMARKED_ATTENDANCE_ONLY",
+                              "value": "UNMARKED_ATTENDANCE_ONLY"
                             }
                           ]
-                        },
+                        }
                       ]
                     },
                     {
@@ -627,7 +623,7 @@ final dynamic attendanceFlows = {
                               "size": "small",
                               "mainAxisAlignment": "center",
                               "height": "spacer8",
-                              "radius": "spacer3",
+                              "radius": "spacer3"
                             },
                             "onAction": [
                               {
@@ -637,7 +633,7 @@ final dynamic attendanceFlows = {
                                     "checkboxValue",
                                     "searchBar",
                                     "SORT_BY"
-                                  ],
+                                  ]
                                 }
                               }
                             ]
@@ -646,7 +642,7 @@ final dynamic attendanceFlows = {
                         {
                           "type": "template",
                           "format": "sizedBox",
-                          "width": 12.0,
+                          "width": 12.0
                         },
                         {
                           "type": "template",
@@ -661,10 +657,10 @@ final dynamic attendanceFlows = {
                               "size": "small",
                               "mainAxisAlignment": "center",
                               "height": "spacer8",
-                              "radius": "spacer3",
+                              "radius": "spacer3"
                             },
                             "onAction": [
-                              {"actionType": "CLOSE_POPUP", "properties": {}},
+                              {"actionType": "CLOSE_POPUP", "properties": {}}
                             ]
                           }
                         }
@@ -673,8 +669,8 @@ final dynamic attendanceFlows = {
                   ],
                   "onAction": []
                 }
-              },
-            },
+              }
+            }
           ]
         },
         {
@@ -685,9 +681,7 @@ final dynamic attendanceFlows = {
           "fieldName": "groupListView",
           "emptyListMessage": "NO_RESULTS_FOUND",
           "properties": {"spacing": "spacer4", "groupTextStyle": "headingM"},
-          "groupBy": {
-            "field": "entity.tag",
-          },
+          "groupBy": {"field": "entity.tag"},
           "clientFilter": [
             {
               "type": "search",
@@ -723,76 +717,14 @@ final dynamic attendanceFlows = {
                 "type": "template",
                 "format": "textTemplate",
                 "value": "{{item.name}}",
-                "properties": {
-                  "style": "headingS",
-                  "color": "primary",
-                }
+                "properties": {"style": "headingS", "color": "primary"}
               },
               {
                 "type": "template",
                 "format": "tag",
                 "fieldName": "attendanceStatus",
-                "label": "{{fn:attendanceStatus(widgetData, item)}}",
+                "label": "{{fn:attendanceStatus(widgetData, item)}}"
               },
-              // Manual Buttons
-              // {
-              //   "type": "template",
-              //   "format": "customRow",
-              //   "properties": {
-              //     "mainAxisAlignment": "start",
-              //     "crossAxisAlignment": "stretch",
-              //     "spacing": "spacer3"
-              //   },
-              //   "children": [
-              //     {
-              //       "type": "template",
-              //       "format": "expanded",
-              //       "child": {
-              //         "fieldKey": "{{item.individualId}}",
-              //         "fieldValue": "absent",
-              //         "groupKey": "attendanceCollection",
-              //         "type": "template",
-              //         "format": "selectButton",
-              //         "label": "ABSENT",
-              //         "prefixIcon": "Close",
-              //         "properties": {
-              //           "color": "red",
-              //           "type": "secondary",
-              //           "selectedType": "primary",
-              //           "size": "small",
-              //           "mainAxisAlignment": "center"
-              //         },
-              //         "onAction": [
-              //           {"actionType": "CLOSE_POPUP", "properties": {}},
-              //         ]
-              //       }
-              //     },
-              //     {
-              //       "type": "template",
-              //       "format": "expanded",
-              //       "child": {
-              //         "fieldKey": "{{item.individualId}}",
-              //         "fieldValue": "present",
-              //         "groupKey": "attendanceCollection",
-              //         "type": "template",
-              //         "format": "selectButton",
-              //         "label": "PRESENT",
-              //         "prefixIcon": "Check",
-              //         "properties": {
-              //           "color": "green",
-              //           "type": "secondary",
-              //           "selectedType": "primary",
-              //           "size": "small",
-              //           "mainAxisAlignment": "center"
-              //         },
-              //         "onAction": [
-              //           {"actionType": "CLOSE_POPUP", "properties": {}},
-              //         ]
-              //       }
-              //     },
-              //   ]
-              // },
-              //Signature Button
               {
                 "type": "template",
                 "format": "customRow",
@@ -814,7 +746,7 @@ final dynamic attendanceFlows = {
                         {
                           "condition": "NOT_EMPTY",
                           "target":
-                              "{{fn:getCurrentSignature(widgetData, item.entity.individualId)}}",
+                              "{{fn:getCurrentSignature(widgetData, item.entity.individualId)}}"
                         },
                         {
                           "condition": "CONTAINS",
@@ -825,7 +757,7 @@ final dynamic attendanceFlows = {
                           "condition": "EQUALS",
                           "target": "{{widgetData.attendanceCollection}}",
                           "value": "{{item.individualId}}==present"
-                        },
+                        }
                       ],
                       "label": "PRESENT",
                       "prefixIcon": "Check",
@@ -850,7 +782,7 @@ final dynamic attendanceFlows = {
                             "fieldKey": "{{item.entity.individualId}}",
                             "groupKey": "signatureCollection",
                             "signatureData":
-                                "{{fn:getExistingSignature(item.entity.individualId, contextData.0.attendanceRegisterModel)}}",
+                                "{{fn:getExistingSignature(item.entity.individualId, contextData.0.attendanceLog)}}",
                             "clearSignatureLabel":
                                 "MARK_ATTENDANCE_CLEAR_SIGNATURE_LABEL",
                             "saveSignatureLabel":
@@ -873,7 +805,7 @@ final dynamic attendanceFlows = {
                                   "individualName":
                                       "{{item.entity.first.individual.name.givenName}}",
                                   "existingSignatureData":
-                                      "{{fn:getExistingSignature(item.entity.individualId, contextData.0.attendanceRegisterModel)}}",
+                                      "{{fn:getExistingSignature(item.entity.individualId, contextData.0.attendanceLog)}}",
                                   "currentSignatureData":
                                       "{{fn:getCurrentSignature(widgetData, item.entity.individualId)}}",
                                   "compareSignatureLabel":
@@ -890,7 +822,7 @@ final dynamic attendanceFlows = {
                                     {
                                       "actionType": "CLOSE_POPUP",
                                       "properties": {}
-                                    },
+                                    }
                                   ]
                                 },
                                 {
@@ -924,7 +856,7 @@ final dynamic attendanceFlows = {
                                           {
                                             "actionType": "CLOSE_POPUP",
                                             "properties": {}
-                                          },
+                                          }
                                         ]
                                       }
                                     },
@@ -950,22 +882,22 @@ final dynamic attendanceFlows = {
                                           {
                                             "actionType": "CLOSE_POPUP",
                                             "properties": {}
-                                          },
+                                          }
                                         ]
                                       }
-                                    },
+                                    }
                                   ]
                                 }
                               ]
                             },
                             "onAction": [
-                              {"actionType": "CLOSE_POPUP", "properties": {}},
+                              {"actionType": "CLOSE_POPUP", "properties": {}}
                             ]
                           }
                         ],
                         "onAction": []
-                      },
-                    },
+                      }
+                    }
                   },
                   {
                     "type": "template",
@@ -986,14 +918,14 @@ final dynamic attendanceFlows = {
                         "mainAxisAlignment": "center"
                       },
                       "onAction": [
-                        {"actionType": "CLOSE_POPUP", "properties": {}},
+                        {"actionType": "CLOSE_POPUP", "properties": {}}
                       ]
-                    },
-                  },
+                    }
+                  }
                 ]
-              },
-            ],
-          },
+              }
+            ]
+          }
         }
       ]
     },
@@ -1035,7 +967,7 @@ final dynamic attendanceFlows = {
                   "name": "manageAttendance",
                   "type": "TEMPLATE",
                   "navigationMode": "popUntil",
-                  "popUntilPageName": "manageAttendance",
+                  "popUntilPageName": "manageAttendance"
                 }
               }
             ],
@@ -1044,7 +976,7 @@ final dynamic attendanceFlows = {
             "properties": {"type": "primary"}
           }
         }
-      ],
-    },
+      ]
+    }
   ]
 };

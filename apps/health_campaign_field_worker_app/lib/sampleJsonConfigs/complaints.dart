@@ -57,7 +57,6 @@ final dynamic sampleComplaintFlows = {
                             "name": "pgrService",
                             "filterKeys": ["serviceRequestId", "mobileNumber"],
                             "widgetKeys": ["complaintNumber", "mobileNumber"],
-                            "filterKeys": ["serviceRequestId", "mobileNumber"],
                             "triggerSearch": true
                           }
                         }
@@ -152,7 +151,7 @@ final dynamic sampleComplaintFlows = {
                     {
                       "data": [
                         {"code": "ASSIGN_TO_ALL", "name": "ASSIGN_TO_ALL"},
-                        {"code": "ASSIGN_TO_ME", "name": "ASSIGN_TO_ME"},
+                        {"code": "ASSIGN_TO_ME", "name": "ASSIGN_TO_ME"}
                       ],
                       "type": "template",
                       "format": "radioList",
@@ -555,7 +554,7 @@ final dynamic sampleComplaintFlows = {
                   "name": "Data Reconciliation Issues"
                 },
                 {"code": "AttendanceIssues", "name": "Attendance Issues"},
-                {"code": "Other", "name": "Other"},
+                {"code": "Other", "name": "Other"}
               ],
               "innerLabel": "",
               "schemaCode": "RAINMAKER-PGR.ServiceDefs",
@@ -726,8 +725,8 @@ final dynamic sampleComplaintFlows = {
                 },
                 {
                   "type": "minLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGIT"
+                  "value": 11,
+                  "message": "MOBILE_LENGTH_11_DIGIT"
                 },
                 {
                   "type": "maxLength",
@@ -929,8 +928,8 @@ final dynamic sampleComplaintFlows = {
             "hidden": false,
             "onAction": [
               {
-                "actionType": "NAVIGATION",
-                "properties": {"name": "complaintInbox", "type": "TEMPLATE"}
+                "actionType": "BACK_NAVIGATION",
+                "properties": {"name": "complaintInbox"}
               }
             ],
             "fieldName": "backToComplaints",
@@ -1022,8 +1021,8 @@ final dynamic sampleComplaintFlows = {
           "format": "button",
           "onAction": [
             {
-              "actionType": "NAVIGATION",
-              "properties": {"name": "complaintInbox", "type": "TEMPLATE"}
+              "actionType": "BACK_NAVIGATION",
+              "properties": {"name": "complaintInbox"}
             }
           ],
           "fieldName": "close",

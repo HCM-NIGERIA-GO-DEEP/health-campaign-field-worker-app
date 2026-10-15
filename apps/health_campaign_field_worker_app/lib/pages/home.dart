@@ -188,6 +188,21 @@ class _HomePageState extends LocalizedState<HomePage> {
     setPackagesSingleton(context);
     unawaited(_initializeServerSummaryReportService());
 
+    // Force-refresh the inventory module's localisation every time Home
+    // loads, bypassing the normal "skip if already cached" check
+    // (loadOnline: true -> onRemoteLoadLocalization). A module's local
+    // cache is otherwise only ever fetched once - a device that cached it
+    // before a localisation fix shipped stays stale forever otherwise,
+    // since neither reinstalling over the existing app nor "Clear Cache"
+    // touches this local data (confirmed: field devices on a previous APK
+    // kept showing stale Partial Accept text despite the server having the
+    // correct messages). Scoped to just this one module, not every module,
+    // to keep the added network cost small.
+    unawaited(triggerLocalization(
+      module: 'hcm-inventory-${context.selectedProject.referenceID}',
+      loadOnline: true,
+    ));
+
     // Register custom components for forms
     _registerCustomComponents();
 
