@@ -153,12 +153,36 @@ class BoundaryBloc extends Bloc<BoundaryEvent, BoundaryState> {
             .take(1)
             .toList();
 
-    // Merge current session's selections into accumulated list (deduplicate by code)
-    final existingCodes = selectedBoundaries.map((b) => b.code).toSet();
+    // A distributor may submit a Distribution Point without choosing one
+    // Community. Resolve that point to its direct Community children so
+    // downsync uses the beneficiary locality level. The boundary list is
+    // already flattened and loaded for the selected parent in the picker.
+    final resolvedBoundaries = selectedBoundaries.length == 1 &&
+            selectedBoundaries.single.label?.trim().toLowerCase() ==
+                'distribution point'
+        ? state.boundaryList.where((boundary) {
+            final selected = selectedBoundaries.single;
+            final path = boundary.materializedPath?.split('.') ?? const [];
+            return boundary.label?.trim().toLowerCase() == 'community' &&
+                boundary.boundaryNum == (selected.boundaryNum ?? 0) + 1 &&
+                path.contains(selected.code);
+          }).toList()
+        : selectedBoundaries;
+
+    // Keep selections from other branches, but discard an older parent or
+    // child when the user changes to a more specific/broader boundary.
+    final previousSelections = state.allSelectedLastLevelBoundaries.where((old) {
+      return !resolvedBoundaries.any((current) {
+        final oldPath = old.materializedPath?.split('.') ?? const [];
+        final currentPath = current.materializedPath?.split('.') ?? const [];
+        return old.code == current.code ||
+            oldPath.contains(current.code) ||
+            currentPath.contains(old.code);
+      });
+    });
     final merged = [
-      ...selectedBoundaries,
-      ...state.allSelectedLastLevelBoundaries
-          .where((b) => !existingCodes.contains(b.code)),
+      ...resolvedBoundaries,
+      ...previousSelections,
     ];
     emit(state.copyWith(
       hasSubmitted: true,
