@@ -786,7 +786,8 @@ class _BoundarySelectionPageState
                                               capitalizedFirstLetter: false,
                                               label: localizations.translate(
                                                   '${runtimeHierarchyType()}_$label'),
-                                              isRequired: true,
+                                              isRequired:
+                                                  isLabelRequired(label),
                                               child: isLastLevel
                                                   ? MultiSelectDropDown(
                                                       sentenceCaseEnabled:
@@ -1084,6 +1085,16 @@ class _BoundarySelectionPageState
     return context.isWarehouseManager || context.isHealthFacilitySupervisor;
   }
 
+  /// Community must be selected for registration (including combined
+  /// Registrar + Distributor users), while Distributor-only users may select
+  /// it when distributing so the village list can be scoped correctly.
+  bool isLabelRequired(String label) {
+    if (label.trim().toLowerCase() == 'community') {
+      return context.isRegistrarRole || !context.isDistributorRole;
+    }
+    return true;
+  }
+
   dynamic filterBoundaryLabelListBasedOnRole(
       bool doFilter, BoundaryState state) {
     final labelList = state.selectedBoundaryMap.keys.toList();
@@ -1092,6 +1103,19 @@ class _BoundarySelectionPageState
           labelList.isNotEmpty ? [labelList.first] : labelList;
 
       return filteredLabelList;
+    }
+
+    if (context.isRegistrarRole || context.isDistributorRole) {
+      const allowedBoundaryLevels = {
+        'health facility',
+        'distribution point',
+        'community',
+      };
+
+      return labelList
+          .where((label) =>
+              allowedBoundaryLevels.contains(label.trim().toLowerCase()))
+          .toList();
     }
 
     return labelList;
@@ -1145,7 +1169,7 @@ class _BoundarySelectionPageState
     for (final entry in formControls.entries) {
       final formControl = entry.value;
 
-      if (formControl.value == null) {
+      if (formControl.value == null && isLabelRequired(entry.key)) {
         formControl.setErrors({'': true});
         return true;
       }
