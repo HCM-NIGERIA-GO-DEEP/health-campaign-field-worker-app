@@ -755,7 +755,7 @@ final dynamic sampleFlows = {
       "screenType": "TEMPLATE",
       "description": "REGISTRATION_HOUSEHOLD_OVERVIEW_DESC",
       "initActions": [
-        {"actionType": "LOAD_UNIQUE_ID_POOL"},
+        {"actionType": "GENERATE_LOCAL_BENEFICIARY_ID"},
         {
           "actionType": "SEARCH_EVENT",
           "properties": {
@@ -1154,7 +1154,7 @@ final dynamic sampleFlows = {
       "screenType": "TEMPLATE",
       "description": "REGISTRATION_HOUSEHOLD_OVERVIEW_DESC",
       "initActions": [
-        {"actionType": "LOAD_UNIQUE_ID_POOL"},
+        {"actionType": "GENERATE_LOCAL_BENEFICIARY_ID"},
         {
           "actionType": "SEARCH_EVENT",
           "properties": {
@@ -2205,7 +2205,7 @@ final dynamic sampleFlows = {
         }
       ],
       "initActions": [
-        {"actionType": "LOAD_UNIQUE_ID_POOL"}
+        {"actionType": "GENERATE_LOCAL_BENEFICIARY_ID"}
       ],
       "name": "searchBeneficiary",
       "order": 1,
@@ -2214,6 +2214,7 @@ final dynamic sampleFlows = {
           "icon": "FilterAlt",
           "type": "template",
           "label": "DOWNLOAD_BENEFICIARY_IDS",
+          "hidden": true,
           "format": "actionPopup",
           "visible":
               "{{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==false && {{fn:hasRole('DISTRIBUTOR')}}==false",
