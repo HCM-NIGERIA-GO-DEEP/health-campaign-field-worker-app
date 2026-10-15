@@ -33,6 +33,8 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
 
   @override
   void didChangeDependencies() {
+    final isRegistrar = context.isRegistrarRole;
+    final isDistributor = context.isDistributorRole;
     final taskRepository =
         context.read<LocalRepository<TaskModel, TaskSearchModel>>()
             as TaskLocalRepository;
@@ -177,9 +179,12 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
           if (mounted) {
             setState(() {
               if (mounted) {
-                current = houseHoldRegistered +
-                    localHouseholdsRegisteredToday +
-                    groupedEntries.entries.length;
+                // Registrar-only progress measures completed household
+                // registrations. Any user who distributes (distributor-only
+                // or combined) progresses only after a successful delivery.
+                current = isRegistrar && !isDistributor
+                    ? houseHoldRegistered + localHouseholdsRegisteredToday
+                    : groupedEntries.entries.length;
               }
             });
           }

@@ -935,7 +935,6 @@ final jsonConfig = {
           "rowVersion": "meta.rowVersion",
           "additionalFields": {
             "sku": "stockDetails.productdetail.sku",
-            "batchNumber": "stockProductDetails.batchNumber",
             "expiryDate": "stockProductDetails.expiryDate",
             "comments": "__context.comment",
             "transportType": "stockDetails.transportType",
@@ -993,7 +992,6 @@ final jsonConfig = {
           "rowVersion": "meta.rowVersion",
           "additionalFields": {
             "sku": "__context:sku",
-            "batchNumber": "stockReceiptDetails.batchNumber",
             "expiryDate": "stockReceiptDetails.expiryDate",
             "comments": "__context.comment",
             "mrnNumber": "__context:mrnNumber",
@@ -1033,7 +1031,6 @@ final jsonConfig = {
           "rowVersion": "meta.rowVersion",
           "additionalFields": {
             "sku": "__context:sku",
-            "batchNumber": "stockReceiptDetails.batchNumber",
             "expiryDate": "stockReceiptDetails.expiryDate",
             "comments": "__context:comment",
             "mrnNumber": "__context:mrnNumber",

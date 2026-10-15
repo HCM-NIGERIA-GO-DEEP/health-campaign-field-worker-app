@@ -1142,14 +1142,10 @@ class _BoundarySelectionPageState
         'community',
       };
 
-      return labelList.where((label) {
-        final normalizedLabel = label.trim().toLowerCase();
-        if (!allowedBoundaryLevels.contains(normalizedLabel)) return false;
-
-        // Distribution-only users select a facility and distribution point.
-        // Registration and combined users also select a community.
-        return normalizedLabel != 'community' || context.isRegistrarRole;
-      }).toList();
+      return labelList
+          .where((label) =>
+              allowedBoundaryLevels.contains(label.trim().toLowerCase()))
+          .toList();
     }
 
     return labelList;

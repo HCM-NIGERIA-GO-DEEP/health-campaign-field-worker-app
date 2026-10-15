@@ -141,12 +141,22 @@ class BoundaryBloc extends Bloc<BoundaryEvent, BoundaryState> {
     BoundarySubmitEvent event,
     BoundaryEmitter emit,
   ) async {
+    // Multi-select controls populate selectedLastLevelBoundaries. A
+    // single-select leaf (used by distributor boundary selection) only
+    // populates selectedBoundaryMap, so include its deepest selection too.
+    final selectedBoundaries = state.selectedLastLevelBoundaries.isNotEmpty
+        ? state.selectedLastLevelBoundaries
+        : state.selectedBoundaryMap.values
+            .whereType<BoundaryModel>()
+            .toList()
+            .reversed
+            .take(1)
+            .toList();
+
     // Merge current session's selections into accumulated list (deduplicate by code)
-    final existingCodes = state.selectedLastLevelBoundaries
-        .map((b) => b.code)
-        .toSet();
+    final existingCodes = selectedBoundaries.map((b) => b.code).toSet();
     final merged = [
-      ...state.selectedLastLevelBoundaries,
+      ...selectedBoundaries,
       ...state.allSelectedLastLevelBoundaries
           .where((b) => !existingCodes.contains(b.code)),
     ];

@@ -1561,9 +1561,6 @@ class SummaryReport {
 
   String get stockBalance => 'SUMMARY_REPORT_STOCK_BALANCE';
 
-  String get tokensUsed => 'SUMMARY_REPORT_TOKENS_USED';
-
-  String get tokensRedeemed => 'SUMMARY_REPORT_TOKENS_REDEEMED';
 }
 
 class NonMobileUser {

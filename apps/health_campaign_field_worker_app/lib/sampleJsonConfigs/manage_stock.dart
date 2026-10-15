@@ -949,37 +949,6 @@ final dynamic sampleInventoryFlows = {
           },
           "properties": [
             {
-              "type": "string",
-              "label": "APPONE_INVENTORY_BATCH_NUMBER_LABEL",
-              "order": 2,
-              "value": "",
-              "format": "text",
-              "hidden": false,
-              "tooltip": "",
-              "helpText": "",
-              "infoText": "",
-              "readOnly": false,
-              "fieldName": "batchNumber",
-              "deleteFlag": false,
-              "innerLabel": "",
-              "systemDate": false,
-              "validations": [
-                {
-                  "type": "required",
-                  "value": false,
-                  "message": "INVENTORY_BATCH_NUMBER_REQUIRED_ERROR_MESSAGE"
-                },
-                {
-                  "type": "minLength",
-                  "value": "3",
-                  "message": "INVENTORY_TEXT_MIN_LENGTH_ERROR_MESSAGE"
-                }
-              ],
-              "errorMessage": "",
-              "isMultiSelect": false,
-              "enums": null
-            },
-            {
               "type": "integer",
               "label": "APPONE_INVENTORY_QUANTITY_SENT_LABEL",
               "order": 4,
@@ -2434,10 +2403,6 @@ final dynamic sampleInventoryFlows = {
                     "value": "{{item.additionalFields.fields.wayBillNumber}}"
                   },
                   {
-                    "key": "INVENTORY_BATCH_NUMBER_LABEL",
-                    "value": "{{item.additionalFields.fields.batchNumber}}"
-                  },
-                  {
                     "key": "INVENTORY_TRANSPORT_TYPE_LABEL",
                     "value": "{{item.additionalFields.fields.transportType}}"
                   },
@@ -2711,11 +2676,6 @@ final dynamic sampleInventoryFlows = {
                           "key": "sku",
                           "value":
                               "{{item.items[0].additionalFields.fields.sku}}"
-                        },
-                        {
-                          "key": "batchNumber",
-                          "value":
-                              "{{item.items[0].additionalFields.fields.batchNumber}}"
                         },
                         {
                           "key": "comment",
@@ -3028,33 +2988,6 @@ final dynamic sampleInventoryFlows = {
               "infoText": "",
               "readOnly": false,
               "fieldName": "wayBillNumber",
-              "deleteFlag": false,
-              "innerLabel": "",
-              "systemDate": false,
-              "visibilityCondition": {},
-              "validations": [
-                {
-                  "type": "minLength",
-                  "value": "3",
-                  "message": "INVENTORY_TEXT_MIN_LENGTH_ERROR_MESSAGE"
-                }
-              ],
-              "errorMessage": "",
-              "isMultiSelect": false,
-              "enums": null
-            },
-            {
-              "type": "string",
-              "label": "INVENTORY_BATCH_NUMBER_LABEL",
-              "order": 5,
-              "value": "",
-              "format": "text",
-              "hidden": false,
-              "tooltip": "",
-              "helpText": "INVENTORY_BATCH_NUMBER_HELPTEXT",
-              "infoText": "",
-              "readOnly": false,
-              "fieldName": "batchNumber",
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,

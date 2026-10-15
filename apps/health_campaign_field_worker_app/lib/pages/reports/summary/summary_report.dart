@@ -1,6 +1,5 @@
 import 'package:digit_data_model/data/repositories/package_repository/local/household.dart';
 import 'package:digit_data_model/data_model.dart';
-import 'package:digit_data_model/models/entities/id_status.dart';
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
@@ -75,9 +74,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           LocalRepository<ProjectBeneficiaryModel,
               ProjectBeneficiarySearchModel>>();
       final summaryReportService = context.read<ServerSummaryReportService>();
-      final uniqueIdPoolRepo = context
-          .read<LocalRepository<UniqueIdPoolModel, UniqueIdPoolSearchModel>>();
-
       List<String> serverReportAllDates = await summaryReportService.allDates();
 
       final projectFacilities = await projectFacilityRepo
@@ -222,48 +218,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         }
       }
 
-      // Tokens Used (Registrar): count of Beneficiary ID pool tokens
-      // actually consumed, by the date each one was assigned.
-      // UPDATE_IDENTIFIER_STATUS (update_identifier_status_executor.dart)
-      // sets auditDetails.lastModifiedTime to "now" the moment it flips a
-      // row from UN_ASSIGNED to ASSIGNED, and only ever does this once per
-      // row, so that timestamp reliably marks the day a token was consumed.
-      final assignedIdPool = await uniqueIdPoolRepo.search(
-        UniqueIdPoolSearchModel(
-          userUuid: userUuid,
-          status: IdStatus.assigned.toValue(),
-        ),
-      );
-      final tokensUsedByDate = countByDate(
-        assignedIdPool
-            .map((idPool) => idPool.auditDetails?.lastModifiedTime)
-            .whereType<int>(),
-        _epochToDateString,
-      );
-
-      // Tokens Redeemed (Distributor): distinct households/beneficiaries
-      // that received a delivery that day - distinct from
-      // numberOfITNDistributed, which counts units, not households. `tasks`
-      // is already scoped to createdBy: userUuid, so no extra filter needed.
-      final deliveredBeneficiaryEpochs = <MapEntry<String, int>>[];
-      for (final task in tasks) {
-        if (task.status != 'ADMINISTRATION_SUCCESS' &&
-            task.status != 'VISITED') {
-          continue;
-        }
-        final epochMs = task.clientAuditDetails?.createdTime ??
-            task.auditDetails?.createdTime;
-        if (!isWithinCurrentCycle(epochMs)) continue;
-        if (epochMs == null) continue;
-        final beneficiaryRef = task.projectBeneficiaryClientReferenceId;
-        if (beneficiaryRef == null || beneficiaryRef.isEmpty) continue;
-        deliveredBeneficiaryEpochs.add(MapEntry(beneficiaryRef, epochMs));
-      }
-      final tokensRedeemedByDate = groupDistinctKeysByDate(
-        deliveredBeneficiaryEpochs,
-        _epochToDateString,
-      );
-
       // ── Group stock consumed from task resources by date + productVariant ──
       // Only count tasks with status 'ADMINISTRATION_SUCCESS' or 'VISITED'
       // Key: "date|productVariantId" -> sum of quantity
@@ -323,8 +277,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         ...localHouseholdsRegisteredByDate.keys,
         ...localPeopleInHouseholdsByDate.keys,
         ...localITNByDate.keys,
-        ...tokensUsedByDate.keys,
-        ...tokensRedeemedByDate.keys,
         ...stockDates,
         ...consumedDates,
         ...serverReportAllDates,
@@ -349,9 +301,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
             (localPeopleInHouseholdsByDate[date] ?? 0);
         final dailyITNCount =
             serverReportITNDistributed + (localITNByDate[date] ?? 0);
-        final dailyTokensUsed = tokensUsedByDate[date] ?? 0;
-        final dailyTokensRedeemed = tokensRedeemedByDate[date]?.length ?? 0;
-
         // Filter stock entries for this day only to compute total less/excess.
         final dateStocks = allStocks.where((stock) {
           final epochMs = stock.clientAuditDetails?.createdTime ??
@@ -384,8 +333,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           householdsRegistered: hhCount,
           numberOfPeopleInHouseholds: dailyPeopleCount,
           numberOfITNDistributed: dailyITNCount,
-          tokensUsed: dailyTokensUsed,
-          tokensRedeemed: dailyTokensRedeemed,
           totalLess: totalLess,
           totalExcess: totalExcess,
         ));
@@ -425,8 +372,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
     final textTheme = theme.digitTextTheme(context);
 
     // Distributors see ITNs distributed. Household/people counts are shown
-    // only when the user also has the Registrar role. Registrars also see
-    // tokens used. Loss/Excess columns are
+    // only when the user also has the Registrar role. Loss/Excess columns are
     // dropped for both roles - commented out below (not deleted) so they
     // can be restored without rebuilding the totalLess/totalExcess
     // computation in _loadData().
@@ -467,9 +413,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
               header: localizations
                   .translate(i18.summaryReport.numberOfPeopleInHouseholds),
             ),
-            CustomTableColumn(
-              header: localizations.translate(i18.summaryReport.tokensUsed),
-            ),
           ];
     // CustomTableColumn(header: localizations.translate(i18.common.loss)),
     // CustomTableColumn(header: localizations.translate(i18.common.excess)),
@@ -490,7 +433,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
                 _formatDisplayDate(row.date),
                 row.householdsRegistered.toString(),
                 row.numberOfPeopleInHouseholds.toString(),
-                row.tokensUsed.toString(),
               ],
         // row.totalLess.toStringAsFixed(0),
         // row.totalExcess.toStringAsFixed(0),
@@ -567,8 +509,6 @@ class _SummaryReportRow {
   final int householdsRegistered;
   final int numberOfPeopleInHouseholds;
   final int numberOfITNDistributed;
-  final int tokensUsed;
-  final int tokensRedeemed;
   // Kept (not removed) so the Loss/Excess columns, commented out below in
   // build(), can be restored later without rebuilding the computation.
   final double totalLess;
@@ -579,8 +519,6 @@ class _SummaryReportRow {
     required this.householdsRegistered,
     required this.numberOfPeopleInHouseholds,
     required this.numberOfITNDistributed,
-    required this.tokensUsed,
-    required this.tokensRedeemed,
     required this.totalLess,
     required this.totalExcess,
   });
