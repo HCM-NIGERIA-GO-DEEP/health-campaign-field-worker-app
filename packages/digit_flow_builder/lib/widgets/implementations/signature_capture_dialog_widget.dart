@@ -170,8 +170,8 @@ class SignatureCaptureWidget extends ResolvedFlowWidget {
                     actionJson,
                     context,
                     onAction,
-                  ) as DigitButton;
-                }).toList(),
+                  );
+                }).whereType<DigitButton>().toList(),
           inlineActions: true,
         );
       },

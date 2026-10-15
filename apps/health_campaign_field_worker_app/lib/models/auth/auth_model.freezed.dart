@@ -278,7 +278,9 @@ mixin _$ValidateResponseModel {
   @JsonKey(name: 'isDuplicateLogin')
   bool get isDuplicateLogin => throw _privateConstructorUsedError;
   @JsonKey(name: 'existingDeviceToken')
-  String? get existingDeviceToken => throw _privateConstructorUsedError;
+  String? get existingDeviceToken =>
+      throw _privateConstructorUsedError; // Whether the backend allows resolving the duplicate login via the
+// device-switch flow. When false, login must be hard-blocked instead.
   @JsonKey(name: 'canSwitchDevice')
   bool get canSwitchDevice => throw _privateConstructorUsedError;
   @JsonKey(name: 'message')
@@ -415,6 +417,8 @@ class _$ValidateResponseModelImpl implements _ValidateResponseModel {
   @override
   @JsonKey(name: 'existingDeviceToken')
   final String? existingDeviceToken;
+// Whether the backend allows resolving the duplicate login via the
+// device-switch flow. When false, login must be hard-blocked instead.
   @override
   @JsonKey(name: 'canSwitchDevice')
   final bool canSwitchDevice;
@@ -479,7 +483,8 @@ abstract class _ValidateResponseModel implements ValidateResponseModel {
   @override
   @JsonKey(name: 'existingDeviceToken')
   String? get existingDeviceToken;
-  @override
+  @override // Whether the backend allows resolving the duplicate login via the
+// device-switch flow. When false, login must be hard-blocked instead.
   @JsonKey(name: 'canSwitchDevice')
   bool get canSwitchDevice;
   @override

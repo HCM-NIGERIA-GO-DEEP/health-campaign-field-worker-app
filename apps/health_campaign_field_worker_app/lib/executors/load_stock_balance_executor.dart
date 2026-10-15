@@ -147,16 +147,18 @@ class StockBalanceExecutor extends ActionExecutor {
 
       if (isDistContext) {
         // For distributors: received adds, everything else (issued, returned, lost, damaged, wastage) subtracts
-        if (isLessOrExcess) {
+        if (stockEntryType == 'RETURNED') {
+          // A distributor creates RETURNED transactions when stock leaves
+          // their delivery team and goes back to the parent warehouse. Treat
+          // it as outgoing even if the backend's receiverId happens to match
+          // the distributor UUID; that must not increase their balance.
+          delta = -quantity;
+        } else if (isLessOrExcess) {
           delta = stockEntryType == 'EXCESS'
               ? quantity
               : -quantity; // Less reduces; Excess increases
         } else if (transactionType == 'RECEIVED' && isReceiver) {
           delta = quantity; // Add received stock
-        } else if (stockEntryType == 'RETURNED' && isReceiver) {
-          delta = quantity; // Add returned stock (coming back to distributor)
-        } else if (stockEntryType == 'RETURNED' && isSender) {
-          delta = -quantity; // Sent return (going out)
         } else {
           delta = -quantity; // All other transactions subtract
         }

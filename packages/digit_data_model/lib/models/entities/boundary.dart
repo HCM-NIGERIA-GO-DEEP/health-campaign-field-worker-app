@@ -15,6 +15,7 @@ class BoundarySearchModel extends EntitySearchModel
   final bool? isSingle;
   final String? hierarchyType;
   final bool? includeChildren;
+  final bool? includeParents;
 
   BoundarySearchModel({
     this.boundaryType,
@@ -24,6 +25,7 @@ class BoundarySearchModel extends EntitySearchModel
     this.isSingle,
     this.hierarchyType,
     this.includeChildren,
+    this.includeParents,
     super.boundaryCode,
     super.isDeleted,
   }) : super();
@@ -37,6 +39,7 @@ class BoundarySearchModel extends EntitySearchModel
     this.isSingle,
     this.hierarchyType,
     this.includeChildren,
+    this.includeParents,
     super.boundaryCode,
     super.additionalFields,
     super.auditDetails,

@@ -424,14 +424,16 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
     final theme = Theme.of(context);
     final textTheme = theme.digitTextTheme(context);
 
-    // Distributors see ITNs distributed plus household/people counts;
-    // Registrars see those counts plus tokens used. A user holding both
-    // roles sees the distributor set. Loss/Excess columns are
+    // Distributors see ITNs distributed. Household/people counts are shown
+    // only when the user also has the Registrar role. Registrars also see
+    // tokens used. Loss/Excess columns are
     // dropped for both roles - commented out below (not deleted) so they
     // can be restored without rebuilding the totalLess/totalExcess
     // computation in _loadData().
     final isDistributor = context.loggedInUserRoles
         .any((role) => role.code == RolesType.distributor.toValue());
+    final isRegistrar = context.loggedInUserRoles
+        .any((role) => role.code == RolesType.registrar.toValue());
 
     final columns = isDistributor
         ? <CustomTableColumn>[
@@ -442,14 +444,16 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
               header: localizations
                   .translate(i18.summaryReport.numberOfITNDistributed),
             ),
-            CustomTableColumn(
-              header: localizations
-                  .translate(i18.summaryReport.householdsRegistered),
-            ),
-            CustomTableColumn(
-              header: localizations
-                  .translate(i18.summaryReport.numberOfPeopleInHouseholds),
-            ),
+            if (isRegistrar) ...[
+              CustomTableColumn(
+                header: localizations
+                    .translate(i18.summaryReport.householdsRegistered),
+              ),
+              CustomTableColumn(
+                header: localizations
+                    .translate(i18.summaryReport.numberOfPeopleInHouseholds),
+              ),
+            ],
           ]
         : <CustomTableColumn>[
             CustomTableColumn(
@@ -477,8 +481,10 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
             ? [
                 _formatDisplayDate(row.date),
                 row.numberOfITNDistributed.toString(),
-                row.householdsRegistered.toString(),
-                row.numberOfPeopleInHouseholds.toString(),
+                if (isRegistrar) ...[
+                  row.householdsRegistered.toString(),
+                  row.numberOfPeopleInHouseholds.toString(),
+                ],
               ]
             : [
                 _formatDisplayDate(row.date),

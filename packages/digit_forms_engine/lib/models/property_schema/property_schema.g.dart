@@ -69,6 +69,7 @@ _$PropertySchemaImpl _$$PropertySchemaImplFromJson(Map<String, dynamic> json) =>
       submitCondition: _visibilityConditionOrNull(json['submitCondition']),
       secondaryActionLabel: json['secondaryActionLabel'] as String?,
       comparisonConfig: _comparisonConfigOrNull(json['comparisonConfig']),
+      dynamicScanLimit: _dynamicScanLimitConfigOrNull(json['dynamicScanLimit']),
     );
 
 Map<String, dynamic> _$$PropertySchemaImplToJson(
@@ -132,6 +133,7 @@ Map<String, dynamic> _$$PropertySchemaImplToJson(
   writeNotNull('submitCondition', instance.submitCondition?.toJson());
   writeNotNull('secondaryActionLabel', instance.secondaryActionLabel);
   writeNotNull('comparisonConfig', instance.comparisonConfig?.toJson());
+  writeNotNull('dynamicScanLimit', instance.dynamicScanLimit?.toJson());
   return val;
 }
 
@@ -385,6 +387,7 @@ _$ComparisonConfigImpl _$$ComparisonConfigImplFromJson(
               .toList() ??
           const [],
       errorMessage: json['errorMessage'] as String?,
+      mode: json['mode'] as String? ?? 'duplicate',
     );
 
 Map<String, dynamic> _$$ComparisonConfigImplToJson(
@@ -403,6 +406,32 @@ Map<String, dynamic> _$$ComparisonConfigImplToJson(
   }
 
   writeNotNull('errorMessage', instance.errorMessage);
+  val['mode'] = instance.mode;
+  return val;
+}
+
+_$DynamicScanLimitConfigImpl _$$DynamicScanLimitConfigImplFromJson(
+        Map<String, dynamic> json) =>
+    _$DynamicScanLimitConfigImpl(
+      sourceField: json['sourceField'] as String,
+      perUnit: (json['perUnit'] as num?)?.toInt() ?? 1,
+      maxQuantity: (json['maxQuantity'] as num?)?.toInt(),
+    );
+
+Map<String, dynamic> _$$DynamicScanLimitConfigImplToJson(
+    _$DynamicScanLimitConfigImpl instance) {
+  final val = <String, dynamic>{
+    'sourceField': instance.sourceField,
+    'perUnit': instance.perUnit,
+  };
+
+  void writeNotNull(String key, dynamic value) {
+    if (value != null) {
+      val[key] = value;
+    }
+  }
+
+  writeNotNull('maxQuantity', instance.maxQuantity);
   return val;
 }
 

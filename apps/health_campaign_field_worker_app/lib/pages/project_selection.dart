@@ -34,10 +34,27 @@ class ProjectSelectionPage extends LocalizedStatefulWidget {
 class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
   DialogRoute? syncDialogRoute;
 
+  void _dismissDialog() {
+    if (syncDialogRoute != null) {
+      try {
+        if (syncDialogRoute!.isActive) {
+          syncDialogRoute!.navigator?.removeRoute(syncDialogRoute!);
+        }
+      } catch (_) {}
+      syncDialogRoute = null;
+    }
+  }
+
   @override
   void initState() {
     context.read<ProjectBloc>().add(const ProjectInitializeEvent());
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _dismissDialog();
+    super.dispose();
   }
 
   @override
@@ -72,12 +89,12 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
               final error = state.syncError;
               final projectSelected = state.selectedProject;
 
-              if (syncDialogRoute?.isActive ?? false) {
-                Navigator.of(context, rootNavigator: true)
-                    .removeRoute(syncDialogRoute!);
+              if (!state.loading && error == null) {
+                _dismissDialog();
               }
 
               if (error != null) {
+                _dismissDialog();
                 syncDialogRoute = DialogRoute(
                   context: context,
                   barrierDismissible: false,
@@ -92,21 +109,13 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
                       ),
                       action: projectSelected == null
                           ? (cxt) {
-                              if (syncDialogRoute != null &&
-                                  syncDialogRoute!.isActive) {
-                                Navigator.of(cxt, rootNavigator: true)
-                                    .removeRoute(syncDialogRoute!);
-                              }
+                              _dismissDialog();
                               context
                                   .read<ProjectBloc>()
                                   .add(const ProjectInitializeEvent());
                             }
                           : (cxt) {
-                              if (syncDialogRoute != null &&
-                                  syncDialogRoute!.isActive) {
-                                Navigator.of(cxt, rootNavigator: true)
-                                    .removeRoute(syncDialogRoute!);
-                              }
+                              _dismissDialog();
                               cxt.read<ProjectBloc>().add(
                                     ProjectSelectProjectEvent(
                                       projectSelected,
@@ -119,10 +128,7 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
                         i18.projectSelection.dismissButtonText,
                       ),
                       action: (context) {
-                        if (syncDialogRoute?.isActive ?? false) {
-                          Navigator.of(context, rootNavigator: true)
-                              .removeRoute(syncDialogRoute!);
-                        }
+                        _dismissDialog();
                       },
                     ),
                   ),
@@ -133,19 +139,32 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
 
                 return;
               } else if (state.loading) {
-                syncDialogRoute = DialogRoute(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (context) => DigitSyncDialogContent(
-                    type: DialogType.inProgress,
-                    label: localizations.translate(
-                      i18.projectSelection.syncInProgressTitleText,
+                if (syncDialogRoute == null || !syncDialogRoute!.isActive) {
+                  syncDialogRoute = DialogRoute(
+                    context: context,
+                    barrierDismissible: false,
+                    builder: (context) => DigitSyncDialogContent(
+                      type: DialogType.inProgress,
+                      label: localizations.translate(
+                        i18.projectSelection.syncInProgressTitleText,
+                      ),
                     ),
-                  ),
-                );
+                  );
 
-                Navigator.of(context, rootNavigator: true)
-                    .push(syncDialogRoute!);
+                  Navigator.of(context, rootNavigator: true)
+                      .push(syncDialogRoute!);
+                }
+              }
+
+              // Auto-select project if only one project is assigned
+              if (!state.loading &&
+                  state.syncError == null &&
+                  state.selectedProject == null &&
+                  state.projects.length == 1) {
+                context.read<ProjectBloc>().add(
+                      ProjectSelectProjectEvent(state.projects.first),
+                    );
+                return;
               }
 
               final selectedProject = state.selectedProject;
@@ -350,7 +369,10 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
         ));
       }
 
+      _dismissDialog();
       if (mounted) {
+        Navigator.of(context, rootNavigator: true)
+            .popUntil((route) => route is! PopupRoute);
         context.router.replaceAll([
           const PermissionsRoute(),
         ]);

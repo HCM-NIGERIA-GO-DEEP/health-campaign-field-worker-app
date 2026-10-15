@@ -90,8 +90,12 @@ class FlowBuilderNavigationService implements NavigationService {
 
         case NavigationMode.popUntil:
           // Pop until a specific page is reached (without pushing)
-          if (popUntilPageName != null && popUntilPageName.isNotEmpty) {
-            _popUntilPage(router, popUntilPageName);
+          final target =
+              (popUntilPageName != null && popUntilPageName.isNotEmpty)
+                  ? popUntilPageName
+                  : name;
+          if (target.isNotEmpty) {
+            _popUntilPage(router, target);
           }
           break;
 

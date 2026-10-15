@@ -42,6 +42,9 @@ class BoundarySearchModelMapper
   static bool? _$includeChildren(BoundarySearchModel v) => v.includeChildren;
   static const Field<BoundarySearchModel, bool> _f$includeChildren =
       Field('includeChildren', _$includeChildren, opt: true);
+  static bool? _$includeParents(BoundarySearchModel v) => v.includeParents;
+  static const Field<BoundarySearchModel, bool> _f$includeParents =
+      Field('includeParents', _$includeParents, opt: true);
   static String? _$boundaryCode(BoundarySearchModel v) => v.boundaryCode;
   static const Field<BoundarySearchModel, String> _f$boundaryCode =
       Field('boundaryCode', _$boundaryCode, opt: true);
@@ -63,6 +66,7 @@ class BoundarySearchModelMapper
     #isSingle: _f$isSingle,
     #hierarchyType: _f$hierarchyType,
     #includeChildren: _f$includeChildren,
+    #includeParents: _f$includeParents,
     #boundaryCode: _f$boundaryCode,
     #additionalFields: _f$additionalFields,
     #auditDetails: _f$auditDetails,
@@ -87,6 +91,7 @@ class BoundarySearchModelMapper
         isSingle: data.dec(_f$isSingle),
         hierarchyType: data.dec(_f$hierarchyType),
         includeChildren: data.dec(_f$includeChildren),
+        includeParents: data.dec(_f$includeParents),
         boundaryCode: data.dec(_f$boundaryCode),
         additionalFields: data.dec(_f$additionalFields),
         auditDetails: data.dec(_f$auditDetails));
@@ -161,6 +166,7 @@ abstract class BoundarySearchModelCopyWith<$R, $In extends BoundarySearchModel,
       bool? isSingle,
       String? hierarchyType,
       bool? includeChildren,
+      bool? includeParents,
       String? boundaryCode,
       AdditionalFields? additionalFields,
       AuditDetails? auditDetails});
@@ -192,6 +198,7 @@ class _BoundarySearchModelCopyWithImpl<$R, $Out>
           Object? isSingle = $none,
           Object? hierarchyType = $none,
           Object? includeChildren = $none,
+          Object? includeParents = $none,
           Object? boundaryCode = $none,
           Object? additionalFields = $none,
           Object? auditDetails = $none}) =>
@@ -203,6 +210,7 @@ class _BoundarySearchModelCopyWithImpl<$R, $Out>
         if (isSingle != $none) #isSingle: isSingle,
         if (hierarchyType != $none) #hierarchyType: hierarchyType,
         if (includeChildren != $none) #includeChildren: includeChildren,
+        if (includeParents != $none) #includeParents: includeParents,
         if (boundaryCode != $none) #boundaryCode: boundaryCode,
         if (additionalFields != $none) #additionalFields: additionalFields,
         if (auditDetails != $none) #auditDetails: auditDetails
@@ -218,6 +226,7 @@ class _BoundarySearchModelCopyWithImpl<$R, $Out>
           hierarchyType: data.get(#hierarchyType, or: $value.hierarchyType),
           includeChildren:
               data.get(#includeChildren, or: $value.includeChildren),
+          includeParents: data.get(#includeParents, or: $value.includeParents),
           boundaryCode: data.get(#boundaryCode, or: $value.boundaryCode),
           additionalFields:
               data.get(#additionalFields, or: $value.additionalFields),
