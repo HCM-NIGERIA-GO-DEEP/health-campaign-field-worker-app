@@ -1095,6 +1095,38 @@ class _BoundarySelectionPageState
     return true;
   }
 
+  /// Returns selectedLastLevelBoundaries if non-empty; otherwise falls back to
+  /// the deepest selected boundary from selectedBoundaryMap. When a
+  /// distributor leaves Community blank, resolve the selected Distribution
+  /// Point to its Community children because beneficiaries use Community as
+  /// their locality.
+  List<BoundaryModel> getEffectiveBoundaries(BoundaryState state) {
+    if (state.selectedLastLevelBoundaries.isNotEmpty) {
+      return state.selectedLastLevelBoundaries;
+    }
+    final lastSelected = state.selectedBoundaryMap.entries
+        .lastWhereOrNull((element) => element.value != null);
+    if (lastSelected?.value != null) {
+      final selectedBoundary = lastSelected!.value!;
+      if (context.isDistributorRole &&
+          !context.isRegistrarRole &&
+          selectedBoundary.label?.trim().toLowerCase() ==
+              'distribution point') {
+        final childCommunities = state.boundaryList.where((boundary) {
+          final path = boundary.materializedPath?.split('.') ?? const [];
+          return boundary.label?.trim().toLowerCase() == 'community' &&
+              boundary.boundaryNum ==
+                  (selectedBoundary.boundaryNum ?? 0) + 1 &&
+              path.contains(selectedBoundary.code);
+        }).toList();
+        if (childCommunities.isNotEmpty) return childCommunities;
+      }
+
+      return [selectedBoundary];
+    }
+    return [];
+  }
+
   dynamic filterBoundaryLabelListBasedOnRole(
       bool doFilter, BoundaryState state) {
     final labelList = state.selectedBoundaryMap.keys.toList();
