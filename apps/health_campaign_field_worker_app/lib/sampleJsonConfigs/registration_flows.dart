@@ -756,6 +756,17 @@ final dynamic sampleFlows = {
             {
               "actionType": "NAVIGATION",
               "properties": {
+                "data": [
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  },
+                  {
+                    "key": "ProjectBeneficiaryClientReferenceId",
+                    "value":
+                        "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                  }
+                ],
                 "name": "registrationHealthTalk",
                 "type": "FORM"
               }
@@ -2365,8 +2376,22 @@ final dynamic sampleFlows = {
               "fieldName": "registrationHealthTalkSubmitButton",
               "onAction": [
                 {
-                  "actionType": "BACK_NAVIGATION",
-                  "properties": {"name": "searchBeneficiary"}
+                  "actionType": "NAVIGATION",
+                  "properties": {
+                    "data": [
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value": "{{navigation.HouseholdClientReferenceId}}"
+                      },
+                      {
+                        "key": "ProjectBeneficiaryClientReferenceId",
+                        "value":
+                            "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                      }
+                    ],
+                    "name": "registrationHealthTalkSuccess",
+                    "type": "TEMPLATE"
+                  }
                 }
               ],
               "properties": {
@@ -2384,8 +2409,22 @@ final dynamic sampleFlows = {
           "version": 1,
           "onAction": [
             {
-              "actionType": "BACK_NAVIGATION",
-              "properties": {"name": "searchBeneficiary"}
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  },
+                  {
+                    "key": "ProjectBeneficiaryClientReferenceId",
+                    "value":
+                        "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                  }
+                ],
+                "name": "registrationHealthTalkSuccess",
+                "type": "TEMPLATE"
+              }
             }
           ],
           "navigateTo": null,
@@ -2618,13 +2657,227 @@ final dynamic sampleFlows = {
       "category": "REGISTRATION",
       "disabled": false,
       "isSelected": true,
-      "onAction": [],
+      "onAction": [
+        {
+          "actionType": "NAVIGATION",
+          "properties": {
+            "data": [
+              {
+                "key": "HouseholdClientReferenceId",
+                "value": "{{navigation.HouseholdClientReferenceId}}"
+              },
+              {
+                "key": "ProjectBeneficiaryClientReferenceId",
+                "value":
+                    "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+              }
+            ],
+            "name": "registrationHealthTalkSuccess",
+            "type": "TEMPLATE",
+            "onError": [
+              {
+                "actionType": "SHOW_TOAST",
+                "properties": {"message": "Navigation failed."}
+              }
+            ],
+            "navigationMode": "popUntilAndPush",
+            "popUntilPageName": "householdOverview"
+          }
+        }
+      ],
       "scrollListener": {},
       "summary": false,
       "version": 1,
       "screenType": "FORM",
       "wrapperConfig": {},
       "initActions": []
+    },
+    {
+      "body": [
+        {
+          "type": "template",
+          "label": "HOUSEHOLD_REGISTERED_SUCCESSFUL_PANEL_CARD_HEADING",
+          "format": "panelCard",
+          "heading": "HOUSEHOLD_REGISTERED_SUCCESSFUL_PANEL_CARD_HEADING",
+          "fieldName": "registrationHealthTalkSuccessCard",
+          "mandatory": true,
+          "properties": {"type": "success"},
+          "description": "HOUSEHOLD_REGISTERED_SUCCESSFUL_PANEL_CARD_DESC",
+          "additionalWidgets": [
+            {
+              "type": "template",
+              "format": "labelPairList",
+              "fieldName": "registrationHealthTalkSuccessLabelPairList",
+              "data": [
+                {
+                  "key": "E_TOKEN",
+                  "value":
+                      "{{fn:getUniqueBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}",
+                  "hideIfNull": true
+                }
+              ]
+            }
+          ],
+          "primaryAction": {
+            "type": "template",
+            "label": "VIEW_HOUSEHOLD_DETAILS",
+            "format": "button",
+            "hidden": false,
+            "onAction": [
+              {
+                "actionType": "NAVIGATION",
+                "properties": {
+                  "data": [
+                    {
+                      "key": "HouseholdClientReferenceId",
+                      "value": "{{navigation.HouseholdClientReferenceId}}"
+                    },
+                    {
+                      "key": "ProjectBeneficiaryClientReferenceId",
+                      "value":
+                          "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                    }
+                  ],
+                  "name": "householdOverview",
+                  "type": "TEMPLATE",
+                  "navigationMode": "popUntilAndPush",
+                  "popUntilPageName": "searchBeneficiary"
+                }
+              }
+            ],
+            "fieldName": "viewHouseholdButton",
+            "mandatory": true,
+            "properties": {"type": "primary"}
+          },
+          "secondaryAction": {
+            "type": "template",
+            "label": "GO_BACK",
+            "format": "button",
+            "hidden": false,
+            "onAction": [
+              {
+                "actionType": "NAVIGATION",
+                "properties": {
+                  "name": "searchBeneficiary",
+                  "type": "TEMPLATE",
+                  "navigationMode": "popUntilAndReplace",
+                  "popUntilPageName": "searchBeneficiary"
+                }
+              },
+              {
+                "actionType": "REFRESH_SEARCH",
+                "properties": {"screenName": "searchBeneficiary"}
+              }
+            ],
+            "fieldName": "goBack",
+            "mandatory": true,
+            "properties": {"type": "secondary"}
+          },
+          "primaryActionLabel": "VIEW_HOUSEHOLD_DETAILS",
+          "secondaryActionLabel": "GO_BACK"
+        }
+      ],
+      "name": "registrationHealthTalkSuccess",
+      "order": 15,
+      "footer": [],
+      "onSystemBack": [
+        {
+          "actionType": "NAVIGATION",
+          "properties": {
+            "name": "searchBeneficiary",
+            "type": "TEMPLATE",
+            "navigationMode": "popUntilAndReplace",
+            "popUntilPageName": "searchBeneficiary"
+          }
+        },
+        {
+          "actionType": "REFRESH_SEARCH",
+          "properties": {"screenName": "searchBeneficiary"}
+        }
+      ],
+      "header": [
+        {
+          "type": "template",
+          "label": "DELIVERY_BACK",
+          "format": "backLink",
+          "onAction": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "name": "searchBeneficiary",
+                "type": "TEMPLATE",
+                "navigationMode": "popUntilAndReplace",
+                "popUntilPageName": "searchBeneficiary"
+              }
+            },
+            {
+              "actionType": "REFRESH_SEARCH",
+              "properties": {"screenName": "searchBeneficiary"}
+            }
+          ],
+          "fieldName": "registrationHealthTalkSuccessBack",
+          "mandatory": true
+        }
+      ],
+      "category": "REGISTRATION",
+      "navigateTo": null,
+      "screenType": "TEMPLATE",
+      "submitCondition": null,
+      "preventScreenCapture": false,
+      "initActions": [
+        {
+          "actionType": "SEARCH_EVENT",
+          "properties": {
+            "data": [
+              {
+                "key": "clientReferenceId",
+                "value": "{{navigation.HouseholdClientReferenceId}}",
+                "operation": "equals"
+              }
+            ],
+            "name": "household",
+            "type": "SEARCH_EVENT"
+          }
+        }
+      ],
+      "wrapperConfig": {
+        "filters": [],
+        "relations": [
+          {
+            "name": "household",
+            "match": {
+              "field": "clientReferenceId",
+              "equalsFrom": "clientReferenceId"
+            },
+            "entity": "HouseholdModel"
+          },
+          {
+            "name": "headOfHousehold",
+            "match": {
+              "field": "householdClientReferenceId",
+              "equalsFrom": "clientReferenceId"
+            },
+            "entity": "HouseholdMemberModel",
+            "filters": [
+              {"field": "isHeadOfHousehold", "equals": true}
+            ]
+          },
+          {
+            "name": "headIndividual",
+            "match": {
+              "field": "clientReferenceId",
+              "equalsFrom": "headOfHousehold.individualClientReferenceId"
+            },
+            "entity": "IndividualModel"
+          }
+        ],
+        "rootEntity": "HouseholdModel",
+        "wrapperName": "HouseholdWrapper",
+        "searchConfig": {
+          "select": ["household", "individual", "householdMember"],
+          "primary": "household"
+        }
+      }
     },
     {
       "name": "DELIVERY",

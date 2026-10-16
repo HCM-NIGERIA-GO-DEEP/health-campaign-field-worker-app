@@ -18,7 +18,7 @@ TO_ENV_HOST = "https://sierraleone-hcm-uat.digit.org/localization/messages/v1/_u
 
 UPSERT_REQUEST_BODY = {
     "RequestInfo": {
-        "authToken": "968b2021-779a-47b9-95df-5676fde520ef",
+        "authToken": "3594134e-8ae8-43b4-83c5-10a41eb4c64a",
         "userInfo": {
             "id": 91,
             "uuid": "1c0f99dc-6a89-4f04-9b1e-a15f29c6a3ba",
@@ -315,6 +315,10 @@ MESSAGES_BY_MODULE = {
         "CAREGIVER_CONSENT_DECLINED_PANEL_HEADING": "Household Marked as Closed",
         "CAREGIVER_CONSENT_DECLINED_PANEL_DESC":
             "This household was marked as closed because consent was not provided. You can search for it again if consent is obtained later.",
+        "HOUSEHOLD_REGISTERED_SUCCESSFUL_PANEL_CARD_HEADING":
+            "Household Registered Successfully",
+        "HOUSEHOLD_REGISTERED_SUCCESSFUL_PANEL_CARD_DESC":
+            "The household has been registered and the health talk checklist has been recorded.",
     },
 }
 # ONE REQUEST PER MODULE - never a single batched request for all of them.
