@@ -1507,9 +1507,11 @@ final jsonConfig = {
   // a declined-consent household is never left without the entities the
   // isEdit reopen path already expects to find and update. Sourced from our
   // own "beneficiaryLocation"/"caregiverConsent" pages instead of
-  // CLOSEHOUSEHOLD.json's "closeHouseholdDetails" page. No head name is
-  // captured before consent, so givenName/familyName are intentionally left
-  // unmapped (resolve to null) until the household is reopened and completed.
+  // CLOSEHOUSEHOLD.json's "closeHouseholdDetails" page. givenName/familyName
+  // come from caregiverConsent's own (optional) nameOfIndividual/familyname
+  // fields - same opportunistic capture Closed Household already does via
+  // headName/familyname, so a name isn't lost just because consent was
+  // declined before the full registration interview happened.
   "householdConsentDeclinedRegistration": {
     "fallbackModel": "HouseholdModel",
     "models": {
@@ -1580,6 +1582,15 @@ final jsonConfig = {
           "name": {
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
+            // Optional on this page (no full registration interview happens
+            // before consent) - caregiverConsent.nameOfIndividual/familyname
+            // are the same optional fields Closed Household's
+            // headName/familyname already model this scenario with. Resolve
+            // to null when left blank, same as before this field existed;
+            // the full Registration flow's mandatory name fields are the
+            // durable source once consent becomes Yes.
+            "givenName": "caregiverConsent.nameOfIndividual",
+            "familyName": "caregiverConsent.familyname",
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit",
           },

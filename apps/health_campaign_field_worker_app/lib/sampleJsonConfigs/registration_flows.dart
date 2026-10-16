@@ -4504,6 +4504,96 @@ final dynamic sampleFlows = {
               "isMultiSelect": false,
               "required.message":
                   "APPONE_REGISTRATION_CAREGIVER_CONSENT_label_consentToParticipate_mandatory_message"
+            },
+            {
+              "type": "string",
+              "label": "HOUSEHOLD_FIRST_NAME",
+              "order": 2,
+              "value": "",
+              "format": "text",
+              "hidden": false,
+              "tooltip": "",
+              "helpText":
+                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_helpText",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "nameOfIndividual",
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": false,
+              // Optional, same as Closed Household's headName/familyname -
+              // declining consent means no full registration interview
+              // happened, so there's no reliable source for a name yet. Only
+              // shown/collected when consent is declined; the full
+              // Registration flow's own (mandatory) name fields are what
+              // capture it once consent later becomes Yes.
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition": "caregiverConsent.consentToParticipate==FALSE",
+                    "type": "custom"
+                  }
+                ]
+              },
+              "validations": [
+                {
+                  "type": "minLength",
+                  "value": "2",
+                  "message":
+                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_max_message"
+                },
+                {
+                  "type": "maxLength",
+                  "value": "200",
+                  "message":
+                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_max_message"
+                }
+              ],
+              "errorMessage": "",
+              "isMultiSelect": false
+            },
+            {
+              "type": "string",
+              "label": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_lastName",
+              "order": 3,
+              "value": "",
+              "format": "text",
+              "hidden": false,
+              "tooltip": "",
+              "helpText":
+                  "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_lastName_helpText",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "familyname",
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": false,
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition": "caregiverConsent.consentToParticipate==FALSE",
+                    "type": "custom"
+                  }
+                ]
+              },
+              "validations": [
+                {
+                  "type": "minLength",
+                  "value": "2",
+                  "message":
+                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_lastName_min_message"
+                },
+                {
+                  "type": "maxLength",
+                  "value": "200",
+                  "message":
+                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_lastName_max_message"
+                }
+              ],
+              "errorMessage": "",
+              "isMultiSelect": false
             }
           ],
           "actionLabel":
