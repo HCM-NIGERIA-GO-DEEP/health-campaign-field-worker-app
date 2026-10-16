@@ -63,6 +63,9 @@ Map<String, String Function(Object)> buildValidationMessages(
       case 'maxField':
         messages['maxField'] = (_) => finalMessage;
         break;
+      case 'maxFieldSum':
+        messages['maxFieldSum'] = (_) => finalMessage;
+        break;
       case 'requiredIf':
         messages['requiredIf'] = (_) => finalMessage;
         break;

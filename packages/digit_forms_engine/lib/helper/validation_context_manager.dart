@@ -78,6 +78,20 @@ class ValidationContextManager {
           if (value.isNotEmpty) {
             _dependencyMap.putIfAbsent(value, () => {}).add(fieldName);
           }
+        } else if (rule.type == 'maxFieldSum' && value is Map) {
+          // Depends on BOTH the sibling summed with this field and the
+          // field the sum is capped by - e.g. childrenCount's maxFieldSum
+          // depends on pregnantWomenCount and memberCount, so editing
+          // either re-runs this field's validators instead of only
+          // re-checking when childrenCount itself is touched.
+          final otherFieldName = value['with'];
+          final maxFieldName = value['maxField'];
+          if (otherFieldName is String && otherFieldName.isNotEmpty) {
+            _dependencyMap.putIfAbsent(otherFieldName, () => {}).add(fieldName);
+          }
+          if (maxFieldName is String && maxFieldName.isNotEmpty) {
+            _dependencyMap.putIfAbsent(maxFieldName, () => {}).add(fieldName);
+          }
         } else if (rule.type == 'conditionalPattern' && value is Map) {
           // conditionalPattern declares its dependency as {"switchOn": "...",
           // "cases": {...}} rather than a {{template}} string, so it was

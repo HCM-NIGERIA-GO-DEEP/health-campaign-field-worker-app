@@ -3740,6 +3740,12 @@ final dynamic sampleFlows = {
                   "value": "memberCount",
                   "message":
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_maxField_message"
+                },
+                {
+                  "type": "maxFieldSum",
+                  "value": {"with": "pregnantWomenCount", "maxField": "memberCount"},
+                  "message":
+                      "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenAndPregnantWomen_maxFieldSum_message"
                 }
               ],
               "errorMessage": "",
@@ -3788,6 +3794,12 @@ final dynamic sampleFlows = {
                   "value": "memberCount",
                   "message":
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_pregnantWomenCount_maxField_message"
+                },
+                {
+                  "type": "maxFieldSum",
+                  "value": {"with": "childrenCount", "maxField": "memberCount"},
+                  "message":
+                      "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenAndPregnantWomen_maxFieldSum_message"
                 }
               ],
               "errorMessage": "",

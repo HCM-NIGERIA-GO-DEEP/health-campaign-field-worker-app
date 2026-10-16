@@ -1856,11 +1856,6 @@ final dynamic sampleInventoryFlows = {
                   "message": "QUANTITY_SENT_MIN_REQUIRED_ERROR_MESSAGE"
                 },
                 {
-                  "type": "max",
-                  "value": 5,
-                  "message": "QUANTITY_CANNOT_EXCEED_STOCK_MAX_LIMIT_VALUE"
-                },
-                {
                   "type": "regex",
                   "value": "^[0-9]+\$",
                   "message": "INVENTORY_VALID_NUMBER_REQUIRED_MESSAGE"
@@ -2850,7 +2845,19 @@ final dynamic sampleInventoryFlows = {
                 "label": "INVENTORY_ACTUAL_QUANTITY_RECEIVED_LABEL",
                 "format": "numeric",
                 "fieldName": "actualQuantityReceived",
-                "mandatory": true
+                "mandatory": true,
+                "validations": [
+                  {
+                    "type": "required",
+                    "value": true,
+                    "message": "INVENTORY_PARTIAL_ACCEPT_QUANTITY_INVALID"
+                  },
+                  {
+                    "type": "min",
+                    "value": 1,
+                    "message": "INVENTORY_PARTIAL_ACCEPT_QUANTITY_INVALID"
+                  }
+                ]
               },
               {
                 "type": "string",

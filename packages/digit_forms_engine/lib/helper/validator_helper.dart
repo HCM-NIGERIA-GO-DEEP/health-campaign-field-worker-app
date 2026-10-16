@@ -221,6 +221,51 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
           }
           break;
 
+        // Validates that this field's value PLUS a sibling field's value
+        // does not exceed a third field's value - e.g. childrenCount +
+        // pregnantWomenCount must not exceed memberCount combined, even
+        // though each individually fits under memberCount on its own
+        // (maxField only catches that per-field case). rule.value:
+        // {"with": "<sibling field>", "maxField": "<total field>"}.
+        // Passes when any value is null/empty/non-numeric (other
+        // validations handle those) so this only fires once all three
+        // fields have a comparable number.
+        case 'maxFieldSum':
+          if (rule.value is Map) {
+            final config = rule.value as Map;
+            final otherFieldName = config['with']?.toString();
+            final maxFieldName = config['maxField']?.toString();
+            if (otherFieldName != null && maxFieldName != null) {
+              validators.add(Validators.delegate((control) {
+                final form = control.parent;
+                if (form is! FormGroup ||
+                    !form.contains(otherFieldName) ||
+                    !form.contains(maxFieldName)) {
+                  return null;
+                }
+                final currentValue =
+                    num.tryParse(control.value?.toString() ?? '');
+                final otherValue = num.tryParse(
+                    form.control(otherFieldName).value?.toString() ?? '');
+                final maxValue = num.tryParse(
+                    form.control(maxFieldName).value?.toString() ?? '');
+                if (currentValue == null ||
+                    otherValue == null ||
+                    maxValue == null) {
+                  return null;
+                }
+                final sum = currentValue + otherValue;
+                if (sum > maxValue) {
+                  return {
+                    'maxFieldSum': {'max': maxValue, 'actual': sum}
+                  };
+                }
+                return null;
+              }) as Validator<T>);
+            }
+          }
+          break;
+
         // Validates that this field has a value whenever a sibling field
         // does - e.g. identificationNumber must be filled in once
         // identificationType is picked, even though neither field is
