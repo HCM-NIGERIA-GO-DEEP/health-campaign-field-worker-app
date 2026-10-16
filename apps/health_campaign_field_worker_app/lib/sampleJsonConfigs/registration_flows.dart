@@ -25,7 +25,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "E_TOKEN",
                   "value":
-                      "{{contextData.0.headIndividual.IndividualModel.identifiers.0.identifierId}}"
+                      "{{fn:getUniqueBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}"
                 }
               ]
             }
@@ -433,7 +433,34 @@ final dynamic sampleFlows = {
           "description": "CAREGIVER_CONSENT_DECLINED_PANEL_DESC",
           "primaryAction": {
             "type": "template",
-            "label": "GO_BACK",
+            "label": "VIEW_HOUSEHOLD_DETAILS",
+            "format": "button",
+            "hidden": false,
+            "onAction": [
+              {
+                "actionType": "NAVIGATION",
+                "properties": {
+                  "data": [
+                    {
+                      "key": "HouseholdClientReferenceId",
+                      "value": "{{navigation.HouseholdClientReferenceId}}"
+                    }
+                  ],
+                  "name": "householdOverview",
+                  "type": "TEMPLATE",
+                  "navigationMode": "popUntilAndPush",
+                  "popUntilPageName": "searchBeneficiary"
+                }
+              }
+            ],
+            "fieldName": "viewHouseholdDetails",
+            "mandatory": true,
+            "properties": {"type": "primary"}
+          },
+          "primaryActionLabel": "VIEW_HOUSEHOLD_DETAILS",
+          "secondaryAction": {
+            "type": "template",
+            "label": "Back to Search",
             "format": "button",
             "hidden": false,
             "onAction": [
@@ -442,16 +469,20 @@ final dynamic sampleFlows = {
                 "properties": {
                   "name": "searchBeneficiary",
                   "type": "TEMPLATE",
-                  "navigationMode": "popUntil",
+                  "navigationMode": "popUntilAndPush",
                   "popUntilPageName": "searchBeneficiary"
                 }
+              },
+              {
+                "actionType": "REFRESH_SEARCH",
+                "properties": {"screenName": "searchBeneficiary"}
               }
             ],
-            "fieldName": "goBackConsent",
+            "fieldName": "backToSearch",
             "mandatory": true,
-            "properties": {"type": "primary"}
+            "properties": {"type": "secondary"}
           },
-          "primaryActionLabel": "GO_BACK"
+          "secondaryActionLabel": "Back to Search"
         }
       ],
       "name": "caregiverAcknowledgement",
@@ -556,7 +587,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "E_TOKEN",
                   "value":
-                      "{{contextData.0.headIndividual.IndividualModel.identifiers.0.identifierId}}",
+                      "{{fn:getUniqueBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}",
                   "isActive": true
                 }
               ],
@@ -696,7 +727,7 @@ final dynamic sampleFlows = {
                       {
                         "key": "beneficiaryId",
                         "value":
-                            "{{contextData.0.headIndividual.IndividualModel.identifiers.0.identifierId}}"
+                            "{{fn:getUniqueBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}"
                       }
                     ],
                     "name": "DELIVERY",
@@ -755,7 +786,6 @@ final dynamic sampleFlows = {
       "screenType": "TEMPLATE",
       "description": "REGISTRATION_HOUSEHOLD_OVERVIEW_DESC",
       "initActions": [
-        {"actionType": "GENERATE_LOCAL_BENEFICIARY_ID"},
         {
           "actionType": "SEARCH_EVENT",
           "properties": {
@@ -1099,7 +1129,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "E_TOKEN",
                   "value":
-                      "{{contextData.0.headIndividual.IndividualModel.identifiers.0.identifierId}}",
+                      "{{fn:getUniqueBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}",
                   "isActive": true
                 }
               ],
@@ -1154,7 +1184,6 @@ final dynamic sampleFlows = {
       "screenType": "TEMPLATE",
       "description": "REGISTRATION_HOUSEHOLD_OVERVIEW_DESC",
       "initActions": [
-        {"actionType": "GENERATE_LOCAL_BENEFICIARY_ID"},
         {
           "actionType": "SEARCH_EVENT",
           "properties": {
@@ -1783,7 +1812,7 @@ final dynamic sampleFlows = {
                     "child": {
                       "type": "template",
                       "value":
-                          "{{ item.headIndividual.0.identifiers.0.identifierId }}",
+                          "{{fn:getUniqueBeneficiaryId(item.headIndividual.0.identifiers)}}",
                       "format": "textTemplate",
                       "fieldName": "beneficiaryId",
                       "maxLines": 2,
@@ -1799,62 +1828,6 @@ final dynamic sampleFlows = {
                       {
                         "actions": [
                           {
-                            "actionType": "OPEN_POPUP",
-                            "properties": {
-                              "size": "medium",
-                              "type": "secondary",
-                              "popupConfig": {
-                                "body": [
-                                  {
-                                    "type": "template",
-                                    "value":
-                                        "{{fn:getRegistrationInsufficientStockMessage()}}",
-                                    "format": "textTemplate",
-                                    "fieldName":
-                                        "insufficientStockRegistrationText",
-                                    "maxLines": 8,
-                                    "properties": {"textAlign": "center"}
-                                  }
-                                ],
-                                "title": "INSUFFICIENT_STOCK_TITLE",
-                                "titleIcon": "Warning",
-                                "type": "alert",
-                                "footerActions": [
-                                  {
-                                    "type": "template",
-                                    "label": "RETURN_TO_HOUSEHOLD_SCREEN_LABEL",
-                                    "format": "button",
-                                    "onAction": [
-                                      {
-                                        "actionType": "CLOSE_POPUP",
-                                        "properties": {
-                                          "parentScreenKey": "searchBeneficiary"
-                                        }
-                                      }
-                                    ],
-                                    "fieldName":
-                                        "closeInsufficientStockRegistrationPopUp",
-                                    "properties": {
-                                      "size": "large",
-                                      "type": "primary",
-                                      "mainAxisSize": "max"
-                                    }
-                                  }
-                                ],
-                                "showCloseButton": true,
-                                "barrierDismissible": true
-                              }
-                            }
-                          }
-                        ],
-                        "condition": {
-                          "expression":
-                              "{{fn:hasStockForRegistration()}}==false && {{fn:isClosedHousehold(item.tasks)}} == false && {{fn:hasRole('DISTRIBUTOR')}} == false"
-                        }
-                      },
-                      {
-                        "actions": [
-                          {
                             "actionType": "REVERSE_TRANSFORM",
                             "properties": {
                               "data": [
@@ -1898,33 +1871,6 @@ final dynamic sampleFlows = {
                       {
                         "actions": [
                           {
-                            "actionType": "NAVIGATION",
-                            "properties": {
-                              "data": [
-                                {
-                                  "key": "HouseholdClientReferenceId",
-                                  "value":
-                                      "{{ item.HouseholdModel.clientReferenceId }}"
-                                },
-                                {
-                                  "key": "ProjectBeneficiaryClientReferenceId",
-                                  "value":
-                                      "{{ item.projectBeneficiaries.ProjectBeneficiaryModel.clientReferenceId }}"
-                                }
-                              ],
-                              "name": "householdOverview",
-                              "type": "TEMPLATE"
-                            }
-                          }
-                        ],
-                        "condition": {
-                          "expression":
-                              "{{fn:hasRole('DISTRIBUTOR')}} == true && {{fn:isClosedHousehold(item.tasks)}} == false"
-                        }
-                      },
-                      {
-                        "actions": [
-                          {
                             "actionType": "REVERSE_TRANSFORM",
                             "properties": {
                               "data": [
@@ -1945,137 +1891,7 @@ final dynamic sampleFlows = {
                                 {
                                   "key": "HouseholdClientReferenceId",
                                   "value":
-                                      "{{ item.HouseholdModel.clientReferenceId }}"
-                                },
-                                {
-                                  "key": "projectBeneficiaryClientReferenceId",
-                                  "value":
-                                      "{{ item.projectBeneficiaries.ProjectBeneficiaryModel.clientReferenceId }}"
-                                },
-                                {"key": "isEdit", "value": "true"},
-                                {"key": "isClosedHousehold", "value": "true"},
-                                {
-                                  "key": "UNIQUE_BENEFICIARY_ID",
-                                  "value": "{{latestBeneficiaryId}}"
-                                },
-                                {
-                                  "key": "uniqueBeneficiaryIdModel",
-                                  "value": "{{latestBeneficiaryIdModel}}"
-                                },
-                                {
-                                  "key": "identifier",
-                                  "value": "{{item.headIndividual}}"
-                                }
-                              ],
-                              "name": "HOUSEHOLD",
-                              "type": "FORM"
-                            }
-                          }
-                        ],
-                        "condition": {
-                          "expression":
-                              "{{fn:hasStockForRegistration()}}==true && {{fn:isClosedHousehold(item.tasks)}} == false && {{fn:hasRole('DISTRIBUTOR')}} == false && {{fn:isHouseholdMarkedClosed(item.tasks)}} == true"
-                        }
-                      },
-                      {
-                        "actions": [
-                          {
-                            "actionType": "REVERSE_TRANSFORM",
-                            "properties": {
-                              "data": [
-                                {"key": "entities", "value": "{{item}}"}
-                              ],
-                              "configName": "beneficiaryRegistration",
-                              "entityTypes": [
-                                "HouseholdModel",
-                                "IndividualModel",
-                                "TaskModel"
-                              ]
-                            }
-                          },
-                          {
-                            "actionType": "NAVIGATION",
-                            "properties": {
-                              "data": [
-                                {
-                                  "key": "HouseholdClientReferenceId",
-                                  "value":
-                                      "{{ item.HouseholdModel.clientReferenceId }}"
-                                },
-                                {
-                                  "key": "projectBeneficiaryClientReferenceId",
-                                  "value":
-                                      "{{ item.projectBeneficiaries.ProjectBeneficiaryModel.clientReferenceId }}"
-                                },
-                                {"key": "isEdit", "value": "true"},
-                                {"key": "isClosedHousehold", "value": "true"}
-                              ],
-                              "name": "previewScreen",
-                              "type": "TEMPLATE"
-                            }
-                          }
-                        ],
-                        "condition": {
-                          "expression":
-                              "{{fn:isClosedHousehold(item.tasks)}} == true"
-                        }
-                      },
-                      {
-                        "actions": [
-                          {
-                            "actionType": "NAVIGATION",
-                            "properties": {
-                              "data": [
-                                {
-                                  "key": "HouseholdClientReferenceId",
-                                  "value":
-                                      "{{ item.HouseholdModel.clientReferenceId }}"
-                                },
-                                {
-                                  "key": "ProjectBeneficiaryClientReferenceId",
-                                  "value":
-                                      "{{ item.projectBeneficiaries.ProjectBeneficiaryModel.clientReferenceId }}"
-                                }
-                              ],
-                              "name": "householdOverview",
-                              "type": "TEMPLATE"
-                            }
-                          }
-                        ],
-                        "condition": {
-                          "expression":
-                              "{{fn:hasRole('DISTRIBUTOR')}} == true && {{fn:isClosedHousehold(item.tasks)}} == false"
-                        }
-                      },
-                      {
-                        "actions": [
-                          {
-                            "actionType": "REVERSE_TRANSFORM",
-                            "properties": {
-                              "data": [
-                                {"key": "entities", "value": "{{item}}"}
-                              ],
-                              "configName": "beneficiaryRegistration",
-                              "entityTypes": [
-                                "HouseholdModel",
-                                "IndividualModel",
-                                "TaskModel"
-                              ]
-                            }
-                          },
-                          {
-                            "actionType": "NAVIGATION",
-                            "properties": {
-                              "data": [
-                                {
-                                  "key": "HouseholdClientReferenceId",
-                                  "value":
-                                      "{{ item.HouseholdModel.clientReferenceId }}"
-                                },
-                                {
-                                  "key": "projectBeneficiaryClientReferenceId",
-                                  "value":
-                                      "{{ item.projectBeneficiaries.ProjectBeneficiaryModel.clientReferenceId }}"
+                                      "{{item.HouseholdModel.clientReferenceId}}"
                                 },
                                 {"key": "isEdit", "value": "true"},
                                 {"key": "isClosedHousehold", "value": "true"},
@@ -2103,7 +1919,7 @@ final dynamic sampleFlows = {
                         ],
                         "condition": {
                           "expression":
-                              "{{fn:hasStockForRegistration()}}==true && {{fn:isClosedHousehold(item.tasks)}} == false && {{fn:hasRole('DISTRIBUTOR')}} == false && {{fn:isHouseholdMarkedClosed(item.tasks)}} == false"
+                              "{{fn:hasStockForRegistration()}}==true && {{fn:isClosedHousehold(item.tasks)}} == false && {{fn:hasRole('DISTRIBUTOR')}} == false && {{fn:isHouseholdMarkedClosed(item.tasks)}} == true"
                         }
                       },
                       {
@@ -2115,20 +1931,10 @@ final dynamic sampleFlows = {
                                 {
                                   "key": "HouseholdClientReferenceId",
                                   "value":
-                                      "{{ item.HouseholdModel.clientReferenceId }}"
-                                },
-                                {
-                                  "key": "nameOfIndividual",
-                                  "value":
-                                      "{{ item.headIndividual.0.name.givenName }}"
-                                },
-                                {
-                                  "key": "UNIQUE_BENEFICIARY_ID",
-                                  "value":
-                                      "{{item.headIndividual.0.identifiers.0.identifierId}}"
+                                      "{{item.HouseholdModel.clientReferenceId}}"
                                 }
                               ],
-                              "name": "HOUSEHOLD",
+                              "name": "householdOverview",
                               "type": "TEMPLATE"
                             }
                           }
@@ -3743,7 +3549,10 @@ final dynamic sampleFlows = {
                 },
                 {
                   "type": "maxFieldSum",
-                  "value": {"with": "pregnantWomenCount", "maxField": "memberCount"},
+                  "value": {
+                    "with": "pregnantWomenCount",
+                    "maxField": "memberCount"
+                  },
                   "message":
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenAndPregnantWomen_maxFieldSum_message"
                 }
@@ -4623,6 +4432,7 @@ final dynamic sampleFlows = {
       "onAction": [
         {
           "actions": [
+            {"actionType": "GENERATE_LOCAL_BENEFICIARY_ID"},
             {
               "actionType": "FETCH_TRANSFORMER_CONFIG",
               "properties": {
@@ -4634,6 +4444,20 @@ final dynamic sampleFlows = {
                 ],
                 "createEntities": ["ProjectBeneficiaryModel"],
                 "configName": "beneficiaryRegistration"
+              }
+            },
+            {
+              "actionType": "UPDATE_IDENTIFIER_STATUS",
+              "properties": {
+                "identifierType": "UNIQUE_BENEFICIARY_ID",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "Failed to update beneficiary id status."
+                    }
+                  }
+                ]
               }
             },
             {
@@ -4700,6 +4524,7 @@ final dynamic sampleFlows = {
         },
         {
           "actions": [
+            {"actionType": "GENERATE_LOCAL_BENEFICIARY_ID"},
             {
               "actionType": "FETCH_TRANSFORMER_CONFIG",
               "properties": {

@@ -214,14 +214,16 @@ class FunctionRegistries {
     // on its own (see _resolveHeading in layout_renderer.dart), so the
     // config resolves the final heading CODE here, while stockEntryType is
     // still in scope, and carries it through navigation as plain data.
-    FunctionRegistry.register('getViewTransactionHeadingCode', (args, stateData) {
+    FunctionRegistry.register('getViewTransactionHeadingCode',
+        (args, stateData) {
       if (args.isEmpty) return 'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
       final stockEntryType = args.first?.toString().toUpperCase() ?? '';
       const headings = {
         'ISSUED': 'INVENTORY_STOCK_ISSUE_DETAILS_HEADING',
         'RETURNED': 'INVENTORY_STOCK_RETURN_DETAILS_HEADING',
       };
-      return headings[stockEntryType] ?? 'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
+      return headings[stockEntryType] ??
+          'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
     });
 
     FunctionRegistry.register('getReportTitle', (args, stateData) {
@@ -477,6 +479,35 @@ class FunctionRegistries {
       }
 
       return identifierType?.trim().toUpperCase() == 'UNIQUE_BENEFICIARY_ID';
+    });
+
+    // Display the actual campaign beneficiary id even when the household has
+    // other identifiers (for example the DEFAULT placeholder) before it.
+    FunctionRegistry.register('getUniqueBeneficiaryId', (args, stateData) {
+      final identifiers = args.isNotEmpty ? args.first : null;
+      if (identifiers is! Iterable) return '';
+      for (final identifier in identifiers) {
+        if (identifier == null) continue;
+        String? type;
+        String? id;
+        if (identifier is Map) {
+          type = identifier['identifierType']?.toString();
+          id = identifier['identifierId']?.toString();
+        } else {
+          try {
+            type = (identifier as dynamic).identifierType?.toString();
+            id = (identifier as dynamic).identifierId?.toString();
+          } catch (_) {
+            continue;
+          }
+        }
+        if (type?.trim().toUpperCase() == 'UNIQUE_BENEFICIARY_ID' &&
+            id != null &&
+            id.isNotEmpty) {
+          return id;
+        }
+      }
+      return '';
     });
 
     // True when the logged-in user holds any of the given role codes.

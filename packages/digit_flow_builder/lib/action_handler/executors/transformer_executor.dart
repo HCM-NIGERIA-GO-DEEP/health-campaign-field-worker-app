@@ -487,10 +487,8 @@ class TransformerExecutor extends ActionExecutor {
   /// behavior exactly. Entry 2 is the separately-captured Identification
   /// Type/Number pair, added only when both are filled in.
   ///
-  /// Falls back to a single all-null entry when neither source resolves,
-  /// exactly matching the single-item mapping this replaces, so any other
-  /// caller of this transformer config that doesn't have these fields sees no
-  /// behavior change.
+  /// Omits incomplete identifiers. Sending an IdentifierModel with a null type
+  /// or id creates invalid individual payloads and can fail sync.
   static List<Map<String, dynamic>> buildIdentifierEntries(
     Map<String, dynamic> formValues,
     FormEntityMapper formEntityMapper,
@@ -504,11 +502,6 @@ class TransformerExecutor extends ActionExecutor {
       identifierEntries.add({
         'identifierType': parts[0].trim(),
         'identifierId': parts.sublist(1).join(',').trim(),
-      });
-    } else if (existingIdentifier != null) {
-      identifierEntries.add({
-        'identifierType': existingIdentifier,
-        'identifierId': null,
       });
     }
 
@@ -524,10 +517,6 @@ class TransformerExecutor extends ActionExecutor {
         'identifierType': identificationType.trim(),
         'identifierId': identificationNumber.trim(),
       });
-    }
-
-    if (identifierEntries.isEmpty) {
-      identifierEntries.add({'identifierType': null, 'identifierId': null});
     }
 
     return identifierEntries;

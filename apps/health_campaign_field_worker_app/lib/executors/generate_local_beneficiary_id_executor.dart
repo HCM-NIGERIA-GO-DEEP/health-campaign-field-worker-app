@@ -174,7 +174,8 @@ class GenerateLocalBeneficiaryIdExecutor extends ActionExecutor {
   Future<List<String>> _resolveBoundaryNamePrefixes(
     BuildContext context,
   ) async {
-    final materializedPath = FlowBuilderSingleton().fullBoundary?.materializedPath;
+    final materializedPath =
+        FlowBuilderSingleton().fullBoundary?.materializedPath;
     if (materializedPath == null || materializedPath.isEmpty) {
       return const ['ZZZ', 'ZZZ', 'ZZZ', 'ZZZ', 'ZZZ'];
     }
@@ -267,6 +268,6 @@ class GenerateLocalBeneficiaryIdExecutor extends ActionExecutor {
     final hourPart = now.hour.toString().padLeft(2, '0');
     final minutePart = now.minute.toString().padLeft(2, '0');
 
-    return '${boundaryPart}_${namePart}_${datePart}_${hourPart}_$minutePart';
+    return '${boundaryPart}_${namePart}_$hourPart$minutePart';
   }
 }

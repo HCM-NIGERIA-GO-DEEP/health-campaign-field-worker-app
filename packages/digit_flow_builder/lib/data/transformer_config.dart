@@ -60,7 +60,6 @@ final jsonConfig = {
           "id": "householdDetails.id",
           "individualId": "householdDetails.individualId",
           "userId": "householdDetails.userId",
-          "userUuinamed": "householdDetails.uuid",
           "dateOfBirth": "beneficiaryDetails.dobPicker",
           "mobileNumber": "householdDetails.phone",
           "altContactNumber": "contactInfo.altContact",
@@ -90,6 +89,7 @@ final jsonConfig = {
             "lastName": "householdDetails.lastName"
           },
           "bloodGroup": "health.bloodGroup",
+          "gender": "householdDetails.gender",
           "address": "list:AddressModel",
           "identifiers": "list:IdentifierModel",
           "clientAuditDetails": "__generate:clientAudit",

@@ -1115,8 +1115,7 @@ class _BoundarySelectionPageState
         final childCommunities = state.boundaryList.where((boundary) {
           final path = boundary.materializedPath?.split('.') ?? const [];
           return boundary.label?.trim().toLowerCase() == 'community' &&
-              boundary.boundaryNum ==
-                  (selectedBoundary.boundaryNum ?? 0) + 1 &&
+              boundary.boundaryNum == (selectedBoundary.boundaryNum ?? 0) + 1 &&
               path.contains(selectedBoundary.code);
         }).toList();
         if (childCommunities.isNotEmpty) return childCommunities;
@@ -1130,24 +1129,28 @@ class _BoundarySelectionPageState
   dynamic filterBoundaryLabelListBasedOnRole(
       bool doFilter, BoundaryState state) {
     final labelList = state.selectedBoundaryMap.keys.toList();
+
+    // Registrar and distributor users need their role-specific levels even
+    // when their boundary labels differ in spacing or capitalization.
+    if (context.isRegistrarRole || context.isDistributorRole) {
+      const allowedBoundaryLevels = {
+        'healthfacility',
+        'distributionpoint',
+        'community',
+      };
+      String normalize(String label) =>
+          label.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
+
+      return labelList
+          .where((label) => allowedBoundaryLevels.contains(normalize(label)))
+          .toList();
+    }
+
     if (doFilter) {
       final filteredLabelList =
           labelList.isNotEmpty ? [labelList.first] : labelList;
 
       return filteredLabelList;
-    }
-
-    if (context.isRegistrarRole || context.isDistributorRole) {
-      const allowedBoundaryLevels = {
-        'health facility',
-        'distribution point',
-        'community',
-      };
-
-      return labelList
-          .where((label) =>
-              allowedBoundaryLevels.contains(label.trim().toLowerCase()))
-          .toList();
     }
 
     return labelList;
