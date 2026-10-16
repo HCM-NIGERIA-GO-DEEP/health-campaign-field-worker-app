@@ -77,7 +77,11 @@ final dynamic inventoryReportFlows = {
                 "type": "TEMPLATE",
                 "name": "reportDetails",
                 "data": [
-                  {"key": "reportType", "value": "ISSUED"},
+                  {"key": "reportType", "value": "receipt"},
+                  {
+                    "key": "reportDetailsHeading",
+                    "value": "INVENTORY_REPORT_DETAILS_RECEIPT_REPORT_TITLE"
+                  },
                   {
                     "key": "facilities",
                     "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
@@ -113,6 +117,10 @@ final dynamic inventoryReportFlows = {
                 "data": [
                   {"key": "reportType", "value": "dispatch"},
                   {
+                    "key": "reportDetailsHeading",
+                    "value": "INVENTORY_REPORT_DETAILS_DISPATCH_REPORT_TITLE"
+                  },
+                  {
                     "key": "facilities",
                     "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
                   },
@@ -138,6 +146,10 @@ final dynamic inventoryReportFlows = {
                 "name": "reportDetails",
                 "data": [
                   {"key": "reportType", "value": "returned"},
+                  {
+                    "key": "reportDetailsHeading",
+                    "value": "INVENTORY_REPORT_DETAILS_RETURNED_REPORT_TITLE"
+                  },
                   {
                     "key": "facilities",
                     "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
@@ -169,6 +181,10 @@ final dynamic inventoryReportFlows = {
               "properties": {
                 "data": [
                   {"key": "reportType", "value": "damage"},
+                  {
+                    "key": "reportDetailsHeading",
+                    "value": "INVENTORY_REPORT_DETAILS_DAMAGE_REPORT_TITLE"
+                  },
                   {"key": "facilities", "value": "{{FacilityModel}}"},
                   {"key": "productVariants", "value": "{{ProductVariantModel}}"}
                 ],
@@ -202,6 +218,10 @@ final dynamic inventoryReportFlows = {
               "properties": {
                 "data": [
                   {"key": "reportType", "value": "loss"},
+                  {
+                    "key": "reportDetailsHeading",
+                    "value": "INVENTORY_REPORT_DETAILS_LOSS_REPORT_TITLE"
+                  },
                   {"key": "facilities", "value": "{{FacilityModel}}"},
                   {"key": "productVariants", "value": "{{ProductVariantModel}}"}
                 ],
@@ -226,6 +246,10 @@ final dynamic inventoryReportFlows = {
               "properties": {
                 "data": [
                   {"key": "reportType", "value": "excess"},
+                  {
+                    "key": "reportDetailsHeading",
+                    "value": "INVENTORY_REPORT_DETAILS_EXCESS_REPORT_TITLE"
+                  },
                   {"key": "facilities", "value": "{{FacilityModel}}"},
                   {"key": "productVariants", "value": "{{ProductVariantModel}}"}
                 ],
@@ -250,6 +274,10 @@ final dynamic inventoryReportFlows = {
               "properties": {
                 "data": [
                   {"key": "reportType", "value": "less"},
+                  {
+                    "key": "reportDetailsHeading",
+                    "value": "INVENTORY_REPORT_DETAILS_LESS_REPORT_TITLE"
+                  },
                   {"key": "facilities", "value": "{{FacilityModel}}"},
                   {"key": "productVariants", "value": "{{ProductVariantModel}}"}
                 ],
@@ -293,7 +321,7 @@ final dynamic inventoryReportFlows = {
     {
       "screenType": "TEMPLATE",
       "name": "reportDetails",
-      "heading": "STOCKREPORTS_REPORT_DETAILS_HEADING",
+      "heading": "{{navigation.reportDetailsHeading}}",
       "description": "STOCKREPORTS_REPORT_DETAILS_DESCRIPTION",
       "initActions": [],
       "wrapperConfig": {
