@@ -216,7 +216,19 @@ class StockCalculationUtils {
       } else if (isReceiver &&
           transactionType == 'DISPATCHED' &&
           status == 'ACCEPTED') {
-        stockReceived += quantity;
+        // Stock PRD: accepting a Shortfall Return with reason "Stock
+        // damage" updates this same record's stockEntryType to DAMAGED
+        // (see manage_stock.dart's stockReceiptDetails onAction) instead of
+        // creating a new transaction, so it reaches the receiver here as an
+        // ACCEPTED dispatch like any other - route it to the damaged
+        // bucket instead of stockReceived, same as the isSender-side
+        // DAMAGED case above, so it stays "in hand" but isn't counted as
+        // issuable.
+        if (stockEntryType == 'DAMAGED') {
+          stockDamaged += quantity;
+        } else {
+          stockReceived += quantity;
+        }
       }
     }
 
@@ -302,12 +314,17 @@ class StockCalculationUtils {
         stockReturned(quantity);
         stockWastage(wastage);
         stockPartialUsed(partialUsed);
-      } else if (status == 'ACCEPTED') {
-        stockReceived(quantity);
       } else if (stockEntryType == 'LOSS') {
         stockLost(quantity);
       } else if (stockEntryType == 'DAMAGED') {
+        // Checked before the generic ACCEPTED case below: a Shortfall
+        // Return accepted with reason "Stock damage" has status ACCEPTED
+        // AND stockEntryType DAMAGED (see manage_stock.dart's
+        // stockReceiptDetails onAction) - if ACCEPTED were checked first it
+        // would always win and this branch would never be reached.
         stockDamaged(quantity);
+      } else if (status == 'ACCEPTED') {
+        stockReceived(quantity);
       }
     }
   }

@@ -2519,6 +2519,73 @@ final dynamic sampleInventoryFlows = {
           }
         },
         {
+          // Stock PRD 8.2: Accept on a return with reason = Stock damage
+          // does NOT re-issue - the quantity enters the receiver's Damaged
+          // bucket instead (still "in hand" but excluded from issuable
+          // stock). Checked before the generic re-issue block below so
+          // damage takes priority over the in-transit/miscount re-issue
+          // path. Reuses the existing "DAMAGED" stockEntryType convention
+          // already handled specially for the sender side in
+          // stock_calculation_utils.dart / stock_balance_executor.dart.
+          "condition": {
+            "expression":
+                "navigation.incomingStockEntryType == 'RETURNED' && formData.discrepancyReason == 'STOCK_DAMAGE'"
+          },
+          "actions": [
+            {
+              "actionType": "UPDATE_EVENT",
+              "properties": {
+                "source": "existingModels",
+                "entity": "StockModel",
+                "modify": [
+                  {
+                    "key": "StockModel.additionalFields.fields.status",
+                    "value": "ACCEPTED"
+                  },
+                  {
+                    "key": "StockModel.additionalFields.fields.stockEntryType",
+                    "value": "DAMAGED"
+                  },
+                  {
+                    "key": "StockModel.additionalFields.fields.comments",
+                    "value": "{{fn:safeString(formData.rejectComment)}}"
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "UPDATE_STOCK_BALANCE",
+              "properties": {
+                "entity": "STOCK",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "SHOW_TOAST",
+              "properties": {
+                "message": "INVENTORY_STOCK_DAMAGE_RECORDED_SUCCESS",
+                "type": "success"
+              }
+            },
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "type": "TEMPLATE",
+                "name": "manageStock",
+                "navigationMode": "popUntilAndReplace",
+                "popUntilPageName": "manageStock"
+              }
+            }
+          ]
+        },
+        {
           "condition": {
             "expression": "navigation.incomingStockEntryType == 'RETURNED'"
           },
@@ -2601,6 +2668,76 @@ final dynamic sampleInventoryFlows = {
         }
       ],
       "onSecondaryAction": [
+        {
+          // Stock PRD: "Partial Accept on a return is reserved for stock
+          // loss" - the sender/upper-hierarchy resolving an incoming
+          // Shortfall Return (navigation.incomingStockEntryType ==
+          // 'RETURNED') via Partial Accept always means the quantity is
+          // unrecoverable, never a good/damaged split. It's a terminal
+          // write-off: no further shortfallTransaction/return-loop, nothing
+          // added to any balance. Checked before the generic partial-accept
+          // block below (which still handles a plain fresh receipt).
+          "condition": {
+            "expression":
+                "navigation.incomingStockEntryType == 'RETURNED' && formData.discrepancyReason == 'STOCK_LOSS'"
+          },
+          "actions": [
+            {
+              "actionType": "UPDATE_EVENT",
+              "properties": {
+                "source": "existingModels",
+                "entity": "StockModel",
+                "modify": [
+                  {
+                    "key": "StockModel.additionalFields.fields.status",
+                    "value": "ACCEPTED"
+                  },
+                  {
+                    "key": "StockModel.additionalFields.fields.comments",
+                    "value": "{{fn:safeString(formData.rejectComment)}}"
+                  },
+                  {
+                    "key":
+                        "StockModel.additionalFields.fields.actualQuantityReceived",
+                    "value": "0"
+                  },
+                  {"key": "StockModel.quantity", "value": "0"},
+                  {"key": "StockModel.transactionReason", "value": "STOCK_LOSS"}
+                ]
+              }
+            },
+            {
+              "actionType": "SHOW_TOAST",
+              "properties": {
+                "message": "INVENTORY_STOCK_LOSS_RECORDED_SUCCESS",
+                "type": "success"
+              }
+            },
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "type": "TEMPLATE",
+                "name": "manageStock",
+                "navigationMode": "popUntilAndReplace",
+                "popUntilPageName": "manageStock"
+              }
+            }
+          ]
+        },
+        {
+          "condition": {
+            "expression": "navigation.incomingStockEntryType == 'RETURNED'"
+          },
+          "actions": [
+            {
+              "actionType": "SHOW_TOAST",
+              "properties": {
+                "message": "INVENTORY_PARTIAL_ACCEPT_RETURN_REQUIRES_STOCK_LOSS_REASON",
+                "type": "error"
+              }
+            }
+          ]
+        },
         {
           "condition": {
             "expression":
