@@ -2204,9 +2204,6 @@ final dynamic sampleFlows = {
           "schemaCode": null
         }
       ],
-      "initActions": [
-        {"actionType": "GENERATE_LOCAL_BENEFICIARY_ID"}
-      ],
       "name": "searchBeneficiary",
       "order": 1,
       "footer": [
@@ -4731,6 +4728,7 @@ final dynamic sampleFlows = {
         },
         {
           "actions": [
+            {"actionType": "GENERATE_LOCAL_BENEFICIARY_ID"},
             {
               "actionType": "FETCH_TRANSFORMER_CONFIG",
               "properties": {
