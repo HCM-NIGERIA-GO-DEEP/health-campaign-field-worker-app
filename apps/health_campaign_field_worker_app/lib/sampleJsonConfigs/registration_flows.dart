@@ -84,7 +84,7 @@ final dynamic sampleFlows = {
                 "properties": {
                   "name": "searchBeneficiary",
                   "type": "TEMPLATE",
-                  "navigationMode": "popUntil",
+                  "navigationMode": "popUntilAndReplace",
                   "popUntilPageName": "searchBeneficiary"
                 }
               }
@@ -110,7 +110,7 @@ final dynamic sampleFlows = {
           "properties": {
             "name": "searchBeneficiary",
             "type": "TEMPLATE",
-            "navigationMode": "popUntil",
+            "navigationMode": "popUntilAndReplace",
             "popUntilPageName": "searchBeneficiary"
           }
         }
@@ -136,7 +136,7 @@ final dynamic sampleFlows = {
                 ],
                 "name": "searchBeneficiary",
                 "type": "TEMPLATE",
-                "navigationMode": "popUntil",
+                "navigationMode": "popUntilAndReplace",
                 "popUntilPageName": "searchBeneficiary"
               }
             }
