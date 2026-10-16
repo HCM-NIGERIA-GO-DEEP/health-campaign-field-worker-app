@@ -1854,7 +1854,7 @@ final dynamic sampleFlows = {
                                       "{{ item.HouseholdModel.clientReferenceId }}"
                                 },
                                 {
-                                  "key": "projectBeneficiaryClientReferenceId",
+                                  "key": "ProjectBeneficiaryClientReferenceId",
                                   "value":
                                       "{{ item.projectBeneficiaries.ProjectBeneficiaryModel.clientReferenceId }}"
                                 },
@@ -1935,6 +1935,11 @@ final dynamic sampleFlows = {
                                   "key": "HouseholdClientReferenceId",
                                   "value":
                                       "{{item.HouseholdModel.clientReferenceId}}"
+                                },
+                                {
+                                  "key": "ProjectBeneficiaryClientReferenceId",
+                                  "value":
+                                      "{{item.projectBeneficiaries.ProjectBeneficiaryModel.clientReferenceId}}"
                                 }
                               ],
                               "name": "householdOverview",
@@ -2609,7 +2614,17 @@ final dynamic sampleFlows = {
             "secondaryActionLabel": "ACTION_CANCEL"
           }
         }
-      ]
+      ],
+      "category": "REGISTRATION",
+      "disabled": false,
+      "isSelected": true,
+      "onAction": [],
+      "scrollListener": {},
+      "summary": false,
+      "version": 1,
+      "screenType": "FORM",
+      "wrapperConfig": {},
+      "initActions": []
     },
     {
       "name": "DELIVERY",
