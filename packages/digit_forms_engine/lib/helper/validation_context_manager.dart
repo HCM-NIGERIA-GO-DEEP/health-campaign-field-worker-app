@@ -79,16 +79,19 @@ class ValidationContextManager {
             _dependencyMap.putIfAbsent(value, () => {}).add(fieldName);
           }
         } else if (rule.type == 'maxFieldSum' && value is Map) {
-          // Depends on BOTH the sibling summed with this field and the
-          // field the sum is capped by - e.g. childrenCount's maxFieldSum
-          // depends on pregnantWomenCount and memberCount, so editing
-          // either re-runs this field's validators instead of only
-          // re-checking when childrenCount itself is touched.
-          final otherFieldName = value['with'];
+          // Only depend on the field the sum is capped by (e.g. memberCount),
+          // NOT on the sibling summed with this field (e.g. childrenCount's
+          // maxFieldSum naming pregnantWomenCount). That sibling has the
+          // mirrored rule pointing back at this field - registering both
+          // directions made each one a dependent of the other, so editing
+          // either triggered updateValueAndValidity() on the other, which
+          // re-emitted a change and re-triggered the first: an infinite
+          // mutual-revalidation loop that froze the app. memberCount doesn't
+          // have a maxFieldSum pointing back, so depending on it only is
+          // cycle-free. The trade-off: editing pregnantWomenCount alone
+          // doesn't live-update childrenCount's cached validity until
+          // childrenCount itself is next touched - acceptable vs. a crash.
           final maxFieldName = value['maxField'];
-          if (otherFieldName is String && otherFieldName.isNotEmpty) {
-            _dependencyMap.putIfAbsent(otherFieldName, () => {}).add(fieldName);
-          }
           if (maxFieldName is String && maxFieldName.isNotEmpty) {
             _dependencyMap.putIfAbsent(maxFieldName, () => {}).add(fieldName);
           }
