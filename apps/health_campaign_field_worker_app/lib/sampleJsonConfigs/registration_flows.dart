@@ -3074,7 +3074,8 @@ final dynamic sampleFlows = {
                         "properties": {"message": "Failed to fetch config."}
                       }
                     ],
-                    "configName": "beneficiaryRegistration"
+                    "configName": "beneficiaryRegistration",
+                    "createEntities": ["ProjectBeneficiaryModel"]
                   }
                 },
                 {
@@ -3138,7 +3139,8 @@ final dynamic sampleFlows = {
                         "properties": {"message": "Failed to fetch config."}
                       }
                     ],
-                    "configName": "beneficiaryRegistration"
+                    "configName": "beneficiaryRegistration",
+                    "createEntities": ["ProjectBeneficiaryModel"]
                   }
                 },
                 {
@@ -3194,7 +3196,8 @@ final dynamic sampleFlows = {
                         "properties": {"message": "Failed to fetch config."}
                       }
                     ],
-                    "configName": "beneficiaryRegistration"
+                    "configName": "beneficiaryRegistration",
+                    "createEntities": ["ProjectBeneficiaryModel"]
                   }
                 },
                 {
@@ -3842,7 +3845,8 @@ final dynamic sampleFlows = {
                         "properties": {"message": "Failed to fetch config."}
                       }
                     ],
-                    "configName": "beneficiaryRegistration"
+                    "configName": "beneficiaryRegistration",
+                    "createEntities": ["ProjectBeneficiaryModel"]
                   }
                 },
                 {
@@ -3907,7 +3911,8 @@ final dynamic sampleFlows = {
                         "properties": {"message": "Failed to fetch config."}
                       }
                     ],
-                    "configName": "beneficiaryRegistration"
+                    "configName": "beneficiaryRegistration",
+                    "createEntities": ["ProjectBeneficiaryModel"]
                   }
                 },
                 {
@@ -3963,7 +3968,8 @@ final dynamic sampleFlows = {
                         "properties": {"message": "Failed to fetch config."}
                       }
                     ],
-                    "configName": "beneficiaryRegistration"
+                    "configName": "beneficiaryRegistration",
+                    "createEntities": ["ProjectBeneficiaryModel"]
                   }
                 },
                 {
@@ -4534,7 +4540,8 @@ final dynamic sampleFlows = {
                     "properties": {"message": "Failed to fetch config."}
                   }
                 ],
-                "configName": "beneficiaryRegistration"
+                "configName": "beneficiaryRegistration",
+                "createEntities": ["ProjectBeneficiaryModel"]
               }
             },
             {
@@ -4665,7 +4672,8 @@ final dynamic sampleFlows = {
                     "properties": {"message": "Failed to fetch config."}
                   }
                 ],
-                "configName": "beneficiaryRegistration"
+                "configName": "beneficiaryRegistration",
+                "createEntities": ["ProjectBeneficiaryModel"]
               }
             },
             {
