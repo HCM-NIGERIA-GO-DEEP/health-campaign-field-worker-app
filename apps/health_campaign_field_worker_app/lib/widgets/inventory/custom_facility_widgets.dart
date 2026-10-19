@@ -197,7 +197,8 @@ class _FacilityCardContent extends StatelessWidget {
     // Every stockEntryType in INVENTORY.json spells the receive flow
     // 'RECEIPT'; 'RECEIVED' is only ever a transactionType. Comparing against
     // 'RECEIVED' here made this flag permanently false.
-
+    final isReceivedFlow =
+        stockEntryType == 'RECEIPT' || transactionType == 'RECEIVED';
     final currentUserBoundaryType =
         context.selectedProject.address?.boundaryType?.toString();
 
@@ -280,8 +281,8 @@ class _FacilityCardContent extends StatelessWidget {
         // A distributor receives stock into their delivery team. Showing the
         // mapped community warehouse here makes it look like a second valid
         // destination even though the receipt belongs to the distributor.
-        if (isToField && isDistributor) return false;
-        if (isToField) return facilityLevel == 'parent';
+        if (isToField && isDistributor && isReceivedFlow) return false;
+        if (isToField) return facilityLevel == 'current';
         if (isFromField) return facilityLevel == 'parent';
       } else if (stockEntryType == 'LOSS' || stockEntryType == 'DAMAGED') {
         // For loss and damaged, to field should show parent facility
@@ -321,7 +322,8 @@ class _FacilityCardContent extends StatelessWidget {
         ((isToField &&
                 !isReturnFlow &&
                 (transactionType == 'DISPATCHED' ||
-                    transactionType == 'ISSUED') &&
+                    transactionType == 'ISSUED' ||
+                    isReceivedFlow) &&
                 (!isWareHouseMgr || hasNoChildFacilities)) ||
             (isFromField &&
                 !isWareHouseMgr &&
