@@ -337,7 +337,28 @@ class FunctionRegistries {
 
     FunctionRegistry.register('getStockQuantityLabel', (args, stateData) {
       if (args.isEmpty) return 'APPONE_INVENTORY_QUANTITY_LABEL';
-      final stockEntryType = args.first?.toString().toUpperCase() ?? '';
+      final source = args.first;
+      var entryType = '';
+      if (source is List) {
+        for (final field in source) {
+          if (field is Map && field['key']?.toString() == 'stockEntryType') {
+            entryType = field['value']?.toString() ?? '';
+            break;
+          }
+          try {
+            final dynamic typedField = field;
+            if (typedField.key?.toString() == 'stockEntryType') {
+              entryType = typedField.value?.toString() ?? '';
+              break;
+            }
+          } catch (_) {
+            // Ignore fields that do not expose the additional-field shape.
+          }
+        }
+      } else {
+        entryType = source?.toString() ?? '';
+      }
+      final stockEntryType = entryType.toUpperCase();
       const labels = {
         'RECEIPT': 'APPONE_INVENTORY_QUANTITY_RECEIVED_LABEL',
         'RETURNED': 'APPONE_INVENTORY_QUANTITY_RETURNED_LABEL',
@@ -357,7 +378,30 @@ class FunctionRegistries {
     FunctionRegistry.register('getViewTransactionHeadingCode',
         (args, stateData) {
       if (args.isEmpty) return 'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
-      final stockEntryType = args.first?.toString().toUpperCase() ?? '';
+      final source = args.first;
+      var entryType = '';
+      if (source is List) {
+        for (final field in source) {
+          if (field is Map && field['key']?.toString() == 'stockEntryType') {
+            entryType = field['value']?.toString() ?? '';
+            break;
+          }
+          try {
+            final dynamic typedField = field;
+            if (typedField.key?.toString() == 'stockEntryType') {
+              entryType = typedField.value?.toString() ?? '';
+              break;
+            }
+          } catch (_) {
+            // Ignore fields that do not expose the additional-field shape.
+          }
+        }
+      } else if (source is Map) {
+        entryType = source['stockEntryType']?.toString() ?? '';
+      } else {
+        entryType = source?.toString() ?? '';
+      }
+      final stockEntryType = entryType.toUpperCase();
       const headings = {
         'ISSUED': 'INVENTORY_STOCK_ISSUE_DETAILS_HEADING',
         'RETURNED': 'INVENTORY_STOCK_RETURN_DETAILS_HEADING',
@@ -1129,13 +1173,26 @@ class FunctionRegistries {
       if (fields == null) return '';
       if (fields is List) {
         for (var field in fields) {
-          if (field is Map && field['key'] == 'stockEntryType') {
+          if (field is Map && field['key']?.toString() == 'stockEntryType') {
             return field['value']?.toString().toUpperCase() ?? '';
+          }
+          try {
+            final dynamic typedField = field;
+            if (typedField.key?.toString() == 'stockEntryType') {
+              return typedField.value?.toString().toUpperCase() ?? '';
+            }
+          } catch (_) {
+            // Ignore fields that do not expose the additional-field shape.
           }
         }
       }
       return '';
     }
+
+    FunctionRegistry.register('getStockEntryTypeFromFields', (args, stateData) {
+      if (args.isEmpty) return '';
+      return getStockEntryTypeFromFields(args.first);
+    });
 
     // Reads a single value from the additionalFields key/value list.
     String getFieldValue(dynamic fields, String key) {

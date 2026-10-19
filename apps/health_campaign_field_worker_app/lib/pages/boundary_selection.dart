@@ -795,8 +795,7 @@ class _BoundarySelectionPageState
                                               capitalizedFirstLetter: false,
                                               label: localizations.translate(
                                                   '${runtimeHierarchyType()}_$label'),
-                                              isRequired:
-                                                  isLabelRequired(label),
+                                              isRequired: true,
                                               child: isMultiSelectLevel
                                                   ? MultiSelectDropDown(
                                                       sentenceCaseEnabled:
@@ -1094,27 +1093,8 @@ class _BoundarySelectionPageState
     return context.isWarehouseManager || context.isHealthFacilitySupervisor;
   }
 
-  /// Community is mandatory for Registrar-only and Registrar+Distributor
-  /// users (double-phase registration, and single-phase registration +
-  /// distribution), but not for Distributor-only users (double-phase
-  /// distribution, where only Health Facility + Distribution Point are mandatory).
-  /// Every other label (Health Facility, Distribution Point, etc.) stays
-  /// mandatory for everyone, matching existing behavior - including
-  /// Warehouse Manager, who never reaches this label anyway since
-  /// filterBoundaryLabelListBasedOnRole truncates their list to the first
-  /// level only.
-  bool isLabelRequired(String label) {
-    if (label.trim().toLowerCase() == 'community') {
-      return context.isRegistrarRole || !context.isDistributorRole;
-    }
-    return true;
-  }
-
-  /// Returns selectedLastLevelBoundaries if non-empty; otherwise falls back to
-  /// the deepest selected boundary from selectedBoundaryMap. When a
-  /// distributor leaves Community blank, resolve the selected Distribution
-  /// Point to its Community children because beneficiaries use Community as
-  /// their locality.
+  /// Returns the selected leaf boundaries, falling back to the deepest
+  /// selected boundary from selectedBoundaryMap.
   List<BoundaryModel> getEffectiveBoundaries(BoundaryState state) {
     if (state.selectedLastLevelBoundaries.isNotEmpty) {
       return state.selectedLastLevelBoundaries;
@@ -1123,20 +1103,6 @@ class _BoundarySelectionPageState
         .lastWhereOrNull((element) => element.value != null);
     if (lastSelected?.value != null) {
       final selectedBoundary = lastSelected!.value!;
-      if (context.isDistributorRole &&
-          !context.isRegistrarRole &&
-          selectedBoundary.label?.trim().toLowerCase() ==
-              'distribution point') {
-        final childCommunities = state.boundaryList.where((boundary) {
-          final path = boundary.materializedPath?.split('.') ?? const [];
-          return boundary.label?.trim().toLowerCase() == 'community' &&
-              boundary.boundaryNum ==
-                  (selectedBoundary.boundaryNum ?? 0) + 1 &&
-              path.contains(selectedBoundary.code);
-        }).toList();
-        if (childCommunities.isNotEmpty) return childCommunities;
-      }
-
       return [selectedBoundary];
     }
     return [];
@@ -1171,8 +1137,7 @@ class _BoundarySelectionPageState
   bool usesMultiSelectForBoundary(String label, bool isLastLevel) {
     if (!isLastLevel) return false;
 
-    // The distribution-only flow ends at Distribution Point, which is a
-    // single selection. Other flows retain multi-select at their leaf level.
+    // Distributor-only users make a single selection at the leaf level.
     return !(context.isDistributorRole && !context.isRegistrarRole);
   }
 
@@ -1224,11 +1189,6 @@ class _BoundarySelectionPageState
     bool hasError = false;
     for (final entry in formControls.entries) {
       final formControl = entry.value;
-      if (!isLabelRequired(entry.key)) {
-        formControl.removeError('');
-        continue;
-      }
-
       if (formControl.value == null ||
           (formControl.value is List && (formControl.value as List).isEmpty)) {
         formControl.setErrors({'': true});

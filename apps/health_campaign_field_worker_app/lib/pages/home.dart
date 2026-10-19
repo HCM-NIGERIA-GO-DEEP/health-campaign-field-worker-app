@@ -2114,9 +2114,9 @@ class _HomePageState extends LocalizedState<HomePage> {
           homeShowcaseData.distributorBeneficiaries.buildWith(
         child: HomeItemCard(
           icon: Icons.home,
-          label: (context.isDistributorRole && !context.isRegistrarRole)
-              ? i18.home.distributionLabel
-              : i18.home.houseToHouse,
+          label: context.isRegistrarRole
+              ? i18.home.registrarBeneficiaryLabel
+              : i18.home.distributionLabel,
           onPressed: () async {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {

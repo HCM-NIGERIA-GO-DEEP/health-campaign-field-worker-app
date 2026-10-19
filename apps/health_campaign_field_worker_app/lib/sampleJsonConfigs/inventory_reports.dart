@@ -165,7 +165,7 @@ final dynamic inventoryReportFlows = {
           "type": "template",
           "label": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_HEADING",
           "format": "menu_card",
-          "hidden": true,
+          "hidden": false,
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_HEADING",
           "visibilityCondition": {
             "expression": [
@@ -202,7 +202,7 @@ final dynamic inventoryReportFlows = {
           "type": "template",
           "label": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_HEADING",
           "format": "menu_card",
-          "hidden": true,
+          "hidden": false,
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_HEADING",
           "visibilityCondition": {
             "expression": [
