@@ -1711,7 +1711,10 @@ final dynamic sampleFlows = {
           ],
           "fieldName": "idSearchBar",
           "mandatory": true,
-          "allowedCharacters": "a-zA-Z0-9",
+          // Generated beneficiary IDs contain underscores (e.g.
+          // UNIQUE_BENEFICIARY_ID values), which this allow-list excluded,
+          // blocking the user from even typing "_" to search by it.
+          "allowedCharacters": "a-zA-Z0-9_",
           "validations": [
             {"type": "minSearchChars", "value": 2}
           ],

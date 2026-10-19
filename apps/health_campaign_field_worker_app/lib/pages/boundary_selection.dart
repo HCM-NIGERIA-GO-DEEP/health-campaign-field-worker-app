@@ -816,6 +816,75 @@ class _BoundarySelectionPageState
                                         final isLastLevel =
                                             labelIndex == labelList.length - 1;
 
+                                        void applyBoundarySelection(
+                                            BoundaryModel selectedBoundary) {
+                                          final displayValue =
+                                              localizations.translate(
+                                            selectedBoundary.code ??
+                                                'No Value',
+                                          );
+                                          debugPrint(
+                                            'Boundary dropdown selected -> label: $label, code: ${selectedBoundary.code}, displayValue: $displayValue, name: ${selectedBoundary.name}',
+                                          );
+
+                                          // Only reset children if value actually changed
+                                          final previousValue =
+                                              state.selectedBoundaryMap[label];
+                                          if (previousValue?.code ==
+                                              selectedBoundary.code) {
+                                            return;
+                                          }
+
+                                          context.read<BoundaryBloc>().add(
+                                                BoundarySearchEvent(
+                                                  boundaryNum: (selectedBoundary)
+                                                      .boundaryNum!,
+                                                  code: (selectedBoundary)
+                                                      .code!,
+                                                ),
+                                              );
+
+                                          context.read<BoundaryBloc>().add(
+                                                BoundarySelectEvent(
+                                                  label: label,
+                                                  selectedBoundary:
+                                                      selectedBoundary,
+                                                ),
+                                              );
+                                          if (labelIndex == 0) {
+                                            FlowBuilderSingleton()
+                                                .setStateBoundary(
+                                              boundary: selectedBoundary,
+                                            );
+                                          }
+                                          formControls[label]
+                                              ?.updateValue(selectedBoundary);
+                                          resetChildDropdowns(label, state);
+                                        }
+
+                                        // A level with exactly one candidate
+                                        // (e.g. a registrar/distributor's
+                                        // Distribution Point or PHU, already
+                                        // fixed by their project assignment)
+                                        // has nothing for the user to pick -
+                                        // auto-select it so the field reads
+                                        // as pre-filled/read-only instead of
+                                        // sitting on an empty "Select..."
+                                        // placeholder the user can't act on.
+                                        if (!isLastLevel &&
+                                            filteredItems.length == 1 &&
+                                            formControls[label]?.value ==
+                                                null) {
+                                          WidgetsBinding.instance
+                                              .addPostFrameCallback((_) {
+                                            if (formControls[label]?.value ==
+                                                null) {
+                                              applyBoundarySelection(
+                                                  filteredItems.first);
+                                            }
+                                          });
+                                        }
+
                                         return Padding(
                                           padding: const EdgeInsets.symmetric(
                                               horizontal: 0, vertical: spacer2),
@@ -972,6 +1041,9 @@ class _BoundarySelectionPageState
                                                           filteredItems
                                                                   .length <=
                                                               1,
+                                                      readOnly: filteredItems
+                                                              .length <=
+                                                          1,
                                                       sentenceCaseEnabled:
                                                           false,
                                                       items: filteredItems
@@ -990,65 +1062,8 @@ class _BoundarySelectionPageState
                                                                     boundary
                                                                         .code ==
                                                                     value.code);
-
-                                                        final displayValue =
-                                                            localizations
-                                                                .translate(
-                                                          selectedBoundary
-                                                                  .code ??
-                                                              'No Value',
-                                                        );
-                                                        debugPrint(
-                                                          'Boundary dropdown selected -> label: $label, code: ${selectedBoundary.code}, displayValue: $displayValue, name: ${selectedBoundary.name}',
-                                                        );
-
-                                                        // Only reset children if value actually changed
-                                                        final previousValue =
-                                                            state.selectedBoundaryMap[
-                                                                label];
-                                                        if (previousValue
-                                                                ?.code ==
-                                                            selectedBoundary
-                                                                .code) {
-                                                          return;
-                                                        }
-
-                                                        context
-                                                            .read<
-                                                                BoundaryBloc>()
-                                                            .add(
-                                                              BoundarySearchEvent(
-                                                                boundaryNum:
-                                                                    (selectedBoundary)
-                                                                        .boundaryNum!,
-                                                                code:
-                                                                    (selectedBoundary)
-                                                                        .code!,
-                                                              ),
-                                                            );
-
-                                                        context
-                                                            .read<
-                                                                BoundaryBloc>()
-                                                            .add(
-                                                              BoundarySelectEvent(
-                                                                label: label,
-                                                                selectedBoundary:
-                                                                    selectedBoundary,
-                                                              ),
-                                                            );
-                                                        if (labelIndex == 0) {
-                                                          FlowBuilderSingleton()
-                                                              .setStateBoundary(
-                                                            boundary:
-                                                                selectedBoundary,
-                                                          );
-                                                        }
-                                                        formControls[label]
-                                                            ?.updateValue(
-                                                                selectedBoundary);
-                                                        resetChildDropdowns(
-                                                            label, state);
+                                                        applyBoundarySelection(
+                                                            selectedBoundary);
                                                       },
                                                       onChange: (value) {
                                                         if (value.isEmpty) {
@@ -1206,9 +1221,16 @@ class _BoundarySelectionPageState
       String normalize(String label) =>
           label.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');
 
-      return labelList
+      final filtered = labelList
           .where((label) => allowedBoundaryLevels.contains(normalize(label)))
           .toList();
+      debugPrint(
+        'boundary_selection.filterBoundaryLabelListBasedOnRole: '
+        'isRegistrarRole=${context.isRegistrarRole} '
+        'isDistributorRole=${context.isDistributorRole} '
+        'fullLabelList=$labelList filtered=$filtered',
+      );
+      return filtered;
     }
 
     if (doFilter) {

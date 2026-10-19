@@ -1142,6 +1142,13 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
             role.code == RolesType.registrar.toValue() ||
             role.code == RolesType.distributor.toValue(),
       );
+      debugPrint(
+        'ProjectBloc.boundary: needsBoundaryParents=$needsBoundaryParents '
+        'roles=${context.loggedInUserRoles.map((r) => r.code).toList()} '
+        'projectBoundaryCode=${event.model.address?.boundary} '
+        'rowversionMismatch=${rowversionList.firstOrNull?.version != serverVersion} '
+        'boundaryRefetched=$boundaryRefetched',
+      );
 
       if (rowversionList.firstOrNull?.version != serverVersion ||
           boundaryRefetched) {
@@ -1152,6 +1159,11 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
                 needsBoundaryParents ? null : event.model.address?.boundaryType,
             includeParents: needsBoundaryParents ? true : null,
           ),
+        );
+        debugPrint(
+          'ProjectBloc.boundary: remote fetch (rowversion-mismatch branch) '
+          'returned ${boundaries.length} boundaries, labels='
+          '${boundaries.map((b) => b.label).toSet()}',
         );
         await boundaryLocalRepository.bulkCreate(boundaries);
         await localSecureStore.setSelectedProject(event.model);
@@ -1196,6 +1208,12 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
               (boundary) =>
                   boundary.label?.toLowerCase() == 'distribution point',
             );
+        debugPrint(
+          'ProjectBloc.boundary: local cache read returned '
+          '${boundaries.length} boundaries, labels='
+          '${boundaries.map((b) => b.label).toSet()}, '
+          'hasRequiredParents=$hasRequiredParents',
+        );
         if (needsBoundaryParents && !hasRequiredParents) {
           try {
             final boundaryWithParents = await boundaryRemoteRepository.search(
@@ -1203,6 +1221,11 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
                 codes: event.model.address?.boundary,
                 includeParents: true,
               ),
+            );
+            debugPrint(
+              'ProjectBloc.boundary: includeParents remote fetch returned '
+              '${boundaryWithParents.length} boundaries, labels='
+              '${boundaryWithParents.map((b) => b.label).toSet()}',
             );
             boundaries = {
               ...boundaries,

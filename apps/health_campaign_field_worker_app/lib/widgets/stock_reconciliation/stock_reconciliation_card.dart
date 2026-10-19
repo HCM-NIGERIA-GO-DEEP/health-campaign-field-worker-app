@@ -359,19 +359,26 @@ class _StockReconciliationCardState
                         labelFlex: 5,
                       ),
                       const DigitDivider(),
+                      // Damaged stock is shown regardless of role - a
+                      // non-distributor (e.g. a warehouse-level upper
+                      // hierarchy user) can end up holding damaged stock via
+                      // the Shortfall Return flow (manage_stock.dart's
+                      // stockReceiptDetails onAction, STOCK_DAMAGE branch)
+                      // just as much as a distributor can, and needs to see
+                      // it's excluded from what they can issue.
+                      LabelValueItem(
+                        label: localizations.translate(
+                            i18.stockReconciliationMetrics.stockDamaged),
+                        value:
+                            _stockMetrics['stockDamaged']!.toStringAsFixed(0),
+                        labelFlex: 5,
+                      ),
+                      const DigitDivider(),
                       if (isDistributor) ...[
                         LabelValueItem(
                           label: localizations.translate(
                               i18.stockReconciliationMetrics.stockLost),
                           value: _stockMetrics['stockLost']!.toStringAsFixed(0),
-                          labelFlex: 5,
-                        ),
-                        const DigitDivider(),
-                        LabelValueItem(
-                          label: localizations.translate(
-                              i18.stockReconciliationMetrics.stockDamaged),
-                          value:
-                              _stockMetrics['stockDamaged']!.toStringAsFixed(0),
                           labelFlex: 5,
                         ),
                         const DigitDivider(),

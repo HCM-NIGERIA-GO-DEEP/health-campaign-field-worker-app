@@ -2,7 +2,9 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:digit_data_model/models/entities/boundary.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -39,12 +41,56 @@ class BoundaryBloc extends Bloc<BoundaryEvent, BoundaryState> {
     BoundaryFindEvent event,
     BoundaryEmitter emit,
   ) async {
+    // isSingle: true previously made the local query ignore `codes` entirely
+    // and instead do `WHERE boundaryNum <= MAX(boundaryNum) LIMIT
+    // MAX(boundaryNum)` (see BoundaryLocalRepository.search) - an arbitrary,
+    // unscoped slice of the ENTIRE local boundary table, not this project's
+    // own branch. That happened to look fine on a near-empty table but broke
+    // down once the table accumulated boundaries from more than one branch -
+    // a registrar/distributor's Distribution Point row would come back
+    // empty because the slice it landed in didn't actually contain their
+    // branch's boundaries. isSingle: false uses the same
+    // materializedPath-scoped match _handleSearch already relies on below.
     List<BoundaryModel> boundaryList = await boundaryRepository.search(
       BoundarySearchModel(
         codes: event.code,
-        isSingle: true,
+        isSingle: false,
       ),
     );
+
+    // The query above (materializedPath LIKE '%code%') can only find the
+    // project's own node and its DESCENDANTS - never its ancestors, since an
+    // ancestor's own materializedPath never contains a descendant's code as
+    // a substring. For a registrar/distributor whose project is assigned at
+    // a leaf level (e.g. Community), this means an ancestor like
+    // "Distribution Point" - already fetched and persisted locally via
+    // project.dart's includeParents fetch - never comes back here, even
+    // though it's sitting right there in the local table. Walk the project's
+    // own node's materializedPath to find its ancestor codes and fetch each
+    // one explicitly by an exact code match.
+    final ownNode =
+        boundaryList.firstWhereOrNull((b) => b.code == event.code);
+    final ancestorCodes = (ownNode?.materializedPath ?? '')
+        .split('.')
+        .where((code) => code.isNotEmpty && code != event.code)
+        .toList();
+
+    for (final ancestorCode in ancestorCodes) {
+      if (boundaryList.any((b) => b.code == ancestorCode)) continue;
+      final ancestorMatches = await boundaryRepository.search(
+        BoundarySearchModel(codes: ancestorCode, isSingle: false),
+      );
+      final exactMatch =
+          ancestorMatches.firstWhereOrNull((b) => b.code == ancestorCode);
+      if (exactMatch != null) boundaryList.add(exactMatch);
+    }
+
+    // Keep hierarchy order (Country -> ... -> Community) intact after
+    // appending ancestors above, since selectedBoundaryMap's key order is
+    // relied on elsewhere (boundary_selection.dart's cascading-dropdown
+    // parent lookup) to represent the real top-down hierarchy.
+    boundaryList = [...boundaryList]
+      ..sort((a, b) => (a.boundaryNum ?? 0).compareTo(b.boundaryNum ?? 0));
 
     final List<String> boundaryLabelList = [];
     for (var element in boundaryList) {
@@ -52,6 +98,10 @@ class BoundaryBloc extends Bloc<BoundaryEvent, BoundaryState> {
         boundaryLabelList.add(element.label.toString());
       }
     }
+    debugPrint(
+      'BoundaryBloc._handlefind: code=${event.code} returned '
+      '${boundaryList.length} boundaries, labels=$boundaryLabelList',
+    );
     emit(
       state.copyWith(
         boundaryList: boundaryList,

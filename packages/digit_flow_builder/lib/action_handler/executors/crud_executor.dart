@@ -287,11 +287,23 @@ class UpdateExecutor extends ActionExecutor {
           final key = modify['key'] as String?;
           var value = modify['value'];
           if (key != null) {
-            // Resolve template expressions like {{navigation.mrnNumber}}
+            // Resolve template expressions like {{navigation.mrnNumber}}.
+            // resolveValue can fail closed in two different ways: returning
+            // null, or returning the raw template string unchanged (when the
+            // referenced path isn't found in contextData) - guard both, or
+            // an unresolved "{{navigation.x}}" literal gets written straight
+            // into the persisted field instead of a real value.
             if (value is String && value.contains('{{')) {
               final resolved = resolveValue(value, contextData);
-              if (resolved != null) {
+              if (resolved != null && resolved != value) {
                 value = resolved;
+              } else {
+                debugPrint(
+                  'UPDATE_EVENT: could not resolve "$value" for key '
+                  '"$key" - leaving this field out of the update rather '
+                  'than persisting the unresolved template',
+                );
+                continue;
               }
             }
             modifyMap[key] = value;

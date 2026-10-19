@@ -165,7 +165,6 @@ final dynamic inventoryReportFlows = {
           "type": "template",
           "label": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_HEADING",
           "format": "menu_card",
-          "hidden": true,
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_HEADING",
           "visibilityCondition": {
             "expression": [
