@@ -946,13 +946,32 @@ class _BoundarySelectionPageState
                                                   : DigitDropdown<
                                                       BoundaryModel>(
                                                       onTap: () {},
-                                                      isDisabled: labelIndex !=
+                                                      // A level with exactly
+                                                      // one candidate (e.g. a
+                                                      // registrar/distributor's
+                                                      // Distribution Point or
+                                                      // PHU, already fixed by
+                                                      // their project
+                                                      // assignment) has
+                                                      // nothing to choose -
+                                                      // disable it so it
+                                                      // reads as the
+                                                      // read-only/pre-filled
+                                                      // field the UI spec
+                                                      // calls for, rather
+                                                      // than an interactive
+                                                      // dropdown with a
+                                                      // single option.
+                                                      isDisabled: (labelIndex !=
                                                               0 &&
                                                           formControls[labelList[
                                                                       labelIndex -
                                                                           1]]
                                                                   ?.value ==
-                                                              null,
+                                                              null) ||
+                                                          filteredItems
+                                                                  .length <=
+                                                              1,
                                                       sentenceCaseEnabled:
                                                           false,
                                                       items: filteredItems
@@ -1172,14 +1191,17 @@ class _BoundarySelectionPageState
       bool doFilter, BoundaryState state) {
     final labelList = state.selectedBoundaryMap.keys.toList();
 
-    // Registrar and distributor users both only pick Distribution Point and
-    // Community (per the UI spec) - no PHU row for either. Distribution
-    // Point will show as effectively fixed/single-option since their project
-    // is already scoped to it; Community is the one real choice they make.
+    // Per the UI mock: Registrar sees Distribution Point (read-only,
+    // pre-filled - their project is already scoped to it) + Community
+    // (mandatory, selectable). Distributor additionally sees PHU
+    // (read-only, pre-filled, one level above Distribution Point) on top of
+    // the same Distribution Point + Community pair. A user holding both
+    // roles gets the distributor's superset.
     if (context.isRegistrarRole || context.isDistributorRole) {
       final allowedBoundaryLevels = <String>{
         'distributionpoint',
         'community',
+        if (context.isDistributorRole) 'phu',
       };
       String normalize(String label) =>
           label.toLowerCase().replaceAll(RegExp(r'[^a-z]'), '');

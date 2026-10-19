@@ -2376,6 +2376,11 @@ final dynamic sampleInventoryFlows = {
                           "value":
                               "{{item.items[0].additionalFields.fields.stockEntryType}}"
                         },
+                        {
+                          "key": "discrepancyReason",
+                          "value":
+                              "{{item.items[0].additionalFields.fields.discrepancyReason}}"
+                        },
                         {"key": "transactionType", "value": "RECEIVED"},
                         {"key": "primaryRole", "value": "RECEIVER"},
                         {"key": "secondaryRole", "value": "SENDER"},
@@ -2522,14 +2527,23 @@ final dynamic sampleInventoryFlows = {
           // Stock PRD 8.2: Accept on a return with reason = Stock damage
           // does NOT re-issue - the quantity enters the receiver's Damaged
           // bucket instead (still "in hand" but excluded from issuable
-          // stock). Checked before the generic re-issue block below so
-          // damage takes priority over the in-transit/miscount re-issue
-          // path. Reuses the existing "DAMAGED" stockEntryType convention
-          // already handled specially for the sender side in
-          // stock_calculation_utils.dart / stock_balance_executor.dart.
+          // stock). The discrepancy reason is set by the LOWER hierarchy at
+          // the time they partially accepted the original dispatch (see
+          // onSecondaryAction's generic partial-accept block below) and is
+          // carried down through navigation.discrepancyReason (populated
+          // from the incoming record's own additionalFields when this
+          // screen is opened - see the "Select" button's NAVIGATION data in
+          // this file's incoming-transactions list) - the upper hierarchy
+          // does not choose a reason themselves, Accept just resolves
+          // whatever reason already arrived with the shortfall. Checked
+          // before the generic re-issue block below so damage takes
+          // priority over the in-transit/miscount re-issue path. Reuses the
+          // existing "DAMAGED" stockEntryType convention already handled
+          // specially for the sender side in stock_calculation_utils.dart /
+          // stock_balance_executor.dart.
           "condition": {
             "expression":
-                "navigation.incomingStockEntryType == 'RETURNED' && formData.discrepancyReason == 'STOCK_DAMAGE'"
+                "navigation.incomingStockEntryType == 'RETURNED' && navigation.discrepancyReason == 'STOCK_DAMAGE'"
           },
           "actions": [
             {
@@ -2545,10 +2559,6 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "StockModel.additionalFields.fields.stockEntryType",
                     "value": "DAMAGED"
-                  },
-                  {
-                    "key": "StockModel.additionalFields.fields.comments",
-                    "value": "{{fn:safeString(formData.rejectComment)}}"
                   }
                 ]
               }
@@ -2571,6 +2581,56 @@ final dynamic sampleInventoryFlows = {
               "actionType": "SHOW_TOAST",
               "properties": {
                 "message": "INVENTORY_STOCK_DAMAGE_RECORDED_SUCCESS",
+                "type": "success"
+              }
+            },
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "type": "TEMPLATE",
+                "name": "manageStock",
+                "navigationMode": "popUntilAndReplace",
+                "popUntilPageName": "manageStock"
+              }
+            }
+          ]
+        },
+        {
+          // Same deal as the DAMAGED block above: the "Stock Loss" reason
+          // was chosen by the LOWER hierarchy at step 2b, carried here via
+          // navigation.discrepancyReason. Per Stock PRD this is a terminal
+          // write-off - the lost quantity must never enter any balance, so
+          // there is deliberately no UPDATE_STOCK_BALANCE call in this
+          // block.
+          "condition": {
+            "expression":
+                "navigation.incomingStockEntryType == 'RETURNED' && navigation.discrepancyReason == 'STOCK_LOSS'"
+          },
+          "actions": [
+            {
+              "actionType": "UPDATE_EVENT",
+              "properties": {
+                "source": "existingModels",
+                "entity": "StockModel",
+                "modify": [
+                  {
+                    "key": "StockModel.additionalFields.fields.status",
+                    "value": "ACCEPTED"
+                  },
+                  {
+                    "key":
+                        "StockModel.additionalFields.fields.actualQuantityReceived",
+                    "value": "0"
+                  },
+                  {"key": "StockModel.quantity", "value": "0"},
+                  {"key": "StockModel.transactionReason", "value": "STOCK_LOSS"}
+                ]
+              }
+            },
+            {
+              "actionType": "SHOW_TOAST",
+              "properties": {
+                "message": "INVENTORY_STOCK_LOSS_RECORDED_SUCCESS",
                 "type": "success"
               }
             },
@@ -2650,7 +2710,7 @@ final dynamic sampleInventoryFlows = {
                   },
                   {
                     "key": "discrepancyReason",
-                    "value": "{{formData.discrepancyReason}}"
+                    "value": "{{navigation.discrepancyReason}}"
                   }
                 ],
                 "onError": [
@@ -2711,62 +2771,13 @@ final dynamic sampleInventoryFlows = {
       ],
       "onSecondaryAction": [
         {
-          // Stock PRD: "Partial Accept on a return is reserved for stock
-          // loss" - the sender/upper-hierarchy resolving an incoming
-          // Shortfall Return (navigation.incomingStockEntryType ==
-          // 'RETURNED') via Partial Accept always means the quantity is
-          // unrecoverable, never a good/damaged split. It's a terminal
-          // write-off: no further shortfallTransaction/return-loop, nothing
-          // added to any balance. Checked before the generic partial-accept
-          // block below (which still handles a plain fresh receipt).
-          "condition": {
-            "expression":
-                "navigation.incomingStockEntryType == 'RETURNED' && formData.discrepancyReason == 'STOCK_LOSS'"
-          },
-          "actions": [
-            {
-              "actionType": "UPDATE_EVENT",
-              "properties": {
-                "source": "existingModels",
-                "entity": "StockModel",
-                "modify": [
-                  {
-                    "key": "StockModel.additionalFields.fields.status",
-                    "value": "ACCEPTED"
-                  },
-                  {
-                    "key": "StockModel.additionalFields.fields.comments",
-                    "value": "{{fn:safeString(formData.rejectComment)}}"
-                  },
-                  {
-                    "key":
-                        "StockModel.additionalFields.fields.actualQuantityReceived",
-                    "value": "0"
-                  },
-                  {"key": "StockModel.quantity", "value": "0"},
-                  {"key": "StockModel.transactionReason", "value": "STOCK_LOSS"}
-                ]
-              }
-            },
-            {
-              "actionType": "SHOW_TOAST",
-              "properties": {
-                "message": "INVENTORY_STOCK_LOSS_RECORDED_SUCCESS",
-                "type": "success"
-              }
-            },
-            {
-              "actionType": "NAVIGATION",
-              "properties": {
-                "type": "TEMPLATE",
-                "name": "manageStock",
-                "navigationMode": "popUntilAndReplace",
-                "popUntilPageName": "manageStock"
-              }
-            }
-          ]
-        },
-        {
+          // A Shortfall Return's resolution (re-issue / damage / loss) is
+          // fully determined by the discrepancyReason the LOWER hierarchy
+          // already chose at step 2b and carried here via
+          // navigation.discrepancyReason - the upper hierarchy doesn't pick
+          // anything, so there is nothing left for "Partially Accept" to do
+          // on a return. Direct them to the plain Accept button instead,
+          // which auto-resolves based on that reason (see onAction above).
           "condition": {
             "expression": "navigation.incomingStockEntryType == 'RETURNED'"
           },
@@ -2774,7 +2785,7 @@ final dynamic sampleInventoryFlows = {
             {
               "actionType": "SHOW_TOAST",
               "properties": {
-                "message": "INVENTORY_PARTIAL_ACCEPT_RETURN_REQUIRES_STOCK_LOSS_REASON",
+                "message": "INVENTORY_RETURN_RESOLVED_VIA_ACCEPT",
                 "type": "error"
               }
             }

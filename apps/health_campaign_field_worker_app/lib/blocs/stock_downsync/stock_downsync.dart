@@ -53,8 +53,6 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
 
   final BuildContext context;
 
-  static const String _dispatchedTransaction = 'DISPATCHED';
-
   StockDownSyncBloc({
     required this.context,
     required this.localSecureStore,
@@ -342,10 +340,6 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
 
         // After stock download, downsync stock balance user actions
         await downSyncStockBalances(event.projectModel.id);
-        await _reconcileSenderShortfalls(
-          projectId: event.projectModel.id,
-          stockEntries: downsyncedStocks.values.toList(),
-        );
 
         emit(StockDownSyncState.success(syncedCount, totalCount));
       } catch (e) {
@@ -442,114 +436,6 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
     } catch (e) {
       debugPrint('Stock balance downsync error: $e');
     }
-  }
-
-  Future<void> _reconcileSenderShortfalls({
-    required String projectId,
-    required List<StockModel> stockEntries,
-  }) async {
-    if (stockEntries.isEmpty) return;
-
-    try {
-      final userObject = await localSecureStore.userRequestModel;
-      final userRoles = userObject?.roles.map((e) => e.code) ?? [];
-      final isDistributor =
-          userRoles.contains(RolesType.distributor.toValue()) ||
-              userRoles.contains(RolesType.communityDistributor.toValue());
-
-      final projectFacilities = await projectFacilityLocalRepository.search(
-        ProjectFacilitySearchModel(projectId: [projectId]),
-      );
-
-      final currentFacilities = projectFacilities.where((pf) {
-        final facilityLevel = pf.additionalFields?.fields
-            .where((f) => f.key == 'facilityLevel')
-            .firstOrNull
-            ?.value;
-        return facilityLevel == null || facilityLevel == 'current';
-      }).toList();
-
-      final facilityIds = isDistributor
-          ? {userObject?.uuid ?? ''}
-          : currentFacilities
-              .map((e) => e.facilityId)
-              .whereType<String>()
-              .toSet();
-
-      facilityIds.removeWhere((element) => element.isEmpty);
-      if (facilityIds.isEmpty) return;
-
-      final senderShortfallDeltas = <String, double>{};
-
-      for (final stock in stockEntries) {
-        final senderId = stock.senderId;
-        final productVariantId = stock.productVariantId;
-        final transactionType = stock.transactionType?.toUpperCase() ?? '';
-
-        if (senderId == null ||
-            productVariantId == null ||
-            !facilityIds.contains(senderId) ||
-            transactionType != _dispatchedTransaction) {
-          continue;
-        }
-
-        final shortfall = StockCalculationUtils.getSenderShortfall(stock);
-        if (shortfall <= 0) continue;
-
-        final balanceKey = generateBalanceKey(senderId, productVariantId,
-            context.selectedProject.referenceID, userObject?.id);
-        senderShortfallDeltas[balanceKey] =
-            (senderShortfallDeltas[balanceKey] ?? 0) + shortfall;
-      }
-
-      for (final entry in senderShortfallDeltas.entries) {
-        await _increaseBalance(entry.key, entry.value);
-      }
-    } catch (e) {
-      debugPrint('Sender stock shortfall reconciliation error: $e');
-    }
-  }
-
-  Future<void> _increaseBalance(String balanceKey, double quantity) async {
-    if (quantity <= 0) return;
-
-    final existing = await userActionLocalRepository.search(
-      UserActionSearchModel(clientReferenceId: [balanceKey]),
-    );
-
-    if (existing.isEmpty) return;
-
-    final balanceAction = existing.first;
-    final balanceFieldIndex = balanceAction.additionalFields?.fields.indexWhere(
-          (field) => field.key == 'balance',
-        ) ??
-        -1;
-
-    if (balanceFieldIndex < 0) return;
-
-    final currentBalance = double.tryParse(
-          balanceAction.additionalFields?.fields[balanceFieldIndex].value ??
-              '0',
-        ) ??
-        0;
-
-    final updatedFields = List<AdditionalField>.from(
-        balanceAction.additionalFields?.fields ?? []);
-    updatedFields[balanceFieldIndex] = AdditionalField(
-      'balance',
-      (currentBalance + quantity).toString(),
-    );
-
-    await userActionLocalRepository.update(
-      balanceAction.copyWith(
-        timestamp: DateTime.now().millisecondsSinceEpoch,
-        additionalFields: UserActionAdditionalFields(
-          version: balanceAction.additionalFields?.version ?? 1,
-          fields: updatedFields,
-        ),
-      ),
-      createOpLog: false,
-    );
   }
 
   Future<Set<String>> _getPendingLocalStockClientReferences(

@@ -13,18 +13,27 @@ import 'package:health_campaign_field_worker_app/sampleJsonConfigs/manage_stock.
 ///       dispatched - accepted, sender = the accepting (lower) facility,
 ///       receiver = the original sender (upper) facility, status IN_TRANSIT -
 ///       so it shows up in the upper hierarchy's incoming list.
-///   3a. Upper hierarchy Accepts that incoming Shortfall Return with reason
-///       In-transit loss/Miscount/Others: a new re-issue shortfallTransaction
-///       is created (stockEntryType ISSUED, same quantity, sender/receiver
-///       swapped back), looping into step 2 for the lower hierarchy again.
-///   3b. Upper hierarchy Accepts the same return with reason Stock damage:
-///       no new transaction - the existing return record is mutated in place
-///       to stockEntryType DAMAGED, ACCEPTED.
-///   3c. Upper hierarchy Partial Accepts the return with reason Stock Loss
-///       (the only valid reason for a RETURNED partial accept): the record is
-///       zeroed out (quantity 0) and ACCEPTED - a terminal write-off.
-///   3d. Upper hierarchy Partial Accepts the return with any other reason:
-///       blocked with an explicit error, no side effects.
+///   The discrepancy reason is chosen by the LOWER hierarchy at step 2b, not
+///   re-entered by the upper hierarchy - it's carried down to the upper
+///   hierarchy's incoming-transactions list as part of the return record's
+///   own additionalFields, and threaded into navigation.discrepancyReason
+///   when they open it. Accept (onAction) auto-resolves based on that
+///   already-known reason; there is nothing left for Partially Accept to do
+///   on a return, since no new input is collected.
+///   3a. Accepting an incoming Shortfall Return whose reason is In-transit/
+///       Miscount/anything other than Stock damage or Stock loss: a new
+///       re-issue shortfallTransaction is created (stockEntryType ISSUED,
+///       same quantity, sender/receiver swapped back), looping into step 2
+///       for the lower hierarchy again.
+///   3b. Accepting a return whose reason is Stock damage: no new transaction
+///       - the existing return record is mutated in place to stockEntryType
+///       DAMAGED, ACCEPTED.
+///   3c. Accepting a return whose reason is Stock Loss: the record is zeroed
+///       out (quantity 0) and ACCEPTED - a terminal write-off, nothing added
+///       to any balance.
+///   3d. Tapping Partially Accept on any return (regardless of reason) is
+///       blocked with an explicit error directing to Accept instead, since
+///       resolution never depends on anything typed in that popup.
 ///
 /// Every FETCH_TRANSFORMER_CONFIG that builds a *new* entity (as opposed to
 /// UPDATE_EVENT's source: "existingModels", which mutates the record already
@@ -220,14 +229,10 @@ void main() {
         );
 
     test('is gated purely on incomingStockEntryType == RETURNED', () {
-      // This is the crux of the 3a/3b audit finding: this condition does not
-      // also check formData.discrepancyReason != 'STOCK_DAMAGE', so it fires
-      // for every accepted return regardless of reason - including the ones
-      // meant to take the Stock-damage branch above it. That branch is dead
-      // because the primary Accept confirmation (showAlertPopUp) never
-      // collects a discrepancyReason in the first place (it has no `body`),
-      // so formData.discrepancyReason is always unset on this path and the
-      // 'STOCK_DAMAGE' branch's condition can never be true.
+      // The more specific STOCK_DAMAGE and STOCK_LOSS branches are checked
+      // first (consecutive conditional group, first match wins), so this
+      // bare RETURNED condition only ever fires once those two have already
+      // been ruled out - it's the correct catch-all for every other reason.
       expect(conditionOf(branch()),
           "navigation.incomingStockEntryType == 'RETURNED'");
     });
@@ -262,10 +267,9 @@ void main() {
       );
       expect(
         dataEntry(fetch, 'discrepancyReason')['value'],
-        '{{formData.discrepancyReason}}',
-        reason: 'the re-issue record should carry the discrepancy reason '
-            'for audit purposes, matching the analogous step 2b '
-            'shortfallTransaction fetch',
+        '{{navigation.discrepancyReason}}',
+        reason: 'the re-issue record should carry forward the discrepancy '
+            'reason the lower hierarchy originally gave, for audit purposes',
       );
     });
 
@@ -297,18 +301,27 @@ void main() {
               're-issue shortfallTransaction fetch overwrites entities');
     });
 
-    test('the branch appears before the generic RETURNED fallthrough', () {
-      // Order matters: the STOCK_DAMAGE-gated branch, then this one, must be
-      // evaluated before any later catch-all RETURNED handling.
+    test('the branch appears after the STOCK_DAMAGE and STOCK_LOSS branches',
+        () {
+      // Order matters: the more specific branches must be evaluated before
+      // this catch-all, since they're all part of one consecutive
+      // conditional group (first match wins).
       final index = onAction.indexOf(branch());
       final damageIndex = onAction.indexWhere((a) => (conditionOf(a) ?? '')
-          .contains("formData.discrepancyReason == 'STOCK_DAMAGE'"));
+          .contains("navigation.discrepancyReason == 'STOCK_DAMAGE'"));
+      final lossIndex = onAction.indexWhere((a) => (conditionOf(a) ?? '')
+          .contains("navigation.discrepancyReason == 'STOCK_LOSS'"));
       expect(damageIndex, greaterThanOrEqualTo(0),
           reason: 'expected a STOCK_DAMAGE-gated branch to exist (step 3b)');
+      expect(lossIndex, greaterThanOrEqualTo(0),
+          reason: 'expected a STOCK_LOSS-gated branch to exist (step 3c)');
       expect(damageIndex, lessThan(index),
           reason:
               'the Stock-damage branch must be checked before the generic '
               're-issue branch so damage can take priority when reachable');
+      expect(lossIndex, lessThan(index),
+          reason: 'the Stock-loss branch must be checked before the generic '
+              're-issue branch so loss can take priority when reachable');
     });
   });
 
@@ -316,12 +329,12 @@ void main() {
       () {
     Map<String, dynamic> branch() => onAction.firstWhere((a) =>
         (conditionOf(a) ?? '').contains("navigation.incomingStockEntryType == 'RETURNED'") &&
-        (conditionOf(a) ?? '').contains("formData.discrepancyReason == 'STOCK_DAMAGE'"));
+        (conditionOf(a) ?? '').contains("navigation.discrepancyReason == 'STOCK_DAMAGE'"));
 
     test('condition checks both RETURNED and STOCK_DAMAGE reason', () {
       expect(
         conditionOf(branch()),
-        "navigation.incomingStockEntryType == 'RETURNED' && formData.discrepancyReason == 'STOCK_DAMAGE'",
+        "navigation.incomingStockEntryType == 'RETURNED' && navigation.discrepancyReason == 'STOCK_DAMAGE'",
       );
     });
 
@@ -369,16 +382,16 @@ void main() {
   });
 
   group(
-      'Step 3c: upper hierarchy partial-accepts a Shortfall Return as Stock loss',
+      'Step 3c: upper hierarchy accepts a Shortfall Return as Stock loss',
       () {
-    Map<String, dynamic> branch() => onSecondaryAction.firstWhere((a) =>
+    Map<String, dynamic> branch() => onAction.firstWhere((a) =>
         (conditionOf(a) ?? '').contains("navigation.incomingStockEntryType == 'RETURNED'") &&
-        (conditionOf(a) ?? '').contains("formData.discrepancyReason == 'STOCK_LOSS'"));
+        (conditionOf(a) ?? '').contains("navigation.discrepancyReason == 'STOCK_LOSS'"));
 
     test('STOCK_LOSS is the only reason gating this terminal write-off', () {
       expect(
         conditionOf(branch()),
-        "navigation.incomingStockEntryType == 'RETURNED' && formData.discrepancyReason == 'STOCK_LOSS'",
+        "navigation.incomingStockEntryType == 'RETURNED' && navigation.discrepancyReason == 'STOCK_LOSS'",
       );
     });
 
@@ -422,21 +435,21 @@ void main() {
       );
     });
 
-    test('is evaluated before the generic RETURNED-without-STOCK_LOSS guard',
+    test('is evaluated before the generic re-issue catch-all in onAction',
         () {
-      final lossIndex = onSecondaryAction.indexOf(branch());
-      final genericReturnedIndex = onSecondaryAction.indexWhere((a) =>
+      final lossIndex = onAction.indexOf(branch());
+      final genericReturnedIndex = onAction.indexWhere((a) =>
           (conditionOf(a) ?? '') ==
           "navigation.incomingStockEntryType == 'RETURNED'");
       expect(genericReturnedIndex, greaterThanOrEqualTo(0),
-          reason: 'expected a bare RETURNED guard branch (step 3d)');
+          reason: 'expected a bare RETURNED catch-all branch (step 3a)');
       expect(lossIndex, lessThan(genericReturnedIndex),
           reason: 'STOCK_LOSS must be special-cased before the generic '
-              'RETURNED rejection, or a valid write-off would be blocked');
+              're-issue branch, or a valid write-off would re-issue instead');
     });
   });
 
-  group('Step 3d: partial accept on a Shortfall Return with any other reason',
+  group('Step 3d: Partially Accept on any Shortfall Return is blocked',
       () {
     Map<String, dynamic> branch() => onSecondaryAction.firstWhere(
           (a) =>
@@ -444,7 +457,7 @@ void main() {
               "navigation.incomingStockEntryType == 'RETURNED'",
         );
 
-    test('any RETURNED partial-accept not already caught by STOCK_LOSS is blocked',
+    test('every RETURNED partial-accept attempt is blocked, regardless of reason',
         () {
       expect(conditionOf(branch()),
           "navigation.incomingStockEntryType == 'RETURNED'");
@@ -459,9 +472,14 @@ void main() {
       expect(toast['actionType'], 'SHOW_TOAST');
       expect(
         toast['properties']['message'],
-        'INVENTORY_PARTIAL_ACCEPT_RETURN_REQUIRES_STOCK_LOSS_REASON',
+        'INVENTORY_RETURN_RESOLVED_VIA_ACCEPT',
       );
       expect(toast['properties']['type'], 'error');
+    });
+
+    test('this is the first branch in onSecondaryAction (runs before the '
+        'generic fresh-dispatch partial-accept guards)', () {
+      expect(onSecondaryAction.first, same(branch()));
     });
   });
 

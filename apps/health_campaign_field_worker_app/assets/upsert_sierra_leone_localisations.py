@@ -298,7 +298,8 @@ MESSAGES_BY_MODULE = {
         "INVENTORY_ACTUAL_QUANTITY_RECEIVED_LABEL": "Actual Quantity Received",
         "INVENTORY_REJECT_COMMENT_LABEL": "Reason for Difference",
         "INVENTORY_PARTIAL_ACCEPT_QUANTITY_INVALID":
-            "Actual received quantity must be greater than zero and no greater than the quantity sent.",
+            "Actual received quantity must be greater than zero and less than the quantity sent. "
+            "To record the full quantity, use Accept instead.",
         "INVENTORY_STOCK_REJECTED_SUCCESS": "Stock partially accepted",
 
         # Stock PRD: Accept/Partial Accept on an incoming Shortfall Return.
@@ -306,8 +307,16 @@ MESSAGES_BY_MODULE = {
             "Stock recorded as damaged",
         "INVENTORY_STOCK_LOSS_RECORDED_SUCCESS":
             "Stock loss recorded",
-        "INVENTORY_PARTIAL_ACCEPT_RETURN_REQUIRES_STOCK_LOSS_REASON":
-            "Partially accepting a return is only used to write off lost stock - select \"Stock loss\" as the reason, or use Accept instead.",
+        "INVENTORY_RETURN_RESOLVED_VIA_ACCEPT":
+            "This return resolves automatically based on the reason the sender reported - use Accept instead.",
+
+        # viewReports' reportDetails heading, per report type. Receipt/
+        # Dispatch/Returned/Damage/Loss reuse the INVENTORY_STOCK_*_DETAILS_
+        # HEADING codes already upserted above for viewTransactionDetails
+        # (same wording fits both screens) - only Excess and Less need their
+        # own codes here, since no single-transaction equivalent exists.
+        "INVENTORY_REPORT_DETAILS_EXCESS_REPORT_TITLE": "Stock Excess Details",
+        "INVENTORY_REPORT_DETAILS_LESS_REPORT_TITLE": "Stock Less Details",
     },
     f"hcm-registration-{CAMPAIGN}": {
         "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenAndPregnantWomen_maxFieldSum_message":
@@ -319,6 +328,13 @@ MESSAGES_BY_MODULE = {
             "Household Registered Successfully",
         "HOUSEHOLD_REGISTERED_SUCCESSFUL_PANEL_CARD_DESC":
             "The household has been registered and the health talk checklist has been recorded.",
+    },
+    f"hcm-closehousehold-{CAMPAIGN}": {
+        # headName only had a minLength before - sync fails server-side past
+        # 200 chars (same cap registration_flows.dart enforces on its own
+        # name fields), so add a matching maxLength here too.
+        "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_headName_MAX_LENGTH_ERROR":
+            "Name must be at most 200 characters",
     },
 }
 # ONE REQUEST PER MODULE - never a single batched request for all of them.
