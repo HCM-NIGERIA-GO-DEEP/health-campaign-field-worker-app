@@ -80,7 +80,7 @@ final dynamic inventoryReportFlows = {
                   {"key": "reportType", "value": "receipt"},
                   {
                     "key": "reportDetailsHeading",
-                    "value": "INVENTORY_REPORT_DETAILS_RECEIPT_REPORT_TITLE"
+                    "value": "INVENTORY_STOCK_RECEIPT_DETAILS_HEADING"
                   },
                   {
                     "key": "facilities",
@@ -118,7 +118,7 @@ final dynamic inventoryReportFlows = {
                   {"key": "reportType", "value": "dispatch"},
                   {
                     "key": "reportDetailsHeading",
-                    "value": "INVENTORY_REPORT_DETAILS_DISPATCH_REPORT_TITLE"
+                    "value": "INVENTORY_STOCK_ISSUE_DETAILS_HEADING"
                   },
                   {
                     "key": "facilities",
@@ -148,7 +148,7 @@ final dynamic inventoryReportFlows = {
                   {"key": "reportType", "value": "returned"},
                   {
                     "key": "reportDetailsHeading",
-                    "value": "INVENTORY_REPORT_DETAILS_RETURNED_REPORT_TITLE"
+                    "value": "INVENTORY_STOCK_RETURN_DETAILS_HEADING"
                   },
                   {
                     "key": "facilities",
@@ -183,7 +183,7 @@ final dynamic inventoryReportFlows = {
                   {"key": "reportType", "value": "damage"},
                   {
                     "key": "reportDetailsHeading",
-                    "value": "INVENTORY_REPORT_DETAILS_DAMAGE_REPORT_TITLE"
+                    "value": "INVENTORY_STOCK_DAMAGED_DETAILS_HEADING"
                   },
                   {"key": "facilities", "value": "{{FacilityModel}}"},
                   {"key": "productVariants", "value": "{{ProductVariantModel}}"}
@@ -220,7 +220,7 @@ final dynamic inventoryReportFlows = {
                   {"key": "reportType", "value": "loss"},
                   {
                     "key": "reportDetailsHeading",
-                    "value": "INVENTORY_REPORT_DETAILS_LOSS_REPORT_TITLE"
+                    "value": "INVENTORY_STOCK_LOSS_DETAILS_HEADING"
                   },
                   {"key": "facilities", "value": "{{FacilityModel}}"},
                   {"key": "productVariants", "value": "{{ProductVariantModel}}"}

@@ -749,22 +749,68 @@ class _BoundarySelectionPageState
                                           if (element.label != label)
                                             return false;
                                           if (labelIndex == 0) return true;
-                                          final parentIndex = labelIndex - 1;
 
-                                          final parentBoundaryEntry = state
-                                              .selectedBoundaryMap.entries
-                                              .elementAtOrNull(parentIndex);
-                                          final parentBoundary =
-                                              parentBoundaryEntry?.value;
-                                          if (parentBoundary == null)
-                                            return false;
+                                          // `labelIndex` is this label's
+                                          // position in the FILTERED
+                                          // `labelList` (role-based filtering
+                                          // hides levels - e.g. a registrar
+                                          // only sees Health Facility/
+                                          // Distribution Point/Community out
+                                          // of the full Country > ... >
+                                          // Community chain), but
+                                          // selectedBoundaryMap always holds
+                                          // every level in the full
+                                          // hierarchy. Indexing into it by
+                                          // `labelIndex - 1` grabbed whatever
+                                          // full-hierarchy level happened to
+                                          // sit at that position - almost
+                                          // never the real parent - and since
+                                          // the hidden levels in between are
+                                          // never explicitly selected, that
+                                          // lookup was usually null, silently
+                                          // emptying the options list (e.g.
+                                          // Community never showed anything
+                                          // once Distribution Point was
+                                          // picked). Walk the full hierarchy
+                                          // instead, from just above this
+                                          // label's real position, to find
+                                          // the nearest ancestor that has
+                                          // actually been selected.
+                                          final fullLabels = state
+                                              .selectedBoundaryMap.keys
+                                              .toList();
+                                          final fullIndex =
+                                              fullLabels.indexOf(label);
 
-                                          if (element.materializedPathList
-                                              .contains(parentBoundary.code)) {
-                                            return true;
+                                          BoundaryModel? parentBoundary;
+                                          for (var i = fullIndex - 1;
+                                              i >= 0;
+                                              i--) {
+                                            final candidate = state
+                                                .selectedBoundaryMap[
+                                                    fullLabels[i]];
+                                            if (candidate != null) {
+                                              parentBoundary = candidate;
+                                              break;
+                                            }
                                           }
 
-                                          return false;
+                                          // No ancestor selected yet (either
+                                          // this is the first visible
+                                          // dropdown, or every hidden level
+                                          // above it is a single-path
+                                          // pass-through that was never
+                                          // surfaced for selection) - the
+                                          // underlying boundaryList is
+                                          // already scoped to the project's
+                                          // assigned subtree, so show
+                                          // everything with this label rather
+                                          // than nothing.
+                                          if (parentBoundary == null)
+                                            return true;
+
+                                          return element.materializedPathList
+                                              .contains(parentBoundary.code);
                                         }).toList();
 
                                         final isLastLevel =
@@ -1085,13 +1131,9 @@ class _BoundarySelectionPageState
     return context.isWarehouseManager || context.isHealthFacilitySupervisor;
   }
 
-  /// Community must be selected for registration (including combined
-  /// Registrar + Distributor users), while Distributor-only users may select
-  /// it when distributing so the village list can be scoped correctly.
+  /// Community is mandatory for every role that gets shown the field,
+  /// including a pure Distributor.
   bool isLabelRequired(String label) {
-    if (label.trim().toLowerCase() == 'community') {
-      return context.isRegistrarRole || !context.isDistributorRole;
-    }
     return true;
   }
 
@@ -1130,11 +1172,12 @@ class _BoundarySelectionPageState
       bool doFilter, BoundaryState state) {
     final labelList = state.selectedBoundaryMap.keys.toList();
 
-    // Registrar and distributor users need their role-specific levels even
-    // when their boundary labels differ in spacing or capitalization.
+    // Registrar and distributor users both only pick Distribution Point and
+    // Community (per the UI spec) - no PHU row for either. Distribution
+    // Point will show as effectively fixed/single-option since their project
+    // is already scoped to it; Community is the one real choice they make.
     if (context.isRegistrarRole || context.isDistributorRole) {
-      const allowedBoundaryLevels = {
-        'healthfacility',
+      final allowedBoundaryLevels = <String>{
         'distributionpoint',
         'community',
       };

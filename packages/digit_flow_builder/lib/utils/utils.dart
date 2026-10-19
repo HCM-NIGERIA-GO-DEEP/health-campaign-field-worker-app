@@ -224,12 +224,16 @@ dynamic resolveNavigationDataValue({
   dynamic stateWrapperFirst,
   required Map<String, dynamic> contextData,
 }) {
-  // If the template references `contextData.*` (e.g. action entities), try the
-  // action contextData first — stateFormData does not carry `entities`, and an
-  // fn: wrapper would otherwise short-circuit on the function's null-default
-  // return value before the fallback runs.
-  final preferActionContext =
-      rawValue is String && rawValue.contains('contextData.');
+  // If the template references `contextData.*` (e.g. action entities) or
+  // `navigation.*` (e.g. contextData['navigation']['stockEntryType']), try the
+  // action contextData first — stateFormData carries neither `entities` nor a
+  // `navigation` key at all, and an fn: wrapper would otherwise short-circuit
+  // on the function's null-default return value before the fallback runs
+  // (e.g. getViewTransactionHeadingCode(null) returning a non-null default
+  // heading, which satisfies neither retry condition below and locks in the
+  // wrong value).
+  final preferActionContext = rawValue is String &&
+      (rawValue.contains('contextData.') || rawValue.contains('navigation.'));
 
   dynamic resolvedValue = preferActionContext
       ? resolveValue(rawValue, contextData)

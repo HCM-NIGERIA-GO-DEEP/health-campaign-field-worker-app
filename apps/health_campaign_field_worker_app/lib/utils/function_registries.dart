@@ -300,7 +300,18 @@ class FunctionRegistries {
       if (args.isEmpty) return '';
       final reportType = args.first?.toString() ?? '';
       const entryTypes = {
-        'receipt': 'RECEIPT',
+        // "RECEIPT" is never actually persisted: the stockReceipt transformer
+        // only builds that stockEntryType on a transient entity used to seed
+        // the UPDATE_EVENT write (manage_stock.dart's stockReceiptDetails
+        // onAction/onSecondaryAction) - the record that's actually saved is
+        // the original dispatch, mutated in place, which keeps its original
+        // "ISSUED" stockEntryType. Filtering for "RECEIPT" here always
+        // matched zero rows, so the Stock Received report was permanently
+        // empty. "ISSUED" + getSenderOrReceiver's receiverId (below) is what
+        // the sender-side "Stock Issued" report (senderId) is NOT scoped to,
+        // so this correctly isolates the receiving facility's accepted
+        // dispatches instead.
+        'receipt': 'ISSUED',
         'dispatch': 'ISSUED',
         'returned': 'RETURNED',
         'damage': 'DAMAGED',

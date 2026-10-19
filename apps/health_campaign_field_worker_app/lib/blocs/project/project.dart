@@ -1137,13 +1137,20 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
           .firstOrNull
           ?.version;
       final boundaryRefetched = await localSecureStore.boundaryRefetched;
+      final needsBoundaryParents = context.loggedInUserRoles.any(
+        (role) =>
+            role.code == RolesType.registrar.toValue() ||
+            role.code == RolesType.distributor.toValue(),
+      );
 
       if (rowversionList.firstOrNull?.version != serverVersion ||
           boundaryRefetched) {
         boundaries = await boundaryRemoteRepository.search(
           BoundarySearchModel(
-            boundaryType: event.model.address?.boundaryType,
             codes: event.model.address?.boundary,
+            boundaryType:
+                needsBoundaryParents ? null : event.model.address?.boundaryType,
+            includeParents: needsBoundaryParents ? true : null,
           ),
         );
         await boundaryLocalRepository.bulkCreate(boundaries);
@@ -1176,11 +1183,44 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
             codes: event.model.address?.boundary,
           ),
         );
+        // Sierra Leone's hierarchy (boundary-sierra.txt) has no "Health
+        // Facility" boundaryType at all - PHU is the real health-facility
+        // level here. Checking for the Liberia label would never find a
+        // match, so hasRequiredParents would always read false and this
+        // branch would re-fetch with includeParents on every single
+        // selection even when the cache already has what's needed.
+        final hasRequiredParents = boundaries.any(
+              (boundary) => boundary.label?.toLowerCase() == 'phu',
+            ) &&
+            boundaries.any(
+              (boundary) =>
+                  boundary.label?.toLowerCase() == 'distribution point',
+            );
+        if (needsBoundaryParents && !hasRequiredParents) {
+          try {
+            final boundaryWithParents = await boundaryRemoteRepository.search(
+              BoundarySearchModel(
+                codes: event.model.address?.boundary,
+                includeParents: true,
+              ),
+            );
+            boundaries = {
+              ...boundaries,
+              ...boundaryWithParents,
+            }.toList();
+          } catch (e) {
+            // Parent boundaries are an enhancement to the cached project
+            // scope. Keep the cached subtree usable when offline.
+            debugPrint('project boundary parent fetch failed: $e');
+          }
+        }
         if (boundaries.isEmpty) {
           boundaries = await boundaryRemoteRepository.search(
             BoundarySearchModel(
-              boundaryType: event.model.address?.boundaryType,
+              boundaryType:
+                  needsBoundaryParents ? null : event.model.address?.boundaryType,
               codes: event.model.address?.boundary,
+              includeParents: needsBoundaryParents ? true : null,
             ),
           );
           if (boundaries.isEmpty) {

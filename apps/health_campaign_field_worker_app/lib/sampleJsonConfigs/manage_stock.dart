@@ -2591,6 +2591,31 @@ final dynamic sampleInventoryFlows = {
           },
           "actions": [
             {
+              // Must run first, while contextData['entities'] still holds the
+              // original stockReceipt-fetch entity built at the top of this
+              // onAction array (transactionType=RECEIVED, qty=navigation.quantity).
+              // This correctly credits the "receiving the return back" effect
+              // (+quantity, since isReceiver && transactionType=='RECEIVED') to
+              // the upper hierarchy's balance BEFORE the FETCH_TRANSFORMER_CONFIG
+              // below overwrites entities with the re-issue entity. The outer
+              // trailing UPDATE_STOCK_BALANCE (after this conditional group)
+              // then applies the re-issue's -quantity effect, netting to 0 -
+              // matching the physical reality that the stock passed back in and
+              // right back out.
+              "actionType": "UPDATE_STOCK_BALANCE",
+              "properties": {
+                "entity": "STOCK",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"
+                    }
+                  }
+                ]
+              }
+            },
+            {
               "actionType": "FETCH_TRANSFORMER_CONFIG",
               "properties": {
                 "configName": "shortfallTransaction",
@@ -2622,6 +2647,10 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "originalIssueClientReferenceId",
                     "value": "{{navigation.clientReferenceId}}"
+                  },
+                  {
+                    "key": "discrepancyReason",
+                    "value": "{{formData.discrepancyReason}}"
                   }
                 ],
                 "onError": [
@@ -2629,6 +2658,19 @@ final dynamic sampleInventoryFlows = {
                     "actionType": "SHOW_TOAST",
                     "properties": {
                       "message": "INVENTORY_FETCH_CONFIG_FAILED_MESSAGE"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "CREATE_EVENT",
+              "properties": {
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "INVENTORY_CREATE_STOCK_FAILED_MESSAGE"
                     }
                   }
                 ]
@@ -2739,9 +2781,34 @@ final dynamic sampleInventoryFlows = {
           ]
         },
         {
+          // Explicit guard for the generic (non-RETURNED) partial-accept
+          // path: the entered quantity must be strictly greater than 0 and
+          // strictly less than the dispatched quantity. 0 means nothing was
+          // received (not a valid partial accept) and a value >= quantity
+          // means everything was received (that's the primary Accept
+          // button/onAction, not this partial-accept branch). Checked ahead
+          // of the generic partial-accept block below so invalid quantities
+          // are rejected with a clear error instead of silently matching no
+          // branch (or worse, matching the old `>= 0` condition and
+          // persisting a zero-quantity "partial accept").
           "condition": {
             "expression":
-                "actualQuantityReceived >= 0 && actualQuantityReceived < quantity"
+                "navigation.incomingStockEntryType != 'RETURNED' && (actualQuantityReceived <= 0 || actualQuantityReceived >= quantity)"
+          },
+          "actions": [
+            {
+              "actionType": "SHOW_TOAST",
+              "properties": {
+                "message": "INVENTORY_PARTIAL_ACCEPT_QUANTITY_INVALID",
+                "type": "error"
+              }
+            }
+          ]
+        },
+        {
+          "condition": {
+            "expression":
+                "actualQuantityReceived > 0 && actualQuantityReceived < quantity"
           },
           "actions": [
             {
@@ -2826,6 +2893,33 @@ final dynamic sampleInventoryFlows = {
               }
             },
             {
+              // UPDATE_STOCK_BALANCE must run here, while contextData['entities']
+              // still holds the "Received" entity (qty=actualQuantityReceived)
+              // from the FETCH_TRANSFORMER_CONFIG(stockReceipt) call above, and
+              // BEFORE the next FETCH_TRANSFORMER_CONFIG(shortfallTransaction)
+              // call overwrites entities with the Shortfall Return entity. This
+              // correctly credits only the actually-received quantity to the
+              // accepting facility's balance. Running it after CREATE_EVENT
+              // (its old position) would instead apply the balance delta to the
+              // Shortfall Return entity, which - per stock_balance_executor's
+              // isDistributorReturn routing - always debits the sender
+              // (isSender && stockEntryType=='RETURNED' -> -qty) regardless of
+              // role, incorrectly subtracting the shortfall from the accepting
+              // facility's own balance.
+              "actionType": "UPDATE_STOCK_BALANCE",
+              "properties": {
+                "entity": "STOCK",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"
+                    }
+                  }
+                ]
+              }
+            },
+            {
               "actionType": "FETCH_TRANSFORMER_CONFIG",
               "properties": {
                 "configName": "shortfallTransaction",
@@ -2882,14 +2976,13 @@ final dynamic sampleInventoryFlows = {
               }
             },
             {
-              "actionType": "UPDATE_STOCK_BALANCE",
+              "actionType": "CREATE_EVENT",
               "properties": {
-                "entity": "STOCK",
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",
                     "properties": {
-                      "message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"
+                      "message": "INVENTORY_CREATE_STOCK_FAILED_MESSAGE"
                     }
                   }
                 ]
@@ -3002,9 +3095,6 @@ final dynamic sampleInventoryFlows = {
                 "format": "dropdown",
                 "fieldName": "discrepancyReason",
                 "mandatory": true,
-                "revealsFreeTextOn": "OTHERS",
-                "revealedDetailLabel":
-                    "INVENTORY_DISCREPANCY_REASON_OTHERS_DETAIL_LABEL",
                 "enums": [
                   {
                     "code": "IN_TRANSIT",
@@ -3017,10 +3107,6 @@ final dynamic sampleInventoryFlows = {
                   {
                     "code": "STOCK_DAMAGE",
                     "name": "INVENTORY_DISCREPANCY_REASON_STOCK_DAMAGE"
-                  },
-                  {
-                    "code": "OTHERS",
-                    "name": "INVENTORY_DISCREPANCY_REASON_OTHERS"
                   }
                 ]
               },
