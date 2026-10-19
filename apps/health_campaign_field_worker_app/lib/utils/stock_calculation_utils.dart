@@ -251,8 +251,7 @@ class StockCalculationUtils {
                 stockLess +
                 stockDamaged +
                 stockLost)
-        : stockReceived +
-            stockReturned -
+        : (stockReceived + stockReturned) -
             (stockIssued + stockDamaged + stockLost);
 
     return {

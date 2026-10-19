@@ -19,6 +19,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 
 import '../../widgets/localized.dart';
 import '../helper/form_builder_helper.dart';
+import '../helper/validation_context_manager.dart';
 import '../helper/validator_helper.dart';
 import '../models/property_schema/property_schema.dart';
 import '../models/schema_object/schema_object.dart';
@@ -346,14 +347,31 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
             return Provider<Map<String, dynamic>>.value(
               value: widget.defaultValues ?? {},
               child: ReactiveFormBuilder(
-                  form: () => fb.group(
-                        JsonForms.getFormControls(
-                          schema,
-                          defaultValues: widget.defaultValues ?? {},
-                          schemaKey: widget.currentSchemaKey,
-                          navigationParams: widget.navigationParams,
-                        ),
+                  form: () {
+                    final group = fb.group(
+                      JsonForms.getFormControls(
+                        schema,
+                        defaultValues: widget.defaultValues ?? {},
+                        schemaKey: widget.currentSchemaKey,
+                        navigationParams: widget.navigationParams,
                       ),
+                    );
+                    // Wires up cross-field validators (e.g. childrenCount's
+                    // "maxField": "memberCount") so editing memberCount after
+                    // childrenCount was already filled re-validates
+                    // childrenCount too. Without this, reactive_forms only
+                    // re-runs a control's validators on its OWN value change,
+                    // so lowering memberCount left childrenCount's stale
+                    // (now-invalid) validity cached as valid, letting
+                    // childrenCount > memberCount through to submission.
+                    if (schema.properties != null) {
+                      ValidationContextManager(
+                        formGroup: group,
+                        schemas: schema.properties!,
+                      );
+                    }
+                    return group;
+                  },
                   builder: (context, formGroup, child) {
                     return ScrollableContent(
                       enableFixedDigitButton: true,

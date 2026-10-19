@@ -219,6 +219,34 @@ class _StockReconciliationCardState
               });
             }
 
+            // Auto-select the first product variant once a warehouse is
+            // picked. The product list isn't filtered by facility (same
+            // full ProductVariantModel list regardless of which warehouse
+            // is chosen), so the first entry is always a valid default and
+            // saves the user an extra tap for the common single-product
+            // case. Only fires when nothing has been picked yet, so it
+            // never overwrites a deliberate user selection. Guarded by
+            // mounted + a re-check of _selectedProduct inside the callback
+            // since product data can arrive asynchronously after the
+            // warehouse selection triggers this build.
+            if (_selectedFacility != null &&
+                _selectedProduct == null &&
+                displayProductVariants.isNotEmpty) {
+              final firstProduct = displayProductVariants.first;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && _selectedProduct == null) {
+                  setState(() {
+                    _productTouched = true;
+                    _selectedProduct = firstProduct;
+                    _manualCountInitialized = false;
+                    _needsMetricsRecalculation = true;
+                  });
+                  _triggerStockSearchIfReady(context);
+                  _updateFormData();
+                }
+              });
+            }
+
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
