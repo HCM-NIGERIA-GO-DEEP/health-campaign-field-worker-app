@@ -204,7 +204,7 @@ class StockCalculationUtils {
         continue;
       }
 
-      // A shortfall-notification RETURNED record (created automatically by
+      // A shortfall-notification RETURNED or resolved DAMAGED record (created automatically by
       // a partial accept - see manage_stock.dart's onSecondaryAction) is a
       // bookkeeping message to the upper hierarchy about the part of a
       // dispatch this facility couldn't account for; it is NOT stock this
@@ -223,7 +223,7 @@ class StockCalculationUtils {
       // transformer sets - a deliberate return of stock this facility
       // actually owned should still decrement/credit normally.
       final isShortfallNotification = isSender &&
-          stockEntryType == 'RETURNED' &&
+          (stockEntryType == 'RETURNED' || stockEntryType == 'DAMAGED') &&
           _getAdditionalFieldValue(stock, 'originalIssueClientReferenceId')
               .isNotEmpty;
       if (isShortfallNotification) {
@@ -256,7 +256,13 @@ class StockCalculationUtils {
           lowerFacilityLostShortfall += rawQuantity;
           continue;
         }
-        if (discrepancyReason == 'IN_TRANSIT') continue;
+        // The accepted RETURNED record is only the notification that causes
+        // the upper facility to reissue the shortfall; it must not affect
+        // that facility's balance. An accepted linked ISSUED row is the
+        // actual reissue and is counted for its receiver below.
+        if (discrepancyReason == 'IN_TRANSIT' && stockEntryType != 'ISSUED') {
+          continue;
+        }
       }
       if (isSender &&
           stockEntryType == 'ISSUED' &&
@@ -278,6 +284,8 @@ class StockCalculationUtils {
           wastage: wastage,
           partialUsed: calculatePartial ? partialUsed : 0,
           status: status,
+          isSender: isSender,
+          isReceiver: isReceiver,
           stockReceived: (v) => stockReceived += v,
           stockReturned: (v) => stockReturned += v,
           stockWastage: (v) => stockWastage += v,
@@ -318,14 +326,10 @@ class StockCalculationUtils {
       } else if (isReceiver &&
           transactionType == 'DISPATCHED' &&
           status == 'ACCEPTED') {
-        // Stock PRD: accepting a Shortfall Return with reason "Stock
-        // damage" updates this same record's stockEntryType to DAMAGED
-        // (see manage_stock.dart's stockReceiptDetails onAction) instead of
-        // creating a new transaction, so it reaches the receiver here as an
-        // ACCEPTED dispatch like any other - route it to the damaged
-        // bucket instead of stockReceived, same as the isSender-side
-        // DAMAGED case above, so it stays "in hand" but isn't counted as
-        // issuable.
+        // Acceptance updates the original dispatched row in place. The
+        // stockReceipt transformer supplies the immediate balance delta but
+        // is not separately persisted, so a later recompute must count this
+        // accepted row.
         if (stockEntryType == 'DAMAGED') {
           stockDamaged += quantity;
         } else {
@@ -398,6 +402,8 @@ class StockCalculationUtils {
     required double wastage,
     required double partialUsed,
     required String status,
+    required bool isSender,
+    required bool isReceiver,
     required void Function(double) stockReceived,
     required void Function(double) stockReturned,
     required void Function(double) stockWastage,
@@ -408,33 +414,42 @@ class StockCalculationUtils {
     required void Function(double) stockDamaged,
   }) {
     if (transactionType == 'RECEIVED') {
-      if (stockEntryType == 'RETURNED') {
+      if (stockEntryType == 'RETURNED' && isReceiver) {
         stockReturned(quantity);
         stockWastage(wastage);
         stockPartialUsed(partialUsed);
-      } else if (stockEntryType == 'EXCESS') {
+      } else if (stockEntryType == 'EXCESS' && isReceiver) {
         stockExcess(quantity);
-      } else if (stockEntryType == 'LESS') {
+      } else if (stockEntryType == 'LESS' && isSender) {
         stockLess(quantity);
-      } else {
+      } else if (isReceiver) {
         stockReceived(quantity);
       }
     } else if (transactionType == 'DISPATCHED') {
-      if (stockEntryType == 'RETURNED' && status != 'REJECTED') {
+      // LESS adjustments are persisted as DISPATCHED by stockLessExcess.
+      // Count them here as well as the legacy RECEIVED representation above,
+      // otherwise a balance recompute after sync restores the deducted stock.
+      if (stockEntryType == 'LESS' && isSender) {
+        stockLess(quantity);
+      } else if (stockEntryType == 'RETURNED' &&
+          status != 'REJECTED' &&
+          isSender) {
         stockReturned(quantity);
         stockWastage(wastage);
         stockPartialUsed(partialUsed);
-      } else if (stockEntryType == 'LOSS') {
+      } else if (stockEntryType == 'LOSS' && isSender) {
         stockLost(quantity);
-      } else if (stockEntryType == 'DAMAGED') {
+      } else if (stockEntryType == 'DAMAGED' && isSender) {
         // Checked before the generic ACCEPTED case below: a Shortfall
         // Return accepted with reason "Stock damage" has status ACCEPTED
         // AND stockEntryType DAMAGED (see manage_stock.dart's
         // stockReceiptDetails onAction) - if ACCEPTED were checked first it
         // would always win and this branch would never be reached.
         stockDamaged(quantity);
-      } else if (status == 'ACCEPTED') {
+      } else if (status == 'ACCEPTED' && isReceiver) {
         stockReceived(quantity);
+      } else if (isSender && stockEntryType == 'ISSUED') {
+        stockIssued(quantity);
       }
     }
   }
@@ -638,4 +653,6 @@ class StockCalculationUtils {
 
     return [];
   }
+
+  static void stockIssued(double quantity) {}
 }

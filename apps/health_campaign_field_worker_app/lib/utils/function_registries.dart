@@ -167,14 +167,20 @@ class FunctionRegistries {
     });
 
     FunctionRegistry.register('getCommentValue', (args, stateData) {
-      if (args.isEmpty || args.first == null) return null;
+      for (final arg in args) {
+        if (arg == null) continue;
 
-      final value = args.first.toString();
-      final trimmed = value.trim();
+        final value = arg.toString();
+        final trimmed = value.trim();
 
-      if (trimmed.isEmpty) return null;
+        if (trimmed.isNotEmpty &&
+            !(trimmed.contains('{{') && trimmed.contains('}}')) &&
+            trimmed.toLowerCase() != 'null') {
+          return value;
+        }
+      }
 
-      return value;
+      return null;
     });
 
     FunctionRegistry.register('generateUniqueMaterialNoteNumber',
@@ -254,6 +260,23 @@ class FunctionRegistries {
       final stockEntryType = args.first?.toString().toUpperCase() ?? '';
       final transactionReason =
           args.length > 1 ? args[1]?.toString().toUpperCase() ?? '' : '';
+      final discrepancyReason =
+          args.length > 2 ? args[2]?.toString().toUpperCase() ?? '' : '';
+      // When an upper-level user resolves a shortfall, the acknowledged
+      // record can retain stockEntryType=RETURNED while its discrepancy
+      // reason classifies it as loss or damage. Match the view-transaction
+      // heading to that classification, just as the report list does.
+      if (discrepancyReason == 'STOCK_DAMAGE' ||
+          transactionReason == 'STOCK_DAMAGE') {
+        return 'INVENTORY_STOCK_DAMAGED_DETAILS_HEADING';
+      }
+      if (discrepancyReason == 'STOCK_LOSS' ||
+          transactionReason == 'STOCK_LOSS') {
+        return 'INVENTORY_STOCK_LOSS_DETAILS_HEADING';
+      }
+      if (stockEntryType == 'RETURNED' || transactionReason == 'RETURNED') {
+        return 'INVENTORY_STOCK_RETURN_DETAILS_HEADING';
+      }
       // Once an issued transaction has been accepted, show the receiver's
       // perspective in the UI. The stored entry type remains ISSUED for stock
       // balance/report calculations.
@@ -412,6 +435,75 @@ class FunctionRegistries {
   }
 
   void _registerTransactionFunctions() {
+    FunctionRegistry.register('getReportStockQuantity', (args, stateData) {
+      if (args.length < 2 || args[1] == null) return '';
+
+      final reportType = args[0]?.toString() ?? '';
+      // TableWidget rows can be EntityModels (as they are when read from the
+      // wrapper modelMap) or maps (as they are in raw API/config data).
+      // Accept both so this report helper behaves like item.quantity access.
+      final rawStock = args[1];
+      final Map stock;
+      if (rawStock is Map) {
+        stock = rawStock;
+      } else if (rawStock is EntityModel) {
+        stock = rawStock.toMap();
+      } else {
+        return '';
+      }
+
+      final rawAdditionalFields = stock['additionalFields'];
+      final Map? additionalFields = rawAdditionalFields is Map
+          ? rawAdditionalFields
+          : rawAdditionalFields is EntityModel
+              ? rawAdditionalFields.toMap()
+              : null;
+      final rawFields = additionalFields?['fields'];
+      String? fieldValue(String key) {
+        if (rawFields is List) {
+          for (final field in rawFields) {
+            final Map? fieldMap = field is Map
+                ? field
+                : field is EntityModel
+                    ? field.toMap()
+                    : null;
+            if (fieldMap != null && fieldMap['key'] == key) {
+              final value = fieldMap['value']?.toString();
+              if (value != null && value.isNotEmpty && value != 'null') {
+                return value;
+              }
+            }
+          }
+        } else if (rawFields is Map) {
+          final value = rawFields[key]?.toString();
+          if (value != null && value.isNotEmpty && value != 'null') {
+            return value;
+          }
+        }
+        return null;
+      }
+
+      // Partial acceptance edits quantity down to the received amount, while
+      // the original sender's issue report must continue to show what they
+      // dispatched. The accepted receiver's receipt report shows the actual
+      // quantity received instead.
+      final value = reportType == 'dispatch'
+          ? fieldValue('originalQuantityReceived') ??
+              stock['quantity']?.toString() ??
+              ''
+          : reportType == 'receipt'
+              ? fieldValue('actualQuantityReceived') ??
+                  stock['quantity']?.toString() ??
+                  ''
+              : stock['quantity']?.toString() ?? '';
+      // This helper is used for report display. Keep signed quantities in
+      // storage for balance calculations, but show their magnitude in reports.
+      final number = num.tryParse(value.toString().trim());
+      if (number == null) return value;
+      final absolute = number.abs();
+      return absolute == absolute.roundToDouble() ? absolute.toInt() : absolute;
+    });
+
     FunctionRegistry.register('getTransactionType', (args, stateData) {
       if (args.isEmpty) return [];
       final reportType = args.first?.toString() ?? '';
@@ -461,13 +553,23 @@ class FunctionRegistries {
       };
       final isDistributor = context.loggedInUserRoles
           .any((role) => role.code == RolesType.distributor.toValue());
-      if (reportType == 'damage') return 'STOCK_DAMAGE';
+      // Only accepted shortfall resolutions are stamped DAMAGED or LOSS.
+      // Pending shortfall notifications remain RETURNED and must not appear
+      // in these resolved discrepancy reports.
+      // Historical accepted shortfall damage rows may still carry RETURNED;
+      // the report applies separate reason and accepted-status filters so
+      // pending returns cannot leak into the damage report.
+      if (reportType == 'damage') return 'DAMAGED,RETURNED';
       if (reportType == 'loss') {
         // Distributor loss entries are recorded as LESS. Upper hierarchy
         // loss reports show lower-level STOCK_LOSS discrepancy records.
-        return isDistributor ? 'LESS' : 'STOCK_LOSS';
+        return isDistributor ? 'LESS' : 'LOSS';
       }
       return entryTypes[reportType] ?? '';
+    });
+
+    FunctionRegistry.register('isResolvedDamageReport', (args, stateData) {
+      return args.isNotEmpty && args.first?.toString() == 'damage';
     });
 
     // Distributor stock records use the user's UUID as sender/receiver id;
@@ -477,21 +579,6 @@ class FunctionRegistries {
           .any((role) => role.code == RolesType.distributor.toValue());
       if (isDistributor) return context.loggedInUserUuid ?? '';
       return args.length > 1 ? args[1]?.toString() ?? '' : '';
-    });
-
-    // Upper-level damage/loss reports show resolved records only. Receipt
-    // reports use transactionReason=RECEIVED as their acceptance marker below;
-    // this avoids depending on a serialized additionalFields status filter.
-    FunctionRegistry.register('getReportStatusFilter', (args, stateData) {
-      if (args.isEmpty) return '';
-      final reportType = args.first?.toString() ?? '';
-      final isDistributor = context.loggedInUserRoles
-          .any((role) => role.code == RolesType.distributor.toValue());
-      if (reportType == 'damage' ||
-          (reportType == 'loss' && !isDistributor)) {
-        return '"key":"status","value":"ACCEPTED"';
-      }
-      return '';
     });
 
     FunctionRegistry.register('getReportTransactionReasonFilter',
@@ -506,13 +593,14 @@ class FunctionRegistries {
         return '';
       }
       if (reportType == 'receipt') return 'RECEIVED';
-      // Accepted discrepancy records can retain transactionReason=RECEIVED
-      // on older rows, while the current accept flow writes STOCK_DAMAGE or
-      // STOCK_LOSS. Match both persisted forms. A real return uses
-      // transactionReason=RETURNED, which also keeps legacy discrepancy rows
-      // out of the Returned report when their stockEntryType is RETURNED.
-      if (reportType == 'damage') return 'RECEIVED,STOCK_DAMAGE';
-      if (reportType == 'loss') return 'RECEIVED,STOCK_LOSS';
+      // These discrepancy reasons are written in additionalFields on the
+      // accepted DAMAGED/LOSS record, not the top-level transactionReason.
+      if (reportType == 'damage') {
+        return 'STOCK_DAMAGE,DAMAGED_IN_STORAGE,DAMAGED_IN_TRANSIT';
+      }
+      if (reportType == 'loss') {
+        return 'STOCK_LOSS,LOST_IN_STORAGE,LOST_IN_TRANSIT';
+      }
       if (reportType == 'returned') return 'RETURNED';
       return '';
     });
@@ -534,11 +622,22 @@ class FunctionRegistries {
       if (isDistributor && (reportType == 'loss' || reportType == 'excess')) {
         return reportType == 'excess' ? 'receiverId' : 'senderId';
       }
-      if (reportType == 'damage') return 'receiverId';
-      if (reportType == 'loss') {
-        return 'receiverId';
-      }
+      // Lower-facility damage/loss shortfall records are addressed to the
+      // upper facility that issued the stock. Its report must filter on the
+      // receiver, which is the selected upper facility.
+      if (reportType == 'damage' || reportType == 'loss') return 'receiverId';
       return senderTypes.contains(reportType) ? 'senderId' : 'receiverId';
+    });
+
+    FunctionRegistry.register('getReportTransactionReasonFilterKey',
+        (args, stateData) {
+      final reportType = args.isEmpty ? '' : args.first?.toString() ?? '';
+      // Discrepancy reasons are stored in additionalFields, not the
+      // top-level transactionReason column.
+      if (reportType == 'damage' || reportType == 'loss') {
+        return 'additionalFields';
+      }
+      return 'transactionReason';
     });
 
     FunctionRegistry.register('getAuditFilterKey', (args, stateData) {
@@ -566,15 +665,19 @@ class FunctionRegistries {
       final facilityFromWhich = argAt(2);
       final facilityToWhich = argAt(3);
       final isExcess = recordType == 'EXCESS';
+      final isDistributor = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.distributor.toValue());
 
       switch (partyField) {
         case 'senderId':
           if (isExcess) return facilityToWhich;
+          if (isDistributor) return context.loggedInUserUuid ?? '';
           return facilityFromWhich == 'DELIVERY_TEAM'
               ? (context.loggedInUserUuid ?? '')
               : facilityFromWhich;
         case 'senderType':
           if (isExcess) return 'WAREHOUSE';
+          if (isDistributor) return 'STAFF';
           return facilityFromWhich == 'DELIVERY_TEAM' ? 'STAFF' : 'WAREHOUSE';
         case 'receiverId':
           return isExcess

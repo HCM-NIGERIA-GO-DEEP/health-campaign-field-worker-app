@@ -1452,7 +1452,7 @@ final dynamic sampleInventoryFlows = {
               {
                 "key": "transactionDetailsHeading",
                 "value":
-                    "{{fn:getViewTransactionHeadingCode(formData.lessExcessDetails.recordType)}}"
+                    "{{fn:getViewTransactionHeadingCode(navigation.stockEntryType)}}"
               }
             ]
           }
@@ -2092,10 +2092,12 @@ final dynamic sampleInventoryFlows = {
           "properties": {
             "type": "SEARCH_EVENT",
             "name": "stock",
+            "awaitResults": true,
+            "skipAccumulatedFilters": true,
             "data": [
               {
                 "key": "additionalFields",
-                "value": "{{navigation.selectedStock}}",
+                "value": "{{fn:getCommentValue(navigation.selectedStock, '__NO_MATCHING_STOCK_MRN__')}}",
                 "operation": "contains"
               }
             ]
@@ -2163,11 +2165,23 @@ final dynamic sampleInventoryFlows = {
                   },
                   {
                     "key": "INVENTORY_WAYBILL_NUMBER_LABEL",
-                    "value": "{{item.additionalFields.fields.wayBillNumber}}"
+                    "value":
+                        "{{fn:getWayBillNumber(item.wayBillNumber, item.additionalFields.fields.wayBillNumber)}}",
+                    "hideIfNull": true
                   },
                   {
                     "key": "INVENTORY_BATCH_NUMBER_LABEL",
                     "value": "{{item.additionalFields.fields.batchNumber}}"
+                  },
+                  {
+                    "key": "APPONE_INVENTORY_TRANSPORT_LABEL",
+                    "value": "{{item.additionalFields.fields.transportType}}",
+                    "hideIfNull": true
+                  },
+                  {
+                    "key": "APPONE_INVENTORY_VEHICLE_NUMBER_LABEL",
+                    "value": "{{item.additionalFields.fields.vehicle_number}}",
+                    "hideIfNull": true
                   },
                   {
                     "key":
@@ -2196,7 +2210,8 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "INVENTORY_COMMENTS_LABEL",
                     "value":
-                        "{{fn:safeString(item.additionalFields.fields.comments)}}"
+                        "{{fn:safeString(item.additionalFields.fields.comments)}}",
+                    "hideIfNull": true
                   }
                 ]
               }
@@ -2436,11 +2451,21 @@ final dynamic sampleInventoryFlows = {
                           "value":
                               "{{fn:getStockDiscrepancyReason(item.items)}}"
                         },
+                        {
+                          "key": "originalIssueClientReferenceId",
+                          "value":
+                              "{{item.items[0].additionalFields.fields.originalIssueClientReferenceId}}"
+                        },
                         {"key": "transactionType", "value": "RECEIVED"},
                         {"key": "primaryRole", "value": "RECEIVER"},
                         {"key": "secondaryRole", "value": "SENDER"},
                         {
                           "key": "mrnNumber",
+                          "value":
+                              "{{fn:getCommentValue(item.items[0].additionalFields.fields.mrnNumber, fn:generateUniqueMaterialNoteNumber())}}"
+                        },
+                        {
+                          "key": "selectedTransactionMrn",
                           "value":
                               "{{item.items[0].additionalFields.fields.mrnNumber}}"
                         },
@@ -2457,7 +2482,7 @@ final dynamic sampleInventoryFlows = {
                         {
                           "key": "wayBillNumber",
                           "value":
-                              "{{item.items[0].additionalFields.fields.wayBillNumber}}"
+                              "{{fn:getWayBillNumber(item.items[0].wayBillNumber, item.items[0].additionalFields.fields.wayBillNumber)}}"
                         },
                         {
                           "key": "productVariantId",
@@ -2474,7 +2499,22 @@ final dynamic sampleInventoryFlows = {
                               "{{item.items[0].additionalFields.fields.batchNumber}}"
                         },
                         {
+                          "key": "transportType",
+                          "value":
+                              "{{item.items[0].additionalFields.fields.transportType}}"
+                        },
+                        {
+                          "key": "vehicleNumber",
+                          "value":
+                              "{{item.items[0].additionalFields.fields.vehicle_number}}"
+                        },
+                        {
                           "key": "comment",
+                          "value":
+                              "{{item.items[0].additionalFields.fields.comments}}"
+                        },
+                        {
+                          "key": "originalComment",
                           "value":
                               "{{item.items[0].additionalFields.fields.comments}}"
                         },
@@ -2525,7 +2565,7 @@ final dynamic sampleInventoryFlows = {
               {"key": "transactionType", "value": "RECEIVED"},
               {"key": "primaryRole", "value": "RECEIVER"},
               {"key": "secondaryRole", "value": "SENDER"},
-              {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
+              {"key": "mrnNumber", "value": "{{fn:getCommentValue(navigation.mrnNumber, navigation.selectedTransactionMrn)}}"},
               {
                 "key": "senderFacilityId",
                 "value": "{{navigation.senderFacilityId}}"
@@ -2540,7 +2580,11 @@ final dynamic sampleInventoryFlows = {
               },
               {"key": "userFacilityId", "value": "{{fn:getUserFacilityId()}}"},
               {"key": "sku", "value": "{{navigation.sku}}"},
-              {"key": "quantity", "value": "{{navigation.quantity}}"}
+              {"key": "quantity", "value": "{{navigation.quantity}}"},
+              {"key": "wayBillNumber", "value": "{{navigation.wayBillNumber}}"},
+              {"key": "batchNumber", "value": "{{navigation.batchNumber}}"},
+              {"key": "transportType", "value": "{{navigation.transportType}}"},
+              {"key": "vehicleNumber", "value": "{{navigation.vehicleNumber}}"}
             ],
             "onError": [
               {
@@ -2575,12 +2619,12 @@ final dynamic sampleInventoryFlows = {
               },
               {
                 "key": "StockModel.additionalFields.fields.mrnNumber",
-                "value": "{{navigation.mrnNumber}}"
+                "value": "{{fn:getCommentValue(navigation.mrnNumber, navigation.selectedTransactionMrn)}}"
               },
               {
                 "key": "StockModel.additionalFields.fields.comments",
                 "value":
-                    "{{fn:safeString(formData.stockReceiptDetails.comment)}}"
+                    "{{fn:getCommentValue(formData.stockReceiptDetails.comment, navigation.originalComment)}}"
               },
               {"key": "StockModel.transactionReason", "value": "RECEIVED"}
             ]
@@ -2651,7 +2695,7 @@ final dynamic sampleInventoryFlows = {
                 "navigationMode": "popUntilAndPush",
                 "popUntilPageName": "manageStock",
                 "data": [
-                  {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
+                  {"key": "mrnNumber", "value": "{{fn:getCommentValue(navigation.mrnNumber, navigation.selectedTransactionMrn)}}"},
                   {
                     "key": "clientReferenceId",
                     "value": "{{navigation.clientReferenceId}}"
@@ -2659,7 +2703,7 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "transactionDetailsHeading",
                     "value":
-                        "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED')}}"
+                        "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED', navigation.discrepancyReason)}}"
                   }
                 ]
               }
@@ -2693,6 +2737,10 @@ final dynamic sampleInventoryFlows = {
                         "StockModel.additionalFields.fields.actualQuantityReceived",
                     "value": "0"
                   },
+                  {
+                    "key": "StockModel.additionalFields.fields.stockEntryType",
+                    "value": "LOSS"
+                  },
                   {"key": "StockModel.transactionReason", "value": "STOCK_LOSS"}
                 ]
               }
@@ -2705,7 +2753,7 @@ final dynamic sampleInventoryFlows = {
                 "navigationMode": "popUntilAndPush",
                 "popUntilPageName": "manageStock",
                 "data": [
-                  {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
+                  {"key": "mrnNumber", "value": "{{fn:getCommentValue(navigation.mrnNumber, navigation.selectedTransactionMrn)}}"},
                   {
                     "key": "clientReferenceId",
                     "value": "{{navigation.clientReferenceId}}"
@@ -2713,7 +2761,7 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "transactionDetailsHeading",
                     "value":
-                        "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED')}}"
+                        "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED', navigation.discrepancyReason)}}"
                   }
                 ]
               }
@@ -2722,7 +2770,7 @@ final dynamic sampleInventoryFlows = {
         },
         {
           "condition": {
-            "expression": "navigation.incomingStockEntryType == 'RETURNED'"
+            "expression": "navigation.incomingStockEntryType == 'RETURNED' && navigation.discrepancyReason == 'IN_TRANSIT'"
           },
           "actions": [
             {
@@ -2780,6 +2828,19 @@ final dynamic sampleInventoryFlows = {
                     "value": "{{fn:getUserFacilityId()}}"
                   },
                   {"key": "sku", "value": "{{navigation.sku}}"},
+                  {
+                    "key": "wayBillNumber",
+                    "value": "{{navigation.wayBillNumber}}"
+                  },
+                  {"key": "batchNumber", "value": "{{navigation.batchNumber}}"},
+                  {
+                    "key": "transportType",
+                    "value": "{{navigation.transportType}}"
+                  },
+                  {
+                    "key": "vehicleNumber",
+                    "value": "{{navigation.vehicleNumber}}"
+                  },
                   {"key": "quantity", "value": "{{navigation.quantity}}"},
                   {
                     "key": "mrnNumber",
@@ -2854,7 +2915,7 @@ final dynamic sampleInventoryFlows = {
             "navigationMode": "popUntilAndPush",
             "popUntilPageName": "manageStock",
             "data": [
-              {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
+              {"key": "mrnNumber", "value": "{{fn:getCommentValue(navigation.mrnNumber, navigation.selectedTransactionMrn)}}"},
               {
                 "key": "clientReferenceId",
                 "value": "{{navigation.clientReferenceId}}"
@@ -2862,7 +2923,7 @@ final dynamic sampleInventoryFlows = {
               {
                 "key": "transactionDetailsHeading",
                 "value":
-                    "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED')}}"
+                    "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED', navigation.discrepancyReason)}}"
               }
             ]
           }
@@ -2878,7 +2939,7 @@ final dynamic sampleInventoryFlows = {
           // on a return. Direct them to the plain Accept button instead,
           // which auto-resolves based on that reason (see onAction above).
           "condition": {
-            "expression": "navigation.incomingStockEntryType == 'RETURNED'"
+            "expression": "navigation.incomingStockEntryType == 'RETURNED' && ((navigation.originalIssueClientReferenceId != null && navigation.originalIssueClientReferenceId != '') || (navigation.discrepancyReason != null && navigation.discrepancyReason != '' && navigation.discrepancyReason != 'null'))"
           },
           "actions": [
             {
@@ -2903,7 +2964,7 @@ final dynamic sampleInventoryFlows = {
           // persisting a zero-quantity "partial accept").
           "condition": {
             "expression":
-                "navigation.incomingStockEntryType != 'RETURNED' && (actualQuantityReceived <= 0 || actualQuantityReceived >= quantity)"
+                "(navigation.incomingStockEntryType != 'RETURNED' || (navigation.originalIssueClientReferenceId == null && (navigation.discrepancyReason == null || navigation.discrepancyReason == '' || navigation.discrepancyReason == 'null'))) && (actualQuantityReceived <= 0 || actualQuantityReceived >= quantity)"
           },
           "actions": [
             {
@@ -2931,7 +2992,7 @@ final dynamic sampleInventoryFlows = {
                   {"key": "transactionType", "value": "RECEIVED"},
                   {"key": "primaryRole", "value": "RECEIVER"},
                   {"key": "secondaryRole", "value": "SENDER"},
-                  {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
+                  {"key": "mrnNumber", "value": "{{fn:getCommentValue(navigation.mrnNumber, navigation.selectedTransactionMrn)}}"},
                   {
                     "key": "senderFacilityId",
                     "value": "{{navigation.senderFacilityId}}"
@@ -2948,6 +3009,19 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "quantity",
                     "value": "{{formData.actualQuantityReceived}}"
+                  },
+                  {
+                    "key": "wayBillNumber",
+                    "value": "{{navigation.wayBillNumber}}"
+                  },
+                  {"key": "batchNumber", "value": "{{navigation.batchNumber}}"},
+                  {
+                    "key": "transportType",
+                    "value": "{{navigation.transportType}}"
+                  },
+                  {
+                    "key": "vehicleNumber",
+                    "value": "{{navigation.vehicleNumber}}"
                   },
                   {
                     "key": "comment",
@@ -2976,7 +3050,7 @@ final dynamic sampleInventoryFlows = {
                   },
                   {
                     "key": "StockModel.additionalFields.fields.mrnNumber",
-                    "value": "{{navigation.mrnNumber}}"
+                    "value": "{{fn:getCommentValue(navigation.mrnNumber, navigation.selectedTransactionMrn)}}"
                   },
                   {
                     "key": "StockModel.additionalFields.fields.comments",
@@ -3063,6 +3137,19 @@ final dynamic sampleInventoryFlows = {
                   },
                   {"key": "sku", "value": "{{navigation.sku}}"},
                   {
+                    "key": "wayBillNumber",
+                    "value": "{{navigation.wayBillNumber}}"
+                  },
+                  {"key": "batchNumber", "value": "{{navigation.batchNumber}}"},
+                  {
+                    "key": "transportType",
+                    "value": "{{navigation.transportType}}"
+                  },
+                  {
+                    "key": "vehicleNumber",
+                    "value": "{{navigation.vehicleNumber}}"
+                  },
+                  {
                     "key": "quantity",
                     "value":
                         "{{fn:subtractQuantity(navigation.quantity, formData.actualQuantityReceived)}}"
@@ -3115,7 +3202,7 @@ final dynamic sampleInventoryFlows = {
                 "navigationMode": "popUntilAndPush",
                 "popUntilPageName": "manageStock",
                 "data": [
-                  {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
+                  {"key": "mrnNumber", "value": "{{fn:getCommentValue(navigation.mrnNumber, navigation.selectedTransactionMrn)}}"},
                   {
                     "key": "clientReferenceId",
                     "value": "{{navigation.clientReferenceId}}"
@@ -3123,7 +3210,7 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "transactionDetailsHeading",
                     "value":
-                        "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED')}}"
+                        "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED', navigation.discrepancyReason)}}"
                   }
                 ]
               }
@@ -3275,7 +3362,7 @@ final dynamic sampleInventoryFlows = {
               "type": "string",
               "label": "INVENTORY_WAYBILL_NUMBER_LABEL",
               "order": 4,
-              "value": "",
+              "value": "{{navigation.wayBillNumber}}",
               "format": "text",
               "hidden": false,
               "tooltip": "",
@@ -3296,7 +3383,7 @@ final dynamic sampleInventoryFlows = {
               "type": "string",
               "label": "INVENTORY_BATCH_NUMBER_LABEL",
               "order": 5,
-              "value": "",
+              "value": "{{navigation.batchNumber}}",
               "format": "text",
               "hidden": false,
               "tooltip": "",

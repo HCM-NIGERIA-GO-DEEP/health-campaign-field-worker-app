@@ -368,16 +368,17 @@ final dynamic inventoryReportFlows = {
                         "operation": "containsAny"
                       },
                       {
-                        "key": "additionalFields",
-                        "value":
-                            "{{fn:getReportStatusFilter(navigation.reportType)}}",
-                        "operation": "contains"
-                      },
-                      {
-                        "key": "transactionReason",
+                        "key": "{{fn:getReportTransactionReasonFilterKey(navigation.reportType)}}",
                         "value":
                             "{{fn:getReportTransactionReasonFilter(navigation.reportType)}}",
                         "operation": "containsAny"
+                      },
+                      {
+                        "key": "additionalFields",
+                        "value": "\"key\":\"status\",\"value\":\"ACCEPTED\"",
+                        "operation": "contains",
+                        "applyIf":
+                            "{{fn:isResolvedDamageReport(navigation.reportType)}}"
                       },
                       {
                         "key":
@@ -427,16 +428,17 @@ final dynamic inventoryReportFlows = {
                         "operation": "containsAny"
                       },
                       {
-                        "key": "additionalFields",
-                        "value":
-                            "{{fn:getReportStatusFilter(navigation.reportType)}}",
-                        "operation": "contains"
-                      },
-                      {
-                        "key": "transactionReason",
+                        "key": "{{fn:getReportTransactionReasonFilterKey(navigation.reportType)}}",
                         "value":
                             "{{fn:getReportTransactionReasonFilter(navigation.reportType)}}",
                         "operation": "containsAny"
+                      },
+                      {
+                        "key": "additionalFields",
+                        "value": "\"key\":\"status\",\"value\":\"ACCEPTED\"",
+                        "operation": "contains",
+                        "applyIf":
+                            "{{fn:isResolvedDamageReport(navigation.reportType)}}"
                       },
                       {
                         "key":
@@ -476,6 +478,7 @@ final dynamic inventoryReportFlows = {
           "type": "template",
           "format": "table",
           "fieldName": "tableInfoReportDetails",
+          "fitToContent": true,
           "data": {
             "source": "StockModel",
             "columns": [
@@ -500,7 +503,8 @@ final dynamic inventoryReportFlows = {
               },
               {
                 "header": "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_4_LABEL",
-                "cellValue": "{{fn:absoluteValue(item.quantity)}}"
+                "cellValue":
+                    "{{fn:getReportStockQuantity(navigation.reportType, item)}}"
               }
             ],
             "rows": "{{contextData.0.StockModel}}"
@@ -670,6 +674,7 @@ final dynamic inventoryReportFlows = {
           "format": "table",
           "fieldName": "tableInfoReckonReportDetails",
           "visible": "{{fn:hasRole('DISTRIBUTOR')}} == false",
+          "fitToContent": true,
           "data": {
             "source": "StockReconciliationModel",
             "columns": [
@@ -712,6 +717,7 @@ final dynamic inventoryReportFlows = {
           "format": "table",
           "fieldName": "distributorTableInfoReckonReportDetails",
           "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
+          "fitToContent": true,
           "data": {
             "source": "StockReconciliationModel",
             "columns": [

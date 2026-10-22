@@ -1023,7 +1023,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                       ),
                       children: [
                         if (_hasDisplayOnlyProperties(schema)) ...[
-                          _buildDisplayOnlyCard(context, schema),
+                          _buildDisplayOnlyCard(context, schema, formGroup),
                           const SizedBox(
                             height: spacer4,
                           )
@@ -1961,9 +1961,23 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     return schema.properties?.values.any((p) => p.displayOnly == true) ?? false;
   }
 
-  Widget _buildDisplayOnlyCard(BuildContext context, PropertySchema schema) {
+  Widget _buildDisplayOnlyCard(
+    BuildContext context,
+    PropertySchema schema,
+    FormGroup formGroup,
+  ) {
+    final visibilityContext = _buildPageVisibilityContext(formGroup);
     final displayOnlyEntries = schema.properties!.entries
-        .where((entry) => entry.value.displayOnly == true)
+        .where((entry) {
+          if (entry.value.displayOnly != true) return false;
+          final visibility = entry.value.visibilityCondition;
+          return visibility == null ||
+              visibility.expression.isEmpty ||
+              evaluateVisibilityExpression(
+                visibility.expression,
+                visibilityContext,
+              );
+        })
         .toList()
       ..sort((a, b) => (a.value.order ?? 0).compareTo(b.value.order ?? 0));
 

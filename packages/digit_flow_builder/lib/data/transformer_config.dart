@@ -992,6 +992,8 @@ final jsonConfig = {
             "batchNumber": "stockReceiptDetails.batchNumber",
             "expiryDate": "stockReceiptDetails.expiryDate",
             "comments": "__context.comment",
+            "transportType": "__context:transportType",
+            "vehicle_number": "__context:vehicleNumber",
             "mrnNumber": "__context:mrnNumber",
             "wayBillNumber": "stockReceiptDetails.wayBillNumber",
             "stockEntryType": "__context:stockEntryType",
@@ -1066,7 +1068,9 @@ final jsonConfig = {
   // allocation. stockEntryType is passed as RETURNED or ISSUED (not a new
   // enum value) so stock_balance_executor.dart's existing branches for both
   // apply unchanged - introducing a new stockEntryType would need
-  // balance-calculation changes too.
+  // balance-calculation changes too. Waybill, batch, transport, and vehicle
+  // details are copied from the original dispatch so the shortfall/reissue
+  // remains traceable to the shipment that produced it.
   "shortfallTransaction": {
     "fallbackModel": "StockModel",
     "models": {
@@ -1079,7 +1083,7 @@ final jsonConfig = {
           "referenceIdType": "__value:PROJECT",
           "quantity": "__context:quantity",
           "campaignNumber": "__context:selectedProject.referenceID",
-          "wayBillNumber": "stockReceiptDetails.wayBillNumber",
+          "wayBillNumber": "__context:wayBillNumber",
           "transactionType": "__value:DISPATCHED",
           "transactionReason": "__value:null",
           "senderId": "__context:senderFacilityId",
@@ -1091,7 +1095,9 @@ final jsonConfig = {
           "rowVersion": "meta.rowVersion",
           "additionalFields": {
             "sku": "__context:sku",
-            "batchNumber": "stockReceiptDetails.batchNumber",
+            "batchNumber": "__context:batchNumber",
+            "transportType": "__context:transportType",
+            "vehicle_number": "__context:vehicleNumber",
             "expiryDate": "stockReceiptDetails.expiryDate",
             "comments": "__context:comment",
             "mrnNumber": "__context:mrnNumber",
@@ -1100,6 +1106,7 @@ final jsonConfig = {
             "originalIssueClientReferenceId":
                 "__context:originalIssueClientReferenceId",
             "discrepancyReason": "__context:discrepancyReason",
+            "wayBillNumber": "__context:wayBillNumber",
             "primaryRole": "__context:primaryRole",
             "secondaryRole": "__context:secondaryRole"
           },

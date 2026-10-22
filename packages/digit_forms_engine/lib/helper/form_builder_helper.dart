@@ -39,6 +39,36 @@ FormControl buildFormControl(
     return null;
   }
 
+  // A few server supplied forms use an exact navigation reference as a
+  // field's initial value (for example {{navigation.wayBillNumber}}). Resolve
+  // only that exact form here; arbitrary template expressions belong to the
+  // flow expression evaluator.
+  dynamic resolveNavigationValue(dynamic value) {
+    if (value is! String) return value;
+
+    final match = RegExp(r'^\{\{\s*navigation\.([\w.]+)\s*\}\}$')
+        .firstMatch(value.trim());
+    if (match == null) return value;
+
+    dynamic resolved = navigationParams;
+    for (final key in match.group(1)!.split('.')) {
+      if (resolved is Map && resolved.containsKey(key)) {
+        resolved = resolved[key];
+      } else {
+        return null;
+      }
+    }
+
+    if (resolved is String && resolved.trim().toLowerCase() == 'null') {
+      return null;
+    }
+    return resolved;
+  }
+
+  bool isNavigationReference(dynamic value) => value is String &&
+      RegExp(r'^\{\{\s*navigation\.[\w.]+\s*\}\}$')
+          .hasMatch(value.trim());
+
   switch (schema.type) {
     case PropertySchemaType.integer:
       if (format == PropertySchemaFormat.date) {
@@ -129,9 +159,15 @@ FormControl buildFormControl(
           validators: validators,
         );
       } else {
+        final defaultValue = resolveNavigationValue(getDefaultValue(name));
+        final initialValue = defaultValue is String &&
+                defaultValue.trim().isEmpty
+            ? resolveNavigationValue(rawValue)
+            : defaultValue ?? resolveNavigationValue(rawValue);
         return FormControl<String>(
-          value: getDefaultValue(name) ??
-              (rawValue?.toString().isEmpty ?? true
+          value: initialValue ??
+              ((rawValue?.toString().isEmpty ?? true) ||
+                      isNavigationReference(rawValue)
                   ? null
                   : rawValue.toString()),
           validators: validators,

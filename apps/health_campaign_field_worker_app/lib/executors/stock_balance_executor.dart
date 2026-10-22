@@ -138,8 +138,27 @@ class StockBalanceExecutor extends ActionExecutor {
           stockEntryType == 'LESS' || stockEntryType == 'EXCESS';
       final isReceiver = stock.receiverId == facilityId;
       final isSender = stock.senderId == facilityId;
+      final additionalFields = stock.additionalFields?.fields ?? const [];
+      final originalIssueReference = additionalFields
+          .firstWhere((field) => field.key == 'originalIssueClientReferenceId',
+              orElse: () => const AdditionalField('', ''))
+          .value
+          ?.toString() ?? '';
+      final discrepancyReason = additionalFields
+          .firstWhere((field) => field.key == 'discrepancyReason',
+              orElse: () => const AdditionalField('', ''))
+          .value
+          ?.toString()
+          .toUpperCase() ?? '';
+      final status = additionalFields
+          .firstWhere((field) => field.key == 'status',
+              orElse: () => const AdditionalField('', ''))
+          .value
+          ?.toString()
+          .toUpperCase() ?? '';
 
-      // A shortfall-notification RETURNED record (created automatically by
+      // A shortfall-notification RETURNED or resolved DAMAGED record
+      // (created automatically by
       // a partial accept) is a bookkeeping message to the upper hierarchy,
       // not stock this facility ever actually held - see the matching,
       // already-proven exclusion in stock_calculation_utils.dart's
@@ -147,17 +166,18 @@ class StockBalanceExecutor extends ActionExecutor {
       // cache can double-count/miscount it differently from the UI's live
       // recompute (which overwrites this same cache on every balance card
       // view, but a gate called in between would still see the bad delta).
-      final isShortfallNotification = isSender &&
-          stockEntryType == 'RETURNED' &&
-          (stock.additionalFields?.fields
-                      .firstWhere(
-                          (f) => f.key == 'originalIssueClientReferenceId',
-                          orElse: () => const AdditionalField('', ''))
-                      .value
-                      ?.toString() ??
-                  '')
-              .isNotEmpty;
-      if (isShortfallNotification) continue;
+      final isLinkedShortfall = originalIssueReference.isNotEmpty;
+      if (isLinkedShortfall &&
+          (stockEntryType == 'RETURNED' || stockEntryType == 'DAMAGED') &&
+          (isSender || isReceiver)) {
+        continue;
+      }
+      if (isLinkedShortfall &&
+          stockEntryType == 'ISSUED' &&
+          discrepancyReason == 'IN_TRANSIT' &&
+          isSender) {
+        continue;
+      }
 
       double delta = 0;
 
@@ -167,7 +187,7 @@ class StockBalanceExecutor extends ActionExecutor {
 
       if (isDistContext) {
         // For distributors: received adds, everything else (issued, returned, lost, damaged, wastage) subtracts
-        if (isLessOrExcess) {
+        if (isLessOrExcess && (isSender || isReceiver)) {
           delta = stockEntryType == 'EXCESS'
               ? quantity
               : -quantity; // Less reduces; Excess increases
@@ -177,8 +197,14 @@ class StockBalanceExecutor extends ActionExecutor {
           delta = quantity; // Add returned stock (coming back to distributor)
         } else if (stockEntryType == 'RETURNED' && isSender) {
           delta = -quantity; // Sent return (going out)
+        } else if (transactionType == 'DISPATCHED' &&
+            isReceiver &&
+            status == 'ACCEPTED') {
+          delta = quantity; // Add accepted stock sent to the distributor
+        } else if (isSender && transactionType == 'DISPATCHED') {
+          delta = -quantity; // Subtract stock issued by the distributor
         } else {
-          delta = -quantity; // All other transactions subtract
+          delta = 0;
         }
       } else {
         // For non-distributors (warehouses, facilities)
@@ -190,11 +216,7 @@ class StockBalanceExecutor extends ActionExecutor {
           delta = quantity; // Add received stock
         } else if (isReceiver &&
             transactionType == 'DISPATCHED' &&
-            stock.additionalFields?.fields
-                    .firstWhere((f) => f.key == 'status',
-                        orElse: () => const AdditionalField('', ''))
-                    .value ==
-                'ACCEPTED') {
+            status == 'ACCEPTED') {
           delta = quantity; // Add accepted stock from dispatch
         } else if (isSender && transactionType == 'DISPATCHED') {
           delta = -quantity; // Subtract issued/dispatched stock

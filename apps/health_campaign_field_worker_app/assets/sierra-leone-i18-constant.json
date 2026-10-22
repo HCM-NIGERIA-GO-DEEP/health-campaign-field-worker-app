@@ -1,0 +1,902 @@
+[
+  {
+    "module": "digit-privacy-policy",
+    "locale": "en_NG",
+    "code": "PRIVACY_NOTICE",
+    "message": "Privacy Notice"
+  },
+  {
+    "module": "hcm-boundary-admin_kambia",
+    "locale": "en_NG",
+    "code": "ADMIN_KAMBIA_Chiefdom",
+    "message": "Chiefdom"
+  },
+  {
+    "module": "hcm-boundary-admin_kambia",
+    "locale": "en_NG",
+    "code": "ADMIN_KAMBIA_Community",
+    "message": "Community"
+  },
+  {
+    "module": "hcm-boundary-admin_kambia",
+    "locale": "en_NG",
+    "code": "ADMIN_KAMBIA_Country",
+    "message": "Country"
+  },
+  {
+    "module": "hcm-boundary-admin_kambia",
+    "locale": "en_NG",
+    "code": "ADMIN_KAMBIA_Distribution Point",
+    "message": "Distribution Point"
+  },
+  {
+    "module": "hcm-boundary-admin_kambia",
+    "locale": "en_NG",
+    "code": "ADMIN_KAMBIA_District",
+    "message": "District"
+  },
+  {
+    "module": "hcm-boundary-admin_kambia",
+    "locale": "en_NG",
+    "code": "ADMIN_KAMBIA_PHU",
+    "message": "PHU"
+  },
+  {
+    "module": "hcm-boundary-admin_kambia",
+    "locale": "en_NG",
+    "code": "ADMIN_KAMBIA_Province",
+    "message": "Province"
+  },
+  {
+    "module": "hcm-boundary-admin_kambia",
+    "locale": "en_NG",
+    "code": "ADMIN_KAMBIA_SI",
+    "message": "Sierra Leone"
+  },
+  {
+    "module": "hcm-boundary-admin_kambia",
+    "locale": "en_NG",
+    "code": "ADMIN_KAMBIA_SI_01_01_09_17_03_03_YEBAYA",
+    "message": "Yebaya"
+  },
+  {
+    "module": "hcm-boundary-admin_kambia",
+    "locale": "en_NG",
+    "code": "ADMIN_KAMBIA_SI_01_01_09_17_03_YEBAYA_MCHP",
+    "message": "Yebaya Mchp"
+  },
+  {
+    "module": "hcm-boundary-admin_kambia",
+    "locale": "en_NG",
+    "code": "ADMIN_KAMBIA_SI_01_01_09_17_YEBAYA_MCHP",
+    "message": "Yebaya Mchp"
+  },
+  {
+    "module": "hcm-boundary-admin_kambia",
+    "locale": "en_NG",
+    "code": "ADMIN_KAMBIA_SI_01_01_09_TONKO_LIMBA_CHIEFDOM",
+    "message": "Tonko Limba Chiefdom"
+  },
+  {
+    "module": "hcm-boundary-admin_kambia",
+    "locale": "en_NG",
+    "code": "ADMIN_KAMBIA_SI_01_01_KAMBIA",
+    "message": "Kambia"
+  },
+  {
+    "module": "hcm-boundary-admin_kambia",
+    "locale": "en_NG",
+    "code": "ADMIN_KAMBIA_SI_01_NORTH_WEST",
+    "message": "North West"
+  },
+  {
+    "module": "hcm-closehousehold-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_headName_MAX_LENGTH_ERROR",
+    "message": "Name must be at most 200 characters"
+  },
+  {
+    "module": "hcm-closehousehold-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_headName_MIN_LENGTH_ERROR",
+    "message": "First name must be at least 3 characters"
+  },
+  {
+    "module": "hcm-closehousehold-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_lastName_MIN_LENGTH_ERROR",
+    "message": "Last name must be at least 3 characters"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_INVENTORY_DAMAGE_REASON_LABEL",
+    "message": "Reason for damage"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_INVENTORY_DAMAGE_REASON_REQUIRED_ERROR_MESSAGE",
+    "message": "Reason for damage is required"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_INVENTORY_LOSS_DECLARATION_LABEL",
+    "message": "Loss Declaration"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_INVENTORY_LOSS_DECLARATION_REQUIRED_ERROR_MESSAGE",
+    "message": "Loss declaration is required"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_INVENTORY_NATURE_OF_LOSS_LABEL",
+    "message": "Nature of Loss"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_INVENTORY_NATURE_OF_LOSS_REQUIRED_ERROR_MESSAGE",
+    "message": "Nature of loss is required"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_INVENTORY_QUANTITY_LABEL",
+    "message": "Quantity"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_INVENTORY_TRANSPORT_LABEL",
+    "message": "Transport Type"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_INVENTORY_VEHICLE_NUMBER_LABEL",
+    "message": "Vehicle Number"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_INVENTORY_WAYBILL_LABEL",
+    "message": "Waybill Number"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_MANAGESTOCK_WAREHOUSE_label_facilityFromWhich",
+    "message": "Received from"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APP_CONFIG_INVENTORY_SENDER_LABEL",
+    "message": "Received from"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APP_CONFIG_INVENTORY_manageStock_BACK_BUTTON_LABEL",
+    "message": "Back"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APP_CONFIG_INVENTORY_manageStock_CREATE_RECORDS_FOR_STOCK_RECEIVED_AT_THE_WAREHOUSE_DESCRIPTION",
+    "message": "Create records for stock received at the warehouse"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APP_CONFIG_INVENTORY_manageStock_CREATE_RECORDS_FOR_STOCK_SENT_OUT_FROM_THE_WAREHOUSE_DESCRIPTION",
+    "message": "Create records for stock sent out from the warehouse"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APP_CONFIG_INVENTORY_manageStock_HEADING",
+    "message": "Manage Stock"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_DAMAGED_DESCRIPTION",
+    "message": "Create records for stock that is damaged"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_ISSUED_HEADING",
+    "message": "Record Stock Issued"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_LOSS_DESCRIPTION",
+    "message": "Create records for stock that is lost"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_RECEIPT_HEADING",
+    "message": "Record Stock Receipt"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APP_CONFIG_INVENTORY_manageStock_RECORD_STOCK_RETURNED_HEADING",
+    "message": "Record Stock Returned"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APP_CONFIG_INVENTORY_manageStock_VIEW_TRANSACTIONS_FOOTER_BUTTON_LABEL",
+    "message": "View Transactions"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APP_CONFIG_INVENTORY_returnOrIssueSelection_HEADING",
+    "message": "Select Transaction Type"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APP_CONFIG_INVENTORY_returnOrIssueSelection_NEXT_BUTTON_LABEL",
+    "message": "Next"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APP_CONFIG_INVENTORY_returnOrIssueSelection_OPTION_ISSUED",
+    "message": "Issued"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APP_CONFIG_INVENTORY_returnOrIssueSelection_OPTION_RETURNED",
+    "message": "Returned"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APP_CONFIG_INVENTORY_returnOrIssueSelection_TRANSACTION_TYPE_LABEL",
+    "message": "Transaction Type"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "DAMAGED_IN_STORAGE",
+    "message": "Damaged in Storage"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "DAMAGED_IN_TRANSIT",
+    "message": "Damaged in Transit"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "DECLARED_LOSS",
+    "message": "Declared Loss"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "F-2026-09-10-024183",
+    "message": "DP Warehouse"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "F-2026-09-10-024184",
+    "message": "PHU Warehouse"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "F-2026-09-10-024185",
+    "message": "District Warehouse"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "F-2026-09-10-024186",
+    "message": "Chiefdom Warehouse"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "F-2026-09-10-024187",
+    "message": "National Warehouse"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "F-2026-09-10-024188",
+    "message": "State Warehouse"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "FAC_F-2026-09-10-024183",
+    "message": "DP Warehouse"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "FAC_F-2026-09-10-024184",
+    "message": "PHU Warehouse"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "FAC_F-2026-09-10-024185",
+    "message": "District Warehouse"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "FAC_F-2026-09-10-024186",
+    "message": "Chiefdom Warehouse"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "FAC_F-2026-09-10-024187",
+    "message": "National Warehouse"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "FAC_F-2026-09-10-024188",
+    "message": "State Warehouse"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_ACTUAL_QUANTITY_RECEIVED_LABEL",
+    "message": "Actual Quantity Received"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_BATCH_NUMBER_LABEL",
+    "message": "Batch Number"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_COMMENTS_LABEL",
+    "message": "Comments"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_CREATE_NEW_TRANSACTION_LABEL",
+    "message": "Create new transaction"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_DISCREPANCY_REASON_IN_TRANSIT",
+    "message": "In Transit"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_DISCREPANCY_REASON_LABEL",
+    "message": "Discrepancy Reason"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_DISCREPANCY_REASON_OTHERS",
+    "message": "Others"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_DISCREPANCY_REASON_OTHERS_DETAIL_LABEL",
+    "message": "Other Reason"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_DISCREPANCY_REASON_STOCK_DAMAGE",
+    "message": "Stock Damage"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_DISCREPANCY_REASON_STOCK_LOSS",
+    "message": "Stock Loss"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_MRN_NUMBER_LABEL",
+    "message": "MRN Number"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_ORIGINAL_QUANTITY_RECEIVED_LABEL",
+    "message": "Quantity Sent"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_PARTIALLY_ACCEPT_STOCK_LABEL",
+    "message": "Partially Accept"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_PARTIAL_ACCEPT_QUANTITY_INVALID",
+    "message": "Actual received quantity must be greater than zero and less than the quantity sent. To record the full quantity, use Accept instead."
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_RECEIVED_FROM_LABEL",
+    "message": "Received from"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_RECEIVER_LABEL",
+    "message": "Sent to"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_RECORD_RECEIPT_MANUALLY",
+    "message": "Record Receipt Manually"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_RECORD_TYPE_HELPTEXT",
+    "message": "Select whether you are recording a loss or an excess"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_REJECT_CANCEL_ACTION",
+    "message": "Cancel"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_REJECT_COMMENT_LABEL",
+    "message": "Reason for Difference"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_REJECT_CONFIRMATION_DESCRIPTION",
+    "message": "Enter the quantity you actually received and the reason it differs from the quantity sent."
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_REJECT_CONFIRMATION_TITLE",
+    "message": "Partially Accept Stock"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_REJECT_CONFIRM_ACTION",
+    "message": "Confirm"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_REPORT_DETAILS_DAMAGE_REPORT_TITLE",
+    "message": "Stock Damaged Details"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_REPORT_DETAILS_EXCESS_REPORT_TITLE",
+    "message": "Stock Excess Details"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_REPORT_DETAILS_LESS_REPORT_TITLE",
+    "message": "Stock Less Details"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_REPORT_DETAILS_LOSS_REPORT_TITLE",
+    "message": "Stock Loss Details"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_RESOURCE_LABEL",
+    "message": "Resource"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_RETURN_RESOLVED_VIA_ACCEPT",
+    "message": "This return resolves automatically based on the reason the sender reported - use Accept instead."
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_SENDER_LABEL",
+    "message": "Received from"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_SHORTFALL_QUANTITY_LABEL",
+    "message": "Shortfall Quantity"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_STOCK_DAMAGED_DETAILS_HEADING",
+    "message": "Stock Damaged Details"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_STOCK_DAMAGE_RECORDED_SUCCESS",
+    "message": "Stock recorded as damaged"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_STOCK_EXCESS_DETAILS_HEADING",
+    "message": "Stock Excess Details"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_STOCK_ISSUE_DETAILS_HEADING",
+    "message": "Stock Issue Details"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_STOCK_LOSS_DETAILS_HEADING",
+    "message": "Stock Loss Details"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_STOCK_LOSS_RECORDED_SUCCESS",
+    "message": "Stock loss recorded"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_STOCK_RECEIPT_DETAILS_HEADING",
+    "message": "Stock Receipt Details"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_STOCK_REJECTED_SUCCESS",
+    "message": "Stock partially accepted"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_STOCK_RETURN_DETAILS_HEADING",
+    "message": "Stock Return Details"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_TEXT_MIN_LENGTH_ERROR_MESSAGE",
+    "message": "This field must have at least 3 characters"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_TRANSACTION_REASON_LABEL",
+    "message": "Transaction Reason"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_TRANSACTION_TYPE_LABEL",
+    "message": "Transaction Type"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_TRANSPORT_TYPE_HELPTEXT",
+    "message": "Select the transport type"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_TRANSPORT_TYPE_JEEP",
+    "message": "Jeep"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_TRANSPORT_TYPE_LABEL",
+    "message": "Transport Type"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_TRANSPORT_TYPE_PICK_UP",
+    "message": "Pick-up"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_TRANSPORT_TYPE_TRUCK",
+    "message": "Truck"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_TRANSPORT_TYPE_VAN",
+    "message": "Van"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_VEHICLE_NUMBER_HELPTEXT",
+    "message": "Enter a vehicle number using letters, numbers, or spaces"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_VEHICLE_NUMBER_LABEL",
+    "message": "Vehicle Number"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_WAYBILL_NUMBER_LABEL",
+    "message": "Waybill Number"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_WAYBILL_NUMBER_REQUIRED_ERROR_MESSAGE",
+    "message": "Waybill number can contain letters and numbers only"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "INVENTORY_WHAT_ARE_YOU_RECORDING_LABEL",
+    "message": "What are you recording?"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "IN_TRANSIT",
+    "message": "In Transit"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "ITN",
+    "message": "Bednet"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "LOSS_BY_FIELD_TEAMS",
+    "message": "Loss by Field Teams"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "LOSS_BY_THEFT",
+    "message": "Loss by Theft"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "LOSS_IN_STORE",
+    "message": "Loss in Store"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_5_LABEL",
+    "message": "Stock Lost"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_6_LABEL",
+    "message": "Stock Excess"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_7_LABEL",
+    "message": "Physical Count"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_8_LABEL",
+    "message": "Stock Damaged"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_UNACCOUNTED_LABEL",
+    "message": "Unaccounted Quantity"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_DESCRIPTION",
+    "message": "View stock recorded as damaged."
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_HEADING",
+    "message": "Stock Damaged"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_DESCRIPTION",
+    "message": "View stock recorded as lost."
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_HEADING",
+    "message": "Stock Loss"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "STOCK_DAMAGE",
+    "message": "Stock Damage"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "STOCK_DAMAGED",
+    "message": "Stock Damaged"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "STOCK_LOSS",
+    "message": "Stock Loss"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "STOCK_LOST",
+    "message": "Stock Lost"
+  },
+  {
+    "module": "hcm-inventory-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "UNDECLARED_LOSS",
+    "message": "Undeclared Loss"
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_identificationNumber_helpText",
+    "message": "Optional. National ID: alphanumeric (e.g. KJ00AQ5R). Passport: SLR followed by 6 digits (e.g. SLR012711). Voter's ID: 7 digits (e.g. 2009765). Driver's License: 2 letters followed by 9 digits (e.g. AQ000011576)."
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_identificationNumber_mandatory_message",
+    "message": "Identification number is required"
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_identificationNumber_passport_pattern_message",
+    "message": "Passport number must be in the format SLR followed by 6 digits (for example, SLR012711)."
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_identificationType_helpText",
+    "message": "Optional - select the type of ID the household has, if any"
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_lastName_mandatory_message",
+    "message": "Last name is required"
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_lastName_max_message",
+    "message": "Last name must be at most 200 characters"
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_lastName_min_message",
+    "message": "Last name must be at least 2 characters"
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_helpText",
+    "message": "Enter the first name of the household head"
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_REGISTRATION_DELIVERYDETAILS_label_scanner_serial_pattern_message",
+    "message": "Enter a serial number of 1 to 20 printable characters, without spaces."
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenAndPregnantWomen_maxFieldSum_message",
+    "message": "The combined number of children and pregnant women must not exceed the total number of household members."
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_maxField_message",
+    "message": "Number of children cannot exceed total household members"
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_expectedBednetCodes",
+    "message": "Scan Voucher"
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_pregnantWomenCount_maxField_message",
+    "message": "Number of pregnant women cannot exceed total household members"
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "CAREGIVER_CONSENT_DECLINED_PANEL_DESC",
+    "message": "This household was marked as closed because consent was not provided. You can search for it again if consent is obtained later."
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "CAREGIVER_CONSENT_DECLINED_PANEL_HEADING",
+    "message": "Household Marked as Closed"
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "HOUSEHOLD_REGISTERED_SUCCESSFUL_PANEL_CARD_DESC",
+    "message": "The household has been registered and the health talk checklist has been recorded."
+  },
+  {
+    "module": "hcm-registration-CMP-2026-10-12-001274",
+    "locale": "en_NG",
+    "code": "HOUSEHOLD_REGISTERED_SUCCESSFUL_PANEL_CARD_HEADING",
+    "message": "Household Registered Successfully"
+  }
+]
