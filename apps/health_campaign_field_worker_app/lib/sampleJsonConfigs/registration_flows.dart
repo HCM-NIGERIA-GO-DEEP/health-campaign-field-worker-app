@@ -558,6 +558,20 @@ final dynamic sampleFlows = {
                   "isActive": true
                 },
                 {
+                  "key":
+                      "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount",
+                  "value":
+                      "{{fn:getAdditionalFieldValue(contextData.0.household.HouseholdModel.additionalFields.fields, 'childrenCount')}}",
+                  "isActive": true
+                },
+                {
+                  "key":
+                      "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_pregnantWomenCount",
+                  "value":
+                      "{{fn:getAdditionalFieldValue(contextData.0.household.HouseholdModel.additionalFields.fields, 'pregnantWomenCount')}}",
+                  "isActive": true
+                },
+                {
                   "key": "NUMBER_OF_ITN_FOR_DELIVERY",
                   "value":
                       "{{fn:itnsForMemberCount(contextData.0.household.HouseholdModel.memberCount)}}",
@@ -589,6 +603,22 @@ final dynamic sampleFlows = {
                   "value":
                       "{{fn:getUniqueBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}",
                   "isActive": true
+                },
+                {
+                  "key":
+                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_identificationType",
+                  "value":
+                      "{{fn:getCapturedIdentifierValue(contextData.0.headIndividual.IndividualModel.identifiers, 'identifierType')}}",
+                  "isActive": true,
+                  "hideIfNull": true
+                },
+                {
+                  "key":
+                      "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_identificationNumber",
+                  "value":
+                      "{{fn:getCapturedIdentifierValue(contextData.0.headIndividual.IndividualModel.identifiers, 'identifierId')}}",
+                  "isActive": true,
+                  "hideIfNull": true
                 }
               ],
               "type": "template",
@@ -752,6 +782,7 @@ final dynamic sampleFlows = {
           "label": "CORE_COMMON_SAVE",
           "format": "button",
           "visible": "{{fn:hasRole('REGISTRAR')}} == true",
+          "disabled": "{{fn:isClosedHousehold(contextData.0.tasks)}} == true",
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -789,7 +820,11 @@ final dynamic sampleFlows = {
           "onAction": [
             {
               "actionType": "BACK_NAVIGATION",
-              "properties": {"name": "searchBeneficiary"}
+              "properties": {"name": "householdDetails"}
+            },
+            {
+              "actionType": "REFRESH_SEARCH",
+              "properties": {"screenName": "searchBeneficiary"}
             }
           ]
         }
@@ -1687,7 +1722,7 @@ final dynamic sampleFlows = {
                       {
                         "key": "identifierId",
                         "value": "field.value",
-                        "operation": "contains"
+                        "operation": "equals"
                       },
                       {
                         "key": "identifierType",
@@ -1735,7 +1770,7 @@ final dynamic sampleFlows = {
                       {
                         "key": "identifierId",
                         "value": "field.value",
-                        "operation": "contains"
+                        "operation": "equals"
                       },
                       {
                         "key": "identifierType",
@@ -1910,15 +1945,16 @@ final dynamic sampleFlows = {
                                   "value":
                                       "{{item.HouseholdModel.clientReferenceId}}"
                                 },
-                                {"key": "isEdit", "value": "true"},
-                                {"key": "isClosedHousehold", "value": "true"},
                                 {
-                                  "key": "UNIQUE_BENEFICIARY_ID",
-                                  "value": "{{latestBeneficiaryId}}"
+                                  "key": "ProjectBeneficiaryClientReferenceId",
+                                  "value":
+                                      "{{item.projectBeneficiaries.ProjectBeneficiaryModel.clientReferenceId}}"
                                 },
+                                {"key": "isEdit", "value": "true"},
                                 {
-                                  "key": "uniqueBeneficiaryIdModel",
-                                  "value": "{{latestBeneficiaryIdModel}}"
+                                  "key": "isClosedHousehold",
+                                  "value":
+                                      "{{fn:isHouseholdMarkedClosed(item.tasks)}}"
                                 },
                                 {
                                   "key": "identifier",
@@ -1926,8 +1962,9 @@ final dynamic sampleFlows = {
                                 },
                                 {
                                   "key": "startPage",
-                                  "value": "householdDetails"
-                                }
+                                  "value": "caregiverConsent"
+                                },
+                                {"key": "deferFormRoutePop", "value": "true"}
                               ],
                               "name": "HOUSEHOLD",
                               "type": "FORM"
@@ -1936,7 +1973,59 @@ final dynamic sampleFlows = {
                         ],
                         "condition": {
                           "expression":
-                              "{{fn:hasStockForRegistration()}}==true && {{fn:isClosedHousehold(item.tasks)}} == false && {{fn:hasRole('DISTRIBUTOR')}} == false && {{fn:isHouseholdMarkedClosed(item.tasks)}} == true"
+                              "{{fn:isCaregiverConsentMissing(item.HouseholdModel)}} == true"
+                        }
+                      },
+                      {
+                        "actions": [
+                          {
+                            "actionType": "REVERSE_TRANSFORM",
+                            "properties": {
+                              "data": [
+                                {"key": "entities", "value": "{{item}}"}
+                              ],
+                              "configName": "beneficiaryRegistration",
+                              "entityTypes": [
+                                "HouseholdModel",
+                                "IndividualModel",
+                                "TaskModel"
+                              ]
+                            }
+                          },
+                          {
+                            "actionType": "NAVIGATION",
+                            "properties": {
+                              "data": [
+                                {
+                                  "key": "HouseholdClientReferenceId",
+                                  "value":
+                                      "{{item.HouseholdModel.clientReferenceId}}"
+                                },
+                                {
+                                  "key": "ProjectBeneficiaryClientReferenceId",
+                                  "value":
+                                      "{{item.projectBeneficiaries.ProjectBeneficiaryModel.clientReferenceId}}"
+                                },
+                                {"key": "isEdit", "value": "true"},
+                                {"key": "isClosedHousehold", "value": "true"},
+                                {
+                                  "key": "identifier",
+                                  "value": "{{item.headIndividual}}"
+                                },
+                                {
+                                  "key": "startPage",
+                                  "value": "caregiverConsent"
+                                },
+                                {"key": "deferFormRoutePop", "value": "true"}
+                              ],
+                              "name": "HOUSEHOLD",
+                              "type": "FORM"
+                            }
+                          }
+                        ],
+                        "condition": {
+                          "expression":
+                              "{{fn:isClosedHousehold(item.tasks)}} == false && {{fn:isHouseholdMarkedClosed(item.tasks)}} == true"
                         }
                       },
                       {
@@ -2079,7 +2168,8 @@ final dynamic sampleFlows = {
                           {
                             "key": "uniqueBeneficiaryIdModel",
                             "value": "{{latestBeneficiaryIdModel}}"
-                          }
+                          },
+                          {"key": "deferFormRoutePop", "value": "true"}
                         ],
                         "name": "HOUSEHOLD",
                         "type": "FORM"
@@ -2196,7 +2286,8 @@ final dynamic sampleFlows = {
                       {
                         "key": "uniqueBeneficiaryIdModel",
                         "value": "{{latestBeneficiaryIdModel}}"
-                      }
+                      },
+                      {"key": "deferFormRoutePop", "value": "true"}
                     ],
                     "name": "HOUSEHOLD",
                     "type": "FORM"
@@ -2671,8 +2762,7 @@ final dynamic sampleFlows = {
               },
               {
                 "key": "ProjectBeneficiaryClientReferenceId",
-                "value":
-                    "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                "value": "{{navigation.ProjectBeneficiaryClientReferenceId}}"
               }
             ],
             "name": "registrationHealthTalkSuccess",
@@ -3118,7 +3208,13 @@ final dynamic sampleFlows = {
               "systemDate": false,
               "validations": [
                 {"type": "isGS1Code", "value": true},
-                {"type": "scanLimit", "value": 3}
+                {"type": "scanLimit", "value": 3},
+                {"type": "allowManualEntry", "value": true},
+                {
+                  "type": "manualSerialPattern",
+                  "value": "^[!-~]{1,20}\$",
+                  "message": "APPONE_REGISTRATION_DELIVERYDETAILS_label_scanner_serial_pattern_message"
+                }
               ],
               "errorMessage": "",
               "includeInForm": true,
@@ -3238,6 +3334,10 @@ final dynamic sampleFlows = {
                   }
                 ]
               }
+            },
+            {
+              "actionType": "REFRESH_SEARCH",
+              "properties": {"screenName": "searchBeneficiary"}
             },
             {
               "actionType": "NAVIGATION",
@@ -3547,6 +3647,10 @@ final dynamic sampleFlows = {
           }
         },
         {
+          "actionType": "REFRESH_SEARCH",
+          "properties": {"screenName": "searchBeneficiary"}
+        },
+        {
           "actionType": "NAVIGATION",
           "properties": {
             "data": [
@@ -3660,7 +3764,10 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{contextData.entities.ProjectBeneficiaryModel.clientReferenceId}}"
-                      }
+                      },
+                      {"key": "isEdit", "value": "true"},
+                      {"key": "isClosedHousehold", "value": "true"},
+                      {"key": "registrationPendingHealthTalk", "value": "true"}
                     ],
                     "name": "householdOverview",
                     "type": "TEMPLATE",
@@ -3670,8 +3777,6 @@ final dynamic sampleFlows = {
                         "properties": {"message": "Navigation failed."}
                       }
                     ],
-                    "navigationMode": "popUntilAndPush",
-                    "popUntilPageName": "searchBeneficiary"
                   }
                 }
               ],
@@ -3776,7 +3881,8 @@ final dynamic sampleFlows = {
                         "key": "ProjectBeneficiaryClientReferenceId",
                         "value":
                             "{{contextData.entities.ProjectBeneficiaryModel.clientReferenceId}}"
-                      }
+                      },
+                      {"key": "registrationPendingHealthTalk", "value": "true"}
                     ],
                     "name": "householdOverview",
                     "type": "TEMPLATE",
@@ -4283,6 +4389,11 @@ final dynamic sampleFlows = {
                         "message":
                             "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_identificationNumber_nationalId_pattern_message"
                       },
+                      "PASSPORT": {
+                        "pattern": "^SLR[0-9]{6}\$",
+                        "message":
+                            "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_identificationNumber_passport_pattern_message"
+                      },
                       "VOTER_ID": {
                         "pattern": "^[0-9]{7}\$",
                         "message":
@@ -4347,6 +4458,8 @@ final dynamic sampleFlows = {
           "description":
               "APPONE_REGISTRATION_HOUSEHOLDDETAILS_SCREEN_DESCRIPTION",
           "showTabView": false,
+          // Existing households submit their updated details here. New
+          // registrations continue through beneficiaryDetails and location.
           "submitCondition": {
             "expression": [
               {"condition": "isEdit == true"}
@@ -4974,6 +5087,14 @@ final dynamic sampleFlows = {
               "navigateTo": {"name": "householdDetails", "type": "form"}
             },
             {
+              "condition":
+                  "caregiverConsent.consentToParticipate==FALSE && navigation.isEdit==true && navigation.isClosedHousehold==true",
+              "navigateTo": {
+                "name": "caregiverAcknowledgement",
+                "type": "TEMPLATE"
+              }
+            },
+            {
               "condition": "caregiverConsent.consentToParticipate==FALSE",
               "navigateTo": {
                 "name": "caregiverAcknowledgement",
@@ -5139,7 +5260,8 @@ final dynamic sampleFlows = {
                     "key": "ProjectBeneficiaryClientReferenceId",
                     "value":
                         "{{navigation.projectBeneficiaryClientReferenceId}}"
-                  }
+                  },
+                  {"key": "registrationPendingHealthTalk", "value": "true"}
                 ],
                 "name": "householdOverview",
                 "type": "TEMPLATE",
@@ -5266,7 +5388,8 @@ final dynamic sampleFlows = {
                     "key": "ProjectBeneficiaryClientReferenceId",
                     "value":
                         "{{contextData.entities.ProjectBeneficiaryModel.clientReferenceId}}"
-                  }
+                  },
+                  {"key": "registrationPendingHealthTalk", "value": "true"}
                 ],
                 "name": "householdOverview",
                 "type": "TEMPLATE",

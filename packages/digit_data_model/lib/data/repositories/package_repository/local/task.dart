@@ -43,6 +43,8 @@ class TaskLocalRepository extends LocalRepository<TaskModel, TaskSearchModel> {
                 id: task.id,
                 createdBy: task.createdBy,
                 clientReferenceId: task.clientReferenceId,
+                projectBeneficiaryClientReferenceId:
+                    task.projectBeneficiaryClientReferenceId,
                 rowVersion: task.rowVersion,
                 tenantId: task.tenantId,
                 isDeleted: task.isDeleted,
@@ -50,6 +52,29 @@ class TaskLocalRepository extends LocalRepository<TaskModel, TaskSearchModel> {
                 projectBeneficiaryId: task.projectBeneficiaryId,
                 createdDate: task.createdDate,
                 status: task.status,
+                additionalFields: task.additionalFields == null
+                    ? null
+                    : TaskAdditionalFieldsMapper.fromJson(
+                        task.additionalFields!,
+                      ),
+                auditDetails: task.auditCreatedBy != null &&
+                        task.auditCreatedTime != null
+                    ? AuditDetails(
+                        createdBy: task.auditCreatedBy!,
+                        createdTime: task.auditCreatedTime!,
+                        lastModifiedBy: task.auditModifiedBy,
+                        lastModifiedTime: task.auditModifiedTime,
+                      )
+                    : null,
+                clientAuditDetails: task.clientCreatedBy != null &&
+                        task.clientCreatedTime != null
+                    ? ClientAuditDetails(
+                        createdBy: task.clientCreatedBy!,
+                        createdTime: task.clientCreatedTime!,
+                        lastModifiedBy: task.clientModifiedBy,
+                        lastModifiedTime: task.clientModifiedTime,
+                      )
+                    : null,
                 resources: resources == null
                     ? null
                     : [

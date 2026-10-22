@@ -100,14 +100,7 @@ final dynamic inventoryReportFlows = {
           "icon": "Assessment",
           "fieldName": "stockIssued",
           "properties": {"icon": "Assessment"},
-          "visibilityCondition": {
-            "expression": [
-              {
-                "condition": "singleton.userRole != 'DISTRIBUTOR'",
-                "type": "custom"
-              }
-            ]
-          },
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == false",
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -166,14 +159,9 @@ final dynamic inventoryReportFlows = {
           "label": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_HEADING",
           "format": "menu_card",
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_HEADING",
-          "visibilityCondition": {
-            "expression": [
-              {
-                "condition": "singleton.userRole != 'DISTRIBUTOR'",
-                "type": "custom"
-              }
-            ]
-          },
+          // Damage here represents a discrepancy reported by a lower
+          // hierarchy. A distributor has no lower hierarchy to report to.
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == false",
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -184,7 +172,7 @@ final dynamic inventoryReportFlows = {
                     "key": "reportDetailsHeading",
                     "value": "INVENTORY_STOCK_DAMAGED_DETAILS_HEADING"
                   },
-                  {"key": "facilities", "value": "{{FacilityModel}}"},
+                  {"key": "facilities", "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"},
                   {"key": "productVariants", "value": "{{ProductVariantModel}}"}
                 ],
                 "name": "reportDetails",
@@ -201,16 +189,10 @@ final dynamic inventoryReportFlows = {
           "type": "template",
           "label": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_HEADING",
           "format": "menu_card",
-          "hidden": true,
+          "hidden": false,
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_HEADING",
-          "visibilityCondition": {
-            "expression": [
-              {
-                "condition": "singleton.userRole != 'DISTRIBUTOR'",
-                "type": "custom"
-              }
-            ]
-          },
+          // For distributors, this lists their own stock-loss records. For
+          // upper hierarchy users, it lists lower-level loss discrepancies.
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -221,7 +203,7 @@ final dynamic inventoryReportFlows = {
                     "key": "reportDetailsHeading",
                     "value": "INVENTORY_STOCK_LOSS_DETAILS_HEADING"
                   },
-                  {"key": "facilities", "value": "{{FacilityModel}}"},
+                  {"key": "facilities", "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"},
                   {"key": "productVariants", "value": "{{ProductVariantModel}}"}
                 ],
                 "name": "reportDetails",
@@ -237,8 +219,9 @@ final dynamic inventoryReportFlows = {
           "icon": "Assessment",
           "type": "template",
           "format": "menu_card",
-          "hidden": true,
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_EXCESS_HEADING",
+          // Excess is a count adjustment created by the distributor.
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -249,7 +232,7 @@ final dynamic inventoryReportFlows = {
                     "key": "reportDetailsHeading",
                     "value": "INVENTORY_REPORT_DETAILS_EXCESS_REPORT_TITLE"
                   },
-                  {"key": "facilities", "value": "{{FacilityModel}}"},
+                  {"key": "facilities", "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"},
                   {"key": "productVariants", "value": "{{ProductVariantModel}}"}
                 ],
                 "name": "reportDetails",
@@ -262,34 +245,6 @@ final dynamic inventoryReportFlows = {
           "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_EXCESS_DESCRIPTION"
         },
         {
-          "icon": "Assessment",
-          "type": "template",
-          "format": "menu_card",
-          "hidden": true,
-          "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_LESS_HEADING",
-          "onAction": [
-            {
-              "actionType": "NAVIGATION",
-              "properties": {
-                "data": [
-                  {"key": "reportType", "value": "less"},
-                  {
-                    "key": "reportDetailsHeading",
-                    "value": "INVENTORY_REPORT_DETAILS_LESS_REPORT_TITLE"
-                  },
-                  {"key": "facilities", "value": "{{FacilityModel}}"},
-                  {"key": "productVariants", "value": "{{ProductVariantModel}}"}
-                ],
-                "name": "reportDetails",
-                "type": "TEMPLATE"
-              }
-            }
-          ],
-          "fieldName": "stockLess",
-          "properties": {"icon": "Assessment"},
-          "description": "STOCKREPORTS_VIEW_REPORTS_STOCK_LESS_DESCRIPTION"
-        },
-        {
           "type": "template",
           "format": "menu_card",
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_RECON_HEADING",
@@ -297,6 +252,7 @@ final dynamic inventoryReportFlows = {
           "icon": "Assessment",
           "fieldName": "stockReconciliation",
           "properties": {"icon": "Assessment"},
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == false",
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -331,7 +287,8 @@ final dynamic inventoryReportFlows = {
         "relations": [],
         "searchConfig": {
           "primary": "stock",
-          "select": ["stock"]
+          "select": ["stock"],
+          "orderBy": {"field": "clientCreatedTime", "order": "DESC"}
         }
       },
       "header": [
@@ -375,20 +332,24 @@ final dynamic inventoryReportFlows = {
               "format": "dropdownTemplate",
               "fieldName": "reportDetailsFacilityDropdown",
               "label": "STOCKREPORTS_REPORT_DETAILS_SELECT_WAREHOUSE_LABEL",
-              "required": true,
+              "required": false,
               "key": "selectedFacility",
               "source": "{{navigation.facilities}}",
               "displayPrefix": "FAC_",
               "displayKey": "facilityId",
               "showWhenSingleOption": true,
               "valueKey": "facilityId",
-              "visible": "{{fn:hasRole('WAREHOUSE_MANAGER')}}",
+              // Distributors filter by their user UUID and do not have a
+              // facility selector. Warehouse managers choose a facility.
+              "visible":
+                  "{{fn:hasRole('WAREHOUSE_MANAGER')}} == true && {{fn:hasRole('DISTRIBUTOR')}} == false",
               "onChange": [
                 {
                   "actionType": "SEARCH_EVENT",
                   "properties": {
                     "type": "SEARCH_EVENT",
                     "name": "stock",
+                    "skipAccumulatedFilters": true,
                     "data": [
                       {
                         "key": "tenantId",
@@ -404,13 +365,26 @@ final dynamic inventoryReportFlows = {
                         "key": "additionalFields",
                         "value":
                             "{{fn:getStockEntryType(navigation.reportType)}}",
+                        "operation": "containsAny"
+                      },
+                      {
+                        "key": "additionalFields",
+                        "value":
+                            "{{fn:getReportStatusFilter(navigation.reportType)}}",
                         "operation": "contains"
+                      },
+                      {
+                        "key": "transactionReason",
+                        "value":
+                            "{{fn:getReportTransactionReasonFilter(navigation.reportType)}}",
+                        "operation": "containsAny"
                       },
                       {
                         "key":
                             "{{fn:getSenderOrReceiver(navigation.reportType)}}",
-                        "value": "{{selectedFacility}}",
-                        "operation": "equals"
+                        "value":
+                            "{{fn:getReportFacilityId(navigation.reportType, selectedFacility)}}",
+                        "operation": "equalsAny"
                       }
                     ]
                   }
@@ -422,17 +396,19 @@ final dynamic inventoryReportFlows = {
               "format": "dropdownTemplate",
               "fieldName": "reportDetailsProductDropdown",
               "label": "STOCKREPORTS_REPORT_DETAILS_SELECT_PRODUCT_LABEL",
-              "required": true,
+              "required": false,
               "key": "selectedProduct",
               "source": "{{navigation.productVariants}}",
               "displayKey": "sku",
               "valueKey": "id",
+              "showWhenSingleOption": true,
               "onChange": [
                 {
                   "actionType": "SEARCH_EVENT",
                   "properties": {
                     "type": "SEARCH_EVENT",
                     "name": "stock",
+                    "skipAccumulatedFilters": true,
                     "data": [
                       {
                         "key": "tenantId",
@@ -448,13 +424,26 @@ final dynamic inventoryReportFlows = {
                         "key": "additionalFields",
                         "value":
                             "{{fn:getStockEntryType(navigation.reportType)}}",
+                        "operation": "containsAny"
+                      },
+                      {
+                        "key": "additionalFields",
+                        "value":
+                            "{{fn:getReportStatusFilter(navigation.reportType)}}",
                         "operation": "contains"
+                      },
+                      {
+                        "key": "transactionReason",
+                        "value":
+                            "{{fn:getReportTransactionReasonFilter(navigation.reportType)}}",
+                        "operation": "containsAny"
                       },
                       {
                         "key":
                             "{{fn:getSenderOrReceiver(navigation.reportType)}}",
-                        "value": "{{selectedFacility}}",
-                        "operation": "equals"
+                        "value":
+                            "{{fn:getReportFacilityId(navigation.reportType, selectedFacility)}}",
+                        "operation": "equalsAny"
                       }
                     ]
                   }
@@ -481,7 +470,7 @@ final dynamic inventoryReportFlows = {
           "properties": {"type": "info"},
           "fieldName": "noRecordFoundInfoReportDetails",
           "visible":
-              "{{fn:isEmpty(stock)}} && {{fn:isNotEmpty(selectedFacility)}}"
+              "{{fn:isEmpty(stock)}} && {{fn:isNotEmpty(selectedProduct)}}"
         },
         {
           "type": "template",
@@ -506,7 +495,8 @@ final dynamic inventoryReportFlows = {
               },
               {
                 "header": "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_3_LABEL",
-                "cellValue": "{{item.additionalFields.fields.wayBillNumber}}"
+                "cellValue":
+                    "{{fn:getWayBillNumber(item.wayBillNumber, item.additionalFields.fields.wayBillNumber)}}"
               },
               {
                 "header": "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_4_LABEL",
@@ -532,7 +522,8 @@ final dynamic inventoryReportFlows = {
         "relations": [],
         "searchConfig": {
           "primary": "stockReconciliation",
-          "select": ["stockReconciliation"]
+          "select": ["stockReconciliation"],
+          "orderBy": {"field": "clientCreatedTime", "order": "DESC"}
         }
       },
       "header": [
@@ -576,14 +567,17 @@ final dynamic inventoryReportFlows = {
               "format": "dropdownTemplate",
               "fieldName": "reckonReportDetailsFacilityDropdown",
               "label": "STOCKRECON_REPORT_DETAILS_SELECT_WAREHOUSE_LABEL",
-              "required": true,
+              "required": false,
               "key": "selectedReconFacility",
               "source": "{{navigation.facilities}}",
               "displayKey": "facilityId",
               "displayPrefix": "FAC_",
               "showWhenSingleOption": true,
               "valueKey": "facilityId",
-              "visible": "{{fn:hasRole('WAREHOUSE_MANAGER')}}",
+              // Distributors' reconciliation rows use their user UUID as
+              // facilityId and therefore have no facility dropdown option.
+              "visible":
+                  "{{fn:hasRole('WAREHOUSE_MANAGER')}} == true && {{fn:hasRole('DISTRIBUTOR')}} == false",
               "onChange": [
                 {
                   "actionType": "SEARCH_EVENT",
@@ -603,7 +597,7 @@ final dynamic inventoryReportFlows = {
                       },
                       {
                         "key": "facilityId",
-                        "value": "{{selectedReconFacility}}",
+                        "value": "{{fn:getReportFacilityId('reconciliation', selectedReconFacility)}}",
                         "operation": "equals"
                       }
                     ]
@@ -640,7 +634,7 @@ final dynamic inventoryReportFlows = {
                       },
                       {
                         "key": "facilityId",
-                        "value": "{{selectedReconFacility}}",
+                        "value": "{{fn:getReportFacilityId('reconciliation', selectedReconFacility)}}",
                         "operation": "equals"
                       }
                     ]
@@ -669,12 +663,13 @@ final dynamic inventoryReportFlows = {
               "STOCKRECON_REPORT_DETAILS_NO_RECORD_FOUND_DESCRIPTION",
           "properties": {"type": "info"},
           "visible":
-              "{{fn:isEmpty(stockReconciliation)}} && {{fn:isNotEmpty(selectedReconFacility)}}"
+              "{{fn:isEmpty(stockReconciliation)}} && {{fn:isNotEmpty(selectedReckonProduct)}}"
         },
         {
           "type": "template",
           "format": "table",
           "fieldName": "tableInfoReckonReportDetails",
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == false",
           "data": {
             "source": "StockReconciliationModel",
             "columns": [
@@ -697,18 +692,58 @@ final dynamic inventoryReportFlows = {
                     "{{fn:absoluteValue(item.additionalFields.fields.stockReturned)}}"
               },
               {
-                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_7_LABEL",
-                "cellValue": "{{item.physicalCount}}"
+                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_5_LABEL",
+                "cellValue": "{{item.additionalFields.fields.stockLost}}"
               },
               {
                 "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_8_LABEL",
-                "cellValue": "{{item.calculatedCount}}"
+                "cellValue": "{{item.additionalFields.fields.stockDamaged}}"
               },
               {
-                "header":
-                    "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_UNACCOUNTED_LABEL",
+                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_7_LABEL",
+                "cellValue": "{{item.physicalCount}}"
+              }
+            ],
+            "rows": "{{contextData.0.StockReconciliationModel}}"
+          }
+        },
+        {
+          "type": "template",
+          "format": "table",
+          "fieldName": "distributorTableInfoReckonReportDetails",
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true",
+          "data": {
+            "source": "StockReconciliationModel",
+            "columns": [
+              {
+                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_1_LABEL",
                 "cellValue":
-                    "{{fn:subtractQuantity(item.calculatedCount, item.physicalCount)}}"
+                    "{{fn:formatDate(item.dateOfReconciliation, 'date', 'dd MMM yyyy')}}"
+              },
+              {
+                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_2_LABEL",
+                "cellValue": "{{item.additionalFields.fields.stockReceived}}"
+              },
+              {
+                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_3_LABEL",
+                "cellValue": "{{item.additionalFields.fields.stockIssued}}"
+              },
+              {
+                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_4_LABEL",
+                "cellValue":
+                    "{{fn:absoluteValue(item.additionalFields.fields.stockReturned)}}"
+              },
+              {
+                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_5_LABEL",
+                "cellValue": "{{item.additionalFields.fields.stockLost}}"
+              },
+              {
+                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_6_LABEL",
+                "cellValue": "{{item.additionalFields.fields.stockExcess}}"
+              },
+              {
+                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_7_LABEL",
+                "cellValue": "{{item.physicalCount}}"
               }
             ],
             "rows": "{{contextData.0.StockReconciliationModel}}"

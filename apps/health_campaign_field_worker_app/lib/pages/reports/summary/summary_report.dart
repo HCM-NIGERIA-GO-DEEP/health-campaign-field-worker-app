@@ -11,7 +11,6 @@ import '../../../data/services/server_summary_report_service.dart';
 import '../../../models/entities/roles_type.dart';
 import '../../../router/app_router.dart';
 import '../../../utils/i18_key_constants.dart' as i18;
-import '../../../utils/stock_calculation_utils.dart';
 import '../../../utils/utils.dart';
 import '../../../widgets/custom_table/custom_data_table.dart';
 import '../../../widgets/header/back_navigation_help_header.dart';
@@ -60,10 +59,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           context.read<LocalRepository<TaskModel, TaskSearchModel>>();
       final stockRepo =
           context.read<LocalRepository<StockModel, StockSearchModel>>();
-      final projectResourceRepo = context.read<
-          LocalRepository<ProjectResourceModel, ProjectResourceSearchModel>>();
-      final productVariantRepo = context.read<
-          LocalRepository<ProductVariantModel, ProductVariantSearchModel>>();
       final projectFacilityRepo = context.read<
           LocalRepository<ProjectFacilityModel, ProjectFacilitySearchModel>>();
       final facilityRepo =
@@ -98,19 +93,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       final effectiveFacilityId = isDistributor
           ? userUuid
           : (facilities.isNotEmpty ? facilities.first.id : userUuid);
-
-      // Fetch product variants
-      final projectResources = await projectResourceRepo
-          .search(ProjectResourceSearchModel(projectId: [projectId]));
-      final productVariantIds = projectResources
-          .map((pr) => pr.resource.productVariantId)
-          .whereType<String>()
-          .toSet()
-          .toList();
-      final productVariants = productVariantIds.isNotEmpty
-          ? await productVariantRepo
-              .search(ProductVariantSearchModel(id: productVariantIds))
-          : <ProductVariantModel>[];
 
       // Fetch all data
       final households =
@@ -281,40 +263,11 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         final dailyITNCount =
             serverReportITNDistributed + (localITNByDate[date] ?? 0);
 
-        // Filter stock entries for this day only to compute total less/excess.
-        final dateStocks = allStocks.where((stock) {
-          final epochMs = stock.clientAuditDetails?.createdTime ??
-              stock.auditDetails?.createdTime;
-          if (!isWithinCurrentCycle(epochMs)) return false;
-          if (epochMs == null) return false;
-          return _epochToDateString(epochMs) == date;
-        }).toList();
-
-        double totalLess = 0;
-        double totalExcess = 0;
-
-        for (final pv in productVariants) {
-          final metrics = dateStocks.isNotEmpty
-              ? StockCalculationUtils.calculateStockMetrics(
-                  stockList: dateStocks,
-                  facilityId: effectiveFacilityId,
-                  productId: pv.id,
-                  loggedInUserUuid: userUuid,
-                  isDistributor: isDistributor,
-                )
-              : StockCalculationUtils.emptyMetrics;
-
-          totalLess += metrics['stockLess'] ?? 0.0;
-          totalExcess += metrics['stockExcess'] ?? 0.0;
-        }
-
         rows.add(_SummaryReportRow(
           date: date,
           householdsRegistered: hhCount,
           numberOfPeopleInHouseholds: dailyPeopleCount,
           numberOfITNDistributed: dailyITNCount,
-          totalLess: totalLess,
-          totalExcess: totalExcess,
         ));
       }
 
@@ -351,11 +304,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
     final theme = Theme.of(context);
     final textTheme = theme.digitTextTheme(context);
 
-    // Distributor sees the ITNs distributed; Registrar sees household and
-    // people counts. Loss/Excess columns are
-    // dropped for both roles - commented out below (not deleted) so they
-    // can be restored without rebuilding the totalLess/totalExcess
-    // computation in _loadData().
+    // Distributor summary is limited to the ITNs distributed. Stock loss,
+    // excess, and less are available through their transaction reports.
+    // Registrar sees household and people counts.
     final isDistributor = context.loggedInUserRoles
         .any((role) => role.code == RolesType.distributor.toValue());
 
@@ -385,8 +336,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
                   .translate(i18.summaryReport.numberOfPeopleInHouseholds),
             ),
           ];
-    // CustomTableColumn(header: localizations.translate(i18.common.loss)),
-    // CustomTableColumn(header: localizations.translate(i18.common.excess)),
 
     // Build rows
     final rows = _reportRows.map((row) {
@@ -401,8 +350,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
                 row.householdsRegistered.toString(),
                 row.numberOfPeopleInHouseholds.toString(),
               ],
-        // row.totalLess.toStringAsFixed(0),
-        // row.totalExcess.toStringAsFixed(0),
       );
     }).toList();
 
@@ -476,17 +423,11 @@ class _SummaryReportRow {
   final int householdsRegistered;
   final int numberOfPeopleInHouseholds;
   final int numberOfITNDistributed;
-  // Kept (not removed) so the Loss/Excess columns, commented out below in
-  // build(), can be restored later without rebuilding the computation.
-  final double totalLess;
-  final double totalExcess;
 
   _SummaryReportRow({
     required this.date,
     required this.householdsRegistered,
     required this.numberOfPeopleInHouseholds,
     required this.numberOfITNDistributed,
-    required this.totalLess,
-    required this.totalExcess,
   });
 }

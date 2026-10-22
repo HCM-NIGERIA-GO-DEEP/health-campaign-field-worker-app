@@ -92,10 +92,9 @@ void main() {
       final idFilter = data.firstWhere((d) => d['key'] == 'identifierId');
       final typeFilter = data.firstWhere((d) => d['key'] == 'identifierType');
 
-      // "in" (not "equals") so any of the 4 ID types match the same box,
-      // and "contains" (not "equals") so short/partial test values still
-      // trigger a search instead of requiring the full exact ID upfront.
-      expect(idFilter['operation'], 'contains');
+      // "in" lets any of the 4 ID types match the same box, while the ID
+      // value itself must match exactly to avoid returning partial matches.
+      expect(idFilter['operation'], 'equals');
       expect(typeFilter['operation'], 'in');
       expect(
         typeFilter['value'],

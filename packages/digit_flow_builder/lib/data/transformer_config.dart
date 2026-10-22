@@ -1083,9 +1083,9 @@ final jsonConfig = {
           "transactionType": "__value:DISPATCHED",
           "transactionReason": "__value:null",
           "senderId": "__context:senderFacilityId",
-          "senderType": "__value:WAREHOUSE",
+          "senderType": "__context:senderPartyType",
           "receiverId": "__context:receiverFacilityId",
-          "receiverType": "__value:WAREHOUSE",
+          "receiverType": "__context:receiverPartyType",
           "nonRecoverableError": "errors.nonRecoverable",
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
@@ -1124,13 +1124,14 @@ final jsonConfig = {
           "campaignNumber": "__context:selectedProject.referenceID",
           "transactionType":
               "__switch:__context:stockEntryType:{LESS:__value:DISPATCHED,default:__value:RECEIVED}",
-          "transactionReason": "lessExcessDetails.reasonForLessExcess",
-          "senderId":
-              "__switch:lessExcessDetails.facilityFromWhich:{DELIVERY_TEAM:__context:loggedInUserUuid,default:lessExcessDetails.facilityFromWhich}",
-          "senderType":
-              "__switch:lessExcessDetails.facilityFromWhich:{DELIVERY_TEAM:__value:STAFF,default:__value:WAREHOUSE}",
-          "receiverId": "warehouseDetails.facilityToWhich",
-          "receiverType": "__value:WAREHOUSE",
+          // The user-entered explanation is stored in adjustmentReason below.
+          // transactionReason is reserved for system transaction codes.
+          "transactionReason":
+              "__switch:__context:stockEntryType:{LESS:__value:null,default:__value:RECEIVED}",
+          "senderId": "__context:senderId",
+          "senderType": "__context:senderType",
+          "receiverId": "__context:receiverId",
+          "receiverType": "__context:receiverType",
           "nonRecoverableError": "errors.nonRecoverable",
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
@@ -1138,6 +1139,10 @@ final jsonConfig = {
             "sku": "lessExcessDetails.productVariant.sku",
             "mrnNumber": "__context:mrnNumber",
             "stockEntryType": "__context:stockEntryType",
+            // Give standalone adjustments the same lifecycle status field as
+            // other stock writes: loss is terminal, excess is received.
+            "status":
+                "__switch:__context:stockEntryType:{LESS:__value:LOST,default:__value:RECEIVED}",
             "adjustmentReason": "lessExcessDetails.reasonForLessExcess"
           },
           "clientAuditDetails": "__generate:clientAudit",

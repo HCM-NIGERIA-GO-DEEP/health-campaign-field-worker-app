@@ -243,9 +243,20 @@ void main() {
         'FETCH_TRANSFORMER_CONFIG',
         'UPDATE_EVENT',
         'UPDATE_STOCK_BALANCE',
-        'SHOW_TOAST',
         'NAVIGATION',
       ]),
     );
+  });
+
+  test(
+      'partial accept ends on the stockSuccess acknowledgment screen, same as '
+      'any other transaction, instead of a bare toast', () {
+    final branch = partialAcceptBranch();
+    final actions = (branch['actions'] as List).cast<Map<String, dynamic>>();
+    final navigation = actions.last;
+
+    expect(navigation['actionType'], 'NAVIGATION');
+    expect(navigation['properties']['name'], 'stockSuccess');
+    expect(navigation['properties']['popUntilPageName'], 'manageStock');
   });
 }

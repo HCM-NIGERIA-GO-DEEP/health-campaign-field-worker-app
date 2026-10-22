@@ -99,7 +99,16 @@ class ActionHandler {
     final expression = condition['expression'] as String?;
     if (expression == null || expression == 'DEFAULT') return true;
 
-    final flatData = flattenFormData(data);
+    final flattenedData = flattenFormData(data);
+    // FormulaParser substitutes variables by iterating this map. Resolve
+    // dotted paths before shorter bare keys (for example,
+    // `navigation.incomingStockEntryType` before
+    // `incomingStockEntryType`) so the bare key cannot partially replace a
+    // longer navigation path before it is evaluated.
+    final flatData = Map<String, dynamic>.fromEntries(
+      flattenedData.entries.toList()
+        ..sort((a, b) => b.key.length.compareTo(a.key.length)),
+    );
 
     debugPrint('CONDITION_EVAL_FLAT: flatData=$flatData');
 
@@ -173,6 +182,13 @@ class ActionHandler {
 
         addWithTypeConversion(formData);
         addWithTypeConversion(navigation);
+        // Keep a nested navigation map as well as the flattened bare keys
+        // above. Flow conditions commonly reference navigation values as
+        // `navigation.someValue`; without this entry flattenFormData only
+        // emits `someValue`, so those conditions evaluate false and their
+        // actions (including the shortfall reissue update/create branch) are
+        // silently skipped.
+        evaluationData['navigation'] = navigation;
 
         debugPrint('CONDITION_EVAL: navigation=$navigation');
         debugPrint(

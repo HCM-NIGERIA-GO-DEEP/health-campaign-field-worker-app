@@ -301,6 +301,30 @@ void main() {
               're-issue shortfallTransaction fetch overwrites entities');
     });
 
+    test(
+        'a second UPDATE_STOCK_BALANCE after CREATE_EVENT applies the '
+        're-issue\'s own -quantity effect, scoped to this branch', () {
+      // Regression guard: this branch used to rely on a single
+      // UPDATE_STOCK_BALANCE shared AFTER the whole conditional group
+      // (DAMAGE/LOSS/RETURNED) to net the re-issue's -quantity. Since that
+      // shared call ran unconditionally regardless of which branch matched,
+      // it also fired for DAMAGE/LOSS - which never touch
+      // contextData['entities'] - wrongly crediting them with the +quantity
+      // entity still left over from the top of onAction. Each branch must
+      // now own its complete balance effect.
+      final actions = actionsOf(branch());
+      final updateStockBalanceCount = actions
+          .where((a) => a['actionType'] == 'UPDATE_STOCK_BALANCE')
+          .length;
+      expect(updateStockBalanceCount, 2,
+          reason: 'one UPDATE_STOCK_BALANCE for the +quantity receive, one '
+              'for the re-issue\'s own -quantity - this branch must not '
+              'depend on a balance call shared with other branches');
+      expect(actions.last['actionType'], 'UPDATE_STOCK_BALANCE',
+          reason: 'the second UPDATE_STOCK_BALANCE must run after '
+              'CREATE_EVENT, once entities holds the just-created re-issue');
+    });
+
     test('the branch appears after the STOCK_DAMAGE and STOCK_LOSS branches',
         () {
       // Order matters: the more specific branches must be evaluated before
@@ -339,8 +363,8 @@ void main() {
     });
 
     test(
-        'mutates the existing return record to DAMAGED/ACCEPTED in place - '
-        'no new entity, no CREATE_EVENT', () {
+        'mutates the existing return record to DAMAGED/ACCEPTED and zeroes '
+        'the quantity in place - no new entity, no CREATE_EVENT', () {
       final actions = actionsOf(branch());
 
       final update = actions.firstWhere(
@@ -358,6 +382,13 @@ void main() {
             ['value'],
         'ACCEPTED',
       );
+      expect(modifyEntry(update, 'StockModel.quantity')['value'], '0');
+      expect(
+        modifyEntry(update,
+            'StockModel.additionalFields.fields.actualQuantityReceived')
+            ['value'],
+        '0',
+      );
 
       expect(
         actions.any((a) => a['actionType'] == 'FETCH_TRANSFORMER_CONFIG'),
@@ -371,12 +402,14 @@ void main() {
       );
     });
 
-    test('still runs UPDATE_STOCK_BALANCE so the damaged qty is marked in-hand',
-        () {
+    test(
+        'does not run UPDATE_STOCK_BALANCE - stock damage is a terminal '
+        'write-off just like stock loss, it must not increase the upper '
+        'hierarchy balance', () {
       final actions = actionsOf(branch());
       expect(
         actions.any((a) => a['actionType'] == 'UPDATE_STOCK_BALANCE'),
-        isTrue,
+        isFalse,
       );
     });
   });
@@ -512,5 +545,52 @@ void main() {
                 'persisted');
       }
     }
+  });
+
+  group(
+      'Step 3e (plain Accept, no Shortfall Return involved) credits the '
+      'full dispatched quantity exactly once', () {
+    Map<String, dynamic> branch() =>
+        onAction.firstWhere((a) => conditionOf(a) == 'DEFAULT');
+
+    test(
+        'a DEFAULT branch exists in onAction\'s conditional group and only '
+        'runs UPDATE_STOCK_BALANCE', () {
+      // Regression guard: before this branch existed, a plain accept (no
+      // incomingStockEntryType=='RETURNED' at all) relied on the SAME shared
+      // trailing UPDATE_STOCK_BALANCE that also, incorrectly, fired for
+      // DAMAGE/LOSS. That shared call has been removed - the DEFAULT branch
+      // now owns the plain-accept credit explicitly, using the
+      // "stockReceipt" entity built at the very top of onAction (untouched
+      // by DAMAGE/LOSS/RETURNED, since none of those branches match here).
+      final actions = actionsOf(branch());
+      expect(actions.map((a) => a['actionType']).toList(),
+          ['UPDATE_STOCK_BALANCE']);
+    });
+
+    test(
+        'no bare UPDATE_STOCK_BALANCE action remains shared after the whole '
+        'conditional group', () {
+      // The DAMAGE, STOCK_LOSS, generic RETURNED, and DEFAULT branches above
+      // must be the last four entries with a 'condition' key before the
+      // trailing (unconditional) stockSuccess NAVIGATION - there must be no
+      // standalone UPDATE_STOCK_BALANCE action sitting between the
+      // conditional group and that NAVIGATION, since such a call would run
+      // for every branch regardless of which one matched (this is exactly
+      // the bug that wrongly credited DAMAGE/LOSS).
+      final conditionalIndices = <int>[];
+      for (var i = 0; i < onAction.length; i++) {
+        if (onAction[i]['condition'] != null) conditionalIndices.add(i);
+      }
+      final lastConditionalIndex = conditionalIndices.last;
+      final afterGroup = onAction.sublist(lastConditionalIndex + 1);
+      expect(
+        afterGroup.any((a) => a['actionType'] == 'UPDATE_STOCK_BALANCE'),
+        isFalse,
+        reason: 'found a bare UPDATE_STOCK_BALANCE after the conditional '
+            'group - it would run unconditionally for every branch '
+            '(including DAMAGE/LOSS, which must have zero balance impact)',
+      );
+    });
   });
 }

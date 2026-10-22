@@ -105,6 +105,20 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
   bool get _isBackDisabled =>
       _backDisabledSchemas.contains(widget.currentSchemaKey);
 
+  bool get _deferFormRoutePop {
+    final value = widget.navigationParams?['deferFormRoutePop'];
+    return value == true || value?.toString().toLowerCase() == 'true';
+  }
+
+  void _popFormRoutesAfterSubmit() {
+    // Keep asynchronous flows on their current form until their onAction
+    // navigation is ready, avoiding a flash of the page underneath.
+    if (_deferFormRoutePop) return;
+    context.router.popUntil(
+      (route) => route.settings.name != FormsRenderRoute.name,
+    );
+  }
+
   int? _getScannerScanLimit(PropertySchema schema) {
     final rules = schema.validations;
     if (rules == null) return null;
@@ -180,9 +194,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     if (!formGroup.contains(config.sourceField)) return null;
 
     final raw = formGroup.control(config.sourceField).value;
-    final sourceValue = raw is num
-        ? raw.toInt()
-        : int.tryParse(raw?.toString().trim() ?? '');
+    final sourceValue =
+        raw is num ? raw.toInt() : int.tryParse(raw?.toString().trim() ?? '');
     if (sourceValue == null || sourceValue <= 0) return null;
 
     final perUnit = config.perUnit > 0 ? config.perUnit : 1;
@@ -580,6 +593,26 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                   );
                                   // Add isEdit to context
                                   submitEvalContext['isEdit'] = widget.isEdit;
+                                  // buildVisibilityEvaluationContext only
+                                  // exposes navigation params prefixed as
+                                  // "navigation.xxx" (consistent with
+                                  // conditionalNavigateTo's evaluator) - but
+                                  // submitCondition expressions reference
+                                  // isEdit bare (see above), so other
+                                  // navigation params written the same bare
+                                  // way (e.g. "isClosedHousehold != true")
+                                  // silently failed to parse: the token never
+                                  // matched any key in this context, so
+                                  // FormulaParser left it unresolved and the
+                                  // whole expression errored, making
+                                  // shouldSubmit permanently false regardless
+                                  // of the actual value. Expose navigation
+                                  // params bare too, matching isEdit's
+                                  // convention.
+                                  widget.navigationParams
+                                      ?.forEach((key, value) {
+                                    submitEvalContext[key] = value;
+                                  });
 
                                   final shouldSubmit =
                                       evaluateVisibilityExpression(
@@ -594,10 +627,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                             schemaKey:
                                                 widget.currentSchemaKey));
                                     // Pop all form pages
-                                    context.router.popUntil((route) {
-                                      return route.settings.name !=
-                                          FormsRenderRoute.name;
-                                    });
+                                    _popFormRoutesAfterSubmit();
                                     return;
                                   }
                                 }
@@ -749,13 +779,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                                           ctx,
                                                           rootNavigator: true,
                                                         ).pop();
-                                                        context.router
-                                                            .popUntil((route) {
-                                                          return route.settings
-                                                                  .name !=
-                                                              FormsRenderRoute
-                                                                  .name;
-                                                        });
+                                                        _popFormRoutesAfterSubmit();
                                                       },
                                                       type: DigitButtonType
                                                           .primary,
@@ -797,10 +821,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                           // Pop all form pages (FormsRenderRoute)
 
                                           /// FIXME: NOT BACKWARD COMPATIBLE
-                                          context.router.popUntil((route) {
-                                            return route.settings.name !=
-                                                FormsRenderRoute.name;
-                                          });
+                                          _popFormRoutesAfterSubmit();
                                           return; // Skip default logic
                                         }
                                         // context.read<FormsBloc>().add(
@@ -912,12 +933,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                                       ctx,
                                                       rootNavigator: true,
                                                     ).pop();
-                                                    context.router
-                                                        .popUntil((route) {
-                                                      return route
-                                                              .settings.name !=
-                                                          FormsRenderRoute.name;
-                                                    });
+                                                    _popFormRoutesAfterSubmit();
                                                   },
                                                   type: DigitButtonType.primary,
                                                   size: DigitButtonSize.large),
@@ -955,10 +971,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                       // Pop all form pages (FormsRenderRoute)
 
                                       /// FIXME: NOT BACKWARD COMPATIBLE
-                                      context.router.popUntil((route) {
-                                        return route.settings.name !=
-                                            FormsRenderRoute.name;
-                                      });
+                                      _popFormRoutesAfterSubmit();
                                     }
                                   }
                                 }
@@ -968,8 +981,22 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                               mainAxisSize: MainAxisSize.max,
                             ),
                           ),
+                          // Partially Accept only applies to a lower
+                          // hierarchy receiving an original dispatch - the
+                          // upper hierarchy resolving an incoming RETURNED
+                          // transaction has nothing left to partially accept
+                          // (see manage_stock.dart's onAction/onSecondaryAction
+                          // for the RETURNED-specific handling). A previous
+                          // attempt at this gated it via the page schema's own
+                          // visibilityCondition, which caused an unrelated
+                          // duplicate/blank panel to render - reading the
+                          // navigation param directly here instead avoids
+                          // touching that schema field at all.
                           if (schema.secondaryActionLabel != null &&
-                              widget.onSecondaryAction != null)
+                              widget.onSecondaryAction != null &&
+                              widget.navigationParams?[
+                                      'incomingStockEntryType'] !=
+                                  'RETURNED')
                             Padding(
                               padding: const EdgeInsets.only(top: spacer1),
                               child: DigitButton(
@@ -1327,9 +1354,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                   schemaKey: widget.currentSchemaKey,
                                 ),
                               );
-                          context.router.popUntil((route) {
-                            return route.settings.name != FormsRenderRoute.name;
-                          });
+                          _popFormRoutesAfterSubmit();
                         }
                       },
                       type: DigitButtonType.primary,
@@ -1338,7 +1363,9 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                     ),
                   ),
                   if (schema.secondaryActionLabel != null &&
-                      widget.onSecondaryAction != null)
+                      widget.onSecondaryAction != null &&
+                      widget.navigationParams?['incomingStockEntryType'] !=
+                          'RETURNED')
                     Padding(
                       padding: const EdgeInsets.only(top: spacer1),
                       child: DigitButton(
@@ -1625,9 +1652,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
                 // Pop all form pages (FormsRenderRoute)
                 /// FIXME: NOT BACKWARD COMPATIBLE
-                context.router.popUntil((route) {
-                  return route.settings.name != FormsRenderRoute.name;
-                });
+                _popFormRoutesAfterSubmit();
               },
               type: DigitButtonType.primary,
               size: DigitButtonSize.large,
@@ -1798,8 +1823,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                 // can contribute a second widget - its revealed detail field
                 // - beneath it, once that option is selected.
                 ...bodyFields.expand((field) {
-                  final error =
-                      showValidationError ? validate(field) : null;
+                  final error = showValidationError ? validate(field) : null;
 
                   void onChange(String value) {
                     values[field.fieldName] = value;
@@ -1904,12 +1928,10 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                     }
                     final popupData = <String, dynamic>{
                       for (final field in bodyFields) ...{
-                        field.fieldName:
-                            (values[field.fieldName] ?? '').trim(),
+                        field.fieldName: (values[field.fieldName] ?? '').trim(),
                         if (freeTextRevealed(field))
                           '${field.fieldName}Detail':
-                              (values['${field.fieldName}Detail'] ?? '')
-                                  .trim(),
+                              (values['${field.fieldName}Detail'] ?? '').trim(),
                       },
                     };
                     Navigator.of(ctx, rootNavigator: true).pop();

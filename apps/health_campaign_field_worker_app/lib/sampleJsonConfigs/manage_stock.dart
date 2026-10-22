@@ -1452,7 +1452,7 @@ final dynamic sampleInventoryFlows = {
               {
                 "key": "transactionDetailsHeading",
                 "value":
-                    "{{fn:getViewTransactionHeadingCode(navigation.stockEntryType)}}"
+                    "{{fn:getViewTransactionHeadingCode(formData.lessExcessDetails.recordType)}}"
               }
             ]
           }
@@ -1610,6 +1610,10 @@ final dynamic sampleInventoryFlows = {
                       "Distribution Point": {
                         "forReceipt": ["PHU Warehouse"],
                         "forIssue": ["DELIVERY_TEAM"]
+                      },
+                      "DELIVERY_TEAM": {
+                        "forIssue": ["DELIVERY_TEAM"],
+                        "forReceipt": ["Distribution Point"]
                       }
                     },
                     "useTransactionType": true
@@ -1781,6 +1785,10 @@ final dynamic sampleInventoryFlows = {
                       "Distribution Point": {
                         "forReceipt": ["PHU Warehouse"],
                         "forIssue": ["DELIVERY_TEAM"]
+                      },
+                      "DELIVERY_TEAM": {
+                        "forIssue": ["DELIVERY_TEAM"],
+                        "forReceipt": ["Distribution Point"]
                       }
                     },
                     "useTransactionType": true
@@ -1921,7 +1929,23 @@ final dynamic sampleInventoryFlows = {
                 "key": "stockEntryType",
                 "value": "{{formData.lessExcessDetails.recordType}}"
               },
-              {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"}
+              {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
+              {
+                "key": "senderId",
+                "value": "{{fn:getStockLessExcessPartyValue(formData.lessExcessDetails.recordType, 'senderId', formData.lessExcessDetails.facilityFromWhich, formData.warehouseDetails.facilityToWhich)}}"
+              },
+              {
+                "key": "senderType",
+                "value": "{{fn:getStockLessExcessPartyValue(formData.lessExcessDetails.recordType, 'senderType', formData.lessExcessDetails.facilityFromWhich, formData.warehouseDetails.facilityToWhich)}}"
+              },
+              {
+                "key": "receiverId",
+                "value": "{{fn:getStockLessExcessPartyValue(formData.lessExcessDetails.recordType, 'receiverId', formData.lessExcessDetails.facilityFromWhich, formData.warehouseDetails.facilityToWhich)}}"
+              },
+              {
+                "key": "receiverType",
+                "value": "{{fn:getStockLessExcessPartyValue(formData.lessExcessDetails.recordType, 'receiverType', formData.lessExcessDetails.facilityFromWhich, formData.warehouseDetails.facilityToWhich)}}"
+              }
             ],
             "onError": [
               {
@@ -1978,7 +2002,7 @@ final dynamic sampleInventoryFlows = {
               {
                 "key": "transactionDetailsHeading",
                 "value":
-                    "{{fn:getViewTransactionHeadingCode(navigation.stockEntryType)}}"
+                    "{{fn:getViewTransactionHeadingCode(formData.lessExcessDetails.recordType)}}"
               }
             ]
           }
@@ -2117,7 +2141,15 @@ final dynamic sampleInventoryFlows = {
                   },
                   {
                     "key": "INVENTORY_TRANSACTION_REASON_LABEL",
-                    "value": "{{item.transactionReason}}"
+                    "value":
+                        "{{fn:getTransactionReasonDisplayCode(item.transactionReason)}}",
+                    "hideIfNull": true
+                  },
+                  {
+                    "key": "INVENTORY_DISCREPANCY_REASON_LABEL",
+                    "value":
+                        "{{fn:getDiscrepancyReasonDisplayCode(item.additionalFields.fields.discrepancyReason)}}",
+                    "hideIfNull": true
                   },
                   {
                     "key":
@@ -2140,13 +2172,8 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key":
                         "{{fn:getStockQuantityLabel(item.additionalFields.fields.stockEntryType)}}",
-                    "value": "{{item.quantity}}"
-                  },
-                  {
-                    "key": "INVENTORY_ORIGINAL_QUANTITY_RECEIVED_LABEL",
                     "value":
-                        "{{item.additionalFields.fields.originalQuantityReceived}}",
-                    "hideIfNull": true
+                        "{{fn:coalesceQuantity(item.additionalFields.fields.originalQuantityReceived, item.quantity)}}"
                   },
                   {
                     "key": "INVENTORY_ACTUAL_QUANTITY_RECEIVED_LABEL",
@@ -2163,7 +2190,7 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "INVENTORY_DISCREPANCY_REASON_LABEL",
                     "value":
-                        "{{item.additionalFields.fields.discrepancyReason}}",
+                        "{{fn:getDiscrepancyReasonDisplayCode(item.additionalFields.fields.discrepancyReason)}}",
                     "hideIfNull": true
                   },
                   {
@@ -2202,11 +2229,24 @@ final dynamic sampleInventoryFlows = {
             "type": "SEARCH_EVENT",
             "name": "stock",
             "awaitResults": true,
+            // Two filters below share the "additionalFields" key
+            // (contains/notContains) - SearchStateManager.getAllFilters
+            // (used when accumulating filters) deduplicates by key, so
+            // without skipping accumulation one of the two would silently
+            // clobber the other. This screen has no other SEARCH_EVENT
+            // triggers (no dropdowns/filters UI) to accumulate with, so
+            // skipping is safe here.
+            "skipAccumulatedFilters": true,
             "data": [
               {
-                "key": "senderId,receiverId",
+                // Incoming transactions are only records addressed to this
+                // user/facility. Including senderId also surfaced the
+                // distributor's own in-transit returns here; those are not
+                // available to accept and intentionally have no discrepancy
+                // reason, which made Partial Accept appear broken.
+                "key": "receiverId",
                 "value": "{{fn:getUserFacilityId()}}",
-                "operation": "equalsAny"
+                "operation": "equals"
               },
               {
                 "key": "auditCreatedBy",
@@ -2222,6 +2262,21 @@ final dynamic sampleInventoryFlows = {
                 "key": "additionalFields",
                 "value": "IN_TRANSIT",
                 "operation": "contains"
+              },
+              {
+                // "additionalFields contains IN_TRANSIT" was meant to mean
+                // "status is still IN_TRANSIT (pending accept)", but it's a
+                // raw substring match against the whole stored blob - a
+                // record with discrepancyReason "IN_TRANSIT" keeps that
+                // literal text in its additionalFields forever, even after
+                // its own status flips to ACCEPTED. Without this exclusion,
+                // an already-accepted in-transit shortfall return kept
+                // reappearing here indefinitely, letting the upper hierarchy
+                // re-run Accept on the same resolved transaction over and
+                // over.
+                "key": "additionalFields",
+                "value": "\"key\":\"status\",\"value\":\"ACCEPTED\"",
+                "operation": "notContains"
               }
             ]
           }
@@ -2379,7 +2434,7 @@ final dynamic sampleInventoryFlows = {
                         {
                           "key": "discrepancyReason",
                           "value":
-                              "{{item.items[0].additionalFields.fields.discrepancyReason}}"
+                              "{{fn:getStockDiscrepancyReason(item.items)}}"
                         },
                         {"key": "transactionType", "value": "RECEIVED"},
                         {"key": "primaryRole", "value": "RECEIVER"},
@@ -2470,10 +2525,7 @@ final dynamic sampleInventoryFlows = {
               {"key": "transactionType", "value": "RECEIVED"},
               {"key": "primaryRole", "value": "RECEIVER"},
               {"key": "secondaryRole", "value": "SENDER"},
-              {
-                "key": "mrnNumber",
-                "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
-              },
+              {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
               {
                 "key": "senderFacilityId",
                 "value": "{{navigation.senderFacilityId}}"
@@ -2505,6 +2557,17 @@ final dynamic sampleInventoryFlows = {
           "properties": {
             "source": "existingModels",
             "entity": "StockModel",
+            // Reuse the original incoming transaction's own MRN here (same
+            // as the partial-accept branch below already does) instead of
+            // generating a fresh one - this record and the "stockReceipt"
+            // entity just created above both belong to the SAME accept
+            // action, and viewTransactionDetails searches by
+            // navigation.selectedStock (set to this MRN when the user taps
+            // "View Transaction" on the success screen - see the trailing
+            // stockSuccess navigation). Generating a brand new, different
+            // MRN here meant neither this record nor the receipt ever
+            // matched that search, so the upper hierarchy's View
+            // Transactions page came up completely blank after Accept.
             "modify": [
               {
                 "key": "StockModel.additionalFields.fields.status",
@@ -2512,7 +2575,7 @@ final dynamic sampleInventoryFlows = {
               },
               {
                 "key": "StockModel.additionalFields.fields.mrnNumber",
-                "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
+                "value": "{{navigation.mrnNumber}}"
               },
               {
                 "key": "StockModel.additionalFields.fields.comments",
@@ -2524,10 +2587,10 @@ final dynamic sampleInventoryFlows = {
           }
         },
         {
-          // Stock PRD 8.2: Accept on a return with reason = Stock damage
-          // does NOT re-issue - the quantity enters the receiver's Damaged
-          // bucket instead (still "in hand" but excluded from issuable
-          // stock). The discrepancy reason is set by the LOWER hierarchy at
+          // Product decision: Stock damage now behaves exactly like Stock
+          // Loss - a terminal write-off that must never enter any balance,
+          // not a quantity that stays "in hand" in a separate Damaged
+          // bucket. The discrepancy reason is set by the LOWER hierarchy at
           // the time they partially accepted the original dispatch (see
           // onSecondaryAction's generic partial-accept block below) and is
           // carried down through navigation.discrepancyReason (populated
@@ -2537,10 +2600,13 @@ final dynamic sampleInventoryFlows = {
           // does not choose a reason themselves, Accept just resolves
           // whatever reason already arrived with the shortfall. Checked
           // before the generic re-issue block below so damage takes
-          // priority over the in-transit/miscount re-issue path. Reuses the
-          // existing "DAMAGED" stockEntryType convention already handled
-          // specially for the sender side in stock_calculation_utils.dart /
-          // stock_balance_executor.dart.
+          // priority over the in-transit/miscount re-issue path. Keep the
+          // shortfall quantity on the record for reconciliation/reporting,
+          // while deliberately making no UPDATE_STOCK_BALANCE call. The
+          // upper facility's stock calculation recognizes this linked
+          // shortfall as already accounted for by the original dispatch.
+          // stockEntryType is tagged DAMAGED so damage and loss stay distinct
+          // in reports.
           "condition": {
             "expression":
                 "navigation.incomingStockEntryType == 'RETURNED' && navigation.discrepancyReason == 'STOCK_DAMAGE'"
@@ -2559,38 +2625,43 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "StockModel.additionalFields.fields.stockEntryType",
                     "value": "DAMAGED"
-                  }
-                ]
-              }
-            },
-            {
-              "actionType": "UPDATE_STOCK_BALANCE",
-              "properties": {
-                "entity": "STOCK",
-                "onError": [
+                  },
                   {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {
-                      "message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"
-                    }
+                    "key":
+                        "StockModel.additionalFields.fields.actualQuantityReceived",
+                    "value": "0"
+                  },
+                  {
+                    "key": "StockModel.transactionReason",
+                    "value": "STOCK_DAMAGE"
                   }
                 ]
               }
             },
             {
-              "actionType": "SHOW_TOAST",
-              "properties": {
-                "message": "INVENTORY_STOCK_DAMAGE_RECORDED_SUCCESS",
-                "type": "success"
-              }
-            },
-            {
+              // Same acknowledgment screen shown after creating any other
+              // stock transaction (see RECORDSTOCK's "stockSuccess"
+              // navigation) - Accept/Partial Accept previously only showed a
+              // toast and dropped straight back to manageStock, with no way
+              // to review the just-recorded transaction.
               "actionType": "NAVIGATION",
               "properties": {
                 "type": "TEMPLATE",
-                "name": "manageStock",
-                "navigationMode": "popUntilAndReplace",
-                "popUntilPageName": "manageStock"
+                "name": "stockSuccess",
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "manageStock",
+                "data": [
+                  {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
+                  {
+                    "key": "clientReferenceId",
+                    "value": "{{navigation.clientReferenceId}}"
+                  },
+                  {
+                    "key": "transactionDetailsHeading",
+                    "value":
+                        "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED')}}"
+                  }
+                ]
               }
             }
           ]
@@ -2622,25 +2693,29 @@ final dynamic sampleInventoryFlows = {
                         "StockModel.additionalFields.fields.actualQuantityReceived",
                     "value": "0"
                   },
-                  {"key": "StockModel.quantity", "value": "0"},
                   {"key": "StockModel.transactionReason", "value": "STOCK_LOSS"}
                 ]
-              }
-            },
-            {
-              "actionType": "SHOW_TOAST",
-              "properties": {
-                "message": "INVENTORY_STOCK_LOSS_RECORDED_SUCCESS",
-                "type": "success"
               }
             },
             {
               "actionType": "NAVIGATION",
               "properties": {
                 "type": "TEMPLATE",
-                "name": "manageStock",
-                "navigationMode": "popUntilAndReplace",
-                "popUntilPageName": "manageStock"
+                "name": "stockSuccess",
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "manageStock",
+                "data": [
+                  {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
+                  {
+                    "key": "clientReferenceId",
+                    "value": "{{navigation.clientReferenceId}}"
+                  },
+                  {
+                    "key": "transactionDetailsHeading",
+                    "value":
+                        "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED')}}"
+                  }
+                ]
               }
             }
           ]
@@ -2651,26 +2726,23 @@ final dynamic sampleInventoryFlows = {
           },
           "actions": [
             {
-              // Must run first, while contextData['entities'] still holds the
-              // original stockReceipt-fetch entity built at the top of this
-              // onAction array (transactionType=RECEIVED, qty=navigation.quantity).
-              // This correctly credits the "receiving the return back" effect
-              // (+quantity, since isReceiver && transactionType=='RECEIVED') to
-              // the upper hierarchy's balance BEFORE the FETCH_TRANSFORMER_CONFIG
-              // below overwrites entities with the re-issue entity. The outer
-              // trailing UPDATE_STOCK_BALANCE (after this conditional group)
-              // then applies the re-issue's -quantity effect, netting to 0 -
-              // matching the physical reality that the stock passed back in and
-              // right back out.
-              "actionType": "UPDATE_STOCK_BALANCE",
+              // Flip the original incoming RETURNED record's own status from
+              // IN_TRANSIT to ACCEPTED, same as the DAMAGE/LOSS branches
+              // above. calculateStockMetrics now skips any record addressed
+              // to this facility while it's still IN_TRANSIT (so a pending
+              // return doesn't get folded into the balance before this
+              // Accept step runs) - without this update that status would
+              // never change. Shortfall resolutions are excluded from the
+              // upper facility's balance because the original dispatch has
+              // already deducted this quantity there.
+              "actionType": "UPDATE_EVENT",
               "properties": {
-                "entity": "STOCK",
-                "onError": [
+                "source": "existingModels",
+                "entity": "StockModel",
+                "modify": [
                   {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {
-                      "message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"
-                    }
+                    "key": "StockModel.additionalFields.fields.status",
+                    "value": "ACCEPTED"
                   }
                 ]
               }
@@ -2689,6 +2761,15 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "receiverFacilityId",
                     "value": "{{navigation.senderFacilityId}}"
+                  },
+                  {
+                    "key": "senderPartyType",
+                    "value": "{{fn:getUserPartyType()}}"
+                  },
+                  {
+                    "key": "receiverPartyType",
+                    "value":
+                        "{{fn:getPartyTypeForFacilityId(navigation.senderFacilityId)}}"
                   },
                   {
                     "key": "productVariantId",
@@ -2735,37 +2816,55 @@ final dynamic sampleInventoryFlows = {
                   }
                 ]
               }
-            }
+            },
           ]
         },
         {
-          "actionType": "UPDATE_STOCK_BALANCE",
-          "properties": {
-            "entity": "STOCK",
-            "onError": [
-              {
-                "actionType": "SHOW_TOAST",
-                "properties": {
-                  "message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"
-                }
+          // Plain Accept of an original dispatch (not resolving any
+          // RETURNED shortfall) - none of the branches above matched, so
+          // contextData['entities'] still holds the unmodified "stockReceipt"
+          // entity built at the very top of this onAction array
+          // (transactionType=RECEIVED, quantity=navigation.quantity, the full
+          // dispatched amount). This is the ONLY branch that credits a
+          // receipt directly. A RETURNED shortfall is already accounted for
+          // by the original dispatch and must not credit the upper facility.
+          "condition": {"expression": "DEFAULT"},
+          "actions": [
+            {
+              "actionType": "UPDATE_STOCK_BALANCE",
+              "properties": {
+                "entity": "STOCK",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "INVENTORY_UPDATE_STOCK_BALANCE_FAILED_MESSAGE"
+                    }
+                  }
+                ]
               }
-            ]
-          }
-        },
-        {
-          "actionType": "SHOW_TOAST",
-          "properties": {
-            "message": "INVENTORY_STOCK_ACCEPTED_SUCCESS",
-            "type": "success"
-          }
+            }
+          ]
         },
         {
           "actionType": "NAVIGATION",
           "properties": {
             "type": "TEMPLATE",
-            "name": "manageStock",
-            "navigationMode": "popUntilAndReplace",
-            "popUntilPageName": "manageStock"
+            "name": "stockSuccess",
+            "navigationMode": "popUntilAndPush",
+            "popUntilPageName": "manageStock",
+            "data": [
+              {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
+              {
+                "key": "clientReferenceId",
+                "value": "{{navigation.clientReferenceId}}"
+              },
+              {
+                "key": "transactionDetailsHeading",
+                "value":
+                    "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED')}}"
+              }
+            ]
           }
         }
       ],
@@ -2946,6 +3045,15 @@ final dynamic sampleInventoryFlows = {
                     "value": "{{navigation.senderFacilityId}}"
                   },
                   {
+                    "key": "senderPartyType",
+                    "value": "{{fn:getUserPartyType()}}"
+                  },
+                  {
+                    "key": "receiverPartyType",
+                    "value":
+                        "{{fn:getPartyTypeForFacilityId(navigation.senderFacilityId)}}"
+                  },
+                  {
                     "key": "productVariantId",
                     "value": "{{navigation.productVariantId}}"
                   },
@@ -3000,19 +3108,24 @@ final dynamic sampleInventoryFlows = {
               }
             },
             {
-              "actionType": "SHOW_TOAST",
-              "properties": {
-                "message": "INVENTORY_STOCK_REJECTED_SUCCESS",
-                "type": "success"
-              }
-            },
-            {
               "actionType": "NAVIGATION",
               "properties": {
                 "type": "TEMPLATE",
-                "name": "manageStock",
-                "navigationMode": "popUntilAndReplace",
-                "popUntilPageName": "manageStock"
+                "name": "stockSuccess",
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "manageStock",
+                "data": [
+                  {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
+                  {
+                    "key": "clientReferenceId",
+                    "value": "{{navigation.clientReferenceId}}"
+                  },
+                  {
+                    "key": "transactionDetailsHeading",
+                    "value":
+                        "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED')}}"
+                  }
+                ]
               }
             }
           ]
@@ -3201,6 +3314,26 @@ final dynamic sampleInventoryFlows = {
               "enums": null
             },
             {
+              "type": "string",
+              "label": "INVENTORY_DISCREPANCY_REASON_LABEL",
+              "order": 6,
+              "value":
+                  "{{fn:getDiscrepancyReasonDisplayCode(navigation.discrepancyReason)}}",
+              "format": "text",
+              "fieldName": "discrepancyReasonDisplay",
+              "displayOnly": true,
+              "hideIfNull": true,
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition":
+                        "navigation.discrepancyReason != null && navigation.discrepancyReason != '' && navigation.discrepancyReason != 'null'",
+                    "type": "custom"
+                  }
+                ]
+              }
+            },
+            {
               "type": "integer",
               "label": "INVENTORY_QUANTITY_SENT_BY_WAREHOUSE_LABEL",
               "order": 7,
@@ -3287,8 +3420,11 @@ final dynamic sampleInventoryFlows = {
             "name": "stock",
             "data": [
               {
-                "key": "clientCreatedBy,clientModifiedBy",
-                "value": "{{singleton.loggedInUserUuid}}",
+                // Include transactions where the user's UUID is recorded as
+                // a party (distributor) or as their facility (warehouse
+                // manager), plus adjustments they personally recorded.
+                "key": "senderId,receiverId,clientCreatedBy",
+                "value": "{{fn:getUserFacilityId()}}",
                 "operation": "equalsAny"
               },
               {
@@ -3480,7 +3616,7 @@ final dynamic sampleInventoryFlows = {
                         {
                           "key": "transactionDetailsHeading",
                           "value":
-                              "{{fn:getViewTransactionHeadingCode(item.items[0].additionalFields.fields.stockEntryType)}}"
+                              "{{fn:getViewTransactionHeadingCode(item.items[0].additionalFields.fields.stockEntryType, item.items[0].transactionReason)}}"
                         }
                       ]
                     }

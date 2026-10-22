@@ -305,6 +305,40 @@ class QueryBuilder {
     return combined;
   }
 
+  /// Builds an OR expression matching any requested substring in any of the
+  /// comma-separated columns. Unlike `containsAll`, only one value needs to
+  /// match. This supports reports that combine related stock entry types.
+  static Expression<bool>? _buildContainsAnyExpression(
+      TableInfo<Table, Object?> table, SearchFilter filter) {
+    final columnNames = filter.field
+        .split(',')
+        .map((f) => camelToSnake(f.trim()))
+        .where((f) => f.isNotEmpty)
+        .toList();
+    final values = _normalizeToList(filter.value)
+        .map((v) => v.toString())
+        .where((v) => v.isNotEmpty)
+        .toList();
+    if (values.isEmpty || columnNames.isEmpty) return null;
+
+    final columns = columnNames.map((colName) {
+      return table.$columns.firstWhere(
+        (c) => c.$name == colName,
+        orElse: () => throw Exception(
+            'Column $colName not found in ${table.actualTableName}'),
+      ) as Expression<String>;
+    }).toList();
+
+    Expression<bool>? combined;
+    for (final column in columns) {
+      for (final value in values) {
+        final clause = column.like('%$value%');
+        combined = combined == null ? clause : combined | clause;
+      }
+    }
+    return combined;
+  }
+
   /// Converts a SearchFilter to a Drift `Expression<bool>` for the given
   /// column. Mirrors the operator set handled by `queryRawTable`.
   /// Returns null when the filter resolves to "match everything" (e.g.
@@ -319,6 +353,16 @@ class QueryBuilder {
         return col.equals(filter.value).not();
       case 'contains':
         return (col as Expression<String>).like('${filter.value}%');
+      case 'containsAny':
+        final values = _normalizeToList(filter.value)
+            .map((v) => v.toString())
+            .where((v) => v.isNotEmpty);
+        Expression<bool>? combined;
+        for (final value in values) {
+          final clause = (col as Expression<String>).like('%$value%');
+          combined = combined == null ? clause : combined | clause;
+        }
+        return combined;
       case 'notContains':
         return col.isNull() |
             (col as Expression<String>).like('%${filter.value}%').not();
@@ -420,6 +464,21 @@ class QueryBuilder {
           return '$column = ?';
         case 'contains':
           return '$column LIKE ?';
+        case 'containsAny':
+          final columns = filter.field
+              .split(',')
+              .map((f) => camelToSnake(f.trim()))
+              .where((f) => f.isNotEmpty)
+              .toList();
+          final values = _normalizeToList(filter.value)
+              .map((v) => v.toString())
+              .where((v) => v.isNotEmpty)
+              .toList();
+          if (columns.isEmpty || values.isEmpty) return '1 = 1';
+          return '(${[
+            for (final col in columns)
+              for (final value in values) '$col LIKE ?'
+          ].join(' OR ')})';
         case 'notContains':
           return '($column IS NULL OR $column NOT LIKE ?)';
         case 'isNotNull':
@@ -488,6 +547,16 @@ class QueryBuilder {
           break;
         case 'contains':
           args.add(Variable.withString('${filter.value}%'));
+          break;
+        case 'containsAny':
+          final columnCount = filter.field.split(',').length;
+          for (var i = 0; i < columnCount; i++) {
+            for (final value in _normalizeToList(filter.value)) {
+              if (value.toString().isNotEmpty) {
+                args.add(Variable.withString('%$value%'));
+              }
+            }
+          }
           break;
         case 'notContains':
           args.add(Variable.withString('%${filter.value}%'));
@@ -681,6 +750,12 @@ class QueryBuilder {
       // part to appear (LIKE) in at least one of the comma-separated columns.
       if (filter.operator == 'containsAll') {
         final expr = _buildContainsAllExpression(dynamicTable, filter);
+        if (expr != null) whereClauses.add(expr);
+        continue;
+      }
+
+      if (filter.operator == 'containsAny') {
+        final expr = _buildContainsAnyExpression(dynamicTable, filter);
         if (expr != null) whereClauses.add(expr);
         continue;
       }

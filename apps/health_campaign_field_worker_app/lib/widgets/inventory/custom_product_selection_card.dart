@@ -608,19 +608,10 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         initialSchema?.pages['lessExcessDetails']?.properties?['quantity'];
     final existingValidations =
         _normalizeValidationRules(initialQuantityField?.validations);
-    final configuredMax = existingValidations
-        .firstWhere(
-          (v) => v.type == 'max' || v.type == 'maxValue',
-          orElse: () => ValidationRule(
-            type: 'max',
-            value: quantityField.max ?? quantityField.maxValue ?? 5,
-          ),
-        )
-        .value;
-    final int configuredMaxInt = configuredMax is int
-        ? configuredMax
-        : int.tryParse(configuredMax?.toString() ?? '') ??
-            (quantityField.max ?? quantityField.maxValue ?? 5);
+    // There is no configured five-unit cap for stock adjustments. Keep a
+    // large input safety ceiling, and apply the real stock-on-hand cap only
+    // to LOSS/LESS records below.
+    const configuredMaxInt = 10000000;
 
     String? currentRecordType;
     try {
@@ -639,7 +630,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
 
     final boundedStock = max(0, stockInHand.floor());
     final maxValue = shouldApplyStockCap && hasSelectedProduct
-        ? min(configuredMaxInt, boundedStock)
+        ? boundedStock
         : configuredMaxInt;
     final isConfiguredCapApplied = maxValue == configuredMaxInt;
 
@@ -668,8 +659,8 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
 
     final updatedQuantityField = quantityField.copyWith(
       validations: newValidations,
-      max: configuredMaxInt,
-      maxValue: configuredMaxInt,
+      max: maxValue,
+      maxValue: maxValue,
     );
     final updatedProperties = Map<String, PropertySchema>.from(properties);
     updatedProperties['quantity'] = updatedQuantityField;
@@ -817,6 +808,23 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         }
       }
     }
+
+    // Stock details normally lets the user choose among the project's
+    // product variants. When the project has exactly one, prefill it so the
+    // user can continue without an unnecessary selection step. Keep the
+    // existing manual selection behavior when multiple products are present.
+    if (!_initialized && productVariants?.length == 1) {
+      final onlyProduct = productVariants!.first;
+      if (onlyProduct is ProductVariantModel) {
+        _prefilledProductIds = {onlyProduct.id};
+        _prefilledOptions = _buildDropdownItemsFromProductVariants(
+          _prefilledProductIds!,
+          productVariants,
+        );
+        _initialized = _prefilledOptions!.isNotEmpty;
+        _formControlUpdated = false;
+      }
+    }
   }
 
   /// Extract product IDs from various value formats
@@ -890,6 +898,9 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         if (selectedModels.isNotEmpty) {
           // Update the form control value with ProductVariantModel instances
           field.control.value = selectedModels;
+          setState(() {
+            _selectedProducts = selectedModels.cast<ProductVariantModel>();
+          });
 
           // Also update FormsBloc to sync state
           context.read<FormsBloc>().add(
@@ -905,6 +916,10 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
                       .toList(),
                 ),
               );
+
+          // Keep stock-in-hand calculations and dependent quantity
+          // validations in sync with the preselected product.
+          _triggerStockSearch(context);
 
           debugPrint(
               'ProductSelectionCard: Updated form control with ${selectedModels.length} products');

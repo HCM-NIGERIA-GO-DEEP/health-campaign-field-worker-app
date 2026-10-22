@@ -1361,8 +1361,18 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
 
       if (receiverIds.isEmpty) return;
 
-      final stockSearchModel = StockSearchModel(
+      // Two separate searches, not one with both fields set - the backend's
+      // _search treats multiple id fields in a single request as AND, so
+      // receiverId==X && senderId==X only ever matches a self-transaction
+      // and silently drops every real two-party record (a lower-hierarchy
+      // user's shortfall return, reissue, or damage/loss write-off sent
+      // back to this facility). Mirrors stock_balance_card.dart's own
+      // proven two-search-and-merge approach for the same endpoint.
+      final receiverSearchModel = StockSearchModel(
         receiverId: receiverIds.first,
+        campaignNumber: project.referenceID,
+      );
+      final senderSearchModel = StockSearchModel(
         senderId: receiverIds.first,
         campaignNumber: project.referenceID,
       );
@@ -1401,51 +1411,64 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       if (existingDownSyncData.isEmpty) {
         await downSyncLocalRepository.create(DownsyncModel(
           offset: 0,
-          limit: 50,
+          limit: 200,
           lastSyncedTime: lastSyncedTime,
           totalCount: 0,
           locality: localityKey,
         ));
       }
 
-      final totalCount = await (stockRemoteRepository as StockRemoteRepository)
-          .fetchTotalCount(
-        stockSearchModel,
+      final remoteRepo = stockRemoteRepository as StockRemoteRepository;
+      final receiverTotalCount = await remoteRepo.fetchTotalCount(
+        receiverSearchModel,
         offSet: 0,
         lastSyncedTime: lastSyncedTime,
         includeOnlyUpdatedByOthers: true,
       );
+      final senderTotalCount = await remoteRepo.fetchTotalCount(
+        senderSearchModel,
+        offSet: 0,
+        lastSyncedTime: lastSyncedTime,
+        includeOnlyUpdatedByOthers: true,
+      );
+      final totalCount = receiverTotalCount + senderTotalCount;
 
       if (totalCount <= 0) return;
 
-      const batchSize = 50;
-      int offset = 0;
-      int syncedCount = 0;
+      const batchSize = 200;
       final currentSyncTime = DateTime.now().millisecondsSinceEpoch;
+      int syncedCount = 0;
 
-      while (syncedCount < totalCount) {
-        final stockEntries = await stockRemoteRepository.search(
-          stockSearchModel,
-          offSet: offset,
-          limit: batchSize,
-          lastSyncedTime: lastSyncedTime,
-          includeOnlyUpdatedByOthers: true,
-        );
+      // Run both searches to completion - any record both happen to return
+      // (a true self-transaction) is just idempotently re-written since
+      // bulkCreate uses insertOrReplace, so there's no double-counting risk.
+      for (final searchModel in [receiverSearchModel, senderSearchModel]) {
+        int offset = 0;
+        while (true) {
+          final stockEntries = await stockRemoteRepository.search(
+            searchModel,
+            offSet: offset,
+            limit: batchSize,
+            lastSyncedTime: lastSyncedTime,
+            includeOnlyUpdatedByOthers: true,
+          );
 
-        if (stockEntries.isEmpty) break;
+          if (stockEntries.isEmpty) break;
 
-        await stockLocalRepository.bulkCreate(stockEntries);
+          await stockLocalRepository.bulkCreate(stockEntries);
 
-        await downSyncLocalRepository.update(DownsyncModel(
-          offset: 0,
-          limit: batchSize,
-          lastSyncedTime: currentSyncTime,
-          totalCount: totalCount,
-          locality: localityKey,
-        ));
+          await downSyncLocalRepository.update(DownsyncModel(
+            offset: 0,
+            limit: batchSize,
+            lastSyncedTime: currentSyncTime,
+            totalCount: totalCount,
+            locality: localityKey,
+          ));
 
-        offset += stockEntries.length;
-        syncedCount += stockEntries.length;
+          offset += stockEntries.length;
+          syncedCount += stockEntries.length;
+          if (stockEntries.length < batchSize) break;
+        }
       }
 
       await downSyncStockBalances(project);

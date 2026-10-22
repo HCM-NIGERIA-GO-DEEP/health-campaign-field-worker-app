@@ -18,6 +18,7 @@ import '../../models/role_actions/role_actions_model.dart';
 import '../../services/device_id_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/environment_config.dart';
+import '../../utils/function_registries.dart';
 
 // part 'auth.freezed.dart' need to be added to auto generate the files for freezed model
 part 'auth.freezed.dart';
@@ -161,13 +162,22 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   // ensureOnlineOrAlert) — if the API call still fails here, the local
   // session is left untouched so the user stays logged in.
   FutureOr<void> _onLogout(AuthLogoutEvent event, AuthEmitter emit) async {
-    // _deleteUserLocalDatabaseData() below wipes every SQL table plus the
-    // entire opLog outbox unconditionally - there was no check for records
-    // still waiting to be uploaded, so logging out before a sync completed
-    // permanently deleted that data with no way to recover it. Block the
-    // logout instead and tell the user to sync first.
+    // _deleteUserLocalDatabaseData() wipes every SQL table plus the entire
+    // opLog outbox. Previously this ran unconditionally on every logout,
+    // permanently destroying any record still waiting to be uploaded with no
+    // way to recover it. A later fix blocked logout entirely whenever
+    // pending records existed - but that left users stuck on this screen
+    // (e.g. no connectivity to sync, or a sync that keeps failing), and the
+    // only workaround support had was to manually clear app data, which lost
+    // the same data this was meant to protect. Product decision: never block
+    // logout. Skip the local wipe when there's unsynced data instead, so it
+    // survives on disk across the session boundary - the next login then
+    // shows a "you have pending records" reminder (see
+    // AuthenticatedPageWrapper's pending-sync check) instead of silently
+    // discarding it.
     final userObject = await localSecureStore.userRequestModel;
     final currentUserUuid = userObject?.uuid;
+    var hasPendingRecords = false;
     if (currentUserUuid != null && currentUserUuid.isNotEmpty) {
       final pendingCount = await isar.opLogs
           .filter()
@@ -176,13 +186,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           .not()
           .operationEqualTo(DataOperation.search)
           .count();
-      if (pendingCount > 0) {
-        _showLogoutFailureAlert(
-          'You have $pendingCount unsynced record(s) on this device. '
-          'Please sync before logging out, or they will be permanently lost.',
-        );
-        return;
-      }
+      hasPendingRecords = pendingCount > 0;
     }
 
     try {
@@ -214,7 +218,16 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return;
     }
 
-    await _deleteUserLocalDatabaseData();
+    if (!hasPendingRecords) {
+      await _deleteUserLocalDatabaseData();
+    }
+    // In-memory only - safe to clear unconditionally regardless of
+    // hasPendingRecords. Without this, a stale balance map from this
+    // session's facility silently carries over into the next login,
+    // which matters when a different role/facility logs in on the same
+    // device right after (see StockBalanceCache's facility-mismatch guard
+    // in the hasStockFor* gates).
+    StockBalanceCache.instance.clear();
     await localSecureStore.deleteAll();
     await localSecureStore.setBoundaryRefetch(true);
     // NOTE: do NOT clear isar.appConfigurations here. Its partner — the

@@ -42,6 +42,7 @@ class JsonSchemaIntegerBuilder extends JsonSchemaBuilder<int> {
           helpText: helpText,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           readOnly: readOnly,
+          editable: !readOnly,
           errorMessage: field.errorText,
           minValue: relativeMinValue ?? minValue ?? 0,
           maxValue: relativeMaxValue ?? maxValue ?? 1000,

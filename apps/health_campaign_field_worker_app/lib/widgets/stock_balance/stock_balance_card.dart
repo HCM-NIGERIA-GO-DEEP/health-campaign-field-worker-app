@@ -177,10 +177,27 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
     final createdBy = context.loggedInUserUuid;
     final selectedCycle = context.selectedCycle;
 
-    // Listen to StockModel changes
+    // Listen to StockModel changes received by this facility.
     stockRepo.listenToChanges(
       query: StockSearchModel(receiverId: facilityId),
       listener: (receivedStocks) async {
+        if (!mounted) return;
+        await _refreshBalances(
+            taskRepo, stockRepo, userActionRepo, effectiveFacilityId);
+      },
+    );
+
+    // Listen to StockModel changes sent BY this facility (e.g. issuing/
+    // dispatching stock to a lower hierarchy). The receiver-only watcher
+    // above never fires for these - a dispatch is a brand new record with
+    // this facility as senderId, not receiverId - so the balance card kept
+    // showing the pre-dispatch quantity until something else (navigating
+    // away and back to a fresh widget instance) happened to trigger a
+    // recompute. Without this, issuing stock looked like it had no effect on
+    // the sender's own displayed balance.
+    stockRepo.listenToChanges(
+      query: StockSearchModel(senderId: facilityId),
+      listener: (sentStocks) async {
         if (!mounted) return;
         await _refreshBalances(
             taskRepo, stockRepo, userActionRepo, effectiveFacilityId);

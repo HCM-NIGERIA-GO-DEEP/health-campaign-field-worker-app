@@ -139,6 +139,26 @@ class StockBalanceExecutor extends ActionExecutor {
       final isReceiver = stock.receiverId == facilityId;
       final isSender = stock.senderId == facilityId;
 
+      // A shortfall-notification RETURNED record (created automatically by
+      // a partial accept) is a bookkeeping message to the upper hierarchy,
+      // not stock this facility ever actually held - see the matching,
+      // already-proven exclusion in stock_calculation_utils.dart's
+      // calculateStockMetrics. Without this, this executor's incremental
+      // cache can double-count/miscount it differently from the UI's live
+      // recompute (which overwrites this same cache on every balance card
+      // view, but a gate called in between would still see the bad delta).
+      final isShortfallNotification = isSender &&
+          stockEntryType == 'RETURNED' &&
+          (stock.additionalFields?.fields
+                      .firstWhere(
+                          (f) => f.key == 'originalIssueClientReferenceId',
+                          orElse: () => const AdditionalField('', ''))
+                      .value
+                      ?.toString() ??
+                  '')
+              .isNotEmpty;
+      if (isShortfallNotification) continue;
+
       double delta = 0;
 
       // Determine if this is a distributor context

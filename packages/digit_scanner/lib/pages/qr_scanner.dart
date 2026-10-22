@@ -107,6 +107,14 @@ class DigitScannerPage extends LocalizedStatefulWidget {
   /// Gets the pattern validation message from validations
   String? get patternMessage => validations?.patternMessage;
 
+  String? get manualSerialPattern => validations?.manualSerialPattern;
+
+  String? get manualSerialPatternMessage =>
+      validations?.manualSerialPatternMessage;
+
+  bool get effectiveAllowManualEntry =>
+      validations?.allowManualEntry ?? true;
+
   @override
   State<DigitScannerPage> createState() => DigitScannerPageState();
 }
@@ -404,7 +412,7 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
         },
         builder: (context, state) {
           return _cameras.isNotEmpty
-              ? !manualCode
+              ? (!manualCode || !widget.effectiveAllowManualEntry)
                   ? scanWidget(context, theme, textTheme, state)
                   : manualEntryWidget(context, theme, textTheme)
               : const Center(
@@ -593,6 +601,26 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                                   type: ToastType.error,
                                   message: localizations
                                       .translate(i18.scanner.enterManualCode),
+                                  sentenceCaseEnabled: false,
+                                );
+                                return;
+                              }
+
+                              final serialPattern = widget.manualSerialPattern;
+                              if (serialPattern != null &&
+                                  !RegExp(serialPattern).hasMatch(serialValue)) {
+                                final message =
+                                    widget.manualSerialPatternMessage;
+                                final translatedMessage = message == null
+                                    ? null
+                                    : localizations.translate(message);
+                                Toast.showToast(
+                                  context,
+                                  type: ToastType.error,
+                                  message: translatedMessage != null &&
+                                          translatedMessage != message
+                                      ? translatedMessage
+                                      : 'Enter a serial number of 1 to 20 printable characters, without spaces.',
                                   sentenceCaseEnabled: false,
                                 );
                                 return;
@@ -1186,9 +1214,10 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
           ),
         ),
 
-        Center(
-          child: overlayForManualEntry(theme, textTheme),
-        ),
+        if (widget.effectiveAllowManualEntry)
+          Center(
+            child: overlayForManualEntry(theme, textTheme),
+          ),
 
         renderScannedResource(theme, textTheme, state)
       ],

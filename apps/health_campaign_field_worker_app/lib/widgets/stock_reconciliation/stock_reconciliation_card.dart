@@ -210,6 +210,26 @@ class _StockReconciliationCardState
                 ? productVariants
                 : _cachedProductVariants;
 
+            // A Distributor has no ProjectFacilityModel row (their own
+            // identity is their user UUID, not a warehouse-type facility),
+            // so _getFacilities always returns empty for them and the
+            // dropdown below would show no options. Auto-resolve their own
+            // facility instead of asking them to pick one - same pattern
+            // stock_balance_card.dart already uses for this role.
+            if (isDistributor && _selectedFacility == null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && _selectedFacility == null) {
+                  setState(() {
+                    _selectedFacility =
+                        FacilityModel(id: context.loggedInUserUuid ?? '');
+                    _needsMetricsRecalculation = true;
+                  });
+                  _triggerStockSearchIfReady(context);
+                  _updateFormData();
+                }
+              });
+            }
+
             // Recalculate stock metrics only when needed (facility/product changed)
             if (_selectedFacility != null &&
                 _selectedProduct != null &&
@@ -225,43 +245,45 @@ class _StockReconciliationCardState
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // Facility Dropdown
-                LabeledField(
-                  isRequired: true,
-                  label: localizations.translate('SELECT_WAREHOUSE'),
-                  child: DigitDropdown<FacilityModel>(
-                    errorMessage: _facilityError,
-                    selectedOption: _selectedFacility != null
-                        ? DropdownItem(
-                            name: localizations
-                                .translate('FAC_${_selectedFacility!.id}'),
-                            code: _selectedFacility!.id,
-                          )
-                        : null,
-                    emptyItemText:
-                        localizations.translate('NO_FACILITIES_FOUND'),
-                    items: displayFacilities.map((facility) {
-                      return DropdownItem(
-                        name: localizations.translate('FAC_${facility.id}'),
-                        code: facility.id,
-                      );
-                    }).toList(),
-                    onSelect: (value) {
-                      final selected = displayFacilities.firstWhere(
-                        (f) => f.id == value.code,
-                      );
-                      setState(() {
-                        _facilityTouched = true;
-                        _selectedFacility = selected;
-                        // Reset flags when facility changes
-                        _manualCountInitialized = false;
-                        _needsMetricsRecalculation = true;
-                      });
-                      _triggerStockSearchIfReady(context);
-                      _updateFormData();
-                    },
+                // Facility Dropdown - hidden for Distributor, auto-resolved
+                // above instead.
+                if (!isDistributor)
+                  LabeledField(
+                    isRequired: true,
+                    label: localizations.translate('SELECT_WAREHOUSE'),
+                    child: DigitDropdown<FacilityModel>(
+                      errorMessage: _facilityError,
+                      selectedOption: _selectedFacility != null
+                          ? DropdownItem(
+                              name: localizations
+                                  .translate('FAC_${_selectedFacility!.id}'),
+                              code: _selectedFacility!.id,
+                            )
+                          : null,
+                      emptyItemText:
+                          localizations.translate('NO_FACILITIES_FOUND'),
+                      items: displayFacilities.map((facility) {
+                        return DropdownItem(
+                          name: localizations.translate('FAC_${facility.id}'),
+                          code: facility.id,
+                        );
+                      }).toList(),
+                      onSelect: (value) {
+                        final selected = displayFacilities.firstWhere(
+                          (f) => f.id == value.code,
+                        );
+                        setState(() {
+                          _facilityTouched = true;
+                          _selectedFacility = selected;
+                          // Reset flags when facility changes
+                          _manualCountInitialized = false;
+                          _needsMetricsRecalculation = true;
+                        });
+                        _triggerStockSearchIfReady(context);
+                        _updateFormData();
+                      },
+                    ),
                   ),
-                ),
                 const SizedBox(height: spacer4),
 
                 // Product Variant Dropdown
@@ -337,13 +359,19 @@ class _StockReconciliationCardState
                         labelFlex: 5,
                       ),
                       const DigitDivider(),
-                      LabelValueItem(
-                        label: localizations.translate(
-                            i18.stockReconciliationMetrics.stockIssued),
-                        value: _stockMetrics['stockIssued']!.toStringAsFixed(0),
-                        labelFlex: 5,
-                      ),
-                      const DigitDivider(),
+                      // Distributor is the lowest hierarchy level - they
+                      // never issue stock on to another facility, so this
+                      // figure is never meaningful for them.
+                      if (!isDistributor) ...[
+                        LabelValueItem(
+                          label: localizations.translate(
+                              i18.stockReconciliationMetrics.stockIssued),
+                          value:
+                              _stockMetrics['stockIssued']!.toStringAsFixed(0),
+                          labelFlex: 5,
+                        ),
+                        const DigitDivider(),
+                      ],
                       LabelValueItem(
                         label: localizations.translate(
                             i18.stockReconciliationMetrics.stockReturned),
@@ -359,29 +387,28 @@ class _StockReconciliationCardState
                         labelFlex: 5,
                       ),
                       const DigitDivider(),
-                      // Damaged stock is shown regardless of role - a
-                      // non-distributor (e.g. a warehouse-level upper
-                      // hierarchy user) can end up holding damaged stock via
-                      // the Shortfall Return flow (manage_stock.dart's
-                      // stockReceiptDetails onAction, STOCK_DAMAGE branch)
-                      // just as much as a distributor can, and needs to see
-                      // it's excluded from what they can issue.
+                      if (!isDistributor) ...[
+                        LabelValueItem(
+                          label: localizations.translate(
+                              i18.stockReconciliationMetrics.stockDamaged),
+                          value: _stockMetrics['stockDamaged']!
+                              .toStringAsFixed(0),
+                          labelFlex: 5,
+                        ),
+                        const DigitDivider(),
+                      ],
+                      // Loss is shown for every role. Accepted shortfalls reported by a lower
+                      // facility are included for reconciliation, while the
+                      // calculation excludes them from stockInHand because
+                      // the original dispatch already accounted for them.
                       LabelValueItem(
                         label: localizations.translate(
-                            i18.stockReconciliationMetrics.stockDamaged),
-                        value:
-                            _stockMetrics['stockDamaged']!.toStringAsFixed(0),
+                            i18.stockReconciliationMetrics.stockLost),
+                        value: _stockMetrics['stockLost']!.toStringAsFixed(0),
                         labelFlex: 5,
                       ),
                       const DigitDivider(),
                       if (isDistributor) ...[
-                        LabelValueItem(
-                          label: localizations.translate(
-                              i18.stockReconciliationMetrics.stockLost),
-                          value: _stockMetrics['stockLost']!.toStringAsFixed(0),
-                          labelFlex: 5,
-                        ),
-                        const DigitDivider(),
                         LabelValueItem(
                           label: localizations.translate(
                               i18.stockReconciliationMetrics.stockExcess),

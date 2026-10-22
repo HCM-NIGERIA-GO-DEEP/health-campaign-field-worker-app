@@ -61,6 +61,16 @@ extension ScannerValidationListExt on List<ScannerValidation>? {
     return false;
   }
 
+  /// Existing configs allow manual entry unless they explicitly disable it.
+  bool get allowManualEntry {
+    final validation =
+        this?.firstWhereOrNull((v) => v.type == 'allowManualEntry');
+    final value = validation?.value;
+    if (value is bool) return value;
+    if (value is String) return value.toLowerCase() == 'true';
+    return true;
+  }
+
   /// Gets the regex pattern for validation
   String? get pattern {
     final validation = this?.firstWhereOrNull((v) => v.type == 'pattern');
@@ -84,6 +94,20 @@ extension ScannerValidationListExt on List<ScannerValidation>? {
   String? get patternMessage {
     return this?.firstWhereOrNull((v) => v.type == 'pattern')?.message;
   }
+
+  /// Regex applied only to the serial entered through GS1 manual entry.
+  String? get manualSerialPattern {
+    final validation =
+        this?.firstWhereOrNull((v) => v.type == 'manualSerialPattern');
+    final value = validation?.value;
+    if (value == null) return null;
+    return value is String ? value : value.toString();
+  }
+
+  /// Error message for the GS1 manual serial validation.
+  String? get manualSerialPatternMessage => this
+      ?.firstWhereOrNull((v) => v.type == 'manualSerialPattern')
+      ?.message;
 
   /// Whether single value mode is enabled (scan limit is 1)
   bool get isSingleValue => scanLimit == 1;

@@ -141,18 +141,25 @@ class StockCalculationUtils {
     double stockLess = 0;
     double stockWastage = 0;
     double stockPartialUsed = 0;
+    // Accepted damage/loss shortfall notices sent by a lower facility are
+    // useful reconciliation totals, but the quantity was already included
+    // in this facility's original dispatch. Track these separately so the
+    // audit totals do not deduct it from this facility's stock a second time.
+    double lowerFacilityLostShortfall = 0;
+    double lowerFacilityDamagedShortfall = 0;
     bool hasDistributorReturns = isDistributor;
 
     for (final stock in filteredStock) {
       final transactionType = stock.transactionType?.toUpperCase() ?? '';
       final transactionReason = stock.transactionReason?.toUpperCase() ?? '';
-      final dispatchedQuantity = double.tryParse(stock.quantity ?? '0') ?? 0.0;
+      final rawQuantity = double.tryParse(stock.quantity ?? '0') ?? 0.0;
       final status = _getAdditionalFieldValue(stock, 'status');
+      final discrepancyReason =
+          _getAdditionalFieldValue(stock, 'discrepancyReason');
       final actualQuantity =
           getNumericAdditionalFieldValue(stock, 'actualQuantityReceived');
-      final quantity = status == 'ACCEPTED' && actualQuantity != null
-          ? actualQuantity
-          : dispatchedQuantity;
+      final originalQuantity =
+          getNumericAdditionalFieldValue(stock, 'originalQuantityReceived');
       final stockEntryType = _getStockEntryType(stock);
       final wastage =
           double.tryParse(_getAdditionalFieldValue(stock, 'quantityWastage')) ??
@@ -162,6 +169,101 @@ class StockCalculationUtils {
           0.0;
       final isReceiver = stock.receiverId == facilityId;
       final isSender = stock.senderId == facilityId;
+
+      // A partial accept (manage_stock.dart's onSecondaryAction) overwrites
+      // the ORIGINAL dispatched record's own `StockModel.quantity` down to
+      // just what the receiver actually accepted, preserving the true
+      // original amount separately in `originalQuantityReceived`. That's
+      // correct for the RECEIVER's own view of the record (they only ever
+      // want credit for what they accepted), but the SENDER reads this exact
+      // same shared record to know how much it dispatched - using the
+      // mutated `quantity` there silently shrinks the sender's own
+      // stockIssued to the receiver-accepted amount instead of what was
+      // actually sent, so a recompute (e.g. on next login) shows a balance
+      // that never matches what the live incremental update already showed
+      // at dispatch time. The sender's own view must always use the true
+      // original amount, never the receiver's actualQuantityReceived.
+      final quantity = isSender
+          ? (originalQuantity ?? rawQuantity)
+          : (status == 'ACCEPTED' && actualQuantity != null
+              ? actualQuantity
+              : rawQuantity);
+
+      // A record addressed TO this facility that's still IN_TRANSIT (a
+      // dispatch/shortfall-return the sender created but this facility
+      // hasn't opened Accept on yet, in stockReceiptDetails) must not
+      // contribute to this facility's balance at all - neither credited nor
+      // debited - until status flips to ACCEPTED. Without this, a recompute
+      // (e.g. on next login) folds in a pending return the instant it syncs
+      // down, before the receiving facility has had any say over it. This
+      // only gates the RECEIVER side of a pending record - the sender's own
+      // immediate deduction on dispatch (isSender branches below) is
+      // intentionally unaffected, matching normal inventory practice of the
+      // stock leaving the sender's books the moment it's shipped.
+      if (isReceiver && status == 'IN_TRANSIT') {
+        continue;
+      }
+
+      // A shortfall-notification RETURNED record (created automatically by
+      // a partial accept - see manage_stock.dart's onSecondaryAction) is a
+      // bookkeeping message to the upper hierarchy about the part of a
+      // dispatch this facility couldn't account for; it is NOT stock this
+      // facility ever actually held. This facility's own "stockReceipt"
+      // entity already credits only the quantity actually accepted
+      // (formData.actualQuantityReceived), excluding the shortfall - so the
+      // shortfall record must contribute nothing further to THIS facility's
+      // own balance as its sender. Without this, the non-distributor formula
+      // (which adds stockReturned) double-credits the shortfall, and the
+      // distributor formula (which subtracts it) double-penalizes it on top
+      // of the receipt already excluding it - e.g. partially accepting
+      // 10/8/6 as 8/5/4 should credit exactly 17, not 17±(the 2+3+2
+      // shortfall). Distinguished from a genuine deliberate Return (made via
+      // returnOrIssueSelection, using the plain "stock" transformer) by
+      // originalIssueClientReferenceId, which only the shortfallTransaction
+      // transformer sets - a deliberate return of stock this facility
+      // actually owned should still decrement/credit normally.
+      final isShortfallNotification = isSender &&
+          stockEntryType == 'RETURNED' &&
+          _getAdditionalFieldValue(stock, 'originalIssueClientReferenceId')
+              .isNotEmpty;
+      if (isShortfallNotification) {
+        continue;
+      }
+
+      // A resolved shortfall sent back to this facility is a reconciliation
+      // message for stock that was already deducted when the original
+      // dispatch was created. Damage/loss quantities should still appear in
+      // reconciliation totals, but must not be counted as another receipt or
+      // deducted from the upper facility's balance a second time. Use the
+      // shortfall record's quantity (not actualQuantityReceived, which refers
+      // to the amount accepted from the original dispatch).
+      // IN_TRANSIT resolutions are reissued to the lower facility, where the
+      // accepted reissue is counted on receipt; the sender side is likewise
+      // excluded below so the original dispatch remains the only district
+      // balance deduction.
+      final originalIssueReference =
+          _getAdditionalFieldValue(stock, 'originalIssueClientReferenceId');
+      if (isReceiver &&
+          status == 'ACCEPTED' &&
+          originalIssueReference.isNotEmpty) {
+        if (discrepancyReason == 'STOCK_DAMAGE') {
+          stockDamaged += rawQuantity;
+          lowerFacilityDamagedShortfall += rawQuantity;
+          continue;
+        }
+        if (discrepancyReason == 'STOCK_LOSS') {
+          stockLost += rawQuantity;
+          lowerFacilityLostShortfall += rawQuantity;
+          continue;
+        }
+        if (discrepancyReason == 'IN_TRANSIT') continue;
+      }
+      if (isSender &&
+          stockEntryType == 'ISSUED' &&
+          originalIssueReference.isNotEmpty &&
+          discrepancyReason == 'IN_TRANSIT') {
+        continue;
+      }
 
       // Auto-detect distributor: if user is sender in a return, treat as distributor
       final isDistributorReturn =
@@ -241,6 +343,8 @@ class StockCalculationUtils {
     stockReturned *= multiplier;
     stockLost *= multiplier;
     stockDamaged *= multiplier;
+    lowerFacilityLostShortfall *= multiplier;
+    lowerFacilityDamagedShortfall *= multiplier;
     stockExcess *= multiplier;
     stockLess *= multiplier;
 
@@ -261,11 +365,17 @@ class StockCalculationUtils {
                 stockPartialUsed +
                 stockIssued +
                 stockLess +
-                stockDamaged +
-                stockLost)
+                stockDamaged -
+                lowerFacilityDamagedShortfall +
+                stockLost -
+                lowerFacilityLostShortfall)
         : stockReceived +
             stockReturned -
-            (stockIssued + stockDamaged + stockLost);
+            (stockIssued +
+                stockDamaged -
+                lowerFacilityDamagedShortfall +
+                stockLost -
+                lowerFacilityLostShortfall);
 
     return {
       'stockReceived': stockReceived,

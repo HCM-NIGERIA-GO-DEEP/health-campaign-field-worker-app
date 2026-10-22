@@ -37,6 +37,7 @@ class ValidationContextManager {
   /// Maps source field -> Set of dependent fields
   /// e.g., {"maxAllowedStock": {"stockReceived", "stockIssued"}}
   final Map<String, Set<String>> _dependencyMap = {};
+  bool _isRevalidatingDependents = false;
 
   ValidationContextManager({
     required this.formGroup,
@@ -79,21 +80,13 @@ class ValidationContextManager {
             _dependencyMap.putIfAbsent(value, () => {}).add(fieldName);
           }
         } else if (rule.type == 'maxFieldSum' && value is Map) {
-          // Only depend on the field the sum is capped by (e.g. memberCount),
-          // NOT on the sibling summed with this field (e.g. childrenCount's
-          // maxFieldSum naming pregnantWomenCount). That sibling has the
-          // mirrored rule pointing back at this field - registering both
-          // directions made each one a dependent of the other, so editing
-          // either triggered updateValueAndValidity() on the other, which
-          // re-emitted a change and re-triggered the first: an infinite
-          // mutual-revalidation loop that froze the app. memberCount doesn't
-          // have a maxFieldSum pointing back, so depending on it only is
-          // cycle-free. The trade-off: editing pregnantWomenCount alone
-          // doesn't live-update childrenCount's cached validity until
-          // childrenCount itself is next touched - acceptable vs. a crash.
-          final maxFieldName = value['maxField'];
-          if (maxFieldName is String && maxFieldName.isNotEmpty) {
-            _dependencyMap.putIfAbsent(maxFieldName, () => {}).add(fieldName);
+          // Revalidate when either the shared cap or summed sibling changes.
+          // A guard in _revalidateDependents prevents the mirrored sibling
+          // dependencies from recursively revalidating each other.
+          for (final dependency in [value['maxField'], value['with']]) {
+            if (dependency is String && dependency.isNotEmpty) {
+              _dependencyMap.putIfAbsent(dependency, () => {}).add(fieldName);
+            }
           }
         } else if (rule.type == 'conditionalPattern' && value is Map) {
           // conditionalPattern declares its dependency as {"switchOn": "...",
@@ -166,41 +159,58 @@ class ValidationContextManager {
 
   /// Re-validate fields that depend on the changed field
   void _revalidateDependents(String sourceField, Set<String> dependentFields) {
-    // Build current validation context from all form values
-    final context = _buildValidationContext();
+    // Cross-field rules can be mutual (childrenCount and
+    // pregnantWomenCount). Revalidation emits status/value events, so ignore
+    // nested dependency callbacks while this pass is already updating fields.
+    if (_isRevalidatingDependents) return;
+    _isRevalidatingDependents = true;
+    try {
+      // Build current validation context from all form values
+      final context = _buildValidationContext();
 
-    if (kDebugMode) {
-      print(
-          'ValidationContextManager: Re-validating dependents of "$sourceField": ${dependentFields.join(", ")}');
-    }
+      if (kDebugMode) {
+        print(
+            'ValidationContextManager: Re-validating dependents of "$sourceField": ${dependentFields.join(", ")}');
+      }
 
-    for (final dependentField in dependentFields) {
-      try {
-        final control = formGroup.control(dependentField);
-        final schema = schemas[dependentField];
+      for (final dependentField in dependentFields) {
+        try {
+          final control = formGroup.control(dependentField);
+          final schema = schemas[dependentField];
 
-        if (schema != null) {
-          // Rebuild validators with updated context
-          final newValidators = buildValidators(
-            schema,
-          );
+          if (schema != null) {
+            // Rebuild validators with updated context
+            final newValidators = buildValidators(
+              schema,
+            );
 
-          // Update validators and re-validate
-          control.setValidators(newValidators);
-          control.updateValueAndValidity();
+            // Update validators and re-validate
+            control.setValidators(newValidators);
+            // These dependencies can be mutual (childrenCount and
+            // pregnantWomenCount). Re-validating a dependent must not emit a
+            // value/status event on that control, or it can schedule the
+            // reciprocal dependency again after the revalidation guard exits.
+            control.updateValueAndValidity(emitEvent: false);
 
+            if (kDebugMode) {
+              print(
+                  'ValidationContextManager: Re-validated "$dependentField" with context: $context');
+            }
+          }
+        } catch (e) {
+          // Skip if field doesn't exist
           if (kDebugMode) {
             print(
-                'ValidationContextManager: Re-validated "$dependentField" with context: $context');
+                'ValidationContextManager: Warning - Dependent field "$dependentField" not found: $e');
           }
         }
-      } catch (e) {
-        // Skip if field doesn't exist
-        if (kDebugMode) {
-          print(
-              'ValidationContextManager: Warning - Dependent field "$dependentField" not found: $e');
-        }
       }
+
+      // Refresh form-level validity once all dependent controls have been
+      // recalculated, without emitting events from the individual controls.
+      formGroup.updateValueAndValidity();
+    } finally {
+      _isRevalidatingDependents = false;
     }
   }
 

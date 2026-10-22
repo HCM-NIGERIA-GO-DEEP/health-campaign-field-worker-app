@@ -32,6 +32,8 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
 
   @override
   void didChangeDependencies() {
+    super.didChangeDependencies();
+
     final projectId = context.projectId;
     final loggedInUserUuid = context.loggedInUserUuid;
     final isDistributor = context.isDistributorRole;
@@ -50,26 +52,32 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
           context.read<LocalRepository<TaskModel, TaskSearchModel>>()
               as TaskLocalRepository;
 
-      final now = DateTime.now();
-      final gte = DateTime(now.year, now.month, now.day);
-      final lte = DateTime(now.year, now.month, now.day, 23, 59, 59, 999);
-
       taskRepository.listenToChanges(
         query: TaskSearchModel(
-          status: 'ADMINISTRATION_SUCCESS',
           projectId: projectId,
-          createdBy: loggedInUserUuid,
-          plannedEndDate: lte.millisecondsSinceEpoch,
-          plannedStartDate: gte.millisecondsSinceEpoch,
         ),
         listener: (taskData) async {
           if (!mounted) return;
+          final now = DateTime.now();
+          final startOfToday = DateTime(now.year, now.month, now.day)
+              .millisecondsSinceEpoch;
+          final startOfTomorrow =
+              DateTime(now.year, now.month, now.day + 1).millisecondsSinceEpoch;
           final results = taskData.where((task) {
-            final additionalFields = task.additionalFields?.fields;
-            return additionalFields != null && additionalFields.isNotEmpty;
+            final createdBy = task.clientAuditDetails?.createdBy ??
+                task.auditDetails?.createdBy;
+            final createdTime = task.clientAuditDetails?.createdTime ??
+                task.auditDetails?.createdTime;
+
+            return task.status == 'ADMINISTRATION_SUCCESS' &&
+                createdBy == loggedInUserUuid &&
+                createdTime != null &&
+                createdTime >= startOfToday &&
+                createdTime < startOfTomorrow;
           }).toList();
           final groupedEntries = results.groupListsBy(
-            (element) => element.projectBeneficiaryClientReferenceId,
+            (element) => element.projectBeneficiaryClientReferenceId ??
+                element.clientReferenceId,
           );
           if (mounted) {
             setState(() {
@@ -182,7 +190,6 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
         }
       },
     );
-    super.didChangeDependencies();
   }
 
   @override

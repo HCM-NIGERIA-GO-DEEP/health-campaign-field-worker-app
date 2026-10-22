@@ -2930,6 +2930,10 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.summaryReportLabel: homeShowcaseData.summaryReport.showcaseKey,
     };
 
+    final userRoleCodes = state.userModel.roles.map((e) => e.code).toList();
+    final isDistributor =
+        userRoleCodes.contains(RolesType.distributor.toValue());
+
     final homeItemsLabel = <String>[
       // INFO: Need to add items label of package Here
       i18.home.beneficiaryLabel,
@@ -2960,6 +2964,9 @@ class _HomePageState extends LocalizedState<HomePage> {
                 .map((e) => e.displayName)
                 .toList()
                 .contains(element) ||
+            // Stock reports are also used by distributors, whose user role
+            // is not always assigned the legacy home action in MDMS.
+            (isDistributor && element == i18.home.viewReportsLabel) ||
             element == i18.home.db)
         .toList();
 
@@ -2971,11 +2978,8 @@ class _HomePageState extends LocalizedState<HomePage> {
     if (envConfig.variables.envType == EnvType.demo && kReleaseMode) {
       filteredLabels.remove(i18.home.db);
     }
-    // filteredLabels.remove(i18.home.db);
+    filteredLabels.remove(i18.home.db);
 
-    final userRoleCodes = state.userModel.roles.map((e) => e.code).toList();
-    final isDistributor =
-        userRoleCodes.contains(RolesType.distributor.toValue());
     final isRegistrar = userRoleCodes.contains(RolesType.registrar.toValue());
     if (isDistributor || isRegistrar) {
       if (!filteredLabels.contains(i18.home.summaryReportLabel)) {

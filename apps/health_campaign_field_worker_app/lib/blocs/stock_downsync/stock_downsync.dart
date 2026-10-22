@@ -72,8 +72,16 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
     on(_handleResetState);
   }
 
-  /// Build the StockSearchModel based on user role
-  Future<StockSearchModel?> _buildStockSearchModel(ProjectModel project) async {
+  /// Build the receiver/sender StockSearchModels based on user role. Two
+  /// separate models, not one with both fields set - the backend's _search
+  /// treats multiple id fields in a single request as AND, so
+  /// receiverId==X && senderId==X only ever matches a self-transaction and
+  /// silently drops every real two-party record (a lower-hierarchy user's
+  /// shortfall return, reissue, or damage/loss write-off sent back to this
+  /// facility). Mirrors stock_balance_card.dart's own proven two-search-
+  /// and-merge approach for the same endpoint.
+  Future<(StockSearchModel, StockSearchModel)?> _buildStockSearchModels(
+      ProjectModel project) async {
     final userObject = await localSecureStore.userRequestModel;
     final userRoles = userObject!.roles.map((e) => e.code);
 
@@ -103,10 +111,15 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
 
     if (receiverIds.isEmpty) return null;
 
-    return StockSearchModel(
-      receiverId: receiverIds.first,
-      senderId: receiverIds.first,
-      campaignNumber: project.referenceID,
+    return (
+      StockSearchModel(
+        receiverId: receiverIds.first,
+        campaignNumber: project.referenceID,
+      ),
+      StockSearchModel(
+        senderId: receiverIds.first,
+        campaignNumber: project.referenceID,
+      ),
     );
   }
 
@@ -180,12 +193,14 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
     try {
       final cycleInfo = await _getCurrentCycleInfo(event.projectModel);
 
-      final stockSearchModel = await _buildStockSearchModel(event.projectModel);
+      final stockSearchModels =
+          await _buildStockSearchModels(event.projectModel);
 
-      if (stockSearchModel == null) {
+      if (stockSearchModels == null) {
         emit(const StockDownSyncState.dataFound(0, 0, 0, null));
         return;
       }
+      final (receiverSearchModel, senderSearchModel) = stockSearchModels;
 
       // Cursor is per user + cycle so a second user on the same device
       // still downloads their own stock from cycle start.
@@ -203,13 +218,20 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
 
       // Always start from offset 0 for total count check since
       // lastChangedSince already scopes the query to new/modified records
-      final totalCount = await (stockRemoteRepository as StockRemoteRepository)
-          .fetchTotalCount(
-        stockSearchModel,
+      final remoteRepo = stockRemoteRepository as StockRemoteRepository;
+      final receiverTotalCount = await remoteRepo.fetchTotalCount(
+        receiverSearchModel,
         offSet: 0,
         lastSyncedTime: lastSyncedTime,
         includeOnlyUpdatedByOthers: true,
       );
+      final senderTotalCount = await remoteRepo.fetchTotalCount(
+        senderSearchModel,
+        offSet: 0,
+        lastSyncedTime: lastSyncedTime,
+        includeOnlyUpdatedByOthers: true,
+      );
+      final totalCount = receiverTotalCount + senderTotalCount;
 
       emit(StockDownSyncState.dataFound(
         totalCount,
@@ -235,13 +257,14 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
       emit(const StockDownSyncState.insufficientStorage());
     } else {
       try {
-        final stockSearchModel =
-            await _buildStockSearchModel(event.projectModel);
+        final stockSearchModels =
+            await _buildStockSearchModels(event.projectModel);
 
-        if (stockSearchModel == null) {
+        if (stockSearchModels == null) {
           emit(const StockDownSyncState.failed());
           return;
         }
+        final (receiverSearchModel, senderSearchModel) = stockSearchModels;
 
         final localityKey = _getLocalityKey(event.projectModel.id);
 
@@ -292,50 +315,59 @@ class StockDownSyncBloc extends Bloc<StockDownSyncEvent, StockDownSyncState> {
 
         emit(StockDownSyncState.inProgress(syncedCount, totalCount));
 
-        // Fetch stock entries in batches to allow progress updates
-        while (syncedCount < totalCount) {
-          final stockEntries = await stockRemoteRepository.search(
-            stockSearchModel,
-            offSet: 0,
-            limit: event.batchSize,
-            lastSyncedTime: lastSyncedTime,
-            includeOnlyUpdatedByOthers: true,
-          );
+        // Two passes - incoming stock (this facility as receiver) and
+        // outgoing/returned stock (this facility as sender). Any record
+        // both passes happen to return (a true self-transaction) is just
+        // idempotently re-written since bulkCreate uses insertOrReplace.
+        for (final searchModel in [receiverSearchModel, senderSearchModel]) {
+          int offset = 0;
+          while (true) {
+            final stockEntries = await stockRemoteRepository.search(
+              searchModel,
+              offSet: offset,
+              limit: event.batchSize,
+              lastSyncedTime: lastSyncedTime,
+              includeOnlyUpdatedByOthers: true,
+            );
 
-          if (stockEntries.isEmpty) break;
+            if (stockEntries.isEmpty) break;
 
-          final mergedStockEntries = stockEntries.where((remoteStock) {
-            final clientRef = remoteStock.clientReferenceId;
-            if (clientRef.isEmpty) return true;
+            final mergedStockEntries = stockEntries.where((remoteStock) {
+              final clientRef = remoteStock.clientReferenceId;
+              if (clientRef.isEmpty) return true;
 
-            final hasPendingLocalChange =
-                pendingLocalStockClientRefs.contains(clientRef);
-            final hasLocalVersion =
-                pendingLocalStocksByClientRef.containsKey(clientRef);
+              final hasPendingLocalChange =
+                  pendingLocalStockClientRefs.contains(clientRef);
+              final hasLocalVersion =
+                  pendingLocalStocksByClientRef.containsKey(clientRef);
 
-            return !(hasPendingLocalChange && hasLocalVersion);
-          }).toList();
+              return !(hasPendingLocalChange && hasLocalVersion);
+            }).toList();
 
-          if (mergedStockEntries.isNotEmpty) {
-            await stockLocalRepository.bulkCreate(mergedStockEntries);
+            if (mergedStockEntries.isNotEmpty) {
+              await stockLocalRepository.bulkCreate(mergedStockEntries);
+            }
+
+            for (final stock in mergedStockEntries) {
+              downsyncedStocks[stock.clientReferenceId] = stock;
+            }
+
+            syncedCount += stockEntries.length;
+            offset += stockEntries.length;
+
+            // Update downsync record, keep offset 0, update lastSyncedTime
+            await downSyncLocalRepository.update(DownsyncModel(
+              offset: 0,
+              limit: event.batchSize,
+              lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
+              totalCount: totalCount,
+              locality: localityKey,
+            ));
+
+            emit(StockDownSyncState.inProgress(syncedCount, totalCount));
+
+            if (stockEntries.length < event.batchSize) break;
           }
-
-          for (final stock in mergedStockEntries) {
-            downsyncedStocks[stock.clientReferenceId] = stock;
-          }
-
-          syncedCount += stockEntries.length;
-
-          // Update downsync record, keep offset 0, update lastSyncedTime
-          await downSyncLocalRepository.update(DownsyncModel(
-            offset: 0,
-            limit: event.batchSize,
-            lastSyncedTime: DateTime.now().millisecondsSinceEpoch,
-            totalCount: totalCount,
-            locality: localityKey,
-          ));
-
-          emit(StockDownSyncState.inProgress(syncedCount, totalCount));
         }
 
         // After stock download, downsync stock balance user actions

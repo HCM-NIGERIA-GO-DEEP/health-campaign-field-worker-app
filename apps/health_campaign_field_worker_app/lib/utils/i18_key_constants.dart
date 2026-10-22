@@ -1557,6 +1557,10 @@ class SummaryReport {
 
   String get stockReturned => 'SUMMARY_REPORT_STOCK_RETURNED';
 
+  String get stockLess => 'SUMMARY_REPORT_STOCK_LESS';
+
+  String get stockExcess => 'SUMMARY_REPORT_STOCK_EXCESS';
+
   String get stockBalance => 'SUMMARY_REPORT_STOCK_BALANCE';
 
   String get tokensUsed => 'SUMMARY_REPORT_TOKENS_USED';

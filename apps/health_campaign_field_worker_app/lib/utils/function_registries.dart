@@ -25,6 +25,7 @@ class FunctionRegistries {
     _registerInventoryFunctions();
     _registerTransactionFunctions();
     _registerFacilityFunctions();
+    _registerProjectFacilityFunctions();
     _registerStockFunctions();
     _registerRoleFunctions();
     _registerViewTransactionFunctions();
@@ -61,6 +62,37 @@ class FunctionRegistries {
       return difference == difference.roundToDouble()
           ? difference.toInt()
           : difference;
+    });
+
+    // viewTransactionDetails' main quantity row: a partially-accepted
+    // StockModel has its own `quantity` field overwritten down to
+    // actualQuantityReceived (see manage_stock.dart's onSecondaryAction),
+    // with originalQuantityReceived preserving the true dispatched amount
+    // separately - so the main row must prefer originalQuantityReceived
+    // when present, falling back to the record's own quantity for a normal
+    // (non-partial) transaction where originalQuantityReceived was never
+    // set. Without this, the main row (labeled "Quantity Sent"/"Quantity
+    // Received" per stockEntryType) duplicated the separate "Actual
+    // Quantity Received" row below it instead of showing what was actually
+    // dispatched.
+    FunctionRegistry.register('coalesceQuantity', (args, stateData) {
+      if (args.isEmpty) return '';
+      for (final arg in args) {
+        final text = arg?.toString().trim() ?? '';
+        if (text.isNotEmpty && text.toLowerCase() != 'null') return arg;
+      }
+      return '';
+    });
+
+    // The stock API may return a null top-level wayBillNumber even though the
+    // submitted value is preserved in additionalFields. Prefer the API field
+    // when populated and fall back to the saved additional field.
+    FunctionRegistry.register('getWayBillNumber', (args, stateData) {
+      for (final arg in args) {
+        final value = arg?.toString().trim() ?? '';
+        if (value.isNotEmpty && value.toLowerCase() != 'null') return arg;
+      }
+      return '';
     });
 
     // Displays whole-number decimals without the trailing .0 while
@@ -203,6 +235,8 @@ class FunctionRegistries {
         'RETURNED': 'APPONE_INVENTORY_QUANTITY_RETURNED_LABEL',
         'ISSUED': 'APPONE_INVENTORY_QUANTITY_SENT_LABEL',
         'DISPATCH': 'APPONE_INVENTORY_QUANTITY_SENT_LABEL',
+        'LESS': 'APPONE_INVENTORY_QUANTITY_LOST_LABEL',
+        'EXCESS': 'APPONE_INVENTORY_QUANTITY_LABEL',
         'LOSS': 'APPONE_INVENTORY_QUANTITY_LOST_LABEL',
         'DAMAGED': 'APPONE_INVENTORY_QUANTITY_DAMAGED_LABEL'
       };
@@ -218,12 +252,120 @@ class FunctionRegistries {
         (args, stateData) {
       if (args.isEmpty) return 'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
       final stockEntryType = args.first?.toString().toUpperCase() ?? '';
+      final transactionReason =
+          args.length > 1 ? args[1]?.toString().toUpperCase() ?? '' : '';
+      // Once an issued transaction has been accepted, show the receiver's
+      // perspective in the UI. The stored entry type remains ISSUED for stock
+      // balance/report calculations.
+      if (stockEntryType == 'ISSUED' && transactionReason == 'RECEIVED') {
+        return 'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
+      }
       const headings = {
         'ISSUED': 'INVENTORY_STOCK_ISSUE_DETAILS_HEADING',
         'RETURNED': 'INVENTORY_STOCK_RETURN_DETAILS_HEADING',
+        'DAMAGED': 'INVENTORY_STOCK_DAMAGED_DETAILS_HEADING',
+        'LOSS': 'INVENTORY_STOCK_LOSS_DETAILS_HEADING',
+        'LESS': 'INVENTORY_STOCK_LOSS_DETAILS_HEADING',
+        'EXCESS': 'INVENTORY_STOCK_EXCESS_DETAILS_HEADING',
       };
       return headings[stockEntryType] ??
           'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
+    });
+
+    FunctionRegistry.register('getTransactionReasonDisplayCode',
+        (args, stateData) {
+      if (args.isEmpty || args.first == null) return null;
+      final value = args.first.toString().trim();
+      return value.isEmpty || value.toLowerCase() == 'null' ? null : value;
+    });
+
+    FunctionRegistry.register('getDiscrepancyReasonDisplayCode',
+        (args, stateData) {
+      if (args.isEmpty || args.first == null) return null;
+      final reason = args.first.toString().trim().toUpperCase();
+      if (reason.isEmpty || reason == 'NULL') return null;
+      const labels = {
+        'IN_TRANSIT': 'INVENTORY_DISCREPANCY_REASON_IN_TRANSIT',
+        'STOCK_LOSS': 'INVENTORY_DISCREPANCY_REASON_STOCK_LOSS',
+        'STOCK_DAMAGE': 'INVENTORY_DISCREPANCY_REASON_STOCK_DAMAGE',
+        'OTHERS': 'INVENTORY_DISCREPANCY_REASON_OTHERS',
+      };
+      return labels[reason] ?? reason;
+    });
+
+    // Stock additionalFields.fields is a list of AdditionalField objects in
+    // the app model and a list of key/value maps in API payloads. Incoming
+    // transactions are grouped by MRN, so inspect every row in the group:
+    // the original dispatch can be first and have no discrepancy reason,
+    // while the linked shortfall row carries the reason.
+    FunctionRegistry.register('getStockDiscrepancyReason', (args, stateData) {
+      if (args.isEmpty || args.first == null) return '';
+      final first = args.first;
+      final stocks = first is List ? first : [first];
+      for (final stock in stocks) {
+        dynamic additionalFields;
+        if (stock is Map) {
+          additionalFields = stock['additionalFields'];
+        } else {
+          try {
+            additionalFields = (stock as dynamic).additionalFields;
+          } catch (_) {
+            continue;
+          }
+        }
+
+        if (additionalFields is String) {
+          try {
+            additionalFields = jsonDecode(additionalFields);
+          } catch (_) {
+            continue;
+          }
+        }
+
+        dynamic fields;
+        if (additionalFields is Map) {
+          fields = additionalFields['fields'];
+        } else {
+          try {
+            fields = (additionalFields as dynamic).fields;
+          } catch (_) {
+            continue;
+          }
+        }
+
+        dynamic reason;
+        if (fields is List) {
+          for (final field in fields) {
+            String? fieldKey;
+            if (field is Map) {
+              fieldKey = field['key']?.toString();
+            } else {
+              try {
+                fieldKey = (field as dynamic).key?.toString();
+              } catch (_) {
+                continue;
+              }
+            }
+            if (fieldKey != 'discrepancyReason') continue;
+            if (field is Map) {
+              reason = field['value'];
+            } else {
+              try {
+                reason = (field as dynamic).value;
+              } catch (_) {
+                reason = null;
+              }
+            }
+            break;
+          }
+        } else if (fields is Map) {
+          reason = fields['discrepancyReason'];
+        }
+
+        final value = reason?.toString().trim() ?? '';
+        if (value.isNotEmpty && value.toLowerCase() != 'null') return value;
+      }
+      return '';
     });
 
     FunctionRegistry.register('getReportTitle', (args, stateData) {
@@ -276,7 +418,7 @@ class FunctionRegistries {
       const types = {
         'receipt': ['RECEIVED'],
         'dispatch': ['DISPATCHED'],
-        'returned': ['RECEIVED'],
+        'returned': ['DISPATCHED'],
         'damage': ['DISPATCHED'],
         'loss': ['DISPATCHED']
       };
@@ -314,12 +456,65 @@ class FunctionRegistries {
         'receipt': 'ISSUED',
         'dispatch': 'ISSUED',
         'returned': 'RETURNED',
-        'damage': 'DAMAGED',
-        'loss': 'LOSS',
         'excess': 'EXCESS',
         'less': 'LESS',
       };
+      final isDistributor = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.distributor.toValue());
+      if (reportType == 'damage') return 'STOCK_DAMAGE';
+      if (reportType == 'loss') {
+        // Distributor loss entries are recorded as LESS. Upper hierarchy
+        // loss reports show lower-level STOCK_LOSS discrepancy records.
+        return isDistributor ? 'LESS' : 'STOCK_LOSS';
+      }
       return entryTypes[reportType] ?? '';
+    });
+
+    // Distributor stock records use the user's UUID as sender/receiver id;
+    // warehouse-manager records use a facility id selected in the report.
+    FunctionRegistry.register('getReportFacilityId', (args, stateData) {
+      final isDistributor = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.distributor.toValue());
+      if (isDistributor) return context.loggedInUserUuid ?? '';
+      return args.length > 1 ? args[1]?.toString() ?? '' : '';
+    });
+
+    // Upper-level damage/loss reports show resolved records only. Receipt
+    // reports use transactionReason=RECEIVED as their acceptance marker below;
+    // this avoids depending on a serialized additionalFields status filter.
+    FunctionRegistry.register('getReportStatusFilter', (args, stateData) {
+      if (args.isEmpty) return '';
+      final reportType = args.first?.toString() ?? '';
+      final isDistributor = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.distributor.toValue());
+      if (reportType == 'damage' ||
+          (reportType == 'loss' && !isDistributor)) {
+        return '"key":"status","value":"ACCEPTED"';
+      }
+      return '';
+    });
+
+    FunctionRegistry.register('getReportTransactionReasonFilter',
+        (args, stateData) {
+      if (args.isEmpty) return '';
+      final reportType = args.first?.toString() ?? '';
+      final isDistributor = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.distributor.toValue());
+      if (isDistributor &&
+          (reportType == 'loss' || reportType == 'excess')) {
+        // Adjustment explanations live in additionalFields.adjustmentReason.
+        return '';
+      }
+      if (reportType == 'receipt') return 'RECEIVED';
+      // Accepted discrepancy records can retain transactionReason=RECEIVED
+      // on older rows, while the current accept flow writes STOCK_DAMAGE or
+      // STOCK_LOSS. Match both persisted forms. A real return uses
+      // transactionReason=RETURNED, which also keeps legacy discrepancy rows
+      // out of the Returned report when their stockEntryType is RETURNED.
+      if (reportType == 'damage') return 'RECEIVED,STOCK_DAMAGE';
+      if (reportType == 'loss') return 'RECEIVED,STOCK_LOSS';
+      if (reportType == 'returned') return 'RETURNED';
+      return '';
     });
 
     FunctionRegistry.register('getSenderOrReceiver', (args, stateData) {
@@ -327,12 +522,22 @@ class FunctionRegistries {
       final reportType = args.first?.toString() ?? '';
       const senderTypes = {
         'dispatch',
-        'damage',
-        'loss',
         'returned',
+        'excess',
         'less',
-        'excess'
       };
+      final isDistributor = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.distributor.toValue());
+      // Distributor loss is recorded by the user as sender. Excess is an
+      // incoming adjustment from the higher-level warehouse, so the user is
+      // the receiver. Filter the party direction used by each persisted flow.
+      if (isDistributor && (reportType == 'loss' || reportType == 'excess')) {
+        return reportType == 'excess' ? 'receiverId' : 'senderId';
+      }
+      if (reportType == 'damage') return 'receiverId';
+      if (reportType == 'loss') {
+        return 'receiverId';
+      }
       return senderTypes.contains(reportType) ? 'senderId' : 'receiverId';
     });
 
@@ -346,6 +551,40 @@ class FunctionRegistries {
       if (args.isEmpty) return 'WAREHOUSE';
       final facilityFromWhich = args.first?.toString() ?? '';
       return facilityFromWhich == 'DELIVERY_TEAM' ? 'STAFF' : 'WAREHOUSE';
+    });
+
+    // Resolves the parties for a distributor's less/excess adjustment.
+    // Loss is an outgoing adjustment from the distributor; excess represents
+    // additional stock received from the selected higher-level warehouse.
+    // Args: [recordType, partyField, facilityFromWhich, facilityToWhich].
+    FunctionRegistry.register('getStockLessExcessPartyValue', (args, stateData) {
+      String argAt(int index) =>
+          args.length > index ? (args[index]?.toString() ?? '') : '';
+
+      final recordType = argAt(0).toUpperCase();
+      final partyField = argAt(1);
+      final facilityFromWhich = argAt(2);
+      final facilityToWhich = argAt(3);
+      final isExcess = recordType == 'EXCESS';
+
+      switch (partyField) {
+        case 'senderId':
+          if (isExcess) return facilityToWhich;
+          return facilityFromWhich == 'DELIVERY_TEAM'
+              ? (context.loggedInUserUuid ?? '')
+              : facilityFromWhich;
+        case 'senderType':
+          if (isExcess) return 'WAREHOUSE';
+          return facilityFromWhich == 'DELIVERY_TEAM' ? 'STAFF' : 'WAREHOUSE';
+        case 'receiverId':
+          return isExcess
+              ? (context.loggedInUserUuid ?? '')
+              : facilityToWhich;
+        case 'receiverType':
+          return isExcess ? 'STAFF' : 'WAREHOUSE';
+        default:
+          return '';
+      }
     });
 
     FunctionRegistry.register('getTeamCode', (args, stateData) {
@@ -521,6 +760,77 @@ class FunctionRegistries {
       return '';
     });
 
+    // Household counts are stored in the Household model's additionalFields
+    // list, while memberCount is a first-class field. Resolve a field by key
+    // for the registration overview without relying on list ordering.
+    FunctionRegistry.register('getAdditionalFieldValue', (args, stateData) {
+      if (args.length < 2) return '';
+      dynamic fields = args[0];
+      final targetKey = args[1]?.toString();
+      if (targetKey == null || targetKey.isEmpty) return '';
+      if (fields is String) {
+        try {
+          fields = jsonDecode(fields);
+        } catch (_) {
+          return '';
+        }
+      }
+      if (fields is Map) {
+        final nestedFields = fields['fields'];
+        if (nestedFields != null) fields = nestedFields;
+      }
+      if (fields is! Iterable) return '';
+      for (final field in fields) {
+        dynamic key;
+        dynamic value;
+        if (field is Map) {
+          key = field['key'];
+          value = field['value'];
+        } else {
+          try {
+            key = (field as dynamic).key;
+            value = (field as dynamic).value;
+          } catch (_) {
+            continue;
+          }
+        }
+        if (key?.toString() == targetKey) return value?.toString() ?? '';
+      }
+      return '';
+    });
+
+    // Return the first captured identifier other than the generated
+    // beneficiary id. The overview uses it for the identification type and
+    // number rows, independent of identifier list ordering.
+    FunctionRegistry.register('getCapturedIdentifierValue', (args, stateData) {
+      if (args.length < 2 || args[0] is! Iterable) return null;
+      final requestedKey = args[1]?.toString();
+      for (final identifier in args[0] as Iterable) {
+        dynamic type;
+        dynamic value;
+        if (identifier is Map) {
+          type = identifier['identifierType'];
+          value = identifier[requestedKey];
+        } else {
+          try {
+            type = (identifier as dynamic).identifierType;
+            value = requestedKey == 'identifierId'
+                ? (identifier as dynamic).identifierId
+                : (identifier as dynamic).identifierType;
+          } catch (_) {
+            continue;
+          }
+        }
+        if (type?.toString().toUpperCase() != 'UNIQUE_BENEFICIARY_ID' &&
+            type?.toString().toUpperCase() != 'DEFAULT' &&
+            value != null &&
+            value.toString().isNotEmpty) {
+          return value;
+        }
+      }
+      return null;
+    });
+
     // True when the logged-in user holds any of the given role codes.
     // Codes are matched case-insensitively against RolesType values.
     // Usage: "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true"
@@ -544,53 +854,121 @@ class FunctionRegistries {
 
   void _registerFacilityFunctions() {
     FunctionRegistry.register('getUserFacilityId', (args, stateData) {
-      final isDistributor = context.loggedInUserRoles
-          .where((role) => role.code == RolesType.distributor.toValue())
-          .toList()
-          .isNotEmpty;
-      final isWareHouseMgr = context.loggedInUserRoles
-          .where((role) => role.code == RolesType.warehouseManager.toValue())
-          .toList()
-          .isNotEmpty;
-      if (isDistributor && !isWareHouseMgr) {
-        return context.loggedInUserUuid ?? '';
-      }
-      try {
-        List<Map<String, dynamic>>? projectFacilities;
-        if (stateData?.modelMap != null) {
-          projectFacilities = stateData!.modelMap['ProjectFacilityModel'];
-        }
-        if (projectFacilities == null || projectFacilities.isEmpty) {
-          final manageStockState = FlowCrudStateRegistry().get('manageStock');
-          final base = manageStockState?.base;
-          if (base is CrudStateLoaded) {
-            final pfModels = base.results['projectFacility'];
-            if (pfModels != null && pfModels.isNotEmpty) {
-              projectFacilities = pfModels
-                  .whereType<ProjectFacilityModel>()
-                  .map((pf) => <String, dynamic>{
-                        'facilityId': pf.facilityId,
-                      })
-                  .toList();
-            }
-          }
-        }
-        if (projectFacilities == null || projectFacilities.isEmpty) {
-          return '';
-        }
-        for (var facility in projectFacilities) {
-          final facilityId = facility['facilityId']?.toString() ?? '';
-          if (facilityId.isNotEmpty) {
-            return facilityId;
-          }
-        }
-        return '';
-      } catch (e) {
-        debugPrint('getUserFacilityId error: $e');
-        return '';
-      }
+      return _resolveUserFacilityId(stateData);
     });
 
+    // Used by shortfallTransaction's senderType - a Distributor's
+    // getUserFacilityId() deliberately returns their raw user UUID instead
+    // of a facility ID (they have no ProjectFacilityModel row), so
+    // shortfallTransaction can no longer hardcode senderType: WAREHOUSE for
+    // every sender or the backend rejects the record (facility-lookup
+    // validation fails on a UUID). Mirrors the exact isDistributor &&
+    // !isWareHouseMgr check in _resolveUserFacilityId so the two always
+    // agree on which users resolve to a UUID.
+    FunctionRegistry.register('getUserPartyType', (args, stateData) {
+      final isDistributor = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.distributor.toValue()) &&
+          !context.loggedInUserRoles
+              .any((role) => role.code == RolesType.warehouseManager.toValue());
+      final isWareHouseMgr = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.warehouseManager.toValue());
+      return (isDistributor && !isWareHouseMgr) ? 'STAFF' : 'WAREHOUSE';
+    });
+
+    // Same purpose as getUserPartyType, but for the OTHER party in a
+    // shortfall/reissue exchange (carried forward as navigation.
+    // senderFacilityId) - we don't have that party's role at hand, only
+    // their already-resolved ID string, so detect a real facility by the
+    // "F-" prefix convention used consistently across this platform;
+    // anything else is a Distributor's raw user UUID.
+    FunctionRegistry.register('getPartyTypeForFacilityId', (args, stateData) {
+      if (args.isEmpty || args.first == null) return 'WAREHOUSE';
+      final id = args.first.toString();
+      return id.startsWith('F-') ? 'WAREHOUSE' : 'STAFF';
+    });
+  }
+
+  // Extracted from getUserFacilityId so the hasStockFor* gates below can
+  // resolve the current user's facility and compare it against
+  // StockBalanceCache.instance.facilityId - without this, a gate called
+  // right after a role switch (before stock_balance_card.dart's next
+  // refresh) would trust a balance map left over from the PREVIOUS
+  // logged-in user's facility.
+  String _resolveUserFacilityId(dynamic stateData) {
+    final isDistributor = context.loggedInUserRoles
+        .where((role) => role.code == RolesType.distributor.toValue())
+        .toList()
+        .isNotEmpty;
+    final isWareHouseMgr = context.loggedInUserRoles
+        .where((role) => role.code == RolesType.warehouseManager.toValue())
+        .toList()
+        .isNotEmpty;
+    if (isDistributor && !isWareHouseMgr) {
+      return context.loggedInUserUuid ?? '';
+    }
+    try {
+      List<Map<String, dynamic>>? projectFacilities;
+      if (stateData?.modelMap != null) {
+        projectFacilities = stateData!.modelMap['ProjectFacilityModel'];
+      }
+      if (projectFacilities == null || projectFacilities.isEmpty) {
+        final manageStockState = FlowCrudStateRegistry().get('manageStock');
+        final base = manageStockState?.base;
+        if (base is CrudStateLoaded) {
+          final pfModels = base.results['projectFacility'];
+          if (pfModels != null && pfModels.isNotEmpty) {
+            projectFacilities = pfModels
+                .whereType<ProjectFacilityModel>()
+                .map((pf) => <String, dynamic>{
+                      'facilityId': pf.facilityId,
+                    })
+                .toList();
+          }
+        }
+      }
+      if (projectFacilities == null || projectFacilities.isEmpty) {
+        return '';
+      }
+      // Must match stock_balance_executor.dart's _handleStockEntity
+      // exactly: that executor picks its own facilityId from
+      // currentFacilities.first (filtered to facilityLevel=='current' or
+      // unset), not just the first ProjectFacilityModel in the list. A
+      // user can have more than one ProjectFacilityModel (different
+      // hierarchy levels) - without this same filter here, a
+      // shortfallTransaction built with this facilityId as senderId could
+      // end up DIFFERENT from the facilityId the balance executor later
+      // resolves for the same user, so its own isSender check silently
+      // fails to match the record it just created. That drops the
+      // offsetting -quantity leg of the in-transit accept/reissue net-zero
+      // entirely, leaving the +quantity credited with nothing to cancel it.
+      final currentFacilities = projectFacilities.where((pf) {
+        final additionalFields = pf['additionalFields'] as Map?;
+        final fields = additionalFields?['fields'] as List?;
+        if (fields == null) return true;
+        for (final field in fields) {
+          if (field is Map && field['key'] == 'facilityLevel') {
+            final value = field['value'];
+            return value == null || value == 'current';
+          }
+        }
+        return true;
+      }).toList();
+      final facilitiesToSearch =
+          currentFacilities.isNotEmpty ? currentFacilities : projectFacilities;
+      for (var facility in facilitiesToSearch) {
+        final facilityId = facility['facilityId']?.toString() ?? '';
+        if (facilityId.isNotEmpty) {
+          return facilityId;
+        }
+      }
+      return '';
+    } catch (e) {
+      debugPrint('getUserFacilityId error: $e');
+      return '';
+    }
+  }
+
+  void _registerProjectFacilityFunctions() {
     FunctionRegistry.register('getProjectFacilities', (args, stateData) {
       try {
         List<Map<String, dynamic>>? projectFacilities;
@@ -735,10 +1113,18 @@ class FunctionRegistries {
 
   void _registerStockFunctions() {
     // Returns true when at least one product has a balance > 0.
-    // Fail-open: returns true when the cache has no facility set yet.
+    // Fail-open: returns true when the cache has no facility set yet, OR
+    // when it holds a DIFFERENT facility's balances - e.g. right after a
+    // role switch on the same device, before stock_balance_card.dart's next
+    // refresh repopulates the cache for the newly logged-in facility.
     FunctionRegistry.register('hasStockForRegistration', (args, stateData) {
       final cache = StockBalanceCache.instance;
-      if (cache.facilityId.isEmpty) return true;
+      final currentFacilityId = _resolveUserFacilityId(stateData);
+      if (cache.facilityId.isEmpty ||
+          (currentFacilityId.isNotEmpty &&
+              cache.facilityId != currentFacilityId)) {
+        return true;
+      }
       if (cache.cache.isEmpty) return false;
       final s = cache.cache.values.any((balance) => balance > 0);
       print(s);
@@ -796,6 +1182,76 @@ class FunctionRegistries {
       return getStatus(tasks.last) == 'CLOSED_HOUSEHOLD';
     });
 
+    // Used by the searchBeneficiary OPEN handler to decide whether a
+    // household must be routed through the caregiverConsent page before
+    // household details/overview can be shown. Covers both Map-shaped and
+    // model-object-shaped additionalFields since the engine can materialize
+    // item.HouseholdModel either way.
+    FunctionRegistry.register("isCaregiverConsentMissing", (args, stateData) {
+      if (args.isEmpty || args.first == null) return true;
+      final household = args.first;
+
+      dynamic additionalFields;
+      if (household is Map) {
+        additionalFields = household['additionalFields'];
+      } else {
+        try {
+          additionalFields = (household as dynamic).additionalFields;
+        } catch (_) {
+          additionalFields = null;
+        }
+      }
+      if (additionalFields == null) return true;
+
+      // searchBeneficiary's item.HouseholdModel is a raw SQL join row, not a
+      // materialized model - additionalFields there is a JSON-encoded TEXT
+      // column (see household.dart's Drift table), not a parsed Map. Without
+      // this decode step every household - closed or not, consent captured
+      // or not - fell through to the catch blocks below and this always
+      // returned true, routing every search-reopen through this branch.
+      if (additionalFields is String) {
+        if (additionalFields.isEmpty) return true;
+        try {
+          additionalFields = jsonDecode(additionalFields);
+        } catch (_) {
+          return true;
+        }
+      }
+
+      dynamic consentValue;
+      if (additionalFields is Map) {
+        final fields = additionalFields['fields'];
+        if (fields is List) {
+          for (final f in fields) {
+            final key = (f is Map) ? f['key'] : (f as dynamic).key;
+            if (key == 'caregiverConsent') {
+              consentValue = (f is Map) ? f['value'] : (f as dynamic).value;
+              break;
+            }
+          }
+        } else {
+          consentValue = additionalFields['caregiverConsent'];
+        }
+      } else {
+        try {
+          final fields = (additionalFields as dynamic).fields;
+          if (fields is List) {
+            for (final f in fields) {
+              final key = (f is Map) ? f['key'] : (f as dynamic).key;
+              if (key == 'caregiverConsent') {
+                consentValue = (f is Map) ? f['value'] : (f as dynamic).value;
+                break;
+              }
+            }
+          }
+        } catch (_) {
+          consentValue = null;
+        }
+      }
+
+      return consentValue == null || consentValue.toString().isEmpty;
+    });
+
     // Returns a formatted message listing each product's available balance.
     FunctionRegistry.register('getRegistrationInsufficientStockMessage',
         (args, stateData) {
@@ -835,7 +1291,12 @@ class FunctionRegistries {
       }
       if (productList.isEmpty) return true;
       final cache = StockBalanceCache.instance;
-      if (cache.facilityId.isEmpty) return true;
+      final currentFacilityId = _resolveUserFacilityId(stateData);
+      if (cache.facilityId.isEmpty ||
+          (currentFacilityId.isNotEmpty &&
+              cache.facilityId != currentFacilityId)) {
+        return true;
+      }
       final List<Map<String, dynamic>> insufficientProducts = [];
       for (final product in productList) {
         if (product is! Map) continue;
@@ -881,7 +1342,12 @@ class FunctionRegistries {
     FunctionRegistry.register('hasStockForRedose', (args, stateData) {
       if (args.isEmpty || args.first == null) return true;
       final cache = StockBalanceCache.instance;
-      if (cache.facilityId.isEmpty) return true;
+      final currentFacilityId = _resolveUserFacilityId(stateData);
+      if (cache.facilityId.isEmpty ||
+          (currentFacilityId.isNotEmpty &&
+              cache.facilityId != currentFacilityId)) {
+        return true;
+      }
 
       // Normalise task list
       List<Map<String, dynamic>> tasks = [];
