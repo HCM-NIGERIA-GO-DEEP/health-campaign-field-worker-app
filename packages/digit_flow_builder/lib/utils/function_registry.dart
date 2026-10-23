@@ -632,19 +632,18 @@ void initializeFunctionRegistry() {
 
     final value = args.first;
 
-    // Must be a string
-    if (value is! String) return false;
-
-    // Normalize (uppercase + trim)
-    final status = value.trim().toUpperCase();
-
-    // Match valid delivered statuses
-    if (status == TaskStatus.administrationSuccess ||
-        status == TaskStatus.delivered) {
-      return true;
+    bool delivered(dynamic item) {
+      if (item is List) return item.any(delivered);
+      if (item is Map) {
+        return delivered(item['TaskModel'] ?? item['status']);
+      }
+      if (item is TaskModel) return delivered(item.status);
+      if (item is! String) return false;
+      final status = item.trim().toUpperCase();
+      return status == TaskStatus.administrationSuccess ||
+          status == TaskStatus.delivered;
     }
-
-    return false;
+    return delivered(value);
   });
 
   /// Registers a function to check if all doses have been delivered for a member.

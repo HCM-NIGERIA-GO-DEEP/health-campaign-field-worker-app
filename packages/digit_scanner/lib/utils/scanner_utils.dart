@@ -526,12 +526,14 @@ class DigitScannerUtils {
 
   String generateGS1Barcode({
     required String batchNumber,
-    required DateTime expiryDate,
+    DateTime? expiryDate,
     String? serialNumber,
     String? gtin,
   }) {
     const groupSeparator = '\u001d'; // ASCII 29
-    final formattedDate = DateFormat('yyMMdd').format(expiryDate);
+    final expiryPart = expiryDate == null
+        ? ''
+        : '17${DateFormat('yyMMdd').format(expiryDate)}';
 
     // Include GTIN (01) if provided (fixed-length 14 digits, no GS needed)
     if (gtin != null && gtin.isNotEmpty && !RegExp(r'^\d{14}$').hasMatch(gtin)) {
@@ -542,6 +544,6 @@ class DigitScannerUtils {
     final serialPart = serialNumber != null && serialNumber.isNotEmpty
         ? '21$serialNumber$groupSeparator'
         : '';
-    return '${gtinPart}10$batchNumber${groupSeparator}17$formattedDate$serialPart';
+    return '${gtinPart}10$batchNumber$groupSeparator$expiryPart$serialPart';
   }
 }

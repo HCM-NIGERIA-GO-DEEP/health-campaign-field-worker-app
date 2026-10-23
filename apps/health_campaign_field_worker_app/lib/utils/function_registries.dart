@@ -485,6 +485,8 @@ class FunctionRegistries {
     FunctionRegistry.register('getStockEntryType', (args, stateData) {
       if (args.isEmpty) return '';
       final reportType = args.first?.toString() ?? '';
+      final isDistributor = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.distributor.toValue());
       const entryTypes = {
         'receipt': 'RECEIPT',
         'dispatch': 'ISSUED',
@@ -494,12 +496,25 @@ class FunctionRegistries {
         'excess': 'EXCESS',
         'less': 'LESS',
       };
+      // Distributor loss declarations are persisted as LESS adjustments.
+      if (reportType == 'loss' && isDistributor) return 'LESS';
       return entryTypes[reportType] ?? '';
     });
 
     FunctionRegistry.register('getSenderOrReceiver', (args, stateData) {
       if (args.isEmpty) return 'receiverId';
       final reportType = args.first?.toString() ?? '';
+      final isDistributor = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.distributor.toValue());
+      // Distributor LESS adjustments may be linked to a facility in either
+      // party field, or recorded by the distributor's UUID. Other damage/loss
+      // records are facility-scoped but can be on either side of a movement.
+      if (isDistributor && (reportType == 'damage' || reportType == 'loss')) {
+        return 'senderId,receiverId,clientCreatedBy';
+      }
+      if (reportType == 'damage' || reportType == 'loss') {
+        return 'senderId,receiverId';
+      }
       const senderTypes = {
         'dispatch',
         'damage',
@@ -509,6 +524,13 @@ class FunctionRegistries {
         'excess'
       };
       return senderTypes.contains(reportType) ? 'senderId' : 'receiverId';
+    });
+
+    FunctionRegistry.register('getReportFacilityId', (args, stateData) {
+      final isDistributor = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.distributor.toValue());
+      if (isDistributor) return context.loggedInUserUuid ?? '';
+      return args.length > 1 ? args[1]?.toString() ?? '' : '';
     });
 
     FunctionRegistry.register('getAuditFilterKey', (args, stateData) {
@@ -597,21 +619,21 @@ class FunctionRegistries {
     // name (rendered as ''), so every delivery-team receipt was saved with no
     // receiver at all.
     //
-    // The destination team (warehouseDetails.teamCode) is the one receiverId
-    // needs. stockDetails.deliveryTeam is the team on the *sending* side
-    // (returns / less-excess) and is only used as a fallback, so a flow that
-    // populates just that field still resolves to a team rather than nothing.
-    // stockEntryType and primaryRole are passed by the config but not needed:
-    // which field is populated already identifies the side the team is on.
+    // Prefer the scanned destination team for Delivery To. For returns where
+    // the source is a delivery team, use the separately scanned source code.
     //
     // args: [stockEntryType, primaryRole, warehouseDetails.teamCode,
+    //        warehouseDetails.facilityToWhich, stockDetails.facilityFromWhich,
     //        stockDetails.deliveryTeam]
     FunctionRegistry.register('getStockTeamCode', (args, stateData) {
       String argAt(int index) =>
           args.length > index ? (args[index]?.toString().trim() ?? '') : '';
 
       final destinationTeam = argAt(2);
-      final rawTeam = destinationTeam.isNotEmpty ? destinationTeam : argAt(3);
+      final sourceTeam = argAt(5);
+      final rawTeam = argAt(3) == 'DELIVERY_TEAM'
+          ? destinationTeam
+          : (argAt(4) == 'DELIVERY_TEAM' ? sourceTeam : '');
       if (rawTeam.isEmpty) return '';
 
       // A scanned team QR arrives as "userName||userUuid" (see getTeamCode), so
@@ -943,16 +965,25 @@ class FunctionRegistries {
 
     FunctionRegistry.register("isClosedHousehold", (args, stateData) {
       if (args.isEmpty || args.first == null) return false;
-      final tasks = args.first;
-
-      if (tasks is! List || tasks.isEmpty) return false;
+      dynamic taskData = args.first;
+      if (taskData is Map && taskData['TaskModel'] != null) {
+        taskData = taskData['TaskModel'];
+      }
+      final tasks = taskData is List ? taskData : [taskData];
 
       String? getStatus(dynamic task) {
         if (task is Map) return task['status']?.toString().toUpperCase();
         try {
           return (task as dynamic).status?.toString().toUpperCase();
         } catch (_) {
-          return null;
+          try {
+            final mapped = (task as dynamic).toMap();
+            return mapped is Map
+                ? mapped['status']?.toString().toUpperCase()
+                : null;
+          } catch (_) {
+            return null;
+          }
         }
       }
 
@@ -974,21 +1005,125 @@ class FunctionRegistries {
     // isClosedHousehold branch in REGISTRATION.json), so this naturally
     // stops matching and it falls back to the normal pending display.
     FunctionRegistry.register("isHouseholdMarkedClosed", (args, stateData) {
-      if (args.isEmpty || args.first == null) return false;
-      final tasks = args.first;
-
-      if (tasks is! List || tasks.isEmpty) return false;
-
-      String? getStatus(dynamic task) {
-        if (task is Map) return task['status']?.toString().toUpperCase();
+      dynamic readField(dynamic value, String key) {
+        if (value is Map) return value[key];
         try {
-          return (task as dynamic).status?.toString().toUpperCase();
+          final mapped = (value as dynamic)?.toMap();
+          if (mapped is Map && mapped.containsKey(key)) return mapped[key];
         } catch (_) {
-          return null;
+          // Fall back to the generated JSON representation below.
+        }
+        try {
+          final mapped = (value as dynamic)?.toJson();
+          if (mapped is Map) return mapped[key];
+        } catch (_) {
+          // Some entity wrappers expose properties without a mapper.
+        }
+        return null;
+      }
+
+      bool isConsentDeclined(dynamic household) {
+        var additionalFields = readField(household, 'additionalFields');
+        if (additionalFields is String) {
+          try {
+            additionalFields = jsonDecode(additionalFields);
+          } catch (_) {
+            return false;
+          }
+        }
+        if (additionalFields is! Map) return false;
+
+        dynamic consent = additionalFields['caregiverConsent'];
+        final fields = additionalFields['fields'];
+        if (fields is List) {
+          for (final field in fields) {
+            if (readField(field, 'key') == 'caregiverConsent') {
+              consent = readField(field, 'value');
+              break;
+            }
+          }
+        }
+        return consent?.toString().toUpperCase() == 'FALSE';
+      }
+
+      // A declined-consent household must return to the consent page even if
+      // its task relation is missing from this search result.
+      if (args.length > 1 && args[1] != null) {
+        if (isConsentDeclined(args[1])) return true;
+      }
+
+      if (args.isEmpty || args.first == null) {
+        return false;
+      }
+
+      dynamic taskData = args.first;
+      if (taskData is Map && taskData['TaskModel'] != null) {
+        taskData = taskData['TaskModel'];
+      }
+      final tasks = taskData is List
+          ? taskData
+          : (readField(taskData, 'status') != null ? [taskData] : <dynamic>[]);
+      if (tasks.isEmpty) return false;
+      dynamic latestTask;
+      int? latestCreatedTime;
+      for (final task in tasks) {
+        final clientAudit = readField(task, 'clientAuditDetails');
+        final audit = readField(task, 'auditDetails');
+        final createdTime = readField(clientAudit, 'createdTime') ??
+            readField(audit, 'createdTime') ??
+            readField(task, 'createdDate');
+        final parsedTime = createdTime is num
+            ? createdTime.toInt()
+            : int.tryParse(createdTime?.toString() ?? '');
+        if (parsedTime != null &&
+            (latestCreatedTime == null || parsedTime >= latestCreatedTime)) {
+          latestTask = task;
+          latestCreatedTime = parsedTime;
         }
       }
 
-      return getStatus(tasks.last) == 'CLOSED_HOUSEHOLD';
+      // Keep the legacy ordering fallback only when this data has no usable
+      // timestamps. Search results are otherwise not guaranteed to be ordered.
+      latestTask ??= tasks.last;
+      final status = readField(latestTask, 'status');
+      return status?.toString().toUpperCase() == 'CLOSED_HOUSEHOLD';
+    });
+
+    FunctionRegistry.register("isCaregiverConsentMissing", (args, stateData) {
+      if (args.isEmpty || args.first == null) return true;
+      final household = args.first;
+      dynamic additionalFields;
+      if (household is Map) {
+        additionalFields = household['additionalFields'];
+      } else {
+        try {
+          additionalFields = (household as dynamic).additionalFields;
+        } catch (_) {
+          return true;
+        }
+      }
+      if (additionalFields is String) {
+        try {
+          additionalFields = jsonDecode(additionalFields);
+        } catch (_) {
+          return true;
+        }
+      }
+      if (additionalFields is! Map) return true;
+      final fields = additionalFields['fields'];
+      dynamic consent;
+      if (fields is List) {
+        for (final field in fields) {
+          final key = field is Map ? field['key'] : (field as dynamic).key;
+          if (key == 'caregiverConsent') {
+            consent = field is Map ? field['value'] : (field as dynamic).value;
+            break;
+          }
+        }
+      } else {
+        consent = additionalFields['caregiverConsent'];
+      }
+      return consent == null || consent.toString().isEmpty;
     });
 
     // Returns a formatted message listing each product's available balance.

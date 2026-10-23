@@ -14,7 +14,18 @@ FormControl buildFormControl(
 }) {
   final validators = buildValidators(schema, schemaKey: schemaKey);
   final format = schema.format;
-  final rawValue = schema.value;
+  dynamic resolveInitialValue(dynamic value) {
+    if (value is! String) return value;
+    final match = RegExp(r'^\{\{\s*navigation\.([^{}]+?)\s*\}\}$')
+        .firstMatch(value.trim());
+    if (match == null) return value;
+    final resolved = navigationParams?[match.group(1)?.trim()];
+    // Older records/defaults may already contain the literal template.
+    // Never put an unresolved template back into a form control.
+    if (resolved is String && resolved.contains('{{')) return null;
+    return resolved;
+  }
+  final rawValue = resolveInitialValue(schema.value);
 
   // Helper to get default value - checks both the exact name and base name (without _item_N suffix)
   dynamic getDefaultValue(String fieldName) {
@@ -22,7 +33,13 @@ FormControl buildFormControl(
 
     // First try exact match
     if (defaultValues.containsKey(fieldName)) {
-      return defaultValues[fieldName];
+      final value = resolveInitialValue(defaultValues[fieldName]);
+      // Reverse transformation cannot invert conditional name mappings and
+      // may supply an empty name. Allow the explicit navigation prefill then.
+      if (const ['nameOfIndividual', 'familyname', 'firstName', 'lastName']
+              .contains(fieldName) &&
+          value is String && value.trim().isEmpty) return null;
+      return value;
     }
 
     // If field has _item_N suffix, try looking up the base field name
@@ -32,7 +49,7 @@ FormControl buildFormControl(
     if (itemSuffixMatch != null) {
       final baseFieldName = itemSuffixMatch.group(1)!;
       if (defaultValues.containsKey(baseFieldName)) {
-        return defaultValues[baseFieldName];
+        return resolveInitialValue(defaultValues[baseFieldName]);
       }
     }
 

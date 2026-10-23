@@ -167,14 +167,6 @@ final dynamic inventoryReportFlows = {
           "format": "menu_card",
           "hidden": false,
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_HEADING",
-          "visibilityCondition": {
-            "expression": [
-              {
-                "condition": "singleton.userRole != 'DISTRIBUTOR'",
-                "type": "custom"
-              }
-            ]
-          },
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -185,7 +177,10 @@ final dynamic inventoryReportFlows = {
                     "key": "reportDetailsHeading",
                     "value": "INVENTORY_REPORT_DETAILS_DAMAGE_REPORT_TITLE"
                   },
-                  {"key": "facilities", "value": "{{FacilityModel}}"},
+                  {
+                    "key": "facilities",
+                    "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
+                  },
                   {"key": "productVariants", "value": "{{ProductVariantModel}}"}
                 ],
                 "name": "reportDetails",
@@ -204,14 +199,6 @@ final dynamic inventoryReportFlows = {
           "format": "menu_card",
           "hidden": false,
           "heading": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_HEADING",
-          "visibilityCondition": {
-            "expression": [
-              {
-                "condition": "singleton.userRole != 'DISTRIBUTOR'",
-                "type": "custom"
-              }
-            ]
-          },
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -222,7 +209,10 @@ final dynamic inventoryReportFlows = {
                     "key": "reportDetailsHeading",
                     "value": "INVENTORY_REPORT_DETAILS_LOSS_REPORT_TITLE"
                   },
-                  {"key": "facilities", "value": "{{FacilityModel}}"},
+                  {
+                    "key": "facilities",
+                    "value": "{{fn:getCurrentFacilities(ProjectFacilityModel)}}"
+                  },
                   {"key": "productVariants", "value": "{{ProductVariantModel}}"}
                 ],
                 "name": "reportDetails",
@@ -332,7 +322,8 @@ final dynamic inventoryReportFlows = {
         "relations": [],
         "searchConfig": {
           "primary": "stock",
-          "select": ["stock"]
+          "select": ["stock"],
+          "orderBy": {"field": "clientCreatedTime", "order": "DESC"}
         }
       },
       "header": [
@@ -410,8 +401,8 @@ final dynamic inventoryReportFlows = {
                       {
                         "key":
                             "{{fn:getSenderOrReceiver(navigation.reportType)}}",
-                        "value": "{{selectedFacility}}",
-                        "operation": "equals"
+                        "value": "{{fn:getReportFacilityId(navigation.reportType, selectedFacility)}}",
+                        "operation": "equalsAny"
                       }
                     ]
                   }
@@ -454,8 +445,8 @@ final dynamic inventoryReportFlows = {
                       {
                         "key":
                             "{{fn:getSenderOrReceiver(navigation.reportType)}}",
-                        "value": "{{selectedFacility}}",
-                        "operation": "equals"
+                        "value": "{{fn:getReportFacilityId(navigation.reportType, selectedFacility)}}",
+                        "operation": "equalsAny"
                       }
                     ]
                   }
@@ -472,7 +463,7 @@ final dynamic inventoryReportFlows = {
           "properties": {"type": "info"},
           "fieldName": "infoCardReportDetails",
           "visible":
-              "{{fn:isEmpty(selectedFacility)}} && {{fn:isEmpty(selectedProduct)}}"
+              "{{fn:isEmpty(fn:getReportFacilityId(navigation.reportType, selectedFacility))}} && {{fn:isEmpty(selectedProduct)}}"
         },
         {
           "type": "template",
@@ -482,12 +473,13 @@ final dynamic inventoryReportFlows = {
           "properties": {"type": "info"},
           "fieldName": "noRecordFoundInfoReportDetails",
           "visible":
-              "{{fn:isEmpty(stock)}} && {{fn:isNotEmpty(selectedFacility)}}"
+              "{{fn:isEmpty(stock)}} && {{fn:isNotEmpty(fn:getReportFacilityId(navigation.reportType, selectedFacility))}} && {{fn:isNotEmpty(selectedProduct)}}"
         },
         {
           "type": "template",
           "format": "table",
           "fieldName": "tableInfoReportDetails",
+          "fitToContent": true,
           "data": {
             "source": "StockModel",
             "columns": [
@@ -533,7 +525,8 @@ final dynamic inventoryReportFlows = {
         "relations": [],
         "searchConfig": {
           "primary": "stockReconciliation",
-          "select": ["stockReconciliation"]
+          "select": ["stockReconciliation"],
+          "orderBy": {"field": "clientCreatedTime", "order": "DESC"}
         }
       },
       "header": [
@@ -676,6 +669,7 @@ final dynamic inventoryReportFlows = {
           "type": "template",
           "format": "table",
           "fieldName": "tableInfoReckonReportDetails",
+          "fitToContent": true,
           "data": {
             "source": "StockReconciliationModel",
             "columns": [

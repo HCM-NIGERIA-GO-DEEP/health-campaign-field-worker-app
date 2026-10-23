@@ -18,6 +18,7 @@ import '../../models/role_actions/role_actions_model.dart';
 import '../../services/device_id_service.dart';
 import '../../utils/constants.dart';
 import '../../utils/environment_config.dart';
+import '../../utils/function_registries.dart';
 
 // part 'auth.freezed.dart' need to be added to auto generate the files for freezed model
 part 'auth.freezed.dart';
@@ -161,13 +162,11 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   // ensureOnlineOrAlert) — if the API call still fails here, the local
   // session is left untouched so the user stays logged in.
   FutureOr<void> _onLogout(AuthLogoutEvent event, AuthEmitter emit) async {
-    // _deleteUserLocalDatabaseData() below wipes every SQL table plus the
-    // entire opLog outbox unconditionally - there was no check for records
-    // still waiting to be uploaded, so logging out before a sync completed
-    // permanently deleted that data with no way to recover it. Block the
-    // logout instead and tell the user to sync first.
+    // Preserve the local database if any records are still waiting to sync.
+    // Users can log out; the next login can continue syncing the retained data.
     final userObject = await localSecureStore.userRequestModel;
     final currentUserUuid = userObject?.uuid;
+    var hasPendingRecords = false;
     if (currentUserUuid != null && currentUserUuid.isNotEmpty) {
       final pendingCount = await isar.opLogs
           .filter()
@@ -176,13 +175,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           .not()
           .operationEqualTo(DataOperation.search)
           .count();
-      if (pendingCount > 0) {
-        _showLogoutFailureAlert(
-          'You have $pendingCount unsynced record(s) on this device. '
-          'Please sync before logging out, or they will be permanently lost.',
-        );
-        return;
-      }
+      hasPendingRecords = pendingCount > 0;
     }
 
     try {
@@ -214,7 +207,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return;
     }
 
-    await _deleteUserLocalDatabaseData();
+    if (!hasPendingRecords) {
+      await _deleteUserLocalDatabaseData();
+    }
+    StockBalanceCache.instance.clear();
     await localSecureStore.deleteAll();
     await localSecureStore.setBoundaryRefetch(true);
     // NOTE: do NOT clear isar.appConfigurations here. Its partner — the

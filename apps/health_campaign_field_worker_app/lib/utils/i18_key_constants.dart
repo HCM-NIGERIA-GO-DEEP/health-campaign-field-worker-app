@@ -1546,6 +1546,8 @@ class SummaryReport {
 
   String get numberOfPeopleInHouseholds => 'NUMBER_OF_PEOPLE_IN_HOUSEHOLDS';
 
+  String get numberOfChildrenUnder5 => 'NUMBER_OF_CHILDREN_UNDER_5';
+
   String get numberOfITNDistributed => 'NUMBER_OF_ITNS_DISTRIBUTED';
 
   String get childrenTreated => 'SUMMARY_REPORT_CHILDREN_TREATED';

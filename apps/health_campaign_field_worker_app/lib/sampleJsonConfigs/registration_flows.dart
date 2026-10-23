@@ -138,12 +138,6 @@ final dynamic sampleFlows = {
             {
               "actionType": "NAVIGATION",
               "properties": {
-                "data": [
-                  {
-                    "key": "HouseholdClientReferenceId",
-                    "value": "{{navigation.HouseholdClientReferenceId}}"
-                  }
-                ],
                 "name": "searchBeneficiary",
                 "type": "TEMPLATE",
                 "navigationMode": "popUntilAndReplace",
@@ -456,6 +450,48 @@ final dynamic sampleFlows = {
           }
         }
       }
+    },
+    {
+      "body": [
+        {
+          "type": "template",
+          "format": "panelCard",
+          "fieldName": "caregiverConsentDeclinedPanel",
+          "label": "CAREGIVER_CONSENT_DECLINED_PANEL_HEADING",
+          "description": "CAREGIVER_CONSENT_DECLINED_PANEL_DESC",
+          "properties": {"type": "info"},
+          "primaryAction": {
+            "label": "ACKNOWLEDGEMENT_SUCCESS_LABEL_TEXT",
+            "onAction": [
+              {
+                "actionType": "CLEAR_STATE",
+                "properties": {
+                  "widgetKeys": ["searchBar"],
+                  "filterKeys": ["givenName,familyName"],
+                  "screenName": "searchBeneficiary"
+                }
+              },
+              {
+                "actionType": "NAVIGATION",
+                "properties": {
+                  "name": "searchBeneficiary",
+                  "type": "TEMPLATE",
+                  "navigationMode": "popUntilAndReplace",
+                  "popUntilPageName": "searchBeneficiary"
+                }
+              }
+            ]
+          }
+        }
+      ],
+      "name": "caregiverAcknowledgement",
+      "order": 13,
+      "footer": [],
+      "header": [{"type": "template", "label": "DELIVERY_BACK", "format": "backLink", "onAction": [{"actionType": "NAVIGATION", "properties": {"name": "searchBeneficiary", "type": "TEMPLATE", "navigationMode": "popUntilAndReplace", "popUntilPageName": "searchBeneficiary"}}]}],
+      "summary": false,
+      "version": 1,
+      "category": "REGISTRATION",
+      "screenType": "TEMPLATE"
     },
     {
       "body": [
@@ -1050,6 +1086,14 @@ final dynamic sampleFlows = {
           "visible": "{{fn:hasRole('REGISTRAR')}} == true",
           "disabled": "{{fn:isUnder5CountMismatch(contextData.0.members, contextData.0.household)}} == true",
           "onAction": [
+            {
+              "actionType": "CLEAR_STATE",
+              "properties": {
+                "screenName": "searchBeneficiary",
+                "widgetKeys": ["searchBar"],
+                "filterKeys": ["givenName,familyName"]
+              }
+            },
             {
               "actionType": "CLEAR_STATE",
               "properties": {
@@ -1818,11 +1862,13 @@ final dynamic sampleFlows = {
                 {
                   "actionType": "SEARCH_EVENT",
                   "properties": {
+                    "skipAccumulatedFilters": true,
                     "data": [
                       {
-                        "key": "givenName",
+                        "key": "givenName,familyName",
                         "value": "field.value",
-                        "operation": "contains"
+                        "operation": "containsAll",
+                        "root": "name"
                       },
                       {
                         "key": "localityBoundaryCode",
@@ -1905,7 +1951,7 @@ final dynamic sampleFlows = {
                     "operation": "equals"
                   }
                 ],
-                "name": "address",
+                "name": "household",
                 "type": "field.value==true ? SEARCH_EVENT : CLEAR_STATE"
               }
             }
@@ -1933,7 +1979,7 @@ final dynamic sampleFlows = {
                   "searchBar"
                 ],
                 "filterKeys": [
-                  "givenName",
+                  "givenName,familyName",
                   "identifierId"
                 ],
                 "triggerSearch": true,
@@ -2010,62 +2056,7 @@ final dynamic sampleFlows = {
                     "type": "template",
                     "label": "OPEN",
                     "format": "button",
-                    "disabled": "{{fn:isClosedHousehold(item.tasks)}} == true",
                     "onAction": [
-                      {
-                        "actions": [
-                          {
-                            "actionType": "OPEN_POPUP",
-                            "properties": {
-                              "size": "medium",
-                              "type": "secondary",
-                              "popupConfig": {
-                                "body": [
-                                  {
-                                    "type": "template",
-                                    "value": "{{fn:getRegistrationInsufficientStockMessage()}}",
-                                    "format": "textTemplate",
-                                    "fieldName": "insufficientStockRegistrationText",
-                                    "maxLines": 8,
-                                    "properties": {
-                                      "textAlign": "center"
-                                    }
-                                  }
-                                ],
-                                "title": "INSUFFICIENT_STOCK_TITLE",
-                                "titleIcon": "Warning",
-                                "type": "alert",
-                                "footerActions": [
-                                  {
-                                    "type": "template",
-                                    "label": "RETURN_TO_HOUSEHOLD_SCREEN_LABEL",
-                                    "format": "button",
-                                    "onAction": [
-                                      {
-                                        "actionType": "CLOSE_POPUP",
-                                        "properties": {
-                                          "parentScreenKey": "searchBeneficiary"
-                                        }
-                                      }
-                                    ],
-                                    "fieldName": "closeInsufficientStockRegistrationPopUp",
-                                    "properties": {
-                                      "size": "large",
-                                      "type": "primary",
-                                      "mainAxisSize": "max"
-                                    }
-                                  }
-                                ],
-                                "showCloseButton": true,
-                                "barrierDismissible": true
-                              }
-                            }
-                          }
-                        ],
-                        "condition": {
-                          "expression": "{{fn:hasStockForRegistration()}}==false && {{fn:isClosedHousehold(item.tasks)}} == false && {{fn:hasRole('DISTRIBUTOR')}} == false"
-                        }
-                      },
                       {
                         "actions": [
                           {
@@ -2081,6 +2072,8 @@ final dynamic sampleFlows = {
                               "entityTypes": [
                                 "HouseholdModel",
                                 "IndividualModel",
+                                "HouseholdMemberModel",
+                                "ProjectBeneficiaryModel",
                                 "TaskModel"
                               ]
                             }
@@ -2104,15 +2097,27 @@ final dynamic sampleFlows = {
                                 {
                                   "key": "isClosedHousehold",
                                   "value": "true"
+                                },
+                                {
+                                  "key": "startPage",
+                                  "value": "caregiverConsent"
+                                },
+                                {
+                                  "key": "firstName",
+                                  "value": "{{item.headIndividual.0.name.givenName}}"
+                                },
+                                {
+                                  "key": "lastName",
+                                  "value": "{{item.headIndividual.0.name.familyName}}"
                                 }
                               ],
-                              "name": "previewScreen",
-                              "type": "TEMPLATE"
+                              "name": "HOUSEHOLD",
+                              "type": "FORM"
                             }
                           }
                         ],
                         "condition": {
-                          "expression": "{{fn:isClosedHousehold(item.tasks)}} == true"
+                          "expression": "{{fn:isHouseholdMarkedClosed(item.tasks, item.HouseholdModel)}} == true"
                         }
                       },
                       {
@@ -2136,7 +2141,7 @@ final dynamic sampleFlows = {
                           }
                         ],
                         "condition": {
-                          "expression": "{{fn:hasRole('DISTRIBUTOR')}} == true && {{fn:isClosedHousehold(item.tasks)}} == false"
+                          "expression": "{{fn:hasRole('DISTRIBUTOR')}} == true && {{fn:isHouseholdMarkedClosed(item.tasks, item.HouseholdModel)}} == false"
                         }
                       },
                       {
@@ -2165,39 +2170,15 @@ final dynamic sampleFlows = {
                                 {
                                   "key": "HouseholdClientReferenceId",
                                   "value": "{{ item.HouseholdModel.clientReferenceId }}"
-                                },
-                                {
-                                  "key": "projectBeneficiaryClientReferenceId",
-                                  "value": "{{ item.projectBeneficiaries.ProjectBeneficiaryModel.clientReferenceId }}"
-                                },
-                                {
-                                  "key": "isEdit",
-                                  "value": "true"
-                                },
-                                {
-                                  "key": "isClosedHousehold",
-                                  "value": "true"
-                                },
-                                {
-                                  "key": "UNIQUE_BENEFICIARY_ID",
-                                  "value": "{{latestBeneficiaryId}}"
-                                },
-                                {
-                                  "key": "uniqueBeneficiaryIdModel",
-                                  "value": "{{latestBeneficiaryIdModel}}"
-                                },
-                                {
-                                  "key": "identifier",
-                                  "value": "{{item.headIndividual}}"
                                 }
                               ],
                               "name": "householdOverview",
-                              "type": "FORM"
+                              "type": "TEMPLATE"
                             }
                           }
                         ],
                         "condition": {
-                          "expression": "{{fn:hasStockForRegistration()}}==true && {{fn:isClosedHousehold(item.tasks)}} == false && {{fn:hasRole('DISTRIBUTOR')}} == false"
+                          "expression": "{{fn:hasStockForRegistration()}}==true && {{fn:isHouseholdMarkedClosed(item.tasks, item.HouseholdModel)}} == false && {{fn:hasRole('DISTRIBUTOR')}} == false"
                         }
                       },
                       {
@@ -2209,17 +2190,9 @@ final dynamic sampleFlows = {
                                 {
                                   "key": "HouseholdClientReferenceId",
                                   "value": "{{ item.HouseholdModel.clientReferenceId }}"
-                                },
-                                {
-                                  "key": "nameOfIndividual",
-                                  "value": "{{ item.headIndividual.0.name.givenName }}"
-                                },
-                                {
-                                  "key": "UNIQUE_BENEFICIARY_ID",
-                                  "value": "{{item.headIndividual.0.identifiers.0.identifierId}}"
                                 }
                               ],
-                              "name": "HOUSEHOLD",
+                              "name": "householdOverview",
                               "type": "TEMPLATE"
                             }
                           }
@@ -2230,6 +2203,7 @@ final dynamic sampleFlows = {
                       }
                     ],
                     "fieldName": "openMemberCard",
+                    "disabled": "{{fn:isDelivered(item.tasks)}} == true",
                     "properties": {
                       "size": "medium",
                       "type": "secondary"
@@ -2255,7 +2229,7 @@ final dynamic sampleFlows = {
                 "type": "template",
                 "value": "SEARCH_HOUSEHOLD_STATUS_ITN_DELIVERED",
                 "format": "textTemplate",
-                "visible": "{{fn:isClosedHousehold(item.tasks)}} == true",
+                "visible": "{{fn:isDelivered(item.tasks)}} == true",
                 "fieldName": "statusDelivered",
                 "properties": {}
               },
@@ -2263,7 +2237,7 @@ final dynamic sampleFlows = {
                 "type": "template",
                 "value": "SEARCH_HOUSEHOLD_STATUS_NOT_VISITED",
                 "format": "textTemplate",
-                "visible": "{{fn:isClosedHousehold(item.tasks)}} == false",
+                "visible": "{{fn:isDelivered(item.tasks)}} == false",
                 "fieldName": "statusNotVisited",
                 "properties": {}
               }
@@ -2320,6 +2294,7 @@ final dynamic sampleFlows = {
                       "actionType": "NAVIGATION",
                       "properties": {
                         "data": [
+                          {"key": "startPage", "value": "beneficiaryLocation"},
                           {
                             "key": "nameOfIndividual",
                             "value": "{{searchBar}}"
@@ -2443,6 +2418,7 @@ final dynamic sampleFlows = {
                   "actionType": "NAVIGATION",
                   "properties": {
                     "data": [
+                      {"key": "startPage", "value": "beneficiaryLocation"},
                       {
                         "key": "nameOfIndividual",
                         "value": "{{searchBar}}"
@@ -3739,7 +3715,7 @@ final dynamic sampleFlows = {
               "type": "string",
               "label": "HOUSEHOLD_FIRST_NAME",
               "order": 2,
-              "value": "",
+              "value": "{{navigation.firstName}}",
               "format": "text",
               "hidden": false,
               "isMdms": false,
@@ -3768,7 +3744,7 @@ final dynamic sampleFlows = {
                 {
                   "type": "minLength",
                   "value": "2",
-                  "message": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_max_message"
+                  "message": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_min_message"
                 },
                 {
                   "type": "maxLength",
@@ -3784,7 +3760,7 @@ final dynamic sampleFlows = {
               "type": "string",
               "label": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_lastName",
               "order": 2,
-              "value": "",
+              "value": "{{navigation.lastName}}",
               "format": "text",
               "hidden": false,
               "isMdms": false,
@@ -3808,7 +3784,7 @@ final dynamic sampleFlows = {
                 {
                   "type": "minLength",
                   "value": "2",
-                  "message": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_max_message"
+                  "message": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_familyname_min_message"
                 },
                 {
                   "type": "maxLength",
@@ -4136,7 +4112,7 @@ final dynamic sampleFlows = {
                 {
                   "actionType": "NAVIGATION",
                   "properties": {
-                    "name": "householdDetails",
+                    "name": "caregiverConsent",
                     "type": "form"
                   }
                 }
@@ -4157,50 +4133,10 @@ final dynamic sampleFlows = {
             {
               "actions": [
                 {
-                  "actionType": "FETCH_TRANSFORMER_CONFIG",
-                  "properties": {
-                    "onError": [
-                      {
-                        "actionType": "SHOW_TOAST",
-                        "properties": {
-                          "message": "Failed to fetch config."
-                        }
-                      }
-                    ],
-                    "configName": "beneficiaryRegistration"
-                  }
-                },
-                {
-                  "actionType": "UPDATE_EVENT",
-                  "properties": {
-                    "entity": "HouseholdModel, IndividualModel, TaskModel, TaskResourceModel",
-                    "modify": [
-                      {
-                        "key": "TaskModel.status",
-                        "value": "NOT_ADMINISTERED"
-                      }
-                    ],
-                    "onError": [
-                      {
-                        "actionType": "SHOW_TOAST",
-                        "properties": {
-                          "message": "Failed to update closed household."
-                        }
-                      }
-                    ]
-                  }
-                },
-                {
                   "actionType": "NAVIGATION",
                   "properties": {
-                    "data": [
-                      {
-                        "key": "HouseholdClientReferenceId",
-                        "value": "{{contextData.entities.HouseholdModel.clientReferenceId}}"
-                      }
-                    ],
-                    "name": "householdOverview",
-                    "type": "TEMPLATE",
+                    "name": "caregiverConsent",
+                    "type": "FORM",
                     "onError": [
                       {
                         "actionType": "SHOW_TOAST",
@@ -4209,8 +4145,12 @@ final dynamic sampleFlows = {
                         }
                       }
                     ],
-                    "navigationMode": "popUntilAndPush",
-                    "popUntilPageName": "searchBeneficiary"
+                    "data": [
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value": "{{contextData.entities.HouseholdModel.clientReferenceId}}"
+                      }
+                    ]
                   }
                 }
               ],
@@ -4584,13 +4524,160 @@ final dynamic sampleFlows = {
           "showTabView": false,
           "submitCondition": null,
           "preventScreenCapture": false
-        }
+        },
+        {
+          "body": null,
+          "flow": "HOUSEHOLD",
+          "page": "caregiverConsent",
+          "type": "object",
+          "label": "APPONE_REGISTRATION_CAREGIVER_CONSENT_SCREEN_HEADING",
+          "heading": "APPONE_REGISTRATION_CAREGIVER_CONSENT_SCREEN_HEADING",
+          "order": 2,
+          "module": "REGISTRATION",
+          "properties": [
+            {
+              "type": "string",
+              "label": "APPONE_REGISTRATION_CAREGIVER_CONSENT_label_consentToParticipate",
+              "order": 1,
+              "format": "radio",
+              "fieldName": "consentToParticipate",
+              "mandatory": true,
+              "required": true,
+              "enums": [
+                {"code": "TRUE", "name": "APPONE_CAREGIVER_CONSENT_YES"},
+                {"code": "FALSE", "name": "APPONE_CAREGIVER_CONSENT_NO"}
+              ],
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "APPONE_REGISTRATION_CAREGIVER_CONSENT_label_consentToParticipate_mandatory_message"
+                }
+              ]
+            },
+            {
+              "type": "string",
+              "label": "HOUSEHOLD_FIRST_NAME",
+              "order": 2,
+              "value": "{{navigation.firstName}}",
+              "format": "text",
+              "fieldName": "firstName",
+              "mandatory": false,
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition": "caregiverConsent.consentToParticipate == FALSE",
+                    "type": "custom"
+                  }
+                ]
+              },
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_mandatory_message",
+                  "condition": {
+                    "expression": "caregiverConsent.consentToParticipate == FALSE"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "string",
+              "label": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_lastName",
+              "order": 3,
+              "value": "{{navigation.lastName}}",
+              "format": "text",
+              "fieldName": "lastName",
+              "mandatory": false,
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition": "caregiverConsent.consentToParticipate == FALSE",
+                    "type": "custom"
+                  }
+                ]
+              },
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_mandatory_message",
+                  "condition": {
+                    "expression": "caregiverConsent.consentToParticipate == FALSE"
+                  }
+                }
+              ]
+            }
+          ],
+          "actionLabel": "APPONE_REGISTRATION_CAREGIVER_CONSENT_ACTION_BUTTON_LABEL_1",
+          "conditionalNavigateTo": [
+            {
+              "condition": "caregiverConsent.consentToParticipate==TRUE",
+              "navigateTo": {"name": "householdDetails", "type": "form"}
+            },
+            {
+              "condition": "caregiverConsent.consentToParticipate==FALSE",
+              "navigateTo": {"name": "caregiverAcknowledgement", "type": "submit"}
+            }
+          ],
+          "showTabView": false,
+          "submitCondition": null,
+          "preventScreenCapture": false
+        },
       ],
       "summary": false,
       "version": 3,
       "category": "REGISTRATION",
       "disabled": false,
       "onAction": [
+        {
+          "actions": [
+            {
+              "actionType": "FETCH_TRANSFORMER_CONFIG",
+              "properties": {
+                "configName": "beneficiaryRegistration",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to save consent decision."}
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "UPDATE_EVENT",
+              "properties": {
+                "entity": "HouseholdModel, IndividualModel",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to save consent decision."}
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  }
+                ],
+                "name": "caregiverAcknowledgement",
+                "type": "TEMPLATE",
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "searchBeneficiary"
+              }
+            }
+          ],
+          "condition": {
+            "type": "custom",
+            "expression": "isEdit==true && isClosedHousehold==true && caregiverConsent.consentToParticipate==FALSE"
+          }
+        },
         {
           "actions": [
             {
@@ -4747,7 +4834,7 @@ final dynamic sampleFlows = {
           ],
           "condition": {
             "type": "custom",
-            "expression": "isEdit==true && isClosedHousehold==true"
+            "expression": "isEdit==true && isClosedHousehold==true && caregiverConsent.consentToParticipate==TRUE"
           }
         },
         {
@@ -4755,27 +4842,11 @@ final dynamic sampleFlows = {
             {
               "actionType": "FETCH_TRANSFORMER_CONFIG",
               "properties": {
+                "configName": "householdConsentDeclinedRegistration",
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",
-                    "properties": {
-                      "message": "Failed to fetch config."
-                    }
-                  }
-                ],
-                "configName": "beneficiaryRegistration"
-              }
-            },
-            {
-              "actionType": "UPDATE_IDENTIFIER_STATUS",
-              "properties": {
-                "identifierType": "UNIQUE_BENEFICIARY_ID",
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {
-                      "message": "Failed to update beneficiary id status."
-                    }
+                    "properties": {"message": "Failed to save consent decision."}
                   }
                 ]
               }
@@ -4786,9 +4857,7 @@ final dynamic sampleFlows = {
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",
-                    "properties": {
-                      "message": "Failed to create household."
-                    }
+                    "properties": {"message": "Failed to save household."}
                   }
                 ]
               }
@@ -4800,30 +4869,73 @@ final dynamic sampleFlows = {
                   {
                     "key": "HouseholdClientReferenceId",
                     "value": "{{contextData.entities.HouseholdModel.clientReferenceId}}"
-                  },
-                  {
-                    "key": "ProjectBeneficiaryClientReferenceId",
-                    "value": "{{contextData.entities.ProjectBeneficiaryModel.clientReferenceId}}"
                   }
                 ],
-                "name": "householdOverview",
+                "name": "caregiverAcknowledgement",
                 "type": "TEMPLATE",
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {
-                      "message": "Navigation failed."
-                    }
-                  }
-                ],
                 "navigationMode": "popUntilAndPush",
                 "popUntilPageName": "searchBeneficiary"
               }
             }
           ],
           "condition": {
-            "expression": "DEFAULT"
+            "type": "custom",
+            "expression": "caregiverConsent.consentToParticipate==FALSE"
           }
+        },
+        {
+          "actions": [
+            {
+              "actionType": "FETCH_TRANSFORMER_CONFIG",
+              "properties": {
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to fetch config."}
+                  }
+                ],
+                "configName": "beneficiaryRegistration",
+                "createEntities": ["ProjectBeneficiaryModel"]
+              }
+            },
+            {
+              "actionType": "UPDATE_IDENTIFIER_STATUS",
+              "properties": {
+                "identifierType": "UNIQUE_BENEFICIARY_ID",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to update beneficiary id status."}
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "CREATE_EVENT",
+              "properties": {
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to create household."}
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {"key": "HouseholdClientReferenceId", "value": "{{contextData.entities.HouseholdModel.clientReferenceId}}"},
+                  {"key": "ProjectBeneficiaryClientReferenceId", "value": "{{contextData.entities.ProjectBeneficiaryModel.clientReferenceId}}"}
+                ],
+                "name": "householdOverview",
+                "type": "TEMPLATE",
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "searchBeneficiary"
+              }
+            }
+          ],
+          "condition": {"expression": "DEFAULT"}
         }
       ],
       "isSelected": true,
@@ -5151,7 +5263,7 @@ final dynamic sampleFlows = {
                 {
                   "type": "minLength",
                   "value": "2",
-                  "message": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_max_message_addmember"
+                  "message": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_min_message_addmember"
                 },
                 {
                   "type": "maxLength",

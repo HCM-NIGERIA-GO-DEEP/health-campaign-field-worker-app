@@ -230,15 +230,16 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
           final batch = map['10'] ?? '';
           final expiryStr = map['17'] ?? '';
 
-          DateTime expiryDate;
-          if (expiryStr.isNotEmpty) {
+          // Legacy manual entries carried a fabricated expiry. Do not restore
+          // it when rebuilding those entries for editing.
+          final isManual = batch == 'MANUAL' && gtin == '00000000000000';
+          DateTime? expiryDate;
+          if (!isManual && expiryStr.isNotEmpty) {
             try {
-              expiryDate = DateFormat('dd MMM yyyy').parse(expiryStr);
+              expiryDate = DateFormat('dd MMM yyyy').parseStrict(expiryStr);
             } catch (_) {
-              expiryDate = DateTime.now().add(const Duration(days: 365));
+              // Missing or invalid expiry must not become a generated date.
             }
-          } else {
-            expiryDate = DateTime.now().add(const Duration(days: 365));
           }
 
           final barcodeString = DigitScannerUtils().generateGS1Barcode(
@@ -601,13 +602,10 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                               // Keep GS1 payload valid while collecting only serial from UI.
                               const gtinValue = '00000000000000';
                               const batchValue = 'MANUAL';
-                              final expiryDate =
-                                  DateTime.now().add(const Duration(days: 365));
                               final barcodeString =
                                   DigitScannerUtils().generateGS1Barcode(
                                 gtin: gtinValue,
                                 serialNumber: serialValue,
-                                expiryDate: expiryDate,
                                 batchNumber: batchValue,
                               );
 

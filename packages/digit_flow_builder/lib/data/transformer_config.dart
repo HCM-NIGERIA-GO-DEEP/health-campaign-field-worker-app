@@ -78,8 +78,10 @@ final jsonConfig = {
           "name": {
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
-            "givenName": "householdDetails.nameOfIndividual",
-            "familyName": "householdDetails.familyname",
+            "givenName":
+                "__switch:caregiverConsent.consentToParticipate:{FALSE:caregiverConsent.firstName,default:householdDetails.nameOfIndividual}",
+            "familyName":
+                "__switch:caregiverConsent.consentToParticipate:{FALSE:caregiverConsent.lastName,default:householdDetails.familyname}",
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit",
             "additionalFields": {"lastName": "householdDetails.lastName"}
@@ -1441,9 +1443,8 @@ final jsonConfig = {
   // a declined-consent household is never left without the entities the
   // isEdit reopen path already expects to find and update. Sourced from our
   // own "beneficiaryLocation"/"caregiverConsent" pages instead of
-  // CLOSEHOUSEHOLD.json's "closeHouseholdDetails" page. No head name is
-  // captured before consent, so givenName/familyName are intentionally left
-  // unmapped (resolve to null) until the household is reopened and completed.
+  // CLOSEHOUSEHOLD.json's "closeHouseholdDetails" page. The consent page
+  // collects the head name when consent is declined.
   "householdConsentDeclinedRegistration": {
     "fallbackModel": "HouseholdModel",
     "models": {
@@ -1514,6 +1515,8 @@ final jsonConfig = {
           "name": {
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
+            "givenName": "caregiverConsent.firstName",
+            "familyName": "caregiverConsent.lastName",
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit",
           },

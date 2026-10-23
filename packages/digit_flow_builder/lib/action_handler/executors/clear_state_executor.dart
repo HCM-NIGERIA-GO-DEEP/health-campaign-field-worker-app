@@ -28,8 +28,13 @@ class ClearStateExecutor extends ActionExecutor {
     Map<String, dynamic> contextData,
   ) async {
     final crudCtx = CrudItemContext.of(context);
-    final compositeKey =
-        crudCtx?.compositeKey ?? getEffectiveCompositeKey(context, contextData);
+    final targetScreen = action.properties['screenName'] as String?;
+    final targetInstance = targetScreen == null
+        ? null
+        : FlowCrudStateRegistry().getInstanceId(targetScreen);
+    final compositeKey = targetScreen == null
+        ? crudCtx?.compositeKey ?? getEffectiveCompositeKey(context, contextData)
+        : targetInstance == null ? null : '$targetScreen::$targetInstance';
 
     if (compositeKey == null) {
       return contextData;

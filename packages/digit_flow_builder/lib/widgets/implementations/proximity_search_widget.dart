@@ -269,16 +269,21 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
       // For disabled state, let configured false-path action run as-is.
       if (value) {
         final existingData = raw['properties']?['data'] ?? [];
-        updated['properties']['data'] = existingData.map((item) {
-          return {
+        final configuredFilters = existingData
+            .where((item) => item is Map && item['operation'] != 'within')
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
+        updated['properties']['data'] = [
+          {
             "key": json['fieldName'],
             if (radius != null) "value": radius,
             "lat": _lat,
             "long": _long,
             "accuracy": _accuracy,
             "operation": "within"
-          };
-        }).toList();
+          },
+          ...configuredFilters,
+        ];
       }
 
       widget.onAction(ActionConfig.fromJson(updated));

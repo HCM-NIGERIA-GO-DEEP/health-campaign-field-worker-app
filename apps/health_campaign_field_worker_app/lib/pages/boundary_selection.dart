@@ -110,13 +110,6 @@ class _BoundarySelectionPageState
         .toList()
         .isNotEmpty;
 
-    bool isRegistrar = context.loggedInUserRoles
-        .where(
-          (role) => role.code == RolesType.registrar.toValue(),
-        )
-        .toList()
-        .isNotEmpty;
-
     bool isHealthFacilityWorkerOnly = isHealthFacilityWorker && !isDistributor;
     // set the param to enable or disable filter of labelList and other boundary conditions
     doFilter = enableFilter();
@@ -638,8 +631,7 @@ class _BoundarySelectionPageState
 
                                                 if (context.mounted) {
                                                   if (isOnline &&
-                                                      (isDistributor ||
-                                                          isRegistrar)) {
+                                                      isDistributor) {
                                                     context
                                                         .read<
                                                             BeneficiaryDownSyncBloc>()

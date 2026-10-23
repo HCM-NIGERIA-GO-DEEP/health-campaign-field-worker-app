@@ -9,6 +9,25 @@ class HouseholdLocalRepository
     extends LocalRepository<HouseholdModel, HouseholdSearchModel> {
   HouseholdLocalRepository(super.sql, super.opLogManager);
 
+  Future<HouseholdModel> _preserveLocation(HouseholdModel incoming) async {
+    final existing = await search(HouseholdSearchModel(
+      clientReferenceId: [incoming.clientReferenceId],
+      tenantId: incoming.tenantId,
+    ));
+    if (existing.isEmpty) return incoming;
+    final saved = existing.first.address;
+    final address = incoming.address;
+    return incoming.copyWith(
+      address: address == null ? saved : address.copyWith(
+        latitude: address.latitude ?? saved?.latitude,
+        longitude: address.longitude ?? saved?.longitude,
+        locationAccuracy: address.locationAccuracy ?? saved?.locationAccuracy,
+        locality: address.locality ?? saved?.locality,
+      ),
+      additionalFields: incoming.additionalFields ?? existing.first.additionalFields,
+    );
+  }
+
   @override
   FutureOr<List<HouseholdModel>> search(
     HouseholdSearchModel query, [
@@ -153,7 +172,8 @@ class HouseholdLocalRepository
     bool createOpLog = true,
     DataOperation dataOperation = DataOperation.create,
   }) async {
-    retryLocalCallOperation(() async {
+    return retryLocalCallOperation(() async {
+      entity = await _preserveLocation(entity);
       final householdCompanion = entity.companion;
       final localityCompanion = entity.address?.locality?.companion;
       final addressCompanion = entity.address?.companion;
@@ -190,6 +210,7 @@ class HouseholdLocalRepository
     List<HouseholdModel> entities,
   ) async {
     return retryLocalCallOperation(() async {
+      entities = await Future.wait(entities.map(_preserveLocation));
       final householdCompanions = entities.map((e) => e.companion).toList();
 
       await sql.batch((batch) async {
@@ -229,6 +250,7 @@ class HouseholdLocalRepository
     DataOperation dataOperation = DataOperation.update,
   }) async {
     return retryLocalCallOperation(() async {
+      entity = await _preserveLocation(entity);
       final householdCompanion = entity.companion;
       final addressCompanion = entity.address
           ?.copyWith(

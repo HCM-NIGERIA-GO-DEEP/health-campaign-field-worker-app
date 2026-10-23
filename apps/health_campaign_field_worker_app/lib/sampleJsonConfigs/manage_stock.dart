@@ -1594,7 +1594,7 @@ final dynamic sampleInventoryFlows ={
               },
               {
                 "key": "teamCode",
-                "value": "{{fn:getStockTeamCode(navigation.stockEntryType, navigation.primaryRole, formData.warehouseDetails.teamCode, formData.stockDetails.deliveryTeam)}}"
+                "value": "{{fn:getStockTeamCode(navigation.stockEntryType, navigation.primaryRole, formData.warehouseDetails.teamCode, formData.warehouseDetails.facilityToWhich, formData.stockDetails.facilityFromWhich, formData.stockDetails.deliveryTeam)}}"
               },
               {
                 "key": "senderId",

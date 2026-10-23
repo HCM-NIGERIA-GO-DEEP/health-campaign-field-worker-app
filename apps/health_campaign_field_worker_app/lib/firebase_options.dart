@@ -53,10 +53,10 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBzE5f156_ia7HumLb1fDg8A-88uhmQ68Y',
-    appId: '1:397617237644:android:ef1103344485f51af6b5a9', // com.digit.hcm
-    messagingSenderId: '397617237644',
-    projectId: 'digit-health-75ed0',
-    storageBucket: 'digit-health-75ed0.appspot.com',
+    apiKey: 'AIzaSyDkT1V6wknoUsh8CFDXiA8OwElZnK9sF9w',
+    appId: '1:630326133351:android:207ddd592b28a8e7954ac2', // org.egov.liberia
+    messagingSenderId: '630326133351',
+    projectId: 'digit-hcm-nigeria',
+    storageBucket: 'digit-hcm-nigeria.firebasestorage.app',
   );
 }

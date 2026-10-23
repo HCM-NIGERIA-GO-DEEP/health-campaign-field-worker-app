@@ -75,6 +75,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
               ProjectBeneficiarySearchModel>>();
       final summaryReportService = context.read<ServerSummaryReportService>();
       List<String> serverReportAllDates = await summaryReportService.allDates();
+      final serverReportTimestamp = await summaryReportService.timestamp();
 
       final projectFacilities = await projectFacilityRepo
           .search(ProjectFacilitySearchModel(projectId: [projectId]));
@@ -113,7 +114,6 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       final households =
           await householdRepo.search(HouseholdSearchModel(), userUuid);
       final tasks = await taskRepo.search(TaskSearchModel(
-        createdBy: userUuid,
         projectId: projectId,
       ));
 
@@ -151,14 +151,15 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       }
       final allStocks = allStocksMap.values.toList();
 
-      // Local household registrations by date. The server-side summary
-      // snapshot is a point-in-time baseline (only refreshed once per
-      // cycle, before any local registration exists - see
-      // _loadSummaryReportData's hasHouseholdDataForCycle check), so it
-      // never ends up re-counting these; every local record is counted
-      // directly, regardless of sync status.
+      // Local household registrations by date. The server summary is a
+      // cached point-in-time baseline: add eligible local registrations made
+      // after it, and remove any closed placeholders already included in it.
       final localHouseholdsRegisteredByDate = <String, int>{};
       final localPeopleInHouseholdsByDate = <String, int>{};
+      final localChildrenUnder5ByDate = <String, int>{};
+      final closedHouseholdsInServerReportByDate = <String, int>{};
+      final closedHouseholdMembersInServerReportByDate = <String, int>{};
+      final closedHouseholdChildrenUnder5InServerReportByDate = <String, int>{};
       for (final hh in households) {
         final createdBy =
             hh.clientAuditDetails?.createdBy ?? hh.auditDetails?.createdBy;
@@ -167,15 +168,38 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
             hh.clientAuditDetails?.createdTime ?? hh.auditDetails?.createdTime;
         if (!isWithinCurrentCycle(epochMs)) continue;
         if (epochMs == null) continue;
-        if (isHouseholdStillClosed(
+        final isClosedPlaceholder = isHouseholdConsentDeclined(hh) ||
+            isHouseholdStillClosed(
           householdClientReferenceId: hh.clientReferenceId,
           projectBeneficiaryClientRefsByHousehold:
               projectBeneficiaryClientRefsByHousehold,
           tasksByProjectBeneficiaryClientRef:
               tasksByProjectBeneficiaryClientRef,
-        )) continue;
+        );
+        if (isClosedPlaceholder) {
+          // The server summary is a cached baseline. If this placeholder
+          // predates that snapshot, its counts are already included there and
+          // must be removed from the displayed totals as well.
+          if (serverReportTimestamp != null &&
+              epochMs <= serverReportTimestamp) {
+            final date = _epochToDateString(epochMs);
+            closedHouseholdsInServerReportByDate[date] =
+                (closedHouseholdsInServerReportByDate[date] ?? 0) + 1;
+            closedHouseholdMembersInServerReportByDate[date] =
+                (closedHouseholdMembersInServerReportByDate[date] ?? 0) +
+                    (hh.memberCount ?? 0);
+            closedHouseholdChildrenUnder5InServerReportByDate[date] =
+                (closedHouseholdChildrenUnder5InServerReportByDate[date] ??
+                        0) +
+                    householdChildrenUnder5Count(hh);
+          }
+          continue;
+        }
 
         final date = _epochToDateString(epochMs);
+        localChildrenUnder5ByDate[date] =
+            (localChildrenUnder5ByDate[date] ?? 0) +
+                householdChildrenUnder5Count(hh);
         localHouseholdsRegisteredByDate[date] =
             (localHouseholdsRegisteredByDate[date] ?? 0) + 1;
         localPeopleInHouseholdsByDate[date] =
@@ -276,6 +300,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       final allDates = <String>{
         ...localHouseholdsRegisteredByDate.keys,
         ...localPeopleInHouseholdsByDate.keys,
+        ...localChildrenUnder5ByDate.keys,
         ...localITNByDate.keys,
         ...stockDates,
         ...consumedDates,
@@ -294,11 +319,26 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
             await summaryReportService.peopleInHouseholds(date: date);
         int serverReportITNDistributed =
             await summaryReportService.itnsDistributed(date: date);
+        int serverReportChildrenUnder5 =
+            await summaryReportService.childrenRegistered(date: date);
 
-        final hhCount = serverReportHouseholdRegistration +
+        final adjustedServerHouseholdCount =
+            serverReportHouseholdRegistration -
+                (closedHouseholdsInServerReportByDate[date] ?? 0);
+        final adjustedServerPeopleCount = serverReportPeopleInHouseholds -
+            (closedHouseholdMembersInServerReportByDate[date] ?? 0);
+        final adjustedServerChildrenUnder5Count = serverReportChildrenUnder5 -
+            (closedHouseholdChildrenUnder5InServerReportByDate[date] ?? 0);
+        final hhCount =
+            (adjustedServerHouseholdCount < 0 ? 0 : adjustedServerHouseholdCount) +
             (localHouseholdsRegisteredByDate[date] ?? 0);
-        final dailyPeopleCount = serverReportPeopleInHouseholds +
+        final dailyPeopleCount =
+            (adjustedServerPeopleCount < 0 ? 0 : adjustedServerPeopleCount) +
             (localPeopleInHouseholdsByDate[date] ?? 0);
+        final dailyChildrenUnder5Count = (adjustedServerChildrenUnder5Count < 0
+                ? 0
+                : adjustedServerChildrenUnder5Count) +
+            (localChildrenUnder5ByDate[date] ?? 0);
         final dailyITNCount =
             serverReportITNDistributed + (localITNByDate[date] ?? 0);
         // Filter stock entries for this day only to compute total less/excess.
@@ -332,6 +372,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           date: date,
           householdsRegistered: hhCount,
           numberOfPeopleInHouseholds: dailyPeopleCount,
+          numberOfChildrenUnder5: dailyChildrenUnder5Count,
           numberOfITNDistributed: dailyITNCount,
           totalLess: totalLess,
           totalExcess: totalExcess,
@@ -399,6 +440,10 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
                 header: localizations
                     .translate(i18.summaryReport.numberOfPeopleInHouseholds),
               ),
+              CustomTableColumn(
+                header: localizations
+                    .translate(i18.summaryReport.numberOfChildrenUnder5),
+              ),
             ],
           ]
         : <CustomTableColumn>[
@@ -412,6 +457,10 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
             CustomTableColumn(
               header: localizations
                   .translate(i18.summaryReport.numberOfPeopleInHouseholds),
+            ),
+            CustomTableColumn(
+              header: localizations
+                  .translate(i18.summaryReport.numberOfChildrenUnder5),
             ),
           ];
     // CustomTableColumn(header: localizations.translate(i18.common.loss)),
@@ -427,12 +476,14 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
                 if (isRegistrar) ...[
                   row.householdsRegistered.toString(),
                   row.numberOfPeopleInHouseholds.toString(),
+                  row.numberOfChildrenUnder5.toString(),
                 ],
               ]
             : [
                 _formatDisplayDate(row.date),
                 row.householdsRegistered.toString(),
                 row.numberOfPeopleInHouseholds.toString(),
+                row.numberOfChildrenUnder5.toString(),
               ],
         // row.totalLess.toStringAsFixed(0),
         // row.totalExcess.toStringAsFixed(0),
@@ -508,6 +559,7 @@ class _SummaryReportRow {
   final String date;
   final int householdsRegistered;
   final int numberOfPeopleInHouseholds;
+  final int numberOfChildrenUnder5;
   final int numberOfITNDistributed;
   // Kept (not removed) so the Loss/Excess columns, commented out below in
   // build(), can be restored later without rebuilding the computation.
@@ -518,6 +570,7 @@ class _SummaryReportRow {
     required this.date,
     required this.householdsRegistered,
     required this.numberOfPeopleInHouseholds,
+    required this.numberOfChildrenUnder5,
     required this.numberOfITNDistributed,
     required this.totalLess,
     required this.totalExcess,

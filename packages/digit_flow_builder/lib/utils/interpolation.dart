@@ -250,6 +250,7 @@ String interpolateWithCrudStates({
             final placeholder = '{{ $trimmed }}';
             final contextData = {
               'item': item,
+              'navigation': navigationParams,
               'contextData': stateData.rawState,
               ...stateData.modelMap,
               if (item != null) ...item,

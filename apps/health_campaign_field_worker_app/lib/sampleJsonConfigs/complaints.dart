@@ -17,17 +17,6 @@ final dynamic sampleComplaintFlows = {
                 "type": "tertiary",
                 "suffixIcon": "Search",
                 "popupConfig": {
-                  "onOpenAction": [
-                    {
-                      "actionType": "CLEAR_STATE",
-                      "properties": {
-                        "name": "pgrService",
-                        "filterKeys": ["serviceRequestId", "mobileNumber"],
-                        "widgetKeys": ["complaintNumber", "mobileNumber"],
-                        "triggerSearch": true
-                      }
-                    }
-                  ],
                   "body": [
                     {
                       "type": "template",
@@ -52,13 +41,8 @@ final dynamic sampleComplaintFlows = {
                       "format": "button",
                       "onAction": [
                         {
-                          "actionType": "CLEAR_STATE",
-                          "properties": {
-                            "name": "pgrService",
-                            "filterKeys": ["serviceRequestId", "mobileNumber"],
-                            "widgetKeys": ["complaintNumber", "mobileNumber"],
-                            "triggerSearch": true
-                          }
+                          "actionType": "CLOSE_POPUP",
+                          "properties": {"parentScreenKey": "complaintInbox"}
                         }
                       ],
                       "fieldName": "cancel",
@@ -77,7 +61,10 @@ final dynamic sampleComplaintFlows = {
                           "actionType": "CLEAR_STATE",
                           "properties": {
                             "name": "pgrService",
-                            "filterKeys": ["serviceRequestId", "mobileNumber"]
+                            "filterKeys": [
+                              "complaintNumber",
+                              "complainantMobileNumber"
+                            ]
                           }
                         },
                         {
@@ -89,40 +76,45 @@ final dynamic sampleComplaintFlows = {
                           "properties": {
                             "data": [
                               {
-                                "key": "serviceRequestId",
-                                "root": "pgrService",
+                                "key": "tenantId",
+                                "value": "{{singleton.selectedProject.tenantId}}",
+                                "operation": "equals"
+                              },
+                              {
+                                "key": "complaintNumber",
                                 "value": "{{complaintNumber}}",
                                 "operation": "contains"
                               },
                               {
-                                "key": "mobileNumber",
-                                "root": "pgrComplainant",
+                                "key": "complainantMobileNumber",
                                 "value": "{{mobileNumber}}",
                                 "operation": "contains"
                               },
                               {
-                                "key": "name",
-                                "root": "pgrComplainant",
+                                "key": "complaintAssignedTo",
+                                "value": "COMPLAINTS_ASSIGNED_TO_SELF",
+                                "applyIf": "{{assignTo}} == ASSIGN_TO_ME",
+                                "operation": "equals"
+                              },
+                              {
+                                "key": "currentUserName",
                                 "value": "{{singleton.loggedInUser.name}}",
-                                "applyIf": "{{ assignTo }} == ASSIGN_TO_ME",
+                                "applyIf": "{{assignTo}} == ASSIGN_TO_ME",
                                 "operation": "equals"
                               },
                               {
-                                "key": "serviceCode",
-                                "value": "{{complaintType }}",
-                                "applyIf":
-                                    "{{complaintType }} !=null && {{complaintType }} !=null",
+                                "key": "complaintTypeCode",
+                                "value": "{{complaintType}}",
+                                "applyIf": "{{complaintType}} != null && {{complaintType}} != ''",
                                 "operation": "equals"
                               },
                               {
-                                "key": "localityBoundaryCode",
-                                "root": "address",
-                                "value": "{{ locality }}",
-                                "applyIf":
-                                    "{{locality }} !=null && {{locality }} !=null",
+                                "key": "locality",
+                                "value": "{{locality}}",
+                                "applyIf": "{{locality}} != null && {{locality}} != ''",
                                 "operation": "equals"
                               }
-                            ],
+                              ],
                             "name": "pgrService"
                           }
                         }
@@ -154,21 +146,6 @@ final dynamic sampleComplaintFlows = {
                 "type": "tertiary",
                 "suffixIcon": "FilterAlt",
                 "popupConfig": {
-                  "onOpenAction": [
-                    {
-                      "actionType": "CLEAR_STATE",
-                      "properties": {
-                        "name": "pgrService",
-                        "filterKeys": [
-                          "name",
-                          "serviceCode",
-                          "localityBoundaryCode"
-                        ],
-                        "widgetKeys": ["assignTo", "complaintType", "locality"],
-                        "triggerSearch": true
-                      }
-                    }
-                  ],
                   "body": [
                     {
                       "data": [
@@ -206,21 +183,8 @@ final dynamic sampleComplaintFlows = {
                       "format": "button",
                       "onAction": [
                         {
-                          "actionType": "CLEAR_STATE",
-                          "properties": {
-                            "name": "pgrService",
-                            "filterKeys": [
-                              "name",
-                              "serviceCode",
-                              "localityBoundaryCode"
-                            ],
-                            "widgetKeys": [
-                              "assignTo",
-                              "complaintType",
-                              "locality"
-                            ],
-                            "triggerSearch": true
-                          }
+                          "actionType": "CLOSE_POPUP",
+                          "properties": {"parentScreenKey": "complaintInbox"}
                         }
                       ],
                       "fieldName": "cancel",
@@ -240,9 +204,10 @@ final dynamic sampleComplaintFlows = {
                           "properties": {
                             "name": "pgrService",
                             "filterKeys": [
-                              "name",
-                              "serviceCode",
-                              "localityBoundaryCode"
+                              "complaintAssignedTo",
+                              "currentUserName",
+                              "complaintTypeCode",
+                              "locality"
                             ]
                           }
                         },
@@ -255,40 +220,45 @@ final dynamic sampleComplaintFlows = {
                           "properties": {
                             "data": [
                               {
-                                "key": "serviceRequestId",
-                                "root": "pgrService",
+                                "key": "tenantId",
+                                "value": "{{singleton.selectedProject.tenantId}}",
+                                "operation": "equals"
+                              },
+                              {
+                                "key": "complaintNumber",
                                 "value": "{{complaintNumber}}",
                                 "operation": "contains"
                               },
                               {
-                                "key": "mobileNumber",
-                                "root": "pgrComplainant",
+                                "key": "complainantMobileNumber",
                                 "value": "{{mobileNumber}}",
                                 "operation": "contains"
                               },
                               {
-                                "key": "name",
-                                "root": "pgrComplainant",
+                                "key": "complaintAssignedTo",
+                                "value": "COMPLAINTS_ASSIGNED_TO_SELF",
+                                "applyIf": "{{assignTo}} == ASSIGN_TO_ME",
+                                "operation": "equals"
+                              },
+                              {
+                                "key": "currentUserName",
                                 "value": "{{singleton.loggedInUser.name}}",
-                                "applyIf": "{{ assignTo }} == ASSIGN_TO_ME",
+                                "applyIf": "{{assignTo}} == ASSIGN_TO_ME",
                                 "operation": "equals"
                               },
                               {
-                                "key": "serviceCode",
-                                "value": "{{complaintType }}",
-                                "applyIf":
-                                    "{{complaintType }} !=null && {{complaintType }} !=null",
+                                "key": "complaintTypeCode",
+                                "value": "{{complaintType}}",
+                                "applyIf": "{{complaintType}} != null && {{complaintType}} != ''",
                                 "operation": "equals"
                               },
                               {
-                                "key": "localityBoundaryCode",
-                                "root": "address",
-                                "value": "{{ locality }}",
-                                "applyIf":
-                                    "{{locality }} !=null && {{locality }} !=null",
+                                "key": "locality",
+                                "value": "{{locality}}",
+                                "applyIf": "{{locality}} != null && {{locality}} != ''",
                                 "operation": "equals"
                               }
-                            ],
+                              ],
                             "name": "pgrService"
                           }
                         }
@@ -376,45 +346,44 @@ final dynamic sampleComplaintFlows = {
                             "data": [
                               {
                                 "key": "tenantId",
-                                "value":
-                                    "{{singleton.selectedProject.tenantId}}",
+                                "value": "{{singleton.selectedProject.tenantId}}",
                                 "operation": "equals"
                               },
                               {
-                                "key": "serviceRequestId",
-                                "root": "pgrService",
+                                "key": "complaintNumber",
                                 "value": "{{complaintNumber}}",
                                 "operation": "contains"
                               },
                               {
-                                "key": "mobileNumber",
-                                "root": "pgrComplainant",
+                                "key": "complainantMobileNumber",
                                 "value": "{{mobileNumber}}",
                                 "operation": "contains"
                               },
                               {
-                                "key": "name",
-                                "root": "pgrComplainant",
+                                "key": "complaintAssignedTo",
+                                "value": "COMPLAINTS_ASSIGNED_TO_SELF",
+                                "applyIf": "{{assignTo}} == ASSIGN_TO_ME",
+                                "operation": "equals"
+                              },
+                              {
+                                "key": "currentUserName",
                                 "value": "{{singleton.loggedInUser.name}}",
-                                "applyIf": "{{ assignTo }} == ASSIGN_TO_ME",
+                                "applyIf": "{{assignTo}} == ASSIGN_TO_ME",
                                 "operation": "equals"
                               },
                               {
-                                "key": "serviceCode",
-                                "value": "{{complaintType }}",
-                                "applyIf":
-                                    "{{complaintType }} !=null && {{complaintType }} !=null",
+                                "key": "complaintTypeCode",
+                                "value": "{{complaintType}}",
+                                "applyIf": "{{complaintType}} != null && {{complaintType}} != ''",
                                 "operation": "equals"
                               },
                               {
-                                "key": "localityBoundaryCode",
-                                "root": "address",
-                                "value": "{{ locality }}",
-                                "applyIf":
-                                    "{{locality }} !=null && {{locality }} !=null",
+                                "key": "locality",
+                                "value": "{{locality}}",
+                                "applyIf": "{{locality}} != null && {{locality}} != ''",
                                 "operation": "equals"
                               }
-                            ],
+                              ],
                             "name": "pgrService",
                             "orderBy": {
                               "field": "auditCreatedTime",

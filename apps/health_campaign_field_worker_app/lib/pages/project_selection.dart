@@ -156,17 +156,6 @@ class _ProjectSelectionPageState extends LocalizedState<ProjectSelectionPage> {
                 }
               }
 
-              // Auto-select project if only one project is assigned
-              if (!state.loading &&
-                  state.syncError == null &&
-                  state.selectedProject == null &&
-                  state.projects.length == 1) {
-                context.read<ProjectBloc>().add(
-                      ProjectSelectProjectEvent(state.projects.first),
-                    );
-                return;
-              }
-
               final selectedProject = state.selectedProject;
               if (selectedProject != null) {
                 final boundary = selectedProject.address?.boundary;

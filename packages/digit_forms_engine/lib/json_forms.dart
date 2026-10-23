@@ -98,7 +98,21 @@ class JsonForms extends StatelessWidget {
       }
 
       final value = form.control(name).value;
-      if (value == null) return null;
+      // Normally a null control value is omitted so forms_render.dart's
+      // post-submit rebuild (schema.properties?.map: keeps the OLD prop
+      // when `values` doesn't contain the key) leaves an edited-but-
+      // untouched field's existing value alone - the right behavior for
+      // most optional fields. Household head-name fields are the
+      // exception: their schema default is a "{{navigation.firstName}}"
+      // style template (see buildFormControl's resolveInitialValue), and
+      // when that template never resolves (e.g. reopening a closed
+      // household with no prior head individual) the control's value is
+      // correctly nulled out by the required validator, but omitting the
+      // key here would leave that literal, unresolved template sitting in
+      // the schema and submitted as if it were a real name. Only these
+      // two fields need the key to always be reported.
+      const alwaysReportKeys = {'nameOfIndividual', 'familyname'};
+      if (value == null && !alwaysReportKeys.contains(name)) return null;
       return MapEntry(name, value);
     }
   }

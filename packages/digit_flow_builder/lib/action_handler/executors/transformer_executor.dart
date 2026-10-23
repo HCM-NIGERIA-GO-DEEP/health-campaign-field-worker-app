@@ -1,7 +1,9 @@
 import 'package:digit_data_converter/src/transformer_service.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/household_type.dart';
+import 'package:digit_data_model/models/entities/id_status.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/transformer_config.dart';
 import '../../flow_builder.dart';
@@ -183,11 +185,42 @@ class TransformerExecutor extends ActionExecutor {
     debugPrint(
         'TRANSFORMER: isEdit=$isEdit, forceCreate=$forceCreate, existingModels=${existingModels?.length ?? 0}');
 
-    extraContext['identifierEntries'] =
-        TransformerExecutor.buildIdentifierEntries(
+    final identifierEntries = TransformerExecutor.buildIdentifierEntries(
       formValuesToUse ?? {},
       formEntityMapper,
     );
+    final consentPage = formValuesToUse?['caregiverConsent'];
+    final consent = consentPage is Map
+        ? consentPage['consentToParticipate']?.toString().toUpperCase()
+        : null;
+    final isRegistration = configName == 'individualRegistration' ||
+        (configName == 'beneficiaryRegistration' && consent == 'TRUE' &&
+            formValuesToUse?['householdDetails'] != null);
+    final alreadyAssigned = existingModels?.whereType<IndividualModel>()
+        .any((individual) => individual.identifiers?.any((identifier) =>
+            identifier.identifierType == 'UNIQUE_BENEFICIARY_ID' &&
+            identifier.identifierId?.isNotEmpty == true) ?? false) ?? false;
+    final hasSelectedToken = identifierEntries.any((entry) =>
+        entry['identifierType'] == 'UNIQUE_BENEFICIARY_ID' &&
+        entry['identifierId'] is String &&
+        (entry['identifierId'] as String).isNotEmpty);
+    if (isRegistration && !alreadyAssigned && !hasSelectedToken) {
+      final available = await context
+          .read<LocalRepository<UniqueIdPoolModel, UniqueIdPoolSearchModel>>()
+          .search(UniqueIdPoolSearchModel(status: IdStatus.unAssigned.toValue()));
+      if (available.isNotEmpty) {
+        available.sort((a, b) => (a.auditDetails?.createdTime ?? 0)
+            .compareTo(b.auditDetails?.createdTime ?? 0));
+        identifierEntries.removeWhere((entry) =>
+            entry['identifierType'] == null ||
+            entry['identifierType'] == 'DEFAULT');
+        identifierEntries.insert(0, {
+          'identifierType': 'UNIQUE_BENEFICIARY_ID',
+          'identifierId': available.first.id,
+        });
+      }
+    }
+    extraContext['identifierEntries'] = identifierEntries;
 
     final contextMap = {
       "selectedProject": FlowBuilderSingleton().selectedProject,
@@ -352,6 +385,94 @@ class TransformerExecutor extends ActionExecutor {
       }
     }
 
+    // The edit mapper retains lists whose source is context-based. Promote
+    // the existing DEFAULT identifier explicitly when reopening a household.
+    if (isRegistration && !alreadyAssigned) {
+      final selected = identifierEntries.where((entry) =>
+          entry['identifierType'] == 'UNIQUE_BENEFICIARY_ID' &&
+          entry['identifierId'] != null).toList();
+      if (selected.isNotEmpty) {
+        entities = entities.map((entity) {
+          if (entity is! IndividualModel ||
+              entity.identifiers?.any((id) =>
+                  id.identifierType == 'UNIQUE_BENEFICIARY_ID' &&
+                  id.identifierId?.isNotEmpty == true) == true) return entity;
+          var promoted = false;
+          final identifiers = entity.identifiers?.map((id) {
+            if (!promoted &&
+                (id.identifierType == 'DEFAULT' || id.identifierType == null)) {
+              promoted = true;
+              return id.copyWith(
+                identifierType: 'UNIQUE_BENEFICIARY_ID',
+                identifierId: selected.first['identifierId'] as String,
+              );
+            }
+            return id;
+          }).toList();
+          return entity.copyWith(identifiers: identifiers);
+        }).toList();
+      }
+    }
+
+    entities = entities.map((entity) {
+      if (entity is! HouseholdModel || entity.additionalFields == null) {
+        return entity;
+      }
+      return entity.copyWith(additionalFields:
+          entity.additionalFields!.copyWith(fields:
+              entity.additionalFields!.fields?.where((field) =>
+                  field.key != 'firstName' && field.key != 'lastName').toList()));
+    }).toList();
+
+    if (configName == 'delivery') {
+      final householdRef = resolveValue(
+          '{{navigation.HouseholdClientReferenceId}}', contextData);
+      if (householdRef is String && householdRef.isNotEmpty &&
+          !householdRef.contains('{{')) {
+        final households = await context
+            .read<LocalRepository<HouseholdModel, HouseholdSearchModel>>()
+            .search(HouseholdSearchModel(
+              clientReferenceId: [householdRef],
+              tenantId: FlowBuilderSingleton().selectedProject?.tenantId,
+            ));
+        if (households.isNotEmpty) {
+          final household = households.first;
+          entities = entities.map((entity) {
+            if (entity is! TaskModel) return entity;
+            final fields = <String, dynamic>{
+              for (final field in household.additionalFields?.fields ??
+                  <AdditionalField>[]) field.key: field.value,
+            };
+            final legacyDate = fields.remove('date');
+            final registrationDate =
+                fields.remove('dateOfRegistration') ?? legacyDate;
+            fields.remove('firstName');
+            fields.remove('lastName');
+            fields.addAll({
+              for (final field in entity.additionalFields?.fields ??
+                  <AdditionalField>[]) field.key: field.value,
+            });
+            fields['householdClientReferenceId'] = household.clientReferenceId;
+            if (entity.projectBeneficiaryClientReferenceId != null) {
+              fields['projectBeneficiaryClientReferenceId'] =
+                  entity.projectBeneficiaryClientReferenceId;
+            }
+            if (registrationDate != null) {
+              fields['registrationDate'] = registrationDate;
+            }
+            if (entity.createdDate != null) {
+              fields['deliveryDate'] = entity.createdDate;
+            }
+            return entity.copyWith(additionalFields: TaskAdditionalFields(
+              version: entity.additionalFields?.version ?? 1,
+              fields: fields.entries
+                  .map((entry) => AdditionalField(entry.key, entry.value))
+                  .toList(),
+            ));
+          }).toList();
+        }
+      }
+    }
     contextData['entities'] = entities;
 
     // TEMP DEBUG (latlng): trace where the delivery task's lat/long comes from.

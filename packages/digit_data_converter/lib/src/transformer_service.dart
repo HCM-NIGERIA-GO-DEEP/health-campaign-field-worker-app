@@ -288,6 +288,29 @@ class FormEntityMapper {
               target[targetKey] = updatedList;
             }
           }
+        } else if (sourcePath is String && sourcePath.startsWith('__switch:')) {
+          // Resolve which literal form path the switch currently points to
+          // (e.g. caregiverConsent.consentToParticipate == FALSE picks the
+          // consent-page name fields instead of householdDetails'), then
+          // apply the update against that resolved path. Without this, the
+          // generic String branch below treated the whole literal
+          // "__switch:...{...}" string as a form path, which never matched
+          // via containsPathInFormData, so the field was silently left
+          // untouched on every edit - e.g. a name changed after reopening a
+          // household and declining consent again never got saved.
+          final resolvedPath =
+              _resolveSwitchToFormPath(sourcePath, formData, context);
+          if (resolvedPath != null &&
+              containsPathInFormData(resolvedPath, formData)) {
+            final formValue =
+                getStrictValueFromFormDataOnly(resolvedPath, formData);
+
+            target[targetKey] = (formValue != null && formValue is DateTime)
+                ? formValue.millisecondsSinceEpoch
+                : formValue;
+
+            usedPaths.add(resolvedPath.split('.').last.split('[').first);
+          }
         } else if (sourcePath is String && sourcePath.startsWith('list:')) {
           // Rebuild the whole list fresh from its listMappings config (e.g.
           // "identifiers": "list:IdentifierModel"), the same way _mapModel
@@ -1121,6 +1144,43 @@ class FormEntityMapper {
     return _getValueFromPath(data, instruction);
   }
 
+  // Resolves a "__switch:key:{CASE:path,default:path}" instruction down to
+  // the literal form path its current key value selects, without evaluating
+  // that path's value - callers run it through the normal
+  // containsPathInFormData/getStrictValueFromFormDataOnly pair so a key with
+  // no entry in the submitted form (switch hasn't been touched this edit)
+  // behaves like any other unmapped field instead of writing null over it.
+  String? _resolveSwitchToFormPath(
+    String instruction,
+    Map<String, dynamic> formData,
+    Map<String, dynamic> context,
+  ) {
+    if (!instruction.startsWith('__switch:')) return instruction;
+
+    final switchContent = instruction.replaceFirst('__switch:', '');
+    final braceIndex = switchContent.indexOf('{');
+    if (braceIndex == -1) return null;
+
+    final rawKeyInstruction = switchContent.substring(0, braceIndex).trim();
+    final keyInstruction = rawKeyInstruction.endsWith(':')
+        ? rawKeyInstruction.substring(0, rawKeyInstruction.length - 1)
+        : rawKeyInstruction;
+    final mappingString = switchContent.substring(braceIndex).trim();
+
+    final keyValue = keyInstruction.startsWith('__context:')
+        ? _getValueFromPath(
+            context, keyInstruction.replaceFirst('__context:', ''))
+        : getStrictValueFromFormDataOnly(keyInstruction, formData);
+
+    final mapping = _parseSwitchMapping(mappingString);
+    final resolved = keyValue != null
+        ? (mapping[keyValue.toString()] ?? mapping['default'])
+        : mapping['default'];
+
+    if (resolved == null || resolved.startsWith('__')) return resolved;
+    return resolved;
+  }
+
   Map<String, String> _parseSwitchMapping(String raw) {
     final map = <String, String>{};
     // Enhanced pattern to support keys with spaces and special characters
@@ -1283,6 +1343,9 @@ class FormEntityMapper {
         // Skip navigation params — they are control data (e.g., isEdit),
         // not entity fields, and should never be stored in additionalFields.
         if (key == 'navigation') return;
+        // Consent names have dedicated Individual.name mappings. They must
+        // not also become fallback household metadata.
+        if (key == 'firstName' || key == 'lastName') return;
         if (value is Map<String, dynamic>) {
           extractUnmapped(value);
         } else {

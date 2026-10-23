@@ -141,50 +141,83 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
           final tasksByProjectBeneficiaryClientRefForToday =
               groupTasksByProjectBeneficiaryClientRef(
                   await taskRepository.search(TaskSearchModel(
-            createdBy: loggedInUserUuid,
             projectId: projectId,
           )));
 
+          var closedHouseholdsAlreadyInServerCount = 0;
           final localHouseholdsRegisteredToday = localHouseholdsToday
-              .where((hh) => !isHouseholdStillClosed(
-                    householdClientReferenceId: hh.clientReferenceId,
-                    projectBeneficiaryClientRefsByHousehold:
-                        projectBeneficiaryClientRefsByHousehold,
-                    tasksByProjectBeneficiaryClientRef:
-                        tasksByProjectBeneficiaryClientRefForToday,
-                  ))
-              .length;
+              .where((hh) {
+            final createdTime = hh.clientAuditDetails?.createdTime ??
+                hh.auditDetails?.createdTime;
+            final isClosedPlaceholder = isHouseholdConsentDeclined(hh) ||
+                isHouseholdStillClosed(
+                  householdClientReferenceId: hh.clientReferenceId,
+                  projectBeneficiaryClientRefsByHousehold:
+                      projectBeneficiaryClientRefsByHousehold,
+                  tasksByProjectBeneficiaryClientRef:
+                      tasksByProjectBeneficiaryClientRefForToday,
+                );
+            if (isClosedPlaceholder) {
+              if (serverReportTimestamp != null &&
+                  createdTime != null &&
+                  createdTime <= serverReportTimestamp) {
+                closedHouseholdsAlreadyInServerCount++;
+              }
+              return false;
+            }
+            return true;
+          }).length;
 
           List<TaskModel> allTasks =
               await taskRepository.search(taskSearchQuery);
 
-          List<TaskModel> filteredTasks = allTasks;
-          if (serverReportTimestamp != null) {
-            filteredTasks = filteredTasks
-                .where((e) =>
-                    e.auditDetails != null &&
-                    e.auditDetails!.lastModifiedTime >= serverReportTimestamp)
-                .toList();
-          }
+          // Scope to today's own deliveries by creation window (same approach
+          // as localHouseholdsRegisteredToday/Summary Report), instead of
+          // comparing auditDetails.lastModifiedTime against a server
+          // snapshot timestamp. That comparison excluded any task still
+          // missing synced server auditDetails (every freshly-created local
+          // delivery, until it syncs) and any task older than a timestamp
+          // that shifts as new snapshots land (e.g. right after Mark Closed
+          // Household triggers a snapshot refresh) - which is why the bar
+          // would advance once and then stop, or drop back to 0.
+          List<TaskModel> filteredTasks = allTasks.where((task) {
+            final createdBy = task.clientAuditDetails?.createdBy ??
+                task.auditDetails?.createdBy;
+            if (createdBy != loggedInUserUuid) return false;
+            final epochMs = task.clientAuditDetails?.createdTime ??
+                task.auditDetails?.createdTime;
+            if (epochMs == null) return false;
+            return epochMs >= gte.millisecondsSinceEpoch &&
+                epochMs <= lte.millisecondsSinceEpoch;
+          }).toList();
           List<TaskModel> results = filteredTasks.where((task) {
-            final additionalFields = task?.additionalFields?.fields;
+            final additionalFields = task.additionalFields?.fields;
             if (additionalFields == null || additionalFields.isEmpty) {
               return false;
             } else
               return true;
           }).toList();
-          final groupedEntries = results.groupListsBy(
-            (element) => element.projectBeneficiaryClientReferenceId,
-          );
+          // Count every delivered task, not distinct beneficiary groups - a
+          // beneficiary visited more than once in a day (e.g. re-delivery)
+          // must add to the bar each time, and tasks missing a beneficiary
+          // reference must each count individually instead of collapsing
+          // into one shared `null` bucket.
+          final deliveredCount = results.length;
           if (mounted) {
             setState(() {
               if (mounted) {
                 // Registrar-only progress measures completed household
                 // registrations. Any user who distributes (distributor-only
                 // or combined) progresses only after a successful delivery.
+                final serverHouseholdCount = houseHoldRegistered ?? 0;
+                final adjustedServerCount = serverHouseholdCount >
+                        closedHouseholdsAlreadyInServerCount
+                    ? serverHouseholdCount -
+                        closedHouseholdsAlreadyInServerCount
+                    : 0;
                 current = isRegistrar && !isDistributor
-                    ? houseHoldRegistered + localHouseholdsRegisteredToday
-                    : groupedEntries.entries.length;
+                    ? adjustedServerCount + localHouseholdsRegisteredToday
+                    : deliveredCount;
               }
             });
           }

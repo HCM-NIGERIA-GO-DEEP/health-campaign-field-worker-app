@@ -349,6 +349,35 @@ Map<String, List<TaskModel>> groupTasksByProjectBeneficiaryClientRef(
   return result;
 }
 
+/// A household that declined caregiver consent is still a placeholder, even
+/// if its linked task status is missing or has already changed locally.
+bool isHouseholdConsentDeclined(HouseholdModel household) {
+  for (final field in
+      household.additionalFields?.fields ?? const <AdditionalField>[]) {
+    if (field.key == 'caregiverConsent') {
+      return field.value?.toString().toUpperCase() == 'FALSE';
+    }
+  }
+
+  return false;
+}
+
+/// Number of children under 5 captured for a household at registration
+/// (householdDetails.childrenCount, stored as a HouseholdModel additional
+/// field). Reported as its own Summary Report metric, separate from the
+/// household's total member count, so the two can't be confused for one
+/// another.
+int householdChildrenUnder5Count(HouseholdModel household) {
+  for (final field in
+      household.additionalFields?.fields ?? const <AdditionalField>[]) {
+    if (field.key == 'childrenCount') {
+      return int.tryParse(field.value?.toString() ?? '') ?? 0;
+    }
+  }
+
+  return 0;
+}
+
 /// Whether a household is still marked closed (via Mark Closed Household or
 /// a declined consent) - i.e. its own last task is still CLOSED_HOUSEHOLD
 /// status - meaning it's just a placeholder, not a real registration yet,

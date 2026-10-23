@@ -135,13 +135,13 @@ class PgrServiceLocalRepository
                   if (query.complaintTypeCode != null)
                     sql.pgrService.serviceCode.equals(query.complaintTypeCode!),
                   if (query.locality != null)
-                    sql.address.boundary.equals(query.locality!),
+                    sql.address.localityBoundaryCode.equals(query.locality!),
                   if (query.complaintStatus != null)
                     if (query.complaintStatus?.isNotEmpty ?? false)
                       sql.pgrService.applicationStatus.isIn(
                           query.complaintStatus?.map((e) => e.index) ?? []),
                   if (query.complainantMobileNumber != null)
-                    sql.pgrComplainant.userName
+                    sql.pgrComplainant.mobileNumber
                         .contains(query.complainantMobileNumber!),
                   if (query.complaintNumber != null)
                     sql.pgrService.serviceRequestId
