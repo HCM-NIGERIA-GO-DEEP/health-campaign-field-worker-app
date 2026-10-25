@@ -26,7 +26,7 @@ final dynamic sampleFlows = {
               "data": [
                 {
                   "key": "E_TOKEN",
-                  "value": "{{contextData.0.headIndividual.IndividualModel.identifiers.0.identifierId}}"
+                  "value": "{{fn:getBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}"
                 }
               ]
             }
@@ -515,6 +515,11 @@ final dynamic sampleFlows = {
                   "key": "MEMBER_COUNT",
                   "value": "{{contextData.0.household.HouseholdModel.memberCount}}",
                   "isActive": true
+                },
+                {
+                  "key": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount",
+                  "value": "{{contextData.0.household.HouseholdModel.additionalFields.fields.childrenCount}}",
+                  "isActive": true
                 }
               ],
               "type": "template",
@@ -541,7 +546,7 @@ final dynamic sampleFlows = {
                 },
                 {
                   "key": "E_TOKEN",
-                  "value": "{{contextData.0.headIndividual.IndividualModel.identifiers.0.identifierId}}",
+                  "value": "{{fn:getBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}",
                   "isActive": true
                 }
               ],
@@ -1056,8 +1061,14 @@ final dynamic sampleFlows = {
                         "value": "{{contextData.0.headIndividual.IndividualModel.name.familyName}}"
                       },
                       {
+                        // Select the token by TYPE, not by array position:
+                        // identifiers.0 is the DEFAULT identifier (a 36-char
+                        // uuid) whenever the pool token is not first, which is
+                        // how that uuid ended up as the delivery TaskModel's
+                        // beneficiaryId. Resolves to '' when the individual
+                        // genuinely has no token.
                         "key": "beneficiaryId",
-                        "value": "{{contextData.0.headIndividual.IndividualModel.identifiers.0.identifierId}}"
+                        "value": "{{fn:getBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}"
                       }
                     ],
                     "name": "DELIVERY",
@@ -1457,6 +1468,11 @@ final dynamic sampleFlows = {
                   "key": "MEMBER_COUNT",
                   "value": "{{contextData.0.household.HouseholdModel.memberCount}}",
                   "isActive": true
+                },
+                {
+                  "key": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount",
+                  "value": "{{contextData.0.household.HouseholdModel.additionalFields.fields.childrenCount}}",
+                  "isActive": true
                 }
               ],
               "type": "template",
@@ -1483,7 +1499,7 @@ final dynamic sampleFlows = {
                 },
                 {
                   "key": "E_TOKEN",
-                  "value": "{{contextData.0.headIndividual.IndividualModel.identifiers.0.identifierId}}",
+                  "value": "{{fn:getBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}",
                   "isActive": true
                 }
               ],
@@ -1941,6 +1957,7 @@ final dynamic sampleFlows = {
                 "data": [
                   {
                     "key": "",
+                    "root": "address",
                     "value": 5,
                     "operation": "within"
                   },
@@ -2031,7 +2048,14 @@ final dynamic sampleFlows = {
           "child": {
             "type": "template",
             "format": "card",
-            "visible": true,
+            // A household that is closed - either marked closed, or registered
+            // with caregiver consent declined, which isHouseholdMarkedClosed
+            // treats identically - has nothing to deliver to. Hide it from
+            // search for a pure Distributor. Users who are also Registrars
+            // keep seeing it: reopening a closed household is a registration
+            // action and runs from this very card's OPEN button.
+            "visible":
+                "{{fn:hasRole('DISTRIBUTOR')}} == false || {{fn:hasRole('REGISTRAR')}} == true || {{fn:isHouseholdMarkedClosed(item.tasks, item.HouseholdModel)}} == false",
             "children": [
               {
                 "type": "template",
@@ -2109,6 +2133,24 @@ final dynamic sampleFlows = {
                                 {
                                   "key": "lastName",
                                   "value": "{{item.headIndividual.0.name.familyName}}"
+                                },
+                                // Reopening a closed household is a real
+                                // registration and must assign a token, exactly
+                                // like registering a new one. Without these two
+                                // params buildFormControl's idPopulator branch
+                                // sees uniqueBeneficiaryId == null, keeps the
+                                // placeholder's existing "DEFAULT, <id>" value,
+                                // and no UNIQUE_BENEFICIARY_ID is ever applied.
+                                // uniqueBeneficiaryIdModel is what lets
+                                // UPDATE_IDENTIFIER_STATUS mark the pool entry
+                                // assigned, so the token cannot be re-issued.
+                                {
+                                  "key": "UNIQUE_BENEFICIARY_ID",
+                                  "value": "{{latestBeneficiaryId}}"
+                                },
+                                {
+                                  "key": "uniqueBeneficiaryIdModel",
+                                  "value": "{{latestBeneficiaryIdModel}}"
                                 }
                               ],
                               "name": "HOUSEHOLD",
@@ -2873,6 +2915,23 @@ final dynamic sampleFlows = {
                 {
                   "type": "scanLimit",
                   "value": 4
+                },
+                {
+                  // Without a "pattern" entry effectiveRegex stays null and
+                  // DigitScannerBloc._handleScanner short-circuits on
+                  // `shouldValidate`, accepting anything - which is why a
+                  // manually typed "sjfk" was taken. This is a deliberately
+                  // permissive guard-rail, not the canonical code format:
+                  // uppercase alphanumeric (hyphens allowed), minimum 8
+                  // characters. It rejects short/lowercase junk while still
+                  // accepting GTIN-style digits and XXXX-XXXX-XXXX codes.
+                  // TIGHTEN THIS once the real format is confirmed - note
+                  // non-matching codes are DROPPED with a toast rather than
+                  // blocked, so an over-strict pattern silently loses valid
+                  // field scans.
+                  "type": "pattern",
+                  "value": r"^[A-Z0-9][A-Z0-9-]{7,}$",
+                  "message": "SCANNER_INVALID_CODE_MESSAGE"
                 }
               ],
               "errorMessage": "",
@@ -4571,16 +4630,11 @@ final dynamic sampleFlows = {
                   }
                 ]
               },
-              "validations": [
-                {
-                  "type": "required",
-                  "value": true,
-                  "message": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_mandatory_message",
-                  "condition": {
-                    "expression": "caregiverConsent.consentToParticipate == FALSE"
-                  }
-                }
-              ]
+              // Declining consent means the caregiver did not agree to give
+              // their details, so the head name captured here is optional -
+              // the field stays visible (so it can be filled in if offered)
+              // but must not block submitting a declined-consent household.
+              "validations": []
             },
             {
               "type": "string",
@@ -4598,16 +4652,11 @@ final dynamic sampleFlows = {
                   }
                 ]
               },
-              "validations": [
-                {
-                  "type": "required",
-                  "value": true,
-                  "message": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_mandatory_message",
-                  "condition": {
-                    "expression": "caregiverConsent.consentToParticipate == FALSE"
-                  }
-                }
-              ]
+              // Declining consent means the caregiver did not agree to give
+              // their details, so the head name captured here is optional -
+              // the field stays visible (so it can be filled in if offered)
+              // but must not block submitting a declined-consent household.
+              "validations": []
             }
           ],
           "actionLabel": "APPONE_REGISTRATION_CAREGIVER_CONSENT_ACTION_BUTTON_LABEL_1",

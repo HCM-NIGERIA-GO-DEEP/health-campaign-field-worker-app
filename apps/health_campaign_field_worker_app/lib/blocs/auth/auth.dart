@@ -182,22 +182,42 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final payload = await _buildLogoutPayload();
       if (payload['access_token'] == null ||
           (payload['access_token'] as String).isEmpty) {
-        _showLogoutFailureAlert('Unable to logout: missing access token.');
+        // No usable token means there is no server session left to end, so
+        // fall through to the local cleanup below rather than trapping the
+        // user in a session they cannot leave.
+        AppLogger.instance.error(
+          title: 'Logout',
+          message: 'No access token present; clearing local session only.',
+        );
+      } else {
+        await authRepository.logOutUser(
+          logoutPath: Constants.logoutUserPath,
+          body: payload,
+        );
+      }
+    } on DioException catch (e) {
+      final statusCode = e.response?.statusCode;
+      // 401/403 means the access token the server would invalidate is already
+      // invalid - the session is effectively over on their side. The app never
+      // persists or checks `expires_in` (see AuthModel/setAuthCredentials) and
+      // _onAutoLogin restores a session purely on token presence, so a token
+      // that quietly expired during a long field session lands here on every
+      // logout attempt. Aborting left the user permanently unable to log out;
+      // proceed with the local cleanup instead.
+      if (statusCode == 401 || statusCode == 403) {
+        AppLogger.instance.error(
+          title: 'Logout API error (token already invalid)',
+          message: '$statusCode: ${e.response?.data}',
+        );
+      } else {
+        final message = _extractDioErrorMessage(e);
+        _showLogoutFailureAlert(message);
+        AppLogger.instance.error(
+          title: 'Logout API error',
+          message: '$statusCode: ${e.response?.data}',
+        );
         return;
       }
-
-      await authRepository.logOutUser(
-        logoutPath: Constants.logoutUserPath,
-        body: payload,
-      );
-    } on DioException catch (e) {
-      final message = _extractDioErrorMessage(e);
-      _showLogoutFailureAlert(message);
-      AppLogger.instance.error(
-        title: 'Logout API error',
-        message: '${e.response?.statusCode}: ${e.response?.data}',
-      );
-      return;
     } catch (e) {
       _showLogoutFailureAlert('Logout failed. Please try again.');
       AppLogger.instance.error(

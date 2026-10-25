@@ -269,6 +269,22 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
       // For disabled state, let configured false-path action run as-is.
       if (value) {
         final existingData = raw['properties']?['data'] ?? [];
+        // Carry the configured root of the proximity filter across this
+        // rebuild. Coordinates live on the address table, not on the
+        // primary household table, and search_executor defaults a missing
+        // root to the search name ("household") - whose latitude/longitude
+        // columns exist but stay null, so the bounding box matched nothing
+        // and proximity search silently returned zero results.
+        // Plain loop rather than firstWhere(orElse: () => null): the config
+        // list arrives as List<Map<String, Object>>, so an orElse returning
+        // null violates the element type and throws at runtime.
+        dynamic withinRoot;
+        for (final item in (existingData as List)) {
+          if (item is Map && item['operation'] == 'within') {
+            withinRoot = item['root'];
+            break;
+          }
+        }
         final configuredFilters = existingData
             .where((item) => item is Map && item['operation'] != 'within')
             .map((item) => Map<String, dynamic>.from(item as Map))
@@ -277,6 +293,7 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
           {
             "key": json['fieldName'],
             if (radius != null) "value": radius,
+            if (withinRoot != null) "root": withinRoot,
             "lat": _lat,
             "long": _long,
             "accuracy": _accuracy,

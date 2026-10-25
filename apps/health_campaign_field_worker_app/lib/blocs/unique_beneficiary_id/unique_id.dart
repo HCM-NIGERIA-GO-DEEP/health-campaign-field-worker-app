@@ -110,18 +110,23 @@ class UniqueIdBloc extends Bloc<UniqueIdEvent, UniqueIdState> {
         await uniqueIdPoolLocalRepository.bulkCreate(batch);
         allFetchedIds.addAll(batch);
 
-        // Check if batch is empty
+        // fetchLimit == 0 means the server has nothing left to dispatch, so
+        // this page is the last one regardless of whether it carried models.
+        // (The empty/non-empty branches this replaces ran identical code.)
+        if (fetchLimit == 0) {
+          // All done
+          emit(UniqueIdState.fetching(totalLimit, totalLimit));
+          break;
+        }
+
+        // An empty page while fetchLimit is still non-zero would leave both
+        // offset and totalFetched unchanged, so the loop would re-issue the
+        // byte-identical request forever - hammering the dispatch endpoint
+        // with no progress and no exit except killing the app. There is
+        // nothing further to page through, so stop and keep what we have.
         if (batch.isEmpty) {
-          if (fetchLimit == 0) {
-            // All done
-            emit(UniqueIdState.fetching(totalLimit, totalLimit));
-            break;
-          }
-        } else {
-          if (fetchLimit == 0) {
-            emit(UniqueIdState.fetching(totalLimit, totalLimit));
-            break;
-          }
+          emit(UniqueIdState.fetching(totalFetched, totalLimit));
+          break;
         }
 
         offset += batch.length;

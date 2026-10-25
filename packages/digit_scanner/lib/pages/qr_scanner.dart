@@ -512,15 +512,35 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
     if (_cameras.isEmpty) {
       _cameras = await availableCameras();
     }
+    if (!mounted) return;
+    if (_cameras.isEmpty) return;
+
+    var index = -1;
     for (var i = 0; i < _cameras.length; i++) {
       if (_cameras[i].lensDirection == _cameraLensDirection) {
-        setState(() {
-          _cameraIndex = i;
-        });
+        index = i;
         break;
       }
     }
-    var camera = _cameras[_cameraIndex];
+    // No camera matches the requested lens: fall back to the first one rather
+    // than indexing with the sentinel -1, which threw a RangeError.
+    if (index == -1) index = 0;
+    if (_cameraIndex != index) {
+      setState(() {
+        _cameraIndex = index;
+      });
+    }
+
+    var camera = _cameras[index];
+    // This method runs again after EVERY manual-code submit (and on resume).
+    // It used to overwrite _cameraController without releasing the old one,
+    // so each entry leaked a live camera session at ResolutionPreset.high -
+    // only the most recent controller was ever disposed, in dispose(). The
+    // leaked native sessions are what made the second and subsequent submits
+    // progressively laggy and could stall other buttons on the screen.
+    // Swap first, then release the previous controller, so the widget tree
+    // never holds a reference to a controller that is being torn down.
+    final previous = _cameraController;
     _cameraController = CameraController(
       camera,
       // Set to ResolutionPreset.high. Do NOT set it to ResolutionPreset.max because for some phones does NOT work.
@@ -530,6 +550,7 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
           ? ImageFormatGroup.nv21
           : ImageFormatGroup.bgra8888,
     );
+    await previous?.dispose();
   }
 
   FormGroup buildForm() {

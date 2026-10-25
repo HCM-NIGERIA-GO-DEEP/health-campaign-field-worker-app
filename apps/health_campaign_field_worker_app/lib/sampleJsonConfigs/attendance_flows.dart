@@ -129,7 +129,7 @@ final dynamic attendanceFlows = {
           "data": "AttendanceWrapper",
           "type": "template",
           "format": "listView",
-          "visible": "{{fn:isNotEmpty(contextData)}}",
+          "hidden": "{{fn:isEmpty(contextData)}}",
           "fieldName": "listView",
           "properties": {"spacing": "spacer4"},
           "child": {
@@ -850,7 +850,7 @@ final dynamic attendanceFlows = {
                             "fieldKey": "{{item.entity.individualId}}",
                             "groupKey": "signatureCollection",
                             "signatureData":
-                                "{{fn:getExistingSignature(item.entity.individualId, contextData.0.attendanceRegisterModel)}}",
+                                "{{fn:getExistingSignature(item.entity.individualId, contextData.0.attendanceLog)}}",
                             "clearSignatureLabel":
                                 "MARK_ATTENDANCE_CLEAR_SIGNATURE_LABEL",
                             "saveSignatureLabel":
@@ -873,7 +873,7 @@ final dynamic attendanceFlows = {
                                   "individualName":
                                       "{{item.entity.first.individual.name.givenName}}",
                                   "existingSignatureData":
-                                      "{{fn:getExistingSignature(item.entity.individualId, contextData.0.attendanceRegisterModel)}}",
+                                      "{{fn:getExistingSignature(item.entity.individualId, contextData.0.attendanceLog)}}",
                                   "currentSignatureData":
                                       "{{fn:getCurrentSignature(widgetData, item.entity.individualId)}}",
                                   "compareSignatureLabel":

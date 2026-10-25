@@ -2972,6 +2972,16 @@ class _HomePageState extends LocalizedState<HomePage> {
       filteredLabels.remove(i18.home.summaryReportLabel);
     }
 
+    // Beneficiary IDs are tokens handed out while REGISTERING a household, so
+    // a pure Distributor has nothing to do with them. Scoped to
+    // distributor-and-not-registrar rather than "not a registrar" so a
+    // combined Registrar+Distributor keeps the card, and roles that are
+    // neither (e.g. warehouse manager) keep whatever their role actions
+    // already granted.
+    if (isDistributor && !isRegistrar) {
+      filteredLabels.remove(i18.home.beneficiaryIdLabel);
+    }
+
     final List<Widget> widgetList =
         filteredLabels.map((label) => homeItemsMap[label]!).toList();
 

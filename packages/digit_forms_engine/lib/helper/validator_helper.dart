@@ -211,7 +211,12 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
               final otherValue = num.tryParse(
                   form.control(otherFieldName).value?.toString() ?? '');
               if (currentValue == null || otherValue == null) return null;
-              if (currentValue > otherValue) {
+              // Strict: the sibling is an exclusive upper bound, not an
+              // inclusive one. childrenCount is the only consumer and a
+              // household cannot be made up entirely of under-5s - there has
+              // to be at least one non-child member - so children ==
+              // memberCount is invalid, not just children > memberCount.
+              if (currentValue >= otherValue) {
                 return {
                   'maxField': {'max': otherValue, 'actual': currentValue}
                 };

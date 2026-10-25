@@ -176,12 +176,13 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           tasksByProjectBeneficiaryClientRef:
               tasksByProjectBeneficiaryClientRef,
         );
+        final isInServerSnapshot =
+            serverReportTimestamp != null && epochMs <= serverReportTimestamp;
         if (isClosedPlaceholder) {
           // The server summary is a cached baseline. If this placeholder
           // predates that snapshot, its counts are already included there and
           // must be removed from the displayed totals as well.
-          if (serverReportTimestamp != null &&
-              epochMs <= serverReportTimestamp) {
+          if (isInServerSnapshot) {
             final date = _epochToDateString(epochMs);
             closedHouseholdsInServerReportByDate[date] =
                 (closedHouseholdsInServerReportByDate[date] ?? 0) + 1;
@@ -196,6 +197,11 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           continue;
         }
 
+        // Every other household in the cycle is counted locally. Do NOT skip
+        // on epochMs <= serverReportTimestamp: a reopened household keeps the
+        // createdTime of the closed placeholder it started as, so that test
+        // dropped real registrations - the row for the current date could
+        // disappear entirely.
         final date = _epochToDateString(epochMs);
         localChildrenUnder5ByDate[date] =
             (localChildrenUnder5ByDate[date] ?? 0) +
@@ -458,10 +464,14 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
               header: localizations
                   .translate(i18.summaryReport.numberOfPeopleInHouseholds),
             ),
-            CustomTableColumn(
-              header: localizations
-                  .translate(i18.summaryReport.numberOfChildrenUnder5),
-            ),
+            // Children under 5 is a registration metric, so it is shown only
+            // to Registrars - matching the isRegistrar gate on the
+            // distributor branch above.
+            if (isRegistrar)
+              CustomTableColumn(
+                header: localizations
+                    .translate(i18.summaryReport.numberOfChildrenUnder5),
+              ),
           ];
     // CustomTableColumn(header: localizations.translate(i18.common.loss)),
     // CustomTableColumn(header: localizations.translate(i18.common.excess)),
@@ -483,7 +493,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
                 _formatDisplayDate(row.date),
                 row.householdsRegistered.toString(),
                 row.numberOfPeopleInHouseholds.toString(),
-                row.numberOfChildrenUnder5.toString(),
+                // Must mirror the isRegistrar gate on the columns above, or
+                // the cells shift out of alignment with their headers.
+                if (isRegistrar) row.numberOfChildrenUnder5.toString(),
               ],
         // row.totalLess.toStringAsFixed(0),
         // row.totalExcess.toStringAsFixed(0),

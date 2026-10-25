@@ -110,8 +110,19 @@ class JsonForms extends StatelessWidget {
       // correctly nulled out by the required validator, but omitting the
       // key here would leave that literal, unresolved template sitting in
       // the schema and submitted as if it were a real name. Only these
-      // two fields need the key to always be reported.
-      const alwaysReportKeys = {'nameOfIndividual', 'familyname'};
+      // head-name fields need the key to always be reported:
+      // nameOfIndividual/familyname on householdDetails, and
+      // firstName/lastName on caregiverConsent (whose defaults are
+      // "{{navigation.firstName}}"/"{{navigation.lastName}}"). The consent
+      // pair matters now that those fields are optional for a declined
+      // consent - leaving them blank is a legitimate outcome, so the null
+      // has to overwrite the template rather than be dropped.
+      const alwaysReportKeys = {
+        'nameOfIndividual',
+        'familyname',
+        'firstName',
+        'lastName',
+      };
       if (value == null && !alwaysReportKeys.contains(name)) return null;
       return MapEntry(name, value);
     }

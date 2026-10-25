@@ -728,6 +728,68 @@ class FunctionRegistries {
       return identifierType?.trim().toUpperCase() == 'UNIQUE_BENEFICIARY_ID';
     });
 
+    // Returns the UNIQUE_BENEFICIARY_ID's identifierId from a list of
+    // identifiers, or '' when the individual has none (e.g. a closed or
+    // consent-declined household, which only ever carries a DEFAULT
+    // identifier - a raw 36-char uuid).
+    //
+    // Callers previously read "identifiers.0.identifierId", i.e. picked by
+    // POSITION. Ordering is not guaranteed: buildIdentifierEntries appends the
+    // Identification Type/Number pair after the idPopulator entry, and the
+    // pool-assignment path inserts the token at index 0 only on the create
+    // path - so on other paths index 0 is the DEFAULT identifier and that
+    // uuid was carried into the delivery TaskModel as the beneficiary id.
+    // Selecting by type removes the dependence on ordering entirely.
+    //
+    // Usage: "value": "{{fn:getBeneficiaryId(item.individual.0.identifiers)}}"
+    FunctionRegistry.register('getBeneficiaryId', (args, stateData) {
+      final identifiers = args.isNotEmpty ? args.first : null;
+      if (identifiers == null) return '';
+
+      String? readField(dynamic identifier, String key) {
+        if (identifier is Map) return identifier[key]?.toString();
+        try {
+          return ((identifier as dynamic).toMap() as Map)[key]?.toString();
+        } catch (_) {}
+        try {
+          switch (key) {
+            case 'identifierType':
+              return (identifier as dynamic).identifierType?.toString();
+            case 'identifierId':
+              return (identifier as dynamic).identifierId?.toString();
+          }
+        } catch (_) {}
+        return null;
+      }
+
+      // Accept either the list or a single identifier.
+      final list = identifiers is List ? identifiers : [identifiers];
+
+      String? fallback;
+      for (final identifier in list) {
+        if (identifier == null) continue;
+        final id = readField(identifier, 'identifierId');
+        if (id == null || id.trim().isEmpty) continue;
+        final type = readField(identifier, 'identifierType');
+        if (type?.trim().toUpperCase() == 'UNIQUE_BENEFICIARY_ID') {
+          return id.trim();
+        }
+        fallback ??= id.trim();
+      }
+
+      // No token: fall back to whatever identifier the individual does have
+      // (in practice the DEFAULT one). A device that has not downloaded any
+      // Beneficiary IDs registers households with only a DEFAULT identifier -
+      // the pool-assignment block in transformer_executor is skipped when the
+      // pool is empty, so that DEFAULT is genuinely all there is, and it must
+      // still travel to the delivery task as the beneficiary reference.
+      // Returning '' here would silently drop the only id those households
+      // have. This does NOT reintroduce the bug it was written for: that was
+      // a DEFAULT uuid winning over an existing token purely because it sat
+      // at index 0, and the type check above now always wins that case.
+      return fallback ?? '';
+    });
+
     // True when the logged-in user holds any of the given role codes.
     // Codes are matched case-insensitively against RolesType values.
     // Usage: "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true"

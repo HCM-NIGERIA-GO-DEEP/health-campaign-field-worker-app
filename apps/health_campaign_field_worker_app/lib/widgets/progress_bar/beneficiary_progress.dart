@@ -145,8 +145,8 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
           )));
 
           var closedHouseholdsAlreadyInServerCount = 0;
-          final localHouseholdsRegisteredToday = localHouseholdsToday
-              .where((hh) {
+          final localHouseholdsRegisteredToday =
+              localHouseholdsToday.where((hh) {
             final createdTime = hh.clientAuditDetails?.createdTime ??
                 hh.auditDetails?.createdTime;
             final isClosedPlaceholder = isHouseholdConsentDeclined(hh) ||
@@ -157,14 +157,21 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
                   tasksByProjectBeneficiaryClientRef:
                       tasksByProjectBeneficiaryClientRefForToday,
                 );
+            final isInServerSnapshot = serverReportTimestamp != null &&
+                createdTime != null &&
+                createdTime <= serverReportTimestamp;
             if (isClosedPlaceholder) {
-              if (serverReportTimestamp != null &&
-                  createdTime != null &&
-                  createdTime <= serverReportTimestamp) {
+              if (isInServerSnapshot) {
                 closedHouseholdsAlreadyInServerCount++;
               }
               return false;
             }
+            // Every other household registered today is counted locally.
+            // Do NOT try to infer "already in the server snapshot" from
+            // createdTime <= serverReportTimestamp: a reopened household
+            // keeps the createdTime of the placeholder it started as, so
+            // that test silently dropped real registrations and the bar
+            // under-counted.
             return true;
           }).length;
 
@@ -210,11 +217,11 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
                 // registrations. Any user who distributes (distributor-only
                 // or combined) progresses only after a successful delivery.
                 final serverHouseholdCount = houseHoldRegistered ?? 0;
-                final adjustedServerCount = serverHouseholdCount >
-                        closedHouseholdsAlreadyInServerCount
-                    ? serverHouseholdCount -
-                        closedHouseholdsAlreadyInServerCount
-                    : 0;
+                final adjustedServerCount =
+                    serverHouseholdCount > closedHouseholdsAlreadyInServerCount
+                        ? serverHouseholdCount -
+                            closedHouseholdsAlreadyInServerCount
+                        : 0;
                 current = isRegistrar && !isDistributor
                     ? adjustedServerCount + localHouseholdsRegisteredToday
                     : deliveredCount;
