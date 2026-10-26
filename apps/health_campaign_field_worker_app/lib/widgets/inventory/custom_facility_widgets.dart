@@ -352,7 +352,11 @@ class _FacilityCardContent extends StatelessWidget {
             !isWareHouseMgr &&
             (selectedValue == null || selectedValue.isEmpty)) {
           selectedValue = deliveryTeamCode;
-          final loggedInUserId = context.loggedInUserUuid;
+          // Match the shape a scanned team QR produces ("userName||userUuid")
+          // so the existing getTeamName/resolveTeamName helpers can show the
+          // username instead of a raw uuid. getStockTeamCode strips the
+          // prefix, so senderId/receiverId still persist the bare uuid.
+          final loggedInUserId = context.loggedInUserTeamCode;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             field.control.value = deliveryTeamCode;
             field.control.markAsTouched();
@@ -384,7 +388,11 @@ class _FacilityCardContent extends StatelessWidget {
             !isWareHouseMgr &&
             (selectedValue == null || selectedValue.isEmpty)) {
           selectedValue = deliveryTeamCode;
-          final loggedInUserId = context.loggedInUserUuid;
+          // Match the shape a scanned team QR produces ("userName||userUuid")
+          // so the existing getTeamName/resolveTeamName helpers can show the
+          // username instead of a raw uuid. getStockTeamCode strips the
+          // prefix, so senderId/receiverId still persist the bare uuid.
+          final loggedInUserId = context.loggedInUserTeamCode;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             field.control.value = deliveryTeamCode;
             field.control.markAsTouched();

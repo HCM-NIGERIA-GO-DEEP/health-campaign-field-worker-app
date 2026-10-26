@@ -79,7 +79,16 @@ class _AcknowledgementPageState extends LocalizedState<AcknowledgementPage> {
             type: DigitButtonType.primary,
             size: DigitButtonSize.large,
             onPressed: () {
-              context.router.popAndPushAll([HomeRoute()]);
+              // replaceAll, not popAndPushAll: HomeRoute is almost always
+              // already on the stack (the flow was entered from Home), and
+              // popAndPushAll only pops the current route before pushing - so
+              // it left TWO HomePage instances mounted at once. Both carry the
+              // same showcase GlobalKeys (HOME_DB_LABEL,
+              // DISTRIBUTOR_HOME_SHOWCASE_*, ...), which is what raised
+              // "Duplicate GlobalKeys detected in widget tree". Every other
+              // route back to Home in this app already uses replaceAll - see
+              // the contract noted at the top of home.dart.
+              context.router.replaceAll([HomeRoute()]);
             },
           ),
           DigitButton(

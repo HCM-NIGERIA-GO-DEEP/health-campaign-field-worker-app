@@ -316,4 +316,149 @@ void main() {
       expect(balance, 1887);
     });
   });
+
+  /// Second round of the in-transit cycle: PHU reissues the shortfall, and
+  /// DP partially accepts THAT reissue too.
+  ///
+  /// The existing saga stops after the first reissue - it is left IN_TRANSIT
+  /// and never re-accepted - so nothing covered what happens when the cycle
+  /// repeats. Note also that the saga's `reissue-1` fixture carries only
+  /// stockEntryType/status, while the real reissue written by
+  /// manage_stock.dart additionally sets originalIssueClientReferenceId and
+  /// discrepancyReason. The reissue branch in calculateStockMetrics keys off
+  /// BOTH of those, so it was never exercised by any test.
+  group('second round: DP partially accepts the reissue as well', () {
+    const phuId = 'PHU-FACILITY-3';
+    const dpId = 'DP-FACILITY-3';
+    const productId = 'PVAR-3';
+
+    /// A reissue as manage_stock.dart actually writes it: an ISSUED record
+    /// carrying the ORIGINAL dispatch's reference plus the IN_TRANSIT
+    /// discrepancy reason. Shown here after DP's own partial accept has
+    /// mutated it (status ACCEPTED, quantity truncated to the accepted
+    /// amount, original amount preserved separately).
+    StockModel mutatedReissue({
+      required String clientReferenceId,
+      required String originalIssueClientReferenceId,
+      required double reissuedQuantity,
+      required double acceptedQuantity,
+    }) =>
+        StockModel(
+          clientReferenceId: clientReferenceId,
+          productVariantId: productId,
+          senderId: phuId,
+          receiverId: dpId,
+          transactionType: 'DISPATCHED',
+          quantity: acceptedQuantity.toString(),
+          additionalFields: StockAdditionalFields(
+            version: 1,
+            fields: [
+              const AdditionalField('stockEntryType', 'ISSUED'),
+              const AdditionalField('status', 'ACCEPTED'),
+              const AdditionalField('discrepancyReason', 'IN_TRANSIT'),
+              AdditionalField(
+                  'actualQuantityReceived', acceptedQuantity.toString()),
+              AdditionalField(
+                  'originalQuantityReceived', reissuedQuantity.toString()),
+              AdditionalField('originalIssueClientReferenceId',
+                  originalIssueClientReferenceId),
+            ],
+          ),
+        );
+
+    // NOTE: no separate "RECEIPT" entity is modelled here. Per
+    // getStockEntryType in function_registries.dart, stockEntryType RECEIPT
+    // is never persisted - the stockReceipt transformer only builds it on a
+    // transient entity that seeds the UPDATE_EVENT, and the record actually
+    // saved is the original dispatch mutated in place, still ISSUED. The
+    // mutated dispatch below therefore IS DP's credit; adding a RECEIPT row
+    // as well would double-count it.
+
+    /// DP's shortfall message back to PHU for the part it could not account
+    /// for. In round two this points at the REISSUE, not the original
+    /// dispatch.
+    StockModel shortfallFromDp(
+      String clientReferenceId,
+      String originalIssueClientReferenceId,
+      double quantity,
+    ) =>
+        StockModel(
+          clientReferenceId: clientReferenceId,
+          productVariantId: productId,
+          senderId: dpId,
+          receiverId: phuId,
+          transactionType: 'DISPATCHED',
+          quantity: quantity.toString(),
+          additionalFields: StockAdditionalFields(
+            version: 1,
+            fields: [
+              const AdditionalField('stockEntryType', 'RETURNED'),
+              const AdditionalField('status', 'IN_TRANSIT'),
+              const AdditionalField('discrepancyReason', 'IN_TRANSIT'),
+              AdditionalField('originalIssueClientReferenceId',
+                  originalIssueClientReferenceId),
+            ],
+          ),
+        );
+
+    // PHU issues 12. DP accepts 7, shortfall 5. PHU reissues the 5.
+    // DP then accepts 3 of that reissue, shortfall 2.
+    List<StockModel> sagaRecords() => [
+          StockModel(
+            clientReferenceId: 'dispatch-1',
+            productVariantId: productId,
+            senderId: phuId,
+            receiverId: dpId,
+            transactionType: 'DISPATCHED',
+            quantity: '7',
+            additionalFields: StockAdditionalFields(
+              version: 1,
+              fields: const [
+                AdditionalField('stockEntryType', 'ISSUED'),
+                AdditionalField('status', 'ACCEPTED'),
+                AdditionalField('actualQuantityReceived', '7'),
+                AdditionalField('originalQuantityReceived', '12'),
+              ],
+            ),
+          ),
+          shortfallFromDp('shortfall-1', 'dispatch-1', 5),
+          mutatedReissue(
+            clientReferenceId: 'reissue-1',
+            originalIssueClientReferenceId: 'dispatch-1',
+            reissuedQuantity: 5,
+            acceptedQuantity: 3,
+          ),
+          shortfallFromDp('shortfall-2', 'reissue-1', 2),
+        ];
+
+    test('DP is credited for what it accepted in BOTH rounds (7 + 3)', () {
+      final balance = StockCalculationUtils.getStockBalance(
+        stockList: sagaRecords(),
+        facilityId: dpId,
+        productId: productId,
+        isDistributor: false,
+      );
+
+      // DP physically holds 7 from the first accept plus 3 from the reissue.
+      // The two shortfall messages are DP's own bookkeeping and must not move
+      // its balance either way.
+      expect(balance, 10);
+    });
+
+    test("PHU's books show the original 12 only once, not again per reissue",
+        () {
+      final balance = StockCalculationUtils.getStockBalance(
+        stockList: sagaRecords(),
+        facilityId: phuId,
+        productId: productId,
+        isDistributor: false,
+      );
+
+      // The full 12 left PHU on the original dispatch. Reissuing part of it
+      // moves already-deducted stock, so it must not deduct a second time -
+      // and the shortfalls coming back are notifications, not returns of
+      // physical stock.
+      expect(balance, -12);
+    });
+  });
 }

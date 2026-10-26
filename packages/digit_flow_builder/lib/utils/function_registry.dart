@@ -626,25 +626,35 @@ void initializeFunctionRegistry() {
     return TaskStatus.ineligible;
   });
 
+  /// True when ANY task in the supplied value represents a completed
+  /// delivery.
+  ///
+  /// Accepts a status string, a TaskModel, a wrapper map ({"TaskModel": ...}
+  /// or {"status": ...}) or a list of any of those, so callers can hand it
+  /// `item.tasks` directly instead of having to reach for a particular
+  /// element's status. The previous form took a String only and returned
+  /// false for anything else - including the task list itself - which made
+  /// "has this household been delivered to?" indistinguishable from "this
+  /// household is closed", because both produced false.
   FunctionRegistry.register("isDelivered", (args, stateData) {
     // No arguments passed
     if (args.isEmpty) return false;
 
-    final value = args.first;
+    bool delivered(dynamic item) {
+      if (item is List) return item.any(delivered);
+      if (item is Map) {
+        return delivered(item['TaskModel'] ?? item['status']);
+      }
+      if (item is TaskModel) return delivered(item.status);
+      if (item is! String) return false;
 
-    // Must be a string
-    if (value is! String) return false;
-
-    // Normalize (uppercase + trim)
-    final status = value.trim().toUpperCase();
-
-    // Match valid delivered statuses
-    if (status == TaskStatus.administrationSuccess ||
-        status == TaskStatus.delivered) {
-      return true;
+      // Normalize (uppercase + trim)
+      final status = item.trim().toUpperCase();
+      return status == TaskStatus.administrationSuccess ||
+          status == TaskStatus.delivered;
     }
 
-    return false;
+    return delivered(args.first);
   });
 
   /// Registers a function to check if all doses have been delivered for a member.

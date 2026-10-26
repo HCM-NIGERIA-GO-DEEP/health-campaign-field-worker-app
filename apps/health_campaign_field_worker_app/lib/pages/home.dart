@@ -2978,7 +2978,7 @@ class _HomePageState extends LocalizedState<HomePage> {
     if (envConfig.variables.envType == EnvType.demo && kReleaseMode) {
       filteredLabels.remove(i18.home.db);
     }
-    filteredLabels.remove(i18.home.db);
+    // filteredLabels.remove(i18.home.db);
 
     final isRegistrar = userRoleCodes.contains(RolesType.registrar.toValue());
     if (isDistributor || isRegistrar) {

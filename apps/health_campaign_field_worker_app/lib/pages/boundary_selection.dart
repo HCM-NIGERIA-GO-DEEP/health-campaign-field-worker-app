@@ -110,13 +110,6 @@ class _BoundarySelectionPageState
         .toList()
         .isNotEmpty;
 
-    bool isRegistrar = context.loggedInUserRoles
-        .where(
-          (role) => role.code == RolesType.registrar.toValue(),
-        )
-        .toList()
-        .isNotEmpty;
-
     bool isHealthFacilityWorkerOnly = isHealthFacilityWorker && !isDistributor;
     // set the param to enable or disable filter of labelList and other boundary conditions
     doFilter = enableFilter();
@@ -636,9 +629,20 @@ class _BoundarySelectionPageState
                                                     await getIsConnected();
 
                                                 if (context.mounted) {
+                                                  // Beneficiary downsync is
+                                                  // for distributors, who need
+                                                  // the existing beneficiary
+                                                  // list to deliver against. A
+                                                  // Registrar creates
+                                                  // households rather than
+                                                  // working from a downloaded
+                                                  // list, so the Download
+                                                  // prompt is skipped for a
+                                                  // pure Registrar. A combined
+                                                  // Registrar+Distributor still
+                                                  // gets it, via isDistributor.
                                                   if (isOnline &&
-                                                      (isDistributor ||
-                                                          isRegistrar)) {
+                                                      isDistributor) {
                                                     context
                                                         .read<
                                                             BeneficiaryDownSyncBloc>()
