@@ -509,21 +509,6 @@ class FunctionRegistries {
         return null;
       }
 
-      // TEMP DEBUG (loss/excess quantity): the Quantity column renders empty
-      // on the Distributor's Loss and Excess reports even though the record
-      // plainly has a quantity. Dumps every input this helper actually sees,
-      // so the log says whether the row reaches here at all, what
-      // reportType it was called with, and which of the quantity sources are
-      // populated. Remove once resolved.
-      debugPrint('REPORT_QTY: reportType=$reportType '
-          'topLevelQuantity=${stock['quantity']} '
-          'afQuantity=${fieldValue('quantity')} '
-          'afOriginal=${fieldValue('originalQuantityReceived')} '
-          'afActual=${fieldValue('actualQuantityReceived')} '
-          'stockEntryType=${fieldValue('stockEntryType')} '
-          'clientRef=${stock['clientReferenceId']} '
-          'rawFieldsType=${rawFields.runtimeType}');
-
       // Partial acceptance edits quantity down to the received amount, while
       // the original sender's issue report must continue to show what they
       // dispatched. The accepted receiver's receipt report shows the actual
@@ -548,8 +533,6 @@ class FunctionRegistries {
       // This helper is used for report display. Keep signed quantities in
       // storage for balance calculations, but show their magnitude in reports.
       final number = num.tryParse(value.toString().trim());
-      // TEMP DEBUG (loss/excess quantity) - remove with the dump above.
-      debugPrint('REPORT_QTY: resolved value="$value" parsed=$number');
       if (number == null) return value;
       final absolute = number.abs();
       return absolute == absolute.roundToDouble() ? absolute.toInt() : absolute;
