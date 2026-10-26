@@ -31,8 +31,19 @@ class BeneficiaryProgressBar extends StatefulWidget {
 class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
   int current = 0;
 
+  // didChangeDependencies can fire more than once for the same State, and
+  // listenToChanges hands back no subscription to cancel - without this
+  // guard every re-entry stacks another live watch() on the same table.
+  bool _listenersAttached = false;
+
   @override
   void didChangeDependencies() {
+    if (_listenersAttached) {
+      super.didChangeDependencies();
+      return;
+    }
+    _listenersAttached = true;
+
     final isRegistrar = context.isRegistrarRole;
     final isDistributor = context.isDistributorRole;
     final taskRepository =
@@ -58,15 +69,14 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
       999,
     );
 
-    taskRepository.listenToChanges(
-      query: TaskSearchModel(
-        status: 'ADMINISTRATION_SUCCESS',
-        projectId: projectId,
-        createdBy: loggedInUserUuid,
-        plannedEndDate: lte.millisecondsSinceEpoch,
-        plannedStartDate: gte.millisecondsSinceEpoch,
-      ),
-      listener: (taskData) async {
+    // Registering a household creates no ADMINISTRATION_SUCCESS task, so a
+    // Registrar's bar - whose value is computed inside this body - never
+    // recomputed after the first build: the task watch simply never fired.
+    // That is why a completed normal registration left the bar frozen.
+    // Extracted so both the Task watch (deliveries) and the
+    // ProjectBeneficiary watch (registrations, created at registration
+    // time) can drive it.
+    Future<void> recompute() async {
         if (mounted) {
           final now = DateTime.now();
           final gte = DateTime(
@@ -126,18 +136,45 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
                 epochMs <= lte.millisecondsSinceEpoch;
           }).toList();
 
-          final todaysProjectBeneficiaries = localHouseholdsToday.isEmpty
+          // A ProjectBeneficiary can point at the head INDIVIDUAL rather
+          // than the household (the beneficiaryType switch in every
+          // registration transformer), so the members are needed to trace
+          // it back. Without this the household -> projectBeneficiary ->
+          // task chain broke, isHouseholdStillClosed silently returned
+          // false, and a Mark Closed Household placeholder counted as a
+          // real registration.
+          final memberRepository = context.read<
+              LocalRepository<HouseholdMemberModel,
+                  HouseholdMemberSearchModel>>();
+          final todaysHouseholdRefs =
+              localHouseholdsToday.map((hh) => hh.clientReferenceId).toList();
+          final todaysMembers = todaysHouseholdRefs.isEmpty
+              ? <HouseholdMemberModel>[]
+              : await memberRepository.search(HouseholdMemberSearchModel(
+                  householdClientReferenceId: todaysHouseholdRefs,
+                ));
+          final householdRefByIndividualRef =
+              householdClientRefByIndividualClientRef(todaysMembers);
+
+          // Search by household refs AND the member individual refs, so the
+          // lookup finds the ProjectBeneficiary whichever of the two it
+          // points at.
+          final todaysProjectBeneficiaries = todaysHouseholdRefs.isEmpty
               ? <ProjectBeneficiaryModel>[]
               : await projectBeneficiaryRepository.search(
                   ProjectBeneficiarySearchModel(
-                    beneficiaryClientReferenceId: localHouseholdsToday
-                        .map((hh) => hh.clientReferenceId)
-                        .toList(),
+                    beneficiaryClientReferenceId: [
+                      ...todaysHouseholdRefs,
+                      ...householdRefByIndividualRef.keys,
+                    ],
                   ),
                 );
           final projectBeneficiaryClientRefsByHousehold =
               groupProjectBeneficiaryClientRefsByHousehold(
-                  todaysProjectBeneficiaries);
+            todaysProjectBeneficiaries,
+            householdClientRefByIndividualClientRef:
+                householdRefByIndividualRef,
+          );
           final tasksByProjectBeneficiaryClientRefForToday =
               groupTasksByProjectBeneficiaryClientRef(
                   await taskRepository.search(TaskSearchModel(
@@ -229,8 +266,28 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
             });
           }
         }
-      },
+    }
+
+    taskRepository.listenToChanges(
+      query: TaskSearchModel(
+        status: 'ADMINISTRATION_SUCCESS',
+        projectId: projectId,
+        createdBy: loggedInUserUuid,
+        plannedEndDate: lte.millisecondsSinceEpoch,
+        plannedStartDate: gte.millisecondsSinceEpoch,
+      ),
+      listener: (_) => recompute(),
     );
+
+    (context.read<
+                LocalRepository<ProjectBeneficiaryModel,
+                    ProjectBeneficiarySearchModel>>()
+            as ProjectBeneficiaryLocalRepository)
+        .listenToChanges(
+      query: ProjectBeneficiarySearchModel(projectId: [projectId]),
+      listener: (_) => recompute(),
+    );
+
     super.didChangeDependencies();
   }
 

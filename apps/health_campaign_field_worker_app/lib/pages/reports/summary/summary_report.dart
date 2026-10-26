@@ -73,6 +73,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       final projectBeneficiaryRepo = context.read<
           LocalRepository<ProjectBeneficiaryModel,
               ProjectBeneficiarySearchModel>>();
+      final householdMemberRepo = context.read<
+          LocalRepository<HouseholdMemberModel,
+              HouseholdMemberSearchModel>>();
       final summaryReportService = context.read<ServerSummaryReportService>();
       List<String> serverReportAllDates = await summaryReportService.allDates();
       final serverReportTimestamp = await summaryReportService.timestamp();
@@ -124,14 +127,37 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // the HOUSEHOLD flow's isEdit && isClosedHousehold branch). Resolve
       // each household's own task chain (household -> projectBeneficiary ->
       // task) to check its current status.
-      final projectBeneficiaries = households.isEmpty
+      //
+      // A ProjectBeneficiary can point at the head INDIVIDUAL rather than
+      // the household (the beneficiaryType switch in every registration
+      // transformer), so the members are needed to trace it back. Without
+      // this the chain broke, isHouseholdStillClosed silently returned
+      // false, and a Mark Closed Household placeholder counted as a real
+      // registration. Mirrors the Beneficiary Progress bar exactly so the
+      // two surfaces cannot disagree.
+      final householdRefs =
+          households.map((hh) => hh.clientReferenceId).toList();
+      final members = householdRefs.isEmpty
+          ? <HouseholdMemberModel>[]
+          : await householdMemberRepo.search(HouseholdMemberSearchModel(
+              householdClientReferenceId: householdRefs,
+            ));
+      final householdRefByIndividualRef =
+          householdClientRefByIndividualClientRef(members);
+
+      final projectBeneficiaries = householdRefs.isEmpty
           ? <ProjectBeneficiaryModel>[]
           : await projectBeneficiaryRepo.search(ProjectBeneficiarySearchModel(
-              beneficiaryClientReferenceId:
-                  households.map((hh) => hh.clientReferenceId).toList(),
+              beneficiaryClientReferenceId: [
+                ...householdRefs,
+                ...householdRefByIndividualRef.keys,
+              ],
             ));
       final projectBeneficiaryClientRefsByHousehold =
-          groupProjectBeneficiaryClientRefsByHousehold(projectBeneficiaries);
+          groupProjectBeneficiaryClientRefsByHousehold(
+        projectBeneficiaries,
+        householdClientRefByIndividualClientRef: householdRefByIndividualRef,
+      );
       final tasksByProjectBeneficiaryClientRef =
           groupTasksByProjectBeneficiaryClientRef(tasks);
 
