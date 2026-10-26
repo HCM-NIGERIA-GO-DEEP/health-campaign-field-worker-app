@@ -322,15 +322,55 @@ int? itnQuantityForMemberCount(int? memberCount,
 }
 
 /// Groups ProjectBeneficiaryModel clientReferenceIds by the household they
-/// belong to (beneficiaryClientReferenceId), for resolving a household's own
-/// task chain (household -> projectBeneficiary -> task).
+/// belong to, for resolving a household's own task chain
+/// (household -> projectBeneficiary -> task).
+///
+/// A ProjectBeneficiary does NOT always point at the household. Every
+/// registration transformer maps it as
+/// `__switch:__context:beneficiaryType:{INDIVIDUAL:__ref:IndividualModel...,
+/// HOUSEHOLD:__ref:HouseholdModel...}`, so on an INDIVIDUAL-beneficiary
+/// project the row points at the head individual instead. Keying this map on
+/// beneficiaryClientReferenceId alone therefore produced NO entry for the
+/// household, isHouseholdStillClosed found no pbRefs, returned false
+/// ("not closed") and every closed / consent-declined household was counted
+/// as a real registration - inflating both the progress bar and the Summary
+/// Report. That is the silent null.
+///
+/// [householdClientRefByIndividualClientRef] maps a member's individual
+/// clientReferenceId to its household clientReferenceId (built from
+/// HouseholdMemberModel), letting this resolve the INDIVIDUAL case too. Pass
+/// an empty map to get the old household-only behaviour.
 Map<String, List<String>> groupProjectBeneficiaryClientRefsByHousehold(
-    Iterable<ProjectBeneficiaryModel> projectBeneficiaries) {
+  Iterable<ProjectBeneficiaryModel> projectBeneficiaries, {
+  Map<String, String> householdClientRefByIndividualClientRef = const {},
+}) {
   final result = <String, List<String>>{};
   for (final pb in projectBeneficiaries) {
     final beneficiaryRef = pb.beneficiaryClientReferenceId;
     if (beneficiaryRef == null || beneficiaryRef.isEmpty) continue;
-    (result[beneficiaryRef] ??= []).add(pb.clientReferenceId);
+    // Either the ref already IS a household, or it is an individual we can
+    // trace back to one.
+    final householdRef =
+        householdClientRefByIndividualClientRef[beneficiaryRef] ??
+            beneficiaryRef;
+    (result[householdRef] ??= []).add(pb.clientReferenceId);
+  }
+  return result;
+}
+
+/// Maps each household member's individual clientReferenceId to its household
+/// clientReferenceId, so a ProjectBeneficiary pointing at an individual can
+/// still be traced back to the household it belongs to. See
+/// [groupProjectBeneficiaryClientRefsByHousehold].
+Map<String, String> householdClientRefByIndividualClientRef(
+    Iterable<HouseholdMemberModel> members) {
+  final result = <String, String>{};
+  for (final member in members) {
+    final individualRef = member.individualClientReferenceId;
+    final householdRef = member.householdClientReferenceId;
+    if (individualRef == null || individualRef.isEmpty) continue;
+    if (householdRef == null || householdRef.isEmpty) continue;
+    result[individualRef] = householdRef;
   }
   return result;
 }

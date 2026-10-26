@@ -30,9 +30,17 @@ class BeneficiaryProgressBar extends StatefulWidget {
 class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
   int current = 0;
 
+  // didChangeDependencies can fire more than once for the same State, and
+  // listenToChanges hands back no subscription to cancel - without this guard
+  // every re-entry stacks another live watch() on the same table.
+  bool _listenersAttached = false;
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+
+    if (_listenersAttached) return;
+    _listenersAttached = true;
 
     final projectId = context.projectId;
     final loggedInUserUuid = context.loggedInUserUuid;
@@ -96,100 +104,155 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
                 ProjectBeneficiarySearchModel>>()
         as ProjectBeneficiaryLocalRepository;
 
+    // Reopening a closed household (the HOUSEHOLD flow's
+    // isEdit && isClosedHousehold branch) is a pure UPDATE_EVENT on
+    // Household/Individual/Task - it writes no project_beneficiary row, so
+    // the ProjectBeneficiary watch alone never fired and the bar stayed
+    // stale until the *next* registration created a PB row, at which point
+    // it jumped by two. That reopen does move the task off CLOSED_HOUSEHOLD,
+    // so watching the task table too closes the gap. Both listeners run the
+    // same recompute; whichever fires first wins and the other is a no-op.
+    void recompute() => _recomputeRegistrarCount(
+          projectId: projectId,
+          loggedInUserUuid: loggedInUserUuid,
+          projectBeneficiaryRepository: projectBeneficiaryRepository,
+        );
+
     projectBeneficiaryRepository.listenToChanges(
       query: ProjectBeneficiarySearchModel(
         projectId: [projectId],
       ),
-      listener: (_) async {
-        if (mounted) {
-          final now = DateTime.now();
-          final gte = DateTime(
-            now.year,
-            now.month,
-            now.day,
-          );
-          final lte = DateTime(
-            now.year,
-            now.month,
-            now.day,
-            23,
-            59,
-            59,
-            999,
-          );
-
-          final summaryReportService =
-              context.read<ServerSummaryReportService>();
-          int? houseHoldRegistered =
-              await summaryReportService.householdRegistration(
-            date: DateFormat('yyyy-MM-dd').format(now),
-          );
-
-          // The server-side snapshot above aggregates every device
-          // registering against this project (not just this one), and
-          // doesn't get refreshed same-day once any local registration
-          // exists (see _loadSummaryReportData's hasHouseholdDataForCycle
-          // check), so a household registered - or a closed/declined one
-          // completed - today on THIS device never shows up in it yet.
-          // Count today's local households on this device on top of that
-          // snapshot, the same way the Summary Report page does, excluding
-          // ones still marked closed (a placeholder, not a real
-          // registration yet).
-          final householdRepository = context
-              .read<LocalRepository<HouseholdModel, HouseholdSearchModel>>();
-          final taskRepository =
-              context.read<LocalRepository<TaskModel, TaskSearchModel>>();
-
-          final todaysHouseholds =
-              await householdRepository.search(HouseholdSearchModel());
-          final localHouseholdsToday = todaysHouseholds.where((hh) {
-            final createdBy =
-                hh.clientAuditDetails?.createdBy ?? hh.auditDetails?.createdBy;
-            if (createdBy != loggedInUserUuid) return false;
-            final epochMs = hh.clientAuditDetails?.createdTime ??
-                hh.auditDetails?.createdTime;
-            if (epochMs == null) return false;
-            return epochMs >= gte.millisecondsSinceEpoch &&
-                epochMs <= lte.millisecondsSinceEpoch;
-          }).toList();
-
-          final todaysProjectBeneficiaries = localHouseholdsToday.isEmpty
-              ? <ProjectBeneficiaryModel>[]
-              : await projectBeneficiaryRepository.search(
-                  ProjectBeneficiarySearchModel(
-                    beneficiaryClientReferenceId: localHouseholdsToday
-                        .map((hh) => hh.clientReferenceId)
-                        .toList(),
-                  ),
-                );
-          final projectBeneficiaryClientRefsByHousehold =
-              groupProjectBeneficiaryClientRefsByHousehold(
-                  todaysProjectBeneficiaries);
-          final tasksByProjectBeneficiaryClientRefForToday =
-              groupTasksByProjectBeneficiaryClientRef(
-                  await taskRepository.search(TaskSearchModel(
-            createdBy: loggedInUserUuid,
-            projectId: projectId,
-          )));
-
-          final localHouseholdsRegisteredToday = localHouseholdsToday
-              .where((hh) => !isHouseholdStillClosed(
-                    householdClientReferenceId: hh.clientReferenceId,
-                    projectBeneficiaryClientRefsByHousehold:
-                        projectBeneficiaryClientRefsByHousehold,
-                    tasksByProjectBeneficiaryClientRef:
-                        tasksByProjectBeneficiaryClientRefForToday,
-                  ))
-              .length;
-
-          if (mounted) {
-            setState(() {
-              current = houseHoldRegistered + localHouseholdsRegisteredToday;
-            });
-          }
-        }
-      },
+      listener: (_) => recompute(),
     );
+
+    (context.read<LocalRepository<TaskModel, TaskSearchModel>>()
+            as TaskLocalRepository)
+        .listenToChanges(
+      query: TaskSearchModel(projectId: projectId),
+      listener: (_) => recompute(),
+    );
+  }
+
+  Future<void> _recomputeRegistrarCount({
+    required String projectId,
+    required String loggedInUserUuid,
+    required ProjectBeneficiaryLocalRepository projectBeneficiaryRepository,
+  }) async {
+    if (!mounted) return;
+
+    final now = DateTime.now();
+    final gte = DateTime(
+      now.year,
+      now.month,
+      now.day,
+    );
+    final lte = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      23,
+      59,
+      59,
+      999,
+    );
+
+    // Resolve everything off the BuildContext up front, before the first
+    // await, so nothing reads it across an async gap.
+    final summaryReportService = context.read<ServerSummaryReportService>();
+    final householdRepository =
+        context.read<LocalRepository<HouseholdModel, HouseholdSearchModel>>();
+    final taskRepository =
+        context.read<LocalRepository<TaskModel, TaskSearchModel>>();
+    final memberRepository = context.read<
+        LocalRepository<HouseholdMemberModel, HouseholdMemberSearchModel>>();
+
+    int houseHoldRegistered = await summaryReportService.householdRegistration(
+      date: DateFormat('yyyy-MM-dd').format(now),
+    );
+
+    // The server-side snapshot above aggregates every device registering
+    // against this project, so today's local households are added on top of
+    // it.
+    //
+    // The previous `hh.id != null` guard here (meant to avoid double-counting
+    // a household once it synced) is gone: it opened a window where a
+    // just-synced household was dropped locally while the server's aggregate
+    // had not caught up yet, so the bar visibly went BACKWARDS (10 -> 9).
+    // Double-counting is now handled by counting distinct clientReferenceIds
+    // only, which is also what the Summary Report does, so the two agree.
+    final todaysHouseholds =
+        await householdRepository.search(HouseholdSearchModel());
+    final localHouseholdsToday = todaysHouseholds.where((hh) {
+      final createdBy =
+          hh.clientAuditDetails?.createdBy ?? hh.auditDetails?.createdBy;
+      if (createdBy != loggedInUserUuid) return false;
+      final epochMs =
+          hh.clientAuditDetails?.createdTime ?? hh.auditDetails?.createdTime;
+      if (epochMs == null) return false;
+      return epochMs >= gte.millisecondsSinceEpoch &&
+          epochMs <= lte.millisecondsSinceEpoch;
+    }).toList();
+
+    // A ProjectBeneficiary can point at the head INDIVIDUAL rather than the
+    // household (the beneficiaryType switch in every registration
+    // transformer), so the members are needed to trace it back. Without this
+    // the household -> projectBeneficiary -> task chain broke,
+    // isHouseholdStillClosed silently returned false, and every closed /
+    // consent-declined household was counted as a real registration.
+    final todaysHouseholdRefs =
+        localHouseholdsToday.map((hh) => hh.clientReferenceId).toList();
+    final todaysMembers = todaysHouseholdRefs.isEmpty
+        ? <HouseholdMemberModel>[]
+        : await memberRepository.search(HouseholdMemberSearchModel(
+            householdClientReferenceId: todaysHouseholdRefs,
+          ));
+    final householdRefByIndividualRef =
+        householdClientRefByIndividualClientRef(todaysMembers);
+
+    // Search by household refs AND the member individual refs, so the
+    // lookup finds the ProjectBeneficiary whichever of the two it points at.
+    final todaysProjectBeneficiaries = todaysHouseholdRefs.isEmpty
+        ? <ProjectBeneficiaryModel>[]
+        : await projectBeneficiaryRepository.search(
+            ProjectBeneficiarySearchModel(
+              beneficiaryClientReferenceId: [
+                ...todaysHouseholdRefs,
+                ...householdRefByIndividualRef.keys,
+              ],
+            ),
+          );
+
+    final projectBeneficiaryClientRefsByHousehold =
+        groupProjectBeneficiaryClientRefsByHousehold(
+      todaysProjectBeneficiaries,
+      householdClientRefByIndividualClientRef: householdRefByIndividualRef,
+    );
+    final tasksByProjectBeneficiaryClientRefForToday =
+        groupTasksByProjectBeneficiaryClientRef(
+            await taskRepository.search(TaskSearchModel(
+      createdBy: loggedInUserUuid,
+      projectId: projectId,
+    )));
+
+    // Distinct households, not rows - a household with several
+    // ProjectBeneficiary/Task rows must still count once.
+    final localHouseholdsRegisteredToday = localHouseholdsToday
+        .where((hh) => !isHouseholdStillClosed(
+              householdClientReferenceId: hh.clientReferenceId,
+              projectBeneficiaryClientRefsByHousehold:
+                  projectBeneficiaryClientRefsByHousehold,
+              tasksByProjectBeneficiaryClientRef:
+                  tasksByProjectBeneficiaryClientRefForToday,
+            ))
+        .map((hh) => hh.clientReferenceId)
+        .toSet()
+        .length;
+
+    if (mounted) {
+      setState(() {
+        current = houseHoldRegistered + localHouseholdsRegisteredToday;
+      });
+    }
   }
 
   @override

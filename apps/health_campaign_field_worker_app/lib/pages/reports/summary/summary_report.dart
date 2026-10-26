@@ -66,6 +66,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       final projectBeneficiaryRepo = context.read<
           LocalRepository<ProjectBeneficiaryModel,
               ProjectBeneficiarySearchModel>>();
+      final householdMemberRepo = context.read<
+          LocalRepository<HouseholdMemberModel,
+              HouseholdMemberSearchModel>>();
       final summaryReportService = context.read<ServerSummaryReportService>();
 
       List<String> serverReportAllDates = await summaryReportService.allDates();
@@ -109,14 +112,36 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // the HOUSEHOLD flow's isEdit && isClosedHousehold branch). Resolve
       // each household's own task chain (household -> projectBeneficiary ->
       // task) to check its current status.
-      final projectBeneficiaries = households.isEmpty
+      //
+      // A ProjectBeneficiary can point at the head INDIVIDUAL rather than
+      // the household (the beneficiaryType switch in every registration
+      // transformer), so the members are needed to trace it back. Without
+      // this the chain broke, isHouseholdStillClosed silently returned false
+      // and every closed household was counted as a real registration - the
+      // Summary Report reading 11 for 10 real households.
+      final householdRefs =
+          households.map((hh) => hh.clientReferenceId).toList();
+      final members = householdRefs.isEmpty
+          ? <HouseholdMemberModel>[]
+          : await householdMemberRepo.search(HouseholdMemberSearchModel(
+              householdClientReferenceId: householdRefs,
+            ));
+      final householdRefByIndividualRef =
+          householdClientRefByIndividualClientRef(members);
+
+      final projectBeneficiaries = householdRefs.isEmpty
           ? <ProjectBeneficiaryModel>[]
           : await projectBeneficiaryRepo.search(ProjectBeneficiarySearchModel(
-              beneficiaryClientReferenceId:
-                  households.map((hh) => hh.clientReferenceId).toList(),
+              beneficiaryClientReferenceId: [
+                ...householdRefs,
+                ...householdRefByIndividualRef.keys,
+              ],
             ));
       final projectBeneficiaryClientRefsByHousehold =
-          groupProjectBeneficiaryClientRefsByHousehold(projectBeneficiaries);
+          groupProjectBeneficiaryClientRefsByHousehold(
+        projectBeneficiaries,
+        householdClientRefByIndividualClientRef: householdRefByIndividualRef,
+      );
       final tasksByProjectBeneficiaryClientRef =
           groupTasksByProjectBeneficiaryClientRef(tasks);
 
@@ -136,18 +161,38 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       }
       final allStocks = allStocksMap.values.toList();
 
-      // Local household registrations by date. The server-side summary
-      // snapshot is a point-in-time baseline (only refreshed once per
-      // cycle, before any local registration exists - see
-      // _loadSummaryReportData's hasHouseholdDataForCycle check), so it
-      // never ends up re-counting these; every local record is counted
-      // directly, regardless of sync status.
+      // Local household registrations by date, counted DISTINCTLY against
+      // the server snapshot rather than summed on top of it.
+      //
+      // The old comment here claimed the server snapshot was a
+      // point-in-time baseline taken before any local registration exists,
+      // so local rows could never be re-counted. That stopped being true:
+      // home.dart's completedSync handler calls
+      // _refreshSummaryReportAfterSync() after EVERY sync, so the snapshot
+      // is re-pulled and then does include households this device already
+      // pushed - which were still being added again from the local table.
+      // Three registrations read as six.
+      //
+      // HouseholdModel.id is null until a sync-up round trip writes the
+      // server-generated id back onto the local row (sync_service_mapper,
+      // DataModelType.household case), so `id == null` means "the server
+      // snapshot cannot possibly contain this one yet" and is the exact
+      // complement of the snapshot. Dedupe by clientReferenceId as well, so
+      // a household is one unit regardless of how many rows reference it.
       final localHouseholdsRegisteredByDate = <String, int>{};
       final localPeopleInHouseholdsByDate = <String, int>{};
+      final countedHouseholdClientRefs = <String>{};
       for (final hh in households) {
         final createdBy =
             hh.clientAuditDetails?.createdBy ?? hh.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
+        // The `hh.id != null` guard that used to sit here is gone - it
+        // dropped a household the moment it synced, before the server's
+        // aggregate had caught up, which made the counts jump backwards.
+        // Distinctness by clientReferenceId is what prevents double
+        // counting, and the progress bar now applies the identical rule so
+        // the two surfaces cannot disagree.
+        if (!countedHouseholdClientRefs.add(hh.clientReferenceId)) continue;
         final epochMs =
             hh.clientAuditDetails?.createdTime ?? hh.auditDetails?.createdTime;
         if (!isWithinCurrentCycle(epochMs)) continue;

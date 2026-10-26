@@ -620,6 +620,33 @@ final jsonConfig = {
             "headName": "__context:headName",
             "headMobileNumber": "__context:headMobileNumber",
 
+            /// Household/individual context carried onto the delivery task so
+            /// a task row is self-describing in reports without re-joining to
+            /// the household. Sourced from nav params set on the DELIVERY
+            /// navigation, exactly the way memberCount/headName already are.
+            "childrenCount": "__context:childrenCount",
+            "pregnantWomenCount": "__context:pregnantWomenCount",
+            "identificationType": "__context:identificationType",
+            "identificationNumber": "__context:identificationNumber",
+
+            /// Whether this household had already been delivered to when the
+            /// task was raised. Computed by fn:isDelivered on the DELIVERY
+            /// navigation - a task-status check, rather than inferring it from
+            /// closed-household state, which conflates "not delivered yet"
+            /// with "closed".
+            "isDelivered": "__context:isDelivered",
+
+            /// What was handed over. TaskResourceModel carries these per
+            /// resource row; mirroring them on the task keeps the aggregate
+            /// visible without expanding the resource list.
+            "quantity": "DeliveryDetails.resourceCard.quantityDistributed",
+            "productVariant":
+                "DeliveryDetails.resourceCard.resourceDelivered.productId",
+
+            /// When the delivery happened, and the boundary it happened in.
+            "dateOfAdministration": "__value:DATETIME.NOW",
+            "administrativeArea": "__context:boundary.name",
+
             /// One GS1 barcode per ITN handed over, captured by the scanner
             /// field on the DeliveryDetails page. TaskResourceModel carries
             /// only an aggregate quantity and has no per-unit column, so the
@@ -1128,6 +1155,12 @@ final jsonConfig = {
           "referenceId": "__context:projectId",
           "referenceIdType": "__value:PROJECT",
           "quantity": "lessExcessDetails.quantity",
+          // Without this the Waybill Number column on the Loss/Excess View
+          // Reports detail table had no source at all - neither
+          // StockModel.wayBillNumber nor additionalFields.wayBillNumber was
+          // ever written, so getWayBillNumber fell through both arguments
+          // and returned '' for every row.
+          "wayBillNumber": "lessExcessDetails.wayBillNumber",
           "campaignNumber": "__context:selectedProject.referenceID",
           "transactionType":
               "__switch:__context:stockEntryType:{LESS:__value:DISPATCHED,default:__value:RECEIVED}",
@@ -1150,7 +1183,17 @@ final jsonConfig = {
             // other stock writes: loss is terminal, excess is received.
             "status":
                 "__switch:__context:stockEntryType:{LESS:__value:LOST,default:__value:RECEIVED}",
-            "adjustmentReason": "lessExcessDetails.reasonForLessExcess"
+            "adjustmentReason": "lessExcessDetails.reasonForLessExcess",
+            // Mirrored into additionalFields as well as onto the top-level
+            // StockModel columns. The server does not always echo
+            // wayBillNumber (and quantity) back on a sync-down, so a record
+            // that round-trips can come back with the top-level column null
+            // while additionalFields survives intact - which is why
+            // getWayBillNumber takes the top-level value AND the
+            // additionalFields copy as its two arguments. Writing both gives
+            // every report row a source that survives the round trip.
+            "wayBillNumber": "lessExcessDetails.wayBillNumber",
+            "quantity": "lessExcessDetails.quantity"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",

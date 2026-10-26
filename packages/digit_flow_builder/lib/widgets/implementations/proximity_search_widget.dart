@@ -268,17 +268,48 @@ class _ProximitySearchStatefulState extends State<_ProximitySearchStateful> {
       // Override proximity data only for enabled state.
       // For disabled state, let configured false-path action run as-is.
       if (value) {
-        final existingData = raw['properties']?['data'] ?? [];
-        updated['properties']['data'] = existingData.map((item) {
-          return {
+        final existingData = (raw['properties']?['data'] ?? []) as List;
+
+        // Carry the configured root of the proximity filter across this
+        // rebuild. Coordinates live on the address table, not on the
+        // primary household table, and search_executor falls back to the
+        // search name for a filter with no root (search_executor.dart:265)
+        // - whose latitude/longitude columns stay null, so the bounding box
+        // matched nothing and proximity search silently returned zero
+        // results.
+        // Plain loop rather than firstWhere(orElse: () => null): the config
+        // list arrives as List<Map<String, Object>>, so an orElse returning
+        // null violates the element type and throws at runtime.
+        dynamic withinRoot;
+        for (final item in existingData) {
+          if (item is Map && item['operation'] == 'within') {
+            withinRoot = item['root'];
+            break;
+          }
+        }
+
+        // Every configured entry used to be rewritten into a "within"
+        // filter, which both duplicated the proximity filter and destroyed
+        // the sibling filters the config declares alongside it (e.g. the
+        // localityBoundaryCode/equals entry on address). Keep non-within
+        // entries exactly as configured and replace only the within one.
+        final configuredFilters = existingData
+            .where((item) => item is Map && item['operation'] != 'within')
+            .map((item) => Map<String, dynamic>.from(item as Map))
+            .toList();
+
+        updated['properties']['data'] = [
+          ...configuredFilters,
+          {
             "key": json['fieldName'],
             if (radius != null) "value": radius,
+            if (withinRoot != null) "root": withinRoot,
             "lat": _lat,
             "long": _long,
             "accuracy": _accuracy,
             "operation": "within"
-          };
-        }).toList();
+          },
+        ];
       }
 
       widget.onAction(ActionConfig.fromJson(updated));

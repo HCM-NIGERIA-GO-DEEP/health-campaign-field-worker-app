@@ -48,7 +48,16 @@ class JsonSchemaIntegerBuilder extends JsonSchemaBuilder<int> {
           maxValue: relativeMaxValue ?? maxValue ?? 1000,
           maxLength: 5,
           step: 1,
-          initialValue: (form.control(formControlName).value ?? 0).toString(),
+          // An unanswered numeric field's FormControl<int> holds null (see
+          // form_builder_helper's PropertySchemaFormat.numeric branch), and
+          // `?? 0` turned that into a literal "0" sitting in the input.
+          // BaseDigitFormInput seeds its controller via
+          // `_controller.text = initialValue`, whose setter collapses the
+          // selection to offset 0 - so the caret parked BEFORE that "0" and
+          // the first digit typed landed in front of it ("5" became "50").
+          // Rendering null as empty leaves the field genuinely blank, so the
+          // caret and the typed digits line up.
+          initialValue: form.control(formControlName).value?.toString() ?? '',
           onChange: (value) {
             form.control(formControlName).markAsTouched();
             if (value.isEmpty) {

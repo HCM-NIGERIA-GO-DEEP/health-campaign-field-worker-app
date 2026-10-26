@@ -758,6 +758,36 @@ final dynamic sampleFlows = {
                         "key": "beneficiaryId",
                         "value":
                             "{{fn:getUniqueBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}"
+                      },
+                      // Household/individual context persisted onto the
+                      // delivery TaskModel (see the delivery config's
+                      // additionalFields), so a task row is self-describing
+                      // in reports without re-joining to the household.
+                      {
+                        "key": "childrenCount",
+                        "value":
+                            "{{fn:getAdditionalFieldValue(contextData.0.household.HouseholdModel.additionalFields.fields, 'childrenCount')}}"
+                      },
+                      {
+                        "key": "pregnantWomenCount",
+                        "value":
+                            "{{fn:getAdditionalFieldValue(contextData.0.household.HouseholdModel.additionalFields.fields, 'pregnantWomenCount')}}"
+                      },
+                      {
+                        "key": "identificationType",
+                        "value":
+                            "{{contextData.0.headIndividual.IndividualModel.identifiers.0.identifierType}}"
+                      },
+                      {
+                        "key": "identificationNumber",
+                        "value":
+                            "{{contextData.0.headIndividual.IndividualModel.identifiers.0.identifierId}}"
+                      },
+                      // Task-status based, so "not delivered yet" is not
+                      // confused with "household closed".
+                      {
+                        "key": "isDelivered",
+                        "value": "{{fn:isDelivered(contextData.0.tasks)}}"
                       }
                     ],
                     "name": "DELIVERY",
@@ -782,7 +812,11 @@ final dynamic sampleFlows = {
           "label": "CORE_COMMON_SAVE",
           "format": "button",
           "visible": "{{fn:hasRole('REGISTRAR')}} == true",
-          "disabled": "{{fn:isClosedHousehold(contextData.0.tasks)}} == true",
+          // Also disabled once the health-talk checklist has been submitted:
+          // the acknowledgement screen links back here, and with Save still
+          // live the same checklist could be filled repeatedly in a loop.
+          "disabled":
+              "{{fn:isClosedHousehold(contextData.0.tasks)}} == true || {{fn:isChecklistCompleted(contextData.0.household.HouseholdModel.additionalFields.fields)}} == true",
           "onAction": [
             {
               "actionType": "NAVIGATION",
@@ -1515,7 +1549,16 @@ final dynamic sampleFlows = {
               "actionType": "field.value==true ? SEARCH_EVENT : CLEAR_STATE",
               "properties": {
                 "data": [
-                  {"key": "", "value": 5, "operation": "within"},
+                  // Latitude/longitude live on the address table, not on
+                  // household - without this root the filter resolves
+                  // against the primary table's always-null coordinate
+                  // columns and matches nothing.
+                  {
+                    "key": "",
+                    "root": "address",
+                    "value": 5,
+                    "operation": "within"
+                  },
                   {
                     "key": "localityBoundaryCode",
                     "root": "address",
@@ -1849,6 +1892,21 @@ final dynamic sampleFlows = {
         {
           "data": "members",
           "type": "template",
+          // A household marked closed (Mark Closed Household or a declined
+          // consent) is a Registrar-owned placeholder - there is nothing for
+          // a Distributor to deliver to until a Registrar reopens and
+          // completes it, and the OPEN button is dead for them anyway. Drop
+          // those rows from the Distributor's result list entirely rather
+          // than showing an unusable card. itemFilter is evaluated per item
+          // by list_view_widget before the card is built, so a filtered-out
+          // household never renders.
+          //
+          // A user who holds BOTH roles keeps seeing them: reopening a
+          // closed household is a registration action and runs from this
+          // very card's OPEN button, so filtering on DISTRIBUTOR alone
+          // would lock a dual-role user out of their own Registrar work.
+          "itemFilter":
+              "{{fn:hasRole('DISTRIBUTOR')}} == false || {{fn:hasRole('REGISTRAR')}} == true || {{fn:isHouseholdMarkedClosed(item.tasks)}} == false",
           "child": {
             "type": "template",
             "format": "card",
@@ -2468,6 +2526,10 @@ final dynamic sampleFlows = {
                   "APPONE_DELIVERYFLOW_DELIVERYDETAILS_ACTIONS_SUBMIT_LABEL",
               "format": "button",
               "fieldName": "registrationHealthTalkSubmitButton",
+              // The checklist persistence itself lives in this flow's own
+              // (flow-level) onAction further down, which is what
+              // screen_builder's _handleFormSubmission executes. This
+              // navigation is kept as it was originally.
               "onAction": [
                 {
                   "actionType": "NAVIGATION",
@@ -2752,6 +2814,97 @@ final dynamic sampleFlows = {
       "disabled": false,
       "isSelected": true,
       "onAction": [
+        // Persist the checklist answers onto the household BEFORE
+        // navigating away.
+        //
+        // This has to live at flow level, not on the footer button: for a
+        // screenType "FORM" flow the forms engine renders and owns the
+        // submit button, and submission routes through
+        // FormSubmissionRegistry into screen_builder's
+        // _handleFormSubmission, which executes widget.config['onAction'] -
+        // this list. Actions placed on the page's footer button are never
+        // executed at all, which is why earlier attempts to save ACTION1..7
+        // there silently did nothing.
+        //
+        // The household is re-searched here rather than relying on the
+        // flow's initActions. initActions run via
+        // ActionHandler.execute(parsed, context, {'wrappers': const []}) -
+        // with no compositeKey in that contextData, so search_executor may
+        // not write its results back into FlowCrudStateRegistry, leaving
+        // _handleFormSubmission's registryState.base null and
+        // contextData['entities'] empty. UpdateExecutor then logs
+        // "No entities found in contextData[entities]" and returns without
+        // writing anything - a silent no-op. awaitResults makes this search
+        // populate contextData['entities'] synchronously before
+        // UPDATE_EVENT runs.
+        //
+        // The "HouseholdModel.additionalFields.fields.<key>" modify path
+        // merges into the existing additionalFields (crud_executor), so
+        // childrenCount / pregnantWomenCount / caregiverConsent already on
+        // the household are preserved.
+        {
+          "actionType": "SEARCH_EVENT",
+          "properties": {
+            "data": [
+              {
+                "key": "clientReferenceId",
+                "value": "{{navigation.HouseholdClientReferenceId}}",
+                "operation": "equals"
+              }
+            ],
+            "name": "household",
+            "type": "SEARCH_EVENT",
+            "awaitResults": true,
+            "onError": [
+              {
+                "actionType": "SHOW_TOAST",
+                "properties": {"message": "Failed to load the household."}
+              }
+            ]
+          }
+        },
+        {
+          "actionType": "UPDATE_EVENT",
+          "properties": {
+            "entity": "HouseholdModel",
+            "modify": [
+              {
+                "key": "HouseholdModel.additionalFields.fields.ACTION1",
+                "value": "{{formData.registrationHealthTalkChecklist.ACTION1}}"
+              },
+              {
+                "key": "HouseholdModel.additionalFields.fields.ACTION2",
+                "value": "{{formData.registrationHealthTalkChecklist.ACTION2}}"
+              },
+              {
+                "key": "HouseholdModel.additionalFields.fields.ACTION3",
+                "value": "{{formData.registrationHealthTalkChecklist.ACTION3}}"
+              },
+              {
+                "key": "HouseholdModel.additionalFields.fields.ACTION4",
+                "value": "{{formData.registrationHealthTalkChecklist.ACTION4}}"
+              },
+              {
+                "key": "HouseholdModel.additionalFields.fields.ACTION5",
+                "value": "{{formData.registrationHealthTalkChecklist.ACTION5}}"
+              },
+              {
+                "key": "HouseholdModel.additionalFields.fields.ACTION6",
+                "value": "{{formData.registrationHealthTalkChecklist.ACTION6}}"
+              },
+              {
+                "key": "HouseholdModel.additionalFields.fields.ACTION7",
+                "value": "{{formData.registrationHealthTalkChecklist.ACTION7}}"
+              }
+            ],
+            "onError": [
+              {
+                "actionType": "SHOW_TOAST",
+                "properties": {"message": "Failed to save the checklist."}
+              }
+            ]
+          }
+        },
         {
           "actionType": "NAVIGATION",
           "properties": {
@@ -2782,8 +2935,51 @@ final dynamic sampleFlows = {
       "summary": false,
       "version": 1,
       "screenType": "FORM",
-      "wrapperConfig": {},
-      "initActions": []
+      // The checklist answers are persisted onto the household on submit,
+      // so the flow has to actually load that household first - with no
+      // relations there are no existingModels and the UPDATE_EVENT would
+      // silently no-op. Mirrors householdOverview's loading, trimmed to the
+      // single entity this flow writes to.
+      "wrapperConfig": {
+        "filters": [],
+        "relations": [
+          {
+            "name": "household",
+            "match": {
+              "field": "clientReferenceId",
+              "equalsFrom": "clientReferenceId"
+            },
+            "entity": "HouseholdModel"
+          }
+        ],
+        // Without this block search_executor bails out with
+        // "No searchConfig in config, skipping search. primaryModel=null,
+        // select=[]" - it never runs the query, so contextData['entities']
+        // stays empty and the UPDATE_EVENT below finds nothing to write the
+        // checklist answers onto. `relations` alone is not enough; the
+        // search needs a primary entity and a select list, exactly as
+        // householdOverview and previewScreen declare.
+        "searchConfig": {
+          "select": ["household"],
+          "primary": "household"
+        }
+      },
+      "initActions": [
+        {
+          "actionType": "SEARCH_EVENT",
+          "properties": {
+            "data": [
+              {
+                "key": "clientReferenceId",
+                "value": "{{navigation.HouseholdClientReferenceId}}",
+                "operation": "equals"
+              }
+            ],
+            "name": "household",
+            "type": "SEARCH_EVENT"
+          }
+        }
+      ]
     },
     {
       "body": [
@@ -3211,8 +3407,17 @@ final dynamic sampleFlows = {
                 {"type": "scanLimit", "value": 3},
                 {"type": "allowManualEntry", "value": true},
                 {
+                  // Was "^[!-~]{1,20}$" - any 1-20 printable characters, so
+                  // a manually typed "sjfk" passed. Same guard-rail as the
+                  // Liberia branch (4f3cbadc3): uppercase alphanumeric with
+                  // hyphens allowed, minimum 8 characters. Rejects short /
+                  // lowercase junk while still accepting GTIN-style digits
+                  // and XXXX-XXXX-XXXX codes.
+                  // TIGHTEN once the real code format is confirmed - and
+                  // note a non-matching manual code is rejected with a toast
+                  // here, so an over-strict pattern blocks valid codes.
                   "type": "manualSerialPattern",
-                  "value": "^[!-~]{1,20}\$",
+                  "value": "^[A-Z0-9][A-Z0-9-]{7,}\$",
                   "message": "APPONE_REGISTRATION_DELIVERYDETAILS_label_scanner_serial_pattern_message"
                 }
               ],

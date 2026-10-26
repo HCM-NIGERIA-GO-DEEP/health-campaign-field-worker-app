@@ -262,6 +262,20 @@ class FunctionRegistries {
           args.length > 1 ? args[1]?.toString().toUpperCase() ?? '' : '';
       final discrepancyReason =
           args.length > 2 ? args[2]?.toString().toUpperCase() ?? '' : '';
+      // Once an issued transaction has been accepted, show the receiver's
+      // perspective in the UI. The stored entry type remains ISSUED for stock
+      // balance/report calculations.
+      //
+      // This MUST be tested before the discrepancy-reason branches below. A
+      // partially-accepted receipt now carries the discrepancy reason that
+      // explains its shortfall (see the Partial Accept UPDATE_EVENT in
+      // manage_stock.dart), and a STOCK_LOSS/STOCK_DAMAGE reason there would
+      // otherwise retitle the receiver's own accepted receipt as "Stock Loss
+      // Details"/"Stock Damaged Details". The record is still a receipt; the
+      // reason only describes why less arrived than was sent.
+      if (stockEntryType == 'ISSUED' && transactionReason == 'RECEIVED') {
+        return 'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
+      }
       // When an upper-level user resolves a shortfall, the acknowledged
       // record can retain stockEntryType=RETURNED while its discrepancy
       // reason classifies it as loss or damage. Match the view-transaction
@@ -277,12 +291,6 @@ class FunctionRegistries {
       if (stockEntryType == 'RETURNED' || transactionReason == 'RETURNED') {
         return 'INVENTORY_STOCK_RETURN_DETAILS_HEADING';
       }
-      // Once an issued transaction has been accepted, show the receiver's
-      // perspective in the UI. The stored entry type remains ISSUED for stock
-      // balance/report calculations.
-      if (stockEntryType == 'ISSUED' && transactionReason == 'RECEIVED') {
-        return 'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
-      }
       const headings = {
         'ISSUED': 'INVENTORY_STOCK_ISSUE_DETAILS_HEADING',
         'RETURNED': 'INVENTORY_STOCK_RETURN_DETAILS_HEADING',
@@ -295,8 +303,26 @@ class FunctionRegistries {
           'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
     });
 
+    // Optional 2nd arg: the record's stockEntryType.
+    //
+    // A LESS/EXCESS adjustment is stored with the transactionReason of the
+    // movement that carried it - an excess is persisted as transactionType
+    // RECEIVED with transactionReason RECEIVED - so echoing the raw reason
+    // rendered "Received" on a record whose own heading said "Stock Excess
+    // Details". The entry type is the meaningful reason for these two, so
+    // use it when present and fall back to the stored reason otherwise.
     FunctionRegistry.register('getTransactionReasonDisplayCode',
         (args, stateData) {
+      final stockEntryType = args.length > 1
+          ? args[1]?.toString().trim().toUpperCase() ?? ''
+          : '';
+      const entryTypeLabels = {
+        'EXCESS': 'INVENTORY_TRANSACTION_REASON_EXCESS',
+        'LESS': 'INVENTORY_TRANSACTION_REASON_LESS',
+      };
+      final entryTypeLabel = entryTypeLabels[stockEntryType];
+      if (entryTypeLabel != null) return entryTypeLabel;
+
       if (args.isEmpty || args.first == null) return null;
       final value = args.first.toString().trim();
       return value.isEmpty || value.toLowerCase() == 'null' ? null : value;
@@ -495,7 +521,15 @@ class FunctionRegistries {
               ? fieldValue('actualQuantityReceived') ??
                   stock['quantity']?.toString() ??
                   ''
-              : stock['quantity']?.toString() ?? '';
+              // Loss/Excess adjustments fall through to here. Fall back to
+              // the additionalFields copy when the top-level column is null
+              // - a record that has round-tripped through the server can
+              // come back without it, which left the Quantity column blank
+              // on the Loss and Excess reports even though the local record
+              // plainly had a quantity.
+              : stock['quantity']?.toString() ??
+                  fieldValue('quantity') ??
+                  '';
       // This helper is used for report display. Keep signed quantities in
       // storage for balance calculations, but show their magnitude in reports.
       final number = num.tryParse(value.toString().trim());
@@ -1163,6 +1197,92 @@ class FunctionRegistries {
       }
     });
 
+    /// True once the registration health-talk checklist has been submitted
+    /// for this household.
+    ///
+    /// The checklist persists its answers as ACTION1..ACTIONn keys in the
+    /// household's additionalFields (via beneficiaryRegistration's
+    /// fallbackModel). Any such key means the user has already been through
+    /// the checklist, so the entry point must not offer it again - without
+    /// this, the acknowledgement screen's "Household Details" link returns to
+    /// householdOverview with Save still enabled, and the checklist can be
+    /// filled over and over in a loop.
+    ///
+    /// Usage: "{{fn:isChecklistCompleted(contextData.0.household.HouseholdModel.additionalFields.fields)}}"
+    FunctionRegistry.register('isChecklistCompleted', (args, stateData) {
+      if (args.isEmpty || args.first == null) return false;
+      final raw = args.first;
+
+      bool isActionKey(dynamic key) {
+        final name = key?.toString().trim().toUpperCase() ?? '';
+        if (!name.startsWith('ACTION')) return false;
+        // ACTION followed by digits only, so unrelated keys that merely begin
+        // with "action" cannot satisfy this.
+        final suffix = name.substring('ACTION'.length);
+        return suffix.isNotEmpty && int.tryParse(suffix) != null;
+      }
+
+      // additionalFields.fields is a list of {key, value} in API payloads and
+      // a list of AdditionalField objects in the app model; the interpolation
+      // layer may also hand this over already flattened to a map.
+      if (raw is Map) {
+        return raw.keys.any(isActionKey);
+      }
+      if (raw is List) {
+        for (final field in raw) {
+          if (field is Map) {
+            if (isActionKey(field['key'])) return true;
+            continue;
+          }
+          try {
+            if (isActionKey((field as dynamic).key)) return true;
+          } catch (_) {
+            // Not a key/value shaped entry - ignore.
+          }
+        }
+      }
+      return false;
+    });
+
+    /// The id this facility's stock should be booked against.
+    ///
+    /// Warehouse-manager style roles are mapped to a real facility, so the
+    /// facility selected on the form is correct for them. A Distributor (and
+    /// therefore Registrar+Distributor, which also holds DISTRIBUTOR) has no
+    /// facility of its own - its stock is keyed by the user's uuid, which is
+    /// the same convention getReportFacilityId already applies when reading
+    /// these records back. Writing one convention and querying the other is
+    /// what leaves a distributor's stock out of its own balance.
+    ///
+    /// Usage: "{{fn:getStockFacilityId(warehouseDetails.facilityToWhich)}}"
+    FunctionRegistry.register('getStockFacilityId', (args, stateData) {
+      final isDistributor = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.distributor.toValue());
+      if (isDistributor) return context.loggedInUserUuid ?? '';
+      final selected = args.isNotEmpty ? args.first?.toString().trim() : null;
+      return (selected == null || selected.isEmpty || selected == 'null')
+          ? ''
+          : selected;
+    });
+
+    /// Human-readable name for the facility a stock record transacted with,
+    /// stored alongside the id so a report row stays readable even when the
+    /// facility list is not loaded. Facility names are localised as
+    /// FAC_<facilityId>; DELIVERY_TEAM is a synthetic party with its own
+    /// code. Returns '' rather than a raw uuid when nothing resolves, so the
+    /// row hides instead of showing an opaque id.
+    ///
+    /// Usage: "{{fn:getTransactingFacilityName(stockDetails.facilityFromWhich)}}"
+    FunctionRegistry.register('getTransactingFacilityName', (args, stateData) {
+      final raw = args.isNotEmpty ? args.first?.toString().trim() : null;
+      if (raw == null || raw.isEmpty || raw == 'null') return '';
+      if (raw.toUpperCase() == 'DELIVERY_TEAM') return 'DELIVERY_TEAM';
+      // Facility ids are localised through the FAC_ prefix; a uuid-shaped
+      // value is a staff/user party and has no facility name.
+      final isUuidLike = raw.contains('-') && !raw.startsWith('F-');
+      return isUuidLike ? '' : 'FAC_$raw';
+    });
+
     FunctionRegistry.register('getCurrentFacilities', (args, stateData) {
       try {
         List<dynamic>? projectFacilities;
@@ -1588,6 +1708,19 @@ class FunctionRegistries {
       return '';
     }
 
+    /// Display form for a STAFF (delivery team / CDD) party: the username
+    /// alongside the id it is recorded against, e.g. "jdoe | <uuid>". The id
+    /// is what every transaction and report keys on, so showing the name
+    /// alone makes rows impossible to cross-reference; showing the id alone
+    /// is meaningless to the user. Degrades to whichever half is available.
+    String teamPartyDisplay(String teamName, String id) {
+      final name = teamName.trim();
+      final identifier = id.trim();
+      if (name.isEmpty) return identifier;
+      if (identifier.isEmpty) return name;
+      return '$name | $identifier';
+    }
+
     FunctionRegistry.register('getFirstPagePartyLabel', (args, stateData) {
       if (args.isEmpty) return 'INVENTORY_TRANSACTING_PARTY_LABEL';
       final stockEntryType = getStockEntryTypeFromFields(args.first);
@@ -1618,19 +1751,19 @@ class FunctionRegistries {
         case 'RECEIPT':
         case 'RETURNED':
           if (senderType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
+            return teamPartyDisplay(teamName, args[1]?.toString() ?? '');
           }
           return withFacilityPrefix(args[1]);
         case 'ISSUED':
         case 'DAMAGED':
         case 'LOSS':
           if (receiverType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
+            return teamPartyDisplay(teamName, args[2]?.toString() ?? '');
           }
           return withFacilityPrefix(args[2]);
         default:
           if (senderType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
+            return teamPartyDisplay(teamName, args[1]?.toString() ?? '');
           }
           return withFacilityPrefix(args[1]);
       }
@@ -1665,7 +1798,7 @@ class FunctionRegistries {
         case 'RECEIPT':
         case 'RETURNED':
           if (receiverType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
+            return teamPartyDisplay(teamName, args[2]?.toString() ?? '');
           }
           return withFacilityPrefix(args[2]);
         case 'ISSUED':
@@ -1677,7 +1810,7 @@ class FunctionRegistries {
           return withFacilityPrefix(args[1]);
         default:
           if (receiverType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
+            return teamPartyDisplay(teamName, args[2]?.toString() ?? '');
           }
           return withFacilityPrefix(args[2]);
       }

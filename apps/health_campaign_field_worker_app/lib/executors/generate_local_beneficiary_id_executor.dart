@@ -21,7 +21,7 @@ import '../services/device_id_service.dart';
 /// `buildIdentifierEntries` mapping) keeps working unmodified.
 ///
 /// Current format:
-/// `<DIS>_<CHI>_<PHU>_<DP>_<COM>_<F><L>_DDMMYYYY_HH_MM`, e.g. `BOM_BIR_KAM_KAM_YEB_JD_15102026_14_37`
+/// `<DIS>_<CHI>_<PHU>_<DP>_<COM>_<F><L>_DDMMYYYY_HHMMSS`, e.g. `BOM_BIR_KAM_KAM_YEB_JD_15102026_143715`
 /// - DIS/CHI/PHU/DP/COM: first 3 letters of the District/Chiefdom/PHU/
 ///   Distribution Point/Community names, resolved from
 ///   `FlowBuilderSingleton().fullBoundary`'s `materializedPath` (ancestor
@@ -36,9 +36,20 @@ import '../services/device_id_service.dart';
 ///   part of the HOUSEHOLD form's final (4th page) submit, not at
 ///   `searchBeneficiary` init time, specifically so that data exists yet.
 ///
-/// Minute-level timestamp granularity means two generations for the same
-/// boundary+name in the same minute (e.g. two offline devices) still collide.
-/// Not addressed here - flagged for a future revision.
+/// The timestamp is second-granular and includes the date. It previously
+/// dropped the date entirely and used minute granularity, so two
+/// registrations at the same clock minute - even on different days - in the
+/// same boundary whose heads shared initials (namePart is only two INITIALS,
+/// so "John Doe" and "Jane Davis" both give "JD") produced the SAME id. That
+/// is what made a registration started right after backing out of another
+/// reuse its id.
+///
+/// Second granularity narrows that window but cannot close it, so every
+/// generated id is additionally checked against the local UniqueIdPool via
+/// `_disambiguateAgainstLocalPool` and suffixed if this device has already
+/// issued it. Cross-DEVICE collisions remain possible (two offline devices,
+/// same boundary, same initials, same second) - the local table cannot see
+/// another device's ids. Still flagged for a future revision.
 ///
 /// The generated id is also persisted locally as an `UN_ASSIGNED`
 /// `UniqueIdPoolModel` row (`createOpLog: false` - this never goes through
@@ -71,11 +82,18 @@ class GenerateLocalBeneficiaryIdExecutor extends ActionExecutor {
 
     final boundaryPrefixes = await _resolveBoundaryNamePrefixes(context);
 
-    final beneficiaryId = generateBeneficiaryId(
+    var beneficiaryId = generateBeneficiaryId(
       boundaryPrefixes: boundaryPrefixes,
       firstName: firstName,
       lastName: lastName,
     );
+    // The format is deterministic (boundary + initials + timestamp), so it
+    // can still repeat - two registrations inside the same second, or a
+    // clock that moved backwards. Every generated id is already written to
+    // the local UniqueIdPool table, so that table is an authoritative record
+    // of what this device has handed out: re-use it as a uniqueness check
+    // and disambiguate rather than silently issuing a duplicate.
+    beneficiaryId = await _disambiguateAgainstLocalPool(context, beneficiaryId);
 
     await _persistLocally(context, beneficiaryId);
 
@@ -116,9 +134,49 @@ class GenerateLocalBeneficiaryIdExecutor extends ActionExecutor {
     };
   }
 
-  /// Best-effort: a failure here (including a primary-key clash from the
-  /// known same-minute collision risk above) must not block the user from
-  /// continuing registration with the id they were already shown.
+  /// Returns [candidate] if this device has not already issued it, otherwise
+  /// appends `_2`, `_3`, ... until an unused id is found.
+  ///
+  /// The generated format is deterministic - boundary prefixes, the head's
+  /// two name INITIALS, and a timestamp - so distinct households can land on
+  /// the same string (same boundary, same initials, same second; or a clock
+  /// that stepped backwards). Every id is persisted to the local
+  /// UniqueIdPool table, which makes that table the record of what this
+  /// device has handed out and therefore a usable uniqueness check.
+  ///
+  /// Best-effort: if the lookup fails, return the candidate unchanged rather
+  /// than blocking the registration - same policy as [_persistLocally].
+  Future<String> _disambiguateAgainstLocalPool(
+    BuildContext context,
+    String candidate,
+  ) async {
+    try {
+      final repository = context
+          .read<LocalRepository<UniqueIdPoolModel, UniqueIdPoolSearchModel>>();
+
+      var attempt = candidate;
+      // Bounded so a misbehaving repository can never spin forever; two
+      // collisions on a second-granular id already means something is very
+      // wrong, and 50 gives enormous headroom over that.
+      for (var suffix = 2; suffix <= 50; suffix++) {
+        final existing =
+            await repository.search(UniqueIdPoolSearchModel(id: attempt));
+        if (existing.isEmpty) return attempt;
+        debugPrint('GENERATE_LOCAL_BENEFICIARY_ID: $attempt already issued on '
+            'this device, disambiguating');
+        attempt = '${candidate}_$suffix';
+      }
+      return attempt;
+    } catch (e) {
+      debugPrint('GENERATE_LOCAL_BENEFICIARY_ID: uniqueness check failed for '
+          '$candidate: $e');
+      return candidate;
+    }
+  }
+
+  /// Best-effort: a failure here (including a primary-key clash) must not
+  /// block the user from continuing registration with the id they were
+  /// already shown.
   Future<void> _persistLocally(
     BuildContext context,
     String beneficiaryId,
@@ -247,8 +305,11 @@ class GenerateLocalBeneficiaryIdExecutor extends ActionExecutor {
     return letters.length >= 3 ? letters.substring(0, 3) : letters;
   }
 
-  /// `<DIS>_<CHI>_<PHU>_<DP>_<COM>_<F><L>_DDMMYYYY_HH_MM`,
-  /// e.g. `BOM_BIR_KAM_KAM_YEB_JD_15102026_14_37`.
+  /// `<DIS>_<CHI>_<PHU>_<DP>_<COM>_<F><L>_DDMMYYYY_HHMMSS`,
+  /// e.g. `BOM_BIR_KAM_KAM_YEB_JD_15102026_143715`.
+  ///
+  /// Callers must pass the result through [_disambiguateAgainstLocalPool]:
+  /// this alone is NOT guaranteed unique.
   @visibleForTesting
   String generateBeneficiaryId({
     required List<String> boundaryPrefixes,
@@ -267,7 +328,20 @@ class GenerateLocalBeneficiaryIdExecutor extends ActionExecutor {
         '${now.year.toString().padLeft(4, '0')}';
     final hourPart = now.hour.toString().padLeft(2, '0');
     final minutePart = now.minute.toString().padLeft(2, '0');
+    // datePart was computed and then silently dropped from the returned
+    // string, so two registrations at the same clock minute on DIFFERENT
+    // DAYS produced byte-identical ids. Restored, as the documented format
+    // above always said it should be.
+    //
+    // Seconds are included too: namePart is only the two INITIALS of the
+    // head's first/last name, so "John Doe" and "Jane Davis" already
+    // collapse to the same "JD". With minute-only granularity any two
+    // households registered in the same boundary within the same minute
+    // whose heads share initials got the same id - which is what made a
+    // fresh registration right after backing out of one reuse its id.
+    final secondPart = now.second.toString().padLeft(2, '0');
 
-    return '${boundaryPart}_${namePart}_$hourPart$minutePart';
+    return '${boundaryPart}_${namePart}_${datePart}_'
+        '$hourPart$minutePart$secondPart';
   }
 }

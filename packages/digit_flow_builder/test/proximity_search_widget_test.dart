@@ -40,7 +40,7 @@ const _proximitySearchJsonString = '''
       "actionType": "field.value==true ? SEARCH_EVENT : CLEAR_STATE",
       "properties": {
         "data": [
-          {"key": "", "value": 5, "operation": "within"},
+          {"key": "", "root": "address", "value": 5, "operation": "within"},
           {
             "key": "localityBoundaryCode",
             "root": "address",
@@ -178,6 +178,46 @@ void main() {
           (clearStateAction.properties['filterKeys'] as List).cast<String>();
 
       expect(filterKeys, containsAll(['identifierId', 'identifierType', 'mobileNumber']));
+    },
+  );
+
+  // Latitude/longitude live on the address table, not on household. A within
+  // filter emitted without its configured root resolves against the primary
+  // table's always-null coordinate columns, so the bounding box matches
+  // nothing and Proximity silently returns zero results.
+  testWidgets(
+    'the emitted within filter keeps its configured root and the sibling filters',
+    (tester) async {
+      await pumpWidget(tester);
+
+      await tester.tap(find.byType(DigitSwitch));
+      await tester.pumpAndSettle();
+
+      final searchAction = dispatchedActions.firstWhere(
+        (a) => a.actionType == 'SEARCH_EVENT',
+        orElse: () =>
+            throw StateError('No SEARCH_EVENT was dispatched on enable'),
+      );
+
+      final data = (searchAction.properties['data'] as List)
+          .cast<Map<String, dynamic>>();
+
+      final within =
+          data.singleWhere((filter) => filter['operation'] == 'within');
+      expect(within['root'], 'address',
+          reason: 'within filter must target the address table');
+      expect(within['lat'], isNotNull);
+      expect(within['long'], isNotNull);
+
+      // Rewriting every configured entry into a "within" filter used to both
+      // duplicate the proximity filter and drop this boundary filter.
+      final locality = data.singleWhere(
+        (filter) => filter['key'] == 'localityBoundaryCode',
+        orElse: () => throw StateError(
+            'configured localityBoundaryCode filter was dropped'),
+      );
+      expect(locality['root'], 'address');
+      expect(locality['operation'], 'equals');
     },
   );
 }

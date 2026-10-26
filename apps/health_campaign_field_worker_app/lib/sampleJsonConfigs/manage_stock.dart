@@ -1898,6 +1898,42 @@ final dynamic sampleInventoryFlows = {
               "errorMessage": "",
               "isMultiSelect": false,
               "enums": null
+            },
+            // The View Reports detail table renders a Waybill Number column
+            // for every report type, but Less/Excess captured no waybill at
+            // all and the stockLessExcess transformer had no wayBillNumber
+            // mapping - so getWayBillNumber fell through both sources and
+            // the column was permanently blank on the Loss and Excess
+            // reports. Optional, since an adjustment is not always tied to a
+            // waybill; same pattern/validation as the receipt flow's own
+            // wayBillNumber field.
+            {
+              "type": "string",
+              "label": "APPONE_INVENTORY_WAYBILL_LABEL",
+              "order": 7,
+              "value": "",
+              "format": "text",
+              "hidden": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "wayBillNumber",
+              "mandatory": false,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "systemDate": false,
+              "validations": [
+                {
+                  "type": "pattern",
+                  "value": "^[A-Za-z0-9]*\$",
+                  "message":
+                      "INVENTORY_WAYBILL_NUMBER_REQUIRED_ERROR_MESSAGE"
+                }
+              ],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "enums": null
             }
           ],
           "value": null,
@@ -2143,16 +2179,20 @@ final dynamic sampleInventoryFlows = {
                   },
                   {
                     "key": "INVENTORY_TRANSACTION_REASON_LABEL",
+                    // stockEntryType is passed so a LESS/EXCESS adjustment
+                    // shows its own reason instead of echoing the RECEIVED
+                    // transactionReason it is stored with.
                     "value":
-                        "{{fn:getTransactionReasonDisplayCode(item.transactionReason)}}",
+                        "{{fn:getTransactionReasonDisplayCode(item.transactionReason, item.additionalFields.fields.stockEntryType)}}",
                     "hideIfNull": true
                   },
-                  {
-                    "key": "INVENTORY_DISCREPANCY_REASON_LABEL",
-                    "value":
-                        "{{fn:getDiscrepancyReasonDisplayCode(item.additionalFields.fields.discrepancyReason)}}",
-                    "hideIfNull": true
-                  },
+                  // NOTE: Discrepancy Reason is rendered once, lower down,
+                  // next to the Actual/Shortfall Quantity rows it explains.
+                  // A second identical copy used to sit here; it stayed
+                  // invisible only because discrepancyReason was never
+                  // populated on the records normally opened from this
+                  // screen. Now that an accepted partial receipt carries the
+                  // reason too, keeping both would print the row twice.
                   {
                     "key":
                         "{{fn:getSecondPagePartyLabel(item.additionalFields.fields)}}",
@@ -3071,6 +3111,21 @@ final dynamic sampleInventoryFlows = {
                     "key": "StockModel.quantity",
                     "value":
                         "{{fn:safeString(formData.actualQuantityReceived)}}"
+                  },
+                  // The Partial Accept popup captures a mandatory
+                  // discrepancy reason, but it was only ever written onto
+                  // the separate shortfall (RETURNED) record via the
+                  // shortfallTransaction transformer. The accepted receipt
+                  // itself carried nothing, so viewTransactionDetails' own
+                  // Discrepancy Reason row - which reads
+                  // additionalFields.discrepancyReason and is hideIfNull -
+                  // stayed hidden on the incoming receipt the receiver
+                  // actually opens. Stamp it here too so the reason travels
+                  // with the record that explains it.
+                  {
+                    "key":
+                        "StockModel.additionalFields.fields.discrepancyReason",
+                    "value": "{{fn:safeString(formData.discrepancyReason)}}"
                   },
                   {"key": "StockModel.transactionReason", "value": "RECEIVED"}
                 ]
