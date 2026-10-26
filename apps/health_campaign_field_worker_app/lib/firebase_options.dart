@@ -52,11 +52,17 @@ class DefaultFirebaseOptions {
     }
   }
 
+  // Values mirror android/app/google-services.json's org.egov.sierraleone
+  // client entry (matching applicationId in android/app/build.gradle).
+  // Firebase.initializeApp reads these, not google-services.json, so the two
+  // have to be kept in step - leaving them pointing at a different project
+  // initialises against that project no matter what the JSON says.
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBzE5f156_ia7HumLb1fDg8A-88uhmQ68Y',
-    appId: '1:397617237644:android:ef1103344485f51af6b5a9', // com.digit.hcm
-    messagingSenderId: '397617237644',
-    projectId: 'digit-health-75ed0',
-    storageBucket: 'digit-health-75ed0.appspot.com',
+    apiKey: 'AIzaSyDkT1V6wknoUsh8CFDXiA8OwElZnK9sF9w',
+    appId:
+        '1:630326133351:android:207ddd592b28a8e7954ac2', // org.egov.sierraleone
+    messagingSenderId: '630326133351',
+    projectId: 'digit-hcm-nigeria',
+    storageBucket: 'digit-hcm-nigeria.firebasestorage.app',
   );
 }
