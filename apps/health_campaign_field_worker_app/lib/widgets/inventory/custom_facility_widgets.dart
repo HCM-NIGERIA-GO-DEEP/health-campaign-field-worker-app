@@ -359,7 +359,12 @@ class _FacilityCardContent extends StatelessWidget {
             !isWareHouseMgr &&
             (selectedValue == null || selectedValue.isEmpty)) {
           selectedValue = deliveryTeamCode;
-          final loggedInUserId = context.loggedInUserUuid;
+          // Match the shape a scanned team QR produces
+          // ("userName||userUuid", falling back to the user's name, then
+          // to the bare uuid) so getTeamName can show a human label
+          // instead of a raw uuid. getStockTeamCode strips the prefix,
+          // so senderId/receiverId still persist the bare uuid.
+          final loggedInUserId = context.loggedInUserTeamCode;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             field.control.value = deliveryTeamCode;
             field.control.markAsTouched();
@@ -391,7 +396,12 @@ class _FacilityCardContent extends StatelessWidget {
             !isWareHouseMgr &&
             (selectedValue == null || selectedValue.isEmpty)) {
           selectedValue = deliveryTeamCode;
-          final loggedInUserId = context.loggedInUserUuid;
+          // Match the shape a scanned team QR produces
+          // ("userName||userUuid", falling back to the user's name, then
+          // to the bare uuid) so getTeamName can show a human label
+          // instead of a raw uuid. getStockTeamCode strips the prefix,
+          // so senderId/receiverId still persist the bare uuid.
+          final loggedInUserId = context.loggedInUserTeamCode;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             field.control.value = deliveryTeamCode;
             field.control.markAsTouched();
@@ -523,9 +533,14 @@ class _FacilityCardContent extends StatelessWidget {
                         schemaKey: pageSchema,
                         context: context,
                         key: dependantFormKey,
+                        // Same "<label>||<uuid>" shape as the auto-prefill
+                        // paths above - this writes the SAME team code
+                        // field, so a bare uuid here would have displayed a
+                        // raw uuid whenever the user picked Delivery Team
+                        // manually instead of being auto-prefilled.
                         value: value.code == deliveryTeamCode &&
                                 receivesIntoOwnTeam
-                            ? context.loggedInUserUuid
+                            ? context.loggedInUserTeamCode
                             : null,
                       ),
                     );

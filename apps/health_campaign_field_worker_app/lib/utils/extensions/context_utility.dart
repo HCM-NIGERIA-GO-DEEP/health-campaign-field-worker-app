@@ -273,6 +273,26 @@ extension ContextUtilityExtensions on BuildContext {
 
   String get loggedInUserUuid => loggedInUser.uuid;
 
+  /// The logged-in user as a delivery-team code, in the same
+  /// "<label>||<userUuid>" shape a scanned team QR produces.
+  ///
+  /// Auto-filling a bare uuid left the inventory cards with nothing to
+  /// resolve a display name from, so they printed a raw uuid. getTeamName
+  /// reads the part before "||" for display, and getStockTeamCode /
+  /// getTeamCode strip everything before it so senderId / receiverId still
+  /// persist the bare uuid - the stored ids are unchanged by this.
+  ///
+  /// Label precedence: userName, then the user's display name, then neither
+  /// (in which case the bare uuid is returned with no separator, which both
+  /// helpers already handle).
+  String get loggedInUserTeamCode {
+    final user = loggedInUser;
+    final label = (user.userName?.trim().isNotEmpty ?? false)
+        ? user.userName!.trim()
+        : (user.name?.trim() ?? '');
+    return label.isEmpty ? user.uuid : '$label||${user.uuid}';
+  }
+
   UserRequestModel get loggedInUser {
     final authBloc = _get<AuthBloc>();
     final userRequestObject = authBloc.state.whenOrNull(
