@@ -340,7 +340,15 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
               "SELECT name FROM sqlite_master WHERE type = 'table' "
               "AND name NOT LIKE 'sqlite_%' "
               "AND name != 'moor_schema' "
-              "AND LOWER(name) != 'localization';",
+              "AND LOWER(name) != 'localization' "
+              // Beneficiary IDs are a pool DOWNLOADED from the server and
+              // allocated to THIS device - not session data. Wiping the
+              // table on logout meant the pool count read zero on the next
+              // login, and refilling it needs connectivity plus a fresh
+              // server allocation, which a field user may not have. Rows
+              // already marked ASSIGNED keep that status, so preserving the
+              // table cannot re-issue an id that was already used.
+              "AND LOWER(name) != 'unique_id_pool';",
             )
             .get();
 
