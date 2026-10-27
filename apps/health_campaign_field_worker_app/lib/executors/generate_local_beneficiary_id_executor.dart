@@ -229,11 +229,51 @@ class GenerateLocalBeneficiaryIdExecutor extends ActionExecutor {
   Future<List<String>> resolveBoundaryNamePrefixes(BuildContext context) =>
       _resolveBoundaryNamePrefixes(context);
 
+  /// Recovers the root-to-leaf boundary chain from the local Boundary table
+  /// when FlowBuilderSingleton().fullBoundary is unset. Returns null when the
+  /// selected boundary is unknown or its row carries no materializedPath.
+  Future<String?> _materializedPathFromBoundaryTable(
+    BuildContext context,
+  ) async {
+    final code = FlowBuilderSingleton().boundary?.code;
+    if (code == null || code.isEmpty) return null;
+
+    try {
+      final boundaryRepo =
+          context.read<LocalRepository<BoundaryModel, BoundarySearchModel>>();
+      // search does a materializedPath LIKE match, so it can return several
+      // descendants - filter to the exact row.
+      final results =
+          await boundaryRepo.search(BoundarySearchModel(codes: code));
+      final exact = results.where((b) => b.code == code);
+      if (exact.isEmpty) return null;
+      final path = exact.first.materializedPath;
+      if (path == null || path.isEmpty) return null;
+      return path;
+    } catch (e) {
+      debugPrint(
+          'GENERATE_LOCAL_BENEFICIARY_ID: boundary path recovery failed: $e');
+      return null;
+    }
+  }
+
   Future<List<String>> _resolveBoundaryNamePrefixes(
     BuildContext context,
   ) async {
-    final materializedPath =
+    // fullBoundary is in-memory only and is set in exactly one place -
+    // project.dart's _loadProjectFacilities. A session that resumes without
+    // re-running that path (relaunch on a cached project) therefore has a
+    // correct `boundary` but a null `fullBoundary`, and every id generated
+    // in that session came out as "ZZZ_ZZZ_ZZZ_ZZZ_ZZZ_..".
+    //
+    // The local Boundary table is synced and holds materializedPath for
+    // every level, so the selected boundary's own code is enough to recover
+    // the chain. Fall back to that before giving up.
+    var materializedPath =
         FlowBuilderSingleton().fullBoundary?.materializedPath;
+    if (materializedPath == null || materializedPath.isEmpty) {
+      materializedPath = await _materializedPathFromBoundaryTable(context);
+    }
     if (materializedPath == null || materializedPath.isEmpty) {
       return const ['ZZZ', 'ZZZ', 'ZZZ', 'ZZZ', 'ZZZ'];
     }
@@ -294,10 +334,11 @@ class GenerateLocalBeneficiaryIdExecutor extends ActionExecutor {
       }
     }
 
-    return codes.map((code) {
+    final prefixes = codes.map((code) {
       final name = nameByCode[code] ?? code;
       return _firstThreeLetters(name);
     }).toList();
+    return prefixes;
   }
 
   String _firstThreeLetters(String value) {
