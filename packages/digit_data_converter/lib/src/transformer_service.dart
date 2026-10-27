@@ -306,7 +306,31 @@ class FormEntityMapper {
             final formValue =
                 getStrictValueFromFormDataOnly(sourcePath, formData);
 
-            target[targetKey] = (formValue != null && formValue is DateTime)
+            // Never let an absent value erase one that is already stored.
+            //
+            // containsPathInFormData only proves the KEYS along the path
+            // exist - it captures a trailing [index] in its regex but never
+            // dereferences it, so "beneficiaryLocation.latLng[0]" passes the
+            // guard the moment `latLng` exists, even when it is null or an
+            // empty list. Re-registering a closed household submits exactly
+            // that shape (the location is captured once, on first
+            // registration, and not re-captured on reopen), so latitude and
+            // longitude were being overwritten with null. Proximity search
+            // filters on address with `within`, so the household silently
+            // became unfindable by location.
+            //
+            // An empty string counts as absent too: latLng is stored as a
+            // comma-separated string and indexed by splitting it, so a
+            // location that was never captured surfaces here as '' just as
+            // often as null.
+            final existingValue = target[targetKey];
+            final isAbsent = formValue == null ||
+                (formValue is String && formValue.trim().isEmpty);
+            if (isAbsent && existingValue != null) {
+              continue;
+            }
+
+            target[targetKey] = (formValue is DateTime)
                 ? formValue.millisecondsSinceEpoch
                 : formValue;
 

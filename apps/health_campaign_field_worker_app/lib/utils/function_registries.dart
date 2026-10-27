@@ -166,6 +166,30 @@ class FunctionRegistries {
       return value;
     });
 
+    /// Joins name parts with a single space, dropping the ones that are
+    /// missing.
+    ///
+    /// Interpolating the parts directly ("{{...givenName}} {{...familyName}}")
+    /// renders a missing part as the literal text "null" - a closed household
+    /// captured with only a first name displayed as "Amara null" - and leaves
+    /// a dangling space even when the template resolves to an empty string.
+    /// Takes any number of parts so the same helper covers given/family and
+    /// given/other/family orders.
+    FunctionRegistry.register('fullName', (args, stateData) {
+      final parts = <String>[];
+      for (final arg in args) {
+        if (arg == null) continue;
+        final trimmed = arg.toString().trim();
+        if (trimmed.isEmpty) continue;
+        // A missing field can arrive as the string "null", and an unresolved
+        // template can leak through as literal "{{...}}" text.
+        if (trimmed.toLowerCase() == 'null') continue;
+        if (trimmed.contains('{{') && trimmed.contains('}}')) continue;
+        parts.add(trimmed);
+      }
+      return parts.join(' ');
+    });
+
     FunctionRegistry.register('getCommentValue', (args, stateData) {
       for (final arg in args) {
         if (arg == null) continue;

@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:digit_data_model/data/repositories/package_repository/local/household.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
@@ -161,37 +163,41 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       }
       final allStocks = allStocksMap.values.toList();
 
-      // Local household registrations by date, counted DISTINCTLY against
-      // the server snapshot rather than summed on top of it.
+      // Local household registrations by date, reconciled against the server
+      // snapshot rather than summed on top of it.
       //
-      // The old comment here claimed the server snapshot was a
-      // point-in-time baseline taken before any local registration exists,
-      // so local rows could never be re-counted. That stopped being true:
       // home.dart's completedSync handler calls
-      // _refreshSummaryReportAfterSync() after EVERY sync, so the snapshot
-      // is re-pulled and then does include households this device already
-      // pushed - which were still being added again from the local table.
-      // Three registrations read as six.
+      // _refreshSummaryReportAfterSync() after EVERY sync, so the snapshot is
+      // re-pulled and then DOES include households this device already
+      // pushed. Adding the local table on top counted each of them twice -
+      // three registrations read as six.
       //
-      // HouseholdModel.id is null until a sync-up round trip writes the
-      // server-generated id back onto the local row (sync_service_mapper,
-      // DataModelType.household case), so `id == null` means "the server
-      // snapshot cannot possibly contain this one yet" and is the exact
-      // complement of the snapshot. Dedupe by clientReferenceId as well, so
-      // a household is one unit regardless of how many rows reference it.
+      // Split local households by whether the server already knows about
+      // them. HouseholdModel.id stays null until a sync-up round trip writes
+      // the server-generated id back onto the local row (sync_service_mapper,
+      // DataModelType.household case), so `id != null` means "the server
+      // aggregate below already counts this one". Dedupe by
+      // clientReferenceId as well, so a household is one unit regardless of
+      // how many rows reference it.
+      //
+      // Neither addend alone is correct. Summing both double-counts every
+      // synced household (3 local + 3 in the aggregate read as 6). Excluding
+      // the synced ones outright makes the count jump backwards during the
+      // window where the id has been written locally but the server's
+      // aggregate has not caught up yet. The row build below therefore takes
+      // max(serverAggregate, localAlreadySynced) + localNotYetSynced, which
+      // is both duplicate-free and monotonic.
       final localHouseholdsRegisteredByDate = <String, int>{};
       final localPeopleInHouseholdsByDate = <String, int>{};
+      final localSyncedHouseholdsByDate = <String, int>{};
+      final localSyncedPeopleByDate = <String, int>{};
       final countedHouseholdClientRefs = <String>{};
       for (final hh in households) {
         final createdBy =
             hh.clientAuditDetails?.createdBy ?? hh.auditDetails?.createdBy;
         if (createdBy != userUuid) continue;
-        // The `hh.id != null` guard that used to sit here is gone - it
-        // dropped a household the moment it synced, before the server's
-        // aggregate had caught up, which made the counts jump backwards.
-        // Distinctness by clientReferenceId is what prevents double
-        // counting, and the progress bar now applies the identical rule so
-        // the two surfaces cannot disagree.
+        // Distinctness by clientReferenceId keeps a household that has
+        // several rows referencing it counted as one unit.
         if (!countedHouseholdClientRefs.add(hh.clientReferenceId)) continue;
         final epochMs =
             hh.clientAuditDetails?.createdTime ?? hh.auditDetails?.createdTime;
@@ -206,10 +212,17 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         )) continue;
 
         final date = _epochToDateString(epochMs);
-        localHouseholdsRegisteredByDate[date] =
-            (localHouseholdsRegisteredByDate[date] ?? 0) + 1;
-        localPeopleInHouseholdsByDate[date] =
-            (localPeopleInHouseholdsByDate[date] ?? 0) + (hh.memberCount ?? 0);
+        if (hh.id != null) {
+          localSyncedHouseholdsByDate[date] =
+              (localSyncedHouseholdsByDate[date] ?? 0) + 1;
+          localSyncedPeopleByDate[date] =
+              (localSyncedPeopleByDate[date] ?? 0) + (hh.memberCount ?? 0);
+        } else {
+          localHouseholdsRegisteredByDate[date] =
+              (localHouseholdsRegisteredByDate[date] ?? 0) + 1;
+          localPeopleInHouseholdsByDate[date] =
+              (localPeopleInHouseholdsByDate[date] ?? 0) + (hh.memberCount ?? 0);
+        }
       }
 
       // Local ITN distributed by date (same reasoning as households above).
@@ -301,10 +314,19 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         int serverReportITNDistributed =
             await summaryReportService.itnsDistributed(date: date);
 
-        final hhCount = serverReportHouseholdRegistration +
+        // The server side is an opaque aggregate, not a list of
+        // clientReferenceIds, so the de-duplication above cannot reach into
+        // it. max() is what keeps an already-synced household from being
+        // counted once by each side while still never reading lower than
+        // what the device itself knows it has registered.
+        final syncedHouseholds = localSyncedHouseholdsByDate[date] ?? 0;
+        final syncedPeople = localSyncedPeopleByDate[date] ?? 0;
+
+        final hhCount = max(serverReportHouseholdRegistration, syncedHouseholds) +
             (localHouseholdsRegisteredByDate[date] ?? 0);
-        final dailyPeopleCount = serverReportPeopleInHouseholds +
-            (localPeopleInHouseholdsByDate[date] ?? 0);
+        final dailyPeopleCount =
+            max(serverReportPeopleInHouseholds, syncedPeople) +
+                (localPeopleInHouseholdsByDate[date] ?? 0);
         final dailyITNCount =
             serverReportITNDistributed + (localITNByDate[date] ?? 0);
 

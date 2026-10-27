@@ -402,7 +402,7 @@ final dynamic sampleCloseHouseholdFlows = {
                 {
                   "key": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_headName_LABEL",
                   "value":
-                      "{{contextData.0.headIndividual.IndividualModel.name.givenName}} {{contextData.0.headIndividual.IndividualModel.name.familyName}}",
+                      "{{fn:fullName(contextData.0.headIndividual.IndividualModel.name.givenName, contextData.0.headIndividual.IndividualModel.name.familyName)}}",
                   "isActive": true
                 },
                 {
@@ -626,7 +626,7 @@ final dynamic sampleCloseHouseholdFlows = {
                 {
                   "key": "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_headName_LABEL",
                   "value":
-                      "{{contextData.0.headIndividual.IndividualModel.name.givenName}} {{contextData.0.headIndividual.IndividualModel.name.familyName}}",
+                      "{{fn:fullName(contextData.0.headIndividual.IndividualModel.name.givenName, contextData.0.headIndividual.IndividualModel.name.familyName)}}",
                   "isActive": true
                 },
                 {

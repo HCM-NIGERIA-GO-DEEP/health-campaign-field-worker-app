@@ -236,7 +236,7 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
 
     // Distinct households, not rows - a household with several
     // ProjectBeneficiary/Task rows must still count once.
-    final localHouseholdsRegisteredToday = localHouseholdsToday
+    final openHouseholdsToday = localHouseholdsToday
         .where((hh) => !isHouseholdStillClosed(
               householdClientReferenceId: hh.clientReferenceId,
               projectBeneficiaryClientRefsByHousehold:
@@ -244,13 +244,33 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
               tasksByProjectBeneficiaryClientRef:
                   tasksByProjectBeneficiaryClientRefForToday,
             ))
+        .toList();
+
+    // Split on whether the server aggregate above already counts them.
+    // HouseholdModel.id stays null until a sync-up round trip writes the
+    // server-generated id back onto the local row, so `id != null` means
+    // "already inside houseHoldRegistered".
+    //
+    // Summing both sides double-counts every synced household; excluding the
+    // synced ones makes the bar run backwards while the server aggregate
+    // catches up. max() is duplicate-free and monotonic. This must stay
+    // identical to the Summary Report's rule so the two surfaces agree.
+    final syncedHouseholdsToday = openHouseholdsToday
+        .where((hh) => hh.id != null)
         .map((hh) => hh.clientReferenceId)
         .toSet()
         .length;
+    final unsyncedHouseholdsToday = openHouseholdsToday
+        .where((hh) => hh.id == null)
+        .map((hh) => hh.clientReferenceId)
+        .toSet()
+        .length;
+    final registeredToday = max(houseHoldRegistered, syncedHouseholdsToday) +
+        unsyncedHouseholdsToday;
 
     if (mounted) {
       setState(() {
-        current = houseHoldRegistered + localHouseholdsRegisteredToday;
+        current = registeredToday;
       });
     }
   }
