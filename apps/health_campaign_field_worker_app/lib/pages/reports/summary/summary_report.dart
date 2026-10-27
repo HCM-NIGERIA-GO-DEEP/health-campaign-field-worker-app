@@ -1,5 +1,3 @@
-import 'dart:math';
-
 import 'package:digit_data_model/data/repositories/package_repository/local/household.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_ui_components/digit_components.dart';
@@ -198,10 +196,14 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         if (createdBy != userUuid) continue;
         // Distinctness by clientReferenceId keeps a household that has
         // several rows referencing it counted as one unit.
-        if (!countedHouseholdClientRefs.add(hh.clientReferenceId)) continue;
+        if (!countedHouseholdClientRefs.add(hh.clientReferenceId)) {
+          continue;
+        }
         final epochMs =
             hh.clientAuditDetails?.createdTime ?? hh.auditDetails?.createdTime;
-        if (!isWithinCurrentCycle(epochMs)) continue;
+        if (!isWithinCurrentCycle(epochMs)) {
+          continue;
+        }
         if (epochMs == null) continue;
         if (isHouseholdStillClosed(
           householdClientReferenceId: hh.clientReferenceId,
@@ -209,7 +211,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
               projectBeneficiaryClientRefsByHousehold,
           tasksByProjectBeneficiaryClientRef:
               tasksByProjectBeneficiaryClientRef,
-        )) continue;
+        )) {
+          continue;
+        }
 
         final date = _epochToDateString(epochMs);
         if (hh.id != null) {
@@ -307,10 +311,19 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
 
       final rows = <_SummaryReportRow>[];
       for (final date in sortedDates) {
-        int serverReportHouseholdRegistration =
-            await summaryReportService.householdRegistration(date: date);
-        int serverReportPeopleInHouseholds =
-            await summaryReportService.peopleInHouseholds(date: date);
+        // Baselines, not live totals: the live count grows to include this
+        // device's own synced households, so adding local rows to it
+        // double-counts. The local count is passed in because a baseline may
+        // only be recorded for a date this device has no rows for - see
+        // baselineFor.
+        final localForDate = (localSyncedHouseholdsByDate[date] ?? 0) +
+            (localHouseholdsRegisteredByDate[date] ?? 0);
+        final baseline = await summaryReportService.baselineFor(
+          date: date,
+          localHouseholdCount: localForDate,
+        );
+        final int serverReportHouseholdRegistration = baseline.households;
+        final int serverReportPeopleInHouseholds = baseline.people;
         int serverReportITNDistributed =
             await summaryReportService.itnsDistributed(date: date);
 
@@ -319,14 +332,17 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         // it. max() is what keeps an already-synced household from being
         // counted once by each side while still never reading lower than
         // what the device itself knows it has registered.
+        // Every local household for the date counts, synced or not: the
+        // baseline above deliberately excludes them all.
         final syncedHouseholds = localSyncedHouseholdsByDate[date] ?? 0;
         final syncedPeople = localSyncedPeopleByDate[date] ?? 0;
 
-        final hhCount = max(serverReportHouseholdRegistration, syncedHouseholds) +
+        final hhCount = serverReportHouseholdRegistration +
+            syncedHouseholds +
             (localHouseholdsRegisteredByDate[date] ?? 0);
-        final dailyPeopleCount =
-            max(serverReportPeopleInHouseholds, syncedPeople) +
-                (localPeopleInHouseholdsByDate[date] ?? 0);
+        final dailyPeopleCount = serverReportPeopleInHouseholds +
+            syncedPeople +
+            (localPeopleInHouseholdsByDate[date] ?? 0);
         final dailyITNCount =
             serverReportITNDistributed + (localITNByDate[date] ?? 0);
 

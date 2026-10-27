@@ -166,20 +166,12 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
     final memberRepository = context.read<
         LocalRepository<HouseholdMemberModel, HouseholdMemberSearchModel>>();
 
-    int houseHoldRegistered = await summaryReportService.householdRegistration(
-      date: DateFormat('yyyy-MM-dd').format(now),
-    );
+    final todayKey = DateFormat('yyyy-MM-dd').format(now);
 
-    // The server-side snapshot above aggregates every device registering
-    // against this project, so today's local households are added on top of
-    // it.
-    //
-    // The previous `hh.id != null` guard here (meant to avoid double-counting
-    // a household once it synced) is gone: it opened a window where a
-    // just-synced household was dropped locally while the server's aggregate
-    // had not caught up yet, so the bar visibly went BACKWARDS (10 -> 9).
-    // Double-counting is now handled by counting distinct clientReferenceIds
-    // only, which is also what the Summary Report does, so the two agree.
+    // The server-side snapshot above is a per-user aggregate for today. It
+    // is reconciled with - not added to - the local rows below: see the
+    // max() further down, which is what stops a household being counted
+    // once by each side after it syncs.
     final todaysHouseholds =
         await householdRepository.search(HouseholdSearchModel());
     final localHouseholdsToday = todaysHouseholds.where((hh) {
@@ -265,8 +257,22 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
         .map((hh) => hh.clientReferenceId)
         .toSet()
         .length;
-    final registeredToday = max(houseHoldRegistered, syncedHouseholdsToday) +
-        unsyncedHouseholdsToday;
+    // Baseline, not the live total: the live count grows to include this
+    // device's own synced households, so adding local rows to it
+    // double-counts, and reconciling against it drops rows while the backend
+    // aggregate lags. The local count is passed in because a baseline may
+    // only be recorded for a date this device has no rows for.
+    final baseline = await summaryReportService.baselineFor(
+      date: todayKey,
+      localHouseholdCount: localHouseholdsToday.length,
+    );
+    final houseHoldRegistered = baseline.households;
+
+    // Every open household registered today counts on top of the baseline,
+    // synced or not - the baseline deliberately excludes them all. This must
+    // stay identical to the Summary Report's rule so the two surfaces agree.
+    final registeredToday =
+        houseHoldRegistered + syncedHouseholdsToday + unsyncedHouseholdsToday;
 
     if (mounted) {
       setState(() {
