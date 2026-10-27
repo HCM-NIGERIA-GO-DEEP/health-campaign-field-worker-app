@@ -1112,7 +1112,18 @@ final jsonConfig = {
           "campaignNumber": "__context:selectedProject.referenceID",
           "wayBillNumber": "__context:wayBillNumber",
           "transactionType": "__value:DISPATCHED",
-          "transactionReason": "__value:null",
+          // This config builds BOTH halves of the shortfall lifecycle: the
+          // RETURNED record a lower level sends back after a partial accept,
+          // and the ISSUED re-issue an upper level sends down to replace it.
+          //
+          // The Stock Returned report filters on transactionReason RETURNED
+          // (see getReportTransactionReasonFilter), so leaving this null for
+          // every shortfall meant a returned shortfall never appeared there -
+          // it was only ever visible through View Transactions, which filters
+          // on the MRN alone. The re-issue half must stay null: it is a fresh
+          // dispatch, and the Stock Issued report does not filter on reason.
+          "transactionReason":
+              "__switch:__context:stockEntryType:{RETURNED:__value:RETURNED,default:__value:null}",
           "senderId": "__context:senderFacilityId",
           "senderType": "__context:senderPartyType",
           "receiverId": "__context:receiverFacilityId",

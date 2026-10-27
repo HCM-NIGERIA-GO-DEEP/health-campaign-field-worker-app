@@ -297,7 +297,17 @@ class FunctionRegistries {
       // otherwise retitle the receiver's own accepted receipt as "Stock Loss
       // Details"/"Stock Damaged Details". The record is still a receipt; the
       // reason only describes why less arrived than was sent.
-      if (stockEntryType == 'ISSUED' && transactionReason == 'RECEIVED') {
+      //
+      // RETURNED is here for the same reason as ISSUED: a return travelling
+      // from a lower level up is accepted through the identical
+      // stockReceiptDetails flow, which stamps transactionReason RECEIVED
+      // while leaving stockEntryType RETURNED. From the accepting side that
+      // record IS a receipt, so it must not keep the sender's "Stock Return
+      // Details" title. A return that has NOT been accepted still carries
+      // transactionReason RETURNED and falls through to the return branch
+      // below, which is what the sender should see.
+      if ((stockEntryType == 'ISSUED' || stockEntryType == 'RETURNED') &&
+          transactionReason == 'RECEIVED') {
         return 'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
       }
       // When an upper-level user resolves a shortfall, the acknowledged
@@ -603,7 +613,18 @@ class FunctionRegistries {
         // the sender-side "Stock Issued" report (senderId) is NOT scoped to,
         // so this correctly isolates the receiving facility's accepted
         // dispatches instead.
-        'receipt': 'ISSUED',
+        //
+        // RETURNED is included because an upper level accepts a return
+        // through the same stockReceiptDetails flow, which leaves
+        // stockEntryType RETURNED while setting transactionReason RECEIVED.
+        // Filtering on ISSUED alone kept every accepted return out of the
+        // receiving side's Stock Received report. The accompanying
+        // transactionReason RECEIVED filter is what keeps PENDING returns
+        // (reason RETURNED) and shortfalls resolved as a write-off
+        // (retagged DAMAGED/LOSS with reason STOCK_DAMAGE/STOCK_LOSS) out of
+        // it - a write-off never entered stock, so it belongs only in the
+        // Damaged/Loss reports.
+        'receipt': 'ISSUED,RETURNED',
         'dispatch': 'ISSUED',
         'returned': 'RETURNED',
         'excess': 'EXCESS',
