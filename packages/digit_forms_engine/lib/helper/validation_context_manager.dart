@@ -68,7 +68,7 @@ class ValidationContextManager {
                 'ValidationContextManager: Field "$fieldName" depends on: ${deps.join(", ")}');
           }
         } else if ((rule.type == 'maxField' || rule.type == 'requiredIf') &&
-            value is String) {
+            (value is String || value is Map)) {
           // Both maxField and requiredIf declare their dependency as the
           // sibling field name itself, e.g. childrenCount's maxField depends
           // on memberCount, identificationNumber's requiredIf depends on
@@ -76,8 +76,14 @@ class ValidationContextManager {
           // this field was already filled/left blank kept the stale
           // (possibly now-invalid) validity cached until this field itself
           // was touched.
-          if (value.isNotEmpty) {
-            _dependencyMap.putIfAbsent(value, () => {}).add(fieldName);
+          //
+          // maxField also accepts {"field": ..., "offset": ...} for a
+          // ceiling that is a sibling shifted by a constant; the dependency
+          // is the same sibling either way.
+          final dependency =
+              value is Map ? value['field']?.toString() : value as String;
+          if (dependency != null && dependency.isNotEmpty) {
+            _dependencyMap.putIfAbsent(dependency, () => {}).add(fieldName);
           }
         } else if (rule.type == 'maxFieldSum' && value is Map) {
           // Revalidate when either the shared cap or summed sibling changes.

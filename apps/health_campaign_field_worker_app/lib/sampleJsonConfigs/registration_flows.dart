@@ -4408,8 +4408,11 @@ final dynamic sampleFlows = {
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_max_message"
                 },
                 {
+                  // memberCount - 1: a household always has at least one
+                  // non-child member (the head), so children can never equal
+                  // the total.
                   "type": "maxField",
-                  "value": "memberCount",
+                  "value": {"field": "memberCount", "offset": -1},
                   "message":
                       "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_maxField_message"
                 },

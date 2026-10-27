@@ -198,22 +198,41 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
         // Passes when either value is null/empty/non-numeric (required/
         // pattern validations handle those separately) so this only fires
         // once both fields actually have a comparable number.
+        // rule.value is either the sibling field's name, or
+        // {"field": "<name>", "offset": <int>} when the ceiling is that
+        // field shifted by a constant - e.g. childrenCount must be at most
+        // memberCount - 1, because a household always has at least one
+        // non-child head.
         case 'maxField':
-          if (rule.value is String) {
-            final otherFieldName = rule.value as String;
+          final rawMaxField = rule.value;
+          String? otherFieldName;
+          num offset = 0;
+          if (rawMaxField is String) {
+            otherFieldName = rawMaxField;
+          } else if (rawMaxField is Map) {
+            otherFieldName = rawMaxField['field']?.toString();
+            offset = num.tryParse(rawMaxField['offset']?.toString() ?? '') ?? 0;
+          }
+
+          if (otherFieldName != null) {
+            final fieldName = otherFieldName;
             validators.add(Validators.delegate((control) {
               final form = control.parent;
-              if (form is! FormGroup || !form.contains(otherFieldName)) {
+              if (form is! FormGroup || !form.contains(fieldName)) {
                 return null;
               }
               final currentValue =
                   num.tryParse(control.value?.toString() ?? '');
               final otherValue = num.tryParse(
-                  form.control(otherFieldName).value?.toString() ?? '');
+                  form.control(fieldName).value?.toString() ?? '');
               if (currentValue == null || otherValue == null) return null;
-              if (currentValue > otherValue) {
+              // An offset can push the ceiling below zero on an empty
+              // household; clamp so the only failure reported is the real
+              // one (memberCount's own min validation).
+              final ceiling = (otherValue + offset) < 0 ? 0 : otherValue + offset;
+              if (currentValue > ceiling) {
                 return {
-                  'maxField': {'max': otherValue, 'actual': currentValue}
+                  'maxField': {'max': ceiling, 'actual': currentValue}
                 };
               }
               return null;
