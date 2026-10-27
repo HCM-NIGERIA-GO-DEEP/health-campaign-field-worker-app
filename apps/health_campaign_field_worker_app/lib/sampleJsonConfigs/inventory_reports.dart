@@ -707,6 +707,16 @@ final dynamic inventoryReportFlows = {
               {
                 "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_7_LABEL",
                 "cellValue": "{{item.physicalCount}}"
+              },
+              {
+                // Captured when the manual count does not match the
+                // calculated one. Stored on the model's own
+                // commentsOnReconciliation column, NOT in additionalFields,
+                // so it is read directly off the item.
+                "header":
+                    "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_COMMENTS_LABEL",
+                "cellValue":
+                    "{{fn:safeString(item.commentsOnReconciliation)}}"
               }
             ],
             "rows": "{{contextData.0.StockReconciliationModel}}"
@@ -750,6 +760,16 @@ final dynamic inventoryReportFlows = {
               {
                 "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_7_LABEL",
                 "cellValue": "{{item.physicalCount}}"
+              },
+              {
+                // Captured when the manual count does not match the
+                // calculated one. Stored on the model's own
+                // commentsOnReconciliation column, NOT in additionalFields,
+                // so it is read directly off the item.
+                "header":
+                    "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_COMMENTS_LABEL",
+                "cellValue":
+                    "{{fn:safeString(item.commentsOnReconciliation)}}"
               }
             ],
             "rows": "{{contextData.0.StockReconciliationModel}}"
