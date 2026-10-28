@@ -774,14 +774,24 @@ final dynamic sampleFlows = {
                             "{{fn:getAdditionalFieldValue(contextData.0.household.HouseholdModel.additionalFields.fields, 'pregnantWomenCount')}}"
                       },
                       {
+                        "key": "headMobileNumber",
+                        "value":
+                            "{{contextData.0.headIndividual.IndividualModel.mobileNumber}}"
+                      },
+                      {
+                        // Positional access sent whatever sat at index 0 -
+                        // the generated beneficiary id, or the DEFAULT
+                        // placeholder. getCapturedIdentifierValue skips both
+                        // and returns the real captured identifier
+                        // (National ID, Voter ID, Passport, Licence).
                         "key": "identificationType",
                         "value":
-                            "{{contextData.0.headIndividual.IndividualModel.identifiers.0.identifierType}}"
+                            "{{fn:getCapturedIdentifierValue(contextData.0.headIndividual.IndividualModel.identifiers, 'identifierType')}}"
                       },
                       {
                         "key": "identificationNumber",
                         "value":
-                            "{{contextData.0.headIndividual.IndividualModel.identifiers.0.identifierId}}"
+                            "{{fn:getCapturedIdentifierValue(contextData.0.headIndividual.IndividualModel.identifiers, 'identifierId')}}"
                       },
                       // Task-status based, so "not delivered yet" is not
                       // confused with "household closed".
@@ -2135,10 +2145,20 @@ final dynamic sampleFlows = {
                 "fieldName": "nationalIdDisplay",
                 "data": [
                   {
+                    // Indexing position 1 assumed the captured identifier
+                    // always sat there. A household registered without a
+                    // National ID has only the generated ones, so that slot
+                    // held the DEFAULT placeholder (or the beneficiary id)
+                    // and the card displayed it as though it were a real
+                    // identifier. getCapturedIdentifierValue skips
+                    // UNIQUE_BENEFICIARY_ID and DEFAULT and returns null when
+                    // nothing else was captured, so hideIfNull drops the row
+                    // entirely - which is what "no identifier" should look
+                    // like.
                     "key":
-                        "{{ item.headIndividual.0.identifiers.1.identifierType }}",
+                        "{{fn:getCapturedIdentifierValue(item.headIndividual.0.identifiers, 'identifierType')}}",
                     "value":
-                        "{{ item.headIndividual.0.identifiers.1.identifierId }}",
+                        "{{fn:getCapturedIdentifierValue(item.headIndividual.0.identifiers, 'identifierId')}}",
                     "isActive": true,
                     "hideIfNull": true
                   }
@@ -2474,16 +2494,16 @@ final dynamic sampleFlows = {
             "task"
           ],
           "primary": "household",
-          "pagination": {"limit": 5, "maxItems": 15}
+          "pagination": {"limit": 20, "maxItems": 200}
         }
       },
       "scrollListener": {
-        "debounceMs": 0,
+        "debounceMs": 300,
         "onScrollUp": [
           {
             "actionType": "REFRESH_SEARCH",
             "properties": {
-              "pagination": {"limit": 5, "maxItems": 15}
+              "pagination": {"limit": 20, "maxItems": 200}
             }
           }
         ],
@@ -2492,7 +2512,7 @@ final dynamic sampleFlows = {
           {
             "actionType": "REFRESH_SEARCH",
             "properties": {
-              "pagination": {"limit": 5, "maxItems": 15}
+              "pagination": {"limit": 20, "maxItems": 200}
             }
           }
         ],
@@ -3508,6 +3528,53 @@ final dynamic sampleFlows = {
               "actionType": "FETCH_TRANSFORMER_CONFIG",
               "properties": {
                 "data": [
+                  // The delivery transformer reads each of these as
+                  // "__context:<key>". A key absent here resolves to null
+                  // and is dropped SILENTLY, which is why the saved
+                  // TaskModel carried only quantity/productVariant/
+                  // dateOfAdministration/scanResource. Names follow what
+                  // the transformer expects, not what navigation calls
+                  // them - hence headName/headMobileNumber.
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  },
+                  {"key": "memberCount", "value": "{{navigation.memberCount}}"},
+                  {
+                    "key": "beneficiaryId",
+                    "value": "{{navigation.beneficiaryId}}"
+                  },
+                  {
+                    "key": "headName",
+                    "value":
+                        "{{fn:fullName(navigation.nameOfIndividual, navigation.lastName)}}"
+                  },
+                  {
+                    "key": "headMobileNumber",
+                    "value": "{{navigation.headMobileNumber}}"
+                  },
+                  {
+                    "key": "childrenCount",
+                    "value": "{{navigation.childrenCount}}"
+                  },
+                  {
+                    "key": "pregnantWomenCount",
+                    "value": "{{navigation.pregnantWomenCount}}"
+                  },
+                  {
+                    "key": "identificationType",
+                    "value": "{{navigation.identificationType}}"
+                  },
+                  {
+                    "key": "identificationNumber",
+                    "value": "{{navigation.identificationNumber}}"
+                  },
+                  // The task being written IS the delivery, so this is
+                  // true by construction. Reading navigation.isDelivered
+                  // here recorded the state BEFORE this delivery - computed
+                  // back on householdOverview - so a first delivery always
+                  // stored false.
+                  {"key": "isDelivered", "value": "true"},
                   {
                     "key": "ProjectBeneficiaryClientReferenceId",
                     "value":
@@ -3810,6 +3877,53 @@ final dynamic sampleFlows = {
           "actionType": "FETCH_TRANSFORMER_CONFIG",
           "properties": {
             "data": [
+                  // The delivery transformer reads each of these as
+                  // "__context:<key>". A key absent here resolves to null
+                  // and is dropped SILENTLY, which is why the saved
+                  // TaskModel carried only quantity/productVariant/
+                  // dateOfAdministration/scanResource. Names follow what
+                  // the transformer expects, not what navigation calls
+                  // them - hence headName/headMobileNumber.
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  },
+                  {"key": "memberCount", "value": "{{navigation.memberCount}}"},
+                  {
+                    "key": "beneficiaryId",
+                    "value": "{{navigation.beneficiaryId}}"
+                  },
+                  {
+                    "key": "headName",
+                    "value":
+                        "{{fn:fullName(navigation.nameOfIndividual, navigation.lastName)}}"
+                  },
+                  {
+                    "key": "headMobileNumber",
+                    "value": "{{navigation.headMobileNumber}}"
+                  },
+                  {
+                    "key": "childrenCount",
+                    "value": "{{navigation.childrenCount}}"
+                  },
+                  {
+                    "key": "pregnantWomenCount",
+                    "value": "{{navigation.pregnantWomenCount}}"
+                  },
+                  {
+                    "key": "identificationType",
+                    "value": "{{navigation.identificationType}}"
+                  },
+                  {
+                    "key": "identificationNumber",
+                    "value": "{{navigation.identificationNumber}}"
+                  },
+                  // The task being written IS the delivery, so this is
+                  // true by construction. Reading navigation.isDelivered
+                  // here recorded the state BEFORE this delivery - computed
+                  // back on householdOverview - so a first delivery always
+                  // stored false.
+                  {"key": "isDelivered", "value": "true"},
               {
                 "key": "ProjectBeneficiaryClientReferenceId",
                 "value": "{{navigation.ProjectBeneficiaryClientReferenceId}}"
