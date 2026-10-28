@@ -705,6 +705,23 @@ final dynamic inventoryReportFlows = {
                 "cellValue": "{{item.additionalFields.fields.stockDamaged}}"
               },
               {
+                // Stock Lost / Stock Damaged above include quantities a
+                // LOWER facility reported against stock this facility had
+                // already dispatched. The original dispatch already removed
+                // them, so stock-in-hand adds them back - without these the
+                // report cannot be reconciled by hand.
+                "header":
+                    "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_DAMAGED_LOWER_LABEL",
+                "cellValue":
+                    "{{item.additionalFields.fields.lowerFacilityDamagedShortfall}}"
+              },
+              {
+                "header":
+                    "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_LOST_LOWER_LABEL",
+                "cellValue":
+                    "{{item.additionalFields.fields.lowerFacilityLostShortfall}}"
+              },
+              {
                 "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_7_LABEL",
                 "cellValue": "{{item.physicalCount}}"
               },

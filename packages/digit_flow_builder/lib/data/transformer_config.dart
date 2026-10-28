@@ -1248,6 +1248,14 @@ final jsonConfig = {
                 "stockRecon.stockReconciliationCard.stockMetrics.stockExcess",
             "stockLess":
                 "stockRecon.stockReconciliationCard.stockMetrics.stockLess",
+            // Persisted so the reconciliation REPORT can repeat the
+            // breakdown the card shows. Without these the report lists Stock
+            // Lost / Stock Damaged in full and cannot be reconciled against
+            // stockInHand by hand.
+            "lowerFacilityLostShortfall":
+                "stockRecon.stockReconciliationCard.stockMetrics.lowerFacilityLostShortfall",
+            "lowerFacilityDamagedShortfall":
+                "stockRecon.stockReconciliationCard.stockMetrics.lowerFacilityDamagedShortfall",
             "stockInHand":
                 "stockRecon.stockReconciliationCard.stockMetrics.stockInHand"
           },

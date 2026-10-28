@@ -356,7 +356,8 @@ class StockCalculationUtils {
     // These are already recorded in ml, so add them after unit conversion
     // to avoid scaling them by the bottle-to-ml multiplier.
     if (tasks.isNotEmpty) {
-      stockIssued += _getDeliveryTaskValue(tasks, productId);
+      final deliveryTaskValue = _getDeliveryTaskValue(tasks, productId);
+      stockIssued += deliveryTaskValue;
     }
 
     // Use distributor calculation if user has distributor role OR if any return was made as sender
@@ -391,6 +392,13 @@ class StockCalculationUtils {
       'stockLess': stockLess,
       'stockWastage': stockWastage,
       'stockPartialUsed': stockPartialUsed,
+      // Surfaced so the reconciliation card can explain why stockInHand is
+      // higher than "received minus everything else": these quantities are
+      // inside stockLost/stockDamaged for reporting, but were ALREADY
+      // deducted by the original dispatch, so the balance adds them back.
+      // Without showing them, a hand-check always lands short by this much.
+      'lowerFacilityLostShortfall': lowerFacilityLostShortfall,
+      'lowerFacilityDamagedShortfall': lowerFacilityDamagedShortfall,
       'stockInHand': stockInHand,
     };
   }
@@ -584,6 +592,8 @@ class StockCalculationUtils {
         'stockLess': 0,
         'stockWastage': 0,
         'stockPartialUsed': 0,
+        'lowerFacilityLostShortfall': 0,
+        'lowerFacilityDamagedShortfall': 0,
         'stockInHand': 0,
       };
 

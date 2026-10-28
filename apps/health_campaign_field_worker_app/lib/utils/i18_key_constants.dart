@@ -211,6 +211,17 @@ class StockReconciliationMetrics {
   String get stockLess => 'STOCK_RECONCILIATION_STOCK_LESS';
 
   String get stockOnHand => 'STOCK_RECONCILIATION_STOCK_ON_HAND';
+
+  /// The portion of stockLost/stockDamaged that a LOWER facility reported
+  /// against stock this facility had already dispatched. It sits inside
+  /// those two totals for reporting, but the original dispatch already
+  /// removed it from the balance, so stockInHand adds it back. Shown so the
+  /// screen's own arithmetic adds up.
+  String get lostReportedByLowerFacility =>
+      'STOCK_RECONCILIATION_LOST_REPORTED_BY_LOWER_FACILITY';
+
+  String get damagedReportedByLowerFacility =>
+      'STOCK_RECONCILIATION_DAMAGED_REPORTED_BY_LOWER_FACILITY';
 }
 
 const surveyFormDataShowcase = SurveyFormDataShowcase();
