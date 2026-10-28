@@ -4900,6 +4900,28 @@ final dynamic sampleFlows = {
                 ]
               }
             },
+            // A declined-consent household is still issued a beneficiary id
+            // and still persists it onto its IndividualModel, so without
+            // this the pool row stayed unAssigned and the next registration
+            // picked and assigned the same id - two households sharing one
+            // beneficiary id. Mirrors the DEFAULT and closed-household
+            // branches, and must stay ahead of CREATE_EVENT as they do:
+            // the executor reads contextData['entities'], which
+            // FETCH_TRANSFORMER_CONFIG has populated by this point.
+            {
+              "actionType": "UPDATE_IDENTIFIER_STATUS",
+              "properties": {
+                "identifierType": "UNIQUE_BENEFICIARY_ID",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "Failed to update beneficiary id status."
+                    }
+                  }
+                ]
+              }
+            },
             {
               "actionType": "CREATE_EVENT",
               "properties": {

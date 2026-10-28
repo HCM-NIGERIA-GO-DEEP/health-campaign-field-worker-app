@@ -181,6 +181,12 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       // cached point-in-time baseline: add eligible local registrations made
       // after it, and remove any closed placeholders already included in it.
       final localHouseholdsRegisteredByDate = <String, int>{};
+      // Same rows as above, split by whether a sync has already folded them
+      // into the server aggregate (see where these are populated).
+      final syncedHouseholdsByDate = <String, int>{};
+      final unsyncedHouseholdsByDate = <String, int>{};
+      final syncedPeopleByDate = <String, int>{};
+      final unsyncedPeopleByDate = <String, int>{};
       final localPeopleInHouseholdsByDate = <String, int>{};
       final localChildrenUnder5ByDate = <String, int>{};
       final closedHouseholdsInServerReportByDate = <String, int>{};
@@ -232,8 +238,26 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         localChildrenUnder5ByDate[date] =
             (localChildrenUnder5ByDate[date] ?? 0) +
                 householdChildrenUnder5Count(hh);
+        // Split on whether the server aggregate already counts this row.
+        // HouseholdModel.id stays null until a sync-up round trip writes the
+        // server-generated id back, so `id != null` means "already inside
+        // serverReportHouseholdRegistration". Kept as two tallies so the
+        // per-date total below can apply the same max() rule the progress
+        // bar uses - summing both sides double-counts every synced
+        // household, excluding the synced ones makes the figure run
+        // backwards while the aggregate catches up.
         localHouseholdsRegisteredByDate[date] =
             (localHouseholdsRegisteredByDate[date] ?? 0) + 1;
+        if (hh.id != null) {
+          syncedHouseholdsByDate[date] = (syncedHouseholdsByDate[date] ?? 0) + 1;
+          syncedPeopleByDate[date] =
+              (syncedPeopleByDate[date] ?? 0) + (hh.memberCount ?? 0);
+        } else {
+          unsyncedHouseholdsByDate[date] =
+              (unsyncedHouseholdsByDate[date] ?? 0) + 1;
+          unsyncedPeopleByDate[date] =
+              (unsyncedPeopleByDate[date] ?? 0) + (hh.memberCount ?? 0);
+        }
         localPeopleInHouseholdsByDate[date] =
             (localPeopleInHouseholdsByDate[date] ?? 0) + (hh.memberCount ?? 0);
       }
@@ -345,10 +369,17 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
 
       final rows = <_SummaryReportRow>[];
       for (final date in sortedDates) {
-        int serverReportHouseholdRegistration =
-            await summaryReportService.householdRegistration(date: date);
-        int serverReportPeopleInHouseholds =
-            await summaryReportService.peopleInHouseholds(date: date);
+        // Baselines, not live totals: the live count grows to include this
+        // device's own synced households, so adding local rows to it
+        // double-counts. The local count is passed in because a baseline
+        // may only be recorded for a date this device holds no rows for -
+        // see baselineFor. Must match the progress bar's rule exactly.
+        final baseline = await summaryReportService.baselineFor(
+          date: date,
+          localHouseholdCount: localHouseholdsRegisteredByDate[date] ?? 0,
+        );
+        int serverReportHouseholdRegistration = baseline.households;
+        int serverReportPeopleInHouseholds = baseline.people;
         int serverReportITNDistributed =
             await summaryReportService.itnsDistributed(date: date);
         int serverReportChildrenUnder5 =
@@ -361,18 +392,26 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
             (closedHouseholdMembersInServerReportByDate[date] ?? 0);
         final adjustedServerChildrenUnder5Count = serverReportChildrenUnder5 -
             (closedHouseholdChildrenUnder5InServerReportByDate[date] ?? 0);
-        final hhCount =
-            (adjustedServerHouseholdCount < 0 ? 0 : adjustedServerHouseholdCount) +
-            (localHouseholdsRegisteredByDate[date] ?? 0);
+        // Every local household for the date counts on top of the
+        // baseline, synced or not: the baseline deliberately excludes them
+        // all. Identical to the progress bar's rule.
+        final hhCount = (adjustedServerHouseholdCount < 0
+                ? 0
+                : adjustedServerHouseholdCount) +
+            (syncedHouseholdsByDate[date] ?? 0) +
+            (unsyncedHouseholdsByDate[date] ?? 0);
         final dailyPeopleCount =
             (adjustedServerPeopleCount < 0 ? 0 : adjustedServerPeopleCount) +
-            (localPeopleInHouseholdsByDate[date] ?? 0);
+                (syncedPeopleByDate[date] ?? 0) +
+                (unsyncedPeopleByDate[date] ?? 0);
         final dailyChildrenUnder5Count = (adjustedServerChildrenUnder5Count < 0
                 ? 0
                 : adjustedServerChildrenUnder5Count) +
             (localChildrenUnder5ByDate[date] ?? 0);
         final dailyITNCount =
             serverReportITNDistributed + (localITNByDate[date] ?? 0);
+
+
         // Filter stock entries for this day only to compute total less/excess.
         final dateStocks = allStocks.where((stock) {
           final epochMs = stock.clientAuditDetails?.createdTime ??

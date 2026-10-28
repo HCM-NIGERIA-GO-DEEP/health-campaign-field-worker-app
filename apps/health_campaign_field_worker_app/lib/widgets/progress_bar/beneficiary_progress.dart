@@ -104,10 +104,7 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
           final summaryReportService =
               context.read<ServerSummaryReportService>();
           int? serverReportTimestamp = await summaryReportService.timestamp();
-          int? houseHoldRegistered =
-              await summaryReportService.householdRegistration(
-            date: DateFormat('yyyy-MM-dd').format(now),
-          );
+          final todayKey = DateFormat('yyyy-MM-dd').format(now);
 
           // The server-side snapshot above is a point-in-time baseline that
           // doesn't get refreshed same-day once any local registration
@@ -182,8 +179,7 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
           )));
 
           var closedHouseholdsAlreadyInServerCount = 0;
-          final localHouseholdsRegisteredToday =
-              localHouseholdsToday.where((hh) {
+          final openHouseholdsToday = localHouseholdsToday.where((hh) {
             final createdTime = hh.clientAuditDetails?.createdTime ??
                 hh.auditDetails?.createdTime;
             final isClosedPlaceholder = isHouseholdConsentDeclined(hh) ||
@@ -210,7 +206,44 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
             // that test silently dropped real registrations and the bar
             // under-counted.
             return true;
-          }).length;
+          }).toList();
+
+          // Split on whether the server aggregate already counts them.
+          // HouseholdModel.id stays null until a sync-up round trip writes
+          // the server-generated id back onto the local row, so `id != null`
+          // means "already inside houseHoldRegistered".
+          //
+          // Summing both sides double-counts every synced household (a
+          // capture showed serverHouseholds=6/adjustedServer=5 plus
+          // localHouseholds=6 giving 11 where the answer was 6), while
+          // excluding the synced ones makes the bar run backwards whenever
+          // the server aggregate lags the local rows. max() is both
+          // duplicate-free and monotonic. This rule must stay identical to
+          // the Summary Report's so the two surfaces cannot disagree.
+          // Baseline, not the live total: the live count grows to include
+          // this device's own synced households, so adding local rows to it
+          // double-counts (capture: adjustedServer=11 + 1 unsynced = 12 for
+          // 11 real households), while reconciling with max() drops rows
+          // whenever the backend aggregate lags the push. The local count is
+          // passed in because a baseline may only be recorded for a date
+          // this device holds no rows for - the one moment the server total
+          // cannot already include something of ours.
+          final baseline = await summaryReportService.baselineFor(
+            date: todayKey,
+            localHouseholdCount: localHouseholdsToday.length,
+          );
+          final houseHoldRegistered = baseline.households;
+
+          final syncedHouseholdsToday = openHouseholdsToday
+              .where((hh) => hh.id != null)
+              .map((hh) => hh.clientReferenceId)
+              .toSet()
+              .length;
+          final unsyncedHouseholdsToday = openHouseholdsToday
+              .where((hh) => hh.id == null)
+              .map((hh) => hh.clientReferenceId)
+              .toSet()
+              .length;
 
           List<TaskModel> allTasks =
               await taskRepository.search(taskSearchQuery);
@@ -253,14 +286,22 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
                 // Registrar-only progress measures completed household
                 // registrations. Any user who distributes (distributor-only
                 // or combined) progresses only after a successful delivery.
-                final serverHouseholdCount = houseHoldRegistered ?? 0;
+                // Non-nullable now that this comes from baselineFor().
+                final serverHouseholdCount = houseHoldRegistered;
                 final adjustedServerCount =
                     serverHouseholdCount > closedHouseholdsAlreadyInServerCount
                         ? serverHouseholdCount -
                             closedHouseholdsAlreadyInServerCount
                         : 0;
+                // Every open household registered today counts on top of
+                // the baseline, synced or not - the baseline deliberately
+                // excludes them all. Must stay identical to the Summary
+                // Report's rule so the two surfaces cannot disagree.
+                final registeredToday = adjustedServerCount +
+                    syncedHouseholdsToday +
+                    unsyncedHouseholdsToday;
                 current = isRegistrar && !isDistributor
-                    ? adjustedServerCount + localHouseholdsRegisteredToday
+                    ? registeredToday
                     : deliveredCount;
               }
             });

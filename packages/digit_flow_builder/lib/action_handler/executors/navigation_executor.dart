@@ -60,15 +60,28 @@ class NavigationExecutor extends ActionExecutor {
       navigationProperties['popUntilPageName'] = popUntilPageName;
     }
 
+    // The row the user actually tapped, when this action was fired from a
+    // list item. Falling back to stateWrapper.first resolved every
+    // "{{item.*}}" template against row 0 regardless of which row was
+    // tapped, so reopening a closed household prefilled it with the head
+    // name (and beneficiary id) of whichever household happened to sit at
+    // the top of the search list. Debug capture: opening household
+    // 86beddb0, whose own stored name is null, produced
+    // firstName="again"/lastName="two" from row 0 of a 5-row list.
+    final tappedItem = CrudItemContext.of(context)?.item;
+
     if (navData != null) {
       final resolvedData = navData.map((entry) {
         final key = entry['key'];
         final rawValue = entry['value'];
 
-        final stateWrapperFirst =
-            (currentState?.stateWrapper?.isNotEmpty == true)
+        // Prefer the tapped row; only fall back to row 0 when this action
+        // did not originate from a list item at all (e.g. a page-level
+        // button), where row 0 is the only sensible interpretation.
+        final stateWrapperFirst = tappedItem ??
+            ((currentState?.stateWrapper?.isNotEmpty == true)
                 ? currentState?.stateWrapper?.first
-                : null;
+                : null);
         final resolvedValue = resolveNavigationDataValue(
           rawValue: rawValue,
           stateFormData: stateFormData,

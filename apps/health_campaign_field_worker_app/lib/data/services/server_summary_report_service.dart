@@ -165,6 +165,66 @@ class ServerSummaryReportService {
     return total;
   }
 
+  /// The server's household count for [date] as it stood BEFORE this install
+  /// began contributing - see the running-minimum comment in
+  /// ServerSummaryReportStorage.writeSummaryReports.
+  ///
+  /// Surfaces that are showing "server totals plus what I have registered"
+  /// must add their local rows to THIS, not to [householdRegistration]: the
+  /// live value already grows to include synced local rows, so adding to it
+  /// double-counts, and reconciling against it drops rows while the backend
+  /// aggregate lags behind the push.
+  ///
+  /// [localHouseholdCount] is how many rows the DEVICE holds for [date]. When
+  /// it is zero the live server counts cannot contain anything this device
+  /// registered, so this is the only safe moment to record a baseline - and
+  /// recording it here, on read, means it is captured the first time a
+  /// surface renders a date rather than whenever a sync happens to fire.
+  ///
+  /// Recording it at sync time instead was the previous bug: by then the
+  /// device's own households had already been pushed and counted, so the
+  /// "baseline" included them and adding the local rows on top counted them
+  /// twice (29 registered + 2 more read as 34).
+  ///
+  /// Falls back to the live count when no baseline has been recorded yet,
+  /// which keeps pre-upgrade installs and never-synced dates reading sensibly.
+  Future<({int households, int people})> baselineFor({
+    required String date,
+    required int localHouseholdCount,
+  }) async {
+    final dayData = await readActiveSummaryReportDayData(date: date);
+    final liveHouseholds = _toInt(dayData?['householdsRegistered']);
+    final livePeople = _toInt(dayData?['peopleInHouseholds']);
+
+    if (localHouseholdCount == 0 &&
+        _activeUserUuid != null &&
+        _activeProjectId != null &&
+        _activeCycle != null) {
+      await storage.writeBaseline(
+        userUuid: _activeUserUuid!,
+        projectId: _activeProjectId!,
+        cycleIndex: _activeCycle!.id,
+        date: date,
+        households: liveHouseholds,
+        people: livePeople,
+      );
+      await _reloadCacheFromStorage();
+      final refreshed = await readActiveSummaryReportDayData(date: date);
+      return (
+        households: _toInt(refreshed?['baselineHouseholdsRegistered']),
+        people: _toInt(refreshed?['baselinePeopleInHouseholds']),
+      );
+    }
+
+    final storedHouseholds = dayData?['baselineHouseholdsRegistered'];
+    final storedPeople = dayData?['baselinePeopleInHouseholds'];
+    return (
+      households:
+          storedHouseholds != null ? _toInt(storedHouseholds) : liveHouseholds,
+      people: storedPeople != null ? _toInt(storedPeople) : livePeople,
+    );
+  }
+
   Future<int> childrenTreated({
     String? date,
   }) async {
