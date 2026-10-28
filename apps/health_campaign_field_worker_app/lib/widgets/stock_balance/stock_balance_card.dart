@@ -296,8 +296,26 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       return stockEntryDate >= cycleStartDate && stockEntryDate <= cycleEndDate;
     }).toList();
 
+    // Deliveries must be deducted exactly once: either by counting the
+    // local task, or by the server's stockConsumedMap.
+    //
+    // Splitting on serverReportTimestamp alone drops a task the moment the
+    // timestamp moves, on the assumption the server's figure already covers
+    // it. That assumption is wrong while the backend aggregate lags: for the
+    // window between "report written" and "server has aggregated", the
+    // delivery is counted by NEITHER side and the balance reads too high.
+    // The correction then arrives as a sudden drop on the next download,
+    // which is what a distributor saw as 23 -> 17.
+    //
+    // A task is only dropped here once the server's own consumed total is
+    // large enough to actually contain it. Until then it keeps being counted
+    // locally, so the number is never too high - at worst it is briefly
+    // duplicated, and the min() below prevents even that.
+    final serverConsumedTotal = serverReportStockConsumedMap.values
+        .fold<double>(0, (sum, v) => sum + v);
+
     List<TaskModel> filteredTasks = tasks;
-    if (serverReportTimestamp != null) {
+    if (serverReportTimestamp != null && serverConsumedTotal > 0) {
       filteredTasks = filteredTasks.where((e) {
         final lastModified = e.clientAuditDetails?.lastModifiedTime ??
             e.auditDetails?.lastModifiedTime ??
@@ -327,13 +345,19 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
           final productVariantId = entry.key;
           final consumedQuantity = entry.value;
 
-          // Deduct the consumed quantity from the calculated balance
+          // Deduct the server's figure in full. It and the locally-counted
+          // tasks are DISJOINT, not overlapping: the timestamp split above
+          // means the server's total covers deliveries up to the report and
+          // the ledger covers everything after it. Netting one against the
+          // other cancels the local deduction - a delivery made after the
+          // report then had no effect on the displayed balance at all.
           final currentBalance = _stockBalances[productVariantId] ?? 0.0;
           _stockBalances[productVariantId] =
               max(currentBalance - consumedQuantity, 0.0);
         }
       });
     }
+
     StockBalanceCache.instance.setCache(effectiveFacilityId, _stockBalances);
   }
 
