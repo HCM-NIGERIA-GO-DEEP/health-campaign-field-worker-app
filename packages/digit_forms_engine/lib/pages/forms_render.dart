@@ -773,6 +773,23 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                         return; // Skip default logic
                                       }
 
+                                      // Handle TEMPLATE navigation —
+                                      // submit the form so the flow-level
+                                      // onAction can navigate to the
+                                      // template screen. Without this,
+                                      // TEMPLATE type falls through to
+                                      // default next-page logic and the
+                                      // target template is never reached.
+                                      if (targetPageType == 'TEMPLATE') {
+                                        context.read<FormsBloc>().add(
+                                            FormsSubmitEvent(
+                                                isEdit: widget.isEdit,
+                                                schemaKey:
+                                                    widget.currentSchemaKey));
+                                        _popFormRoutesAfterSubmit();
+                                        return; // Skip default logic
+                                      }
+
                                       // Handle direct form submission (skip remaining pages)
                                       if (targetPageType == 'submit') {
                                         final contextValue =
@@ -1932,6 +1949,21 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     final popUpConfig = schema.showSecondaryAlertPopUp!;
     final bodyFields = popUpConfig.body ?? [];
 
+    // Popup copy may depend on the incoming transaction, just like display
+    // fields. Keep domain functions in the app through the existing resolver.
+    String popupText(String template) {
+      var code = template;
+      if (template.startsWith('{{') && template.endsWith('}}')) {
+        final expression = template.substring(2, template.length - 2).trim();
+        final resolved = FormPageNavigationRegistry().displayFieldResolver?.call(
+          expression,
+          {'navigation': widget.navigationParams ?? <String, dynamic>{}},
+        );
+        code = resolved ?? template;
+      }
+      return localizations.translate(code);
+    }
+
     // One value per field. This used to be a single shared
     // TextEditingController, which only behaved correctly while every popup
     // had exactly one body field: typing into any field overwrote the same
@@ -1974,7 +2006,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     /// Null when the field is acceptable, otherwise the reason it is not.
     String? validate(SecondaryAlertBodyField field) {
       final value = (values[field.fieldName] ?? '').trim();
-      final label = localizations.translate(field.label);
+      final label = popupText(field.label);
 
       if (value.isEmpty) {
         return field.mandatory ? '$label is required' : null;
@@ -1991,7 +2023,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
       if (!freeTextRevealed(field)) return null;
       final detailKey = '${field.fieldName}Detail';
       final value = (values[detailKey] ?? '').trim();
-      final label = localizations.translate(field.label);
+      final label = popupText(field.label);
       return value.isEmpty ? '$label detail is required' : null;
     }
 
@@ -2005,7 +2037,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
             return Popup(
               title: localizations.translate(popUpConfig.title),
               description: popUpConfig.description != null
-                  ? localizations.translate(popUpConfig.description!)
+                  ? popupText(popUpConfig.description!)
                   : null,
               additionalWidgets: [
                 // expand (not map) because a dropdown with revealsFreeTextOn
@@ -2027,7 +2059,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                   final fieldWidget = Padding(
                     padding: const EdgeInsets.only(top: spacer2),
                     child: LabeledField(
-                      label: localizations.translate(field.label),
+                      label: popupText(field.label),
                       isRequired: field.mandatory,
                       child: isDropdown(field)
                           ? DigitDropdown<String>(
@@ -2090,7 +2122,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                     child: LabeledField(
                       label: field.revealedDetailLabel != null
                           ? localizations.translate(field.revealedDetailLabel!)
-                          : localizations.translate(field.label),
+                          : popupText(field.label),
                       isRequired: true,
                       child: DigitTextAreaFormInput(
                         initialValue: values[detailKey] ?? '',
@@ -2199,29 +2231,35 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
           if (templateMatch != null) {
             final path = templateMatch.group(1)!.trim();
             if (path.startsWith('fn:')) {
-              // Handle functions like fn:getDiscrepancyReasonDisplayCode(navigation.discrepancyReason)
-              final argMatch = RegExp(r'fn:\w+\(([^)]+)\)').firstMatch(path);
-              if (argMatch != null) {
-                final innerPath = argMatch.group(1)!.trim();
-                final innerParts = innerPath.split('.');
-                dynamic innerVal = resolveContext;
-                for (final part in innerParts) {
-                  if (innerVal is Map && innerVal.containsKey(part)) {
-                    innerVal = innerVal[part];
-                  } else {
-                    innerVal = null;
-                    break;
+              // Delegate fn: resolution to the app layer via the registered
+              // DisplayFieldResolver. This avoids hardcoding domain-specific
+              // function mappings (e.g. reason-label maps) inside the generic
+              // forms engine package.
+              final resolver =
+                  FormPageNavigationRegistry().displayFieldResolver;
+              if (resolver != null) {
+                resolvedValue = resolver(path, resolveContext);
+              }
+              // If no resolver is registered, fall back to resolving the
+              // argument path and displaying its raw value.
+              if (resolvedValue == null || resolvedValue.isEmpty) {
+                final argMatch =
+                    RegExp(r'fn:\w+\(([^)]+)\)').firstMatch(path);
+                if (argMatch != null) {
+                  final innerPath = argMatch.group(1)!.trim();
+                  final innerParts = innerPath.split('.');
+                  dynamic innerVal = resolveContext;
+                  for (final part in innerParts) {
+                    if (innerVal is Map && innerVal.containsKey(part)) {
+                      innerVal = innerVal[part];
+                    } else {
+                      innerVal = null;
+                      break;
+                    }
                   }
-                }
-                if (innerVal != null) {
-                  final reason = innerVal.toString().trim().toUpperCase();
-                  const reasonLabels = {
-                    'IN_TRANSIT': 'INVENTORY_DISCREPANCY_REASON_IN_TRANSIT',
-                    'STOCK_LOSS': 'INVENTORY_DISCREPANCY_REASON_STOCK_LOSS',
-                    'STOCK_DAMAGE': 'INVENTORY_DISCREPANCY_REASON_STOCK_DAMAGE',
-                    'OTHERS': 'INVENTORY_DISCREPANCY_REASON_OTHERS',
-                  };
-                  resolvedValue = reasonLabels[reason] ?? reason;
+                  if (innerVal != null) {
+                    resolvedValue = innerVal.toString();
+                  }
                 }
               }
             } else {

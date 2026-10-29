@@ -1,5 +1,6 @@
 import 'package:digit_crud_bloc/bloc/crud_bloc.dart';
 import 'package:digit_data_model/utils/utils.dart';
+import 'package:digit_flow_builder/utils/interpolation.dart';
 import 'package:digit_flow_builder/utils/scanner_comparison_utils.dart';
 import 'package:digit_flow_builder/widgets/localized.dart';
 import 'package:digit_forms_engine/forms_engine.dart';
@@ -10,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'action_handler/action_config.dart';
 import 'flow_builder.dart';
+import 'utils/function_registry.dart';
 
 class ScreenKeyListener extends StatelessWidget {
   final String screenKey;
@@ -175,6 +177,50 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
   }
 
   void _registerFormPageNavigationInterceptor() {
+    // Register a display-field resolver that routes fn: template expressions
+    // through the FunctionRegistry so the forms engine never hardcodes
+    // domain-specific mappings (e.g. discrepancy reason labels).
+    FormPageNavigationRegistry().displayFieldResolver ??=
+        (String fnExpression, Map<String, dynamic> resolveContext) {
+      final fnRegex = RegExp(r'fn:(\w+)\(([^)]*)\)');
+      final match = fnRegex.firstMatch(fnExpression);
+      if (match == null) return null;
+
+      final fnName = match.group(1)!;
+      final argsExpr = match.group(2) ?? '';
+
+      final resolvedArgs = argsExpr.trim().isEmpty
+          ? <dynamic>[]
+          : argsExpr.split(',').map((rawArg) {
+              final trimmed = rawArg.trim();
+              // Quoted literal
+              if (trimmed.startsWith("'") || trimmed.startsWith('"')) {
+                return trimmed.replaceAll(RegExp(r"""^['"]|['"]$"""), '');
+              }
+              // Number
+              final numValue = num.tryParse(trimmed);
+              if (numValue != null) return numValue;
+              // Path resolution against the display-only context
+              final parts = trimmed.split('.');
+              dynamic current = resolveContext;
+              for (final part in parts) {
+                if (current is Map && current.containsKey(part)) {
+                  current = current[part];
+                } else {
+                  return null;
+                }
+              }
+              return current;
+            }).toList();
+
+      final result = FunctionRegistry.call(
+        fnName,
+        resolvedArgs,
+        CrudStateData(const {}, const []),
+      );
+      return result?.toString();
+    };
+
     FormPageNavigationRegistry().register(
       owner: this,
       interceptor: ({
@@ -210,11 +256,10 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
                 enrichedContext['latestBeneficiaryId']?.toString() ?? '';
             final firstName =
                 (formValues['nameOfIndividual'] ?? '').toString().trim();
-            final lastName = (formValues['familyname'] ??
-                    formValues['lastName'] ??
-                    '')
-                .toString()
-                .trim();
+            final lastName =
+                (formValues['familyname'] ?? formValues['lastName'] ?? '')
+                    .toString()
+                    .trim();
             final headName = '$firstName $lastName'.trim();
             return {
               'beneficiaryId': bid,
@@ -303,7 +348,8 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
             ...?popupData,
           };
 
-          final existingModels = (navParams['existingModels'] is List && (navParams['existingModels'] as List).isNotEmpty)
+          final existingModels = (navParams['existingModels'] is List &&
+                  (navParams['existingModels'] as List).isNotEmpty)
               ? navParams['existingModels'] as List
               : (entities.isNotEmpty ? entities : null);
 
