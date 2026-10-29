@@ -25,7 +25,9 @@ import '../models/property_schema/property_schema.dart';
 import '../models/schema_object/schema_object.dart';
 import '../utils/screen_protection_manager.dart';
 import '../utils/utils.dart';
+import '../helper/form_page_navigation_registry.dart';
 import '../widgets/multi_entity_tab_view.dart';
+import '../widgets/scanner_comparison_provider.dart';
 
 @RoutePage()
 class FormsRenderPage extends LocalizedStatefulWidget {
@@ -118,6 +120,45 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
       (route) => route.settings.name != FormsRenderRoute.name,
     );
   }
+
+  Future<Map<String, dynamic>> _enrichNavigationParams({
+    required String targetPageName,
+    required Map<String, dynamic> formValues,
+  }) async {
+    final nextNavParams =
+        Map<String, dynamic>.from(widget.navigationParams ?? {});
+    final interceptor = FormPageNavigationRegistry().interceptor;
+    if (interceptor != null) {
+      try {
+        final enriched = await interceptor(
+          context: context,
+          currentSchemaKey: widget.currentSchemaKey,
+          fromPageName: widget.pageName,
+          toPageName: targetPageName,
+          formValues: formValues,
+          currentNavParams: widget.navigationParams,
+        );
+        if (enriched != null) {
+          nextNavParams.addAll(enriched);
+        }
+      } catch (e) {
+        // Ignore error in interceptor
+      }
+    }
+    if (!nextNavParams.containsKey('headName') ||
+        nextNavParams['headName'] == null ||
+        nextNavParams['headName'].toString().isEmpty) {
+      final fn = (formValues['nameOfIndividual'] ?? '').toString().trim();
+      final ln = (formValues['familyname'] ?? formValues['lastName'] ?? '')
+          .toString()
+          .trim();
+      if (fn.isNotEmpty || ln.isNotEmpty) {
+        nextNavParams['headName'] = '$fn $ln'.trim();
+      }
+    }
+    return nextNavParams;
+  }
+
 
   int? _getScannerScanLimit(PropertySchema schema) {
     final rules = schema.validations;
@@ -272,6 +313,12 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
       pages: pages,
       navigationParams: widget.navigationParams,
     );
+  }
+
+  bool _shouldShowSecondaryButton(PropertySchema schema, String contextLabel) {
+    final hasLabel = schema.secondaryActionLabel != null;
+    final hasAction = widget.onSecondaryAction != null;
+    return hasLabel && hasAction;
   }
 
   bool _isVisibleForScannerValidation(
@@ -707,6 +754,11 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                       // Handle form navigation
                                       if (targetPageName != null &&
                                           targetPageType == 'form') {
+                                        final nextNavParams =
+                                            await _enrichNavigationParams(
+                                          targetPageName: targetPageName,
+                                          formValues: values,
+                                        );
                                         context.router.push(FormsRenderRoute(
                                           isEdit: widget.isEdit,
                                           customComponents:
@@ -715,8 +767,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                               widget.currentSchemaKey,
                                           pageName: targetPageName,
                                           defaultValues: widget.defaultValues,
-                                          navigationParams:
-                                              widget.navigationParams,
+                                          navigationParams: nextNavParams,
                                         ));
                                         _isSubmitting = false;
                                         return; // Skip default logic
@@ -858,14 +909,19 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                       a.value.order!.compareTo(b.value.order!));
 
                                 if (nextPageEntry.isNotEmpty) {
+                                  final nextPageName = nextPageEntry.first.key;
+                                  final nextNavParams =
+                                      await _enrichNavigationParams(
+                                    targetPageName: nextPageName,
+                                    formValues: values,
+                                  );
                                   context.router.push(FormsRenderRoute(
                                       isEdit: widget.isEdit,
                                       customComponents: widget.customComponents,
                                       currentSchemaKey: widget.currentSchemaKey,
-                                      pageName: nextPageEntry.first.key,
+                                      pageName: nextPageName,
                                       defaultValues: widget.defaultValues,
-                                      navigationParams:
-                                          widget.navigationParams));
+                                      navigationParams: nextNavParams));
                                   _isSubmitting = false;
                                 } else {
                                   if (schemaObject.summary) {
@@ -992,11 +1048,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                           // duplicate/blank panel to render - reading the
                           // navigation param directly here instead avoids
                           // touching that schema field at all.
-                          if (schema.secondaryActionLabel != null &&
-                              widget.onSecondaryAction != null &&
-                              widget.navigationParams?[
-                                      'incomingStockEntryType'] !=
-                                  'RETURNED')
+                          if (_shouldShowSecondaryButton(
+                              schema, 'Issue1-Button-1'))
                             Padding(
                               padding: const EdgeInsets.only(top: spacer1),
                               child: DigitButton(
@@ -1064,10 +1117,10 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                     const SizedBox(
                                       height: spacer1,
                                     ),
-                                    Text(
+                                    _buildDescriptionWidget(
                                       localizations
                                           .translate(schema.description!),
-                                      style: Theme.of(context)
+                                      Theme.of(context)
                                           .digitTextTheme(context)
                                           .bodyS
                                           .copyWith(
@@ -1075,6 +1128,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                                   .colorTheme
                                                   .text
                                                   .secondary),
+                                      schemaObject: schemaObject,
                                     ),
                                   ],
                                 ],
@@ -1338,13 +1392,18 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                               a.value.order!.compareTo(b.value.order!));
 
                         if (nextPageEntry.isNotEmpty) {
+                          final nextPageName = nextPageEntry.first.key;
+                          final nextNavParams = await _enrichNavigationParams(
+                            targetPageName: nextPageName,
+                            formValues: values,
+                          );
                           context.router.push(FormsRenderRoute(
                             isEdit: widget.isEdit,
                             customComponents: widget.customComponents,
                             currentSchemaKey: widget.currentSchemaKey,
-                            pageName: nextPageEntry.first.key,
+                            pageName: nextPageName,
                             defaultValues: widget.defaultValues,
-                            navigationParams: widget.navigationParams,
+                            navigationParams: nextNavParams,
                           ));
                           _isSubmitting = false;
                         } else {
@@ -1362,10 +1421,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                       mainAxisSize: MainAxisSize.max,
                     ),
                   ),
-                  if (schema.secondaryActionLabel != null &&
-                      widget.onSecondaryAction != null &&
-                      widget.navigationParams?['incomingStockEntryType'] !=
-                          'RETURNED')
+                  if (_shouldShowSecondaryButton(
+                      schema, 'Issue1-Button-2'))
                     Padding(
                       padding: const EdgeInsets.only(top: spacer1),
                       child: DigitButton(
@@ -1409,9 +1466,11 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                           ),
                           if (schema.description != null) ...[
                             const SizedBox(height: spacer1),
-                            Text(
+                            _buildDescriptionWidget(
                               localizations.translate(schema.description!),
-                              style: Theme.of(context).textTheme.bodyMedium,
+                              Theme.of(context).textTheme.bodyMedium ??
+                                  const TextStyle(),
+                              schemaObject: schemaObject,
                             ),
                           ],
                           const SizedBox(height: spacer2),
@@ -1440,6 +1499,123 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
         ),
       ),
     );
+  }
+
+  /// Builds a formatted description widget supporting placeholders like
+  /// {0} / {beneficiaryId} / {unique_beneficiary_id} and {1} / {headName} / {name},
+  /// styling the substituted dynamic values in bold.
+  Widget _buildDescriptionWidget(
+    String rawDescription,
+    TextStyle baseStyle, {
+    SchemaObject? schemaObject,
+  }) {
+    final nav = widget.navigationParams;
+    final def = widget.defaultValues;
+
+    var beneficiaryId = (nav?['beneficiaryId'] ??
+            nav?['unique_beneficiary_id'] ??
+            nav?['UNIQUE_BENEFICIARY_ID'] ??
+            nav?['latestBeneficiaryId'] ??
+            nav?['beneficiary_id'] ??
+            def?['beneficiaryId'] ??
+            def?['unique_beneficiary_id'] ??
+            def?['latestBeneficiaryId'])
+        ?.toString() ??
+        '';
+
+    var headName = (nav?['headName'] ??
+            nav?['head_name'] ??
+            def?['headName'])
+        ?.toString() ??
+        '';
+
+    if (headName.isEmpty && schemaObject != null) {
+      final hhProps = schemaObject.pages['householdDetails']?.properties;
+      final givenName =
+          hhProps?['nameOfIndividual']?.value?.toString().trim() ?? '';
+      final familyName =
+          (hhProps?['familyname']?.value ?? hhProps?['lastName']?.value)
+                  ?.toString()
+                  .trim() ??
+              '';
+      if (givenName.isNotEmpty || familyName.isNotEmpty) {
+        headName = '$givenName $familyName'.trim();
+      }
+    }
+
+    if (headName.isEmpty) {
+      final givenName =
+          (nav?['nameOfIndividual'] ?? nav?['givenName'] ?? '')
+              ?.toString()
+              .trim() ??
+              '';
+      final familyName =
+          (nav?['lastName'] ?? nav?['familyName'] ?? '')
+              ?.toString()
+              .trim() ??
+              '';
+      if (givenName.isNotEmpty || familyName.isNotEmpty) {
+        headName = '$givenName $familyName'.trim();
+      }
+    }
+
+    if (beneficiaryId.isEmpty && schemaObject != null) {
+      final hhProps = schemaObject.pages['householdDetails']?.properties;
+      final bid =
+          hhProps?['UNIQUE_BENEFICIARY_ID']?.value?.toString().trim() ?? '';
+      if (bid.isNotEmpty) {
+        beneficiaryId = bid;
+      }
+    }
+
+    final pattern = RegExp(
+        r'(\{(?:0|1|beneficiaryId|unique_beneficiary_id|headName|name)\})');
+    if (!pattern.hasMatch(rawDescription)) {
+      return Text(rawDescription, style: baseStyle);
+    }
+
+    final boldStyle = baseStyle.copyWith(
+      fontWeight: FontWeight.bold,
+      color: Theme.of(context).colorScheme.onSurface,
+    );
+
+    final spans = <InlineSpan>[];
+    int lastEnd = 0;
+    for (final match in pattern.allMatches(rawDescription)) {
+      if (match.start > lastEnd) {
+        spans.add(TextSpan(
+          text: rawDescription.substring(lastEnd, match.start),
+          style: baseStyle,
+        ));
+      }
+      final token = match.group(0);
+      if (token == '{0}' ||
+          token == '{beneficiaryId}' ||
+          token == '{unique_beneficiary_id}') {
+        spans.add(TextSpan(
+          text: beneficiaryId.isNotEmpty ? beneficiaryId : token,
+          style: boldStyle,
+        ));
+      } else if (token == '{1}' ||
+          token == '{headName}' ||
+          token == '{name}') {
+        spans.add(TextSpan(
+          text: headName.isNotEmpty ? headName : token,
+          style: boldStyle,
+        ));
+      } else {
+        spans.add(TextSpan(text: token, style: baseStyle));
+      }
+      lastEnd = match.end;
+    }
+    if (lastEnd < rawDescription.length) {
+      spans.add(TextSpan(
+        text: rawDescription.substring(lastEnd),
+        style: baseStyle,
+      ));
+    }
+
+    return Text.rich(TextSpan(children: spans));
   }
 
   /// Builds a form for a single entity without tabs.
@@ -1729,6 +1905,9 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
           (rawValue is List && rawValue.isEmpty)) {
         // ✅ Null values show "--"
         displayValue = '--';
+      } else if (rawValue is String && rawValue.contains('||')) {
+        final parts = rawValue.split('||');
+        displayValue = '${parts.first.trim()} : ${parts.last.trim()}';
       } else {
         displayValue = localizations.translate(rawValue.toString());
       }
@@ -1759,8 +1938,18 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     // buffer, and on confirm every fieldName was handed that one value. A
     // popup declaring both a comment and a quantity would therefore save the
     // comment text into both.
+    final isUpperPartialAccept =
+        widget.navigationParams?['incomingStockEntryType'] == 'RETURNED';
+    final prefilledReason =
+        widget.navigationParams?['discrepancyReason']?.toString() ?? '';
+
     final values = <String, String>{
-      for (final field in bodyFields) field.fieldName: '',
+      for (final field in bodyFields)
+        field.fieldName: (isUpperPartialAccept &&
+                field.fieldName == 'discrepancyReason' &&
+                prefilledReason.isNotEmpty)
+            ? prefilledReason
+            : '',
       // Pre-seeded so a dropdown's revealed free-text field always has a
       // slot, even though it isn't one of the declared bodyFields itself.
       for (final field in bodyFields)
@@ -1832,6 +2021,9 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                     });
                   }
 
+                  final isFieldReadOnly = isUpperPartialAccept &&
+                      field.fieldName == 'discrepancyReason';
+
                   final fieldWidget = Padding(
                     padding: const EdgeInsets.only(top: spacer2),
                     child: LabeledField(
@@ -1839,6 +2031,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                       isRequired: field.mandatory,
                       child: isDropdown(field)
                           ? DigitDropdown<String>(
+                              readOnly: isFieldReadOnly,
                               items: (field.enums ?? [])
                                   .map((option) => DropdownItem(
                                         name: localizations
@@ -1848,14 +2041,17 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                   .toList(),
                               selectedOption: (field.enums ?? [])
                                   .where((option) =>
-                                      option.code == values[field.fieldName])
+                                      option.code.toUpperCase() ==
+                                      values[field.fieldName]?.toUpperCase())
                                   .map((option) => DropdownItem(
                                         name: localizations
                                             .translate(option.name),
                                         code: option.code,
                                       ))
                                   .firstOrNull,
-                              onSelect: (item) => onChange(item.code),
+                              onSelect: isFieldReadOnly
+                                  ? (item) {}
+                                  : (item) => onChange(item.code),
                               errorMessage: error,
                               isSearchable: false,
                             )
@@ -1971,12 +2167,13 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
         .where((entry) {
           if (entry.value.displayOnly != true) return false;
           final visibility = entry.value.visibilityCondition;
-          return visibility == null ||
+          final isVisible = visibility == null ||
               visibility.expression.isEmpty ||
               evaluateVisibilityExpression(
                 visibility.expression,
                 visibilityContext,
               );
+          return isVisible;
         })
         .toList()
       ..sort((a, b) => (a.value.order ?? 0).compareTo(b.value.order ?? 0));
@@ -2001,18 +2198,46 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
           final templateMatch = RegExp(r'\{\{([^}]+)\}\}').firstMatch(valueStr);
           if (templateMatch != null) {
             final path = templateMatch.group(1)!.trim();
-            final parts = path.split('.');
-            dynamic current = resolveContext;
-            for (final part in parts) {
-              if (current is Map && current.containsKey(part)) {
-                current = current[part];
-              } else {
-                current = null;
-                break;
+            if (path.startsWith('fn:')) {
+              // Handle functions like fn:getDiscrepancyReasonDisplayCode(navigation.discrepancyReason)
+              final argMatch = RegExp(r'fn:\w+\(([^)]+)\)').firstMatch(path);
+              if (argMatch != null) {
+                final innerPath = argMatch.group(1)!.trim();
+                final innerParts = innerPath.split('.');
+                dynamic innerVal = resolveContext;
+                for (final part in innerParts) {
+                  if (innerVal is Map && innerVal.containsKey(part)) {
+                    innerVal = innerVal[part];
+                  } else {
+                    innerVal = null;
+                    break;
+                  }
+                }
+                if (innerVal != null) {
+                  final reason = innerVal.toString().trim().toUpperCase();
+                  const reasonLabels = {
+                    'IN_TRANSIT': 'INVENTORY_DISCREPANCY_REASON_IN_TRANSIT',
+                    'STOCK_LOSS': 'INVENTORY_DISCREPANCY_REASON_STOCK_LOSS',
+                    'STOCK_DAMAGE': 'INVENTORY_DISCREPANCY_REASON_STOCK_DAMAGE',
+                    'OTHERS': 'INVENTORY_DISCREPANCY_REASON_OTHERS',
+                  };
+                  resolvedValue = reasonLabels[reason] ?? reason;
+                }
               }
-            }
-            if (current != null && current is! Map && current is! List) {
-              resolvedValue = current.toString();
+            } else {
+              final parts = path.split('.');
+              dynamic current = resolveContext;
+              for (final part in parts) {
+                if (current is Map && current.containsKey(part)) {
+                  current = current[part];
+                } else {
+                  current = null;
+                  break;
+                }
+              }
+              if (current != null && current is! Map && current is! List) {
+                resolvedValue = current.toString();
+              }
             }
           }
         } else {

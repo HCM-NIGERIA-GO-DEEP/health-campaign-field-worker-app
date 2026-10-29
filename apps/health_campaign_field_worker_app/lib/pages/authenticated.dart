@@ -1,11 +1,13 @@
 import 'dart:async';
 import 'dart:ui';
 
+import 'package:collection/collection.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:digit_data_model/models/entities/attendance_register.dart';
 import 'package:digit_data_model/models/entities/attendee.dart';
 import 'package:digit_face_verification/digit_face_verification.dart';
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_flow_builder/utils/utils.dart' show FlowBuilderSingleton;
 import 'package:digit_data_model/models/entities/hf_referral.dart';
 import 'package:digit_forms_engine/blocs/forms/forms.dart';
 import 'package:digit_showcase/showcase_widget.dart';
@@ -658,21 +660,20 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
                       if (showDrawer)
                         BlocBuilder<BoundaryBloc, BoundaryState>(
                           builder: (context, state) {
-                            bool isDistributor = context.loggedInUserRoles
-                                .where(
-                                  (role) =>
-                                      role.code ==
-                                      RolesType.distributor.toValue(),
-                                )
-                                .toList()
-                                .isNotEmpty;
+                            // Find the deepest selected boundary (e.g. Community) across all roles
+                            final selectedBoundaryModel = FlowBuilderSingleton()
+                                    .boundary ??
+                                context.boundaryOrNull ??
+                                state.selectedLastLevelBoundaries.lastOrNull ??
+                                state.allSelectedLastLevelBoundaries
+                                    .firstOrNull ??
+                                state.selectedBoundaryMap.values
+                                    .whereNotNull()
+                                    .lastOrNull ??
+                                state.boundaryList.lastOrNull;
 
-                            final selectedBoundary = isDistributor
-                                ? (state.selectedBoundaryMap.values.lastOrNull
-                                        ?.code ??
-                                    state.allSelectedLastLevelBoundaries
-                                        .firstOrNull?.code)
-                                : state.boundaryList.firstOrNull?.code;
+                            final selectedBoundary =
+                                selectedBoundaryModel?.code;
 
                             return selectedBoundary != null
                                 ? DigitButton(
@@ -681,11 +682,18 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
                                     suffixIcon: Icons.arrow_drop_down,
                                     type: DigitButtonType.tertiary,
                                     size: DigitButtonSize.large,
-                                    onPressed: () {
+                                    onPressed: () async {
                                       if (context.router.topRoute.name !=
                                           CurrentBoundaryRoute.name) {
-                                        context.router
-                                            .push(CurrentBoundaryRoute());
+                                        final picked = await context.router
+                                            .push<BoundaryModel>(
+                                                CurrentBoundaryRoute());
+                                        if (picked != null) {
+                                          context.setBoundary(picked);
+                                        }
+                                        if (mounted) {
+                                          setState(() {});
+                                        }
                                       }
                                     },
                                     iconColor:

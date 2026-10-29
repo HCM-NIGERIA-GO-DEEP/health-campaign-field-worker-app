@@ -223,7 +223,9 @@ class StockCalculationUtils {
       // transformer sets - a deliberate return of stock this facility
       // actually owned should still decrement/credit normally.
       final isShortfallNotification = isSender &&
-          (stockEntryType == 'RETURNED' || stockEntryType == 'DAMAGED') &&
+          (stockEntryType == 'RETURNED' ||
+              stockEntryType == 'DAMAGED' ||
+              stockEntryType == 'LOSS') &&
           _getAdditionalFieldValue(stock, 'originalIssueClientReferenceId')
               .isNotEmpty;
       if (isShortfallNotification) {
@@ -234,26 +236,29 @@ class StockCalculationUtils {
       // message for stock that was already deducted when the original
       // dispatch was created. Damage/loss quantities should still appear in
       // reconciliation totals, but must not be counted as another receipt or
-      // deducted from the upper facility's balance a second time. Use the
-      // shortfall record's quantity (not actualQuantityReceived, which refers
-      // to the amount accepted from the original dispatch).
-      // IN_TRANSIT resolutions are reissued to the lower facility, where the
-      // accepted reissue is counted on receipt; the sender side is likewise
-      // excluded below so the original dispatch remains the only district
-      // balance deduction.
+      // deducted from the upper facility's balance a second time. When partially
+      // accepted, actualQuantity indicates the portion accepted as loss/damage,
+      // while the remainder is reissued.
       final originalIssueReference =
           _getAdditionalFieldValue(stock, 'originalIssueClientReferenceId');
       if (isReceiver &&
           status == 'ACCEPTED' &&
           originalIssueReference.isNotEmpty) {
+        final hasOrigQty =
+            _getAdditionalFieldValue(stock, 'originalQuantityReceived').isNotEmpty;
+        final acceptedQty = hasOrigQty && actualQuantity != null
+            ? actualQuantity
+            : (actualQuantity != null && actualQuantity > 0)
+                ? actualQuantity
+                : rawQuantity;
         if (discrepancyReason == 'STOCK_DAMAGE') {
-          stockDamaged += rawQuantity;
-          lowerFacilityDamagedShortfall += rawQuantity;
+          stockDamaged += acceptedQty;
+          lowerFacilityDamagedShortfall += acceptedQty;
           continue;
         }
         if (discrepancyReason == 'STOCK_LOSS') {
-          stockLost += rawQuantity;
-          lowerFacilityLostShortfall += rawQuantity;
+          stockLost += acceptedQty;
+          lowerFacilityLostShortfall += acceptedQty;
           continue;
         }
         // The accepted RETURNED record is only the notification that causes
@@ -266,8 +271,7 @@ class StockCalculationUtils {
       }
       if (isSender &&
           stockEntryType == 'ISSUED' &&
-          originalIssueReference.isNotEmpty &&
-          discrepancyReason == 'IN_TRANSIT') {
+          originalIssueReference.isNotEmpty) {
         continue;
       }
 
@@ -382,7 +386,7 @@ class StockCalculationUtils {
                 stockLost -
                 lowerFacilityLostShortfall);
 
-    return {
+    final metrics = {
       'stockReceived': stockReceived,
       'stockIssued': stockIssued,
       'stockReturned': stockReturned,
@@ -401,6 +405,8 @@ class StockCalculationUtils {
       'lowerFacilityDamagedShortfall': lowerFacilityDamagedShortfall,
       'stockInHand': stockInHand,
     };
+
+    return metrics;
   }
 
   static void _processDistributorStock({

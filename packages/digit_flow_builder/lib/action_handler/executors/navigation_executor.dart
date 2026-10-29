@@ -20,9 +20,13 @@ class NavigationExecutor extends ActionExecutor {
     BuildContext context,
     Map<String, dynamic> contextData,
   ) async {
-    context
-        .read<DigitScannerBloc>()
-        .add(const DigitScannerEvent.handleScanner());
+    if (context.mounted) {
+      try {
+        context
+            .read<DigitScannerBloc>()
+            .add(const DigitScannerEvent.handleScanner());
+      } catch (_) {}
+    }
     final targetPageName = action.properties['name'] as String?;
     final targetType = action.properties['type'] as String?;
 
@@ -34,13 +38,18 @@ class NavigationExecutor extends ActionExecutor {
     }
 
     // Get current screen's state data for resolving navigation values
-    final screenKey =
-        getScreenKeyFromArgs(context) ?? context.router.currentPath;
+    String? screenKey;
+    if (context.mounted) {
+      try {
+        screenKey = getScreenKeyFromArgs(context) ?? context.router.currentPath;
+      } catch (_) {}
+    }
 
     // Get composite key for current screen's FlowCrudStateRegistry operations
     final currentCompositeKey = getCompositeKey(context, screenKey: screenKey);
+    final resolvedKey = currentCompositeKey ?? screenKey;
     final currentState =
-        FlowCrudStateRegistry().get(currentCompositeKey ?? screenKey);
+        resolvedKey != null ? FlowCrudStateRegistry().get(resolvedKey) : null;
     final stateFormData = currentState?.formData;
 
     // Get navigation mode and popUntilPageName from action properties

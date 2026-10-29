@@ -91,7 +91,9 @@ class ConditionalEvaluator {
           resolved.contains('<') ||
           resolved.contains('&&') ||
           resolved.contains('||')) {
-        return evaluateExpression(resolved, context, stateData: stateData);
+        final result =
+            evaluateExpression(resolved, context, stateData: stateData);
+        return result;
       }
 
       // Handle simple boolean string values

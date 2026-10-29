@@ -1,5 +1,7 @@
 import 'package:flutter/widgets.dart';
 
+export '../helper/form_page_navigation_registry.dart';
+
 /// Singleton registry that stores the duplicate check callback.
 /// This survives across route pushes (unlike InheritedWidget).
 ///

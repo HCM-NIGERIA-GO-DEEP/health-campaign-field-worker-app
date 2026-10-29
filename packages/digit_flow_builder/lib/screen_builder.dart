@@ -3,10 +3,12 @@ import 'package:digit_data_model/utils/utils.dart';
 import 'package:digit_flow_builder/utils/scanner_comparison_utils.dart';
 import 'package:digit_flow_builder/widgets/localized.dart';
 import 'package:digit_forms_engine/forms_engine.dart';
+import 'package:digit_forms_engine/helper/form_page_navigation_registry.dart';
 import 'package:digit_forms_engine/pages/forms_render.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import 'action_handler/action_config.dart';
 import 'flow_builder.dart';
 
 class ScreenKeyListener extends StatelessWidget {
@@ -95,6 +97,7 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
 
         // Register form submission handler
         _registerFormHandler();
+        _registerFormPageNavigationInterceptor();
 
         final resolvedActions =
             resolveTemplates(initActions, widget.navigationParams ?? {});
@@ -171,8 +174,64 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
     }
   }
 
+  void _registerFormPageNavigationInterceptor() {
+    FormPageNavigationRegistry().register(
+      owner: this,
+      interceptor: ({
+        required BuildContext context,
+        required String currentSchemaKey,
+        required String fromPageName,
+        required String toPageName,
+        required Map<String, dynamic> formValues,
+        required Map<String, dynamic>? currentNavParams,
+      }) async {
+        if (toPageName == 'registrationHealthTalkChecklist' ||
+            (fromPageName == 'householdDetails' &&
+                toPageName.contains('Checklist'))) {
+          final executor = ActionHandler.registry
+              .getExecutor('GENERATE_LOCAL_BENEFICIARY_ID');
+          if (executor != null) {
+            final enrichedContext = await executor.execute(
+              ActionConfig(
+                action: 'GENERATE_LOCAL_BENEFICIARY_ID',
+                actionType: 'GENERATE_LOCAL_BENEFICIARY_ID',
+                properties: const {},
+              ),
+              context,
+              {
+                'formData': {
+                  'householdDetails': formValues,
+                },
+                'navigation': currentNavParams,
+                '_compositeKey': _compositeKey,
+              },
+            );
+            final bid =
+                enrichedContext['latestBeneficiaryId']?.toString() ?? '';
+            final firstName =
+                (formValues['nameOfIndividual'] ?? '').toString().trim();
+            final lastName = (formValues['familyname'] ??
+                    formValues['lastName'] ??
+                    '')
+                .toString()
+                .trim();
+            final headName = '$firstName $lastName'.trim();
+            return {
+              'beneficiaryId': bid,
+              'UNIQUE_BENEFICIARY_ID': bid,
+              'latestBeneficiaryId': bid,
+              'headName': headName,
+            };
+          }
+        }
+        return null;
+      },
+    );
+  }
+
   @override
   void dispose() {
+    FormPageNavigationRegistry().clearIfOwner(this);
     if (_isRegistered) {
       FormSubmissionRegistry().unregister(
         schemaKey: _schemaKey,
@@ -244,6 +303,10 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
             ...?popupData,
           };
 
+          final existingModels = (navParams['existingModels'] is List && (navParams['existingModels'] as List).isNotEmpty)
+              ? navParams['existingModels'] as List
+              : (entities.isNotEmpty ? entities : null);
+
           ActionHandler.executeActions(
             secondaryActions,
             context,
@@ -251,6 +314,7 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
               'formData': formData,
               'navigation': navParams,
               'entities': entities,
+              if (existingModels != null) 'existingModels': existingModels,
             },
           );
         };

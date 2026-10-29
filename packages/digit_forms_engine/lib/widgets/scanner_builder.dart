@@ -158,12 +158,22 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
 
   String formatDisplayCodes(List displayCodes) {
     if (displayCodes.isEmpty) return '';
-    // If it's a single code, display as is
+    // If it's a single code with ||, format as "userName : userUuid"
     if (displayCodes.length == 1 && displayCodes.first.contains('||')) {
-      return displayCodes.first.toString().split("||").first.trim();
+      final parts = displayCodes.first.toString().split('||');
+      final userName = parts.first.trim();
+      final userUuid = parts.last.trim();
+      return '$userName : $userUuid';
     }
-    // If multiple codes, join with comma and space
-    return displayCodes.map((e) => e.toString()).join(', ');
+    // If multiple codes, format any containing || and join with comma and space
+    return displayCodes.map((e) {
+      final str = e.toString();
+      if (str.contains('||')) {
+        final parts = str.split('||');
+        return '${parts.first.trim()} : ${parts.last.trim()}';
+      }
+      return str;
+    }).join(', ');
   }
 
   String _extractSerialFromGs1Map(Map<String, dynamic> data) {

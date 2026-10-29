@@ -70,6 +70,14 @@ class StockBalanceExecutor extends ActionExecutor {
       final hasTask = entities.any((e) => e is TaskModel);
       final entityType = action.properties['entity'] as String?;
 
+      // Resolving a shortfall return (e.g. upper hierarchy accepting damage/loss/transit return)
+      // is a bookkeeping resolution of stock already dispatched and must never increase the upper
+      // facility's physical balance.
+      final nav = contextData['navigation'] as Map<String, dynamic>?;
+      if (nav?['incomingStockEntryType'] == 'RETURNED') {
+        return contextData;
+      }
+
       if (hasStock || entityType == 'STOCK') {
         await _handleStockEntity(context, entities, projectId, boundaryCode);
       }
@@ -168,14 +176,13 @@ class StockBalanceExecutor extends ActionExecutor {
       // view, but a gate called in between would still see the bad delta).
       final isLinkedShortfall = originalIssueReference.isNotEmpty;
       if (isLinkedShortfall &&
-          (stockEntryType == 'RETURNED' || stockEntryType == 'DAMAGED') &&
+          (stockEntryType == 'RETURNED' ||
+              stockEntryType == 'DAMAGED' ||
+              stockEntryType == 'LOSS') &&
           (isSender || isReceiver)) {
         continue;
       }
-      if (isLinkedShortfall &&
-          stockEntryType == 'ISSUED' &&
-          discrepancyReason == 'IN_TRANSIT' &&
-          isSender) {
+      if (isLinkedShortfall && stockEntryType == 'ISSUED' && isSender) {
         continue;
       }
 
@@ -406,9 +413,5 @@ class StockBalanceExecutor extends ActionExecutor {
 
     StockBalanceCache.instance
         .setCache(facilityId, {productVariantId: newBalance});
-
-    debugPrint(
-      'UPDATE_STOCK_BALANCE: Updated balance for $facilityId/$productVariantId = $newBalance (previous: $currentBalance, delta: $quantityDelta, existing record: ${existing != null})',
-    );
   }
 }

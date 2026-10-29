@@ -164,9 +164,13 @@ class TableWidget extends ResolvedFlowWidget {
           // Just convert to string
           final finalText = cellValue?.toString() ?? '';
 
-          final displayText = finalText != "null"
-              ? (localization?.translate(finalText) ?? finalText)
-              : "--";
+          final isNumeric = num.tryParse(finalText.trim()) != null;
+          final translated = (!isNumeric && finalText != "null")
+              ? localization?.translate(finalText)
+              : null;
+          final displayText = (translated != null && translated.trim().isNotEmpty)
+              ? translated
+              : (finalText != "null" && finalText.trim().isNotEmpty ? finalText : "--");
 
           return DigitTableData(
             displayText,

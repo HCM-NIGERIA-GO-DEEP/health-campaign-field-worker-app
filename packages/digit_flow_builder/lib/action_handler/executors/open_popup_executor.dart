@@ -184,7 +184,7 @@ class OpenPopupExecutor extends ActionExecutor {
 
                     return FlowWidgetFactory.build(
                       resolvedAction,
-                      popupContext,
+                      context,
                       (popupAction) {
                         final enrichedAction = _withParentScreenKey(
                           popupAction,
@@ -194,7 +194,7 @@ class OpenPopupExecutor extends ActionExecutor {
                         unawaited(
                           ActionHandler.execute(
                             enrichedAction,
-                            popupContext,
+                            context,
                             {
                               ...contextData,
                               if (parentScreenKey != null)

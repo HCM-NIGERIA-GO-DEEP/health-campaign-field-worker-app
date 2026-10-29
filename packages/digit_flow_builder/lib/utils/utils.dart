@@ -8,6 +8,7 @@ import 'package:digit_data_model/models/templates/template_config.dart';
 import 'package:digit_flow_builder/utils/interpolation.dart';
 import 'package:flutter/material.dart';
 
+import '../blocs/flow_crud_bloc.dart';
 import 'function_registry.dart';
 
 class FlowBuilderSingleton {
@@ -469,6 +470,22 @@ dynamic resolveValueRaw(dynamic value, dynamic contextData,
         // Fallback to widgetData parameter
         path = path.substring('widgetData.'.length);
         return widgetData != null ? _resolvePath(widgetData, path) : null;
+      }
+
+      // Handle navigation. prefix
+      if (path.startsWith('navigation.')) {
+        if (isStructuredContext && contextData.containsKey('navigation')) {
+          final innerPath = path.substring('navigation.'.length);
+          return _resolvePath(contextData['navigation'], innerPath);
+        }
+        if (screenKey != null) {
+          final navParams =
+              FlowCrudStateRegistry().getNavigationParams(screenKey);
+          if (navParams != null) {
+            final innerPath = path.substring('navigation.'.length);
+            return _resolvePath(navParams, innerPath);
+          }
+        }
       }
 
       // Handle singleton access

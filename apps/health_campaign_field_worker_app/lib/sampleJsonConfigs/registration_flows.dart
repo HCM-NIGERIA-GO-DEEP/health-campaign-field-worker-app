@@ -433,33 +433,6 @@ final dynamic sampleFlows = {
           "description": "CAREGIVER_CONSENT_DECLINED_PANEL_DESC",
           "primaryAction": {
             "type": "template",
-            "label": "VIEW_HOUSEHOLD_DETAILS",
-            "format": "button",
-            "hidden": false,
-            "onAction": [
-              {
-                "actionType": "NAVIGATION",
-                "properties": {
-                  "data": [
-                    {
-                      "key": "HouseholdClientReferenceId",
-                      "value": "{{navigation.HouseholdClientReferenceId}}"
-                    }
-                  ],
-                  "name": "householdOverview",
-                  "type": "TEMPLATE",
-                  "navigationMode": "popUntilAndPush",
-                  "popUntilPageName": "searchBeneficiary"
-                }
-              }
-            ],
-            "fieldName": "viewHouseholdDetails",
-            "mandatory": true,
-            "properties": {"type": "primary"}
-          },
-          "primaryActionLabel": "VIEW_HOUSEHOLD_DETAILS",
-          "secondaryAction": {
-            "type": "template",
             "label": "Back to Search",
             "format": "button",
             "hidden": false,
@@ -480,9 +453,9 @@ final dynamic sampleFlows = {
             ],
             "fieldName": "backToSearch",
             "mandatory": true,
-            "properties": {"type": "secondary"}
+            "properties": {"type": "primary"}
           },
-          "secondaryActionLabel": "Back to Search"
+          "primaryActionLabel": "Back to Search"
         }
       ],
       "name": "caregiverAcknowledgement",
@@ -759,6 +732,11 @@ final dynamic sampleFlows = {
                         "value":
                             "{{fn:getUniqueBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}"
                       },
+                      {
+                        "key": "headName",
+                        "value":
+                            "{{fn:fullName(contextData.0.headIndividual.IndividualModel.name.givenName, contextData.0.headIndividual.IndividualModel.name.familyName)}}"
+                      },
                       // Household/individual context persisted onto the
                       // delivery TaskModel (see the delivery config's
                       // additionalFields), so a task row is self-describing
@@ -819,31 +797,83 @@ final dynamic sampleFlows = {
         },
         {
           "type": "template",
-          "label": "CORE_COMMON_SAVE",
+          "label": "ACTION_SUBMIT",
           "format": "button",
           "visible": "{{fn:hasRole('REGISTRAR')}} == true",
-          // Also disabled once the health-talk checklist has been submitted:
-          // the acknowledgement screen links back here, and with Save still
-          // live the same checklist could be filled repeatedly in a loop.
           "disabled":
-              "{{fn:isClosedHousehold(contextData.0.tasks)}} == true || {{fn:isChecklistCompleted(contextData.0.household.HouseholdModel.additionalFields.fields)}} == true",
+              "{{fn:isClosedHousehold(contextData.0.tasks)}} == true || ('{{navigation.isNewRegistration}}' != 'true' && {{fn:isChecklistCompleted(contextData.0.household.HouseholdModel.additionalFields.fields)}} == true)",
           "onAction": [
             {
-              "actionType": "NAVIGATION",
+              "actionType": "OPEN_POPUP",
               "properties": {
-                "data": [
-                  {
-                    "key": "HouseholdClientReferenceId",
-                    "value": "{{navigation.HouseholdClientReferenceId}}"
-                  },
-                  {
-                    "key": "ProjectBeneficiaryClientReferenceId",
-                    "value":
-                        "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                  }
-                ],
-                "name": "registrationHealthTalk",
-                "type": "FORM"
+                "size": "large",
+                "type": "primary",
+                "popupConfig": {
+                  "title": "APPONE_ELIGIBILITYCHECKLIST_ALERT_TITLE",
+                  "description": "HOUSEHOLD_CHECKLIST_SUBMIT_DESCRIPTION",
+                  "type": "alert",
+                  "footerActions": [
+                    {
+                      "type": "template",
+                      "label": "ACTION_CANCEL",
+                      "format": "button",
+                      "fieldName": "cancelHouseholdOverviewPopUp",
+                      "properties": {
+                        "type": "secondary",
+                        "size": "medium"
+                      },
+                      "onAction": [
+                        {
+                          "actionType": "CLOSE_POPUP",
+                          "properties": {
+                            "parentScreenKey": "householdOverview"
+                          }
+                        }
+                      ]
+                    },
+                    {
+                      "type": "template",
+                      "label": "ACTION_SUBMIT",
+                      "format": "button",
+                      "fieldName": "submitHouseholdOverviewPopUp",
+                      "properties": {
+                        "type": "primary",
+                        "size": "medium"
+                      },
+                      "onAction": [
+                        {
+                          "actionType": "CLOSE_POPUP",
+                          "properties": {
+                            "parentScreenKey": "householdOverview"
+                          }
+                        },
+                        {
+                          "actionType": "NAVIGATION",
+                          "properties": {
+                            "data": [
+                              {
+                                "key": "HouseholdClientReferenceId",
+                                "value":
+                                    "{{navigation.HouseholdClientReferenceId}}"
+                              },
+                              {
+                                "key": "ProjectBeneficiaryClientReferenceId",
+                                "value":
+                                    "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                              }
+                            ],
+                            "name": "registrationHealthTalkSuccess",
+                            "type": "TEMPLATE",
+                            "navigationMode": "popUntilAndPush",
+                            "popUntilPageName": "searchBeneficiary"
+                          }
+                        }
+                      ]
+                    }
+                  ],
+                  "showCloseButton": true,
+                  "barrierDismissible": true
+                }
               }
             }
           ],
@@ -2607,7 +2637,7 @@ final dynamic sampleFlows = {
           "properties": [
             {
               "type": "boolean",
-              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_RECEIVE_NET",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION1",
               "order": 1,
               "value": "",
               "format": "checkbox",
@@ -2636,9 +2666,8 @@ final dynamic sampleFlows = {
             },
             {
               "type": "boolean",
-              "label":
-                  "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_TRUCK_IN_THE_NET",
-              "order": 1,
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION2",
+              "order": 2,
               "value": "",
               "format": "checkbox",
               "hidden": false,
@@ -2666,8 +2695,8 @@ final dynamic sampleFlows = {
             },
             {
               "type": "boolean",
-              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ROLL_UP_NET",
-              "order": 1,
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION3",
+              "order": 3,
               "value": "",
               "format": "checkbox",
               "hidden": false,
@@ -2695,9 +2724,8 @@ final dynamic sampleFlows = {
             },
             {
               "type": "boolean",
-              "label":
-                  "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_NET_IS_DIRTY",
-              "order": 1,
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION4",
+              "order": 4,
               "value": "",
               "format": "checkbox",
               "hidden": false,
@@ -2725,9 +2753,8 @@ final dynamic sampleFlows = {
             },
             {
               "type": "boolean",
-              "label":
-                  "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_MEND_YOUR_NETS",
-              "order": 1,
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION5",
+              "order": 5,
               "value": "",
               "format": "checkbox",
               "hidden": false,
@@ -2755,9 +2782,8 @@ final dynamic sampleFlows = {
             },
             {
               "type": "boolean",
-              "label":
-                  "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_THE_NET_PROTECTS",
-              "order": 1,
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION6",
+              "order": 6,
               "value": "",
               "format": "checkbox",
               "hidden": false,
@@ -2785,9 +2811,8 @@ final dynamic sampleFlows = {
             },
             {
               "type": "boolean",
-              "label":
-                  "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_PROTECT_FROM_MALERIA",
-              "order": 1,
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION7",
+              "order": 7,
               "value": "",
               "format": "checkbox",
               "hidden": false,
@@ -2797,6 +2822,122 @@ final dynamic sampleFlows = {
               "infoText": "",
               "readOnly": false,
               "fieldName": "ACTION7",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION8",
+              "order": 8,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION8",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION9",
+              "order": 9,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION9",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION10",
+              "order": 10,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION10",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION11",
+              "order": 11,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION11",
               "required": true,
               "mandatory": true,
               "deleteFlag": false,
@@ -2915,6 +3056,22 @@ final dynamic sampleFlows = {
               {
                 "key": "HouseholdModel.additionalFields.fields.ACTION7",
                 "value": "{{formData.registrationHealthTalkChecklist.ACTION7}}"
+              },
+              {
+                "key": "HouseholdModel.additionalFields.fields.ACTION8",
+                "value": "{{formData.registrationHealthTalkChecklist.ACTION8}}"
+              },
+              {
+                "key": "HouseholdModel.additionalFields.fields.ACTION9",
+                "value": "{{formData.registrationHealthTalkChecklist.ACTION9}}"
+              },
+              {
+                "key": "HouseholdModel.additionalFields.fields.ACTION10",
+                "value": "{{formData.registrationHealthTalkChecklist.ACTION10}}"
+              },
+              {
+                "key": "HouseholdModel.additionalFields.fields.ACTION11",
+                "value": "{{formData.registrationHealthTalkChecklist.ACTION11}}"
               }
             ],
             "onError": [
@@ -3645,7 +3802,7 @@ final dynamic sampleFlows = {
           "properties": [
             {
               "type": "boolean",
-              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_RECEIVE_NET",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION1",
               "order": 1,
               "value": "",
               "format": "checkbox",
@@ -3674,9 +3831,8 @@ final dynamic sampleFlows = {
             },
             {
               "type": "boolean",
-              "label":
-                  "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_TRUCK_IN_THE_NET",
-              "order": 1,
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION2",
+              "order": 2,
               "value": "",
               "format": "checkbox",
               "hidden": false,
@@ -3704,8 +3860,8 @@ final dynamic sampleFlows = {
             },
             {
               "type": "boolean",
-              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ROLL_UP_NET",
-              "order": 1,
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION3",
+              "order": 3,
               "value": "",
               "format": "checkbox",
               "hidden": false,
@@ -3733,9 +3889,8 @@ final dynamic sampleFlows = {
             },
             {
               "type": "boolean",
-              "label":
-                  "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_NET_IS_DIRTY",
-              "order": 1,
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION4",
+              "order": 4,
               "value": "",
               "format": "checkbox",
               "hidden": false,
@@ -3763,9 +3918,8 @@ final dynamic sampleFlows = {
             },
             {
               "type": "boolean",
-              "label":
-                  "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_MEND_YOUR_NETS",
-              "order": 1,
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION5",
+              "order": 5,
               "value": "",
               "format": "checkbox",
               "hidden": false,
@@ -3793,9 +3947,8 @@ final dynamic sampleFlows = {
             },
             {
               "type": "boolean",
-              "label":
-                  "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_THE_NET_PROTECTS",
-              "order": 1,
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION6",
+              "order": 6,
               "value": "",
               "format": "checkbox",
               "hidden": false,
@@ -3823,9 +3976,8 @@ final dynamic sampleFlows = {
             },
             {
               "type": "boolean",
-              "label":
-                  "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_PROTECT_FROM_MALERIA",
-              "order": 1,
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION7",
+              "order": 7,
               "value": "",
               "format": "checkbox",
               "hidden": false,
@@ -3835,6 +3987,122 @@ final dynamic sampleFlows = {
               "infoText": "",
               "readOnly": false,
               "fieldName": "ACTION7",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION8",
+              "order": 8,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION8",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION9",
+              "order": 9,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION9",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION10",
+              "order": 10,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION10",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION11",
+              "order": 11,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION11",
               "required": true,
               "mandatory": true,
               "deleteFlag": false,
@@ -4012,7 +4280,7 @@ final dynamic sampleFlows = {
           "page": "householdDetails",
           "type": "object",
           "label": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_SCREEN_HEADING",
-          "order": 4,
+          "order": 3,
           "footer": [
             {
               "label":
@@ -4022,7 +4290,10 @@ final dynamic sampleFlows = {
               "onAction": [
                 {
                   "actionType": "NAVIGATION",
-                  "properties": {"name": "beneficiaryDetails", "type": "form"}
+                  "properties": {
+                    "name": "registrationHealthTalkChecklist",
+                    "type": "form"
+                  }
                 }
               ],
               "properties": {
@@ -4086,7 +4357,7 @@ final dynamic sampleFlows = {
                       },
                       {"key": "isEdit", "value": "true"},
                       {"key": "isClosedHousehold", "value": "true"},
-                      {"key": "registrationPendingHealthTalk", "value": "true"}
+                      {"key": "isNewRegistration", "value": "true"}
                     ],
                     "name": "householdOverview",
                     "type": "TEMPLATE",
@@ -4164,62 +4435,20 @@ final dynamic sampleFlows = {
             {
               "actions": [
                 {
-                  "actionType": "FETCH_TRANSFORMER_CONFIG",
-                  "properties": {
-                    "onError": [
-                      {
-                        "actionType": "SHOW_TOAST",
-                        "properties": {"message": "Failed to fetch config."}
-                      }
-                    ],
-                    "configName": "beneficiaryRegistration",
-                    "createEntities": ["ProjectBeneficiaryModel"]
-                  }
-                },
-                {
-                  "actionType": "CREATE_EVENT",
-                  "properties": {
-                    "onError": [
-                      {
-                        "actionType": "SHOW_TOAST",
-                        "properties": {"message": "Failed to create household."}
-                      }
-                    ]
-                  }
-                },
-                {
                   "actionType": "NAVIGATION",
                   "properties": {
-                    "data": [
-                      {
-                        "key": "HouseholdClientReferenceId",
-                        "value":
-                            "{{contextData.entities.HouseholdModel.clientReferenceId}}"
-                      },
-                      {
-                        "key": "ProjectBeneficiaryClientReferenceId",
-                        "value":
-                            "{{contextData.entities.ProjectBeneficiaryModel.clientReferenceId}}"
-                      },
-                      {"key": "registrationPendingHealthTalk", "value": "true"}
-                    ],
-                    "name": "householdOverview",
-                    "type": "TEMPLATE",
-                    "onError": [
-                      {
-                        "actionType": "SHOW_TOAST",
-                        "properties": {"message": "Navigation failed."}
-                      }
-                    ],
-                    "navigationMode": "popUntilAndPush",
-                    "popUntilPageName": "searchBeneficiary"
+                    "name": "registrationHealthTalkChecklist",
+                    "type": "form"
                   }
                 }
               ],
               "condition": {"expression": "DEFAULT"}
             }
           ],
-          "navigateTo": {"name": "beneficiaryDetails", "type": "form"},
+          "navigateTo": {
+            "name": "registrationHealthTalkChecklist",
+            "type": "form"
+          },
           "properties": [
             {
               "type": "string",
@@ -4437,6 +4666,8 @@ final dynamic sampleFlows = {
                 "errorMessage":
                     "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_memberCount_max_message"
               },
+              "maxValue": 30,
+              "minValue": 1,
               "value": "1",
               "format": "numeric",
               "hidden": false,
@@ -4784,9 +5015,18 @@ final dynamic sampleFlows = {
           // registrations continue through beneficiaryDetails and location.
           "submitCondition": {
             "expression": [
-              {"condition": "isEdit == true"}
+              {"condition": "isEdit == true && isClosedHousehold != true"}
             ]
           },
+          "conditionalNavigateTo": [
+            {
+              "condition": "isEdit != true || isClosedHousehold == true",
+              "navigateTo": {
+                "name": "registrationHealthTalkChecklist",
+                "type": "form"
+              }
+            }
+          ],
           "preventScreenCapture": false
         },
         {
@@ -5424,6 +5664,417 @@ final dynamic sampleFlows = {
               }
             }
           ]
+        },
+        {
+          "body": null,
+          "flow": "HOUSEHOLD",
+          "page": "registrationHealthTalkChecklist",
+          "type": "object",
+          "label": "APPONE_DELIVERYFLOW_DELIVERYDETAILS_ACTIONS_SCREEN_HEADING",
+          "order": 4,
+          "footer": [
+            {
+              "label":
+                  "APPONE_DELIVERYFLOW_DELIVERYDETAILS_ACTIONS_SUBMIT_LABEL",
+              "format": "button",
+              "fieldName": "registrationHealthTalkSubmitButton",
+              // The checklist persistence itself lives in this flow's own
+              // (flow-level) onAction further down, which is what
+              // screen_builder's _handleFormSubmission executes. This
+              // navigation is kept as it was originally.
+              "onAction": [
+                {
+                  "actionType": "NAVIGATION",
+                  "properties": {
+                    "data": [
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value":
+                            "{{contextData.entities.HouseholdModel.clientReferenceId}}"
+                      },
+                      {
+                        "key": "ProjectBeneficiaryClientReferenceId",
+                        "value":
+                            "{{contextData.entities.ProjectBeneficiaryModel.clientReferenceId}}"
+                      },
+                      {
+                        "key": "isNewRegistration",
+                        "value": "true"
+                      }
+                    ],
+                    "name": "householdOverview",
+                    "type": "TEMPLATE",
+                    "navigationMode": "popUntilAndPush",
+                    "popUntilPageName": "searchBeneficiary"
+                  }
+                }
+              ],
+              "properties": {
+                "size": "large",
+                "type": "primary",
+                "mainAxisSize": "max",
+                "mainAxisAlignment": "center"
+              }
+            }
+          ],
+          "module": "REGISTRATION",
+          "heading":
+              "APPONE_DELIVERYFLOW_DELIVERYDETAILS_ACTIONS_SCREEN_HEADING",
+          "summary": false,
+          "version": 1,
+          "onAction": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value":
+                        "{{contextData.entities.HouseholdModel.clientReferenceId}}"
+                  },
+                  {
+                    "key": "ProjectBeneficiaryClientReferenceId",
+                    "value":
+                        "{{contextData.entities.ProjectBeneficiaryModel.clientReferenceId}}"
+                  }
+                ],
+                "name": "householdOverview",
+                "type": "TEMPLATE",
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "searchBeneficiary"
+              }
+            }
+          ],
+          "navigateTo": null,
+          "properties": [
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION1",
+              "order": 1,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION1",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION2",
+              "order": 2,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION2",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION3",
+              "order": 3,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION3",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION4",
+              "order": 4,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION4",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION5",
+              "order": 5,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION5",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION6",
+              "order": 6,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION6",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION7",
+              "order": 7,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION7",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION8",
+              "order": 8,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION8",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION9",
+              "order": 9,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION9",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION10",
+              "order": 10,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION10",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            },
+            {
+              "type": "boolean",
+              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION11",
+              "order": 11,
+              "value": "",
+              "format": "checkbox",
+              "hidden": false,
+              "isMdms": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "ACTION11",
+              "required": true,
+              "mandatory": true,
+              "deleteFlag": false,
+              "innerLabel": "",
+              "schemaCode": null,
+              "systemDate": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message":
+                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": ""
+            }
+          ],
+          "actionLabel":
+              "APPONE_DELIVERYFLOW_DELIVERYDETAILS_ACTIONS_SUBMIT_LABEL",
+          "description":
+              "APPONE_DELIVERYFLOW_DELIVERYDETAILS_ACTIONS_SCREEN_DESCRIPTION",
+          "showTabView": false,
+          "submitCondition": null,
+          "preventScreenCapture": false,
+          "conditionalNavigateTo": null
         }
       ],
       "summary": false,
@@ -5581,9 +6232,9 @@ final dynamic sampleFlows = {
                   {
                     "key": "ProjectBeneficiaryClientReferenceId",
                     "value":
-                        "{{navigation.projectBeneficiaryClientReferenceId}}"
+                        "{{contextData.entities.ProjectBeneficiaryModel.clientReferenceId}}"
                   },
-                  {"key": "registrationPendingHealthTalk", "value": "true"}
+                  {"key": "isNewRegistration", "value": "true"}
                 ],
                 "name": "householdOverview",
                 "type": "TEMPLATE",
@@ -5658,6 +6309,63 @@ final dynamic sampleFlows = {
         },
         {
           "actions": [
+            {
+              "actionType": "FETCH_TRANSFORMER_CONFIG",
+              "properties": {
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to fetch config."}
+                  }
+                ],
+                "configName": "beneficiaryRegistration",
+                "createEntities": ["ProjectBeneficiaryModel"]
+              }
+            },
+            {
+              "actionType": "UPDATE_EVENT",
+              "properties": {
+                "entity": "HouseholdModel, IndividualModel",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to update household."}
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value":
+                        "{{contextData.entities.HouseholdModel.clientReferenceId}}"
+                  },
+                  {
+                    "key": "ProjectBeneficiaryClientReferenceId",
+                    "value":
+                        "{{contextData.entities.ProjectBeneficiaryModel.clientReferenceId}}"
+                  }
+                ],
+                "name": "householdOverview",
+                "type": "TEMPLATE",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Navigation failed."}
+                  }
+                ],
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "searchBeneficiary"
+              }
+            }
+          ],
+          "condition": {"type": "custom", "expression": "isEdit==true"}
+        },
+        {
+          "actions": [
             {"actionType": "GENERATE_LOCAL_BENEFICIARY_ID"},
             {
               "actionType": "FETCH_TRANSFORMER_CONFIG",
@@ -5711,7 +6419,10 @@ final dynamic sampleFlows = {
                     "value":
                         "{{contextData.entities.ProjectBeneficiaryModel.clientReferenceId}}"
                   },
-                  {"key": "registrationPendingHealthTalk", "value": "true"}
+                  {
+                    "key": "isNewRegistration",
+                    "value": "true"
+                  }
                 ],
                 "name": "householdOverview",
                 "type": "TEMPLATE",

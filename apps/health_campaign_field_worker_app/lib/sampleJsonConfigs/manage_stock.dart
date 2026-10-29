@@ -2492,6 +2492,11 @@ final dynamic sampleInventoryFlows = {
                               "{{fn:getStockDiscrepancyReason(item.items)}}"
                         },
                         {
+                          "key": "discrepancyReasonDisplay",
+                          "value":
+                              "{{fn:getDiscrepancyReasonDisplayCode(fn:getStockDiscrepancyReason(item.items))}}"
+                        },
+                        {
                           "key": "originalIssueClientReferenceId",
                           "value":
                               "{{item.items[0].additionalFields.fields.originalIssueClientReferenceId}}"
@@ -2971,40 +2976,20 @@ final dynamic sampleInventoryFlows = {
       ],
       "onSecondaryAction": [
         {
-          // A Shortfall Return's resolution (re-issue / damage / loss) is
-          // fully determined by the discrepancyReason the LOWER hierarchy
-          // already chose at step 2b and carried here via
-          // navigation.discrepancyReason - the upper hierarchy doesn't pick
-          // anything, so there is nothing left for "Partially Accept" to do
-          // on a return. Direct them to the plain Accept button instead,
-          // which auto-resolves based on that reason (see onAction above).
-          "condition": {
-            "expression": "navigation.incomingStockEntryType == 'RETURNED' && ((navigation.originalIssueClientReferenceId != null && navigation.originalIssueClientReferenceId != '') || (navigation.discrepancyReason != null && navigation.discrepancyReason != '' && navigation.discrepancyReason != 'null'))"
-          },
-          "actions": [
-            {
-              "actionType": "SHOW_TOAST",
-              "properties": {
-                "message": "INVENTORY_RETURN_RESOLVED_VIA_ACCEPT",
-                "type": "error"
-              }
-            }
-          ]
-        },
-        {
-          // Explicit guard for the generic (non-RETURNED) partial-accept
-          // path: the entered quantity must be strictly greater than 0 and
-          // strictly less than the dispatched quantity. 0 means nothing was
-          // received (not a valid partial accept) and a value >= quantity
-          // means everything was received (that's the primary Accept
-          // button/onAction, not this partial-accept branch). Checked ahead
-          // of the generic partial-accept block below so invalid quantities
-          // are rejected with a clear error instead of silently matching no
-          // branch (or worse, matching the old `>= 0` condition and
-          // persisting a zero-quantity "partial accept").
+          // The entered quantity must be strictly greater than 0 and
+          // strictly less than the quantity on the record being accepted.
+          // 0 means nothing was received (not a partial accept) and a value
+          // >= quantity means everything was (that is the primary Accept
+          // button / onAction). Checked ahead of the partial-accept block
+          // below so an invalid quantity is rejected with a clear error
+          // instead of silently matching no branch.
+          //
+          // This now applies to RETURNED records too: the upper level can
+          // partially accept a shortfall return, and whatever it does not
+          // accept is re-issued back down.
           "condition": {
             "expression":
-                "(navigation.incomingStockEntryType != 'RETURNED' || (navigation.originalIssueClientReferenceId == null && (navigation.discrepancyReason == null || navigation.discrepancyReason == '' || navigation.discrepancyReason == 'null'))) && (actualQuantityReceived <= 0 || actualQuantityReceived >= quantity)"
+                "actualQuantityReceived < 0 || actualQuantityReceived >= quantity"
           },
           "actions": [
             {
@@ -3017,9 +3002,266 @@ final dynamic sampleInventoryFlows = {
           ]
         },
         {
+          // Option C: When the upper hierarchy partially accepts an IN_TRANSIT
+          // shortfall return (e.g. accepts 30 out of 60), BOTH portions are
+          // reissued to the lower facility:
+          //   (1) Reissue 1: the accepted in-transit quantity (formData.actualQuantityReceived, e.g. 30)
+          //   (2) Reissue 2: the remaining shortfall (subtractQuantity(quantity, actualQuantityReceived), e.g. 30)
+          // Total reissued back down = 30 + 30 = 60. Neither reissue deducts from
+          // upper facility balance (already deducted in original dispatch).
           "condition": {
             "expression":
-                "actualQuantityReceived > 0 && actualQuantityReceived < quantity"
+                "actualQuantityReceived >= 0 && actualQuantityReceived < quantity && navigation.incomingStockEntryType == 'RETURNED' && navigation.discrepancyReason == 'IN_TRANSIT'"
+          },
+          "actions": [
+            {
+              "actionType": "UPDATE_EVENT",
+              "properties": {
+                "source": "existingModels",
+                "entity": "StockModel",
+                "modify": [
+                  {
+                    "key": "StockModel.additionalFields.fields.status",
+                    "value": "ACCEPTED"
+                  },
+                  {
+                    "key": "StockModel.additionalFields.fields.mrnNumber",
+                    "value": "{{fn:getCommentValue(navigation.mrnNumber, navigation.selectedTransactionMrn)}}"
+                  },
+                  {
+                    "key": "StockModel.additionalFields.fields.comments",
+                    "value": "{{fn:safeString(formData.rejectComment)}}"
+                  },
+                  {
+                    "key":
+                        "StockModel.additionalFields.fields.actualQuantityReceived",
+                    "value":
+                        "{{fn:safeString(formData.actualQuantityReceived)}}"
+                  },
+                  {
+                    "key":
+                        "StockModel.additionalFields.fields.originalQuantityReceived",
+                    "value": "{{fn:safeString(navigation.quantity)}}"
+                  },
+                  {
+                    "key":
+                        "StockModel.additionalFields.fields.discrepancyReason",
+                    "value": "IN_TRANSIT"
+                  },
+                  {"key": "StockModel.transactionReason", "value": "IN_TRANSIT"}
+                ]
+              }
+            },
+            {
+              // Reissue 1: The accepted in-transit quantity
+              "actionType": "FETCH_TRANSFORMER_CONFIG",
+              "properties": {
+                "configName": "shortfallTransaction",
+                "forceCreate": true,
+                "data": [
+                  {"key": "stockEntryType", "value": "ISSUED"},
+                  {
+                    "key": "senderFacilityId",
+                    "value": "{{fn:getUserFacilityId()}}"
+                  },
+                  {
+                    "key": "receiverFacilityId",
+                    "value": "{{navigation.senderFacilityId}}"
+                  },
+                  {
+                    "key": "senderPartyType",
+                    "value": "{{fn:getUserPartyType()}}"
+                  },
+                  {
+                    "key": "receiverPartyType",
+                    "value":
+                        "{{fn:getPartyTypeForFacilityId(navigation.senderFacilityId)}}"
+                  },
+                  {
+                    "key": "productVariantId",
+                    "value": "{{navigation.productVariantId}}"
+                  },
+                  {
+                    "key": "userFacilityId",
+                    "value": "{{fn:getUserFacilityId()}}"
+                  },
+                  {"key": "sku", "value": "{{navigation.sku}}"},
+                  {
+                    "key": "wayBillNumber",
+                    "value": "{{navigation.wayBillNumber}}"
+                  },
+                  {"key": "batchNumber", "value": "{{navigation.batchNumber}}"},
+                  {
+                    "key": "transportType",
+                    "value": "{{navigation.transportType}}"
+                  },
+                  {
+                    "key": "vehicleNumber",
+                    "value": "{{navigation.vehicleNumber}}"
+                  },
+                  {
+                    "key": "quantity",
+                    "value": "{{formData.actualQuantityReceived}}"
+                  },
+                  {
+                    "key": "mrnNumber",
+                    "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
+                  },
+                  {
+                    "key": "originalIssueClientReferenceId",
+                    "value": "{{navigation.clientReferenceId}}"
+                  },
+                  {
+                    "key": "discrepancyReason",
+                    "value": "IN_TRANSIT"
+                  },
+                  {
+                    "key": "comment",
+                    "value": "{{fn:safeString(formData.rejectComment)}}"
+                  }
+                ],
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "INVENTORY_FETCH_CONFIG_FAILED_MESSAGE"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "CREATE_EVENT",
+              "properties": {
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "INVENTORY_CREATE_STOCK_FAILED_MESSAGE"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              // Reissue 2: The remaining shortfall quantity
+              "actionType": "FETCH_TRANSFORMER_CONFIG",
+              "properties": {
+                "configName": "shortfallTransaction",
+                "forceCreate": true,
+                "data": [
+                  {"key": "stockEntryType", "value": "ISSUED"},
+                  {
+                    "key": "senderFacilityId",
+                    "value": "{{fn:getUserFacilityId()}}"
+                  },
+                  {
+                    "key": "receiverFacilityId",
+                    "value": "{{navigation.senderFacilityId}}"
+                  },
+                  {
+                    "key": "senderPartyType",
+                    "value": "{{fn:getUserPartyType()}}"
+                  },
+                  {
+                    "key": "receiverPartyType",
+                    "value":
+                        "{{fn:getPartyTypeForFacilityId(navigation.senderFacilityId)}}"
+                  },
+                  {
+                    "key": "productVariantId",
+                    "value": "{{navigation.productVariantId}}"
+                  },
+                  {
+                    "key": "userFacilityId",
+                    "value": "{{fn:getUserFacilityId()}}"
+                  },
+                  {"key": "sku", "value": "{{navigation.sku}}"},
+                  {
+                    "key": "wayBillNumber",
+                    "value": "{{navigation.wayBillNumber}}"
+                  },
+                  {"key": "batchNumber", "value": "{{navigation.batchNumber}}"},
+                  {
+                    "key": "transportType",
+                    "value": "{{navigation.transportType}}"
+                  },
+                  {
+                    "key": "vehicleNumber",
+                    "value": "{{navigation.vehicleNumber}}"
+                  },
+                  {
+                    "key": "quantity",
+                    "value":
+                        "{{fn:subtractQuantity(navigation.quantity, formData.actualQuantityReceived)}}"
+                  },
+                  {
+                    "key": "mrnNumber",
+                    "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
+                  },
+                  {
+                    "key": "originalIssueClientReferenceId",
+                    "value": "{{navigation.clientReferenceId}}"
+                  },
+                  {
+                    "key": "discrepancyReason",
+                    "value": "IN_TRANSIT"
+                  },
+                  {
+                    "key": "comment",
+                    "value": "{{fn:safeString(formData.rejectComment)}}"
+                  }
+                ],
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "INVENTORY_FETCH_CONFIG_FAILED_MESSAGE"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "CREATE_EVENT",
+              "properties": {
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "INVENTORY_CREATE_STOCK_FAILED_MESSAGE"
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "type": "TEMPLATE",
+                "name": "stockSuccess",
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "manageStock",
+                "data": [
+                  {"key": "mrnNumber", "value": "{{fn:getCommentValue(navigation.mrnNumber, navigation.selectedTransactionMrn)}}"},
+                  {
+                    "key": "clientReferenceId",
+                    "value": "{{navigation.clientReferenceId}}"
+                  },
+                  {
+                    "key": "transactionDetailsHeading",
+                    "value":
+                        "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED', navigation.discrepancyReason)}}"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "condition": {
+            "expression":
+                "actualQuantityReceived >= 0 && actualQuantityReceived < quantity"
           },
           "actions": [
             {
@@ -3107,11 +3349,13 @@ final dynamic sampleInventoryFlows = {
                         "StockModel.additionalFields.fields.originalQuantityReceived",
                     "value": "{{fn:safeString(navigation.quantity)}}"
                   },
-                  {
-                    "key": "StockModel.quantity",
-                    "value":
-                        "{{fn:safeString(formData.actualQuantityReceived)}}"
-                  },
+                  // StockModel.quantity is deliberately NOT overwritten.
+                  // It is what was DISPATCHED, and every stock report is
+                  // built on it - shrinking it to the accepted amount made
+                  // the sender's own "Stock Issued" stop matching what they
+                  // physically sent, so the two sides of one transaction
+                  // could never be reconciled. The accepted amount lives in
+                  // actualQuantityReceived alongside it.
                   // The Partial Accept popup captures a mandatory
                   // discrepancy reason, but it was only ever written onto
                   // the separate shortfall (RETURNED) record via the
@@ -3127,7 +3371,17 @@ final dynamic sampleInventoryFlows = {
                         "StockModel.additionalFields.fields.discrepancyReason",
                     "value": "{{fn:safeString(formData.discrepancyReason)}}"
                   },
-                  {"key": "StockModel.transactionReason", "value": "RECEIVED"}
+                  {
+                    "key":
+                        "StockModel.additionalFields.fields.stockEntryType",
+                    "value":
+                        "{{fn:getPartialAcceptStockEntryType(navigation.incomingStockEntryType, formData.discrepancyReason)}}"
+                  },
+                  {
+                    "key": "StockModel.transactionReason",
+                    "value":
+                        "{{fn:getPartialAcceptTransactionReason(navigation.incomingStockEntryType, formData.discrepancyReason)}}"
+                  }
                 ]
               }
             },
@@ -3164,7 +3418,16 @@ final dynamic sampleInventoryFlows = {
                 "configName": "shortfallTransaction",
                 "forceCreate": true,
                 "data": [
-                  {"key": "stockEntryType", "value": "RETURNED"},
+                  // Direction-aware: accepting an ISSUED dispatch sends
+                  // the remainder UP as RETURNED; accepting a RETURNED
+                  // shortfall sends it DOWN as ISSUED (a re-issue). The
+                  // sender/receiver ids below need no switch - the record is
+                  // always addressed back to whoever sent this one.
+                  {
+                    "key": "stockEntryType",
+                    "value":
+                        "{{fn:getShortfallEntryType(navigation.incomingStockEntryType)}}"
+                  },
                   {
                     "key": "senderFacilityId",
                     "value": "{{fn:getUserFacilityId()}}"
@@ -3350,7 +3613,7 @@ final dynamic sampleInventoryFlows = {
                   },
                   {
                     "type": "min",
-                    "value": 1,
+                    "value": 0,
                     "message": "INVENTORY_PARTIAL_ACCEPT_QUANTITY_INVALID"
                   }
                 ]

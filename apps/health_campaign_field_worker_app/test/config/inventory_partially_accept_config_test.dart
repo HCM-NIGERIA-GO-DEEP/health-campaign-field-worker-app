@@ -64,20 +64,20 @@ void main() {
 
   /// The branch that performs the actual (non-RETURNED) partial accept: its
   /// condition references both `actualQuantityReceived` and `quantity` with
-  /// range comparisons, and is not the RETURNED-specific out-of-range guard.
+  /// range comparisons, and is not the out-of-range guard.
   Map<String, dynamic> partialAcceptBranch() => onSecondaryAction.firstWhere(
         (action) =>
             expressionOf(action).contains('actualQuantityReceived') &&
             expressionOf(action).contains('quantity') &&
-            !expressionOf(action).contains('incomingStockEntryType'),
+            !expressionOf(action).contains('incomingStockEntryType') &&
+            !expressionOf(action).contains('||'),
       );
 
-  /// The branch that rejects an out-of-range quantity for the generic
-  /// (non-RETURNED) partial accept.
+  /// The branch that rejects an out-of-range quantity.
   Map<String, dynamic> invalidQuantityBranch() => onSecondaryAction.firstWhere(
         (action) =>
-            expressionOf(action).contains('incomingStockEntryType') &&
-            expressionOf(action).contains('actualQuantityReceived'),
+            expressionOf(action).contains('actualQuantityReceived') &&
+            expressionOf(action).contains('||'),
       );
 
   Map<String, dynamic> modifyEntriesOf(Map<String, dynamic> branch) {
@@ -96,11 +96,11 @@ void main() {
   });
 
   test(
-      'partial acceptance only proceeds for a positive quantity strictly less than dispatched',
+      'partial acceptance proceeds for a non-negative quantity strictly less than dispatched',
       () {
     expect(
       expressionOf(partialAcceptBranch()),
-      'actualQuantityReceived > 0 && actualQuantityReceived < quantity',
+      'actualQuantityReceived >= 0 && actualQuantityReceived < quantity',
     );
   });
 
@@ -110,8 +110,7 @@ void main() {
     final branch = invalidQuantityBranch();
     expect(
       expressionOf(branch),
-      "navigation.incomingStockEntryType != 'RETURNED' && "
-      "(actualQuantityReceived <= 0 || actualQuantityReceived >= quantity)",
+      "actualQuantityReceived < 0 || actualQuantityReceived >= quantity",
     );
 
     final toast = (branch['actions'] as List)

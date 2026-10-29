@@ -51,7 +51,18 @@ final jsonConfig = {
             "childrenCount": "householdDetails.childrenCount",
             "pregnantWomenCount": "householdDetails.pregnantWomenCount",
             "memberCount": "householdDetails.memberCount",
-            "caregiverConsent": "caregiverConsent.consentToParticipate"
+            "caregiverConsent": "caregiverConsent.consentToParticipate",
+            "ACTION1": "registrationHealthTalkChecklist.ACTION1",
+            "ACTION2": "registrationHealthTalkChecklist.ACTION2",
+            "ACTION3": "registrationHealthTalkChecklist.ACTION3",
+            "ACTION4": "registrationHealthTalkChecklist.ACTION4",
+            "ACTION5": "registrationHealthTalkChecklist.ACTION5",
+            "ACTION6": "registrationHealthTalkChecklist.ACTION6",
+            "ACTION7": "registrationHealthTalkChecklist.ACTION7",
+            "ACTION8": "registrationHealthTalkChecklist.ACTION8",
+            "ACTION9": "registrationHealthTalkChecklist.ACTION9",
+            "ACTION10": "registrationHealthTalkChecklist.ACTION10",
+            "ACTION11": "registrationHealthTalkChecklist.ACTION11"
           }
         }
       },
@@ -285,7 +296,18 @@ final jsonConfig = {
             "childrenCount": "householdDetails.childrenCount",
             "pregnantWomenCount": "householdDetails.pregnantWomenCount",
             "memberCount": "householdDetails.memberCount",
-            "caregiverConsent": "caregiverConsent.consentToParticipate"
+            "caregiverConsent": "caregiverConsent.consentToParticipate",
+            "ACTION1": "registrationHealthTalkChecklist.ACTION1",
+            "ACTION2": "registrationHealthTalkChecklist.ACTION2",
+            "ACTION3": "registrationHealthTalkChecklist.ACTION3",
+            "ACTION4": "registrationHealthTalkChecklist.ACTION4",
+            "ACTION5": "registrationHealthTalkChecklist.ACTION5",
+            "ACTION6": "registrationHealthTalkChecklist.ACTION6",
+            "ACTION7": "registrationHealthTalkChecklist.ACTION7",
+            "ACTION8": "registrationHealthTalkChecklist.ACTION8",
+            "ACTION9": "registrationHealthTalkChecklist.ACTION9",
+            "ACTION10": "registrationHealthTalkChecklist.ACTION10",
+            "ACTION11": "registrationHealthTalkChecklist.ACTION11"
           }
         }
       }
@@ -654,7 +676,18 @@ final jsonConfig = {
             /// already uses for its own "scanResource". additionalFields is
             /// serialised along with the rest of the task by the oplog, so
             /// this syncs without any change to sync_service.
-            "scanResource": "DeliveryDetails.scanner"
+            "scanResource": "DeliveryDetails.scanner",
+            "ACTION1": "DeliveryChecklist.ACTION1",
+            "ACTION2": "DeliveryChecklist.ACTION2",
+            "ACTION3": "DeliveryChecklist.ACTION3",
+            "ACTION4": "DeliveryChecklist.ACTION4",
+            "ACTION5": "DeliveryChecklist.ACTION5",
+            "ACTION6": "DeliveryChecklist.ACTION6",
+            "ACTION7": "DeliveryChecklist.ACTION7",
+            "ACTION8": "DeliveryChecklist.ACTION8",
+            "ACTION9": "DeliveryChecklist.ACTION9",
+            "ACTION10": "DeliveryChecklist.ACTION10",
+            "ACTION11": "DeliveryChecklist.ACTION11"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"

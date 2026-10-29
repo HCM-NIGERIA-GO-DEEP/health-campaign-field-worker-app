@@ -279,7 +279,9 @@ class ActionHandler {
           final resolvedCondition = Map<String, dynamic>.from(condition);
           resolvedCondition['expression'] = expression;
 
-          if (evaluateCondition(resolvedCondition, evaluationData)) {
+          final matched = evaluateCondition(resolvedCondition, evaluationData);
+
+          if (matched) {
             final subActions = condActionJson['actions'] as List? ?? [];
             for (final subActionJson in subActions) {
               final action = ActionConfig.fromJson(subActionJson);

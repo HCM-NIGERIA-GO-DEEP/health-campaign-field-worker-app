@@ -526,7 +526,7 @@ class _FacilityCardContent extends StatelessWidget {
                         key: dependantFormKey,
                         value: value.code == deliveryTeamCode &&
                                 receivesIntoOwnTeam
-                            ? context.loggedInUserUuid
+                            ? context.loggedInUserTeamCode
                             : null,
                       ),
                     );

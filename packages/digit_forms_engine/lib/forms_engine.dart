@@ -46,3 +46,4 @@ export 'models/property_schema/property_schema.dart';
 export 'models/schema_object/schema_object.dart';
 export 'utils/screen_protection_manager.dart';
 export 'widgets/scanner_comparison_provider.dart';
+export 'helper/form_page_navigation_registry.dart';

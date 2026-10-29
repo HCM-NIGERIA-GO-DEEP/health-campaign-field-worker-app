@@ -58,6 +58,9 @@ class WidgetStateContext {
   /// The raw CrudStateData object (for advanced use cases).
   final CrudStateData? stateData;
 
+  /// Navigation params for this screen context.
+  final Map<String, dynamic>? navigationParams;
+
   /// Cached evaluation context map for use with resolveValue/resolveTemplate.
   /// This is the primary way to pass context to template resolution functions.
   ///
@@ -67,6 +70,7 @@ class WidgetStateContext {
   /// - `contextData` - Complete raw state (list)
   /// - `formData` - Form field values
   /// - `widgetData` - Widget-specific state
+  /// - `navigation` - Navigation parameters for the screen
   /// - `item` - Legacy alias for itemData
   /// - Plus all keys from modelMap spread at root level
   ///
@@ -83,6 +87,7 @@ class WidgetStateContext {
     this.contextData,
     this.formData = const {},
     this.widgetData = const {},
+    this.navigationParams,
     this.modelMap = const {},
     this.screenKey,
     this.compositeKey,
@@ -98,6 +103,7 @@ class WidgetStateContext {
       'contextData': contextData,
       'formData': formData,
       'widgetData': widgetData,
+      'navigation': navigationParams ?? {},
       // Spread modelMap so {{ModelName.field}} works directly
       ...modelMap,
       // Legacy support for existing templates using 'item'
@@ -163,6 +169,7 @@ class WidgetStateContext {
       contextData: enrichedContextData,
       formData: registryState?.formData ?? {},
       widgetData: registryState?.widgetData ?? {},
+      navigationParams: navigationParams,
       modelMap: crudCtx?.stateData?.modelMap ?? {},
       screenKey: screenKey,
       compositeKey: compositeKey,

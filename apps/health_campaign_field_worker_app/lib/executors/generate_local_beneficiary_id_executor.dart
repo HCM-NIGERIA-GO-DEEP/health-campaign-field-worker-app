@@ -72,52 +72,72 @@ class GenerateLocalBeneficiaryIdExecutor extends ActionExecutor {
     final compositeKey =
         crudCtx?.compositeKey ?? getEffectiveCompositeKey(context, contextData);
 
-    if (compositeKey == null) return contextData;
-
     final formData = contextData['formData'] as Map<String, dynamic>?;
     final householdDetails =
         formData?['householdDetails'] as Map<String, dynamic>?;
     final firstName = (householdDetails?['nameOfIndividual'] ?? '').toString();
     final lastName = (householdDetails?['familyname'] ?? '').toString();
 
-    final boundaryPrefixes = await _resolveBoundaryNamePrefixes(context);
+    // Check if an ID was already generated during this registration session
+    final currentState =
+        compositeKey != null ? FlowCrudStateRegistry().get(compositeKey) : null;
+    final existingFromRegistry =
+        currentState?.widgetData?['latestBeneficiaryId']?.toString();
+    final existingFromContext = contextData['latestBeneficiaryId']?.toString();
+    final navMap = contextData['navigation'] as Map<String, dynamic>?;
+    final existingFromNav = (navMap?['latestBeneficiaryId'] ??
+            navMap?['UNIQUE_BENEFICIARY_ID'] ??
+            navMap?['beneficiaryId'])
+        ?.toString();
 
-    var beneficiaryId = generateBeneficiaryId(
-      boundaryPrefixes: boundaryPrefixes,
-      firstName: firstName,
-      lastName: lastName,
-    );
-    // The format is deterministic (boundary + initials + timestamp), so it
-    // can still repeat - two registrations inside the same second, or a
-    // clock that moved backwards. Every generated id is already written to
-    // the local UniqueIdPool table, so that table is an authoritative record
-    // of what this device has handed out: re-use it as a uniqueness check
-    // and disambiguate rather than silently issuing a duplicate.
-    beneficiaryId = await _disambiguateAgainstLocalPool(context, beneficiaryId);
+    final firstInitial = firstName.isNotEmpty ? firstName[0].toUpperCase() : '';
+    final lastInitial = lastName.isNotEmpty ? lastName[0].toUpperCase() : '';
+    final currentInitials = '$firstInitial$lastInitial';
 
-    await _persistLocally(context, beneficiaryId);
+    bool isReusable(String? id) {
+      if (id == null || id.isEmpty) return false;
+      if (currentInitials.isEmpty) return true;
+      final parts = id.split('_');
+      // Format: DIS_CHI_PHU_DP_COM_INITIALS_DATE_TIME
+      if (parts.length >= 3) {
+        final idInitials = parts[parts.length - 3];
+        return idInitials == currentInitials;
+      }
+      return true;
+    }
 
-    final currentState = FlowCrudStateRegistry().get(compositeKey);
-    final currentWidgetData =
-        Map<String, dynamic>.from(currentState?.widgetData ?? {});
+    String beneficiaryId;
+    if (isReusable(existingFromRegistry)) {
+      beneficiaryId = existingFromRegistry!;
+    } else if (isReusable(existingFromContext)) {
+      beneficiaryId = existingFromContext!;
+    } else if (isReusable(existingFromNav)) {
+      beneficiaryId = existingFromNav!;
+    } else {
+      final boundaryPrefixes = await _resolveBoundaryNamePrefixes(context);
+      beneficiaryId = generateBeneficiaryId(
+        boundaryPrefixes: boundaryPrefixes,
+        firstName: firstName,
+        lastName: lastName,
+      );
+      beneficiaryId =
+          await _disambiguateAgainstLocalPool(context, beneficiaryId);
+      await _persistLocally(context, beneficiaryId);
+    }
 
-    currentWidgetData['uniqueIdPoolCount'] = 1;
-    currentWidgetData['latestBeneficiaryIdModel'] = null;
-    currentWidgetData['latestBeneficiaryId'] = beneficiaryId;
+    if (compositeKey != null) {
+      final currentWidgetData =
+          Map<String, dynamic>.from(currentState?.widgetData ?? {});
+      currentWidgetData['uniqueIdPoolCount'] = 1;
+      currentWidgetData['latestBeneficiaryIdModel'] = null;
+      currentWidgetData['latestBeneficiaryId'] = beneficiaryId;
 
-    final updatedState = (currentState ?? const FlowCrudState()).copyWith(
-      widgetData: currentWidgetData,
-    );
-    FlowCrudStateRegistry().update(compositeKey, updatedState);
+      final updatedState = (currentState ?? const FlowCrudState()).copyWith(
+        widgetData: currentWidgetData,
+      );
+      FlowCrudStateRegistry().update(compositeKey, updatedState);
+    }
 
-    // The hidden `identifiers` idPopulator field on `householdDetails` used
-    // to carry the Beneficiary ID because it was pre-filled from a nav param
-    // set *before* this form opened, back when the id was generated at
-    // searchBeneficiary init time. Now that generation happens here, at
-    // submit time, that field is never (re-)populated - so inject the same
-    // "identifierType,identifierId" shape FETCH_TRANSFORMER_CONFIG's
-    // `buildIdentifierEntries` already parses (see transformer_executor.dart)
-    // straight into formData, as if the field had resolved to it.
     final updatedFormData = Map<String, dynamic>.from(formData ?? {});
     final updatedHouseholdDetails =
         Map<String, dynamic>.from(householdDetails ?? {});

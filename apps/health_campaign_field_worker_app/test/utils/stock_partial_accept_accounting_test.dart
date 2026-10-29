@@ -52,8 +52,8 @@ void main() {
 
     expect(receiverMetrics['stockReceived'], 6);
     expect(receiverMetrics['stockInHand'], 6);
-    expect(senderMetrics['stockIssued'], 6);
-    expect(senderMetrics['stockInHand'], -6);
+    expect(senderMetrics['stockIssued'], 10);
+    expect(senderMetrics['stockInHand'], -10);
   });
 
   test('sender reconciliation returns only the undelivered partial quantity',

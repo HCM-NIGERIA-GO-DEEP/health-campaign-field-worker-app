@@ -145,44 +145,83 @@ class _UserQRDetailsPageState extends LocalizedState<UserQRDetailsPage> {
 
   Widget _buildInventoryQR(BuildContext context, AuthState state) {
     final theme = Theme.of(context);
+    final textTheme = theme.digitTextTheme(context);
 
     return state.maybeMap(
-      authenticated: (value) => Column(
-        children: [
-          SizedBox(
-            width: MediaQuery.of(context).size.width / 1.25,
-            height: MediaQuery.of(context).size.width / 1.25,
-            child: Padding(
-              padding: const EdgeInsets.all(spacer2),
-              child: Container(
+      authenticated: (value) {
+        final userName = (value.userModel.userName?.trim().isNotEmpty ?? false)
+            ? value.userModel.userName!.trim()
+            : (value.userModel.name?.trim() ?? '');
+        final userUuid = context.loggedInUserUuid;
+        final teamCodeDisplay = '$userName : $userUuid';
+
+        return Column(
+          children: [
+            SizedBox(
+              width: MediaQuery.of(context).size.width / 1.25,
+              height: MediaQuery.of(context).size.width / 1.25,
+              child: Padding(
                 padding: const EdgeInsets.all(spacer2),
-                decoration: BoxDecoration(
-                    borderRadius:
-                        const BorderRadius.all(Radius.circular(spacer1)),
-                    border: Border.all(
-                      color: theme.colorTheme.primary.primary1,
-                      width: 2,
-                    )),
-                child: QrImageView(
-                  data: context.loggedInUserUuid,
-                  version: QrVersions.auto,
-                  size: MediaQuery.of(context).size.width / 1.25,
+                child: Container(
+                  padding: const EdgeInsets.all(spacer2),
+                  decoration: BoxDecoration(
+                      borderRadius:
+                          const BorderRadius.all(Radius.circular(spacer1)),
+                      border: Border.all(
+                        color: theme.colorTheme.primary.primary1,
+                        width: 2,
+                      )),
+                  child: QrImageView(
+                    data: context.loggedInUserTeamCode,
+                    version: QrVersions.auto,
+                    size: MediaQuery.of(context).size.width / 1.25,
+                  ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Center(
-            child: Text(
-              value.userModel.name.toString(),
-              style: DigitTheme.instance.mobileTheme.textTheme.headlineMedium
-                  ?.apply(
-                color: DigitTheme.instance.colorScheme.shadow,
+            const SizedBox(height: spacer4),
+            Center(
+              child: Text(
+                value.userModel.name.toString(),
+                style: DigitTheme.instance.mobileTheme.textTheme.headlineMedium
+                    ?.apply(
+                  color: DigitTheme.instance.colorScheme.shadow,
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+            const SizedBox(height: spacer2),
+            Center(
+              child: Container(
+                width: MediaQuery.of(context).size.width / 1.32,
+                padding: const EdgeInsets.symmetric(
+                    horizontal: spacer1, vertical: spacer1),
+                decoration: BoxDecoration(
+                  borderRadius:
+                      const BorderRadius.all(Radius.circular(spacer1)),
+                  border: Border(
+                      left: BorderSide(
+                          color: theme.colorTheme.generic.divider),
+                      right: BorderSide(
+                          color: theme.colorTheme.generic.divider),
+                      bottom: BorderSide(
+                          color: theme.colorTheme.generic.divider),
+                      top: BorderSide(
+                          color: theme.colorTheme.generic.divider)),
+                  color: theme.colorTheme.paper.secondary,
+                ),
+                child: Center(
+                  child: Text(
+                    teamCodeDisplay,
+                    style: textTheme.headingXS.copyWith(
+                      color: theme.colorTheme.primary.primary2,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
       orElse: () => const Offstage(),
     );
   }

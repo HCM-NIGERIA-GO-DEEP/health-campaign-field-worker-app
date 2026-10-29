@@ -24,6 +24,9 @@ class ButtonWidget extends ResolvedFlowWidget {
     String? height = props['height'];
     String? radius = props['radius'];
 
+    final fieldName = json['fieldName'] ?? '';
+    final label = resolved.resolvedLabel ?? '';
+    final isDisabled = resolved.isDisabled;
     return WidgetParsers.wrapWithBottomGap(
       DigitButton(
         crossAxisAlignment: CrossAxisAlignment.center,

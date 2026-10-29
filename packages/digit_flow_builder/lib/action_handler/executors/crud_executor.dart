@@ -5,6 +5,7 @@ import 'package:digit_data_model/data_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../utils/context_utility.dart';
 import '../../utils/utils.dart';
 import '../action_config.dart';
 import 'action_executor.dart';
@@ -198,9 +199,36 @@ class UpdateExecutor extends ActionExecutor {
     // Default: 'entities' (the transformed entities)
     // 'existingModels': use the original entities (e.g., to mark original stock as accepted)
     final source = action.properties['source'] as String? ?? 'entities';
-    final entities = contextData[source];
+    var entities = contextData[source];
+
+    if (entities == null || (entities is List && entities.isEmpty)) {
+      // Fallback 1: check navigation['existingModels']
+      final navParams = contextData['navigation'] as Map<String, dynamic>?;
+      if (navParams != null &&
+          navParams['existingModels'] is List &&
+          (navParams['existingModels'] as List).isNotEmpty) {
+        entities = navParams['existingModels'];
+      }
+      // Fallback 2: check if clientReferenceId is in navigation or formData
+      if (entities == null || (entities is List && entities.isEmpty)) {
+        final clientRefId = (contextData['navigation'] as Map?)?['clientReferenceId']?.toString() ??
+            (contextData['formData'] as Map?)?['clientReferenceId']?.toString();
+        final entityType = action.properties['entity'] as String? ?? 'StockModel';
+        if (clientRefId != null && clientRefId.isNotEmpty && entityType == 'StockModel') {
+          try {
+            final repo = context.repository<StockModel, StockSearchModel>(context);
+            final results = await repo.search(StockSearchModel(clientReferenceId: [clientRefId]));
+            if (results.isNotEmpty) {
+              entities = results;
+            }
+          } catch (e) {
+            // Ignore error fetching by clientRefId
+          }
+        }
+      }
+    }
+
     if (entities == null || entities is! List || entities.isEmpty) {
-      debugPrint('UPDATE_EVENT: No entities found in contextData[$source]');
       return contextData;
     }
 
@@ -454,8 +482,6 @@ class UpdateExecutor extends ActionExecutor {
       return contextData;
     }
 
-    debugPrint(
-        'UPDATE_EVENT: Updating ${processedEntities.length} entities (${entityList.length - processedEntities.length} unchanged)');
     // Use CrudService directly to await the update, ensuring DB is updated
     // before subsequent actions (e.g., UPDATE_STOCK_BALANCE) query it.
     await CrudBlocSingleton().crudService.updateEntities(processedEntities);

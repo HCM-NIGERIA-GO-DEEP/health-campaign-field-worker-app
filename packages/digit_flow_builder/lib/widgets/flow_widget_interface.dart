@@ -49,11 +49,18 @@ class FlowWidgetFactory {
     final widgetData = flowState?.widgetData ?? {};
     final formData = flowState?.formData ?? {};
 
+    final navParams = stateKey != null
+        ? FlowCrudStateRegistry().getNavigationParams(stateKey) ??
+            FlowCrudStateRegistry()
+                .getNavigationParams(stateKey.split('::').last)
+        : null;
+
     // Create evaluation context that includes modelMap for named entity access
     final evalContext = {
       'item': crudCtx?.item,
       'contextData': crudCtx?.stateData?.rawState ?? {},
       'context': crudCtx?.stateData?.modelMap ?? {},
+      'navigation': navParams ?? {},
       ...modelMap,
       // Include modelMap so {{stock}}, {{productVariant}} etc. can be resolved
       ...formData,

@@ -48,6 +48,63 @@ class FunctionRegistries {
     // Shortfall Return (Accept/Partial Accept PRD): dispatched minus actual
     // received, used both to size the auto-created return transaction and to
     // display the shortfall on view-transaction-details.
+    /// Which direction an unresolved partial-accept remainder travels.
+    ///
+    /// Partial accept always sends what was NOT accepted back to the other
+    /// party, but the record type depends on which way the stock was moving:
+    ///
+    ///   accepting an ISSUED dispatch  -> remainder goes UP   as RETURNED
+    ///   accepting a RETURNED shortfall -> remainder goes DOWN as ISSUED
+    ///                                     (a re-issue)
+    ///
+    /// The sender/receiver ids need no such switch: the shortfall is always
+    /// addressed back to whoever sent the record being accepted.
+    ///
+    /// args: [incomingStockEntryType]
+    FunctionRegistry.register('getShortfallEntryType', (args, stateData) {
+      final incoming = args.isEmpty ? '' : args.first?.toString() ?? '';
+      return incoming.trim().toUpperCase() == 'RETURNED'
+          ? 'ISSUED'
+          : 'RETURNED';
+    });
+
+    /// Resolves the stockEntryType written onto the mutated record during partial accept.
+    /// When accepting a shortfall return at the upper level:
+    /// - STOCK_DAMAGE retags the record to DAMAGED (so it matches the Damage report)
+    /// - STOCK_LOSS retags the record to LOSS (so it matches the Loss report)
+    /// - Otherwise (regular return or lower accepting dispatch), retains the incoming type.
+    FunctionRegistry.register('getPartialAcceptStockEntryType', (args, stateData) {
+      final incomingType =
+          args.isNotEmpty ? args[0]?.toString().trim().toUpperCase() ?? '' : '';
+      final discrepancy =
+          args.length > 1 ? args[1]?.toString().trim().toUpperCase() ?? '' : '';
+      if (incomingType == 'RETURNED') {
+        if (discrepancy == 'STOCK_DAMAGE') return 'DAMAGED';
+        if (discrepancy == 'STOCK_LOSS') return 'LOSS';
+        return 'RETURNED';
+      }
+      return 'ISSUED';
+    });
+
+    /// Resolves the transactionReason written onto the mutated record during partial accept.
+    /// When accepting a shortfall return at the upper level:
+    /// - STOCK_DAMAGE sets STOCK_DAMAGE (keeps it OUT of Stock Received report)
+    /// - STOCK_LOSS sets STOCK_LOSS (keeps it OUT of Stock Received report)
+    /// - IN_TRANSIT sets IN_TRANSIT (keeps it OUT of Stock Received report)
+    /// - Regular return / lower accepting dispatch sets RECEIVED (genuine physical receipt)
+    FunctionRegistry.register('getPartialAcceptTransactionReason', (args, stateData) {
+      final incomingType =
+          args.isNotEmpty ? args[0]?.toString().trim().toUpperCase() ?? '' : '';
+      final discrepancy =
+          args.length > 1 ? args[1]?.toString().trim().toUpperCase() ?? '' : '';
+      if (incomingType == 'RETURNED') {
+        if (discrepancy == 'STOCK_DAMAGE') return 'STOCK_DAMAGE';
+        if (discrepancy == 'STOCK_LOSS') return 'STOCK_LOSS';
+        if (discrepancy == 'IN_TRANSIT') return 'IN_TRANSIT';
+      }
+      return 'RECEIVED';
+    });
+
     FunctionRegistry.register('subtractQuantity', (args, stateData) {
       if (args.length < 2) return '';
 
@@ -364,9 +421,13 @@ class FunctionRegistries {
 
     FunctionRegistry.register('getDiscrepancyReasonDisplayCode',
         (args, stateData) {
-      if (args.isEmpty || args.first == null) return null;
+      if (args.isEmpty || args.first == null) {
+        return null;
+      }
       final reason = args.first.toString().trim().toUpperCase();
-      if (reason.isEmpty || reason == 'NULL') return null;
+      if (reason.isEmpty || reason == 'NULL') {
+        return null;
+      }
       const labels = {
         'IN_TRANSIT': 'INVENTORY_DISCREPANCY_REASON_IN_TRANSIT',
         'STOCK_LOSS': 'INVENTORY_DISCREPANCY_REASON_STOCK_LOSS',
@@ -382,7 +443,9 @@ class FunctionRegistries {
     // the original dispatch can be first and have no discrepancy reason,
     // while the linked shortfall row carries the reason.
     FunctionRegistry.register('getStockDiscrepancyReason', (args, stateData) {
-      if (args.isEmpty || args.first == null) return '';
+      if (args.isEmpty || args.first == null) {
+        return '';
+      }
       final first = args.first;
       final stocks = first is List ? first : [first];
       for (final stock in stocks) {
@@ -446,7 +509,9 @@ class FunctionRegistries {
         }
 
         final value = reason?.toString().trim() ?? '';
-        if (value.isNotEmpty && value.toLowerCase() != 'null') return value;
+        if (value.isNotEmpty && value.toLowerCase() != 'null') {
+          return value;
+        }
       }
       return '';
     });
@@ -496,7 +561,9 @@ class FunctionRegistries {
 
   void _registerTransactionFunctions() {
     FunctionRegistry.register('getReportStockQuantity', (args, stateData) {
-      if (args.length < 2 || args[1] == null) return '';
+      if (args.length < 2 || args[1] == null) {
+        return '';
+      }
 
       final reportType = args[0]?.toString() ?? '';
       // TableWidget rows can be EntityModels (as they are when read from the
@@ -543,33 +610,44 @@ class FunctionRegistries {
         return null;
       }
 
+      final origQty = fieldValue('originalQuantityReceived');
+      final actualQty = fieldValue('actualQuantityReceived');
+      final fieldQty = fieldValue('quantity');
+      final topLevelQty = stock['quantity'];
+
       // Partial acceptance edits quantity down to the received amount, while
       // the original sender's issue report must continue to show what they
       // dispatched. The accepted receiver's receipt report shows the actual
       // quantity received instead.
       final value = reportType == 'dispatch'
-          ? fieldValue('originalQuantityReceived') ??
-              stock['quantity']?.toString() ??
+          ? origQty ??
+              topLevelQty?.toString() ??
+              fieldQty ??
               ''
           : reportType == 'receipt'
-              ? fieldValue('actualQuantityReceived') ??
-                  stock['quantity']?.toString() ??
+              ? actualQty ??
+                  topLevelQty?.toString() ??
+                  fieldQty ??
                   ''
-              // Loss/Excess adjustments fall through to here. Fall back to
-              // the additionalFields copy when the top-level column is null
-              // - a record that has round-tripped through the server can
-              // come back without it, which left the Quantity column blank
-              // on the Loss and Excess reports even though the local record
-              // plainly had a quantity.
-              : stock['quantity']?.toString() ??
-                  fieldValue('quantity') ??
-                  '';
+              : (reportType == 'loss' || reportType == 'damage')
+                  ? (origQty != null && actualQty != null && actualQty.isNotEmpty
+                      ? actualQty
+                      : (actualQty != null &&
+                              actualQty != '0' &&
+                              actualQty.isNotEmpty
+                          ? actualQty
+                          : topLevelQty?.toString() ?? fieldQty ?? ''))
+                  : topLevelQty?.toString() ?? fieldQty ?? '';
       // This helper is used for report display. Keep signed quantities in
       // storage for balance calculations, but show their magnitude in reports.
       final number = num.tryParse(value.toString().trim());
-      if (number == null) return value;
-      final absolute = number.abs();
-      return absolute == absolute.roundToDouble() ? absolute.toInt() : absolute;
+      final dynamic result = number == null
+          ? value
+          : (number.abs() == number.abs().roundToDouble()
+              ? number.abs().toInt()
+              : number.abs());
+
+      return result;
     });
 
     FunctionRegistry.register('getTransactionType', (args, stateData) {
@@ -1270,23 +1348,29 @@ class FunctionRegistries {
       // additionalFields.fields is a list of {key, value} in API payloads and
       // a list of AdditionalField objects in the app model; the interpolation
       // layer may also hand this over already flattened to a map.
+      bool result = false;
       if (raw is Map) {
-        return raw.keys.any(isActionKey);
-      }
-      if (raw is List) {
+        result = raw.keys.any(isActionKey);
+      } else if (raw is List) {
         for (final field in raw) {
           if (field is Map) {
-            if (isActionKey(field['key'])) return true;
+            if (isActionKey(field['key'])) {
+              result = true;
+              break;
+            }
             continue;
           }
           try {
-            if (isActionKey((field as dynamic).key)) return true;
+            if (isActionKey((field as dynamic).key)) {
+              result = true;
+              break;
+            }
           } catch (_) {
             // Not a key/value shaped entry - ignore.
           }
         }
       }
-      return false;
+      return result;
     });
 
     /// The id this facility's stock should be booked against.
@@ -1754,7 +1838,7 @@ class FunctionRegistries {
     }
 
     /// Display form for a STAFF (delivery team / CDD) party: the username
-    /// alongside the id it is recorded against, e.g. "jdoe | <uuid>". The id
+    /// alongside the id it is recorded against, e.g. "jdoe : <uuid>". The id
     /// is what every transaction and report keys on, so showing the name
     /// alone makes rows impossible to cross-reference; showing the id alone
     /// is meaningless to the user. Degrades to whichever half is available.
@@ -1763,7 +1847,7 @@ class FunctionRegistries {
       final identifier = id.trim();
       if (name.isEmpty) return identifier;
       if (identifier.isEmpty) return name;
-      return '$name | $identifier';
+      return '$name : $identifier';
     }
 
     FunctionRegistry.register('getFirstPagePartyLabel', (args, stateData) {
@@ -1850,7 +1934,7 @@ class FunctionRegistries {
         case 'DAMAGED':
         case 'LOSS':
           if (senderType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
+            return teamPartyDisplay(teamName, args[1]?.toString() ?? '');
           }
           return withFacilityPrefix(args[1]);
         default:

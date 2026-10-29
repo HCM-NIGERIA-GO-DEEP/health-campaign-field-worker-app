@@ -16,8 +16,8 @@ class ClosePopupExecutor extends ActionExecutor {
     BuildContext context,
     Map<String, dynamic> contextData,
   ) async {
-    // Close the popup if navigator can pop
-    if (Navigator.of(context, rootNavigator: true).canPop()) {
+    final canPop = Navigator.of(context, rootNavigator: true).canPop();
+    if (canPop) {
       Navigator.of(context, rootNavigator: true).pop();
     }
 
