@@ -38,7 +38,7 @@ class JsonSchemaIntegerBuilder extends JsonSchemaBuilder<int> {
         label: label,
         capitalizedFirstLetter: false,
         isRequired: isRequired ?? false,
-        child: DigitNumericFormInput(
+        child: _StableNumericFormInput(
           helpText: helpText,
           inputFormatters: [FilteringTextInputFormatter.digitsOnly],
           readOnly: readOnly,
@@ -48,20 +48,12 @@ class JsonSchemaIntegerBuilder extends JsonSchemaBuilder<int> {
           maxValue: relativeMaxValue ?? maxValue ?? 1000,
           maxLength: 5,
           step: 1,
-          // An unanswered numeric field's FormControl<int> holds null (see
-          // form_builder_helper's PropertySchemaFormat.numeric branch), and
-          // `?? 0` turned that into a literal "0" sitting in the input.
-          // BaseDigitFormInput seeds its controller via
-          // `_controller.text = initialValue`, whose setter collapses the
-          // selection to offset 0 - so the caret parked BEFORE that "0" and
-          // the first digit typed landed in front of it ("5" became "50").
-          // Rendering null as empty leaves the field genuinely blank, so the
-          // caret and the typed digits line up.
+          // Keep unanswered counters blank rather than displaying zero.
           initialValue: form.control(formControlName).value?.toString() ?? '',
           onChange: (value) {
             form.control(formControlName).markAsTouched();
             if (value.isEmpty) {
-              form.control(formControlName).value = 0;
+              form.control(formControlName).value = null;
               return;
             }
             form.control(formControlName).value = int.parse(value);
@@ -70,4 +62,94 @@ class JsonSchemaIntegerBuilder extends JsonSchemaBuilder<int> {
       ),
     );
   }
+}
+
+// Use the existing input's styling with atomic text/selection updates. The
+// upstream numeric stepper resets selection to zero; correcting it after a
+// frame makes the caret visibly jump and also overrides deliberate edits.
+class _StableNumericFormInput extends BaseDigitFormInput {
+  const _StableNumericFormInput({
+    super.helpText,
+    super.inputFormatters,
+    super.readOnly,
+    required bool editable,
+    super.errorMessage,
+    super.minValue,
+    super.maxValue,
+    super.maxLength,
+    super.step,
+    super.initialValue,
+    super.onChange,
+  }) : super(
+          keyboardType: TextInputType.number,
+          textAlign: TextAlign.center,
+          prefixText: '-',
+          suffixText: '+',
+          suffixPrefixWidth: 100,
+          showCurser: editable,
+          isEditable: editable,
+        );
+
+  @override
+  _StableNumericFormInputState createState() => _StableNumericFormInputState();
+}
+
+class _StableNumericFormInputState extends BaseDigitFormInputState {
+  bool _firstTapAfterFocus = true;
+
+  void _moveToEnd() {
+    controller.selection =
+        TextSelection.collapsed(offset: controller.text.length);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _moveToEnd();
+  }
+
+  @override
+  void didUpdateWidget(covariant BaseDigitFormInput oldWidget) {
+    final previousText = controller.text;
+    super.didUpdateWidget(oldWidget);
+    if (previousText != controller.text) _moveToEnd();
+  }
+
+  @override
+  void onFocusChange() {
+    super.onFocusChange();
+    if (myFocusNode.hasFocus) {
+      _moveToEnd();
+    } else {
+      _firstTapAfterFocus = true;
+    }
+  }
+
+  @override
+  void onTap() {
+    if (_firstTapAfterFocus && !widget.readOnly) _moveToEnd();
+    _firstTapAfterFocus = false;
+    super.onTap();
+  }
+
+  void _step(int direction) {
+    if (widget.readOnly) return;
+    final current = int.tryParse(controller.text) ?? 0;
+    final next = current + direction * widget.step;
+    if (next >= widget.minValue && next <= widget.maxValue) {
+      final text = next.toString();
+      controller.value = TextEditingValue(
+        text: text,
+        selection: TextSelection.collapsed(offset: text.length),
+      );
+    }
+    _firstTapAfterFocus = false;
+    widget.onChange?.call(controller.text);
+  }
+
+  @override
+  void onPrefixIconClick({void Function()? customFunction}) => _step(-1);
+
+  @override
+  void onSuffixIconClick({void Function()? customFunction}) => _step(1);
 }
