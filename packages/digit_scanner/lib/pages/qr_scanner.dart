@@ -1506,8 +1506,15 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                               Flexible(
                                 child: Text(
                                   overflow: TextOverflow.ellipsis,
-                                  DigitScannerUtils().trimString(
-                                      effectiveQrCodes[index].toString()),
+                                  (() {
+                                    final raw = effectiveQrCodes[index].toString();
+                                    // Format 'username||uuid' as 'username : uuid'
+                                    // before truncating for display
+                                    final display = raw.contains('||')
+                                        ? '${raw.split('||').first.trim()} : ${raw.split('||').last.trim()}'
+                                        : raw;
+                                    return DigitScannerUtils().trimString(display);
+                                  })(),
                                 ),
                               ),
                               IconButton(

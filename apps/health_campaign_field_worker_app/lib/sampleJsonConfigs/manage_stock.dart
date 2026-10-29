@@ -661,6 +661,11 @@ final dynamic sampleInventoryFlows = {
               "includeInForm": true,
               "validations": [
                 {
+                  "type": "regex",
+                  "value": r"^(?:[^|]+\|\|)?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                  "message": "INVENTORY_DELIVERY_TEAM_QR_INVALID"
+                },
+                {
                   "type": "required",
                   "value": true,
                   "message":
@@ -1383,12 +1388,12 @@ final dynamic sampleInventoryFlows = {
               {
                 "key": "teamCode",
                 "value":
-                    "{{fn:getTeamCode(formData.warehouseDetails.teamCode)}}"
+                    "{{fn:getStockTeamCode(formData.warehouseDetails.teamCode, formData.stockDetails.deliveryTeam, formData.warehouseDetails.facilityFromWhich)}}"
               },
               {
                 "key": "deliveryTeamName",
                 "value":
-                    "{{fn:getTeamName(formData.warehouseDetails.teamCode)}}"
+                    "{{fn:getStockTeamName(formData.warehouseDetails.teamCode, formData.stockDetails.deliveryTeam, formData.warehouseDetails.facilityFromWhich)}}"
               },
               {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
               {
@@ -1655,6 +1660,11 @@ final dynamic sampleInventoryFlows = {
               "systemDate": false,
               "includeInSummary": true,
               "validations": [
+                {
+                  "type": "regex",
+                  "value": r"^(?:[^|]+\|\|)?[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
+                  "message": "INVENTORY_DELIVERY_TEAM_QR_INVALID"
+                },
                 {
                   "type": "required",
                   "value": true,
@@ -2225,20 +2235,20 @@ final dynamic sampleInventoryFlows = {
                   },
                   {
                     "key":
-                        "{{fn:getStockQuantityLabel(item.additionalFields.fields.stockEntryType)}}",
+                        "{{fn:getDetailsPrimaryQuantityLabel(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status)}}",
                     "value":
                         "{{fn:coalesceQuantity(item.additionalFields.fields.originalQuantityReceived, item.quantity)}}"
                   },
                   {
-                    "key": "INVENTORY_ACTUAL_QUANTITY_RECEIVED_LABEL",
+                    "key": "{{fn:getDetailsConfirmedQuantityLabel(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status)}}",
                     "value":
-                        "{{item.additionalFields.fields.actualQuantityReceived}}",
+                        "{{fn:getDetailsConfirmedQuantity(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status)}}",
                     "hideIfNull": true
                   },
                   {
-                    "key": "INVENTORY_SHORTFALL_QUANTITY_LABEL",
+                    "key": "{{fn:getDetailsDifferenceLabel(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status)}}",
                     "value":
-                        "{{fn:subtractQuantity(item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived)}}",
+                        "{{fn:getDetailsDifference(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status)}}",
                     "hideIfNull": true
                   },
                   {
@@ -2521,6 +2531,15 @@ final dynamic sampleInventoryFlows = {
                           "value": "{{item.items[0].senderId}}"
                         },
                         {
+                          "key": "receivedFromName",
+                          "value":
+                              "{{fn:resolveTeamName(item.items[0].additionalFields.fields)}}"
+                        },
+                        {
+                          "key": "senderPartyType",
+                          "value": "{{item.items[0].senderType}}"
+                        },
+                        {
                           "key": "quantity",
                           "value": "{{item.items[0].quantity}}"
                         },
@@ -2618,6 +2637,14 @@ final dynamic sampleInventoryFlows = {
               {
                 "key": "receivedFromName",
                 "value": "{{navigation.receivedFromName}}"
+              },
+              {
+                "key": "senderPartyType",
+                "value": "{{navigation.senderPartyType}}"
+              },
+              {
+                "key": "receiverPartyType",
+                "value": "{{fn:getUserPartyType()}}"
               },
               {
                 "key": "productVariantId",
@@ -2748,7 +2775,7 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "transactionDetailsHeading",
                     "value":
-                        "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED', navigation.discrepancyReason)}}"
+                        "{{fn:getAcceptedTransactionHeadingCode(navigation.incomingStockEntryType, navigation.discrepancyReason)}}"
                   }
                 ]
               }
@@ -2806,7 +2833,7 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "transactionDetailsHeading",
                     "value":
-                        "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED', navigation.discrepancyReason)}}"
+                        "{{fn:getAcceptedTransactionHeadingCode(navigation.incomingStockEntryType, navigation.discrepancyReason)}}"
                   }
                 ]
               }
@@ -2968,7 +2995,7 @@ final dynamic sampleInventoryFlows = {
               {
                 "key": "transactionDetailsHeading",
                 "value":
-                    "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED', navigation.discrepancyReason)}}"
+                    "{{fn:getAcceptedTransactionHeadingCode(navigation.incomingStockEntryType, navigation.discrepancyReason)}}"
               }
             ]
           }
@@ -3251,7 +3278,7 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "transactionDetailsHeading",
                     "value":
-                        "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED', navigation.discrepancyReason)}}"
+                        "{{fn:getAcceptedTransactionHeadingCode(navigation.incomingStockEntryType, navigation.discrepancyReason)}}"
                   }
                 ]
               }
@@ -3528,7 +3555,7 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "transactionDetailsHeading",
                     "value":
-                        "{{fn:getViewTransactionHeadingCode(navigation.incomingStockEntryType, 'RECEIVED', navigation.discrepancyReason)}}"
+                        "{{fn:getAcceptedTransactionHeadingCode(navigation.incomingStockEntryType, navigation.discrepancyReason)}}"
                   }
                 ]
               }
@@ -3595,13 +3622,13 @@ final dynamic sampleInventoryFlows = {
           },
           "showSecondaryAlertPopUp": {
             "title": "INVENTORY_REJECT_CONFIRMATION_TITLE",
-            "description": "INVENTORY_REJECT_CONFIRMATION_DESCRIPTION",
+            "description": "{{fn:getPartialAcceptDescription(navigation.incomingStockEntryType, navigation.discrepancyReason)}}",
             "primaryActionLabel": "INVENTORY_REJECT_CONFIRM_ACTION",
             "secondaryActionLabel": "INVENTORY_REJECT_CANCEL_ACTION",
             "body": [
               {
                 "type": "integer",
-                "label": "INVENTORY_ACTUAL_QUANTITY_RECEIVED_LABEL",
+                "label": "{{fn:getPartialAcceptQuantityLabel(navigation.incomingStockEntryType, navigation.discrepancyReason)}}",
                 "format": "numeric",
                 "fieldName": "actualQuantityReceived",
                 "mandatory": true,
@@ -3671,7 +3698,7 @@ final dynamic sampleInventoryFlows = {
               "type": "string",
               "label": "INVENTORY_RECEIVED_FROM_LABEL",
               "order": 3,
-              "value": "{{senderFacilityId}}",
+              "value": "{{fn:teamPartyDisplay(navigation.receivedFromName, senderFacilityId)}}",
               "format": "text",
               "fieldName": "receivedFrom",
               "displayOnly": true
@@ -3988,7 +4015,7 @@ final dynamic sampleInventoryFlows = {
                   "type": "template",
                   "fieldName": "viewTransactionGroupedItemText",
                   "value":
-                      "{{item.additionalFields.fields.sku}}: {{item.quantity}}"
+                      "{{item.additionalFields.fields.sku}}: {{fn:coalesceQuantity(item.additionalFields.fields.actualQuantityReceived, item.quantity)}}"
                 }
               },
               {
@@ -4021,7 +4048,7 @@ final dynamic sampleInventoryFlows = {
                         {
                           "key": "transactionDetailsHeading",
                           "value":
-                              "{{fn:getViewTransactionHeadingCode(item.items[0].additionalFields.fields.stockEntryType, item.items[0].transactionReason)}}"
+                              "{{fn:getViewTransactionHeadingCode(item.items[0].additionalFields.fields.stockEntryType, item.items[0].transactionReason, item.items[0].additionalFields.fields.discrepancyReason, item.items[0].additionalFields.fields.originalIssueClientReferenceId)}}"
                         }
                       ]
                     }

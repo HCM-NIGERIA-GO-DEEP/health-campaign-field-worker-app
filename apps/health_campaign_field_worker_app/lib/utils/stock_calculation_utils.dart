@@ -28,6 +28,15 @@ String generateBalanceKey(String facilityId, String productVariantId,
 }
 
 class StockCalculationUtils {
+  /// Reconciliation displays only write-offs affecting this warehouse's
+  /// balance. Lower-facility write-offs are already covered by stock issued.
+  /// Missing offsets on older reconciliation snapshots mean zero.
+  static double warehouseWriteOffQuantity(dynamic total, dynamic lowerFacility) {
+    double amount(dynamic value) =>
+        double.tryParse(value?.toString() ?? '') ?? 0;
+    return amount(total) - amount(lowerFacility);
+  }
+
   static String _getAdditionalFieldValue(StockModel stock, String key) {
     final fields = stock.additionalFields?.fields;
     if (fields == null) return '';

@@ -206,6 +206,11 @@ class StockReconciliationMetrics {
 
   String get stockDamaged => 'STOCK_RECONCILIATION_STOCK_DAMAGED';
 
+  String get warehouseStockLost => 'STOCK_RECONCILIATION_WAREHOUSE_STOCK_LOST';
+
+  String get warehouseStockDamaged =>
+      'STOCK_RECONCILIATION_WAREHOUSE_STOCK_DAMAGED';
+
   String get stockExcess => 'STOCK_RECONCILIATION_STOCK_EXCESS';
 
   String get stockLess => 'STOCK_RECONCILIATION_STOCK_LESS';

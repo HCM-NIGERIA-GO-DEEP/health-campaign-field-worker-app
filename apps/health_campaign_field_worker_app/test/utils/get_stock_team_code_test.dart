@@ -1,7 +1,16 @@
+import 'package:digit_data_converter/src/transformer_service.dart';
+import 'package:digit_data_converter/utils/utils.dart';
+import 'package:digit_data_model/data_model.dart';
+import 'package:digit_flow_builder/data/digit_data_converter.dart';
+import 'package:digit_flow_builder/data/transformer_config.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
 import 'package:digit_flow_builder/utils/interpolation.dart';
+import 'package:digit_flow_builder/utils/utils.dart';
+import 'package:digit_forms_engine/helper/form_builder_helper.dart';
+import 'package:digit_forms_engine/models/property_schema/property_schema.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:health_campaign_field_worker_app/sampleJsonConfigs/manage_stock.dart';
 import 'package:health_campaign_field_worker_app/utils/function_registries.dart';
 
 /// getStockTeamCode is what fills __context:teamCode, which the "stock"
@@ -17,6 +26,15 @@ import 'package:health_campaign_field_worker_app/utils/function_registries.dart'
 /// args: [stockEntryType, primaryRole, warehouseDetails.teamCode,
 ///        stockDetails.deliveryTeam]
 void main() {
+  setUpAll(() {
+    StockModelMapper.ensureInitialized();
+    StockAdditionalFieldsMapper.ensureInitialized();
+    AdditionalFieldMapper.ensureInitialized();
+    AuditDetailsMapper.ensureInitialized();
+    ClientAuditDetailsMapper.ensureInitialized();
+    DataConverterSingleton()
+        .setData(dynamicEntityModelListener: EntityModelJsonMapper());
+  });
   // getStockTeamCode reads only its args, so an empty state is enough.
   final stateData = CrudStateData(const {}, const []);
 
@@ -47,8 +65,8 @@ void main() {
   testWidgets('returns the destination team captured on warehouseDetails',
       (tester) async {
     await withRegistry(tester, () {
-      expect(callIt(['RECEIPT', 'RECEIVER', 'user-uuid-1', null]),
-          'user-uuid-1');
+      expect(
+          callIt(['RECEIPT', 'RECEIVER', 'user-uuid-1', null]), 'user-uuid-1');
     });
   });
 
@@ -75,7 +93,8 @@ void main() {
       (tester) async {
     await withRegistry(tester, () {
       // receiverId is the only consumer, so the receiving side wins.
-      expect(callIt(['RECEIPT', 'RECEIVER', 'to-team', 'from-team']), 'to-team');
+      expect(
+          callIt(['RECEIPT', 'RECEIVER', 'to-team', 'from-team']), 'to-team');
     });
   });
 
@@ -85,5 +104,187 @@ void main() {
       expect(callIt(['RECEIPT', 'RECEIVER', '  ', '']), '');
       expect(callIt([]), '');
     });
+  });
+
+  testWidgets('current three-argument config resolves the receiver and name',
+      (tester) async {
+    await withRegistry(tester, () {
+      final args = ['Jane||user-uuid-2', null, 'F-WAREHOUSE'];
+      expect(callIt(args), 'user-uuid-2');
+      expect(
+          FunctionRegistry.call('getStockTeamName', args, stateData), 'Jane');
+      expect(
+          callIt([null, 'Jane||user-uuid-2', 'DELIVERY_TEAM']), 'user-uuid-2');
+      expect(callIt(['null', null, 'F-WAREHOUSE']), '');
+      expect(callIt(['Jane||', null, 'F-WAREHOUSE']), '');
+    });
+  });
+
+  testWidgets('receipt display functions are registered and identify sender',
+      (tester) async {
+    await withRegistry(tester, () {
+      final fields = [
+        {'key': 'stockEntryType', 'value': 'RECEIPT'},
+        {'key': 'deliveryTeamName', 'value': 'Jane'},
+      ];
+      expect(FunctionRegistry.call('resolveTeamName', [fields], stateData),
+          'Jane');
+      expect(
+          FunctionRegistry.call(
+              'resolveTeamName',
+              [
+                {'deliveryTeamName': 'Jane'}
+              ],
+              stateData),
+          'Jane');
+      expect(
+          FunctionRegistry.call(
+              'getSecondPagePartyLabel',
+              [
+                [const AdditionalField('stockEntryType', 'RECEIPT')]
+              ],
+              stateData),
+          'INVENTORY_SENDER_LABEL');
+      expect(
+          FunctionRegistry.call(
+              'teamPartyDisplay', ['Jane', 'user-uuid-2'], stateData),
+          'Jane : user-uuid-2');
+      expect(
+          FunctionRegistry.call(
+              'teamPartyDisplay', ['Jane', 'F-SENDER'], stateData),
+          'FAC_F-SENDER');
+      expect(
+          FunctionRegistry.call('getSecondPagePartyLabel', [fields], stateData),
+          'INVENTORY_SENDER_LABEL');
+      expect(
+          FunctionRegistry.call(
+              'getSecondPageParty',
+              [fields, 'F-SENDER', 'F-RECEIVER', 'WAREHOUSE', 'WAREHOUSE'],
+              stateData),
+          'FAC_F-SENDER');
+      expect(
+          FunctionRegistry.call(
+              'getSecondPageParty',
+              [fields, 'user-uuid-2', 'F-RECEIVER', 'STAFF', 'WAREHOUSE'],
+              stateData),
+          'Jane : user-uuid-2');
+    });
+  });
+
+  testWidgets('configured issue creates a staff receiver with a persisted name',
+      (tester) async {
+    await withRegistry(tester, () {
+      const uuid = '64b9b45f-4349-4ab7-a8d9-35facb95150e';
+      final flow = (sampleInventoryFlows['flows'] as List)
+          .cast<Map<String, dynamic>>()
+          .firstWhere((f) => f['name'] == 'RECORDSTOCK');
+      final action =
+          (flow['onAction'] as List).cast<Map<String, dynamic>>().first;
+      final properties = action['properties'] as Map<String, dynamic>;
+      final extraData =
+          (properties['data'] as List).cast<Map<String, dynamic>>();
+      final form = <String, dynamic>{
+        'warehouseDetails': {
+          'facilityToWhich': 'DELIVERY_TEAM',
+          'teamCode': 'sl-team-1||$uuid',
+          'dateOfEntry': DateTime(2026, 10, 30),
+        },
+        'stockDetails': {
+          'facilityFromWhich': 'F-DP',
+          'productdetail': {'id': 'PVAR-1', 'sku': 'BEDNET'},
+        },
+        'stockProductDetails': {'quantitySent': 45},
+      };
+      final contextData = {
+        'formData': form,
+        'navigation': {
+          'stockEntryType': 'ISSUED',
+          'transactionType': 'DISPATCHED',
+          'primaryRole': 'SENDER',
+          'secondaryRole': 'RECEIVER',
+          'mrnNumber': 'MRN-1',
+        },
+      };
+      final extras = <String, dynamic>{
+        for (final data in extraData)
+          data['key'] as String: resolveValue(data['value'], contextData),
+      };
+      final stock = FormEntityMapper(config: jsonConfig)
+          .mapFormToEntities(
+            formValues: form,
+            modelsConfig:
+                jsonConfig['stock']!['models'] as Map<String, dynamic>,
+            context: {
+              ...extras,
+              'projectId': 'project',
+              'tenantId': 'si',
+              'userUUID': 'issuer',
+            },
+            fallbackFormDataString: 'StockModel',
+          )
+          .single as StockModel;
+      expect(stock.receiverId, uuid);
+      expect(stock.receiverType, 'STAFF');
+      expect(stock.senderId, 'F-DP');
+      expect(stock.quantity, '45');
+      expect(
+          stock.additionalFields!.fields
+              .firstWhere((f) => f.key == 'deliveryTeamName')
+              .value,
+          'sl-team-1');
+    });
+  });
+
+  test('team scanner rejects a missing ID and accepts a complete team QR', () {
+    final flow = (sampleInventoryFlows['flows'] as List)
+        .cast<Map<String, dynamic>>()
+        .firstWhere((f) => f['name'] == 'RECORDSTOCK');
+    final warehouse = (flow['pages'] as List)
+        .cast<Map<String, dynamic>>()
+        .firstWhere((p) => p['page'] == 'warehouseDetails');
+    final field = (warehouse['properties'] as List)
+        .cast<Map<String, dynamic>>()
+        .firstWhere((f) => f['fieldName'] == 'teamCode');
+    final schema = PropertySchema.fromJson(field);
+    final control = buildFormControl('teamCode', schema, schema);
+    expect(control.valid, isFalse);
+    control.value = 'sl-team-1||';
+    expect(control.valid, isFalse);
+    control.value = 'sl-team-1||64b9b45f-4349-4ab7-a8d9-35facb95150e';
+    expect(control.valid, isTrue);
+    control.dispose();
+  });
+
+  test('receipt mapping preserves a staff sender and their display name', () {
+    final stock = FormEntityMapper(config: jsonConfig)
+        .mapFormToEntities(
+          formValues: {'stockReceiptDetails': <String, dynamic>{}},
+          modelsConfig:
+              jsonConfig['stockReceipt']!['models'] as Map<String, dynamic>,
+          context: {
+            'senderFacilityId': 'sender-uuid',
+            'senderPartyType': 'STAFF',
+            'receivedFromName': 'sl-team-1',
+            'userFacilityId': 'F-WAREHOUSE',
+            'receiverPartyType': 'WAREHOUSE',
+            'quantity': '45',
+            'stockEntryType': 'RECEIPT',
+            'transactionType': 'RECEIVED',
+            'projectId': 'project',
+            'tenantId': 'si',
+            'userUUID': 'receiver',
+          },
+          fallbackFormDataString: 'StockModel',
+        )
+        .single as StockModel;
+    expect(stock.senderId, 'sender-uuid');
+    expect(stock.senderType, 'STAFF');
+    expect(stock.receiverId, 'F-WAREHOUSE');
+    expect(stock.receiverType, 'WAREHOUSE');
+    expect(
+        stock.additionalFields!.fields
+            .firstWhere((f) => f.key == 'deliveryTeamName')
+            .value,
+        'sl-team-1');
   });
 }

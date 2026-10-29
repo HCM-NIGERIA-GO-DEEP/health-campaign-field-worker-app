@@ -392,21 +392,27 @@ class _StockReconciliationCardState
                       if (!isDistributor) ...[
                         LabelValueItem(
                           label: localizations.translate(
-                              i18.stockReconciliationMetrics.stockDamaged),
-                          value: _stockMetrics['stockDamaged']!
-                              .toStringAsFixed(0),
+                              i18.stockReconciliationMetrics.warehouseStockDamaged),
+                          value: StockCalculationUtils.warehouseWriteOffQuantity(
+                            _stockMetrics['stockDamaged'],
+                            _stockMetrics['lowerFacilityDamagedShortfall'],
+                          ).toStringAsFixed(0),
                           labelFlex: 5,
                         ),
                         const DigitDivider(),
                       ],
-                      // Loss is shown for every role. Accepted shortfalls reported by a lower
-                      // facility are included for reconciliation, while the
-                      // calculation excludes them from stockInHand because
-                      // the original dispatch already accounted for them.
+                      // Keep distributor totals; warehouse reconciliation excludes
+                      // write-offs already accounted for by stock issued.
                       LabelValueItem(
-                        label: localizations.translate(
-                            i18.stockReconciliationMetrics.stockLost),
-                        value: _stockMetrics['stockLost']!.toStringAsFixed(0),
+                        label: localizations.translate(isDistributor
+                            ? i18.stockReconciliationMetrics.stockLost
+                            : i18.stockReconciliationMetrics.warehouseStockLost),
+                        value: (isDistributor
+                            ? _stockMetrics['stockLost']!
+                            : StockCalculationUtils.warehouseWriteOffQuantity(
+                                _stockMetrics['stockLost'],
+                                _stockMetrics['lowerFacilityLostShortfall'],
+                              )).toStringAsFixed(0),
                         labelFlex: 5,
                       ),
                       const DigitDivider(),
@@ -423,51 +429,6 @@ class _StockReconciliationCardState
                           label: localizations.translate(
                               i18.stockReconciliationMetrics.stockLess),
                           value: _stockMetrics['stockLess']!.toStringAsFixed(0),
-                          labelFlex: 5,
-                        ),
-                        const DigitDivider(),
-                      ],
-                      // Stock Lost and Stock Damaged above each include
-                      // quantities a LOWER facility reported against stock
-                      // this facility had already dispatched. The original
-                      // dispatch already removed them from the balance, so
-                      // stockInHand adds them back - without these two rows
-                      // a hand-check of the card always lands short.
-                      //
-                      // Shown per bucket rather than combined so each pairs
-                      // with the total it came out of: "Damaged 22 / of
-                      // which 22 reported" makes it obvious this facility
-                      // had no damage of its own.
-                      //
-                      // Upper hierarchy only. A distributor has no lower
-                      // level to receive a shortfall from, so these are
-                      // structurally zero for them - the role is still
-                      // checked explicitly, matching how stockExcess and
-                      // stockLess are gated above.
-                      if (!isDistributor &&
-                          (_stockMetrics['lowerFacilityDamagedShortfall'] ??
-                                  0) >
-                              0) ...[
-                        LabelValueItem(
-                          label: localizations.translate(i18
-                              .stockReconciliationMetrics
-                              .damagedReportedByLowerFacility),
-                          value: _stockMetrics[
-                                  'lowerFacilityDamagedShortfall']!
-                              .toStringAsFixed(0),
-                          labelFlex: 5,
-                        ),
-                        const DigitDivider(),
-                      ],
-                      if (!isDistributor &&
-                          (_stockMetrics['lowerFacilityLostShortfall'] ?? 0) >
-                              0) ...[
-                        LabelValueItem(
-                          label: localizations.translate(i18
-                              .stockReconciliationMetrics
-                              .lostReportedByLowerFacility),
-                          value: _stockMetrics['lowerFacilityLostShortfall']!
-                              .toStringAsFixed(0),
                           labelFlex: 5,
                         ),
                         const DigitDivider(),

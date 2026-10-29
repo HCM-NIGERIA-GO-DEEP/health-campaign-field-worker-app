@@ -14,6 +14,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../blocs/app_initialization/app_initialization.dart';
 import '../models/entities/roles_type.dart';
 import 'utils.dart';
+import 'transaction_details_presentation.dart';
+import 'stock_calculation_utils.dart';
 
 class FunctionRegistries {
   final BuildContext context;
@@ -32,6 +34,14 @@ class FunctionRegistries {
   }
 
   void _registerGenerateFunctions() {
+    FunctionRegistry.register('getWarehouseWriteOffQuantity', (args, stateData) {
+      final quantity = StockCalculationUtils.warehouseWriteOffQuantity(
+        args.isNotEmpty ? args[0] : null,
+        args.length > 1 ? args[1] : null,
+      );
+      return quantity == quantity.roundToDouble() ? quantity.toInt() : quantity;
+    });
+
     // For report fields that display a quantity while the stored sign is
     // retained for stock calculations.
     FunctionRegistry.register('absoluteValue', (args, stateData) {
@@ -121,17 +131,9 @@ class FunctionRegistries {
           : difference;
     });
 
-    // viewTransactionDetails' main quantity row: a partially-accepted
-    // StockModel has its own `quantity` field overwritten down to
-    // actualQuantityReceived (see manage_stock.dart's onSecondaryAction),
-    // with originalQuantityReceived preserving the true dispatched amount
-    // separately - so the main row must prefer originalQuantityReceived
-    // when present, falling back to the record's own quantity for a normal
-    // (non-partial) transaction where originalQuantityReceived was never
-    // set. Without this, the main row (labeled "Quantity Sent"/"Quantity
-    // Received" per stockEntryType) duplicated the separate "Actual
-    // Quantity Received" row below it instead of showing what was actually
-    // dispatched.
+    // Prefer the preserved dispatch quantity for historical records whose
+    // quantity was reduced during partial accept. Current records keep the
+    // dispatched quantity and store the accepted portion separately.
     FunctionRegistry.register('coalesceQuantity', (args, stateData) {
       if (args.isEmpty) return '';
       for (final arg in args) {
@@ -330,68 +332,51 @@ class FunctionRegistries {
       return labels[stockEntryType] ?? 'APPONE_INVENTORY_QUANTITY_LABEL';
     });
 
-    // The view-transaction-details screen's "heading" is only ever a plain
-    // {{navigation.x}} substitution followed by translate() - it can't branch
-    // on its own (see _resolveHeading in layout_renderer.dart), so the
-    // config resolves the final heading CODE here, while stockEntryType is
-    // still in scope, and carries it through navigation as plain data.
-    FunctionRegistry.register('getViewTransactionHeadingCode',
-        (args, stateData) {
-      if (args.isEmpty) return 'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
-      final stockEntryType = args.first?.toString().toUpperCase() ?? '';
-      final transactionReason =
-          args.length > 1 ? args[1]?.toString().toUpperCase() ?? '' : '';
-      final discrepancyReason =
-          args.length > 2 ? args[2]?.toString().toUpperCase() ?? '' : '';
-      // Once an issued transaction has been accepted, show the receiver's
-      // perspective in the UI. The stored entry type remains ISSUED for stock
-      // balance/report calculations.
-      //
-      // This MUST be tested before the discrepancy-reason branches below. A
-      // partially-accepted receipt now carries the discrepancy reason that
-      // explains its shortfall (see the Partial Accept UPDATE_EVENT in
-      // manage_stock.dart), and a STOCK_LOSS/STOCK_DAMAGE reason there would
-      // otherwise retitle the receiver's own accepted receipt as "Stock Loss
-      // Details"/"Stock Damaged Details". The record is still a receipt; the
-      // reason only describes why less arrived than was sent.
-      //
-      // RETURNED is here for the same reason as ISSUED: a return travelling
-      // from a lower level up is accepted through the identical
-      // stockReceiptDetails flow, which stamps transactionReason RECEIVED
-      // while leaving stockEntryType RETURNED. From the accepting side that
-      // record IS a receipt, so it must not keep the sender's "Stock Return
-      // Details" title. A return that has NOT been accepted still carries
-      // transactionReason RETURNED and falls through to the return branch
-      // below, which is what the sender should see.
-      if ((stockEntryType == 'ISSUED' || stockEntryType == 'RETURNED') &&
-          transactionReason == 'RECEIVED') {
-        return 'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
+    // Resolve both entry routes using the same display rules. Acceptance
+    // supplies the final classification rather than pretending every result
+    // is a physical receipt.
+    String codeArg(List<dynamic> args, int index) => index < args.length
+        ? (args[index]?.toString().trim().toUpperCase() ?? '')
+        : '';
+    FunctionRegistry.register('getViewTransactionHeadingCode', (args, stateData) {
+      return TransactionDetailsPresentation.heading(
+        codeArg(args, 0), codeArg(args, 1), codeArg(args, 2),
+        codeArg(args, 3) == 'NULL' ? '' : codeArg(args, 3),
+      );
+    });
+    FunctionRegistry.register('getAcceptedTransactionHeadingCode', (args, stateData) {
+      return TransactionDetailsPresentation.acceptedHeading(
+          codeArg(args, 0), codeArg(args, 1));
+    });
+    // Arguments: entry type, transaction reason, discrepancy reason,
+    // original quantity, actual quantity, quantity, original issue ID, status.
+    FunctionRegistry.register('getDetailsPrimaryQuantityLabel', (args, stateData) =>
+        TransactionDetailsPresentation(args).primaryLabel);
+    FunctionRegistry.register('getDetailsConfirmedQuantityLabel', (args, stateData) =>
+        TransactionDetailsPresentation(args).confirmedLabel);
+    FunctionRegistry.register('getDetailsConfirmedQuantity', (args, stateData) =>
+        TransactionDetailsPresentation(args).confirmedQuantity);
+    FunctionRegistry.register('getDetailsDifferenceLabel', (args, stateData) =>
+        TransactionDetailsPresentation(args).differenceLabel);
+    FunctionRegistry.register('getDetailsDifference', (args, stateData) =>
+        TransactionDetailsPresentation(args).difference);
+    FunctionRegistry.register('getPartialAcceptQuantityLabel', (args, stateData) {
+      return TransactionDetailsPresentation([
+        codeArg(args, 0),
+        codeArg(args, 0) == 'RETURNED' ? codeArg(args, 1) : '',
+        codeArg(args, 1), null, null, null,
+        codeArg(args, 0) == 'RETURNED' ? 'shortfall' : '',
+      ]).confirmedLabel;
+    });
+    FunctionRegistry.register('getPartialAcceptDescription', (args, stateData) {
+      if (codeArg(args, 0) != 'RETURNED') {
+        return 'INVENTORY_DETAILS_PARTIAL_RECEIPT_DESCRIPTION';
       }
-      // When an upper-level user resolves a shortfall, the acknowledged
-      // record can retain stockEntryType=RETURNED while its discrepancy
-      // reason classifies it as loss or damage. Match the view-transaction
-      // heading to that classification, just as the report list does.
-      if (discrepancyReason == 'STOCK_DAMAGE' ||
-          transactionReason == 'STOCK_DAMAGE') {
-        return 'INVENTORY_STOCK_DAMAGED_DETAILS_HEADING';
-      }
-      if (discrepancyReason == 'STOCK_LOSS' ||
-          transactionReason == 'STOCK_LOSS') {
-        return 'INVENTORY_STOCK_LOSS_DETAILS_HEADING';
-      }
-      if (stockEntryType == 'RETURNED' || transactionReason == 'RETURNED') {
-        return 'INVENTORY_STOCK_RETURN_DETAILS_HEADING';
-      }
-      const headings = {
-        'ISSUED': 'INVENTORY_STOCK_ISSUE_DETAILS_HEADING',
-        'RETURNED': 'INVENTORY_STOCK_RETURN_DETAILS_HEADING',
-        'DAMAGED': 'INVENTORY_STOCK_DAMAGED_DETAILS_HEADING',
-        'LOSS': 'INVENTORY_STOCK_LOSS_DETAILS_HEADING',
-        'LESS': 'INVENTORY_STOCK_LOSS_DETAILS_HEADING',
-        'EXCESS': 'INVENTORY_STOCK_EXCESS_DETAILS_HEADING',
-      };
-      return headings[stockEntryType] ??
-          'INVENTORY_STOCK_RECEIPT_DETAILS_HEADING';
+      return {
+        'STOCK_LOSS': 'INVENTORY_DETAILS_PARTIAL_LOSS_DESCRIPTION',
+        'STOCK_DAMAGE': 'INVENTORY_DETAILS_PARTIAL_DAMAGE_DESCRIPTION',
+        'IN_TRANSIT': 'INVENTORY_DETAILS_PARTIAL_TRANSIT_DESCRIPTION',
+      }[codeArg(args, 1)] ?? 'INVENTORY_DETAILS_PARTIAL_RECEIPT_DESCRIPTION';
     });
 
     // Optional 2nd arg: the record's stockEntryType.
@@ -872,37 +857,24 @@ class FunctionRegistries {
       }
     });
 
-    // Resolves the delivery team a stock transaction is addressed to.
-    //
-    // The "stock" transformer config maps
-    //   receiverId -> __switch:receiverPartyType{STAFF: __context:teamCode, ...}
-    // so whenever the receiving party is a delivery team, receiverId is exactly
-    // whatever this returns. INVENTORY.json called this function but it was
-    // never registered, and FunctionRegistry.call returns null for an unknown
-    // name (rendered as ''), so every delivery-team receipt was saved with no
-    // receiver at all.
-    //
-    // The destination team (warehouseDetails.teamCode) is the one receiverId
-    // needs. stockDetails.deliveryTeam is the team on the *sending* side
-    // (returns / less-excess) and is only used as a fallback, so a flow that
-    // populates just that field still resolves to a team rather than nothing.
-    // stockEntryType and primaryRole are passed by the config but not needed:
-    // which field is populated already identifies the side the team is on.
-    //
-    // args: [stockEntryType, primaryRole, warehouseDetails.teamCode,
-    //        stockDetails.deliveryTeam]
+    // Current configs pass [teamCode, deliveryTeam, facilityFromWhich].
+    // Older downloaded configs pass [entryType, primaryRole, teamCode,
+    // deliveryTeam]. Keep both layouts compatible until configs refresh.
+    String stockTeamValue(List<dynamic> args) {
+      String valueAt(int index) {
+        final value = index < args.length
+            ? args[index]?.toString().trim() ?? '' : '';
+        return value.toLowerCase() == 'null' ? '' : value;
+      }
+      final offset = args.length >= 4 ? 2 : 0;
+      final destination = valueAt(offset);
+      return destination.isNotEmpty ? destination : valueAt(offset + 1);
+    }
+
     FunctionRegistry.register('getStockTeamCode', (args, stateData) {
-      String argAt(int index) =>
-          args.length > index ? (args[index]?.toString().trim() ?? '') : '';
-
-      final destinationTeam = argAt(2);
-      final rawTeam = destinationTeam.isNotEmpty ? destinationTeam : argAt(3);
-      if (rawTeam.isEmpty) return '';
-
-      // A scanned team QR arrives as "userName||userUuid" (see getTeamCode), so
-      // strip the name - receiverId has to be the bare uuid. A team code filled
-      // in from the logged-in distributor has no separator and passes through.
-      return rawTeam.contains('||') ? rawTeam.split('||').last.trim() : rawTeam;
+      final rawTeam = stockTeamValue(args);
+      final id = rawTeam.split('||').last.trim();
+      return id.toLowerCase() == 'null' ? '' : id;
     });
 
     // Extracts the userName (part before "||") from the scanned team QR
@@ -937,6 +909,13 @@ class FunctionRegistries {
         return args.length > 2 ? (args[2]?.toString() ?? '') : '';
       }
       return '';
+    });
+
+    // Persist the name from the same QR used to resolve the party ID.
+    FunctionRegistry.register('getStockTeamName', (args, stateData) {
+      final rawTeam = stockTeamValue(args);
+      final name = rawTeam.contains('||') ? rawTeam.split('||').first.trim() : '';
+      return name;
     });
 
     FunctionRegistry.register('getTransactionStatusType', (args, stateData) {
@@ -1792,29 +1771,24 @@ class FunctionRegistries {
   }
 
   void _registerViewTransactionFunctions() {
-    String getStockEntryTypeFromFields(dynamic fields) {
-      if (fields == null) return '';
+    // Reads a single value from the additionalFields key/value list.
+    String getFieldValue(dynamic fields, String key) {
+      if (fields is Map) return fields[key]?.toString() ?? '';
       if (fields is List) {
-        for (var field in fields) {
-          if (field is Map && field['key'] == 'stockEntryType') {
-            return field['value']?.toString().toUpperCase() ?? '';
+        for (final field in fields) {
+          if (field is Map && field['key'] == key) {
+            return field['value']?.toString() ?? '';
+          }
+          if (field is AdditionalField && field.key == key) {
+            return field.value?.toString() ?? '';
           }
         }
       }
       return '';
     }
 
-    // Reads a single value from the additionalFields key/value list.
-    String getFieldValue(dynamic fields, String key) {
-      if (fields is List) {
-        for (var field in fields) {
-          if (field is Map && field['key'] == key) {
-            return field['value']?.toString() ?? '';
-          }
-        }
-      }
-      return '';
-    }
+    String getStockEntryTypeFromFields(dynamic fields) =>
+        getFieldValue(fields, 'stockEntryType').toUpperCase();
 
     // Prefixes a facility id with FAC_ (skips empty ids so we never show a bare
     // "FAC_"). Used to display facility parties on the transaction screens.
@@ -1845,10 +1819,23 @@ class FunctionRegistries {
     String teamPartyDisplay(String teamName, String id) {
       final name = teamName.trim();
       final identifier = id.trim();
-      if (name.isEmpty) return identifier;
-      if (identifier.isEmpty) return name;
-      return '$name : $identifier';
+      final result = name.isEmpty
+          ? identifier
+          : (identifier.isEmpty ? name : '$name : $identifier');
+      return result;
     }
+
+    // These functions are also called directly by the receipt flow config.
+    FunctionRegistry.register('resolveTeamName', (args, stateData) =>
+        args.isEmpty ? '' : resolveTeamName(args.first));
+    FunctionRegistry.register('teamPartyDisplay', (args, stateData) {
+      final name = args.isNotEmpty ? args[0]?.toString() ?? '' : '';
+      final id = args.length > 1 ? args[1]?.toString() ?? '' : '';
+      // Cached receipt configs use this function for both kinds of sender.
+      return id.startsWith('F-')
+          ? withFacilityPrefix(id)
+          : teamPartyDisplay(name, id);
+    });
 
     FunctionRegistry.register('getFirstPagePartyLabel', (args, stateData) {
       if (args.isEmpty) return 'INVENTORY_TRANSACTING_PARTY_LABEL';
@@ -1903,6 +1890,7 @@ class FunctionRegistries {
       final stockEntryType = getStockEntryTypeFromFields(args.first);
       switch (stockEntryType) {
         case 'RECEIPT':
+          return 'INVENTORY_SENDER_LABEL';
         case 'RETURNED':
           return 'INVENTORY_RECEIVER_LABEL';
         case 'ISSUED':
@@ -1925,6 +1913,10 @@ class FunctionRegistries {
       // the transaction list (getFirstPageParty).
       switch (stockEntryType) {
         case 'RECEIPT':
+          if (senderType == 'STAFF') {
+            return teamPartyDisplay(teamName, args[1]?.toString() ?? '');
+          }
+          return withFacilityPrefix(args[1]);
         case 'RETURNED':
           if (receiverType == 'STAFF') {
             return teamPartyDisplay(teamName, args[2]?.toString() ?? '');
