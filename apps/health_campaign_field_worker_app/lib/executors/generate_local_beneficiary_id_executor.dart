@@ -96,14 +96,18 @@ class GenerateLocalBeneficiaryIdExecutor extends ActionExecutor {
 
     bool isReusable(String? id) {
       if (id == null || id.isEmpty) return false;
-      if (currentInitials.isEmpty) return true;
+      // When we can't determine the registrant's initials (both names blank),
+      // never reuse an existing ID — it might belong to a different household.
+      if (currentInitials.isEmpty) return false;
       final parts = id.split('_');
-      // Format: DIS_CHI_PHU_DP_COM_INITIALS_DATE_TIME
+      // Expected format: DIS_CHI_PHU_DP_COM_INITIALS_DATE_TIME
+      // The initials segment sits 3 positions from the end.
       if (parts.length >= 3) {
         final idInitials = parts[parts.length - 3];
         return idInitials == currentInitials;
       }
-      return true;
+      // Unrecognised format — don't risk reusing a mismatched ID.
+      return false;
     }
 
     String beneficiaryId;

@@ -2419,7 +2419,7 @@ final dynamic sampleFlows = {
       ],
       "header": [
         {
-          "label": "BACK",
+          "label": "CORE_COMMON_BACK",
           "format": "backLink",
           "onAction": [
             {
@@ -5062,6 +5062,40 @@ final dynamic sampleFlows = {
           "version": 1,
           "onAction": [
             {
+              // Consent-declined closed household — the household already
+              // exists. Just navigate to acknowledgement, don't create
+              // new entities (was causing duplicate pending transactions).
+              "actions": [
+                {
+                  "actionType": "NAVIGATION",
+                  "properties": {
+                    "data": [
+                      {
+                        "key": "HouseholdClientReferenceId",
+                        "value":
+                            "{{navigation.HouseholdClientReferenceId}}"
+                      }
+                    ],
+                    "name": "caregiverAcknowledgement",
+                    "type": "TEMPLATE",
+                    "onError": [
+                      {
+                        "actionType": "SHOW_TOAST",
+                        "properties": {"message": "Navigation failed."}
+                      }
+                    ],
+                    "navigationMode": "popUntilAndPush",
+                    "popUntilPageName": "searchBeneficiary"
+                  }
+                }
+              ],
+              "condition": {
+                "type": "custom",
+                "expression":
+                    "isEdit==true && isClosedHousehold==true && caregiverConsent.consentToParticipate==FALSE"
+              }
+            },
+            {
               "actions": [
                 {
                   "actionType": "FETCH_TRANSFORMER_CONFIG",
@@ -6172,6 +6206,41 @@ final dynamic sampleFlows = {
           "condition": {
             "type": "custom",
             "expression": "isEdit==true && isNotBeneficiary==true"
+          }
+        },
+        // Consent-declined closed household: the household already exists
+        // in the DB with closed status. Do NOT create new entities —
+        // just navigate to the acknowledgement page. Creating entities
+        // here caused duplicate pending transactions (5 per submission).
+        {
+          "actions": [
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value":
+                        "{{navigation.HouseholdClientReferenceId}}"
+                  }
+                ],
+                "name": "caregiverAcknowledgement",
+                "type": "TEMPLATE",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Navigation failed."}
+                  }
+                ],
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "searchBeneficiary"
+              }
+            }
+          ],
+          "condition": {
+            "type": "custom",
+            "expression":
+                "isEdit==true && isClosedHousehold==true && caregiverConsent.consentToParticipate==FALSE"
           }
         },
         {
