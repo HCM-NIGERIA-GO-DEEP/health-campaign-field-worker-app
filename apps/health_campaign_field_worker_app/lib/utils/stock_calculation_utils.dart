@@ -141,6 +141,7 @@ class StockCalculationUtils {
       return stock.receiverId == facilityId || stock.senderId == facilityId;
     }).toList();
 
+
     double stockReceived = 0;
     double stockIssued = 0;
     double stockReturned = 0;
@@ -154,6 +155,8 @@ class StockCalculationUtils {
     // useful reconciliation totals, but the quantity was already included
     // in this facility's original dispatch. Track these separately so the
     // audit totals do not deduct it from this facility's stock a second time.
+    double reportedLostShortfall = 0;
+    double reportedDamagedShortfall = 0;
     double lowerFacilityLostShortfall = 0;
     double lowerFacilityDamagedShortfall = 0;
     bool hasDistributorReturns = isDistributor;
@@ -238,6 +241,20 @@ class StockCalculationUtils {
           _getAdditionalFieldValue(stock, 'originalIssueClientReferenceId')
               .isNotEmpty;
       if (isShortfallNotification) {
+        // Informational only: these units were never credited to this facility.
+        if (status == 'ACCEPTED') {
+          final accepted = originalQuantity != null && actualQuantity != null
+              ? actualQuantity
+              : (actualQuantity != null && actualQuantity > 0
+                  ? actualQuantity
+                  : rawQuantity);
+          if (discrepancyReason == 'STOCK_LOSS') {
+            reportedLostShortfall += accepted;
+          }
+          if (discrepancyReason == 'STOCK_DAMAGE') {
+            reportedDamagedShortfall += accepted;
+          }
+        }
         continue;
       }
 
@@ -360,6 +377,8 @@ class StockCalculationUtils {
     stockReturned *= multiplier;
     stockLost *= multiplier;
     stockDamaged *= multiplier;
+    reportedLostShortfall *= multiplier;
+    reportedDamagedShortfall *= multiplier;
     lowerFacilityLostShortfall *= multiplier;
     lowerFacilityDamagedShortfall *= multiplier;
     stockExcess *= multiplier;
@@ -410,6 +429,10 @@ class StockCalculationUtils {
       // inside stockLost/stockDamaged for reporting, but were ALREADY
       // deducted by the original dispatch, so the balance adds them back.
       // Without showing them, a hand-check always lands short by this much.
+      'reportedLostShortfall':
+          reportedLostShortfall + lowerFacilityLostShortfall,
+      'reportedDamagedShortfall':
+          reportedDamagedShortfall + lowerFacilityDamagedShortfall,
       'lowerFacilityLostShortfall': lowerFacilityLostShortfall,
       'lowerFacilityDamagedShortfall': lowerFacilityDamagedShortfall,
       'stockInHand': stockInHand,
@@ -607,6 +630,8 @@ class StockCalculationUtils {
         'stockLess': 0,
         'stockWastage': 0,
         'stockPartialUsed': 0,
+        'reportedLostShortfall': 0,
+        'reportedDamagedShortfall': 0,
         'lowerFacilityLostShortfall': 0,
         'lowerFacilityDamagedShortfall': 0,
         'stockInHand': 0,

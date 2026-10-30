@@ -1287,6 +1287,10 @@ final jsonConfig = {
             // breakdown the card shows. Without these the report lists Stock
             // Lost / Stock Damaged in full and cannot be reconciled against
             // stockInHand by hand.
+            "reportedLostShortfall":
+                "stockRecon.stockReconciliationCard.stockMetrics.reportedLostShortfall",
+            "reportedDamagedShortfall":
+                "stockRecon.stockReconciliationCard.stockMetrics.reportedDamagedShortfall",
             "lowerFacilityLostShortfall":
                 "stockRecon.stockReconciliationCard.stockMetrics.lowerFacilityLostShortfall",
             "lowerFacilityDamagedShortfall":

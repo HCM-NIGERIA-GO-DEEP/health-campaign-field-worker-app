@@ -1,4 +1,5 @@
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_flow_builder/data/transformer_config.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:health_campaign_field_worker_app/sampleJsonConfigs/inventory_reports.dart';
 import 'package:health_campaign_field_worker_app/utils/stock_calculation_utils.dart';
@@ -90,7 +91,7 @@ void main() {
   });
 
   test(
-      'warehouse report has the same two local rows and no duplicate breakdown',
+      'warehouse report keeps balance rows and adds informational shortfalls',
       () {
     Map<String, dynamic> table(String name) {
       final flow = (inventoryReportFlows['flows'] as List)
@@ -120,6 +121,21 @@ void main() {
         (c) => c['header'] == 'STOCK_RECONCILIATION_WAREHOUSE_STOCK_LOST');
     expect(loss['cellValue'], contains('getWarehouseWriteOffQuantity'));
     expect(loss['cellValue'], contains('lowerFacilityLostShortfall'));
+    for (final suffix in ['LOST', 'DAMAGED']) {
+      expect(
+          columns.where((column) =>
+              column['header'] ==
+              'STOCK_RECONCILIATION_REPORTED_SHORTFALL_$suffix'),
+          hasLength(1));
+    }
+    final models = jsonConfig['stockReconciliation']!['models'] as Map;
+    final mappings = (models['StockReconciliationModel'] as Map)['mappings'] as Map;
+    final fields = mappings['additionalFields'] as Map;
+    expect(fields['reportedLostShortfall'],
+        'stockRecon.stockReconciliationCard.stockMetrics.reportedLostShortfall');
+    expect(fields['reportedDamagedShortfall'],
+        'stockRecon.stockReconciliationCard.stockMetrics.reportedDamagedShortfall');
+
     final distributor = table('distributorTableInfoReckonReportDetails');
     final distributorColumns = ((distributor['data'] as Map)['columns'] as List)
         .cast<Map<String, dynamic>>();
@@ -128,5 +144,75 @@ void main() {
             c['header'] ==
             'STOCKRECON_REPORT_DETAILS_TABLE_HEADER_5_LABEL')['cellValue'],
         '{{item.additionalFields.fields.stockLost}}');
+  });
+  test(
+      'reported 70-unit shortfall is visible on both sides without a second deduction',
+      () {
+    final receipt = stock('receipt', 'ISSUED', '100', extra: [
+      const AdditionalField('originalQuantityReceived', '100'),
+      const AdditionalField('actualQuantityReceived', '30'),
+      const AdditionalField('discrepancyReason', 'STOCK_LOSS'),
+    ]);
+    final shortfall = stock('shortfall', 'LOSS', '70',
+        sender: 'lower',
+        receiver: 'upper',
+        extra: [
+          const AdditionalField('actualQuantityReceived', '0'),
+          const AdditionalField('discrepancyReason', 'STOCK_LOSS'),
+          const AdditionalField('originalIssueClientReferenceId', 'receipt'),
+        ]);
+    final rows = [receipt, shortfall];
+    final lower = StockCalculationUtils.calculateStockMetrics(
+        stockList: rows, facilityId: 'lower', productId: 'bednet');
+    final upper = StockCalculationUtils.calculateStockMetrics(
+        stockList: rows, facilityId: 'upper', productId: 'bednet');
+    expect(lower['reportedLostShortfall'], 70);
+    expect(lower['stockReceived'], 30);
+    expect(lower['stockInHand'], 30);
+    expect(lower['stockLost'], 0);
+    expect(upper['reportedLostShortfall'], 70);
+    expect(upper['lowerFacilityLostShortfall'], 70);
+    expect(upper['stockIssued'], 100);
+    expect(upper['stockInHand'], -100);
+    expect(
+        StockCalculationUtils.warehouseWriteOffQuantity(
+            upper['stockLost'], upper['lowerFacilityLostShortfall']),
+        0);
+  });
+
+  test(
+      'partial and pending shortfall confirmations do not inflate reported totals',
+      () {
+    final resolved = stock('damage', 'DAMAGED', '70',
+        sender: 'lower',
+        receiver: 'upper',
+        extra: [
+          const AdditionalField('originalQuantityReceived', '70'),
+          const AdditionalField('actualQuantityReceived', '20'),
+          const AdditionalField('discrepancyReason', 'STOCK_DAMAGE'),
+          const AdditionalField('originalIssueClientReferenceId', 'receipt'),
+        ]);
+    final pending = resolved.copyWith(
+        clientReferenceId: 'pending',
+        additionalFields: StockAdditionalFields(version: 1, fields: [
+          const AdditionalField('stockEntryType', 'RETURNED'),
+          const AdditionalField('status', 'IN_TRANSIT'),
+          const AdditionalField('discrepancyReason', 'STOCK_DAMAGE'),
+          const AdditionalField(
+              'originalIssueClientReferenceId', 'other-receipt'),
+        ]));
+    final metrics = StockCalculationUtils.calculateStockMetrics(
+        stockList: [resolved, pending],
+        facilityId: 'lower',
+        productId: 'bednet');
+    expect(metrics['reportedDamagedShortfall'], 20);
+    expect(metrics['reportedLostShortfall'], 0);
+    expect(metrics['stockInHand'], 0);
+    final scaled = StockCalculationUtils.calculateStockMetrics(
+        stockList: [resolved],
+        facilityId: 'lower',
+        productId: 'bednet',
+        multiplier: 30);
+    expect(scaled['reportedDamagedShortfall'], 600);
   });
 }

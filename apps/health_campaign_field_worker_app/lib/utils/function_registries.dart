@@ -710,8 +710,22 @@ class FunctionRegistries {
       return entryTypes[reportType] ?? '';
     });
 
+    // Match the entry field itself, not a reason such as STOCK_LOSS elsewhere
+    // in the JSON. Return a list so commas inside each JSON fragment stay intact.
+    FunctionRegistry.register('getReportStockEntryFilter', (args, stateData) {
+      final types = FunctionRegistry.call('getStockEntryType', args, stateData)
+              ?.toString()
+              .split(',') ??
+          <String>[];
+      return types
+          .where((type) => type.isNotEmpty)
+          .map((type) => '"key":"stockEntryType","value":"$type"')
+          .toList();
+    });
+
     FunctionRegistry.register('isResolvedDamageReport', (args, stateData) {
-      return args.isNotEmpty && args.first?.toString() == 'damage';
+      final type = args.isEmpty ? '' : args.first?.toString();
+      return type == 'damage' || (type == 'loss' && !context.isDistributorRole);
     });
 
     // Distributor stock records use the user's UUID as sender/receiver id;
@@ -764,10 +778,11 @@ class FunctionRegistries {
       if (isDistributor && (reportType == 'loss' || reportType == 'excess')) {
         return reportType == 'excess' ? 'receiverId' : 'senderId';
       }
-      // Lower-facility damage/loss shortfall records are addressed to the
-      // upper facility that issued the stock. Its report must filter on the
-      // receiver, which is the selected upper facility.
-      if (reportType == 'damage' || reportType == 'loss') return 'receiverId';
+      // A warehouse can report a shortfall upstream or receive one from below.
+      // Include either party; exact entry and accepted-status filters isolate
+      // the resolved write-off from the original receipt.
+      if (reportType == 'damage' || reportType == 'loss')
+        return 'senderId,receiverId';
       return senderTypes.contains(reportType) ? 'senderId' : 'receiverId';
     });
 
@@ -866,6 +881,7 @@ class FunctionRegistries {
             ? args[index]?.toString().trim() ?? '' : '';
         return value.toLowerCase() == 'null' ? '' : value;
       }
+
       final offset = args.length >= 4 ? 2 : 0;
       final destination = valueAt(offset);
       return destination.isNotEmpty ? destination : valueAt(offset + 1);

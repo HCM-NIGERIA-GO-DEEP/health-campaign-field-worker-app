@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'package:digit_crud_bloc/models/global_search_params.dart';
+import 'package:digit_crud_bloc/repositories/helpers/query_builder.dart';
 import 'package:bloc_test/bloc_test.dart';
 import 'package:digit_flow_builder/data/transformer_config.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
@@ -244,6 +247,71 @@ void main() {
       await withRegistry(tester, role: RolesType.warehouseManager, () {
         expect(call('getReportFacilityId', ['returned', 'FAC-1']), 'FAC-1');
       });
+    });
+  });
+  testWidgets('100 sent / 30 received selects only the linked 70-unit loss',
+      (tester) async {
+    await withRegistry(tester, () {
+      Map<String, dynamic> stock(String type, String quantity, String actual,
+              {String? original}) =>
+          {
+            'quantity': quantity,
+            'additionalFields': {
+              'fields': [
+                {'key': 'stockEntryType', 'value': type},
+                {'key': 'discrepancyReason', 'value': 'STOCK_LOSS'},
+                {'key': 'status', 'value': 'ACCEPTED'},
+                {'key': 'actualQuantityReceived', 'value': actual},
+                if (original != null)
+                  {'key': 'originalQuantityReceived', 'value': original},
+              ]
+            },
+          };
+      final receipt = stock('ISSUED', '100', '30', original: '100');
+      final loss = stock('LOSS', '70', '0');
+      final fragments =
+          (call('getReportStockEntryFilter', ['loss']) as List).cast<String>();
+      expect(fragments.any(jsonEncode(receipt['additionalFields']).contains),
+          false);
+      expect(
+          fragments.any(jsonEncode(loss['additionalFields']).contains), true);
+      expect(call('getReportStockQuantity', ['receipt', receipt]), 30);
+      expect(call('getReportStockQuantity', ['loss', loss]), 70);
+      expect(call('getSenderOrReceiver', ['loss']), 'senderId,receiverId');
+      expect(call('getSenderOrReceiver', ['damage']), 'senderId,receiverId');
+      expect(call('isResolvedDamageReport', ['loss']), true);
+    });
+  });
+
+  testWidgets('distributor loss keeps the existing LESS and sender filters',
+      (tester) async {
+    await withRegistry(tester, () {
+      expect(call('getStockEntryType', ['loss']), 'LESS');
+      expect(call('getSenderOrReceiver', ['loss']), 'senderId');
+      expect(call('isResolvedDamageReport', ['loss']), false);
+    }, role: RolesType.distributor);
+  });
+
+  testWidgets(
+      'SQL loss filters keep exact JSON fragments and both facility directions',
+      (tester) async {
+    await withRegistry(tester, () {
+      final filters = [
+        SearchFilter(
+            root: 'stock',
+            field: 'additionalFields',
+            operator: 'containsAny',
+            value: call('getReportStockEntryFilter', ['loss'])),
+        SearchFilter(
+            root: 'stock',
+            field: call('getSenderOrReceiver', ['loss']).toString(),
+            operator: 'equalsAny',
+            value: 'lower'),
+      ];
+      expect(QueryBuilder.buildWhereClauseRaw(filters),
+          '(additional_fields LIKE ?) AND (sender_id = ? OR receiver_id = ?)');
+      expect(QueryBuilder.buildWhereArgs(filters).map((arg) => arg.value),
+          ['%"key":"stockEntryType","value":"LOSS"%', 'lower', 'lower']);
     });
   });
 }

@@ -364,7 +364,7 @@ final dynamic inventoryReportFlows = {
                       {
                         "key": "additionalFields",
                         "value":
-                            "{{fn:getStockEntryType(navigation.reportType)}}",
+                            "{{fn:getReportStockEntryFilter(navigation.reportType)}}",
                         "operation": "containsAny"
                       },
                       {
@@ -424,7 +424,7 @@ final dynamic inventoryReportFlows = {
                       {
                         "key": "additionalFields",
                         "value":
-                            "{{fn:getStockEntryType(navigation.reportType)}}",
+                            "{{fn:getReportStockEntryFilter(navigation.reportType)}}",
                         "operation": "containsAny"
                       },
                       {
@@ -702,7 +702,18 @@ final dynamic inventoryReportFlows = {
               },
               {
                 "header": "STOCK_RECONCILIATION_WAREHOUSE_STOCK_DAMAGED",
-                "cellValue": "{{fn:getWarehouseWriteOffQuantity(item.additionalFields.fields.stockDamaged, item.additionalFields.fields.lowerFacilityDamagedShortfall)}}"
+                "cellValue":
+                    "{{fn:getWarehouseWriteOffQuantity(item.additionalFields.fields.stockDamaged, item.additionalFields.fields.lowerFacilityDamagedShortfall)}}"
+              },
+              {
+                "header": "STOCK_RECONCILIATION_REPORTED_SHORTFALL_LOST",
+                "cellValue":
+                    "{{fn:coalesceQuantity(item.additionalFields.fields.reportedLostShortfall, item.additionalFields.fields.lowerFacilityLostShortfall, 0)}}"
+              },
+              {
+                "header": "STOCK_RECONCILIATION_REPORTED_SHORTFALL_DAMAGED",
+                "cellValue":
+                    "{{fn:coalesceQuantity(item.additionalFields.fields.reportedDamagedShortfall, item.additionalFields.fields.lowerFacilityDamagedShortfall, 0)}}"
               },
               {
                 "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_7_LABEL",

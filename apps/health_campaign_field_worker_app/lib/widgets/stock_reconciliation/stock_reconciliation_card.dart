@@ -62,6 +62,8 @@ class _StockReconciliationCardState
     'stockReturned': 0,
     'stockLost': 0,
     'stockDamaged': 0,
+    'reportedLostShortfall': 0,
+    'reportedDamagedShortfall': 0,
     'lowerFacilityLostShortfall': 0,
     'lowerFacilityDamagedShortfall': 0,
     'stockExcess': 0,
@@ -416,6 +418,25 @@ class _StockReconciliationCardState
                         labelFlex: 5,
                       ),
                       const DigitDivider(),
+                      if (!isDistributor) ...[
+                        LabelValueItem(
+                          label: localizations.translate(
+                              'STOCK_RECONCILIATION_REPORTED_SHORTFALL_LOST'),
+                          value: (_stockMetrics['reportedLostShortfall'] ?? 0)
+                              .toStringAsFixed(0),
+                          labelFlex: 5,
+                        ),
+                        const DigitDivider(),
+                        LabelValueItem(
+                          label: localizations.translate(
+                              'STOCK_RECONCILIATION_REPORTED_SHORTFALL_DAMAGED'),
+                          value:
+                              (_stockMetrics['reportedDamagedShortfall'] ?? 0)
+                                  .toStringAsFixed(0),
+                          labelFlex: 5,
+                        ),
+                        const DigitDivider(),
+                      ],
                       if (isDistributor) ...[
                         LabelValueItem(
                           label: localizations.translate(
@@ -527,6 +548,7 @@ class _StockReconciliationCardState
 
       return stockEntryDate >= cycleStartDate && stockEntryDate <= cycleEndDate;
     }).toList();
+
 
     // Calculate metrics using common utility
     final calculatedMetrics = StockCalculationUtils.calculateStockMetrics(
