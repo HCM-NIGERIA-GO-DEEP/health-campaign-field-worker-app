@@ -16,6 +16,7 @@ import '../../models/auth/auth_model.dart';
 import '../../models/entities/roles_type.dart';
 import '../../models/role_actions/role_actions_model.dart';
 import '../../services/device_id_service.dart';
+import '../../services/logout_sql_cleanup.dart';
 import '../../utils/constants.dart';
 import '../../utils/environment_config.dart';
 import '../../utils/function_registries.dart';
@@ -162,7 +163,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   // ensureOnlineOrAlert) — if the API call still fails here, the local
   // session is left untouched so the user stays logged in.
   FutureOr<void> _onLogout(AuthLogoutEvent event, AuthEmitter emit) async {
-    // _deleteUserLocalDatabaseData() wipes every SQL table plus the entire
+    // _deleteUserLocalDatabaseData() clears session SQL tables plus the entire
     // opLog outbox. Previously this ran unconditionally on every logout,
     // permanently destroying any record still waiting to be uploaded with no
     // way to recover it. A later fix blocked logout entirely whenever
@@ -324,33 +325,8 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   Future<void> _deleteUserLocalDatabaseData() async {
-    await _clearSqlTables();
+    await clearLogoutSqlTables(sql);
     await _clearIsarUserSessionData();
-  }
-
-  Future<void> _clearSqlTables() async {
-    await sql.transaction(() async {
-      await sql.customStatement('PRAGMA foreign_keys = OFF;');
-      try {
-        final tables = await sql
-            .customSelect(
-              "SELECT name FROM sqlite_master WHERE type = 'table' "
-              "AND name NOT LIKE 'sqlite_%' "
-              "AND name != 'moor_schema' "
-              "AND LOWER(name) != 'localization';",
-            )
-            .get();
-
-        for (final row in tables) {
-          final tableName = row.data['name'] as String?;
-          if (tableName == null || tableName.isEmpty) continue;
-          final escaped = tableName.replaceAll('"', '""');
-          await sql.customStatement('DELETE FROM "$escaped";');
-        }
-      } finally {
-        await sql.customStatement('PRAGMA foreign_keys = ON;');
-      }
-    });
   }
 
   Future<void> _clearIsarUserSessionData() async {
