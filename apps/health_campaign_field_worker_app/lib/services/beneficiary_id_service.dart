@@ -10,6 +10,7 @@ import '../data/remote_client.dart';
 import '../data/repositories/remote/boundary_beneficiary_id.dart';
 import '../models/boundary_beneficiary_id.dart';
 import '../utils/environment_config.dart';
+import '../utils/runtime_hierarchy.dart';
 import '../utils/utils.dart';
 
 /// Server pool IDs stay raw in UniqueIdPool. The display/persisted individual
@@ -25,8 +26,6 @@ class BeneficiaryIdService {
   final String tenantId;
   static Future<void> _queue = Future.value();
   static final Map<String, Future<void>> _prefixRequests = {};
-  // Dummy mappings must never enter the persistent real-prefix cache.
-  static final Map<String, int> _temporaryPrefixes = {};
 
   BeneficiaryIdService(
       {required this.pool,
@@ -134,18 +133,28 @@ class BeneficiaryIdService {
     final dp = await distributionPoint(selected);
     final cached = cache.getBoundaryNumericId(scope, dp.code);
     if (cached != null) {
+      BoundaryBeneficiaryIdRepository.debug('CACHE_HIT', {
+        'boundaryCode': dp.code,
+        'prefix': cached,
+      });
       return;
     }
     final key = '$scope|${dp.code}';
     await (_prefixRequests[key] ??= () async {
       try {
-        final response = await prefixes.fetch();
+        final response = await prefixes.fetch(
+          boundaryCode: dp.code,
+          hierarchyType: runtimeHierarchyType(),
+        );
         for (final entry in response.boundaryToNumericId.entries) {
-          if (response.isDummy) {
-            _temporaryPrefixes['$scope|${entry.key}'] = entry.value;
-            continue;
-          }
           await cache.setBoundaryNumericId(scope, entry.key, entry.value);
+          BoundaryBeneficiaryIdRepository.debug('CACHE_SAVED', {
+            'boundaryCode': entry.key,
+            'prefix': entry.value,
+            'saved':
+                cache.getBoundaryNumericId(scope, entry.key) == entry.value,
+            'cachedPrefix': cache.getBoundaryNumericId(scope, entry.key),
+          });
         }
       } catch (_) {
         // Explicit product fallback: the DP's real name, never its code.
@@ -156,8 +165,7 @@ class BeneficiaryIdService {
   Future<String> compose(BoundaryModel selected, String rawId) async {
     final dp = await distributionPoint(selected);
     final cached = cache.getBoundaryNumericId(scope, dp.code);
-    final dummy = _temporaryPrefixes['$scope|${dp.code}'];
-    final numeric = cached ?? dummy;
+    final numeric = cached;
     final identifier = '${numeric?.toString() ?? dp.name}_$rawId';
     return identifier;
   }

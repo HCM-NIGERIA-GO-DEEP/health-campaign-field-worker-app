@@ -69,14 +69,16 @@ class MemoryBoundaries extends Fake
 class Prefixes extends BoundaryBeneficiaryIdRepository {
   Map<String, int> values = {'DP': 42, 'OTHER': 43};
   bool fail = false;
-  bool dummy = false;
   int calls = 0;
   Prefixes() : super(Dio(), tenantId: 'si');
   @override
-  Future<BoundaryBeneficiaryIdMap> fetch() async {
+  Future<BoundaryBeneficiaryIdMap> fetch(
+      {required String boundaryCode, required String hierarchyType}) async {
+    expect(boundaryCode, isIn(['DP', 'OTHER']));
+    expect(hierarchyType, 'ADMIN');
     calls++;
     if (fail) throw StateError('offline');
-    return BoundaryBeneficiaryIdMap(values, isDummy: dummy);
+    return BoundaryBeneficiaryIdMap(values);
   }
 }
 
@@ -104,6 +106,7 @@ void main() {
   }
 
   setUp(() async {
+    DigitDataModelSingleton().setHierarchyType('ADMIN');
     SharedPreferences.setMockInitialValues({});
     cache = AppSharedPreferences();
     await cache.init();
@@ -207,14 +210,13 @@ void main() {
         BoundaryModel(code: 'DP', name: 'DP', label: 'Distribution Point');
     expect(service.distributionPoint(boundaries.rows.first), throwsStateError);
   });
-  test('dummy mapping composes numeric IDs without polluting persistent cache',
+  test('empty API mapping uses the DP name without caching a dummy prefix',
       () async {
-    prefixes.dummy = true;
-    prefixes.values = {'DP': 89};
+    prefixes.values = {};
     pool.rows['raw'] = row('raw');
-    final result =
-        await service.allocate(boundaries.rows.first, 'dummy-household');
-    expect(result.identifier, '89_raw');
+    final result = await service.allocate(
+        boundaries.rows.first, 'empty-mapping-household');
+    expect(result.identifier, 'Yebaya MCHP_raw');
     expect(cache.getBoundaryNumericId(service.scope, 'DP'), isNull);
   });
   test('cache does not leak a prefix across campaigns', () async {

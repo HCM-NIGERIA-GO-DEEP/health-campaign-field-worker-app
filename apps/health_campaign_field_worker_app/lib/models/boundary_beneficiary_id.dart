@@ -1,9 +1,8 @@
-/// DTO for the provisional boundary/unique_beneficiary_ids API contract.
+/// BoundaryIdentifier maps boundary-code strings to numeric identifier strings.
+/// Values are validated before being used as beneficiary ID prefixes.
 class BoundaryBeneficiaryIdMap {
   final Map<String, int> boundaryToNumericId;
-  final bool isDummy;
-  const BoundaryBeneficiaryIdMap(this.boundaryToNumericId,
-      {this.isDummy = false});
+  const BoundaryBeneficiaryIdMap(this.boundaryToNumericId);
 
   factory BoundaryBeneficiaryIdMap.fromJson(Map<String, dynamic> json) {
     final values = <String, int>{};

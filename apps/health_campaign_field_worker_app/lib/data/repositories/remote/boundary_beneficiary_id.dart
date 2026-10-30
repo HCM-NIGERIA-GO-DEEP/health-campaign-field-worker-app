@@ -1,34 +1,67 @@
+import 'dart:convert';
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import '../../../models/boundary_beneficiary_id.dart';
 
-/// Keep the provisional route and response parsing isolated until confirmed.
+/// Boundary identifiers are requested for the selected distribution point.
 class BoundaryBeneficiaryIdRepository {
-  // Temporary test mapping until the backend route is available.
-  static const dummyBoundaryIds = <String, int>{
-    'ADMIN_KAMBIA_SI_01_01_09_17_03_YEBAYA_MCHP': 89,
-  };
   final Dio client;
   final String tenantId;
   const BoundaryBeneficiaryIdRepository(this.client, {required this.tenantId});
 
-  Future<BoundaryBeneficiaryIdMap> fetch() async {
+  static void debug(String event, Map<String, dynamic> data) {
+    assert(() {
+      debugPrint('SLDBG:BENEFICIARY_PREFIX_$event ${jsonEncode(data)}');
+      return true;
+    }());
+  }
+
+  Future<BoundaryBeneficiaryIdMap> fetch({
+    required String boundaryCode,
+    required String hierarchyType,
+  }) async {
+    const path = 'boundary-service/boundary-identifier/_search';
+    final query = {
+      'tenantId': tenantId,
+      'codes': boundaryCode,
+      'offset': 0,
+      'limit': 50,
+      'hierarchyType': hierarchyType,
+    };
     try {
-      final response = await client.get<dynamic>(
-        'boundary/unique_beneficiary_ids',
-        queryParameters: {'tenantId': tenantId},
-        // The shared AuthTokenInterceptor adds the same authenticated
-        // RequestInfo envelope used by the existing application APIs.
+      final response = await client.post<dynamic>(
+        path,
+        queryParameters: query,
+        // Shared AuthTokenInterceptor supplies the authenticated RequestInfo.
         data: <String, dynamic>{},
       );
-      if (response.data is! Map) {
-        throw const FormatException('Expected a boundary mapping object');
+      final body = response.data;
+      final mapping = body is Map ? body['BoundaryIdentifier'] : null;
+      debug('RESPONSE', {
+        'statusCode': response.statusCode,
+        'boundaryCode': boundaryCode,
+        'mappingType': mapping.runtimeType.toString(),
+        'mappingCount': mapping is Map ? mapping.length : null,
+        // Mapping only: never log RequestInfo, tokens, or user information.
+        'mapping': mapping is Map ? mapping : null,
+      });
+      if (mapping is! Map || mapping.isEmpty) {
+        throw const FormatException('Missing or empty BoundaryIdentifier map');
       }
-      final parsed = BoundaryBeneficiaryIdMap.fromJson(
-          Map<String, dynamic>.from(response.data as Map));
-      for (final entry in parsed.boundaryToNumericId.entries) {}
+      final parsed =
+          BoundaryBeneficiaryIdMap.fromJson(Map<String, dynamic>.from(mapping));
+      if (!parsed.boundaryToNumericId.containsKey(boundaryCode)) {
+        throw const FormatException(
+            'Selected boundary has no numeric identifier');
+      }
       return parsed;
     } catch (error) {
-      return const BoundaryBeneficiaryIdMap(dummyBoundaryIds, isDummy: true);
+      debug('RESPONSE', {
+        'boundaryCode': boundaryCode,
+        'errorType': error.runtimeType.toString(),
+        if (error is DioException) 'statusCode': error.response?.statusCode,
+      });
+      return const BoundaryBeneficiaryIdMap({});
     }
   }
 }
