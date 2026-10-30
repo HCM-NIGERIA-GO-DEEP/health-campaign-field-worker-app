@@ -2860,19 +2860,29 @@ void initializeFunctionRegistry() {
   });
 
   FunctionRegistry.register('hasMinimumBeneficiaryId', (args, stateData) {
-    final minCountArg = args.isNotEmpty ? args.first : null;
-    final minCount = minCountArg is int
-        ? minCountArg
-        : int.tryParse(minCountArg?.toString() ?? '');
+    // Must never throw: a throw from a visible/disabled fn blanks the screen.
+    try {
+      final minCountArg = args.isNotEmpty ? args.first : null;
+      final minCount = minCountArg is int
+          ? minCountArg
+          : int.tryParse(minCountArg?.toString() ?? '');
 
-    if (minCount == null) return false;
+      if (minCount == null) return false;
 
-    final currentCountArg = args.length > 1 ? args[1] : null;
-    final currentCount = currentCountArg is int
-        ? currentCountArg
-        : int.tryParse(currentCountArg?.toString() ?? '');
+      // The snapshot (set by LOAD_UNIQUE_ID_POOL, lowered by
+      // UPDATE_IDENTIFIER_STATUS) survives a replaced or stale screen state,
+      // so it wins over the screen's own count.
+      final snapshotCount = FlowBuilderSingleton().uniqueIdPoolCount;
 
-    return (currentCount ?? 0) >= minCount;
+      final currentCountArg = args.length > 1 ? args[1] : null;
+      final screenCount = currentCountArg is int
+          ? currentCountArg
+          : int.tryParse(currentCountArg?.toString() ?? '');
+
+      return (snapshotCount ?? screenCount ?? 0) >= minCount;
+    } catch (_) {
+      return false;
+    }
   });
 
   FunctionRegistry.register('getLatestBeneficiaryId', (args, stateData) {

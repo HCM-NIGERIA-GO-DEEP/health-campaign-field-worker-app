@@ -9,6 +9,15 @@ import 'package:digit_flow_builder/widget_registry.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../utils/beneficiary_id/pool_id_assignment.dart';
+
+/// Loads the logged-in user's free pool IDs for the registration screens.
+///
+/// Publishes the free count as a process-wide snapshot (read by
+/// `hasMinimumBeneficiaryId`), then writes `uniqueIdPoolCount`,
+/// `latestBeneficiaryId` and `latestBeneficiaryIdModel` into the screen state,
+/// creating the state when none exists yet. The ID shown here is only a hint:
+/// UPDATE_IDENTIFIER_STATUS gives the real pool ID at save time.
 class LoadUniqueIdPoolExecutor extends ActionExecutor {
   @override
   bool canHandle(String actionType) => actionType == 'LOAD_UNIQUE_ID_POOL';
@@ -23,49 +32,48 @@ class LoadUniqueIdPoolExecutor extends ActionExecutor {
     final compositeKey =
         crudCtx?.compositeKey ?? getEffectiveCompositeKey(context, contextData);
 
-    if (compositeKey == null) return contextData;
+    // Without a user the repository would drop the user filter and count the
+    // rows of every user on the device.
+    final userUuid = FlowBuilderSingleton().currentUserUuid;
+    if (userUuid == null) {
+      debugPrint('LOAD_UNIQUE_ID_POOL: no logged-in user, pool not loaded');
+      return contextData;
+    }
 
     try {
       final repository = context
           .read<LocalRepository<UniqueIdPoolModel, UniqueIdPoolSearchModel>>();
 
-      final userUuid = FlowBuilderSingleton().loggedInUser?.uuid;
-
-      final searchResult = repository.search(UniqueIdPoolSearchModel(
-        status: IdStatus.unAssigned.toValue(),
-        userUuid: userUuid,
+      final availableIds = sortOldestFirst(await repository.search(
+        UniqueIdPoolSearchModel(
+          status: IdStatus.unAssigned.toValue(),
+          userUuid: userUuid,
+        ),
       ));
 
-      List<UniqueIdPoolModel> availableIds;
-      if (searchResult is Future) {
-        availableIds = await (searchResult as Future<List<UniqueIdPoolModel>>);
-      } else {
-        availableIds = List<UniqueIdPoolModel>.from(searchResult as List);
-      }
-
       final count = availableIds.length;
-      UniqueIdPoolModel? latestIdModel;
-      if (availableIds.isNotEmpty) {
-        availableIds.sort((a, b) {
-          final aTime = a.auditDetails?.createdTime ?? 0;
-          final bTime = b.auditDetails?.createdTime ?? 0;
-          return aTime.compareTo(bTime);
-        });
-        latestIdModel = availableIds.first;
-      }
+      final latestIdModel = availableIds.isEmpty ? null : availableIds.first;
 
-      final currentState = FlowCrudStateRegistry().get(compositeKey);
-      final currentWidgetData =
-          Map<String, dynamic>.from(currentState?.widgetData ?? {});
+      FlowBuilderSingleton()
+          .setUniqueIdPoolSnapshot(userUuid: userUuid, count: count);
+      debugPrint('LOAD_UNIQUE_ID_POOL: $count free pool IDs for this user');
 
-      currentWidgetData['uniqueIdPoolCount'] = count;
-      currentWidgetData['latestBeneficiaryIdModel'] = latestIdModel;
-      currentWidgetData['latestBeneficiaryId'] = latestIdModel?.id;
-
-      final updatedState =
-          currentState?.copyWith(widgetData: currentWidgetData);
-      if (updatedState != null) {
-        FlowCrudStateRegistry().update(compositeKey, updatedState);
+      if (compositeKey == null) {
+        debugPrint(
+            'LOAD_UNIQUE_ID_POOL: no screen key; snapshot published only');
+      } else {
+        final currentState = FlowCrudStateRegistry().get(compositeKey);
+        FlowCrudStateRegistry().update(
+          compositeKey,
+          (currentState ?? const FlowCrudState()).copyWith(
+            widgetData: {
+              ...?currentState?.widgetData,
+              'uniqueIdPoolCount': count,
+              'latestBeneficiaryIdModel': latestIdModel,
+              'latestBeneficiaryId': latestIdModel?.id,
+            },
+          ),
+        );
       }
 
       return {
@@ -75,6 +83,7 @@ class LoadUniqueIdPoolExecutor extends ActionExecutor {
         'latestBeneficiaryIdModel': latestIdModel,
       };
     } catch (e) {
+      debugPrint('LOAD_UNIQUE_ID_POOL: failed to load the pool: $e');
       return contextData;
     }
   }

@@ -115,6 +115,46 @@ class FlowBuilderSingleton {
   List<Map<String, dynamic>>? get userRoles => _userRoles;
 
   int? get beneficiaryIdMinCount => _beneficiaryIdMinCount;
+
+  /// The logged-in user's uuid, from the user model or the login session.
+  String? get currentUserUuid {
+    final fromModel = _loggedInUser?.uuid;
+    if (fromModel != null && fromModel.isNotEmpty) return fromModel;
+    final fromSession = _loggedInUserUuid;
+    return (fromSession != null && fromSession.isNotEmpty) ? fromSession : null;
+  }
+
+  // Free pool-ID count, kept outside any screen state so that a replaced,
+  // stale or other-instance screen state cannot hide it (RC-01, RC-02, RC-04).
+  int? _uniqueIdPoolCount;
+  String? _uniqueIdPoolUserUuid;
+
+  /// Publishes the number of free pool IDs that [userUuid] has on this device.
+  void setUniqueIdPoolSnapshot({required String userUuid, required int count}) {
+    _uniqueIdPoolUserUuid = userUuid;
+    _uniqueIdPoolCount = count < 0 ? 0 : count;
+  }
+
+  /// One of the logged-in user's pool IDs was marked ASSIGNED. Another user's
+  /// snapshot is left alone. The count never goes below 0.
+  void consumeUniqueIdPoolId() {
+    if (_uniqueIdPoolUserUuid != currentUserUuid) return;
+    final count = _uniqueIdPoolCount;
+    if (count != null && count > 0) _uniqueIdPoolCount = count - 1;
+  }
+
+  void clearUniqueIdPoolSnapshot() {
+    _uniqueIdPoolCount = null;
+    _uniqueIdPoolUserUuid = null;
+  }
+
+  /// Free pool IDs of the logged-in user, or null when no snapshot exists for
+  /// this user (another user's snapshot is never returned).
+  int? get uniqueIdPoolCount {
+    final user = currentUserUuid;
+    if (user == null || user != _uniqueIdPoolUserUuid) return null;
+    return _uniqueIdPoolCount;
+  }
 }
 
 /// TODO: WILL REMOVE THIS FUNCTION ALSO : TEMPORARY

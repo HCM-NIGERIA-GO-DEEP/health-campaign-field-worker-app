@@ -451,6 +451,9 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
                                           stateData,
                                           context,
                                           screenKey: screenKey,
+                                          // Read this instance's state, not the
+                                          // newest instance behind the bare key.
+                                          compositeKey: compositeKey,
                                           (action) {
                                             ActionHandler.execute(
                                                 action, context, {
@@ -472,6 +475,9 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
                                         stateData,
                                         context,
                                         screenKey: screenKey,
+                                        // Read this instance's state, not the
+                                        // newest instance behind the bare key.
+                                        compositeKey: compositeKey,
                                         (action) {
                                           ActionHandler.execute(
                                               action, context, {
