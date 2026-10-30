@@ -133,10 +133,6 @@ class BeneficiaryIdService {
     final dp = await distributionPoint(selected);
     final cached = cache.getBoundaryNumericId(scope, dp.code);
     if (cached != null) {
-      BoundaryBeneficiaryIdRepository.debug('CACHE_HIT', {
-        'boundaryCode': dp.code,
-        'prefix': cached,
-      });
       return;
     }
     final key = '$scope|${dp.code}';
@@ -148,13 +144,6 @@ class BeneficiaryIdService {
         );
         for (final entry in response.boundaryToNumericId.entries) {
           await cache.setBoundaryNumericId(scope, entry.key, entry.value);
-          BoundaryBeneficiaryIdRepository.debug('CACHE_SAVED', {
-            'boundaryCode': entry.key,
-            'prefix': entry.value,
-            'saved':
-                cache.getBoundaryNumericId(scope, entry.key) == entry.value,
-            'cachedPrefix': cache.getBoundaryNumericId(scope, entry.key),
-          });
         }
       } catch (_) {
         // Explicit product fallback: the DP's real name, never its code.
