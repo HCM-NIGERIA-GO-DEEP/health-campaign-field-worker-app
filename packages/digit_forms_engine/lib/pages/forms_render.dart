@@ -2115,6 +2115,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                   editable: true,
                                 )
                               : DigitTextAreaFormInput(
+                                  readOnly: isFieldReadOnly,
                                   initialValue: values[field.fieldName] ?? '',
                                   onChange: onChange,
                                   errorMessage: error,

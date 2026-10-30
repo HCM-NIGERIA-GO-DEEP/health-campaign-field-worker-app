@@ -197,7 +197,10 @@ class StockCalculationUtils {
       // original amount, never the receiver's actualQuantityReceived.
       final quantity = isSender
           ? (originalQuantity ?? rawQuantity)
-          : (status == 'ACCEPTED' && actualQuantity != null
+          : (status == 'ACCEPTED' &&
+                  actualQuantity != null &&
+                  actualQuantity >= 0 &&
+                  actualQuantity <= (originalQuantity ?? rawQuantity)
               ? actualQuantity
               : rawQuantity);
 
@@ -269,6 +272,14 @@ class StockCalculationUtils {
           _getAdditionalFieldValue(stock, 'originalIssueClientReferenceId');
       if (isReceiver &&
           status == 'ACCEPTED' &&
+          originalIssueReference.isNotEmpty &&
+          transactionReason == 'IN_TRANSIT') {
+        continue; // Confirmation of a shortfall is not a physical receipt.
+      }
+      if (isReceiver &&
+          status == 'ACCEPTED' &&
+          stockEntryType != 'ISSUED' &&
+          stockEntryType != 'RECEIPT' &&
           originalIssueReference.isNotEmpty) {
         final hasOrigQty =
             _getAdditionalFieldValue(stock, 'originalQuantityReceived').isNotEmpty;

@@ -1,3 +1,5 @@
+import 'package:digit_data_model/data_model.dart';
+
 /// Display-only interpretation of a stock record. Never changes accounting.
 class TransactionDetailsPresentation {
   final String entryType;
@@ -8,6 +10,9 @@ class TransactionDetailsPresentation {
   final num? quantity;
   final String originalIssue;
   final String status;
+  final String senderId;
+  final String receiverId;
+  final String viewerId;
 
   TransactionDetailsPresentation(List<dynamic> args)
       : entryType = _text(_at(args, 0)).toUpperCase(),
@@ -17,7 +22,67 @@ class TransactionDetailsPresentation {
         actual = num.tryParse(_text(_at(args, 4))),
         quantity = num.tryParse(_text(_at(args, 5))),
         originalIssue = _text(_at(args, 6)),
-        status = _text(_at(args, 7)).toUpperCase();
+        status = _text(_at(args, 7)).toUpperCase(),
+        senderId = _text(_at(args, 8)),
+        receiverId = _text(_at(args, 9)),
+        viewerId = _text(_at(args, 10));
+
+  factory TransactionDetailsPresentation.fromStock(dynamic raw,
+      {String viewerId = ''}) {
+    final Map row = raw is EntityModel ? raw.toMap() : raw as Map;
+    final additional = row['additionalFields'];
+    final fields = additional is Map ? additional['fields'] : null;
+    dynamic field(String key) {
+      if (fields is Map) return fields[key];
+      if (fields is List) {
+        for (final item in fields) {
+          final Map? map = item is Map
+              ? item
+              : item is EntityModel
+                  ? item.toMap()
+                  : null;
+          if (map?['key'] == key) return map?['value'];
+        }
+      }
+      return null;
+    }
+
+    return TransactionDetailsPresentation([
+      field('stockEntryType'),
+      row['transactionReason'],
+      field('discrepancyReason'),
+      field('originalQuantityReceived'),
+      field('actualQuantityReceived'),
+      row['quantity'],
+      field('originalIssueClientReferenceId'),
+      field('status'),
+      row['senderId'],
+      row['receiverId'],
+      viewerId,
+    ]);
+  }
+
+  bool get isSenderView => viewerId.isNotEmpty && viewerId == senderId;
+  num? get validActual =>
+      actual != null && actual! >= 0 && actual! <= (sent ?? 0) ? actual : null;
+  num? get listQuantity => isLoss || isDamage
+      ? (confirmedQuantity ?? sent)
+      : isShortfall || isSenderView
+          ? sent
+          : viewerId.isNotEmpty &&
+                  viewerId == receiverId &&
+                  status == 'ACCEPTED'
+              ? (validActual ?? quantity)
+              : quantity;
+  String get listLabel => isLoss || isDamage
+      ? confirmedLabel
+      : !isShortfall &&
+              !isSenderView &&
+              viewerId.isNotEmpty &&
+              viewerId == receiverId &&
+              status == 'ACCEPTED'
+          ? 'INVENTORY_DETAILS_QUANTITY_RECEIVED'
+          : primaryLabel;
 
   static dynamic _at(List<dynamic> args, int index) =>
       index < args.length ? args[index] : null;
@@ -30,9 +95,7 @@ class TransactionDetailsPresentation {
   bool get isLoss => entryType == 'LOSS' || reason == 'STOCK_LOSS';
   bool get isDamage => entryType == 'DAMAGED' || reason == 'STOCK_DAMAGE';
   bool get isShortfall =>
-      (entryType == 'RETURNED' &&
-          originalIssue.isNotEmpty &&
-          {'STOCK_LOSS', 'STOCK_DAMAGE', 'IN_TRANSIT'}.contains(discrepancy)) ||
+      (entryType == 'RETURNED' && originalIssue.isNotEmpty) ||
       reason == 'IN_TRANSIT' ||
       ((isLoss || isDamage) && (originalIssue.isNotEmpty || hasPartial));
 
@@ -58,12 +121,27 @@ class TransactionDetailsPresentation {
   String get confirmedLabel {
     if (isLoss) return 'INVENTORY_DETAILS_CONFIRMED_LOST';
     if (isDamage) return 'INVENTORY_DETAILS_CONFIRMED_DAMAGED';
-    if (isShortfall) return 'INVENTORY_DETAILS_CONFIRMED_IN_TRANSIT';
-    return 'INVENTORY_DETAILS_QUANTITY_RECEIVED';
+    if (isShortfall) {
+      if (discrepancy == 'STOCK_LOSS') {
+        return 'INVENTORY_DETAILS_CONFIRMED_LOST';
+      }
+      if (discrepancy == 'STOCK_DAMAGE') {
+        return 'INVENTORY_DETAILS_CONFIRMED_DAMAGED';
+      }
+      return discrepancy == 'IN_TRANSIT' || reason == 'IN_TRANSIT'
+          ? 'INVENTORY_DETAILS_CONFIRMED_IN_TRANSIT'
+          : 'INVENTORY_DETAILS_QUANTITY_CONFIRMED';
+    }
+    return isSenderView
+        ? 'INVENTORY_DETAILS_ACCEPTED_BY_DESTINATION'
+        : 'INVENTORY_DETAILS_QUANTITY_RECEIVED';
   }
 
   num? get confirmedQuantity {
-    if (!isShortfall) return isResolution ? null : actual;
+    if (!isShortfall)
+      return isResolution || (status != 'ACCEPTED' && !hasPartial)
+          ? null
+          : validActual;
     if (hasPartial) return actual;
     // Full write-off Accept stores actual=0 to indicate no physical receipt.
     // The entire reported quantity is confirmed, not that zero sentinel.

@@ -139,7 +139,7 @@ class StockBalanceExecutor extends ActionExecutor {
       final productVariantId = stock.productVariantId;
       if (productVariantId == null) continue;
 
-      final quantity = double.tryParse(stock.quantity ?? '0') ?? 0;
+      final rawQuantity = double.tryParse(stock.quantity ?? '0') ?? 0;
       final transactionType = stock.transactionType?.toUpperCase() ?? '';
       final stockEntryType = _getStockEntryType(stock);
       final isLessOrExcess =
@@ -159,11 +159,24 @@ class StockBalanceExecutor extends ActionExecutor {
           ?.toString()
           .toUpperCase() ?? '';
       final status = additionalFields
-          .firstWhere((field) => field.key == 'status',
-              orElse: () => const AdditionalField('', ''))
-          .value
-          ?.toString()
-          .toUpperCase() ?? '';
+              .firstWhere((field) => field.key == 'status',
+                  orElse: () => const AdditionalField('', ''))
+              .value
+              ?.toString()
+              .toUpperCase() ??
+          '';
+
+      final actual = StockCalculationUtils.getNumericAdditionalFieldValue(
+          stock, 'actualQuantityReceived');
+      final original = StockCalculationUtils.getNumericAdditionalFieldValue(
+          stock, 'originalQuantityReceived');
+      final quantity = isReceiver &&
+              status == 'ACCEPTED' &&
+              actual != null &&
+              actual >= 0 &&
+              actual <= (original ?? rawQuantity)
+          ? actual
+          : rawQuantity;
 
       // A shortfall-notification RETURNED or resolved DAMAGED record
       // (created automatically by
@@ -175,6 +188,11 @@ class StockBalanceExecutor extends ActionExecutor {
       // recompute (which overwrites this same cache on every balance card
       // view, but a gate called in between would still see the bad delta).
       final isLinkedShortfall = originalIssueReference.isNotEmpty;
+      if (isLinkedShortfall &&
+          isReceiver &&
+          stock.transactionReason?.toUpperCase() == 'IN_TRANSIT') {
+        continue;
+      }
       if (isLinkedShortfall &&
           (stockEntryType == 'RETURNED' ||
               stockEntryType == 'DAMAGED' ||

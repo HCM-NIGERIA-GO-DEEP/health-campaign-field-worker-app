@@ -126,4 +126,61 @@ void main() {
     ]);
     expect(pending.confirmedQuantity, isNull);
   });
+  test(
+      'returned in-transit resolution without a top-level reason is not a receipt',
+      () {
+    final display = TransactionDetailsPresentation([
+      'RETURNED',
+      null,
+      'IN_TRANSIT',
+      '70',
+      '30',
+      '70',
+      'original',
+      'ACCEPTED',
+    ]);
+    expect(display.primaryLabel, 'INVENTORY_DETAILS_SHORTFALL_REPORTED');
+    expect(display.confirmedLabel, 'INVENTORY_DETAILS_CONFIRMED_IN_TRANSIT');
+    expect(display.confirmedQuantity, 30);
+    expect(display.difference, 40);
+  });
+
+  test('lower partial acceptance of a reissue still shows quantity received',
+      () {
+    final display = TransactionDetailsPresentation([
+      'ISSUED',
+      'RECEIVED',
+      'IN_TRANSIT',
+      '70',
+      '30',
+      '70',
+      'original',
+      'ACCEPTED',
+    ]);
+    expect(display.confirmedLabel, 'INVENTORY_DETAILS_QUANTITY_RECEIVED');
+    expect(display.confirmedQuantity, 30);
+    expect(display.differenceLabel, 'INVENTORY_DETAILS_NOT_RECEIVED');
+  });
+
+  test('linked shortfall labels follow the discrepancy even before retagging',
+      () {
+    for (final entry in [
+      ['STOCK_LOSS', 'INVENTORY_DETAILS_CONFIRMED_LOST'],
+      ['STOCK_DAMAGE', 'INVENTORY_DETAILS_CONFIRMED_DAMAGED'],
+      ['IN_TRANSIT', 'INVENTORY_DETAILS_CONFIRMED_IN_TRANSIT'],
+      ['', 'INVENTORY_DETAILS_QUANTITY_CONFIRMED'],
+    ]) {
+      final display = TransactionDetailsPresentation([
+        'RETURNED',
+        'RETURNED',
+        entry[0],
+        '70',
+        '30',
+        '70',
+        'original',
+        'ACCEPTED',
+      ]);
+      expect(display.confirmedLabel, entry[1]);
+    }
+  });
 }

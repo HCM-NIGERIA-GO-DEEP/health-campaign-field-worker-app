@@ -54,7 +54,12 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
     return _buildByType(form);
   }
 
-  bool get _isReadOnly => (widget.schema.readOnly ?? false) || _autoReadOnly;
+  bool get _isReadOnly =>
+      (widget.schema.readOnly ?? false) ||
+      _autoReadOnly ||
+      (widget.pageName == 'stockReceiptDetails' &&
+          widget.formControlName == 'comment' &&
+          widget.navigationParams?['incomingStockEntryType'] == 'RETURNED');
 
   void _checkAutoFill(FormGroup form) {
     final autoFillConditions = widget.schema.autoFillCondition;

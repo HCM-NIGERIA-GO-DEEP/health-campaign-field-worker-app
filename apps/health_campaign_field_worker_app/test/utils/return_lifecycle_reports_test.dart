@@ -314,4 +314,48 @@ void main() {
           ['%"key":"stockEntryType","value":"LOSS"%', 'lower', 'lower']);
     });
   });
+  testWidgets(
+      'upper partial-accept popup uses confirmation labels rather than receipt labels',
+      (tester) async {
+    await withRegistry(tester, () {
+      for (final entry in [
+        ['STOCK_LOSS', 'INVENTORY_DETAILS_CONFIRMED_LOST'],
+        ['STOCK_DAMAGE', 'INVENTORY_DETAILS_CONFIRMED_DAMAGED'],
+        ['IN_TRANSIT', 'INVENTORY_DETAILS_CONFIRMED_IN_TRANSIT'],
+        ['', 'INVENTORY_DETAILS_QUANTITY_CONFIRMED'],
+      ]) {
+        expect(call('getPartialAcceptQuantityLabel', ['RETURNED', entry[0]]),
+            entry[1]);
+      }
+      expect(call('getPartialAcceptQuantityLabel', ['ISSUED', 'IN_TRANSIT']),
+          'INVENTORY_DETAILS_QUANTITY_RECEIVED');
+    });
+  });
+  testWidgets(
+      'receipt reports ignore a legacy parent quantity exceeding the movement quantity',
+      (tester) async {
+    await withRegistry(tester, () {
+      final stock = {
+        'quantity': '50',
+        'additionalFields': {
+          'fields': [
+            {'key': 'actualQuantityReceived', 'value': '150'},
+          ]
+        }
+      };
+      expect(call('getReportStockQuantity', ['receipt', stock]), 50);
+    });
+  });
+
+  testWidgets(
+      'full acceptance preserves linked partial-flow metadata as booleans',
+      (tester) async {
+    await withRegistry(tester, () {
+      expect(call('isPartialStockFlow', [null, null]), false);
+      expect(call('isPartialStockFlow', [null, false]), false);
+      expect(call('isPartialStockFlow', ['parent', false]), true);
+      expect(call('isPartialStockFlow', [null, true]), true);
+      expect(call('isPartialStockFlow', [null, 'true']), true);
+    });
+  });
 }

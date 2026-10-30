@@ -2078,6 +2078,8 @@ final dynamic sampleInventoryFlows = {
                 "properties": {
                   "type": "TEMPLATE",
                   "name": "viewTransactionDetails",
+                  "navigationMode": "popUntilAndPush",
+                  "popUntilPageName": "manageStock",
                   "data": [
                     {
                       "key": "selectedStock",
@@ -2124,10 +2126,7 @@ final dynamic sampleInventoryFlows = {
           "format": "backLink",
           "label": "CORE_COMMON_BACK",
           "onAction": [
-            {
-              "actionType": "NAVIGATION",
-              "properties": {"type": "TEMPLATE", "name": "manageStock"}
-            }
+            {"actionType": "BACK_NAVIGATION", "properties": {}}
           ]
         }
       ],
@@ -2235,20 +2234,22 @@ final dynamic sampleInventoryFlows = {
                   },
                   {
                     "key":
-                        "{{fn:getDetailsPrimaryQuantityLabel(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status)}}",
+                        "{{fn:getDetailsPrimaryQuantityLabel(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status, item.senderId, item.receiverId)}}",
                     "value":
                         "{{fn:coalesceQuantity(item.additionalFields.fields.originalQuantityReceived, item.quantity)}}"
                   },
                   {
-                    "key": "{{fn:getDetailsConfirmedQuantityLabel(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status)}}",
+                    "key":
+                        "{{fn:getDetailsConfirmedQuantityLabel(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status, item.senderId, item.receiverId)}}",
                     "value":
-                        "{{fn:getDetailsConfirmedQuantity(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status)}}",
+                        "{{fn:getDetailsConfirmedQuantity(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status, item.senderId, item.receiverId)}}",
                     "hideIfNull": true
                   },
                   {
-                    "key": "{{fn:getDetailsDifferenceLabel(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status)}}",
+                    "key":
+                        "{{fn:getDetailsDifferenceLabel(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status, item.senderId, item.receiverId)}}",
                     "value":
-                        "{{fn:getDetailsDifference(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status)}}",
+                        "{{fn:getDetailsDifference(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status, item.senderId, item.receiverId)}}",
                     "hideIfNull": true
                   },
                   {
@@ -2511,6 +2512,11 @@ final dynamic sampleInventoryFlows = {
                           "value":
                               "{{item.items[0].additionalFields.fields.originalIssueClientReferenceId}}"
                         },
+                        {
+                          "key": "partial_flow",
+                          "value":
+                              "{{item.items[0].additionalFields.fields.partial_flow}}"
+                        },
                         {"key": "transactionType", "value": "RECEIVED"},
                         {"key": "primaryRole", "value": "RECEIVER"},
                         {"key": "secondaryRole", "value": "SENDER"},
@@ -2625,6 +2631,11 @@ final dynamic sampleInventoryFlows = {
             "configName": "stockReceipt",
             "forceCreate": true,
             "data": [
+              {
+                "key": "partial_flow",
+                "value":
+                    "{{fn:isPartialStockFlow(navigation.originalIssueClientReferenceId, navigation.partial_flow)}}"
+              },
               {"key": "stockEntryType", "value": "RECEIPT"},
               {"key": "transactionType", "value": "RECEIVED"},
               {"key": "primaryRole", "value": "RECEIVER"},
@@ -2685,6 +2696,16 @@ final dynamic sampleInventoryFlows = {
             // matched that search, so the upper hierarchy's View
             // Transactions page came up completely blank after Accept.
             "modify": [
+              {
+                "key": "StockModel.additionalFields.fields.partial_flow",
+                "value":
+                    "{{fn:isPartialStockFlow(navigation.originalIssueClientReferenceId, navigation.partial_flow)}}"
+              },
+              {
+                "key":
+                    "StockModel.additionalFields.fields.actualQuantityReceived",
+                "value": "{{navigation.quantity}}"
+              },
               {
                 "key": "StockModel.additionalFields.fields.status",
                 "value": "ACCEPTED"
@@ -3048,6 +3069,10 @@ final dynamic sampleInventoryFlows = {
                 "entity": "StockModel",
                 "modify": [
                   {
+                    "key": "StockModel.additionalFields.fields.partial_flow",
+                    "value": true
+                  },
+                  {
                     "key": "StockModel.additionalFields.fields.status",
                     "value": "ACCEPTED"
                   },
@@ -3297,6 +3322,7 @@ final dynamic sampleInventoryFlows = {
                 "configName": "stockReceipt",
                 "forceCreate": true,
                 "data": [
+                  {"key": "partial_flow", "value": true},
                   {"key": "stockEntryType", "value": "RECEIPT"},
                   {"key": "transactionType", "value": "RECEIVED"},
                   {"key": "primaryRole", "value": "RECEIVER"},
@@ -3353,6 +3379,10 @@ final dynamic sampleInventoryFlows = {
                 "source": "existingModels",
                 "entity": "StockModel",
                 "modify": [
+                  {
+                    "key": "StockModel.additionalFields.fields.partial_flow",
+                    "value": true
+                  },
                   {
                     "key": "StockModel.additionalFields.fields.status",
                     "value": "ACCEPTED"
@@ -3801,7 +3831,7 @@ final dynamic sampleInventoryFlows = {
               "type": "string",
               "label": "INVENTORY_COMMENTS_LABEL",
               "order": 8,
-              "value": "",
+              "value": "{{navigation.originalComment}}",
               "format": "textArea",
               "hidden": false,
               "tooltip": "",
@@ -4011,11 +4041,16 @@ final dynamic sampleInventoryFlows = {
                 "fieldName": "viewTransactionGroupedItemsList",
                 "dataSource": "item.items",
                 "child": {
-                  "format": "textTemplate",
+                  "format": "labelPairList",
                   "type": "template",
                   "fieldName": "viewTransactionGroupedItemText",
-                  "value":
-                      "{{item.additionalFields.fields.sku}}: {{fn:coalesceQuantity(item.additionalFields.fields.actualQuantityReceived, item.quantity)}}"
+                  "data": [
+                    {
+                      "key": "{{fn:getViewTransactionQuantityLabel(item)}}",
+                      "value":
+                          "{{item.additionalFields.fields.sku}}: {{fn:getViewTransactionQuantity(item)}}"
+                    }
+                  ]
                 }
               },
               {

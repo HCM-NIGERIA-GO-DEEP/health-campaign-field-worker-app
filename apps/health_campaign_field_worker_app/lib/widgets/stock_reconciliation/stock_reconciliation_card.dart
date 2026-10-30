@@ -160,6 +160,17 @@ class _StockReconciliationCardState
   Widget build(BuildContext context) {
     final isDistributor = context.loggedInUserRoles
         .any((role) => role.code == RolesType.distributor.toValue());
+    final warehouseLost = StockCalculationUtils.warehouseWriteOffQuantity(
+        _stockMetrics['stockLost'],
+        _stockMetrics['lowerFacilityLostShortfall']);
+    final warehouseDamaged = StockCalculationUtils.warehouseWriteOffQuantity(
+        _stockMetrics['stockDamaged'],
+        _stockMetrics['lowerFacilityDamagedShortfall']);
+    String metricLabel(String key, String fallback) {
+      final translated = localizations.translate(key);
+      return translated == key ? fallback : translated;
+    }
+
     final theme = Theme.of(context);
     final textTheme = theme.digitTextTheme(context);
 
@@ -391,45 +402,50 @@ class _StockReconciliationCardState
                         labelFlex: 5,
                       ),
                       const DigitDivider(),
-                      if (!isDistributor) ...[
+                      if (!isDistributor && warehouseDamaged != 0) ...[
                         LabelValueItem(
-                          label: localizations.translate(
-                              i18.stockReconciliationMetrics.warehouseStockDamaged),
-                          value: StockCalculationUtils.warehouseWriteOffQuantity(
-                            _stockMetrics['stockDamaged'],
-                            _stockMetrics['lowerFacilityDamagedShortfall'],
-                          ).toStringAsFixed(0),
+                          label: metricLabel(
+                              i18.stockReconciliationMetrics
+                                  .warehouseStockDamaged,
+                              'Stock damaged at this warehouse'),
+                          value: warehouseDamaged.toStringAsFixed(0),
                           labelFlex: 5,
                         ),
                         const DigitDivider(),
                       ],
                       // Keep distributor totals; warehouse reconciliation excludes
                       // write-offs already accounted for by stock issued.
-                      LabelValueItem(
-                        label: localizations.translate(isDistributor
-                            ? i18.stockReconciliationMetrics.stockLost
-                            : i18.stockReconciliationMetrics.warehouseStockLost),
-                        value: (isDistributor
-                            ? _stockMetrics['stockLost']!
-                            : StockCalculationUtils.warehouseWriteOffQuantity(
-                                _stockMetrics['stockLost'],
-                                _stockMetrics['lowerFacilityLostShortfall'],
-                              )).toStringAsFixed(0),
-                        labelFlex: 5,
-                      ),
-                      const DigitDivider(),
+                      if (isDistributor || warehouseLost != 0) ...[
+                        LabelValueItem(
+                          label: isDistributor
+                              ? localizations.translate(
+                                  i18.stockReconciliationMetrics.stockLost)
+                              : metricLabel(
+                                  i18.stockReconciliationMetrics
+                                      .warehouseStockLost,
+                                  'Stock lost at this warehouse'),
+                          value: (isDistributor
+                                  ? _stockMetrics['stockLost']!
+                                  : warehouseLost)
+                              .toStringAsFixed(0),
+                          labelFlex: 5,
+                        ),
+                        const DigitDivider(),
+                      ],
                       if (!isDistributor) ...[
                         LabelValueItem(
-                          label: localizations.translate(
-                              'STOCK_RECONCILIATION_REPORTED_SHORTFALL_LOST'),
+                          label: metricLabel(
+                              'STOCK_RECONCILIATION_REPORTED_SHORTFALL_LOST',
+                              'Confirmed loss on warehouse transfers'),
                           value: (_stockMetrics['reportedLostShortfall'] ?? 0)
                               .toStringAsFixed(0),
                           labelFlex: 5,
                         ),
                         const DigitDivider(),
                         LabelValueItem(
-                          label: localizations.translate(
-                              'STOCK_RECONCILIATION_REPORTED_SHORTFALL_DAMAGED'),
+                          label: metricLabel(
+                              'STOCK_RECONCILIATION_REPORTED_SHORTFALL_DAMAGED',
+                              'Confirmed damage on warehouse transfers'),
                           value:
                               (_stockMetrics['reportedDamagedShortfall'] ?? 0)
                                   .toStringAsFixed(0),

@@ -990,6 +990,7 @@ final jsonConfig = {
           "campaignNumber": "__context:selectedProject.referenceID",
           "rowVersion": "meta.rowVersion",
           "additionalFields": {
+            "partial_flow": "__value:false",
             "sku": "stockDetails.productdetail.sku",
             "batchNumber": "stockProductDetails.batchNumber",
             "expiryDate": "stockProductDetails.expiryDate",
@@ -1049,6 +1050,7 @@ final jsonConfig = {
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
           "additionalFields": {
+            "partial_flow": "__context:partial_flow",
             "sku": "__context:sku",
             "deliveryTeamName": "__context:receivedFromName",
             "batchNumber": "stockReceiptDetails.batchNumber",
@@ -1092,6 +1094,7 @@ final jsonConfig = {
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
           "additionalFields": {
+            "partial_flow": "__value:false",
             "sku": "__context:sku",
             "batchNumber": "stockReceiptDetails.batchNumber",
             "expiryDate": "stockReceiptDetails.expiryDate",
@@ -1134,7 +1137,8 @@ final jsonConfig = {
   // details are copied from the original dispatch so the shortfall/reissue
   // remains traceable to the shipment that produced it.
   "shortfallTransaction": {
-    "fallbackModel": "StockModel",
+    // Only the explicit movement fields belong to a new row. Unmapped popup
+    // values (for example the parent's actualQuantityReceived) must not leak.
     "models": {
       "StockModel": {
         "mappings": {
@@ -1167,6 +1171,7 @@ final jsonConfig = {
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
           "additionalFields": {
+            "partial_flow": "__value:true",
             "sku": "__context:sku",
             "batchNumber": "__context:batchNumber",
             "transportType": "__context:transportType",
@@ -1222,6 +1227,7 @@ final jsonConfig = {
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
           "additionalFields": {
+            "partial_flow": "__value:false",
             "sku": "lessExcessDetails.productVariant.sku",
             "mrnNumber": "__context:mrnNumber",
             "stockEntryType": "__context:stockEntryType",

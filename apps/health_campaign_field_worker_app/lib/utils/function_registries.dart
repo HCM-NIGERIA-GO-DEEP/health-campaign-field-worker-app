@@ -350,17 +350,44 @@ class FunctionRegistries {
     });
     // Arguments: entry type, transaction reason, discrepancy reason,
     // original quantity, actual quantity, quantity, original issue ID, status.
-    FunctionRegistry.register('getDetailsPrimaryQuantityLabel', (args, stateData) =>
-        TransactionDetailsPresentation(args).primaryLabel);
-    FunctionRegistry.register('getDetailsConfirmedQuantityLabel', (args, stateData) =>
-        TransactionDetailsPresentation(args).confirmedLabel);
-    FunctionRegistry.register('getDetailsConfirmedQuantity', (args, stateData) =>
-        TransactionDetailsPresentation(args).confirmedQuantity);
-    FunctionRegistry.register('getDetailsDifferenceLabel', (args, stateData) =>
-        TransactionDetailsPresentation(args).differenceLabel);
-    FunctionRegistry.register('getDetailsDifference', (args, stateData) =>
-        TransactionDetailsPresentation(args).difference);
-    FunctionRegistry.register('getPartialAcceptQuantityLabel', (args, stateData) {
+    TransactionDetailsPresentation details(
+            List<dynamic> args, dynamic stateData) =>
+        TransactionDetailsPresentation([
+          for (var i = 0; i < 10; i++) i < args.length ? args[i] : null,
+          _resolveUserFacilityId(stateData),
+        ]);
+    FunctionRegistry.register(
+        'getViewTransactionQuantity',
+        (args, stateData) => TransactionDetailsPresentation.fromStock(
+                args.first,
+                viewerId: _resolveUserFacilityId(stateData))
+            .listQuantity);
+    FunctionRegistry.register(
+        'getViewTransactionQuantityLabel',
+        (args, stateData) => TransactionDetailsPresentation.fromStock(
+                args.first,
+                viewerId: _resolveUserFacilityId(stateData))
+            .listLabel);
+    FunctionRegistry.register(
+        'isPartialStockFlow',
+        (args, stateData) =>
+            (args.isNotEmpty &&
+                args[0] != null &&
+                args[0].toString().isNotEmpty &&
+                args[0].toString() != 'null') ||
+            (args.length > 1 && (args[1] == true || args[1] == 'true')));
+    FunctionRegistry.register('getDetailsPrimaryQuantityLabel',
+        (args, stateData) => details(args, stateData).primaryLabel);
+    FunctionRegistry.register('getDetailsConfirmedQuantityLabel',
+        (args, stateData) => details(args, stateData).confirmedLabel);
+    FunctionRegistry.register('getDetailsConfirmedQuantity',
+        (args, stateData) => details(args, stateData).confirmedQuantity);
+    FunctionRegistry.register('getDetailsDifferenceLabel',
+        (args, stateData) => details(args, stateData).differenceLabel);
+    FunctionRegistry.register('getDetailsDifference',
+        (args, stateData) => details(args, stateData).difference);
+    FunctionRegistry.register('getPartialAcceptQuantityLabel',
+        (args, stateData) {
       return TransactionDetailsPresentation([
         codeArg(args, 0),
         codeArg(args, 0) == 'RETURNED' ? codeArg(args, 1) : '',
@@ -599,6 +626,13 @@ class FunctionRegistries {
       final actualQty = fieldValue('actualQuantityReceived');
       final fieldQty = fieldValue('quantity');
       final topLevelQty = stock['quantity'];
+      final received = num.tryParse(actualQty ?? '');
+      final sent =
+          num.tryParse(origQty ?? topLevelQty?.toString() ?? fieldQty ?? '');
+      final physicalActual =
+          received != null && sent != null && received >= 0 && received <= sent
+              ? actualQty
+              : null;
 
       // Partial acceptance edits quantity down to the received amount, while
       // the original sender's issue report must continue to show what they
@@ -610,10 +644,7 @@ class FunctionRegistries {
               fieldQty ??
               ''
           : reportType == 'receipt'
-              ? actualQty ??
-                  topLevelQty?.toString() ??
-                  fieldQty ??
-                  ''
+              ? physicalActual ?? topLevelQty?.toString() ?? fieldQty ?? ''
               : (reportType == 'loss' || reportType == 'damage')
                   ? (origQty != null && actualQty != null && actualQty.isNotEmpty
                       ? actualQty
