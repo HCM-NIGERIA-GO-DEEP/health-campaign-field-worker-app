@@ -5,6 +5,7 @@ import 'package:digit_flow_builder/action_handler/executors/action_executor.dart
 import 'package:digit_flow_builder/utils/utils.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../services/beneficiary_id_service.dart';
 
 class UpdateIdentifierStatusExecutor extends ActionExecutor {
   @override
@@ -71,6 +72,7 @@ class UpdateIdentifierStatusExecutor extends ActionExecutor {
 
             final searchResult = repository.search(UniqueIdPoolSearchModel(
               id: identifierId,
+              userUuid: FlowBuilderSingleton().loggedInUserUuid,
             ));
 
             List<UniqueIdPoolModel> searchResults;
@@ -82,6 +84,28 @@ class UpdateIdentifierStatusExecutor extends ActionExecutor {
                   List<UniqueIdPoolModel>.from(searchResult as List);
             }
 
+            searchResults = searchResults
+                .where((row) =>
+                    row.userUuid == FlowBuilderSingleton().loggedInUserUuid &&
+                    (individual.tenantId == null ||
+                        row.tenantId == individual.tenantId))
+                .toList();
+            if (searchResults.isEmpty) {
+              // DP names and raw IDs may contain underscores. Resolve the
+              // pinned composite -> raw allocation instead of guessing a split.
+              final candidates = await repository.search(
+                  UniqueIdPoolSearchModel(
+                      userUuid: FlowBuilderSingleton().loggedInUserUuid));
+              searchResults = candidates
+                  .where((row) =>
+                      row.userUuid == FlowBuilderSingleton().loggedInUserUuid &&
+                      (individual.tenantId == null ||
+                          row.tenantId == individual.tenantId) &&
+                      BeneficiaryIdService.field(
+                              row, 'composedBeneficiaryId') ==
+                          identifierId)
+                  .toList();
+            }
             if (searchResults.isEmpty) {
               debugPrint(
                   'UPDATE_IDENTIFIER_STATUS: No UniqueIdPoolModel found for id: $identifierId');
@@ -154,7 +178,7 @@ class UpdateIdentifierStatusExecutor extends ActionExecutor {
           .read<LocalRepository<UniqueIdPoolModel, UniqueIdPoolSearchModel>>();
 
       for (final uniqueIdModel in uniqueIdPoolToUpdate) {
-        await repository.update(uniqueIdModel);
+        await repository.update(uniqueIdModel, createOpLog: false);
       }
 
       debugPrint(

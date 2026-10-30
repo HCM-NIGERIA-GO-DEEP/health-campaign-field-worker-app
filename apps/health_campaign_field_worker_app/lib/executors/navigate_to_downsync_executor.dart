@@ -3,6 +3,7 @@ import 'package:digit_flow_builder/action_handler/executors/action_executor.dart
 import 'package:flutter/material.dart';
 
 import '../router/app_router.dart';
+import '../utils/utils.dart';
 
 class NavigateToBeneficiaryIdDownSyncExecutor extends ActionExecutor {
   @override
@@ -15,7 +16,7 @@ class NavigateToBeneficiaryIdDownSyncExecutor extends ActionExecutor {
     BuildContext context,
     Map<String, dynamic> contextData,
   ) async {
-
+    if (!context.isRegistrarRole) return contextData;
     final router = context.router;
 
     router.popUntil((route) => route.settings.name == 'HomeRoute');

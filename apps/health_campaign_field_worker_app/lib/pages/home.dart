@@ -67,6 +67,7 @@ import '../utils/debound.dart';
 import '../utils/environment_config.dart';
 import '../utils/flow_navigation_utils.dart';
 import '../utils/function_registries.dart';
+import '../services/beneficiary_id_service.dart';
 import '../utils/i18_key_constants.dart' as i18;
 import '../utils/least_level_boundary_singleton.dart';
 import '../utils/stock_downsync_utils.dart';
@@ -186,6 +187,16 @@ class _HomePageState extends LocalizedState<HomePage> {
     });
     //// Function to set initial Data required for the packages to run
     setPackagesSingleton(context);
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted || !context.isRegistrarRole) return;
+      final selected = context.boundaryOrNull;
+      if (selected == null) return;
+      try {
+        await BeneficiaryIdService.forContext(context).prepare(selected);
+      } catch (_) {
+        // The allocation step still requires a real DP name if no API mapping exists.
+      }
+    });
     unawaited(_initializeServerSummaryReportService());
 
     // Force-refresh the inventory module's localisation every time Home
@@ -2949,8 +2960,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home.beneficiaryReferralLabel,
       i18.home.manageAttendanceLabel,
       i18.home.dashboard,
-      i18.home
-          .beneficiaryIdLabel, // TODO: Uncomment when beneficiary downsync is implemented
+      if (context.isRegistrarRole) i18.home.beneficiaryIdLabel,
       if (FaceAuthFeatureFlag.enabled) i18.home.faceRegistrationLabel,
       // i18.home.dataShare,
       i18.home.stockSyncDataLabel,
@@ -2967,6 +2977,8 @@ class _HomePageState extends LocalizedState<HomePage> {
             // Stock reports are also used by distributors, whose user role
             // is not always assigned the legacy home action in MDMS.
             (isDistributor && element == i18.home.viewReportsLabel) ||
+            (context.isRegistrarRole &&
+                element == i18.home.beneficiaryIdLabel) ||
             element == i18.home.db)
         .toList();
 

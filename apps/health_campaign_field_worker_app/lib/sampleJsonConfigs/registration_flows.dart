@@ -1272,7 +1272,7 @@ final dynamic sampleFlows = {
           "type": "template",
           "label": "REGISTER_NEW_BENEFICIARY",
           "format": "button",
-          "visible": true,
+          "visible": "{{fn:hasRole('REGISTRAR')}} == true",
           "onAction": [
             {
               "actionType": "BACK_NAVIGATION",
@@ -1829,10 +1829,7 @@ final dynamic sampleFlows = {
           ],
           "fieldName": "idSearchBar",
           "mandatory": true,
-          // Generated beneficiary IDs contain underscores (e.g.
-          // UNIQUE_BENEFICIARY_ID values), which this allow-list excluded,
-          // blocking the user from even typing "_" to search by it.
-          "allowedCharacters": "a-zA-Z0-9_",
+          // The fallback prefix is the DP name, which can contain spaces or punctuation.
           "validations": [
             {"type": "minSearchChars", "value": 2}
           ],
@@ -2231,96 +2228,27 @@ final dynamic sampleFlows = {
       ],
       "name": "searchBeneficiary",
       "order": 1,
+      "initActions": [
+        {"actionType": "LOAD_UNIQUE_ID_POOL"}
+      ],
       "footer": [
         {
-          "icon": "FilterAlt",
           "type": "template",
           "label": "DOWNLOAD_BENEFICIARY_IDS",
-          "hidden": true,
-          "format": "actionPopup",
-          "visible":
-              "{{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, uniqueIdPoolCount)}}==false && {{fn:hasRole('DISTRIBUTOR')}}==false",
-          "disabled": "false",
+          "format": "button",
           "fieldName": "beneficiaryIdMinCheck",
+          "visible": "{{fn:hasRole('REGISTRAR')}} == true",
           "properties": {
-            "icon": "FilterAlt",
             "size": "large",
-            "type": "primary",
-            "popupConfig": {
-              "body": [],
-              "type": "alert",
-              "title":
-                  "REGISTRATION_SEARCH_BENEFICIARY_MIN_BENEFICIARY_ID_LEFT_TITLE",
-              "description":
-                  "REGISTRATION_SEARCH_BENEFICIARY_MIN_BENEFICIARY_ID_LEFT_DESCRIPTION",
-              "footerActions": [
-                {
-                  "type": "template",
-                  "label":
-                      "REGISTRATION_SEARCH_BENEFICIARY_SKIP_CONTINUE_LABEL",
-                  "format": "button",
-                  "onAction": [
-                    {
-                      "actionType": "CLOSE_POPUP",
-                      "properties": {"parentScreenKey": "searchBeneficiary"}
-                    },
-                    {
-                      "actionType": "NAVIGATION",
-                      "properties": {
-                        "data": [
-                          {"key": "nameOfIndividual", "value": "{{searchBar}}"},
-                          {
-                            "key": "UNIQUE_BENEFICIARY_ID",
-                            "value": "{{latestBeneficiaryId}}"
-                          },
-                          {
-                            "key": "uniqueBeneficiaryIdModel",
-                            "value": "{{latestBeneficiaryIdModel}}"
-                          },
-                          {"key": "deferFormRoutePop", "value": "true"}
-                        ],
-                        "name": "HOUSEHOLD",
-                        "type": "FORM"
-                      }
-                    }
-                  ],
-                  "fieldName": "skip",
-                  "properties": {
-                    "size": "large",
-                    "type": "secondary",
-                    "mainAxisSize": "max"
-                  },
-                  "visible": "{{fn:hasRole('DISTRIBUTOR')}} == false"
-                },
-                {
-                  "type": "template",
-                  "label": "REGISTRATION_SEARCH_BENEFICIARY_DOWNLOAD_ID",
-                  "format": "button",
-                  "onAction": [
-                    {
-                      "actionType": "CLOSE_POPUP",
-                      "properties": {"parentScreenKey": "searchBeneficiary"}
-                    },
-                    {
-                      "actionType": "NAVIGATE_TO_BENEFICIARY_ID_DOWN_SYNC",
-                      "properties": {}
-                    }
-                  ],
-                  "fieldName": "downloadID",
-                  "properties": {
-                    "size": "large",
-                    "type": "primary",
-                    "mainAxisSize": "max"
-                  }
-                }
-              ],
-              "showCloseButton": true,
-              "barrierDismissible": true
-            },
-            "mainAxisSize": "max",
-            "mainAxisAlignment": "center"
+            "type": "secondary",
+            "mainAxisSize": "max"
           },
-          "schemaCode": null
+          "onAction": [
+            {
+              "actionType": "NAVIGATE_TO_BENEFICIARY_ID_DOWN_SYNC",
+              "properties": {}
+            }
+          ]
         },
         {
           "type": "template",
@@ -2328,6 +2256,10 @@ final dynamic sampleFlows = {
           "format": "button",
           "fieldName": "registerNewBeneficiary",
           "onAction": [
+            {
+              "actionType": "LOAD_UNIQUE_ID_POOL",
+              "properties": {"requireAvailable": true}
+            },
             {
               "actions": [
                 {
@@ -2377,7 +2309,8 @@ final dynamic sampleFlows = {
                 }
               ],
               "condition": {
-                "expression": "{{fn:hasStockForRegistration()}}==false"
+                "expression":
+                    "{{fn:hasRole('REGISTRAR')}} == false && {{fn:hasStockForRegistration()}}==false"
               }
             },
             {
@@ -2402,9 +2335,7 @@ final dynamic sampleFlows = {
                   }
                 }
               ],
-              "condition": {
-                "condition": {"expression": "DEFAULT"}
-              }
+              "condition": {"expression": "DEFAULT"}
             }
           ],
           "mandatory": true,
@@ -2414,7 +2345,9 @@ final dynamic sampleFlows = {
             "mainAxisSize": "max",
             "mainAxisAlignment": "center"
           },
-          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == false"
+          "visible": "{{fn:hasRole('REGISTRAR')}} == true",
+          "disabled":
+              "{{fn:hasMinimumBeneficiaryId(1, uniqueIdPoolCount)}} == false"
         }
       ],
       "header": [
@@ -6118,7 +6051,10 @@ final dynamic sampleFlows = {
       "onAction": [
         {
           "actions": [
-            {"actionType": "GENERATE_LOCAL_BENEFICIARY_ID"},
+            {
+              "actionType": "LOAD_UNIQUE_ID_POOL",
+              "properties": {"allocate": true, "stopOnError": true}
+            },
             {
               "actionType": "FETCH_TRANSFORMER_CONFIG",
               "properties": {
@@ -6133,22 +6069,10 @@ final dynamic sampleFlows = {
               }
             },
             {
-              "actionType": "UPDATE_IDENTIFIER_STATUS",
-              "properties": {
-                "identifierType": "UNIQUE_BENEFICIARY_ID",
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {
-                      "message": "Failed to update beneficiary id status."
-                    }
-                  }
-                ]
-              }
-            },
-            {
               "actionType": "CREATE_EVENT",
               "properties": {
+                "stopOnError": true,
+                "awaitPersistence": true,
                 "entity": "ProjectBeneficiaryModel, IndividualModel",
                 "onError": [
                   {
@@ -6163,6 +6087,7 @@ final dynamic sampleFlows = {
             {
               "actionType": "UPDATE_EVENT",
               "properties": {
+                "stopOnError": true,
                 "entity":
                     "HouseholdModel, IndividualModel, ProjectBeneficiaryModel",
                 "onError": [
@@ -6170,6 +6095,20 @@ final dynamic sampleFlows = {
                     "actionType": "SHOW_TOAST",
                     "properties": {
                       "message": "Failed to update closed household."
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "UPDATE_IDENTIFIER_STATUS",
+              "properties": {
+                "identifierType": "UNIQUE_BENEFICIARY_ID",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "Failed to update beneficiary id status."
                     }
                   }
                 ]
@@ -6245,7 +6184,10 @@ final dynamic sampleFlows = {
         },
         {
           "actions": [
-            {"actionType": "GENERATE_LOCAL_BENEFICIARY_ID"},
+            {
+              "actionType": "LOAD_UNIQUE_ID_POOL",
+              "properties": {"allocate": true, "stopOnError": true}
+            },
             {
               "actionType": "FETCH_TRANSFORMER_CONFIG",
               "properties": {
@@ -6260,22 +6202,9 @@ final dynamic sampleFlows = {
               }
             },
             {
-              "actionType": "UPDATE_IDENTIFIER_STATUS",
-              "properties": {
-                "identifierType": "UNIQUE_BENEFICIARY_ID",
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {
-                      "message": "Failed to update beneficiary id status."
-                    }
-                  }
-                ]
-              }
-            },
-            {
               "actionType": "UPDATE_EVENT",
               "properties": {
+                "stopOnError": true,
                 "entity": "HouseholdModel, IndividualModel, TaskModel",
                 "modify": [
                   {"key": "TaskModel.status", "value": "NOT_ADMINISTERED"}
@@ -6285,6 +6214,20 @@ final dynamic sampleFlows = {
                     "actionType": "SHOW_TOAST",
                     "properties": {
                       "message": "Failed to update closed household."
+                    }
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "UPDATE_IDENTIFIER_STATUS",
+              "properties": {
+                "identifierType": "UNIQUE_BENEFICIARY_ID",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "Failed to update beneficiary id status."
                     }
                   }
                 ]
@@ -6340,6 +6283,8 @@ final dynamic sampleFlows = {
             {
               "actionType": "CREATE_EVENT",
               "properties": {
+                "stopOnError": true,
+                "awaitPersistence": true,
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",
@@ -6394,6 +6339,7 @@ final dynamic sampleFlows = {
             {
               "actionType": "UPDATE_EVENT",
               "properties": {
+                "stopOnError": true,
                 "entity": "HouseholdModel, IndividualModel",
                 "onError": [
                   {
@@ -6435,7 +6381,10 @@ final dynamic sampleFlows = {
         },
         {
           "actions": [
-            {"actionType": "GENERATE_LOCAL_BENEFICIARY_ID"},
+            {
+              "actionType": "LOAD_UNIQUE_ID_POOL",
+              "properties": {"allocate": true, "stopOnError": true}
+            },
             {
               "actionType": "FETCH_TRANSFORMER_CONFIG",
               "properties": {
@@ -6450,6 +6399,19 @@ final dynamic sampleFlows = {
               }
             },
             {
+              "actionType": "CREATE_EVENT",
+              "properties": {
+                "stopOnError": true,
+                "awaitPersistence": true,
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to create household."}
+                  }
+                ]
+              }
+            },
+            {
               "actionType": "UPDATE_IDENTIFIER_STATUS",
               "properties": {
                 "identifierType": "UNIQUE_BENEFICIARY_ID",
@@ -6459,17 +6421,6 @@ final dynamic sampleFlows = {
                     "properties": {
                       "message": "Failed to update beneficiary id status."
                     }
-                  }
-                ]
-              }
-            },
-            {
-              "actionType": "CREATE_EVENT",
-              "properties": {
-                "onError": [
-                  {
-                    "actionType": "SHOW_TOAST",
-                    "properties": {"message": "Failed to create household."}
                   }
                 ]
               }

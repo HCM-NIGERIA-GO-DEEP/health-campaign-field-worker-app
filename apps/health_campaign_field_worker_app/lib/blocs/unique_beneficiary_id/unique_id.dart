@@ -9,6 +9,8 @@ import 'package:digit_data_model/models/entities/id_status.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
+import '../../services/beneficiary_id_service.dart';
+
 part 'unique_id.freezed.dart';
 
 typedef UniqueIdEmitter = Emitter<UniqueIdState>;
@@ -36,6 +38,16 @@ class UniqueIdBloc extends Bloc<UniqueIdEvent, UniqueIdState> {
     on(_fetchAUniqueId);
   }
 
+  bool _downloaded(UniqueIdPoolModel row) =>
+      row.userUuid == userUuid &&
+      row.tenantId == tenantId &&
+      BeneficiaryIdService.field(row, 'beneficiaryIdSource') ==
+          BeneficiaryIdService.serverSource;
+
+  bool _available(UniqueIdPoolModel row) =>
+      _downloaded(row) &&
+      BeneficiaryIdService.field(row, 'reservedFor') == null;
+
   FutureOr<void> _fetchIdCount(
       UniqueIdCountEvent event, Emitter<UniqueIdState> emit) async {
     emit(const UniqueIdState.loading());
@@ -52,7 +64,8 @@ class UniqueIdBloc extends Bloc<UniqueIdEvent, UniqueIdState> {
           userUuid: userUuid,
         ),
       );
-      emit(UniqueIdState.idCount(count.length, totalCount.length));
+      emit(UniqueIdState.idCount(count.where(_available).length,
+          totalCount.where(_downloaded).length));
     } catch (e) {
       emit(UniqueIdState.failed(e.toString()));
     }
@@ -107,11 +120,19 @@ class UniqueIdBloc extends Bloc<UniqueIdEvent, UniqueIdState> {
         final int fetchLimit = response.fetchLimit;
         totalLimit = response.totalLimit;
 
-        await uniqueIdPoolLocalRepository.bulkCreate(batch);
+        await BeneficiaryIdService.saveDownloaded(
+            uniqueIdPoolLocalRepository,
+            batch
+                .map((row) =>
+                    row.copyWith(userUuid: userUuid, tenantId: tenantId))
+                .toList());
         allFetchedIds.addAll(batch);
 
         // Check if batch is empty
         if (batch.isEmpty) {
+          if (fetchLimit != 0) {
+            throw StateError('Beneficiary ID download made no progress');
+          }
           if (fetchLimit == 0) {
             // All done
             emit(UniqueIdState.fetching(totalLimit, totalLimit));
@@ -154,7 +175,7 @@ class UniqueIdBloc extends Bloc<UniqueIdEvent, UniqueIdState> {
         ),
       );
 
-      emit(UniqueIdState.aUniqueId(count.first));
+      emit(UniqueIdState.aUniqueId(count.where(_available).first));
     } catch (e) {
       emit(UniqueIdState.failed(e.toString()));
     }

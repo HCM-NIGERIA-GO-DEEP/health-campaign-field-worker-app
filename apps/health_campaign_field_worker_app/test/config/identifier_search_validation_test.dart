@@ -45,12 +45,11 @@ void main() {
     expect(field!['allowedCharacters'], 'a-zA-Z0-9');
   });
 
-  test('the Beneficiary ID search bar accepts only alphanumeric characters',
-      () {
+  test('the Beneficiary ID search accepts a complete DP-name-prefixed ID', () {
     final field = findByFieldName(registration, 'idSearchBar');
 
     expect(field, isNotNull);
-    expect(field!['allowedCharacters'], 'a-zA-Z0-9');
+    expect(field!['allowedCharacters'], isNull);
   });
 
   test('the Phone Number search bar accepts only digits', () {

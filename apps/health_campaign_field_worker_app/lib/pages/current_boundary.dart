@@ -14,6 +14,7 @@ import '../utils/environment_config.dart';
 import '../utils/i18_key_constants.dart' as i18;
 import '../utils/least_level_boundary_singleton.dart';
 import '../utils/utils.dart';
+import '../services/beneficiary_id_service.dart';
 import '../widgets/header/back_navigation_help_header.dart';
 import '../widgets/localized.dart';
 
@@ -158,8 +159,18 @@ class _CurrentBoundaryPageState extends LocalizedState<CurrentBoundaryPage> {
                       final boundary = boundaries[index];
 
                       return InkWell(
-                        onTap: () {
+                        onTap: () async {
                           context.setBoundary(boundary);
+                          if (context.isRegistrarRole) {
+                            try {
+                              await BeneficiaryIdService.forContext(context)
+                                  .prepare(boundary);
+                            } catch (_) {
+                              // Boundary selection/download can continue; allocation validates
+                              // the cached mapping or actual distribution-point name later.
+                            }
+                          }
+                          if (!context.mounted) return;
                           if (widget.onBoundarySelected != null) {
                             widget.onBoundarySelected!(context);
                           } else {

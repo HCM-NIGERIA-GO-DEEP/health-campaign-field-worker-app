@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppSharedPreferences {
@@ -55,5 +56,35 @@ class AppSharedPreferences {
 
   Future<void> setStockDownsyncTime(String key, int value) async {
     await sharedPreferences.setInt(key, value);
+  }
+
+  String _beneficiaryKey(String scope, String code, String kind) =>
+      'beneficiary_${kind}_${Uri.encodeComponent(scope)}_${Uri.encodeComponent(code)}';
+
+  int? getBoundaryNumericId(String scope, String code) =>
+      sharedPreferences.getInt(_beneficiaryKey(scope, code, 'prefix'));
+
+  Future<void> setBoundaryNumericId(
+      String scope, String code, int value) async {
+    await (await _ensureInstance())
+        .setInt(_beneficiaryKey(scope, code, 'prefix'), value);
+  }
+
+  Map<String, String>? getBeneficiaryDistributionPoint(
+      String scope, String code) {
+    final value =
+        sharedPreferences.getString(_beneficiaryKey(scope, code, 'dp'));
+    if (value == null) return null;
+    try {
+      return Map<String, String>.from(jsonDecode(value) as Map);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> setBeneficiaryDistributionPoint(
+      String scope, String code, Map<String, String> value) async {
+    await (await _ensureInstance())
+        .setString(_beneficiaryKey(scope, code, 'dp'), jsonEncode(value));
   }
 }

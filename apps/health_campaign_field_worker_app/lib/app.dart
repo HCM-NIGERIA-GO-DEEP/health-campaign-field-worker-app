@@ -43,7 +43,7 @@ import 'utils/environment_config.dart';
 import 'utils/localization_delegates.dart';
 import 'utils/utils.dart';
 import 'widgets/network_manager_provider_wrapper.dart';
-import '../../executors/generate_local_beneficiary_id_executor.dart';
+
 
 class MainApplication extends StatefulWidget {
   final Dio client;
@@ -99,7 +99,8 @@ class MainApplicationState extends State<MainApplication>
     );
     ActionHandler.registry.register(
       'GENERATE_LOCAL_BENEFICIARY_ID',
-      GenerateLocalBeneficiaryIdExecutor(),
+      // Compatibility with previously downloaded configs: never generate locally.
+      LoadUniqueIdPoolExecutor(defaultAllocate: true),
     );
   }
 

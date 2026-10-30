@@ -17,6 +17,7 @@ import '../../blocs/localization/app_localization.dart';
 import '../../blocs/unique_beneficiary_id/unique_id.dart';
 import '../../utils/environment_config.dart';
 import '../../utils/extensions/extensions.dart';
+import '../../utils/utils.dart';
 import '../../utils/i18_key_constants.dart' as i18;
 import '../../widgets/header/back_navigation_help_header.dart';
 import '../../widgets/localized.dart';
@@ -52,6 +53,14 @@ class _BeneficiaryIdDownSyncState extends State<BeneficiaryIdDownSyncPage> {
 
   @override
   Widget build(BuildContext context) {
+    if (!context.isRegistrarRole) {
+      return Scaffold(
+          appBar: AppBar(),
+          body: Center(
+              child: Text(AppLocalizations.of(context)
+                  .translate('BENEFICIARY_IDS_REGISTRAR_ONLY'))));
+    }
+
     final localizations = AppLocalizations.of(context);
     final theme = Theme.of(context);
 
