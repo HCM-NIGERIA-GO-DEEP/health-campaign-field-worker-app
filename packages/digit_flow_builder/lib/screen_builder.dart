@@ -110,6 +110,7 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
           );
           ActionHandler.execute(parsed, context, {
             'wrappers': const [],
+            '_compositeKey': _compositeKey,
           });
         }
       });
@@ -160,6 +161,7 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
 
     Map<String, dynamic> contextData = {
       'formData': formData,
+      '_compositeKey': _compositeKey,
       'navigation': mergedNavParams,
       if (entities.isNotEmpty) 'entities': entities,
     };
@@ -234,14 +236,14 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
         if (toPageName == 'registrationHealthTalkChecklist' ||
             (fromPageName == 'householdDetails' &&
                 toPageName.contains('Checklist'))) {
-          final executor = ActionHandler.registry
-              .getExecutor('GENERATE_LOCAL_BENEFICIARY_ID');
+          final executor =
+              ActionHandler.registry.getExecutor('LOAD_UNIQUE_ID_POOL');
           if (executor != null) {
             final enrichedContext = await executor.execute(
               ActionConfig(
-                action: 'GENERATE_LOCAL_BENEFICIARY_ID',
-                actionType: 'GENERATE_LOCAL_BENEFICIARY_ID',
-                properties: const {},
+                action: 'LOAD_UNIQUE_ID_POOL',
+                actionType: 'LOAD_UNIQUE_ID_POOL',
+                properties: const {'allocate': true, 'silent': true},
               ),
               context,
               {
@@ -252,6 +254,11 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
                 '_compositeKey': _compositeKey,
               },
             );
+            if (enrichedContext['haltActionChain'] == true) {
+              throw FormPageNavigationBlocked(
+                  enrichedContext['beneficiaryIdError']?.toString() ??
+                      'BENEFICIARY_IDS_DOWNLOAD_REQUIRED');
+            }
             final bid =
                 enrichedContext['latestBeneficiaryId']?.toString() ?? '';
             final firstName =
@@ -262,6 +269,9 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
                     .trim();
             final headName = '$firstName $lastName'.trim();
             return {
+              'rawBeneficiaryId': enrichedContext['rawBeneficiaryId'],
+              'beneficiaryIdAllocationKey':
+                  enrichedContext['beneficiaryIdAllocationKey'],
               'beneficiaryId': bid,
               'UNIQUE_BENEFICIARY_ID': bid,
               'latestBeneficiaryId': bid,

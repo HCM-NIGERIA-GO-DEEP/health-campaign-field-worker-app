@@ -1,5 +1,10 @@
 import 'package:flutter/widgets.dart';
 
+class FormPageNavigationBlocked implements Exception {
+  final String message;
+  const FormPageNavigationBlocked(this.message);
+}
+
 /// Callback invoked when transitioning between form pages, allowing external
 /// handlers to generate IDs or enrich navigation params based on form values.
 typedef FormPageNavigationInterceptor = Future<Map<String, dynamic>?> Function({

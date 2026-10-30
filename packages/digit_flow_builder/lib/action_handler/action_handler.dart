@@ -138,6 +138,7 @@ class ActionHandler {
   ) async {
     int i = 0;
     while (i < actions.length) {
+      if (contextData['haltActionChain'] == true) return contextData;
       final actionJson = actions[i];
 
       if (actionJson['condition'] != null) {
@@ -284,6 +285,7 @@ class ActionHandler {
           if (matched) {
             final subActions = condActionJson['actions'] as List? ?? [];
             for (final subActionJson in subActions) {
+              if (contextData['haltActionChain'] == true) break;
               final action = ActionConfig.fromJson(subActionJson);
               contextData = await execute(action, context, contextData);
             }

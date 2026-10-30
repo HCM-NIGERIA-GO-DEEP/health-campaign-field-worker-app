@@ -141,8 +141,14 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
         if (enriched != null) {
           nextNavParams.addAll(enriched);
         }
+      } on FormPageNavigationBlocked catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+              SnackBar(content: Text(localizations.translate(e.message))));
+        }
+        return {...nextNavParams, '__blockNavigation': true};
       } catch (e) {
-        // Ignore error in interceptor
+        // Ignore unrelated errors in optional interceptors.
       }
     }
     if (!nextNavParams.containsKey('headName') ||
@@ -158,7 +164,6 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     }
     return nextNavParams;
   }
-
 
   int? _getScannerScanLimit(PropertySchema schema) {
     final rules = schema.validations;
@@ -759,6 +764,9 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                           targetPageName: targetPageName,
                                           formValues: values,
                                         );
+                                        if (nextNavParams[
+                                                '__blockNavigation'] ==
+                                            true) return;
                                         context.router.push(FormsRenderRoute(
                                           isEdit: widget.isEdit,
                                           customComponents:
@@ -932,6 +940,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                     targetPageName: nextPageName,
                                     formValues: values,
                                   );
+                                  if (nextNavParams['__blockNavigation'] ==
+                                      true) return;
                                   context.router.push(FormsRenderRoute(
                                       isEdit: widget.isEdit,
                                       customComponents: widget.customComponents,
@@ -1414,6 +1424,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                             targetPageName: nextPageName,
                             formValues: values,
                           );
+                          if (nextNavParams['__blockNavigation'] == true)
+                            return;
                           context.router.push(FormsRenderRoute(
                             isEdit: widget.isEdit,
                             customComponents: widget.customComponents,

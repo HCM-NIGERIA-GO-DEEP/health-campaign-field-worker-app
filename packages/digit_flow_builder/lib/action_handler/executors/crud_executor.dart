@@ -72,7 +72,11 @@ class CrudExecutor extends ActionExecutor {
       return contextData;
     }
 
-    context.read<CrudBloc>().add(CrudEventCreate(entities: entityList));
+    if (action.properties['awaitPersistence'] == true) {
+      await context.read<CrudBloc>().service.createEntities(entityList);
+    } else {
+      context.read<CrudBloc>().add(CrudEventCreate(entities: entityList));
+    }
 
     return contextData;
   }

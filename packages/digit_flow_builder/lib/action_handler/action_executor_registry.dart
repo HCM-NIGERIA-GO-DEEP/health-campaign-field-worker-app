@@ -90,6 +90,9 @@ class ActionExecutorRegistry {
       debugPrint('❌ Error executing action ${action.actionType}: $e');
       debugPrint('Stack trace: $stackTrace');
 
+      if (action.properties['stopOnError'] == true) {
+        return {...contextData, 'haltActionChain': true};
+      }
       // Return original context data if execution fails
       return contextData;
     }
