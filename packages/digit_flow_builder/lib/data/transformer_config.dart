@@ -684,10 +684,7 @@ final jsonConfig = {
             "ACTION5": "DeliveryChecklist.ACTION5",
             "ACTION6": "DeliveryChecklist.ACTION6",
             "ACTION7": "DeliveryChecklist.ACTION7",
-            "ACTION8": "DeliveryChecklist.ACTION8",
-            "ACTION9": "DeliveryChecklist.ACTION9",
-            "ACTION10": "DeliveryChecklist.ACTION10",
-            "ACTION11": "DeliveryChecklist.ACTION11"
+            "ACTION8": "DeliveryChecklist.ACTION8"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"

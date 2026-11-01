@@ -149,6 +149,7 @@ class UniqueIdBloc extends Bloc<UniqueIdEvent, UniqueIdState> {
         totalFetched += batch.length;
 
         if (totalFetched >= totalLimit) {
+          emit(UniqueIdState.fetching(totalLimit, totalLimit));
           break;
         }
       }

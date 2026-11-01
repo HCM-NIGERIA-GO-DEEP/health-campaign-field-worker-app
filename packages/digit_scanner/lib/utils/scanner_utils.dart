@@ -17,6 +17,13 @@ import './i18_key_constants.dart' as i18;
 import 'constants.dart';
 
 class DigitScannerUtils {
+  /// Reject invalid manual QR values before they can occupy a scan slot.
+  static bool acceptsManualQrCode(String value, String? regex) {
+    final code = value.trim();
+    if (code.isEmpty) return false;
+    return regex == null || regex.trim().isEmpty || RegExp(regex).hasMatch(code);
+  }
+
   static DateTime? _lastErrorToastTime;
   static String _lastErrorToastMessage = '';
 

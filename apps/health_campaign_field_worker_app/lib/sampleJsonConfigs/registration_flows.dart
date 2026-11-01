@@ -2237,7 +2237,13 @@ final dynamic sampleFlows = {
           "label": "DOWNLOAD_BENEFICIARY_IDS",
           "format": "button",
           "fieldName": "beneficiaryIdMinCheck",
-          "visible": "{{fn:hasRole('REGISTRAR')}} == true",
+          // Only offer the download while the local pool is actually empty.
+          // uniqueIdPoolCount is refreshed by the LOAD_UNIQUE_ID_POOL
+          // initAction above on every entry/refresh of this screen, so the
+          // button disappears once IDs are downloaded and comes back on its
+          // own when the pool drains to zero again.
+          "visible":
+              "{{fn:hasRole('REGISTRAR')}} == true && {{fn:hasMinimumBeneficiaryId(1, uniqueIdPoolCount)}} == false",
           "properties": {
             "size": "large",
             "type": "secondary",
@@ -3583,12 +3589,12 @@ final dynamic sampleFlows = {
           "flow": "DELIVERY",
           "page": "DeliveryChecklist",
           "type": "object",
-          "label": "APPONE_DELIVERYFLOW_DELIVERYDETAILS_ACTIONS_SCREEN_HEADING",
+          "label": "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_HEADING",
           "order": 2,
           "footer": [
             {
               "label":
-                  "APPONE_DELIVERYFLOW_DELIVERYDETAILS_ACTIONS_SUBMIT_LABEL",
+                  "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_SUBMIT_LABEL",
               "format": "button",
               "fieldName": "deliveryChecklistSubmitButton",
               "onAction": [
@@ -3610,7 +3616,7 @@ final dynamic sampleFlows = {
           ],
           "module": "REGISTRATION",
           "heading":
-              "APPONE_DELIVERYFLOW_DELIVERYDETAILS_ACTIONS_SCREEN_HEADING",
+              "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_HEADING",
           "summary": false,
           "version": 1,
           "onAction": [
@@ -3735,7 +3741,7 @@ final dynamic sampleFlows = {
           "properties": [
             {
               "type": "boolean",
-              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION1",
+              "label": "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_ACTION1",
               "order": 1,
               "value": "",
               "format": "checkbox",
@@ -3757,14 +3763,14 @@ final dynamic sampleFlows = {
                   "type": "required",
                   "value": true,
                   "message":
-                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                      "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_REQUIRED_MESSAGE"
                 }
               ],
               "errorMessage": ""
             },
             {
               "type": "boolean",
-              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION2",
+              "label": "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_ACTION2",
               "order": 2,
               "value": "",
               "format": "checkbox",
@@ -3786,14 +3792,14 @@ final dynamic sampleFlows = {
                   "type": "required",
                   "value": true,
                   "message":
-                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                      "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_REQUIRED_MESSAGE"
                 }
               ],
               "errorMessage": ""
             },
             {
               "type": "boolean",
-              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION3",
+              "label": "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_ACTION3",
               "order": 3,
               "value": "",
               "format": "checkbox",
@@ -3815,14 +3821,14 @@ final dynamic sampleFlows = {
                   "type": "required",
                   "value": true,
                   "message":
-                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                      "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_REQUIRED_MESSAGE"
                 }
               ],
               "errorMessage": ""
             },
             {
               "type": "boolean",
-              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION4",
+              "label": "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_ACTION4",
               "order": 4,
               "value": "",
               "format": "checkbox",
@@ -3844,14 +3850,14 @@ final dynamic sampleFlows = {
                   "type": "required",
                   "value": true,
                   "message":
-                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                      "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_REQUIRED_MESSAGE"
                 }
               ],
               "errorMessage": ""
             },
             {
               "type": "boolean",
-              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION5",
+              "label": "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_ACTION5",
               "order": 5,
               "value": "",
               "format": "checkbox",
@@ -3873,14 +3879,14 @@ final dynamic sampleFlows = {
                   "type": "required",
                   "value": true,
                   "message":
-                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                      "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_REQUIRED_MESSAGE"
                 }
               ],
               "errorMessage": ""
             },
             {
               "type": "boolean",
-              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION6",
+              "label": "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_ACTION6",
               "order": 6,
               "value": "",
               "format": "checkbox",
@@ -3902,14 +3908,14 @@ final dynamic sampleFlows = {
                   "type": "required",
                   "value": true,
                   "message":
-                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                      "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_REQUIRED_MESSAGE"
                 }
               ],
               "errorMessage": ""
             },
             {
               "type": "boolean",
-              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION7",
+              "label": "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_ACTION7",
               "order": 7,
               "value": "",
               "format": "checkbox",
@@ -3931,14 +3937,14 @@ final dynamic sampleFlows = {
                   "type": "required",
                   "value": true,
                   "message":
-                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                      "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_REQUIRED_MESSAGE"
                 }
               ],
               "errorMessage": ""
             },
             {
               "type": "boolean",
-              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION8",
+              "label": "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_ACTION8",
               "order": 8,
               "value": "",
               "format": "checkbox",
@@ -3960,103 +3966,16 @@ final dynamic sampleFlows = {
                   "type": "required",
                   "value": true,
                   "message":
-                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
-                }
-              ],
-              "errorMessage": ""
-            },
-            {
-              "type": "boolean",
-              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION9",
-              "order": 9,
-              "value": "",
-              "format": "checkbox",
-              "hidden": false,
-              "isMdms": false,
-              "tooltip": "",
-              "helpText": "",
-              "infoText": "",
-              "readOnly": false,
-              "fieldName": "ACTION9",
-              "required": true,
-              "mandatory": true,
-              "deleteFlag": false,
-              "innerLabel": "",
-              "schemaCode": null,
-              "systemDate": true,
-              "validations": [
-                {
-                  "type": "required",
-                  "value": true,
-                  "message":
-                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
-                }
-              ],
-              "errorMessage": ""
-            },
-            {
-              "type": "boolean",
-              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION10",
-              "order": 10,
-              "value": "",
-              "format": "checkbox",
-              "hidden": false,
-              "isMdms": false,
-              "tooltip": "",
-              "helpText": "",
-              "infoText": "",
-              "readOnly": false,
-              "fieldName": "ACTION10",
-              "required": true,
-              "mandatory": true,
-              "deleteFlag": false,
-              "innerLabel": "",
-              "schemaCode": null,
-              "systemDate": true,
-              "validations": [
-                {
-                  "type": "required",
-                  "value": true,
-                  "message":
-                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
-                }
-              ],
-              "errorMessage": ""
-            },
-            {
-              "type": "boolean",
-              "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_ACTION11",
-              "order": 11,
-              "value": "",
-              "format": "checkbox",
-              "hidden": false,
-              "isMdms": false,
-              "tooltip": "",
-              "helpText": "",
-              "infoText": "",
-              "readOnly": false,
-              "fieldName": "ACTION11",
-              "required": true,
-              "mandatory": true,
-              "deleteFlag": false,
-              "innerLabel": "",
-              "schemaCode": null,
-              "systemDate": true,
-              "validations": [
-                {
-                  "type": "required",
-                  "value": true,
-                  "message":
-                      "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_REQUIRED_MESSAGE"
+                      "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_REQUIRED_MESSAGE"
                 }
               ],
               "errorMessage": ""
             }
           ],
           "actionLabel":
-              "APPONE_DELIVERYFLOW_DELIVERYDETAILS_ACTIONS_SUBMIT_LABEL",
+              "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_SUBMIT_LABEL",
           "description":
-              "APPONE_DELIVERYFLOW_DELIVERYDETAILS_ACTIONS_SCREEN_DESCRIPTION",
+              "APPONE_DISTRIBUTOR_DELIVERY_CHECKLIST_DESCRIPTION",
           "showTabView": false,
           "submitCondition": null,
           "preventScreenCapture": false,
@@ -6149,10 +6068,45 @@ final dynamic sampleFlows = {
         },
         // Consent-declined closed household: the household already exists
         // in the DB with closed status. Do NOT create new entities —
-        // just navigate to the acknowledgement page. Creating entities
-        // here caused duplicate pending transactions (5 per submission).
+        // creating entities here caused duplicate pending transactions
+        // (5 per submission). The head's name still has to be persisted
+        // though: givenName/familyName live on IndividualModel.name, and
+        // the consent page's nameOfIndividual/familyname fields are mapped
+        // onto them by the householdConsentDeclinedRegistration transformer.
+        // In edit mode the transformer runs updateEntitiesFromForm against
+        // the reverse-transformed existingModels, so the existing
+        // Individual's id/clientReferenceId are reused rather than
+        // regenerated, and UPDATE_EVENT scoped to IndividualModel persists
+        // only that row - no new entity, no duplicate transactions.
         {
           "actions": [
+            {
+              "actionType": "FETCH_TRANSFORMER_CONFIG",
+              "properties": {
+                "configName": "householdConsentDeclinedRegistration",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to fetch config."}
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "UPDATE_EVENT",
+              "properties": {
+                "stopOnError": true,
+                "entity": "IndividualModel",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {
+                      "message": "Failed to update beneficiary name."
+                    }
+                  }
+                ]
+              }
+            },
             {
               "actionType": "NAVIGATION",
               "properties": {

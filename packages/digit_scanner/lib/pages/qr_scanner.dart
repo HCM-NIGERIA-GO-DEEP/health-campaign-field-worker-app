@@ -406,7 +406,9 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
             );
             context.read<DigitScannerBloc>().add(
                   DigitScannerEvent.handleScanner(
-                      barCode: [], qrCode: [], scannerId: widget.scannerId),
+                      barCode: state.barCodes,
+                      qrCode: state.qrCodes,
+                      scannerId: widget.scannerId),
                 );
           }
         },
@@ -980,6 +982,18 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                                 .value
                                 .toString()
                                 .trim();
+                            if (!DigitScannerUtils.acceptsManualQrCode(
+                                manualValue, widget.effectiveRegex)) {
+                              Toast.showToast(
+                                context,
+                                type: ToastType.error,
+                                message: localizations.translate(
+                                    widget.patternMessage ??
+                                        i18.scanner.resourcesScanFailed),
+                                sentenceCaseEnabled: false,
+                              );
+                              return;
+                            }
                             final bloc = context.read<DigitScannerBloc>();
 
                             // Per-scan duplicate check
