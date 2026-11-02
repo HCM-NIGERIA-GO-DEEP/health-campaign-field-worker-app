@@ -15,6 +15,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../blocs/app_initialization/app_initialization.dart';
 import '../../blocs/localization/app_localization.dart';
 import '../../blocs/unique_beneficiary_id/unique_id.dart';
+import '../../utils/beneficiary_id_download_gate.dart';
 import '../../utils/environment_config.dart';
 import '../../utils/extensions/extensions.dart';
 import '../../utils/i18_key_constants.dart' as i18;
@@ -36,6 +37,10 @@ class BeneficiaryIdDownSyncPage extends LocalizedStatefulWidget {
 
 class _BeneficiaryIdDownSyncState extends State<BeneficiaryIdDownSyncPage> {
   int beneficiaryIdCount = 0, beneficiaryIdTotalCount = 0;
+
+  /// False until the first local count (or a failed count) arrives; until
+  /// then the page shows a loader instead of 0.
+  bool _countLoaded = false;
   bool _isProgressDialogVisible = false;
   final ProgressDialog _progressDialog = ProgressDialog();
 
@@ -87,6 +92,7 @@ class _BeneficiaryIdDownSyncState extends State<BeneficiaryIdDownSyncPage> {
                   state.maybeWhen(
                       orElse: () {},
                       idCount: (availableCount, totalCount) {
+                        _countLoaded = true;
                         _progressDialog.closeProgressDialog();
                         _isProgressDialogVisible = false;
                         beneficiaryIdCount = availableCount;
@@ -113,6 +119,8 @@ class _BeneficiaryIdDownSyncState extends State<BeneficiaryIdDownSyncPage> {
                         }
                       },
                       failed: (String? error) {
+                        // A failed count must not block downloading.
+                        _countLoaded = true;
                         _progressDialog.closeProgressDialog();
                         _isProgressDialogVisible = false;
                         if (error != null) {
@@ -234,8 +242,11 @@ class _BeneficiaryIdDownSyncState extends State<BeneficiaryIdDownSyncPage> {
                           margin: const EdgeInsets.only(top: spacer2),
                           children: [
                             DigitButton(
-                              isDisabled:
-                                  beneficiaryIdCount > beneficiaryIdMinCount,
+                              isDisabled: isBeneficiaryIdDownloadDisabled(
+                                countLoaded: _countLoaded,
+                                available: beneficiaryIdCount,
+                                minCount: beneficiaryIdMinCount,
+                              ),
                               label: localizations.translate(
                                   i18.beneficiaryId.downloadBeneficiaryIds),
                               type: DigitButtonType.primary,
@@ -252,11 +263,16 @@ class _BeneficiaryIdDownSyncState extends State<BeneficiaryIdDownSyncPage> {
                           ]),
                       children: [
                         Center(
-                          child: BeneficiaryIDGauge(
-                            idCount: beneficiaryIdCount,
-                            totalCount: beneficiaryIdTotalCount,
-                            beneficiaryMinCount: beneficiaryIdMinCount,
-                          ),
+                          child: _countLoaded
+                              ? BeneficiaryIDGauge(
+                                  idCount: beneficiaryIdCount,
+                                  totalCount: beneficiaryIdTotalCount,
+                                  beneficiaryMinCount: beneficiaryIdMinCount,
+                                )
+                              : const Padding(
+                                  padding: EdgeInsets.all(spacer10),
+                                  child: CircularProgressIndicator(),
+                                ),
                         )
                       ],
                     ),

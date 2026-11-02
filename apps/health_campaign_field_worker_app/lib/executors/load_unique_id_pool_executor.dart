@@ -10,6 +10,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 class LoadUniqueIdPoolExecutor extends ActionExecutor {
+  /// Widget-data key that is true while the pool is being read. The
+  /// REGISTRATION config disables Register / Add Member on it, so the
+  /// seconds before the count arrives no longer offer the low-ID popup.
+  /// A screen without the flag (older app) behaves as before.
+  static const loadingKey = 'uniqueIdPoolLoading';
+
   @override
   bool canHandle(String actionType) => actionType == 'LOAD_UNIQUE_ID_POOL';
 
@@ -26,6 +32,8 @@ class LoadUniqueIdPoolExecutor extends ActionExecutor {
     if (compositeKey == null) return contextData;
 
     try {
+      _mergeWidgetData(compositeKey, {loadingKey: true});
+
       final repository = context
           .read<LocalRepository<UniqueIdPoolModel, UniqueIdPoolSearchModel>>();
 
@@ -54,19 +62,12 @@ class LoadUniqueIdPoolExecutor extends ActionExecutor {
         latestIdModel = availableIds.first;
       }
 
-      final currentState = FlowCrudStateRegistry().get(compositeKey);
-      final currentWidgetData =
-          Map<String, dynamic>.from(currentState?.widgetData ?? {});
-
-      currentWidgetData['uniqueIdPoolCount'] = count;
-      currentWidgetData['latestBeneficiaryIdModel'] = latestIdModel;
-      currentWidgetData['latestBeneficiaryId'] = latestIdModel?.id;
-
-      final updatedState =
-          currentState?.copyWith(widgetData: currentWidgetData);
-      if (updatedState != null) {
-        FlowCrudStateRegistry().update(compositeKey, updatedState);
-      }
+      _mergeWidgetData(compositeKey, {
+        'uniqueIdPoolCount': count,
+        'latestBeneficiaryIdModel': latestIdModel,
+        'latestBeneficiaryId': latestIdModel?.id,
+        loadingKey: false,
+      });
 
       return {
         ...contextData,
@@ -78,7 +79,22 @@ class LoadUniqueIdPoolExecutor extends ActionExecutor {
       // Without this the search screen silently shows no pool count, which
       // sends the user to the low-ID popup and a DEFAULT identifier.
       debugPrint('LOAD_UNIQUE_ID_POOL: failed to load the pool: $e\n$stackTrace');
+      // Clear the flag so a failed load does not leave Register disabled.
+      _mergeWidgetData(compositeKey, {loadingKey: false});
       return contextData;
     }
+  }
+
+  /// Merges [values] into the screen's widget data. Creates the state when
+  /// the screen has none yet: a search screen opened without a NAVIGATION
+  /// action has no state until the user types, and the count was dropped.
+  void _mergeWidgetData(String compositeKey, Map<String, dynamic> values) {
+    final currentState = FlowCrudStateRegistry().get(compositeKey);
+    FlowCrudStateRegistry().update(
+      compositeKey,
+      (currentState ?? const FlowCrudState()).copyWith(
+        widgetData: {...?currentState?.widgetData, ...values},
+      ),
+    );
   }
 }
