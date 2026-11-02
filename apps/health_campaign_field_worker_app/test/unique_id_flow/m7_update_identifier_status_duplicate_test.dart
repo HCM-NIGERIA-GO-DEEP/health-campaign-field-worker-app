@@ -192,6 +192,29 @@ void main() {
     verifyNever(() => repo.update(any()));
   });
 
+  testWidgets(
+      'T7 (residual, not fixed): a pool search that fails at save keeps the DEFAULT identifier',
+      (tester) async {
+    // The only path left that saves a UUID while free IDs exist: the
+    // allocator's own query fails (SQLITE_BUSY beyond the repository's 5
+    // retries) and the executor keeps the identifier it was given.
+    when(() => repo.search(any()))
+        .thenAnswer((_) async => throw Exception('database is locked'));
+    final context = await pumpContext(tester, repo: repo);
+
+    final input = {
+      'entities': [
+        individualWith(identifierType: 'DEFAULT', identifierId: 'some-uuid')
+      ],
+    };
+    final result =
+        await UpdateIdentifierStatusExecutor().execute(action, context, input);
+
+    expect(identical(result, input), isTrue);
+    expect(savedIdentifiers(result).single.identifierType, 'DEFAULT');
+    verifyNever(() => repo.update(any()));
+  });
+
   testWidgets('T7: an ID not in the local pool is left alone', (tester) async {
     stubPool(repo, [poolRow('SMC-0001')]);
     final context = await pumpContext(tester, repo: repo);
