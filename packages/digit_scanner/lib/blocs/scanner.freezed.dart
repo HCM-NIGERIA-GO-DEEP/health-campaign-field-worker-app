@@ -16,16 +16,6 @@ final _privateConstructorUsedError = UnsupportedError(
 
 /// @nodoc
 mixin _$DigitScannerEvent {
-  List<GS1Barcode> get barCode => throw _privateConstructorUsedError;
-  List<String> get qrCode => throw _privateConstructorUsedError;
-  String get manualCode => throw _privateConstructorUsedError;
-  String? get regex => throw _privateConstructorUsedError;
-  String? get patternMessage => throw _privateConstructorUsedError;
-
-  /// Identifier for which scanner field initiated this scan.
-  /// Used to prevent multiple scanner fields from reacting to the same state change.
-  /// Defaults to 'default' for backward compatibility with existing flows.
-  String get scannerId => throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult when<TResult extends Object?>({
     required TResult Function(
@@ -36,6 +26,7 @@ mixin _$DigitScannerEvent {
             String? patternMessage,
             String scannerId)
         handleScanner,
+    required TResult Function() clearError,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -48,6 +39,7 @@ mixin _$DigitScannerEvent {
             String? patternMessage,
             String scannerId)?
         handleScanner,
+    TResult? Function()? clearError,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
@@ -60,28 +52,28 @@ mixin _$DigitScannerEvent {
             String? patternMessage,
             String scannerId)?
         handleScanner,
+    TResult Function()? clearError,
     required TResult orElse(),
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(DigitScannerScanEvent value) handleScanner,
+    required TResult Function(DigitScannerClearErrorEvent value) clearError,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(DigitScannerScanEvent value)? handleScanner,
+    TResult? Function(DigitScannerClearErrorEvent value)? clearError,
   }) =>
       throw _privateConstructorUsedError;
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(DigitScannerScanEvent value)? handleScanner,
+    TResult Function(DigitScannerClearErrorEvent value)? clearError,
     required TResult orElse(),
   }) =>
-      throw _privateConstructorUsedError;
-
-  @JsonKey(ignore: true)
-  $DigitScannerEventCopyWith<DigitScannerEvent> get copyWith =>
       throw _privateConstructorUsedError;
 }
 
@@ -90,14 +82,6 @@ abstract class $DigitScannerEventCopyWith<$Res> {
   factory $DigitScannerEventCopyWith(
           DigitScannerEvent value, $Res Function(DigitScannerEvent) then) =
       _$DigitScannerEventCopyWithImpl<$Res, DigitScannerEvent>;
-  @useResult
-  $Res call(
-      {List<GS1Barcode> barCode,
-      List<String> qrCode,
-      String manualCode,
-      String? regex,
-      String? patternMessage,
-      String scannerId});
 }
 
 /// @nodoc
@@ -109,54 +93,14 @@ class _$DigitScannerEventCopyWithImpl<$Res, $Val extends DigitScannerEvent>
   final $Val _value;
   // ignore: unused_field
   final $Res Function($Val) _then;
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? barCode = null,
-    Object? qrCode = null,
-    Object? manualCode = null,
-    Object? regex = freezed,
-    Object? patternMessage = freezed,
-    Object? scannerId = null,
-  }) {
-    return _then(_value.copyWith(
-      barCode: null == barCode
-          ? _value.barCode
-          : barCode // ignore: cast_nullable_to_non_nullable
-              as List<GS1Barcode>,
-      qrCode: null == qrCode
-          ? _value.qrCode
-          : qrCode // ignore: cast_nullable_to_non_nullable
-              as List<String>,
-      manualCode: null == manualCode
-          ? _value.manualCode
-          : manualCode // ignore: cast_nullable_to_non_nullable
-              as String,
-      regex: freezed == regex
-          ? _value.regex
-          : regex // ignore: cast_nullable_to_non_nullable
-              as String?,
-      patternMessage: freezed == patternMessage
-          ? _value.patternMessage
-          : patternMessage // ignore: cast_nullable_to_non_nullable
-              as String?,
-      scannerId: null == scannerId
-          ? _value.scannerId
-          : scannerId // ignore: cast_nullable_to_non_nullable
-              as String,
-    ) as $Val);
-  }
 }
 
 /// @nodoc
-abstract class _$$DigitScannerScanEventImplCopyWith<$Res>
-    implements $DigitScannerEventCopyWith<$Res> {
+abstract class _$$DigitScannerScanEventImplCopyWith<$Res> {
   factory _$$DigitScannerScanEventImplCopyWith(
           _$DigitScannerScanEventImpl value,
           $Res Function(_$DigitScannerScanEventImpl) then) =
       __$$DigitScannerScanEventImplCopyWithImpl<$Res>;
-  @override
   @useResult
   $Res call(
       {List<GS1Barcode> barCode,
@@ -309,6 +253,7 @@ class _$DigitScannerScanEventImpl implements DigitScannerScanEvent {
             String? patternMessage,
             String scannerId)
         handleScanner,
+    required TResult Function() clearError,
   }) {
     return handleScanner(
         barCode, qrCode, manualCode, regex, patternMessage, scannerId);
@@ -325,6 +270,7 @@ class _$DigitScannerScanEventImpl implements DigitScannerScanEvent {
             String? patternMessage,
             String scannerId)?
         handleScanner,
+    TResult? Function()? clearError,
   }) {
     return handleScanner?.call(
         barCode, qrCode, manualCode, regex, patternMessage, scannerId);
@@ -341,6 +287,7 @@ class _$DigitScannerScanEventImpl implements DigitScannerScanEvent {
             String? patternMessage,
             String scannerId)?
         handleScanner,
+    TResult Function()? clearError,
     required TResult orElse(),
   }) {
     if (handleScanner != null) {
@@ -354,6 +301,7 @@ class _$DigitScannerScanEventImpl implements DigitScannerScanEvent {
   @optionalTypeArgs
   TResult map<TResult extends Object?>({
     required TResult Function(DigitScannerScanEvent value) handleScanner,
+    required TResult Function(DigitScannerClearErrorEvent value) clearError,
   }) {
     return handleScanner(this);
   }
@@ -362,6 +310,7 @@ class _$DigitScannerScanEventImpl implements DigitScannerScanEvent {
   @optionalTypeArgs
   TResult? mapOrNull<TResult extends Object?>({
     TResult? Function(DigitScannerScanEvent value)? handleScanner,
+    TResult? Function(DigitScannerClearErrorEvent value)? clearError,
   }) {
     return handleScanner?.call(this);
   }
@@ -370,6 +319,7 @@ class _$DigitScannerScanEventImpl implements DigitScannerScanEvent {
   @optionalTypeArgs
   TResult maybeMap<TResult extends Object?>({
     TResult Function(DigitScannerScanEvent value)? handleScanner,
+    TResult Function(DigitScannerClearErrorEvent value)? clearError,
     required TResult orElse(),
   }) {
     if (handleScanner != null) {
@@ -388,26 +338,147 @@ abstract class DigitScannerScanEvent implements DigitScannerEvent {
       final String? patternMessage,
       final String scannerId}) = _$DigitScannerScanEventImpl;
 
-  @override
   List<GS1Barcode> get barCode;
-  @override
   List<String> get qrCode;
-  @override
   String get manualCode;
-  @override
   String? get regex;
-  @override
   String? get patternMessage;
-  @override
 
   /// Identifier for which scanner field initiated this scan.
   /// Used to prevent multiple scanner fields from reacting to the same state change.
   /// Defaults to 'default' for backward compatibility with existing flows.
   String get scannerId;
-  @override
   @JsonKey(ignore: true)
   _$$DigitScannerScanEventImplCopyWith<_$DigitScannerScanEventImpl>
       get copyWith => throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class _$$DigitScannerClearErrorEventImplCopyWith<$Res> {
+  factory _$$DigitScannerClearErrorEventImplCopyWith(
+          _$DigitScannerClearErrorEventImpl value,
+          $Res Function(_$DigitScannerClearErrorEventImpl) then) =
+      __$$DigitScannerClearErrorEventImplCopyWithImpl<$Res>;
+}
+
+/// @nodoc
+class __$$DigitScannerClearErrorEventImplCopyWithImpl<$Res>
+    extends _$DigitScannerEventCopyWithImpl<$Res,
+        _$DigitScannerClearErrorEventImpl>
+    implements _$$DigitScannerClearErrorEventImplCopyWith<$Res> {
+  __$$DigitScannerClearErrorEventImplCopyWithImpl(
+      _$DigitScannerClearErrorEventImpl _value,
+      $Res Function(_$DigitScannerClearErrorEventImpl) _then)
+      : super(_value, _then);
+}
+
+/// @nodoc
+
+class _$DigitScannerClearErrorEventImpl implements DigitScannerClearErrorEvent {
+  const _$DigitScannerClearErrorEventImpl();
+
+  @override
+  String toString() {
+    return 'DigitScannerEvent.clearError()';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$DigitScannerClearErrorEventImpl);
+  }
+
+  @override
+  int get hashCode => runtimeType.hashCode;
+
+  @override
+  @optionalTypeArgs
+  TResult when<TResult extends Object?>({
+    required TResult Function(
+            List<GS1Barcode> barCode,
+            List<String> qrCode,
+            String manualCode,
+            String? regex,
+            String? patternMessage,
+            String scannerId)
+        handleScanner,
+    required TResult Function() clearError,
+  }) {
+    return clearError();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? whenOrNull<TResult extends Object?>({
+    TResult? Function(
+            List<GS1Barcode> barCode,
+            List<String> qrCode,
+            String manualCode,
+            String? regex,
+            String? patternMessage,
+            String scannerId)?
+        handleScanner,
+    TResult? Function()? clearError,
+  }) {
+    return clearError?.call();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeWhen<TResult extends Object?>({
+    TResult Function(
+            List<GS1Barcode> barCode,
+            List<String> qrCode,
+            String manualCode,
+            String? regex,
+            String? patternMessage,
+            String scannerId)?
+        handleScanner,
+    TResult Function()? clearError,
+    required TResult orElse(),
+  }) {
+    if (clearError != null) {
+      return clearError();
+    }
+    return orElse();
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult map<TResult extends Object?>({
+    required TResult Function(DigitScannerScanEvent value) handleScanner,
+    required TResult Function(DigitScannerClearErrorEvent value) clearError,
+  }) {
+    return clearError(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult? mapOrNull<TResult extends Object?>({
+    TResult? Function(DigitScannerScanEvent value)? handleScanner,
+    TResult? Function(DigitScannerClearErrorEvent value)? clearError,
+  }) {
+    return clearError?.call(this);
+  }
+
+  @override
+  @optionalTypeArgs
+  TResult maybeMap<TResult extends Object?>({
+    TResult Function(DigitScannerScanEvent value)? handleScanner,
+    TResult Function(DigitScannerClearErrorEvent value)? clearError,
+    required TResult orElse(),
+  }) {
+    if (clearError != null) {
+      return clearError(this);
+    }
+    return orElse();
+  }
+}
+
+abstract class DigitScannerClearErrorEvent implements DigitScannerEvent {
+  const factory DigitScannerClearErrorEvent() =
+      _$DigitScannerClearErrorEventImpl;
 }
 
 /// @nodoc

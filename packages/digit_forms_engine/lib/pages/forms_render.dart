@@ -289,6 +289,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
       final rawValue = formGroup.control(entry.key).value?.toString() ?? '';
       final scannedCount = _getScannedValueCount(rawValue);
+
+
       if (scannedCount < limit) {
         return true;
       }
@@ -395,7 +397,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                               : localizations
                                   .translate(schema.actionLabel ?? 'Submit'),
                           isDisabled: _isSubmitting ||
-                              _hasIncompleteScannerScanLimit(schema, formGroup),
+                          _hasIncompleteScannerScanLimit(schema, formGroup),
                           onPressed: () async {
                             // Prevent multiple simultaneous submissions
                             if (_isSubmitting) return;
@@ -1575,17 +1577,34 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                 // Then update UI
                 setState(() {});
 
-                // Add small delay to allow custom component to update schema data
-                await Future.delayed(const Duration(milliseconds: 200));
+                try {
+                  // Add small delay to allow custom component to update schema data
+                  await Future.delayed(const Duration(milliseconds: 200));
 
-                context.read<FormsBloc>().add(FormsSubmitEvent(
-                    schemaKey: widget.currentSchemaKey, isEdit: widget.isEdit));
+                  context.read<FormsBloc>().add(FormsSubmitEvent(
+                      schemaKey: widget.currentSchemaKey,
+                      isEdit: widget.isEdit));
 
-                // Pop all form pages (FormsRenderRoute)
-                /// FIXME: NOT BACKWARD COMPATIBLE
-                context.router.popUntil((route) {
-                  return route.settings.name != FormsRenderRoute.name;
-                });
+                  // Pop all form pages (FormsRenderRoute)
+                  /// FIXME: NOT BACKWARD COMPATIBLE
+                  context.router.popUntil((route) {
+                    return route.settings.name != FormsRenderRoute.name;
+                  });
+                } finally {
+                  // This reset is load-bearing, not hygiene. _isSubmitting is
+                  // State on this page, and the two other Submit buttons are
+                  // `isDisabled: _isSubmitting || ...`. The flag used to be
+                  // set here and never cleared, on the assumption that the
+                  // popUntil above always destroys this State. It does not:
+                  // the predicate stops at the first route whose name is not
+                  // FormsRenderRoute, so if the route name does not match
+                  // (see the FIXME) nothing is popped, the page survives with
+                  // the flag stuck true, and every Submit button on it is
+                  // disabled for good - with no error shown to explain why.
+                  if (mounted) {
+                    setState(() => _isSubmitting = false);
+                  }
+                }
               },
               type: DigitButtonType.primary,
               size: DigitButtonSize.large,
@@ -1623,6 +1642,32 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
         ]);
   }
 
+  /// Renders one entry of a list-valued summary field.
+  ///
+  /// Plain scalars are translated as before. Maps need unpacking first: the
+  /// resourceCard field stores
+  ///   {'resourceDelivered': {'name': ..., 'productId': ...},
+  ///    'quantityDistributed': n}
+  /// and calling toString() on that - which is what used to happen - put the
+  /// whole literal map on screen, braces and productId included. It also
+  /// defeated localisation, because the translation key is the product name
+  /// alone ("ITN - Grade - 1"), never the map's string form. Pulling the name
+  /// out and translating it is what turns the summary into "ITN x 2".
+  String _summariseListEntry(dynamic entry, dynamic localizations) {
+    if (entry is! Map) return localizations.translate(entry.toString());
+
+    final delivered = entry['resourceDelivered'];
+    final name = delivered is Map ? delivered['name']?.toString() : null;
+    if (name == null || name.trim().isEmpty) {
+      return localizations.translate(entry.toString());
+    }
+
+    final translatedName = localizations.translate(name);
+    final quantity = entry['quantityDistributed'];
+
+    return quantity == null ? translatedName : '$translatedName x $quantity';
+  }
+
   List<LabelValueItem> _renderSummaryLabelValueItems(PropertySchema schema) {
     final properties = schema.properties ?? {};
     final currentLocale = Localizations.localeOf(context).toString();
@@ -1639,7 +1684,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
       if (rawValue is List) {
         displayValue = rawValue
-            .map((e) => localizations.translate(e.toString()))
+            .map((e) => _summariseListEntry(e, localizations))
             .join(', ');
       } else if (rawValue is String && isDotSeparatedKey(rawValue)) {
         displayValue = rawValue

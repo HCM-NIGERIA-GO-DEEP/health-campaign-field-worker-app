@@ -131,61 +131,26 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
   final GlobalKey qrKey = GlobalKey(debugLabel: 'QR');
   bool _isPermissionDialogShowing = false;
   bool _waitingForPermissionFromSettings = false;
-  static const _manualGtinFormKey = 'gtinCode';
   static const _manualCodeFormKey = 'manualCode';
   static const _manualSerialNoFormKey = 'serialNoCode';
-  static const _manualExpiryDateFormKey = 'expiryDate';
 
-  /// Safely parses DateTime from form control value
-  /// Handles String, DateTime, int (milliseconds), and null values
-  DateTime _parseExpiryDate(dynamic value) {
-    // If already a DateTime, return it
-    if (value is DateTime) return value;
+  DateTime? _lastErrorToastTime;
+  String? _lastErrorToastMessage;
+  bool _submittingManualEntry = false;
 
-    // If it's a String, try to parse with different formats
-    if (value is String) {
-      final trimmed = value.trim();
-      if (trimmed.isEmpty) return DateTime.now();
-
-      // Try common date formats
-      final formats = [
-        "dd/MM/yyyy",
-        "dd/MM/yy",
-        "dd MMM yyyy",
-        "yyyy-MM-dd",
-        "MM/dd/yyyy",
-      ];
-
-      for (final format in formats) {
-        try {
-          return DateFormat(format).parse(trimmed);
-        } catch (_) {
-          // Try next format
-        }
-      }
-
-      // Try ISO8601 as fallback
-      try {
-        return DateTime.parse(trimmed);
-      } catch (_) {
-        debugPrint('Failed to parse date string: $trimmed');
-        return DateTime.now();
-      }
+  /// Suppresses a repeat of the same error toast within 1.5s, mirroring
+  /// DigitScannerUtils.handleError. Stacked toasts sit over the footer button
+  /// and swallow taps.
+  bool _shouldShowErrorToast(String message) {
+    final now = DateTime.now();
+    if (_lastErrorToastTime != null &&
+        _lastErrorToastMessage == message &&
+        now.difference(_lastErrorToastTime!).inMilliseconds < 1500) {
+      return false;
     }
-
-    // If it's an int, treat as milliseconds since epoch
-    if (value is int) {
-      try {
-        return DateTime.fromMillisecondsSinceEpoch(value);
-      } catch (_) {
-        debugPrint('Failed to parse date from milliseconds: $value');
-        return DateTime.now();
-      }
-    }
-
-    // For any other type or null, return current date
-    debugPrint('Unexpected date type: ${value.runtimeType}');
-    return DateTime.now();
+    _lastErrorToastTime = now;
+    _lastErrorToastMessage = message;
+    return true;
   }
 
   @override
@@ -389,25 +354,41 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
     return Scaffold(
       body: BlocConsumer<DigitScannerBloc, DigitScannerState>(
         listener: (context, state) {
-          if (state.error != null &&
-              (state.error?.toString() ?? '').trim().isNotEmpty) {
-            Toast.showToast(
-              context,
-              type: ToastType.error,
-              message: localizations.translate(state.error.toString()),
-              sentenceCaseEnabled: false,
-            );
+          final error = state.error?.toString().trim() ?? '';
+          if (error.isNotEmpty) {
+            // Same 1.5s same-message window DigitScannerUtils.handleError
+            // applies. Without it, repeated emissions stack toasts on top of
+            // each other and the pile intercepts taps meant for the footer
+            // button underneath.
+            if (_shouldShowErrorToast(error)) {
+              Toast.showToast(
+                context,
+                type: ToastType.error,
+                message: localizations.translate(error),
+                sentenceCaseEnabled: false,
+              );
+            }
+            // Dismiss the error ONLY. This used to re-dispatch handleScanner
+            // with empty lists, which the bloc treats as "no content" and
+            // emits straight back as the new state - wiping every serial the
+            // user had captured and leaving the page's scan-limit gate
+            // unsatisfiable, so Submit stayed disabled.
             context.read<DigitScannerBloc>().add(
-                  DigitScannerEvent.handleScanner(
-                      barCode: [], qrCode: [], scannerId: widget.scannerId),
+                  const DigitScannerEvent.clearError(),
                 );
           }
         },
         builder: (context, state) {
+          // Manual entry needs no camera, so it must not sit behind the
+          // camera-init spinner. Gating it on _cameras meant every manual
+          // code was typed behind a full-screen CircularProgressIndicator
+          // while the camera warmed up, which read as lag and as an overlay
+          // swallowing taps.
+          if (manualCode) {
+            return manualEntryWidget(context, theme, textTheme);
+          }
           return _cameras.isNotEmpty
-              ? !manualCode
-                  ? scanWidget(context, theme, textTheme, state)
-                  : manualEntryWidget(context, theme, textTheme)
+              ? scanWidget(context, theme, textTheme, state)
               : const Center(
                   child: CircularProgressIndicator(),
                 );
@@ -595,13 +576,20 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                       padding: const EdgeInsets.all(spacer4),
                       child: DigitButton(
                         mainAxisSize: MainAxisSize.max,
+                        // duplicateCheckFn below hits the database, and
+                        // nothing used to indicate that work was in flight.
+                        // The button looked dead and every extra tap queued
+                        // another check.
+                        isDisabled: _submittingManualEntry,
                         onPressed: () async {
+                          if (_submittingManualEntry) return;
                           if (widget.effectiveIsGS1code) {
                             form.markAllAsTouched();
                             if (!form.valid) return;
 
                             final bloc = context.read<DigitScannerBloc>();
 
+                            setState(() => _submittingManualEntry = true);
                             try {
                               final serialValue = form
                                   .control(_manualSerialNoFormKey)
@@ -754,6 +742,14 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                                     .translate(i18.scanner.resourcesScanFailed),
                                 sentenceCaseEnabled: false,
                               );
+                            } finally {
+                              // Every validation branch above returns early,
+                              // so the flag has to be cleared here or the
+                              // button stays disabled after a rejected code.
+                              if (mounted) {
+                                setState(
+                                    () => _submittingManualEntry = false);
+                              }
                             }
                           } else {
                             if (form.control(_manualCodeFormKey).value ==
