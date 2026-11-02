@@ -112,8 +112,7 @@ class DigitScannerPage extends LocalizedStatefulWidget {
   String? get manualSerialPatternMessage =>
       validations?.manualSerialPatternMessage;
 
-  bool get effectiveAllowManualEntry =>
-      validations?.allowManualEntry ?? true;
+  bool get effectiveAllowManualEntry => validations?.allowManualEntry ?? true;
 
   @override
   State<DigitScannerPage> createState() => DigitScannerPageState();
@@ -610,7 +609,8 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
 
                               final serialPattern = widget.manualSerialPattern;
                               if (serialPattern != null &&
-                                  !RegExp(serialPattern).hasMatch(serialValue)) {
+                                  !RegExp(serialPattern)
+                                      .hasMatch(serialValue)) {
                                 final message =
                                     widget.manualSerialPatternMessage;
                                 final translatedMessage = message == null
@@ -1435,8 +1435,7 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                                       SizedBox(
                                         width: 110,
                                         child: Text(
-                                          localizations
-                                              .translate(
+                                          localizations.translate(
                                               i18.scanner.serialNumber),
                                           style: textTheme.bodyS.copyWith(
                                             color:
@@ -1521,13 +1520,15 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                                 child: Text(
                                   overflow: TextOverflow.ellipsis,
                                   (() {
-                                    final raw = effectiveQrCodes[index].toString();
+                                    final raw =
+                                        effectiveQrCodes[index].toString();
                                     // Format 'username||uuid' as 'username : uuid'
                                     // before truncating for display
                                     final display = raw.contains('||')
                                         ? '${raw.split('||').first.trim()} : ${raw.split('||').last.trim()}'
                                         : raw;
-                                    return DigitScannerUtils().trimString(display);
+                                    return DigitScannerUtils()
+                                        .trimString(display);
                                   })(),
                                 ),
                               ),
