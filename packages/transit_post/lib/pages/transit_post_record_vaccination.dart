@@ -276,8 +276,15 @@ class TransitPostRecordVaccinationPageState
             "${localizations.translate(i18.transitPost.doseLabel)} $count",
             cellKey: "Dose$count"),
       );
-      tableData.add(DigitTableData(resource.productVariantId,
-          cellKey: resource.name ?? resource.productVariantId));
+      // The displayed value and the cellKey were the wrong way round: the
+      // table rendered the raw productVariantId ("PVAR-2026-...") and hid the
+      // product name in the key. Show the name, translated - the localisation
+      // code for a product is its name ("ITN - Grade - 1") - and keep the id
+      // as the stable key.
+      tableData.add(DigitTableData(
+          localizations.translate(
+              resource.name ?? resource.productVariantId),
+          cellKey: resource.productVariantId));
 
       finalTableRow.add(DigitTableRow(tableRow: tableData));
       count++;
