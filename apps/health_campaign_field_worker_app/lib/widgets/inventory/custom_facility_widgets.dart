@@ -173,6 +173,33 @@ class _FacilityCardContent extends StatelessWidget {
         : null;
   }
 
+  /// Current value of the dependent field (teamCode), read the same way
+  /// _getCurrentValue reads this field's own value.
+  ///
+  /// The receive-flow prefill has to key off THIS being empty, not off the
+  /// facility field: on a distributor receipt DELIVERY_TEAM is the only
+  /// destination on offer and is already selected, so a guard on the facility
+  /// field never fires and teamCode stays empty.
+  String? _getDependantValue(AbstractControl<dynamic>? control) {
+    final siblingValue =
+        control?.parent is FormGroup && (control!.parent as FormGroup).contains(dependantFormKey)
+            ? (control.parent as FormGroup).control(dependantFormKey).value?.toString()
+            : null;
+    if (siblingValue != null && siblingValue.isNotEmpty) return siblingValue;
+
+    final formData = stateData?.formData as Map<String, dynamic>?;
+    if (formData == null) return null;
+
+    final value = formData['warehouseDetails.$dependantFormKey'] ??
+        formData[dependantFormKey] ??
+        (formData['warehouseDetails'] as Map<String, dynamic>?)?[dependantFormKey] ??
+        (formData['stockDetails'] as Map<String, dynamic>?)?[dependantFormKey];
+
+    return (value != null && value.toString().isNotEmpty)
+        ? value.toString()
+        : null;
+  }
+
   String _getDisplayName(String facilityId, String? deliveryTeamCode) {
     if (facilityId == deliveryTeamCode) {
       return localizations.translate('DELIVERY_TEAM');
@@ -351,6 +378,67 @@ class _FacilityCardContent extends StatelessWidget {
       builder: (field) {
         // Read selected value from the form control (source of truth)
         var selectedValue = _getCurrentValue(field.control);
+        final currentTeamCode = _getDependantValue(field.control);
+
+        // For the receive flow, a distributor takes delivery into their OWN
+        // team, so prefill it the same way the return and loss/excess
+        // branches below already do.
+        //
+        // Offering DELIVERY_TEAM as a receipt destination (see showDeliveryTeam
+        // above) is what reveals the teamCode field, whose visibilityCondition
+        // is `warehouseDetails.facilityToWhich==DELIVERY_TEAM`. That option was
+        // added without the matching prefill, and teamCode is a mandatory
+        // SCANNER field - but a distributor receiving into their own team has
+        // no QR to scan, so it stayed empty. getStockTeamCode reads exactly
+        // that field for receiverId, so every such receipt was rejected by the
+        // server with
+        //   Size.stockBulkRequest.stock[0].receiverId
+        //   "size must be between 2 and 2147483647"
+        // and the stock was never recorded.
+        //
+        // Guarded by showDeliveryTeam so this only fires where DELIVERY_TEAM is
+        // genuinely on offer - warehouse managers and non-distributor roles are
+        // already excluded by it.
+        // Guarded on the DEPENDENT field being empty, not this one. On a
+        // distributor receipt DELIVERY_TEAM is the only destination offered
+        // (facilityToWhich filters to zero project facilities) so it is
+        // already selected by the time this runs - a guard on selectedValue
+        // never fires and teamCode is never written. Keying off teamCode also
+        // means a genuinely scanned team code is never clobbered.
+        if (isReceivedFlow &&
+            isToField &&
+            showDeliveryTeam &&
+            (selectedValue == null ||
+                selectedValue.isEmpty ||
+                selectedValue == deliveryTeamCode) &&
+            (currentTeamCode == null || currentTeamCode.isEmpty)) {
+          selectedValue = deliveryTeamCode;
+          // "userName||userUuid", the same shape a scanned team QR produces,
+          // so getTeamName can show a label while getStockTeamCode strips the
+          // prefix and persists the bare uuid as receiverId.
+          final loggedInUserId = context.loggedInUserTeamCode;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            field.control.value = deliveryTeamCode;
+            field.control.markAsTouched();
+            field.control.markAsDirty();
+            context.read<FormsBloc>().add(
+                  FormsEvent.updateField(
+                    schemaKey: pageSchema,
+                    context: context,
+                    key: formKey,
+                    value: deliveryTeamCode,
+                  ),
+                );
+            context.read<FormsBloc>().add(
+                  FormsEvent.updateField(
+                    schemaKey: pageSchema,
+                    context: context,
+                    key: dependantFormKey,
+                    value: loggedInUserId,
+                  ),
+                );
+          });
+        }
 
         // For return flow, auto-prefill delivery team if no value yet (distributors only)
         if (isReturnFlow &&

@@ -215,12 +215,14 @@ class FunctionRegistries {
       return number == number.roundToDouble() ? number.toInt() : number;
     });
 
-    // Clamps a dose-criteria-configured number to a maximum (defaulting to
-    // maxDeliveryQuantityPerHousehold), formatting it the same way
-    // trimTrailingZero does. Used anywhere a displayed ITN quantity is read
-    // directly from project config, bypassing the ResourceCard widget that
-    // enforces this same cap on the quantity actually entered for delivery.
-    // Usage: "{{fn:capNumber(path.to.quantity, 3)}}"
+    // Clamps a number to an explicitly supplied maximum, formatting it the
+    // same way trimTrailingZero does.
+    //
+    // There is no longer a default maximum: the per-household ITN ceiling is
+    // campaign config, not an app constant, so a caller that does not say
+    // what the maximum is gets the number back unchanged rather than a
+    // silently-applied app-side cap.
+    // Usage: "{{fn:capNumber(path.to.quantity, path.to.max)}}"
     FunctionRegistry.register('capNumber', (args, stateData) {
       if (args.isEmpty || args.first == null) return '';
 
@@ -229,33 +231,29 @@ class FunctionRegistries {
       if (number == null) return raw.toString();
 
       final maxArg = args.length > 1 ? args[1] : null;
-      final max = maxArg is num
-          ? maxArg
-          : num.tryParse(maxArg?.toString() ?? '') ??
-              maxDeliveryQuantityPerHousehold;
+      final max =
+          maxArg is num ? maxArg : num.tryParse(maxArg?.toString() ?? '');
 
-      final capped = number > max ? max : number;
+      final capped = (max != null && number > max) ? max : number;
       return capped == capped.roundToDouble() ? capped.toInt() : capped;
     });
 
-    // Resolves the ITN entitlement for a household from its member count,
-    // per the project type's taskProcedure ("1 bednet per 2 household
-    // members", capped at maxDeliveryQuantityPerHousehold).
+    // Resolves the ITN entitlement for a household straight from the
+    // project's dose criteria.
     //
-    // This deliberately does NOT read the dose criteria's `quantity`: that
-    // is a flat per-unit "1" in the project type config, so using it showed
-    // the same figure for a 1-member and a 7-member household - and it
-    // resolved to an empty string entirely whenever no cycle was currently
-    // running, since the whole targetCycle lookup collapsed to null.
-    // Usage: "{{fn:itnsForMemberCount(path.to.memberCount)}}"
-    FunctionRegistry.register('itnsForMemberCount', (args, stateData) {
+    // This replaces the old itnsForMemberCount, which derived the figure in
+    // the app as "1 net per 2 household members, capped at 3". That rule was
+    // app-side guesswork: the real entitlement is a per-district campaign
+    // decision (2 nets in the four urban Monrovia districts, 4 elsewhere),
+    // each district is its own project, and the number is already configured
+    // on the project type. Deriving it locally meant the configured value was
+    // ignored and every district behaved identically.
+    //
+    // Usage: "{{fn:itnQuantityFromConfig(contextData.0.eligibleProductVariants)}}"
+    FunctionRegistry.register('itnQuantityFromConfig', (args, stateData) {
       if (args.isEmpty || args.first == null) return '';
 
-      final raw = args.first;
-      final memberCount =
-          raw is num ? raw.toInt() : int.tryParse(raw.toString().trim());
-
-      final quantity = itnQuantityForMemberCount(memberCount);
+      final quantity = maxDeliveryQuantityFromDoseCriteria(args.first);
 
       return quantity?.toString() ?? '';
     });
@@ -631,10 +629,44 @@ class FunctionRegistries {
 
       final destinationTeam = argAt(2);
       final sourceTeam = argAt(5);
-      final rawTeam = argAt(3) == 'DELIVERY_TEAM'
+      final toDeliveryTeam = argAt(3) == 'DELIVERY_TEAM';
+      final rawTeam = toDeliveryTeam
           ? destinationTeam
           : (argAt(4) == 'DELIVERY_TEAM' ? sourceTeam : '');
-      if (rawTeam.isEmpty) return '';
+
+      if (rawTeam.isEmpty) {
+        // A distributor receiving stock INTO their own delivery team has no
+        // team QR to scan - they are the team - so warehouseDetails.teamCode
+        // is never filled and this returned ''. receiverId is mapped straight
+        // from this value, and the server rejects an empty one:
+        //   Size.stockBulkRequest.stock[0].receiverId
+        //   "size must be between 2 and 2147483647"
+        // The whole receipt was therefore refused and the balance never
+        // moved. getStockSenderId already falls back to the logged-in uuid
+        // for the mirror-image case (STAFF sender); this restores the same
+        // behaviour on the receiving side.
+        //
+        // Deliberately scoped to distributors: for a warehouse manager
+        // issuing to a team, an empty teamCode means the team QR was not
+        // scanned, and silently substituting the manager's own uuid would
+        // attribute the stock to the wrong party. Better to keep failing
+        // loudly there.
+        if (!toDeliveryTeam) {
+          return '';
+        }
+        try {
+          final isDistributor = context.loggedInUserRoles.any((role) =>
+              role.code == RolesType.distributor.toValue() ||
+              role.code == RolesType.communityDistributor.toValue());
+          if (isDistributor) return context.loggedInUserUuid;
+        } catch (_) {
+          // loggedInUserRoles/loggedInUserUuid throw when the user bloc is
+          // not in scope. This runs inside config interpolation, where an
+          // exception would abort the whole transform, so fall back to the
+          // previous behaviour rather than taking the form down.
+        }
+        return '';
+      }
 
       // A scanned team QR arrives as "userName||userUuid" (see getTeamCode), so
       // strip the name - receiverId has to be the bare uuid. A team code filled
@@ -1239,15 +1271,12 @@ class FunctionRegistries {
           final productName =
               variant['name']?.toString() ?? productId ?? 'Unknown';
           if (productId == null || productId.isEmpty) continue;
-          final rawQuantity =
+          // The configured quantity is already the per-household maximum
+          // ResourceCard enforces on the entered amount, so this check (and
+          // the "required" figure in the insufficient-stock message) matches
+          // what a delivery can actually use without any extra capping.
+          final quantity =
               double.tryParse(variant['quantity']?.toString() ?? '1') ?? 1.0;
-          // Cap to the same per-household maximum ResourceCard enforces on
-          // the quantity actually entered, so this check (and the "required"
-          // figure shown in the insufficient-stock message) never demands
-          // more stock than a delivery could ever actually use.
-          final quantity = rawQuantity > maxDeliveryQuantityPerHousehold
-              ? maxDeliveryQuantityPerHousehold.toDouble()
-              : rawQuantity;
           final key = productId;
           final balance = cache.cache[key] ?? 0.0;
           if (balance < quantity) {
@@ -1315,14 +1344,11 @@ class FunctionRegistries {
         final productId = resource['productVariantId']?.toString();
         if (productId == null || productId.isEmpty) continue;
 
-        final rawQuantity =
+        // A redose repeats what the earlier task actually recorded, which was
+        // itself validated against the project's configured maximum, so the
+        // recorded quantity needs no further capping.
+        final quantity =
             double.tryParse(resource['quantity']?.toString() ?? '1') ?? 1.0;
-        // A redose must never ask for more than the per-household cap
-        // either, even for a historical task recorded before this cap
-        // existed.
-        final quantity = rawQuantity > maxDeliveryQuantityPerHousehold
-            ? maxDeliveryQuantityPerHousehold.toDouble()
-            : rawQuantity;
         final balance = cache.cache[productId] ?? 0.0;
         if (balance < quantity) {
           insufficientProducts.add({
