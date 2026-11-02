@@ -10,14 +10,19 @@ import 'package:flutter_test/flutter_test.dart';
 /// `hidden: true`, which meant it was neither rendered
 /// (json_form_builder.dart skips hidden properties) nor counted by the
 /// under-capture gate in forms_render.dart - so no serials were captured and
-/// nothing blocked submission. It also carried a hardcoded `scanLimit: 4`,
-/// above the per-household cap of 3.
+/// nothing blocked submission.
 ///
 /// For GS1 codes the required scan count is derived from the resource-card
-/// quantity (scanner_builder.dart `_effectiveRequiredScanCount`), so the
-/// distributor must capture exactly as many serials as ITNs being handed
-/// over; `scanLimit` only applies as a fallback when that quantity cannot be
-/// read.
+/// quantity (scanner_builder.dart `_effectiveRequiredScanCount`), which in
+/// turn now comes from the project's dose criteria. So the distributor
+/// captures exactly as many serials as ITNs being handed over, and a district
+/// configured for 2 nets and one configured for 4 each get the right count
+/// with no app-side number involved.
+///
+/// `scanLimit` here is only the fallback for when that quantity cannot be
+/// read. A template expression would NOT work in a validations value: it is
+/// consumed as a raw JSON literal (scanner_builder.dart `scanLimit`) and an
+/// unparseable string silently degrades to 1 - so this stays a plain number.
 void main() {
   group('DeliveryDetails scanner field', () {
     late Map<String, dynamic> scanner;
@@ -56,10 +61,19 @@ void main() {
       expect(validationsByType()['isGS1Code'], isTrue);
     });
 
-    test('its fallback scan limit does not exceed the per-household cap', () {
-      // 3 == maxDeliveryQuantityPerHousehold. The old value of 4 would have
-      // let a fallback path ask for more ITNs than a household can receive.
-      expect(validationsByType()['scanLimit'], 3);
+    test('its fallback scan limit covers the largest configured district', () {
+      // 4 is the highest per-household maximum any Liberia district is
+      // configured for. A lower fallback (it was 3) would, on the rare path
+      // where the resource-card quantity cannot be read, stop a rural
+      // distributor from scanning the 4th net they are handing over.
+      expect(validationsByType()['scanLimit'], 4);
+    });
+
+    test('the fallback is a literal number, not a template expression', () {
+      // Validations values skip template resolution entirely, so a
+      // "{{fn:...}}" string here would fail int.tryParse and silently
+      // collapse the limit to 1.
+      expect(validationsByType()['scanLimit'], isA<int>());
     });
   });
 

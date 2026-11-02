@@ -2,100 +2,76 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:health_campaign_field_worker_app/utils/utils.dart';
 
-/// Guards the ITN entitlement shown as NUMBER_OF_ITN_FOR_DELIVERY.
+/// Guards the REGISTRATION.json wiring of the ITN entitlement shown as
+/// NUMBER_OF_ITN_FOR_DELIVERY.
 ///
-/// The Bednet/LLIN project type configures a flat `quantity: 1` per
-/// ProductVariant - a per-unit figure, not a per-household total - so reading
-/// it directly showed "1" for every household no matter how many members it
-/// had. The real rule lives in the project type's own taskProcedure: "1
-/// bednet is to be distributed per 2 household members", with the worked
-/// examples 4 members -> 2 nets and 5 members -> 3 nets.
+/// Two superseded approaches this must not drift back to:
+///
+///  1. Reading the dose-criteria quantity through the `targetCycle` lookup.
+///     That lookup resolves to null whenever no cycle is currently running,
+///     which rendered the field blank.
+///  2. Deriving the figure in the app as "1 net per 2 household members,
+///     capped at 3" (fn:itnsForMemberCount). That was app-side guesswork; it
+///     ignored the maximum the campaign actually configured, so a campaign
+///     created with a maximum of 4 still showed and distributed 3.
+///
+/// The figure now comes from `eligibleProductVariants` - the dose criteria
+/// the flow builder has already resolved into context - so each district's
+/// own configured maximum is what the field worker sees.
 void main() {
-  group('itnQuantityForMemberCount', () {
-    test('matches the worked examples in the project type taskProcedure', () {
-      // "If there are 4 household members, 2 bednets should be distributed."
-      expect(itnQuantityForMemberCount(4), 2);
-      // "If there are 5 household members, 3 bednets should be distributed."
-      expect(itnQuantityForMemberCount(5), 3);
-    });
+  late String raw;
+  late Map<String, dynamic> config;
 
-    test('rounds up - an odd member still needs a net', () {
-      expect(itnQuantityForMemberCount(1), 1);
-      expect(itnQuantityForMemberCount(3), 2);
-    });
+  const expression =
+      '{{fn:itnQuantityFromConfig(contextData.0.eligibleProductVariants)}}';
 
-    test('a household of exactly 2 gets a single net', () {
-      expect(itnQuantityForMemberCount(2), 1);
-    });
-
-    test('never exceeds the per-household cap', () {
-      expect(itnQuantityForMemberCount(6), maxDeliveryQuantityPerHousehold);
-      expect(itnQuantityForMemberCount(20), maxDeliveryQuantityPerHousehold);
-      expect(maxDeliveryQuantityPerHousehold, 3);
-    });
-
-    test('an unknown or nonsensical member count yields null, not zero', () {
-      // A blank is honest; "0 nets" would be a misleading instruction.
-      expect(itnQuantityForMemberCount(null), isNull);
-      expect(itnQuantityForMemberCount(0), isNull);
-      expect(itnQuantityForMemberCount(-1), isNull);
-    });
-
-    test('scales with a different members-per-unit rule', () {
-      expect(itnQuantityForMemberCount(6, membersPerUnit: 3, maxQuantity: 10),
-          2);
-      expect(itnQuantityForMemberCount(7, membersPerUnit: 3, maxQuantity: 10),
-          3);
-    });
+  setUpAll(() {
+    raw = File('assets/configs/json/REGISTRATION.json').readAsStringSync();
+    config = jsonDecode(raw) as Map<String, dynamic>;
   });
 
-  group('REGISTRATION.json wiring', () {
-    late String raw;
-
-    setUpAll(() {
-      raw = File('assets/configs/json/REGISTRATION.json').readAsStringSync();
-    });
-
-    test(
-        'NUMBER_OF_ITN_FOR_DELIVERY is derived from member count, not from '
-        'the dose criteria quantity', () {
-      final config = jsonDecode(raw);
-
-      final values = <String>[];
-      void walk(dynamic node) {
-        if (node is Map) {
-          if (node['key'] == 'NUMBER_OF_ITN_FOR_DELIVERY') {
-            values.add(node['value'].toString());
-          }
-          node.values.forEach(walk);
-        } else if (node is List) {
-          node.forEach(walk);
+  List<String> valuesForKey(String key) {
+    final values = <String>[];
+    void walk(dynamic node) {
+      if (node is Map) {
+        if (node['key'] == key && node['value'] != null) {
+          values.add(node['value'].toString());
         }
+        node.values.forEach(walk);
+      } else if (node is List) {
+        node.forEach(walk);
       }
+    }
 
-      walk(config);
+    walk(config);
+    return values;
+  }
 
-      expect(values, isNotEmpty);
-      for (final value in values) {
-        expect(value, contains('itnsForMemberCount'));
-        expect(value, contains('memberCount'));
-        // The old wiring collapsed to an empty string whenever no project
-        // cycle was currently running, because the whole targetCycle lookup
-        // resolved to null.
-        expect(value, isNot(contains('targetCycle')));
-      }
-    });
+  test('NUMBER_OF_ITN_FOR_DELIVERY is read from the backend dose criteria',
+      () {
+    final values = valuesForKey('NUMBER_OF_ITN_FOR_DELIVERY');
 
-    test(
-        'no NUMBER_OF_ITN_FOR_DELIVERY reader is left on the stale '
-        'doseCriteria quantity path anywhere in the config', () {
-      expect(
-        raw,
-        isNot(contains(
-            'doseCriteria.0.ProductVariants.0.quantity')),
-      );
-    });
+    expect(values, isNotEmpty);
+    for (final value in values) {
+      expect(value, expression);
+    }
+  });
+
+  test('every screen agrees on the same source - none is left behind', () {
+    // householdOverview and previewScreen both display this figure; a
+    // partial migration would show two different numbers for one household.
+    expect(
+      valuesForKey('NUMBER_OF_ITN_FOR_DELIVERY').toSet(),
+      {expression},
+    );
+  });
+
+  test('the app-side member-count rule is gone from the config', () {
+    expect(raw, isNot(contains('itnsForMemberCount')));
+  });
+
+  test('no reader is left on the stale targetCycle doseCriteria path', () {
+    expect(raw, isNot(contains('doseCriteria.0.ProductVariants.0.quantity')));
   });
 }

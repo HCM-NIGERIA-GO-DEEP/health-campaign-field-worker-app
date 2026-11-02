@@ -282,43 +282,45 @@ String maskString(String input) {
   return maskedString;
 }
 
-/// The hard cap on how many ITN units a single household may be offered for
-/// delivery, regardless of what the project's dose criteria configure.
-const maxDeliveryQuantityPerHousehold = 3;
-
-/// Clamps a dose-criteria-configured quantity to [maxDeliveryQuantityPerHousehold].
-/// Null (no quantity configured) stays null.
-int? capDeliveryQuantity(int? quantity,
-        {int maxQuantity = maxDeliveryQuantityPerHousehold}) =>
-    quantity == null ? null : math.min(quantity, maxQuantity);
-
-/// How many household members share a single ITN, per the Bednet/LLIN
-/// project type's taskProcedure ("1 bednet is to be distributed per 2
-/// household members").
-const householdMembersPerItn = 2;
-
-/// ITN units a household is entitled to, derived from its member count.
+/// The maximum ITN units a household may be offered, read from the project
+/// type's dose criteria.
 ///
-/// The project type's dose criteria configure a flat `quantity: 1` per
-/// ProductVariant - it is a per-unit figure, not a per-household total - so
-/// reading that number straight out of the config (as the household overview
-/// used to) showed "1" for every household regardless of size. The real
-/// entitlement is one net per [householdMembersPerItn] members, rounded up,
-/// and never more than [maxDeliveryQuantityPerHousehold]. This matches the
-/// worked examples in the project type's own taskProcedure: 4 members -> 2
-/// nets, 5 members -> 3 nets.
+/// There is deliberately no app-side constant here. The per-household maximum
+/// is a campaign-configuration decision that varies by district - 2 nets in
+/// the four urban Monrovia districts, 4 elsewhere - and each district is its
+/// own project with its own project type, so the only place that number can
+/// correctly live is the backend config. An app-side cap silently overrode it
+/// and made every district behave the same.
 ///
-/// Returns null when the member count is unknown, so callers can render a
-/// blank rather than a misleading zero.
-int? itnQuantityForMemberCount(int? memberCount,
-    {int membersPerUnit = householdMembersPerItn,
-    int maxQuantity = maxDeliveryQuantityPerHousehold}) {
-  if (memberCount == null || memberCount <= 0) return null;
+/// [eligibleProductVariants] is the resolved `doseCriteria` list the flow
+/// builder puts in context (see `eligibleProductVariants` in
+/// REGISTRATION.json), i.e. a list of maps each holding a `ProductVariants`
+/// list whose entries carry the configured `quantity`.
+///
+/// Returns the largest configured quantity across the eligible variants, or
+/// null when nothing is configured - so callers can render a blank rather
+/// than a misleading zero.
+int? maxDeliveryQuantityFromDoseCriteria(dynamic eligibleProductVariants) {
+  final criteria = eligibleProductVariants is List
+      ? eligibleProductVariants
+      : (eligibleProductVariants is Map ? [eligibleProductVariants] : const []);
 
-  // Round up: an odd member still needs a net of their own.
-  final entitled = (memberCount + membersPerUnit - 1) ~/ membersPerUnit;
+  int? max;
+  for (final criterion in criteria) {
+    if (criterion is! Map) continue;
+    final variants = criterion['ProductVariants'];
+    if (variants is! List) continue;
+    for (final variant in variants) {
+      if (variant is! Map) continue;
+      final raw = variant['quantity'];
+      final quantity =
+          raw is num ? raw.toInt() : int.tryParse(raw?.toString() ?? '');
+      if (quantity == null || quantity <= 0) continue;
+      max = max == null ? quantity : math.max(max, quantity);
+    }
+  }
 
-  return math.min(entitled, maxQuantity);
+  return max;
 }
 
 /// Groups ProjectBeneficiaryModel clientReferenceIds by the household they

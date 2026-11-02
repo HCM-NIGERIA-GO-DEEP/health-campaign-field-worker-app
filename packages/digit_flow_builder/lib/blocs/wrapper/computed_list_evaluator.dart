@@ -320,6 +320,11 @@ class ComputedListEvaluator {
         if (result['isSuccess'] && result['value'] == true) {
           results.add(item);
         } else if (result['isSuccess'] && result['value'] is num) {
+          // A numeric condition carries the entitlement itself, not a
+          // keep/drop predicate: the ITN dose criteria ship a placeholder
+          // `quantity: 1` alongside "MIN(CEIL(memberCount/2), 4)", and the
+          // computed result is the real per-household maximum. Verified on
+          // device: memberCount 10 -> 4, memberCount 5 -> 3.
           final computedValue = result['value'];
 
           if (item['ProductVariants'] is List) {

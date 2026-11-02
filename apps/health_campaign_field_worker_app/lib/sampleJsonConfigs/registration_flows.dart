@@ -1050,7 +1050,7 @@ final dynamic sampleFlows = {
                       },
                       {
                         "key": "qty",
-                        "value": "{{contextData.0.targetCycle.0.deliveries.0.doseCriteria.0.ProductVariants.0.quantity}}"
+                        "value": "{{fn:itnQuantityFromConfig(contextData.0.eligibleProductVariants)}}"
                       },
                       {
                         "key": "nameOfIndividual",

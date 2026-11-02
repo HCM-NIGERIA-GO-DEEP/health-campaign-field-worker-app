@@ -277,8 +277,10 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
                                 variants: productVariants,
                                 onProductChanged: (index, product) {
                                   setState(() {
-                                    _maxQuantities[index] =
-                                        capDeliveryQuantity(product.quantity);
+                                    // The dose criteria's quantity IS the
+                                    // per-household maximum for this project's
+                                    // district - use it as given.
+                                    _maxQuantities[index] = product.quantity;
                                   });
                                 },
                                 onDelete: (index) {
@@ -369,6 +371,7 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
         });
       }
     }
+
 
     context.read<FormsBloc>().add(
           FormsEvent.updateField(
@@ -513,9 +516,10 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
     _maxQuantities = List<int?>.generate(
       _controllers.length,
       (index) => (productVariants != null && index < productVariants.length)
-          ? capDeliveryQuantity(productVariants[index].quantity)
+          ? productVariants[index].quantity
           : null,
     );
+
 
     return fb.group(<String, Object>{
       _resourceDeliveredKey: FormArray<DeliveryProductVariant>(
@@ -538,13 +542,20 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
       _quantityDistributedKey: FormArray<int>(
         _controllers.map((e) {
           final index = _controllers.indexOf(e);
+          final configuredMax =
+              (productVariants != null && index < productVariants.length)
+                  ? productVariants[index].quantity
+                  : null;
           return FormControl<int>(
-            value: (productVariants != null && index < productVariants.length)
-                ? capDeliveryQuantity(productVariants[index].quantity)
-                : 0,
+            value: configuredMax ?? 0,
             validators: [
               Validators.min(1),
-              Validators.max(maxDeliveryQuantityPerHousehold),
+              // The ceiling comes from the project's dose criteria, not from
+              // the app, so a district configured for 2 nets and one
+              // configured for 4 both validate against their own number. The
+              // form is rebuilt whenever productVariants change
+              // (see _getOrCreateForm), so this stays in step with the config.
+              if (configuredMax != null) Validators.max(configuredMax),
             ],
           );
         }).toList(),
@@ -558,6 +569,7 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
     final cycles = projectType?.cycles;
     final eligible =
         data?.stateWrapper?.first?['eligibleProductVariants'] as List?;
+
     final productVariants = (eligible != null && eligible.isNotEmpty)
         ? eligible
             .whereType<Map<String, dynamic>>() // safety
@@ -572,6 +584,7 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
                     e as Map<String, dynamic>))
                 .toList() ??
             [];
+
 
     return productVariants;
   }
