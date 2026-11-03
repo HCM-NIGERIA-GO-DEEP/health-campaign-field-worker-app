@@ -595,7 +595,17 @@ class FunctionRegistries {
       final teamCode = args[3]?.toString() ?? '';
       final receiverPartyType =
           facilityToWhich == 'DELIVERY_TEAM' ? 'STAFF' : 'WAREHOUSE';
-      return receiverPartyType == 'STAFF' ? teamCode : facilityToWhich;
+      if (receiverPartyType != 'STAFF') return facilityToWhich;
+      // A scanned - or prefilled - team code arrives as "userName||userUuid"
+      // (see getTeamCode). receiverId has to be the bare uuid, so strip the
+      // name exactly as getStockTeamCode does. Returning the composite was
+      // latent rather than visible, because the stock transformer maps
+      // receiverId from `__switch:receiverPartyType{STAFF: __context:teamCode}`
+      // and never reads this key - but the two must not disagree, or whichever
+      // one a future config picks decides whether the receipt is accepted.
+      return teamCode.contains('||')
+          ? teamCode.split('||').last.trim()
+          : teamCode;
     });
 
     FunctionRegistry.register('getTeamCode', (args, stateData) {
@@ -620,19 +630,40 @@ class FunctionRegistries {
     // Prefer the scanned destination team for Delivery To. For returns where
     // the source is a delivery team, use the separately scanned source code.
     //
-    // args: [stockEntryType, primaryRole, warehouseDetails.teamCode,
-    //        warehouseDetails.facilityToWhich, stockDetails.facilityFromWhich,
-    //        stockDetails.deliveryTeam]
+    // Two call shapes are live in the field and both have to work, because the
+    // app cannot control when a remote config rolls out to a device:
+    //
+    //   6-arg [stockEntryType, primaryRole, warehouseDetails.teamCode,
+    //          warehouseDetails.facilityToWhich,
+    //          stockDetails.facilityFromWhich, stockDetails.deliveryTeam]
+    //
+    //   4-arg [stockEntryType, primaryRole, warehouseDetails.teamCode,
+    //          stockDetails.deliveryTeam]              <- the remote config
+    //
+    // Reading argAt(3) unconditionally tested the 4-arg form's deliveryTeam
+    // (null on a receipt) against 'DELIVERY_TEAM'. That is never true, so
+    // toDeliveryTeam was false, rawTeam was '', and this returned '' before
+    // the distributor fallback below could run. receiverId is mapped straight
+    // from the result, and the server refused the whole receipt with
+    //   Size.stockBulkRequest.stock[0].receiverId
+    //   "size must be between 2 and 2147483647"
+    //
+    // The 4-arg form carries no facilityToWhich, but it does not need one: the
+    // teamCode field's own visibilityCondition is
+    // `warehouseDetails.facilityToWhich==DELIVERY_TEAM`, so a non-empty
+    // teamCode already means the destination is a delivery team.
     FunctionRegistry.register('getStockTeamCode', (args, stateData) {
       String argAt(int index) =>
           args.length > index ? (args[index]?.toString().trim() ?? '') : '';
 
+      final isSixArg = args.length >= 6;
       final destinationTeam = argAt(2);
-      final sourceTeam = argAt(5);
-      final toDeliveryTeam = argAt(3) == 'DELIVERY_TEAM';
+      final sourceTeam = isSixArg ? argAt(5) : '';
+      final toDeliveryTeam =
+          isSixArg ? argAt(3) == 'DELIVERY_TEAM' : destinationTeam.isNotEmpty;
       final rawTeam = toDeliveryTeam
           ? destinationTeam
-          : (argAt(4) == 'DELIVERY_TEAM' ? sourceTeam : '');
+          : (isSixArg && argAt(4) == 'DELIVERY_TEAM' ? sourceTeam : '');
 
       if (rawTeam.isEmpty) {
         // A distributor receiving stock INTO their own delivery team has no
@@ -651,7 +682,15 @@ class FunctionRegistries {
         // scanned, and silently substituting the manager's own uuid would
         // attribute the stock to the wrong party. Better to keep failing
         // loudly there.
-        if (!toDeliveryTeam) {
+        // Only the 6-arg form can actually tell that the destination is NOT a
+        // delivery team. In the 4-arg form an empty teamCode is ambiguous, but
+        // the ambiguity is harmless: this value is consumed only through
+        // `__switch:receiverPartyType{STAFF: __context:teamCode}`, so a
+        // warehouse-bound transaction takes receiverId from facilityToWhich
+        // and never reads this at all. Falling through therefore lets the
+        // distributor fallback cover a receipt whose prefill did not land,
+        // without affecting warehouse transactions.
+        if (isSixArg && !toDeliveryTeam) {
           return '';
         }
         try {
