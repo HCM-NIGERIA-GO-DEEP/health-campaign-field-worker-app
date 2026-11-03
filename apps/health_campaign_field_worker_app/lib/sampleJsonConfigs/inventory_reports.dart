@@ -502,7 +502,7 @@ final dynamic inventoryReportFlows = {
                 "cellValue": "{{item.additionalFields.fields.wayBillNumber}}"
               },
               {
-                "header": "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_4_LABEL",
+                "header": "{{fn:unitLabel('STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_4_LABEL')}}",
                 "cellValue": "{{item.quantity}}"
               }
             ],

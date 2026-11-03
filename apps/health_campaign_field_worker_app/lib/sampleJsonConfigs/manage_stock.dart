@@ -122,6 +122,13 @@ final dynamic sampleInventoryFlows ={
                     "type": "FORM",
                     "name": "RECORDSTOCK",
                     "data": [
+                      // Stock keeping unit for the logged-in role. Resolved in the
+                      // flow layer because the forms engine has its OWN function
+                      // registry, which has no hasRole - an fn: call inside the
+                      // form's labelConditions reaches FormulaParser as literal
+                      // text and silently never matches. Read as
+                      // navigation.stockUnit.
+                      {"key": "stockUnit", "value": "{{fn:stockUnitForRole()}}"},
                       {
                         "key": "stockEntryType",
                         "value": "RECEIPT"
@@ -196,6 +203,13 @@ final dynamic sampleInventoryFlows ={
                 "type": "FORM",
                 "name": "RECORDSTOCK",
                 "data": [
+                  // Stock keeping unit for the logged-in role. Resolved in the
+                  // flow layer because the forms engine has its OWN function
+                  // registry, which has no hasRole - an fn: call inside the
+                  // form's labelConditions reaches FormulaParser as literal
+                  // text and silently never matches. Read as
+                  // navigation.stockUnit.
+                  {"key": "stockUnit", "value": "{{fn:stockUnitForRole()}}"},
                   {
                     "key": "stockEntryType",
                     "value": "DAMAGED"
@@ -239,6 +253,13 @@ final dynamic sampleInventoryFlows ={
                 "type": "FORM",
                 "name": "RECORDSTOCK",
                 "data": [
+                  // Stock keeping unit for the logged-in role. Resolved in the
+                  // flow layer because the forms engine has its OWN function
+                  // registry, which has no hasRole - an fn: call inside the
+                  // form's labelConditions reaches FormulaParser as literal
+                  // text and silently never matches. Read as
+                  // navigation.stockUnit.
+                  {"key": "stockUnit", "value": "{{fn:stockUnitForRole()}}"},
                   {
                     "key": "stockEntryType",
                     "value": "LOSS"
@@ -334,6 +355,13 @@ final dynamic sampleInventoryFlows ={
                     "type": "FORM",
                     "name": "RECORDSTOCK",
                     "data": [
+                      // Stock keeping unit for the logged-in role. Resolved in the
+                      // flow layer because the forms engine has its OWN function
+                      // registry, which has no hasRole - an fn: call inside the
+                      // form's labelConditions reaches FormulaParser as literal
+                      // text and silently never matches. Read as
+                      // navigation.stockUnit.
+                      {"key": "stockUnit", "value": "{{fn:stockUnitForRole()}}"},
                       {
                         "key": "stockEntryType",
                         "value": "ISSUED"
@@ -374,6 +402,13 @@ final dynamic sampleInventoryFlows ={
                     "type": "FORM",
                     "name": "RECORDSTOCK",
                     "data": [
+                      // Stock keeping unit for the logged-in role. Resolved in the
+                      // flow layer because the forms engine has its OWN function
+                      // registry, which has no hasRole - an fn: call inside the
+                      // form's labelConditions reaches FormulaParser as literal
+                      // text and silently never matches. Read as
+                      // navigation.stockUnit.
+                      {"key": "stockUnit", "value": "{{fn:stockUnitForRole()}}"},
                       {
                         "key": "stockEntryType",
                         "value": "RETURNED"
@@ -483,6 +518,13 @@ final dynamic sampleInventoryFlows ={
                   "type": "FORM",
                   "name": "RECORDSTOCK",
                   "data": [
+                    // Stock keeping unit for the logged-in role. Resolved in the
+                    // flow layer because the forms engine has its OWN function
+                    // registry, which has no hasRole - an fn: call inside the
+                    // form's labelConditions reaches FormulaParser as literal
+                    // text and silently never matches. Read as
+                    // navigation.stockUnit.
+                    {"key": "stockUnit", "value": "{{fn:stockUnitForRole()}}"},
                     {
                       "key": "stockEntryType",
                       "value": "RECEIPT"
@@ -569,6 +611,13 @@ final dynamic sampleInventoryFlows ={
                 "type": "FORM",
                 "name": "RECORDSTOCK",
                 "data": [
+                  // Stock keeping unit for the logged-in role. Resolved in the
+                  // flow layer because the forms engine has its OWN function
+                  // registry, which has no hasRole - an fn: call inside the
+                  // form's labelConditions reaches FormulaParser as literal
+                  // text and silently never matches. Read as
+                  // navigation.stockUnit.
+                  {"key": "stockUnit", "value": "{{fn:stockUnitForRole()}}"},
                   {
                     "key": "stockEntryType",
                     "value": "RECEIPT"
@@ -1122,6 +1171,19 @@ final dynamic sampleInventoryFlows ={
             {
               "type": "integer",
               "label": "APPONE_INVENTORY_QUANTITY_SENT_LABEL",
+              // Warehouse managers count ITNs in bales; distributors count
+              // loose pieces. Same field, same page, so the label code is
+              // chosen by role rather than the field being duplicated.
+              "labelConditions": [
+                {
+                  "condition": "navigation.stockUnit == 'BALES'",
+                  "label": "APPONE_INVENTORY_QUANTITY_SENT_LABEL_BALES"
+                },
+                {
+                  "condition": "navigation.stockUnit == 'PIECES'",
+                  "label": "APPONE_INVENTORY_QUANTITY_SENT_LABEL_PIECES"
+                }
+              ],
               "order": 4,
               "value": "",
               "format": "text",
@@ -1171,6 +1233,19 @@ final dynamic sampleInventoryFlows ={
             {
               "type": "integer",
               "label": "APPONE_INVENTORY_QUANTITY_LOST_LABEL",
+              // Warehouse managers count ITNs in bales; distributors count
+              // loose pieces. Same field, same page, so the label code is
+              // chosen by role rather than the field being duplicated.
+              "labelConditions": [
+                {
+                  "condition": "navigation.stockUnit == 'BALES'",
+                  "label": "APPONE_INVENTORY_QUANTITY_LOST_LABEL_BALES"
+                },
+                {
+                  "condition": "navigation.stockUnit == 'PIECES'",
+                  "label": "APPONE_INVENTORY_QUANTITY_LOST_LABEL_PIECES"
+                }
+              ],
               "order": 4,
               "value": "",
               "format": "text",
@@ -1310,6 +1385,19 @@ final dynamic sampleInventoryFlows ={
             {
               "type": "integer",
               "label": "APPONE_INVENTORY_QUANTITY_DAMAGED_LABEL",
+              // Warehouse managers count ITNs in bales; distributors count
+              // loose pieces. Same field, same page, so the label code is
+              // chosen by role rather than the field being duplicated.
+              "labelConditions": [
+                {
+                  "condition": "navigation.stockUnit == 'BALES'",
+                  "label": "APPONE_INVENTORY_QUANTITY_DAMAGED_LABEL_BALES"
+                },
+                {
+                  "condition": "navigation.stockUnit == 'PIECES'",
+                  "label": "APPONE_INVENTORY_QUANTITY_DAMAGED_LABEL_PIECES"
+                }
+              ],
               "order": 4,
               "value": "",
               "format": "text",
@@ -1402,6 +1490,19 @@ final dynamic sampleInventoryFlows ={
             {
               "type": "integer",
               "label": "APPONE_INVENTORY_QUANTITY_RETURNED_LABEL",
+              // Warehouse managers count ITNs in bales; distributors count
+              // loose pieces. Same field, same page, so the label code is
+              // chosen by role rather than the field being duplicated.
+              "labelConditions": [
+                {
+                  "condition": "navigation.stockUnit == 'BALES'",
+                  "label": "APPONE_INVENTORY_QUANTITY_RETURNED_LABEL_BALES"
+                },
+                {
+                  "condition": "navigation.stockUnit == 'PIECES'",
+                  "label": "APPONE_INVENTORY_QUANTITY_RETURNED_LABEL_PIECES"
+                }
+              ],
               "order": 4,
               "value": "",
               "format": "text",
@@ -1451,6 +1552,19 @@ final dynamic sampleInventoryFlows ={
             {
               "type": "integer",
               "label": "APPONE_INVENTORY_QUANTITY_RECEIVED_LABEL",
+              // Warehouse managers count ITNs in bales; distributors count
+              // loose pieces. Same field, same page, so the label code is
+              // chosen by role rather than the field being duplicated.
+              "labelConditions": [
+                {
+                  "condition": "navigation.stockUnit == 'BALES'",
+                  "label": "APPONE_INVENTORY_QUANTITY_RECEIVED_LABEL_BALES"
+                },
+                {
+                  "condition": "navigation.stockUnit == 'PIECES'",
+                  "label": "APPONE_INVENTORY_QUANTITY_RECEIVED_LABEL_PIECES"
+                }
+              ],
               "order": 4,
               "value": "",
               "format": "text",
@@ -2733,6 +2847,13 @@ final dynamic sampleInventoryFlows ={
                 "navigationMode": "popUntilAndPush",
                 "popUntilPageName": "RECORDSTOCK",
                 "data": [
+                  // Stock keeping unit for the logged-in role. Resolved in the
+                  // flow layer because the forms engine has its OWN function
+                  // registry, which has no hasRole - an fn: call inside the
+                  // form's labelConditions reaches FormulaParser as literal
+                  // text and silently never matches. Read as
+                  // navigation.stockUnit.
+                  {"key": "stockUnit", "value": "{{fn:stockUnitForRole()}}"},
                   {
                     "key": "stockEntryType",
                     "value": "RECEIPT"
