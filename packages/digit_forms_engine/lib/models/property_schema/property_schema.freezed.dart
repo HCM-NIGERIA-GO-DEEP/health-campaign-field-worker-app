@@ -54,7 +54,24 @@ mixin _$PropertySchema {
   String? get prefixText => throw _privateConstructorUsedError;
   String? get suffixText => throw _privateConstructorUsedError;
   String? get innerLabel => throw _privateConstructorUsedError;
-  String? get label => throw _privateConstructorUsedError;
+  String? get label =>
+      throw _privateConstructorUsedError; // Picks a different label code when a condition holds, evaluated in order
+// with the first match winning and [label] as the fallback.
+//
+// Labels resolve through a plain translateIfPresent(code) lookup, so one
+// code yields exactly one message - there was no way to vary wording at
+// runtime. The stock quantity fields need it: a warehouse manager counts
+// in bales and a distributor counts in pieces, on the same page and the
+// same form control, so duplicating the field was not an option either
+// (two controls cannot share a fieldName).
+//
+// Conditions use the same expression syntax and context as
+// visibilityCondition, so "{{fn:hasRole('WAREHOUSE_MANAGER')}} == true"
+// works here too. Omitted means the plain [label] is used, so existing
+// configs are unaffected.
+  @JsonKey(fromJson: _labelConditionListOrNull)
+  List<LabelCondition>? get labelConditions =>
+      throw _privateConstructorUsedError;
   bool? get isMultiSelect => throw _privateConstructorUsedError;
   dynamic get value => throw _privateConstructorUsedError;
   DisplayBehavior? get displayBehavior => throw _privateConstructorUsedError;
@@ -140,6 +157,8 @@ abstract class $PropertySchemaCopyWith<$Res> {
       String? suffixText,
       String? innerLabel,
       String? label,
+      @JsonKey(fromJson: _labelConditionListOrNull)
+      List<LabelCondition>? labelConditions,
       bool? isMultiSelect,
       dynamic value,
       DisplayBehavior? displayBehavior,
@@ -219,6 +238,7 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
     Object? suffixText = freezed,
     Object? innerLabel = freezed,
     Object? label = freezed,
+    Object? labelConditions = freezed,
     Object? isMultiSelect = freezed,
     Object? value = freezed,
     Object? displayBehavior = freezed,
@@ -339,6 +359,10 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
           ? _value.label
           : label // ignore: cast_nullable_to_non_nullable
               as String?,
+      labelConditions: freezed == labelConditions
+          ? _value.labelConditions
+          : labelConditions // ignore: cast_nullable_to_non_nullable
+              as List<LabelCondition>?,
       isMultiSelect: freezed == isMultiSelect
           ? _value.isMultiSelect
           : isMultiSelect // ignore: cast_nullable_to_non_nullable
@@ -577,6 +601,8 @@ abstract class _$$PropertySchemaImplCopyWith<$Res>
       String? suffixText,
       String? innerLabel,
       String? label,
+      @JsonKey(fromJson: _labelConditionListOrNull)
+      List<LabelCondition>? labelConditions,
       bool? isMultiSelect,
       dynamic value,
       DisplayBehavior? displayBehavior,
@@ -663,6 +689,7 @@ class __$$PropertySchemaImplCopyWithImpl<$Res>
     Object? suffixText = freezed,
     Object? innerLabel = freezed,
     Object? label = freezed,
+    Object? labelConditions = freezed,
     Object? isMultiSelect = freezed,
     Object? value = freezed,
     Object? displayBehavior = freezed,
@@ -783,6 +810,10 @@ class __$$PropertySchemaImplCopyWithImpl<$Res>
           ? _value.label
           : label // ignore: cast_nullable_to_non_nullable
               as String?,
+      labelConditions: freezed == labelConditions
+          ? _value._labelConditions
+          : labelConditions // ignore: cast_nullable_to_non_nullable
+              as List<LabelCondition>?,
       isMultiSelect: freezed == isMultiSelect
           ? _value.isMultiSelect
           : isMultiSelect // ignore: cast_nullable_to_non_nullable
@@ -906,6 +937,8 @@ class _$PropertySchemaImpl implements _PropertySchema {
       this.suffixText,
       this.innerLabel,
       this.label,
+      @JsonKey(fromJson: _labelConditionListOrNull)
+      final List<LabelCondition>? labelConditions,
       this.isMultiSelect,
       this.value,
       this.displayBehavior,
@@ -933,6 +966,7 @@ class _$PropertySchemaImpl implements _PropertySchema {
       @JsonKey(fromJson: _dynamicScanLimitConfigOrNull) this.dynamicScanLimit})
       : _properties = properties,
         _enums = enums,
+        _labelConditions = labelConditions,
         _conditions = conditions,
         _validations = validations,
         _conditionalNavigateTo = conditionalNavigateTo,
@@ -1015,6 +1049,45 @@ class _$PropertySchemaImpl implements _PropertySchema {
   final String? innerLabel;
   @override
   final String? label;
+// Picks a different label code when a condition holds, evaluated in order
+// with the first match winning and [label] as the fallback.
+//
+// Labels resolve through a plain translateIfPresent(code) lookup, so one
+// code yields exactly one message - there was no way to vary wording at
+// runtime. The stock quantity fields need it: a warehouse manager counts
+// in bales and a distributor counts in pieces, on the same page and the
+// same form control, so duplicating the field was not an option either
+// (two controls cannot share a fieldName).
+//
+// Conditions use the same expression syntax and context as
+// visibilityCondition, so "{{fn:hasRole('WAREHOUSE_MANAGER')}} == true"
+// works here too. Omitted means the plain [label] is used, so existing
+// configs are unaffected.
+  final List<LabelCondition>? _labelConditions;
+// Picks a different label code when a condition holds, evaluated in order
+// with the first match winning and [label] as the fallback.
+//
+// Labels resolve through a plain translateIfPresent(code) lookup, so one
+// code yields exactly one message - there was no way to vary wording at
+// runtime. The stock quantity fields need it: a warehouse manager counts
+// in bales and a distributor counts in pieces, on the same page and the
+// same form control, so duplicating the field was not an option either
+// (two controls cannot share a fieldName).
+//
+// Conditions use the same expression syntax and context as
+// visibilityCondition, so "{{fn:hasRole('WAREHOUSE_MANAGER')}} == true"
+// works here too. Omitted means the plain [label] is used, so existing
+// configs are unaffected.
+  @override
+  @JsonKey(fromJson: _labelConditionListOrNull)
+  List<LabelCondition>? get labelConditions {
+    final value = _labelConditions;
+    if (value == null) return null;
+    if (_labelConditions is EqualUnmodifiableListView) return _labelConditions;
+    // ignore: implicit_dynamic_type
+    return EqualUnmodifiableListView(value);
+  }
+
   @override
   final bool? isMultiSelect;
   @override
@@ -1117,7 +1190,7 @@ class _$PropertySchemaImpl implements _PropertySchema {
 
   @override
   String toString() {
-    return 'PropertySchema(type: $type, readOnly: $readOnly, displayOnly: $displayOnly, hidden: $hidden, properties: $properties, enums: $enums, schemaCode: $schemaCode, systemDate: $systemDate, charCount: $charCount, format: $format, startDate: $startDate, endDate: $endDate, minValue: $minValue, maxValue: $maxValue, minLength: $minLength, maxLength: $maxLength, min: $min, max: $max, helpText: $helpText, tooltip: $tooltip, prefixText: $prefixText, suffixText: $suffixText, innerLabel: $innerLabel, label: $label, isMultiSelect: $isMultiSelect, value: $value, displayBehavior: $displayBehavior, conditions: $conditions, order: $order, actionLabel: $actionLabel, description: $description, validations: $validations, includeInForm: $includeInForm, includeInSummary: $includeInSummary, navigateTo: $navigateTo, visibilityCondition: $visibilityCondition, conditionalNavigateTo: $conditionalNavigateTo, autoFillCondition: $autoFillCondition, showAlertPopUp: $showAlertPopUp, showSecondaryAlertPopUp: $showSecondaryAlertPopUp, multiEntityConfig: $multiEntityConfig, preventScreenCapture: $preventScreenCapture, submitCondition: $submitCondition, secondaryActionLabel: $secondaryActionLabel, comparisonConfig: $comparisonConfig, dynamicScanLimit: $dynamicScanLimit)';
+    return 'PropertySchema(type: $type, readOnly: $readOnly, displayOnly: $displayOnly, hidden: $hidden, properties: $properties, enums: $enums, schemaCode: $schemaCode, systemDate: $systemDate, charCount: $charCount, format: $format, startDate: $startDate, endDate: $endDate, minValue: $minValue, maxValue: $maxValue, minLength: $minLength, maxLength: $maxLength, min: $min, max: $max, helpText: $helpText, tooltip: $tooltip, prefixText: $prefixText, suffixText: $suffixText, innerLabel: $innerLabel, label: $label, labelConditions: $labelConditions, isMultiSelect: $isMultiSelect, value: $value, displayBehavior: $displayBehavior, conditions: $conditions, order: $order, actionLabel: $actionLabel, description: $description, validations: $validations, includeInForm: $includeInForm, includeInSummary: $includeInSummary, navigateTo: $navigateTo, visibilityCondition: $visibilityCondition, conditionalNavigateTo: $conditionalNavigateTo, autoFillCondition: $autoFillCondition, showAlertPopUp: $showAlertPopUp, showSecondaryAlertPopUp: $showSecondaryAlertPopUp, multiEntityConfig: $multiEntityConfig, preventScreenCapture: $preventScreenCapture, submitCondition: $submitCondition, secondaryActionLabel: $secondaryActionLabel, comparisonConfig: $comparisonConfig, dynamicScanLimit: $dynamicScanLimit)';
   }
 
   @override
@@ -1164,6 +1237,8 @@ class _$PropertySchemaImpl implements _PropertySchema {
             (identical(other.innerLabel, innerLabel) ||
                 other.innerLabel == innerLabel) &&
             (identical(other.label, label) || other.label == label) &&
+            const DeepCollectionEquality()
+                .equals(other._labelConditions, _labelConditions) &&
             (identical(other.isMultiSelect, isMultiSelect) ||
                 other.isMultiSelect == isMultiSelect) &&
             const DeepCollectionEquality().equals(other.value, value) &&
@@ -1237,6 +1312,7 @@ class _$PropertySchemaImpl implements _PropertySchema {
         suffixText,
         innerLabel,
         label,
+        const DeepCollectionEquality().hash(_labelConditions),
         isMultiSelect,
         const DeepCollectionEquality().hash(value),
         displayBehavior,
@@ -1304,6 +1380,8 @@ abstract class _PropertySchema implements PropertySchema {
       final String? suffixText,
       final String? innerLabel,
       final String? label,
+      @JsonKey(fromJson: _labelConditionListOrNull)
+      final List<LabelCondition>? labelConditions,
       final bool? isMultiSelect,
       final dynamic value,
       final DisplayBehavior? displayBehavior,
@@ -1397,6 +1475,22 @@ abstract class _PropertySchema implements PropertySchema {
   String? get innerLabel;
   @override
   String? get label;
+  @override // Picks a different label code when a condition holds, evaluated in order
+// with the first match winning and [label] as the fallback.
+//
+// Labels resolve through a plain translateIfPresent(code) lookup, so one
+// code yields exactly one message - there was no way to vary wording at
+// runtime. The stock quantity fields need it: a warehouse manager counts
+// in bales and a distributor counts in pieces, on the same page and the
+// same form control, so duplicating the field was not an option either
+// (two controls cannot share a fieldName).
+//
+// Conditions use the same expression syntax and context as
+// visibilityCondition, so "{{fn:hasRole('WAREHOUSE_MANAGER')}} == true"
+// works here too. Omitted means the plain [label] is used, so existing
+// configs are unaffected.
+  @JsonKey(fromJson: _labelConditionListOrNull)
+  List<LabelCondition>? get labelConditions;
   @override
   bool? get isMultiSelect;
   @override
@@ -2282,6 +2376,162 @@ abstract class _VisibilityCondition implements VisibilityCondition {
   @override
   @JsonKey(ignore: true)
   _$$VisibilityConditionImplCopyWith<_$VisibilityConditionImpl> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+LabelCondition _$LabelConditionFromJson(Map<String, dynamic> json) {
+  return _LabelCondition.fromJson(json);
+}
+
+/// @nodoc
+mixin _$LabelCondition {
+  String get condition => throw _privateConstructorUsedError;
+  String get label => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $LabelConditionCopyWith<LabelCondition> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $LabelConditionCopyWith<$Res> {
+  factory $LabelConditionCopyWith(
+          LabelCondition value, $Res Function(LabelCondition) then) =
+      _$LabelConditionCopyWithImpl<$Res, LabelCondition>;
+  @useResult
+  $Res call({String condition, String label});
+}
+
+/// @nodoc
+class _$LabelConditionCopyWithImpl<$Res, $Val extends LabelCondition>
+    implements $LabelConditionCopyWith<$Res> {
+  _$LabelConditionCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? condition = null,
+    Object? label = null,
+  }) {
+    return _then(_value.copyWith(
+      condition: null == condition
+          ? _value.condition
+          : condition // ignore: cast_nullable_to_non_nullable
+              as String,
+      label: null == label
+          ? _value.label
+          : label // ignore: cast_nullable_to_non_nullable
+              as String,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$LabelConditionImplCopyWith<$Res>
+    implements $LabelConditionCopyWith<$Res> {
+  factory _$$LabelConditionImplCopyWith(_$LabelConditionImpl value,
+          $Res Function(_$LabelConditionImpl) then) =
+      __$$LabelConditionImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String condition, String label});
+}
+
+/// @nodoc
+class __$$LabelConditionImplCopyWithImpl<$Res>
+    extends _$LabelConditionCopyWithImpl<$Res, _$LabelConditionImpl>
+    implements _$$LabelConditionImplCopyWith<$Res> {
+  __$$LabelConditionImplCopyWithImpl(
+      _$LabelConditionImpl _value, $Res Function(_$LabelConditionImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? condition = null,
+    Object? label = null,
+  }) {
+    return _then(_$LabelConditionImpl(
+      condition: null == condition
+          ? _value.condition
+          : condition // ignore: cast_nullable_to_non_nullable
+              as String,
+      label: null == label
+          ? _value.label
+          : label // ignore: cast_nullable_to_non_nullable
+              as String,
+    ));
+  }
+}
+
+/// @nodoc
+@JsonSerializable()
+class _$LabelConditionImpl implements _LabelCondition {
+  const _$LabelConditionImpl({required this.condition, required this.label});
+
+  factory _$LabelConditionImpl.fromJson(Map<String, dynamic> json) =>
+      _$$LabelConditionImplFromJson(json);
+
+  @override
+  final String condition;
+  @override
+  final String label;
+
+  @override
+  String toString() {
+    return 'LabelCondition(condition: $condition, label: $label)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$LabelConditionImpl &&
+            (identical(other.condition, condition) ||
+                other.condition == condition) &&
+            (identical(other.label, label) || other.label == label));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, condition, label);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$LabelConditionImplCopyWith<_$LabelConditionImpl> get copyWith =>
+      __$$LabelConditionImplCopyWithImpl<_$LabelConditionImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$LabelConditionImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _LabelCondition implements LabelCondition {
+  const factory _LabelCondition(
+      {required final String condition,
+      required final String label}) = _$LabelConditionImpl;
+
+  factory _LabelCondition.fromJson(Map<String, dynamic> json) =
+      _$LabelConditionImpl.fromJson;
+
+  @override
+  String get condition;
+  @override
+  String get label;
+  @override
+  @JsonKey(ignore: true)
+  _$$LabelConditionImplCopyWith<_$LabelConditionImpl> get copyWith =>
       throw _privateConstructorUsedError;
 }
 

@@ -39,6 +39,7 @@ _$PropertySchemaImpl _$$PropertySchemaImplFromJson(Map<String, dynamic> json) =>
       suffixText: json['suffixText'] as String?,
       innerLabel: json['innerLabel'] as String?,
       label: json['label'] as String?,
+      labelConditions: _labelConditionListOrNull(json['labelConditions']),
       isMultiSelect: json['isMultiSelect'] as bool?,
       value: json['value'],
       displayBehavior: json['displayBehavior'] == null
@@ -108,6 +109,8 @@ Map<String, dynamic> _$$PropertySchemaImplToJson(
   writeNotNull('suffixText', instance.suffixText);
   writeNotNull('innerLabel', instance.innerLabel);
   writeNotNull('label', instance.label);
+  writeNotNull('labelConditions',
+      instance.labelConditions?.map((e) => e.toJson()).toList());
   writeNotNull('isMultiSelect', instance.isMultiSelect);
   writeNotNull('value', instance.value);
   writeNotNull('displayBehavior', instance.displayBehavior?.toJson());
@@ -238,6 +241,19 @@ Map<String, dynamic> _$$VisibilityConditionImplToJson(
         _$VisibilityConditionImpl instance) =>
     <String, dynamic>{
       'expression': instance.expression,
+    };
+
+_$LabelConditionImpl _$$LabelConditionImplFromJson(Map<String, dynamic> json) =>
+    _$LabelConditionImpl(
+      condition: json['condition'] as String,
+      label: json['label'] as String,
+    );
+
+Map<String, dynamic> _$$LabelConditionImplToJson(
+        _$LabelConditionImpl instance) =>
+    <String, dynamic>{
+      'condition': instance.condition,
+      'label': instance.label,
     };
 
 _$VisibilityExpressionImpl _$$VisibilityExpressionImplFromJson(

@@ -44,6 +44,22 @@ class PropertySchema with _$PropertySchema {
     String? suffixText,
     String? innerLabel,
     String? label,
+    // Picks a different label code when a condition holds, evaluated in order
+    // with the first match winning and [label] as the fallback.
+    //
+    // Labels resolve through a plain translateIfPresent(code) lookup, so one
+    // code yields exactly one message - there was no way to vary wording at
+    // runtime. The stock quantity fields need it: a warehouse manager counts
+    // in bales and a distributor counts in pieces, on the same page and the
+    // same form control, so duplicating the field was not an option either
+    // (two controls cannot share a fieldName).
+    //
+    // Conditions use the same expression syntax and context as
+    // visibilityCondition, so "{{fn:hasRole('WAREHOUSE_MANAGER')}} == true"
+    // works here too. Omitted means the plain [label] is used, so existing
+    // configs are unaffected.
+    @JsonKey(fromJson: _labelConditionListOrNull)
+    List<LabelCondition>? labelConditions,
     bool? isMultiSelect,
     dynamic value,
     DisplayBehavior? displayBehavior,
@@ -143,6 +159,17 @@ class VisibilityCondition with _$VisibilityCondition {
 
   factory VisibilityCondition.fromJson(Map<String, dynamic> json) =>
       _$VisibilityConditionFromJson(json);
+}
+
+@freezed
+class LabelCondition with _$LabelCondition {
+  const factory LabelCondition({
+    required String condition,
+    required String label,
+  }) = _LabelCondition;
+
+  factory LabelCondition.fromJson(Map<String, dynamic> json) =>
+      _$LabelConditionFromJson(json);
 }
 
 @freezed
@@ -322,6 +349,25 @@ NavigateToConfig? _navigateToConfigOrNull(dynamic value) {
     return NavigateToConfig.fromJson(value);
   }
   return null;
+}
+
+/// Tolerates a malformed or partial entry by skipping it rather than failing
+/// the whole page parse - a bad label override should cost the override, not
+/// the screen.
+List<LabelCondition>? _labelConditionListOrNull(dynamic value) {
+  if (value is! List) return null;
+
+  final parsed = <LabelCondition>[];
+  for (final entry in value) {
+    if (entry is! Map) continue;
+    final condition = entry['condition'];
+    final label = entry['label'];
+    if (condition is! String || label is! String) continue;
+    if (condition.trim().isEmpty || label.trim().isEmpty) continue;
+    parsed.add(LabelCondition(condition: condition, label: label));
+  }
+
+  return parsed.isEmpty ? null : parsed;
 }
 
 VisibilityCondition? _visibilityConditionOrNull(dynamic value) {
