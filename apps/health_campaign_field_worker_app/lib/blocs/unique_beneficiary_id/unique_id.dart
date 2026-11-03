@@ -1,6 +1,7 @@
 // GENERATED using mason_cli
 import 'dart:async';
 
+import 'package:android_id/android_id.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:digit_data_model/data/repositories/package_repository/remote/unique_id_pool.dart';
@@ -10,6 +11,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../utils/beneficiary_id_allocator.dart';
+import '../../utils/session/device_id_resolution.dart';
 
 part 'unique_id.freezed.dart';
 
@@ -70,7 +72,9 @@ class UniqueIdBloc extends Bloc<UniqueIdEvent, UniqueIdState> {
     try {
       final deviceInfo = DeviceInfoPlugin();
       final androidInfo = await deviceInfo.androidInfo;
-      final deviceUuid = androidInfo.id;
+      // ANDROID_ID, not androidInfo.id: that is Build.ID, which every device
+      // on the same firmware shares. Build.ID stays the fallback.
+      final deviceUuid = usableId(await _readAndroidId()) ?? androidInfo.id;
 
       final connectivityResult = await Connectivity().checkConnectivity();
       if (connectivityResult.contains(ConnectivityResult.none)) {
@@ -150,6 +154,15 @@ class UniqueIdBloc extends Bloc<UniqueIdEvent, UniqueIdState> {
       } else {
         emit(UniqueIdState.failed(e.toString()));
       }
+    }
+  }
+
+  // A failed read must not fail the download; the caller falls back.
+  static Future<String?> _readAndroidId() async {
+    try {
+      return await const AndroidId().getId();
+    } catch (_) {
+      return null;
     }
   }
 
