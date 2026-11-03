@@ -864,6 +864,66 @@ class FunctionRegistries {
     // True when the logged-in user holds any of the given role codes.
     // Codes are matched case-insensitively against RolesType values.
     // Usage: "visible": "{{fn:hasRole('DISTRIBUTOR')}} == true"
+    // The stock keeping unit for the logged-in user: a warehouse manager
+    // moves ITNs in bales, a distributor hands out loose pieces.
+    //
+    // Resolved HERE, in the flow layer, and passed down as a navigation param
+    // ("stockUnit") rather than being evaluated inside the form. The forms
+    // engine has its own separate functionRegistry (digit_forms_engine
+    // utils.dart) which does not contain hasRole, so an `{{fn:hasRole(...)}}`
+    // expression inside a form's labelConditions is never evaluated - it
+    // reaches FormulaParser as literal text and silently never matches.
+    // Comparing the plain `navigation.stockUnit` value instead uses only what
+    // that evaluator can already do.
+    //
+    // Returns '' for any other role, so labelConditions fall through to the
+    // unit-less default label rather than mislabelling the field.
+    // Usage: "{{fn:stockUnitForRole()}}"
+    FunctionRegistry.register('stockUnitForRole', (args, stateData) {
+      try {
+        final roles = context.loggedInUserRoles
+            .map((role) => role.code.toUpperCase())
+            .toSet();
+        // Warehouse manager wins for a dual-role user: stock they handle is
+        // still baled until it is broken down at the distribution point.
+        return stockUnitForRoles(roles);
+      } catch (_) {
+        return '';
+      }
+    });
+
+    // Suffixes a localisation code with the logged-in role's stock unit,
+    // for places that resolve a label through resolveTemplate rather than a
+    // plain translate() - i.e. TEMPLATE table headers, where the header is
+    // resolved first and translated second.
+    //
+    // Form FIELD labels cannot use this: they go through translateIfPresent
+    // with no template resolution, which is why those use `labelConditions`
+    // against navigation.stockUnit instead. Two mechanisms, same source of
+    // truth (stockUnitForRole).
+    //
+    // Falls back to the bare code when the role has no unit, so the column
+    // keeps its existing unit-less heading rather than rendering a raw key
+    // for a code that was never upserted.
+    // Usage: "{{fn:unitLabel('STOCKRECON_REPORT_DETAILS_TABLE_HEADER_2_LABEL')}}"
+    FunctionRegistry.register('unitLabel', (args, stateData) {
+      if (args.isEmpty || args.first == null) return '';
+      final base = args.first.toString().trim().replaceAll("'", '');
+      if (base.isEmpty) return '';
+
+      String unit = '';
+      try {
+        final roles = context.loggedInUserRoles
+            .map((role) => role.code.toUpperCase())
+            .toSet();
+        unit = stockUnitForRoles(roles);
+      } catch (_) {
+        unit = '';
+      }
+
+      return unit.isEmpty ? base : '${base}_$unit';
+    });
+
     FunctionRegistry.register('hasRole', (args, stateData) {
       final requestedRoles = args
           .expand((arg) => arg is List ? arg : [arg])

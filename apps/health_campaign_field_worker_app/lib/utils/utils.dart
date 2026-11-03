@@ -282,6 +282,22 @@ String maskString(String input) {
   return maskedString;
 }
 
+/// The stock keeping unit a role counts in: a warehouse manager moves ITNs
+/// in bales, a distributor hands out loose pieces.
+///
+/// Kept pure so one rule serves all three consumers - the `stockUnitForRole`
+/// and `unitLabel` registry functions, and the navigation param set at flow
+/// entry. Returns '' for any other role so callers fall back to the
+/// unit-less label rather than mislabelling the field.
+String stockUnitForRoles(Iterable<String> roleCodes) {
+  final roles = roleCodes.map((code) => code.toUpperCase()).toSet();
+  // Warehouse manager wins for a dual-role user: stock they handle is still
+  // baled until it is broken down at the distribution point.
+  if (roles.contains('WAREHOUSE_MANAGER')) return 'BALES';
+  if (roles.contains('DISTRIBUTOR')) return 'PIECES';
+  return '';
+}
+
 /// The maximum ITN units a household may be offered, read from the project
 /// type's dose criteria.
 ///
