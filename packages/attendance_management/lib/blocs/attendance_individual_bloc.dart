@@ -325,7 +325,41 @@ class AttendanceIndividualBloc
     int twelvePM =
         DateTime(currentDate.year, currentDate.month, currentDate.day, 11, 58)
             .millisecondsSinceEpoch;
-    attendees = event.attendees.map((e) {
+
+    // Drop attendees whose enrollment window does not contain the selected
+    // date. The date selector is bounded by the register's startDate, which
+    // precedes an attendee's enrollmentDate whenever staff are mapped to the
+    // register mid-campaign, so without this a supervisor can mark someone for
+    // a day before they existed on the register. The server rejects those
+    // logs, and sync-up has no per-record error handling, so one rejected log
+    // fails the whole batch.
+    //
+    // This is the single choke point for the attendee list: it feeds both the
+    // rendered list and attendanceCollectionModel, which _onSaveAsDraft
+    // iterates when building logs. Filtering here covers every entry point
+    // into this screen, including the QR scanner.
+    final selectedDay =
+        DateTime(currentDate.year, currentDate.month, currentDate.day);
+
+    final inWindow = event.attendees.where((e) {
+      final enrolled = e.enrollmentDate;
+      if (enrolled != null) {
+        final en = DateTime.fromMillisecondsSinceEpoch(enrolled);
+        if (selectedDay.isBefore(DateTime(en.year, en.month, en.day))) {
+          return false;
+        }
+      }
+      final denrolled = e.denrollmentDate;
+      if (denrolled != null) {
+        final de = DateTime.fromMillisecondsSinceEpoch(denrolled);
+        if (selectedDay.isAfter(DateTime(de.year, de.month, de.day))) {
+          return false;
+        }
+      }
+      return true;
+    }).toList();
+
+    attendees = inWindow.map((e) {
       final entryLogList = logResponse
           .where((l) =>
               l.individualId == e.individualId &&

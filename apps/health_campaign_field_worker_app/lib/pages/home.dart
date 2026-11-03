@@ -667,6 +667,42 @@ class _HomePageState extends LocalizedState<HomePage> {
         return (logTime == entryTime || logTime == exitTime);
       }).toList();
 
+      // An attendee can only be marked on dates inside their enrollment
+      // window. The date picker is bounded by the register's startDate, which
+      // is earlier than the enrollment date whenever staff are mapped to the
+      // register mid-campaign, so without this the supervisor can mark someone
+      // for a day before they existed on the register. The server rejects
+      // those logs, and because sync-up has no per-record error handling a
+      // single rejected log aborts the entire sync batch.
+      if (selectedDate != null) {
+        final selected = DateTime.fromMillisecondsSinceEpoch(selectedDate);
+        final selectedDay =
+            DateTime(selected.year, selected.month, selected.day);
+
+        items = items.where((item) {
+          final entity = item is Map ? item['entity'] : null;
+          if (entity == null) return true;
+
+          final enrolled = entity.enrollmentDate;
+          if (enrolled is int) {
+            final e = DateTime.fromMillisecondsSinceEpoch(enrolled);
+            if (selectedDay.isBefore(DateTime(e.year, e.month, e.day))) {
+              return false;
+            }
+          }
+
+          final denrolled = entity.denrollmentDate;
+          if (denrolled is int) {
+            final d = DateTime.fromMillisecondsSinceEpoch(denrolled);
+            if (selectedDay.isAfter(DateTime(d.year, d.month, d.day))) {
+              return false;
+            }
+          }
+
+          return true;
+        }).toList();
+      }
+
       items = items.map((item) {
         if (item is Map && item['individualId'] != null) {
           double status = -1.0;

@@ -65,6 +65,17 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
   var currentSelectedDate =
       DateTime.now().getFormattedDate('dd MMM yyyy').toString();
   bool markManualAttendance = false;
+
+  /// Whether the supervisor used the Present/Absent buttons during this
+  /// session, as opposed to the QR scanner.
+  ///
+  /// `markManualAttendance` alone cannot answer this now that manual marking
+  /// is offered on the current date too: it only tracks "the selected date is
+  /// in the past". Submission applies `isMarkedManually` to the whole batch,
+  /// so deriving it from the date would label scanner-marked workers as
+  /// manual. Reset whenever the date changes, since each date is submitted
+  /// separately.
+  bool _usedManualMarking = false;
   String? manualAttendanceReason;
   String? manualAttendanceComment;
 
@@ -233,6 +244,46 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
     return DateTime(first.year, first.month, first.day);
   }
 
+  /// Attendees whose enrollment window contains [date] (defaults to the
+  /// currently selected date).
+  ///
+  /// The date selector is bounded by the register's startDate, which precedes
+  /// an attendee's enrollmentDate whenever staff are mapped to the register
+  /// mid-campaign. Without this the supervisor can mark someone for a day
+  /// before they existed on the register; the server rejects those logs, and
+  /// sync-up has no per-record error handling, so one rejected log fails the
+  /// whole batch.
+  List<AttendeeModel> _attendeesForSelectedDate([DateTime? date]) {
+    final attendees = widget.registerModel.attendees ?? [];
+    if (attendees.isEmpty) return [];
+
+    final selected = date ??
+        AttendanceDateTimeManagement.getFormattedDateToDateTime(
+            currentSelectedDate);
+    if (selected == null) return attendees;
+    final selectedDay = DateTime(selected.year, selected.month, selected.day);
+
+    return attendees
+        .where((a) => _isWithinEnrollmentWindow(a, selectedDay))
+        .toList();
+  }
+
+  bool _isWithinEnrollmentWindow(AttendeeModel attendee, DateTime selectedDay) {
+    final enrolled = attendee.enrollmentDate;
+    if (enrolled != null) {
+      final e = DateTime.fromMillisecondsSinceEpoch(enrolled);
+      if (selectedDay.isBefore(DateTime(e.year, e.month, e.day))) return false;
+    }
+
+    final denrolled = attendee.denrollmentDate;
+    if (denrolled != null) {
+      final d = DateTime.fromMillisecondsSinceEpoch(denrolled);
+      if (selectedDay.isAfter(DateTime(d.year, d.month, d.day))) return false;
+    }
+
+    return true;
+  }
+
   DateTime _attendanceLastDate() {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
@@ -256,6 +307,9 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
       currentSelectedDate = formatted;
       dateController.text = formatted;
       markManualAttendance = !AttendanceDateTimeManagement.isToday(normalized);
+      // Each date is marked and submitted on its own; carrying this across a
+      // date change would tag the next date's batch as manual.
+      _usedManualMarking = false;
     });
 
     controller.clear();
@@ -437,9 +491,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
             create: (context) => individualLogBloc!
               ..add(
                 AttendanceIndividualLogSearchEvent(
-                  attendees: widget.registerModel.attendees!.isNotEmpty
-                      ? widget.registerModel.attendees!
-                      : [],
+                  attendees: _attendeesForSelectedDate(),
                   limit: 10,
                   offset: 0,
                   currentDate: DateTime.now().isAfter(
@@ -974,15 +1026,20 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                                                     ? _faceEventDots[
                                                         individual.individualId]
                                                     : null,
-                                            markManualAttendance:
-                                                AttendanceDateTimeManagement.isToday(
-                                                            AttendanceDateTimeManagement
-                                                                .getFormattedDateToDateTime(
-                                                                    currentSelectedDate)!) &&
-                                                        !markManualAttendance
-                                                    ? false
-                                                    : true,
+                                            // Present/Absent are offered on
+                                            // every date, today included. This
+                                            // previously resolved to false on
+                                            // the current date, so today could
+                                            // only be marked by QR scanner --
+                                            // leaving no way to mark a register
+                                            // whose enrollment starts today.
+                                            // The scanner is unchanged and is
+                                            // still shown for today; manual
+                                            // marking is now an addition to it
+                                            // rather than a replacement.
+                                            markManualAttendance: true,
                                             onMarkPresent: () async {
+                                              _usedManualMarking = true;
                                               // Toggling an already-present
                                               // worker off needs no signature —
                                               // forward the toggle event as-is.
@@ -1062,6 +1119,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                                                               null));
                                             },
                                             onMarkAbsent: () {
+                                              _usedManualMarking = true;
                                               context
                                                   .read<
                                                       AttendanceIndividualBloc>()
@@ -1329,8 +1387,8 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                     longitude: longitude,
                     comment: form.control(_commentKey).value,
                     additionalDetails: {
-                      if (markManualAttendance)
-                        'isMarkedManually': markManualAttendance,
+                      if (markManualAttendance || _usedManualMarking)
+                        'isMarkedManually': true,
                       if (manualAttendanceReason != null &&
                           manualAttendanceReason!.isNotEmpty)
                         'manualMarkingReason': manualAttendanceReason,
@@ -1504,9 +1562,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
 
     individualLogBloc!.add(
       AttendanceIndividualLogSearchEvent(
-        attendees: widget.registerModel.attendees!.isNotEmpty
-            ? widget.registerModel.attendees!
-            : [],
+        attendees: _attendeesForSelectedDate(),
         limit: 10,
         offset: 0,
         currentDate: AttendanceDateTimeManagement.getFormattedDateToDateTime(
@@ -1642,9 +1698,7 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                     currentSelectedDate = date;
                     individualLogBloc!.add(
                       AttendanceIndividualLogSearchEvent(
-                        attendees: widget.registerModel.attendees!.isNotEmpty
-                            ? widget.registerModel.attendees!
-                            : [],
+                        attendees: _attendeesForSelectedDate(),
                         limit: 10,
                         offset: 0,
                         currentDate: AttendanceDateTimeManagement
