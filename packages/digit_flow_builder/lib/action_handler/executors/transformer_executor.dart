@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../data/transformer_config.dart';
 import '../../flow_builder.dart';
+import '../../utils/cycle_index.dart';
 import '../../utils/interpolation.dart';
 import '../../utils/utils.dart';
 import 'action_executor.dart';
@@ -209,6 +210,12 @@ class TransformerExecutor extends ActionExecutor {
       'householdType': HouseholdType.family.toValue(),
       ...extraContext,
       "beneficiaryType": FlowBuilderSingleton().beneficiaryType?.toValue(),
+      // The cycle this record is saved in, for every mapping's
+      // `cycleIndexStamp`; set after extraContext so a screen cannot change
+      // it. A screen's own `cycleIndex` is left exactly as passed.
+      "cycleIndexStamp": cycleIndexStampAt(
+          FlowBuilderSingleton().projectType?.cycles,
+          DateTime.now().millisecondsSinceEpoch),
     };
 
     List<EntityModel> entities = [];
