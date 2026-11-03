@@ -2369,13 +2369,14 @@ void initializeFunctionRegistry() {
   FunctionRegistry.register("hasBeneficiaryId", (args, stateData) {
     final identifier = args.isNotEmpty ? args.first : null;
 
-    if (identifier == null) return false;
+    if (identifier is! Map) return false;
 
-    if (identifier["identifierType"] == 'UNIQUE_BENEFICIARY_ID') {
-      return true;
-    }
+    // Data registered by the older app stores the type as its enum name
+    // (`uniqueBeneficiaryID`), so compare without case or underscores.
+    final type = identifier["identifierType"]?.toString();
+    if (type == null) return false;
 
-    return false;
+    return type.replaceAll('_', '').toLowerCase() == 'uniquebeneficiaryid';
   });
 
   FunctionRegistry.register("getVASProjectCycles", (args, stateData) {
