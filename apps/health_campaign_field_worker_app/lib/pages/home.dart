@@ -2168,13 +2168,11 @@ class _HomePageState extends LocalizedState<HomePage> {
                     // MDMS publishes this module as REGISTRATIONFLOW, and
                     // storeSchema caches under schemaJson['name'] verbatim,
                     // so that is the name actually present in the cache -
-                    // query it first. REGISTRATION is kept as the fallback
-                    // because our own source config still carries that name;
-                    // asking for it alone never matched, which is why
-                    // registration silently ran on the bundled sampleFlows
-                    // below and no backend change ever reached the app.
+                    // ask for it directly. Asking for REGISTRATION (the name
+                    // our own source config carries) never matched, which is
+                    // why registration silently ran on the bundled
+                    // sampleFlows below and no backend change reached the app.
                     schemaKey: 'REGISTRATIONFLOW',
-                    schemaKeyAliases: const ['REGISTRATION'],
                     sampleFlows: sampleFlows,
                     relationshipMappings: [
                       const RelationshipMapping(

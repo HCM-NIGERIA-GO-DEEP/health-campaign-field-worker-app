@@ -18,7 +18,7 @@ TO_ENV_HOST = "https://sierraleone-hcm-uat.digit.org/localization/messages/v1/_u
 
 UPSERT_REQUEST_BODY = {
     "RequestInfo": {
-        "authToken": "3594134e-8ae8-43b4-83c5-10a41eb4c64a",
+        "authToken": "e29ebe9c-0ccb-424b-8694-0a316a429a84",
         "userInfo": {
             "id": 91,
             "uuid": "1c0f99dc-6a89-4f04-9b1e-a15f29c6a3ba",
@@ -275,68 +275,94 @@ headers = {"Content-Type": "application/json"}
 #             "Number of children and pregnant women combined cannot exceed total household members",
 #     },
 # }
-
-# Legacy localization payload retained as comments above. The active entries
-# cover the member-sum validation and consent-declined success screen wording.
+#
+# # Legacy localization payload retained as comments above. The active entries
+# # cover the member-sum validation and consent-declined success screen wording.
+# MESSAGES_BY_MODULE = {
+#     f"hcm-inventory-{CAMPAIGN}": {
+#         "INVENTORY_ORIGINAL_QUANTITY_RECEIVED_LABEL": "Quantity Sent",
+#         "INVENTORY_DISCREPANCY_REASON_LABEL": "Discrepancy Reason",
+#         "INVENTORY_DISCREPANCY_REASON_IN_TRANSIT": "In Transit",
+#         "INVENTORY_DISCREPANCY_REASON_STOCK_LOSS": "Stock Loss",
+#         "INVENTORY_DISCREPANCY_REASON_STOCK_DAMAGE": "Stock Damage",
+#         "INVENTORY_DISCREPANCY_REASON_OTHERS": "Others",
+#         "INVENTORY_DISCREPANCY_REASON_OTHERS_DETAIL_LABEL": "Other Reason",
+#         "INVENTORY_SHORTFALL_QUANTITY_LABEL": "Shortfall Quantity",
+#         "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_UNACCOUNTED_LABEL": "Unaccounted Quantity",
+#         "INVENTORY_PARTIALLY_ACCEPT_STOCK_LABEL": "Partially Accept",
+#         "INVENTORY_REJECT_CONFIRMATION_TITLE": "Partially Accept Stock",
+#         "INVENTORY_REJECT_CONFIRMATION_DESCRIPTION":
+#             "Enter the quantity you actually received and the reason it differs from the quantity sent.",
+#         "INVENTORY_REJECT_CONFIRM_ACTION": "Confirm",
+#         "INVENTORY_REJECT_CANCEL_ACTION": "Cancel",
+#         "INVENTORY_ACTUAL_QUANTITY_RECEIVED_LABEL": "Actual Quantity Received",
+#         "INVENTORY_REJECT_COMMENT_LABEL": "Reason for Difference",
+#         "INVENTORY_PARTIAL_ACCEPT_QUANTITY_INVALID":
+#             "Actual received quantity must be greater than zero and less than the quantity sent. "
+#             "To record the full quantity, use Accept instead.",
+#         "INVENTORY_STOCK_REJECTED_SUCCESS": "Stock partially accepted",
+#
+#         # Stock PRD: Accept/Partial Accept on an incoming Shortfall Return.
+#         "INVENTORY_STOCK_DAMAGE_RECORDED_SUCCESS":
+#             "Stock recorded as damaged",
+#         "INVENTORY_STOCK_LOSS_RECORDED_SUCCESS":
+#             "Stock loss recorded",
+#         "INVENTORY_RETURN_RESOLVED_VIA_ACCEPT":
+#             "This return resolves automatically based on the reason the sender reported - use Accept instead.",
+#
+#         # viewReports' reportDetails heading, per report type. Receipt/
+#         # Dispatch/Returned/Damage/Loss reuse the INVENTORY_STOCK_*_DETAILS_
+#         # HEADING codes already upserted above for viewTransactionDetails
+#         # (same wording fits both screens) - only Excess and Less need their
+#         # own codes here, since no single-transaction equivalent exists.
+#         "INVENTORY_REPORT_DETAILS_EXCESS_REPORT_TITLE": "Stock Excess Details",
+#         "INVENTORY_REPORT_DETAILS_LESS_REPORT_TITLE": "Stock Less Details",
+#     },
+#     f"hcm-registration-{CAMPAIGN}": {
+#         "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenAndPregnantWomen_maxFieldSum_message":
+#             "The combined number of children and pregnant women must not exceed the total number of household members.",
+#         "CAREGIVER_CONSENT_DECLINED_PANEL_HEADING": "Household Marked as Closed",
+#         "CAREGIVER_CONSENT_DECLINED_PANEL_DESC":
+#             "This household was marked as closed because consent was not provided. You can search for it again if consent is obtained later.",
+#         "HOUSEHOLD_REGISTERED_SUCCESSFUL_PANEL_CARD_HEADING":
+#             "Household Registered Successfully",
+#         "HOUSEHOLD_REGISTERED_SUCCESSFUL_PANEL_CARD_DESC":
+#             "The household has been registered and the health talk checklist has been recorded.",
+#     },
+#     f"hcm-closehousehold-{CAMPAIGN}": {
+#         # headName only had a minLength before - sync fails server-side past
+#         # 200 chars (same cap registration_flows.dart enforces on its own
+#         # name fields), so add a matching maxLength here too.
+#         "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_headName_MAX_LENGTH_ERROR":
+#             "Name must be at most 200 characters",
+#     },
+# }
+# Active set: the home beneficiary card, now labelled per role.
+#
+# The card's VISIBILITY was already role-driven, but its text was not - both
+# Registrar and Distributor saw "House to House", which only describes the
+# Registrar's work. A Distributor hands stock out at a fixed distribution
+# point and never goes door to door, so the card named a task they do not do.
+# home.dart now picks the code via context.isDistributorRole; the destination
+# flow is unchanged, only the wording.
+#
+# Module: hcm-registration-<campaign>, matching where Liberia keeps its
+# equivalent home card labels (HOME_REGISTRAR_BENEFICIARY_LABEL /
+# HOME_DISTRIBUTION_LABEL in upsert_liberia_localisations.py).
+#
+# Note the app's own seed data (lib/utils/localization_strings.json) files
+# HOME_* codes under "hcm-home" - that module is NOT used here. It appears
+# only in those upstream seed files, in no Sierra Leone module list and in no
+# fetch path, so a code sent there would upsert cleanly and still render as
+# the raw code on screen.
 MESSAGES_BY_MODULE = {
-    f"hcm-inventory-{CAMPAIGN}": {
-        "INVENTORY_ORIGINAL_QUANTITY_RECEIVED_LABEL": "Quantity Sent",
-        "INVENTORY_DISCREPANCY_REASON_LABEL": "Discrepancy Reason",
-        "INVENTORY_DISCREPANCY_REASON_IN_TRANSIT": "In Transit",
-        "INVENTORY_DISCREPANCY_REASON_STOCK_LOSS": "Stock Loss",
-        "INVENTORY_DISCREPANCY_REASON_STOCK_DAMAGE": "Stock Damage",
-        "INVENTORY_DISCREPANCY_REASON_OTHERS": "Others",
-        "INVENTORY_DISCREPANCY_REASON_OTHERS_DETAIL_LABEL": "Other Reason",
-        "INVENTORY_SHORTFALL_QUANTITY_LABEL": "Shortfall Quantity",
-        "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_UNACCOUNTED_LABEL": "Unaccounted Quantity",
-        "INVENTORY_PARTIALLY_ACCEPT_STOCK_LABEL": "Partially Accept",
-        "INVENTORY_REJECT_CONFIRMATION_TITLE": "Partially Accept Stock",
-        "INVENTORY_REJECT_CONFIRMATION_DESCRIPTION":
-            "Enter the quantity you actually received and the reason it differs from the quantity sent.",
-        "INVENTORY_REJECT_CONFIRM_ACTION": "Confirm",
-        "INVENTORY_REJECT_CANCEL_ACTION": "Cancel",
-        "INVENTORY_ACTUAL_QUANTITY_RECEIVED_LABEL": "Actual Quantity Received",
-        "INVENTORY_REJECT_COMMENT_LABEL": "Reason for Difference",
-        "INVENTORY_PARTIAL_ACCEPT_QUANTITY_INVALID":
-            "Actual received quantity must be greater than zero and less than the quantity sent. "
-            "To record the full quantity, use Accept instead.",
-        "INVENTORY_STOCK_REJECTED_SUCCESS": "Stock partially accepted",
-
-        # Stock PRD: Accept/Partial Accept on an incoming Shortfall Return.
-        "INVENTORY_STOCK_DAMAGE_RECORDED_SUCCESS":
-            "Stock recorded as damaged",
-        "INVENTORY_STOCK_LOSS_RECORDED_SUCCESS":
-            "Stock loss recorded",
-        "INVENTORY_RETURN_RESOLVED_VIA_ACCEPT":
-            "This return resolves automatically based on the reason the sender reported - use Accept instead.",
-
-        # viewReports' reportDetails heading, per report type. Receipt/
-        # Dispatch/Returned/Damage/Loss reuse the INVENTORY_STOCK_*_DETAILS_
-        # HEADING codes already upserted above for viewTransactionDetails
-        # (same wording fits both screens) - only Excess and Less need their
-        # own codes here, since no single-transaction equivalent exists.
-        "INVENTORY_REPORT_DETAILS_EXCESS_REPORT_TITLE": "Stock Excess Details",
-        "INVENTORY_REPORT_DETAILS_LESS_REPORT_TITLE": "Stock Less Details",
-    },
     f"hcm-registration-{CAMPAIGN}": {
-        "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenAndPregnantWomen_maxFieldSum_message":
-            "The combined number of children and pregnant women must not exceed the total number of household members.",
-        "CAREGIVER_CONSENT_DECLINED_PANEL_HEADING": "Household Marked as Closed",
-        "CAREGIVER_CONSENT_DECLINED_PANEL_DESC":
-            "This household was marked as closed because consent was not provided. You can search for it again if consent is obtained later.",
-        "HOUSEHOLD_REGISTERED_SUCCESSFUL_PANEL_CARD_HEADING":
-            "Household Registered Successfully",
-        "HOUSEHOLD_REGISTERED_SUCCESSFUL_PANEL_CARD_DESC":
-            "The household has been registered and the health talk checklist has been recorded.",
-    },
-    f"hcm-closehousehold-{CAMPAIGN}": {
-        # headName only had a minLength before - sync fails server-side past
-        # 200 chars (same cap registration_flows.dart enforces on its own
-        # name fields), so add a matching maxLength here too.
-        "CLOSEHOUSEHOLD_CLOSEHOUSEHOLDDETAILS_headName_MAX_LENGTH_ERROR":
-            "Name must be at most 200 characters",
+        # Shown to Distributors in place of HOME_HOUSE_TO_HOUSE_LABEL, which
+        # stays as-is for Registrars.
+        "HOME_DISTRIBUTION_POINT_LABEL": "Distribution point",
     },
 }
+
 # ONE REQUEST PER MODULE - never a single batched request for all of them.
 # The server de-duplicates the messages array by CODE alone, ignoring the
 # module, so a batch carrying the same code for two modules is rejected
