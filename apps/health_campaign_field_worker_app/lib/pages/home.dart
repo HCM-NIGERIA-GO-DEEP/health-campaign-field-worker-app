@@ -2140,7 +2140,17 @@ class _HomePageState extends LocalizedState<HomePage> {
           homeShowcaseData.distributorBeneficiaries.buildWith(
         child: HomeItemCard(
           icon: Icons.home,
-          label: i18.home.houseToHouse,
+          // One card, two audiences. Its visibility is role-driven, but the
+          // label was not: both roles saw "House to House", which is only
+          // true for a Registrar. A Distributor hands stock out at a fixed
+          // distribution point and never goes door to door, so the card
+          // described work they do not do.
+          //
+          // Only the wording differs - the destination flow is identical, so
+          // this deliberately does not branch the navigation below.
+          label: context.isDistributorRole
+              ? i18.home.distributionPoint
+              : i18.home.houseToHouse,
           onPressed: () async {
             context.router.push(CurrentBoundaryRoute(
               onBoundarySelected: (ctx) async {
@@ -2155,7 +2165,16 @@ class _HomePageState extends LocalizedState<HomePage> {
                 await FlowNavigationUtils.navigateToFlowModule(
                   context: ctx,
                   config: FlowModuleConfig(
-                    schemaKey: 'REGISTRATION',
+                    // MDMS publishes this module as REGISTRATIONFLOW, and
+                    // storeSchema caches under schemaJson['name'] verbatim,
+                    // so that is the name actually present in the cache -
+                    // query it first. REGISTRATION is kept as the fallback
+                    // because our own source config still carries that name;
+                    // asking for it alone never matched, which is why
+                    // registration silently ran on the bundled sampleFlows
+                    // below and no backend change ever reached the app.
+                    schemaKey: 'REGISTRATIONFLOW',
+                    schemaKeyAliases: const ['REGISTRATION'],
                     sampleFlows: sampleFlows,
                     relationshipMappings: [
                       const RelationshipMapping(
