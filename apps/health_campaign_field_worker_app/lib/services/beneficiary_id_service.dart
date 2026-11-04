@@ -154,8 +154,9 @@ class BeneficiaryIdService {
   Future<String> compose(BoundaryModel selected, String rawId) async {
     final dp = await distributionPoint(selected);
     final cached = cache.getBoundaryNumericId(scope, dp.code);
-    final numeric = cached;
-    final identifier = '${numeric?.toString() ?? dp.name}_$rawId';
+    // Used verbatim - no int round-trip - so a zero-padded code keeps the
+    // width the backend issued ("0255_xx", not "255_xx").
+    final identifier = '${cached ?? dp.name}_$rawId';
     return identifier;
   }
 

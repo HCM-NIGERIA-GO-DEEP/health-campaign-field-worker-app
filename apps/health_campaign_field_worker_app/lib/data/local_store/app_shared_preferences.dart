@@ -61,13 +61,29 @@ class AppSharedPreferences {
   String _beneficiaryKey(String scope, String code, String kind) =>
       'beneficiary_${kind}_${Uri.encodeComponent(scope)}_${Uri.encodeComponent(code)}';
 
-  int? getBoundaryNumericId(String scope, String code) =>
-      sharedPreferences.getInt(_beneficiaryKey(scope, code, 'prefix'));
+  /// Stored as a String so a zero-padded prefix keeps the width the backend
+  /// issued ("0255", not 255).
+  ///
+  /// setInt/getInt normalised the padding away, which would have undone the
+  /// String handling in BoundaryBeneficiaryIdMap one layer further down - the
+  /// map parsed "0255" correctly and the cache then wrote 255 back.
+  String? getBoundaryNumericId(String scope, String code) {
+    final key = _beneficiaryKey(scope, code, 'prefix');
+    try {
+      return sharedPreferences.getString(key);
+    } on TypeError {
+      // An install from before this change still holds an int under this key,
+      // and getString throws on the type mismatch rather than returning null.
+      // Treat it as absent: it is then re-fetched and rewritten as a String,
+      // and the un-padded int was the wrong value to begin with.
+      return null;
+    }
+  }
 
   Future<void> setBoundaryNumericId(
-      String scope, String code, int value) async {
+      String scope, String code, String value) async {
     await (await _ensureInstance())
-        .setInt(_beneficiaryKey(scope, code, 'prefix'), value);
+        .setString(_beneficiaryKey(scope, code, 'prefix'), value);
   }
 
   Map<String, String>? getBeneficiaryDistributionPoint(
