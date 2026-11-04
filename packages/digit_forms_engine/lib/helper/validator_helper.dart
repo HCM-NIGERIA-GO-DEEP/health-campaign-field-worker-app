@@ -1,4 +1,5 @@
 import 'package:digit_forms_engine/helper/form_builder_helper.dart';
+import 'package:digit_scanner/utils/scanner_utils.dart';
 import 'package:flutter/foundation.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
@@ -40,6 +41,47 @@ dynamic _resolveNavigationValue(dynamic value, String? schemaKey) {
   // Extract the key after "navigation."
   final key = value.substring('navigation.'.length);
   return navParams[key];
+}
+
+/// The individual codes held in a scanner control's value.
+///
+/// A scanner control does not store a code - it stores every code that was
+/// scanned, serialized as `key:value|key:value` segments joined by ';'. A
+/// per-code `pattern` therefore cannot be applied to the control value as a
+/// whole: `^[A-Z0-9][A-Z0-9-]{7,}$` matches the serial `38383838448` but not
+/// the `01:00000000000000|10:MANUAL|21:38383838448` it is stored inside,
+/// because of the ':' and '|' separators. Applying it to the raw value
+/// rejected every scan on the delivery page with a "required field" toast
+/// while DigitScannerBloc had already accepted each code individually.
+///
+/// Returns the serial (AI 21) per GS1 segment, mirroring what the bloc checks
+/// for a manually typed code. A segment whose serial cannot be read yields
+/// nothing rather than the raw text: the pattern is a deliberately permissive
+/// guard-rail and non-matching codes are dropped with a toast at scan time, so
+/// guessing here would resurrect exactly the false rejection this replaces.
+List<String> scannerCodesFromValue(String raw) {
+  final trimmed = raw.trim();
+  if (trimmed.isEmpty) return const [];
+
+  final codes = <String>[];
+  for (final segment in trimmed.split(';')) {
+    final part = segment.trim();
+    if (part.isEmpty) continue;
+
+    final isGs1 = part.contains('|') || RegExp(r'^\d{2}:').hasMatch(part);
+    if (!isGs1) {
+      // A bare code (legacy single-value entry) is itself the thing to check.
+      codes.add(part);
+      continue;
+    }
+
+    for (final map in DigitScannerUtils.deserializeGs1Barcodes(part)) {
+      final serial = (map['21'] ?? map['SERIAL'] ?? map['serial'])?.trim();
+      if (serial != null && serial.isNotEmpty) codes.add(serial);
+    }
+  }
+
+  return codes;
 }
 
 List<Validator<T>> buildValidators<T>(PropertySchema schema,
@@ -159,6 +201,43 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
           break;
 
         case 'pattern':
+          // A scanner control holds many codes in one serialized string, so
+          // the pattern has to be applied per code. Handled before the
+          // generic branches below, which test the control value as a whole.
+          //
+          // Deliberately NOT composeOR'd with equals('')/equals(null): that
+          // is how this surfaced as `errors=[pattern, requiredEquals]`.
+          // composeOR returns the UNION of every branch's errors when all
+          // fail, so the empty-value fallback leaked its own key alongside
+          // the real one and the page reported a "required" failure for what
+          // was actually a format mismatch. Emptiness is checked inline here.
+          if (schema.format == PropertySchemaFormat.scanner) {
+            final raw = rule.value is List && rule.value.isNotEmpty
+                ? rule.value.first
+                : rule.value;
+            if (raw is String && raw.isNotEmpty) {
+              final pattern = RegExp(raw);
+              validators.add(Validators.delegate((control) {
+                final value = control.value?.toString() ?? '';
+                if (value.trim().isEmpty) return null;
+
+                final codes = scannerCodesFromValue(value);
+                // No readable code is not a format failure - an unrecognised
+                // shape is for the scanner itself to reject, and failing here
+                // would block the page with no way to clear it.
+                if (codes.isEmpty) return null;
+
+                final invalid =
+                    codes.where((c) => !pattern.hasMatch(c)).toList();
+                if (invalid.isEmpty) return null;
+                return {
+                  'pattern': {'invalidCodes': invalid}
+                };
+              }) as Validator<T>);
+            }
+            break;
+          }
+
           if (rule.value is List && rule.value.isNotEmpty) {
             validators.add(Validators.composeOR([
               Validators.pattern(RegExp(rule.value.first)) as Validator<T>,

@@ -3327,7 +3327,7 @@ final dynamic sampleFlows = {
             {
               "type": "boolean",
               "label": "APPONE_DELIVERYFLOW_DELIVERYDETAIL_ACTIONS_PROTECT_FROM_MALERIA",
-              "order": 1,
+              "order": 7,
               "value": "",
               "format": "checkbox",
               "hidden": false,
@@ -3336,7 +3336,7 @@ final dynamic sampleFlows = {
               "helpText": "",
               "infoText": "",
               "readOnly": false,
-              "fieldName": "ACTION6",
+              "fieldName": "ACTION7",
               "required": true,
               "mandatory": true,
               "deleteFlag": false,

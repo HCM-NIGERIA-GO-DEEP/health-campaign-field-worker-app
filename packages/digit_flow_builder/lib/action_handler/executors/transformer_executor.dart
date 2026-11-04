@@ -204,21 +204,64 @@ class TransformerExecutor extends ActionExecutor {
         entry['identifierType'] == 'UNIQUE_BENEFICIARY_ID' &&
         entry['identifierId'] is String &&
         (entry['identifierId'] as String).isNotEmpty);
-    if (isRegistration && !alreadyAssigned && !hasSelectedToken) {
+    // The token carried IN from form state. On a leaked registration this is
+    // the PREVIOUS household's id.
+    final incomingToken = identifierEntries.firstWhere(
+      (e) => e['identifierType'] == 'UNIQUE_BENEFICIARY_ID',
+      orElse: () => const <String, dynamic>{},
+    )['identifierId'];
+
+    // A carried token is only trustworthy while its pool row is still
+    // unAssigned. Trusting it unconditionally is what let two households
+    // share an id: the registry keeps the previous household's formData when
+    // a screen is left by a route pop that ran no CLEAR_STATE - leaving
+    // householdOverview by the system back gesture does exactly that, since
+    // it declares no onSystemBack while its back BUTTON clears state - and
+    // the stale id then suppressed the pool query entirely, so the duplicate
+    // was issued however many unassigned ids were waiting.
+    //
+    // Checked against the pool rather than by clearing state on that one
+    // screen: the leak is a property of every "left without CLEAR_STATE"
+    // path, and the invariant worth enforcing is that a NEW registration
+    // never reuses an id the pool has already handed out.
+    //
+    // A token absent from the pool is KEPT. It is not pool-managed (a
+    // manually entered or migrated id), and re-picking over it would
+    // overwrite a deliberate value - a worse failure than the one being
+    // fixed, and one this code cannot distinguish from a genuine leak.
+    var tokenUsable = hasSelectedToken;
+    if (isRegistration && !alreadyAssigned && hasSelectedToken) {
+      final rows = await context
+          .read<LocalRepository<UniqueIdPoolModel, UniqueIdPoolSearchModel>>()
+          .search(UniqueIdPoolSearchModel(id: incomingToken.toString()));
+      // Absent from the pool: not pool-managed, so leave it alone.
+      tokenUsable = rows.isEmpty ||
+          rows.first.status == IdStatus.unAssigned.toValue();
+    }
+
+    if (isRegistration && !alreadyAssigned && !tokenUsable) {
       final available = await context
           .read<LocalRepository<UniqueIdPoolModel, UniqueIdPoolSearchModel>>()
           .search(UniqueIdPoolSearchModel(status: IdStatus.unAssigned.toValue()));
       if (available.isNotEmpty) {
         available.sort((a, b) => (a.auditDetails?.createdTime ?? 0)
             .compareTo(b.auditDetails?.createdTime ?? 0));
+        // The stale UNIQUE_BENEFICIARY_ID is removed too, not just the
+        // DEFAULT placeholders. Without this the leaked entry survives
+        // alongside the fresh one and whichever the mapper reads first wins -
+        // which would leave the duplicate in place half the time.
         identifierEntries.removeWhere((entry) =>
             entry['identifierType'] == null ||
-            entry['identifierType'] == 'DEFAULT');
+            entry['identifierType'] == 'DEFAULT' ||
+            entry['identifierType'] == 'UNIQUE_BENEFICIARY_ID');
         identifierEntries.insert(0, {
           'identifierType': 'UNIQUE_BENEFICIARY_ID',
           'identifierId': available.first.id,
         });
       }
+      // Pool exhausted: the stale token is left in place because there is
+      // nothing to replace it with. A duplicate remains possible until the
+      // pool is topped up - the shortage is the thing to fix, not this.
     }
     extraContext['identifierEntries'] = identifierEntries;
 
