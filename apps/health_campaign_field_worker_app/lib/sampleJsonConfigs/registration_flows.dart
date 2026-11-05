@@ -547,7 +547,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "NUMBER_OF_ITN_FOR_DELIVERY",
                   "value":
-                      "{{fn:itnsForMemberCount(contextData.0.household.HouseholdModel.memberCount)}}",
+                      "{{fn:itnQuantityFromConfig(contextData.0.eligibleProductVariants)}}",
                   "isActive": true
                 }
               ],
@@ -605,6 +605,16 @@ final dynamic sampleFlows = {
       ],
       "name": "householdOverview",
       "order": 3,
+      "onSystemBack": [
+        {
+          "actionType": "BACK_NAVIGATION",
+          "properties": {"forcePop": true}
+        },
+        {
+          "actionType": "REFRESH_SEARCH",
+          "properties": {"screenName": "searchBeneficiary"}
+        }
+      ],
       "footer": [
         {
           "type": "template",
@@ -715,7 +725,7 @@ final dynamic sampleFlows = {
                       {
                         "key": "qty",
                         "value":
-                            "{{fn:itnsForMemberCount(contextData.0.household.HouseholdModel.memberCount)}}"
+                            "{{fn:itnQuantityFromConfig(contextData.0.eligibleProductVariants)}}"
                       },
                       {
                         "key": "nameOfIndividual",
@@ -804,76 +814,22 @@ final dynamic sampleFlows = {
               "{{fn:isClosedHousehold(contextData.0.tasks)}} == true || ('{{navigation.isNewRegistration}}' != 'true' && {{fn:isChecklistCompleted(contextData.0.household.HouseholdModel.additionalFields.fields)}} == true)",
           "onAction": [
             {
-              "actionType": "OPEN_POPUP",
+              "actionType": "NAVIGATION",
               "properties": {
-                "size": "large",
-                "type": "primary",
-                "popupConfig": {
-                  "title": "APPONE_ELIGIBILITYCHECKLIST_ALERT_TITLE",
-                  "description": "HOUSEHOLD_CHECKLIST_SUBMIT_DESCRIPTION",
-                  "type": "alert",
-                  "footerActions": [
-                    {
-                      "type": "template",
-                      "label": "ACTION_CANCEL",
-                      "format": "button",
-                      "fieldName": "cancelHouseholdOverviewPopUp",
-                      "properties": {
-                        "type": "secondary",
-                        "size": "medium"
-                      },
-                      "onAction": [
-                        {
-                          "actionType": "CLOSE_POPUP",
-                          "properties": {
-                            "parentScreenKey": "householdOverview"
-                          }
-                        }
-                      ]
-                    },
-                    {
-                      "type": "template",
-                      "label": "ACTION_SUBMIT",
-                      "format": "button",
-                      "fieldName": "submitHouseholdOverviewPopUp",
-                      "properties": {
-                        "type": "primary",
-                        "size": "medium"
-                      },
-                      "onAction": [
-                        {
-                          "actionType": "CLOSE_POPUP",
-                          "properties": {
-                            "parentScreenKey": "householdOverview"
-                          }
-                        },
-                        {
-                          "actionType": "NAVIGATION",
-                          "properties": {
-                            "data": [
-                              {
-                                "key": "HouseholdClientReferenceId",
-                                "value":
-                                    "{{navigation.HouseholdClientReferenceId}}"
-                              },
-                              {
-                                "key": "ProjectBeneficiaryClientReferenceId",
-                                "value":
-                                    "{{navigation.ProjectBeneficiaryClientReferenceId}}"
-                              }
-                            ],
-                            "name": "registrationHealthTalkSuccess",
-                            "type": "TEMPLATE",
-                            "navigationMode": "popUntilAndPush",
-                            "popUntilPageName": "searchBeneficiary"
-                          }
-                        }
-                      ]
-                    }
-                  ],
-                  "showCloseButton": true,
-                  "barrierDismissible": true
-                }
+                "data": [
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  },
+                  {
+                    "key": "ProjectBeneficiaryClientReferenceId",
+                    "value": "{{navigation.ProjectBeneficiaryClientReferenceId}}"
+                  }
+                ],
+                "name": "registrationHealthTalkSuccess",
+                "type": "TEMPLATE",
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "searchBeneficiary"
               }
             }
           ],
@@ -894,7 +850,7 @@ final dynamic sampleFlows = {
           "onAction": [
             {
               "actionType": "BACK_NAVIGATION",
-              "properties": {"name": "householdDetails"}
+              "properties": {"name": "householdDetails", "forcePop": true}
             },
             {
               "actionType": "REFRESH_SEARCH",
@@ -1225,7 +1181,7 @@ final dynamic sampleFlows = {
                 {
                   "key": "NUMBER_OF_ITN_FOR_DELIVERY",
                   "value":
-                      "{{fn:itnsForMemberCount(contextData.0.household.HouseholdModel.memberCount)}}",
+                      "{{fn:itnQuantityFromConfig(contextData.0.eligibleProductVariants)}}",
                   "isActive": true
                 }
               ],
@@ -1970,7 +1926,22 @@ final dynamic sampleFlows = {
                     "type": "template",
                     "label": "OPEN",
                     "format": "button",
-                    "disabled": "{{fn:isClosedHousehold(item.tasks)}} == true",
+                    // Read the pool count at render time, after list-row
+                    // preprocessing, so a download can enable this button.
+                    "disabled": {
+                      "@condition": [
+                        {
+                          "when": "{{fn:isClosedHousehold(item.tasks)}} == true",
+                          "value": true
+                        },
+                        {
+                          "when":
+                              "{{fn:isHouseholdMarkedClosed(item.tasks)}} == true && {{fn:hasMinimumBeneficiaryId(1, widgetData.uniqueIdPoolCount)}} == false",
+                          "value": true
+                        }
+                      ],
+                      "@default": false
+                    },
                     "onAction": [
                       {
                         "actions": [
@@ -2013,6 +1984,62 @@ final dynamic sampleFlows = {
                         "condition": {
                           "expression":
                               "{{fn:isClosedHousehold(item.tasks)}} == true"
+                        }
+                      },
+                      {
+                        "actions": [
+                          {
+                            "actionType": "LOAD_UNIQUE_ID_POOL",
+                            "properties": {"requireAvailable": true}
+                          },
+                          {
+                            "actionType": "REVERSE_TRANSFORM",
+                            "properties": {
+                              "data": [
+                                {"key": "entities", "value": "{{item}}"}
+                              ],
+                              "configName": "beneficiaryRegistration",
+                              "entityTypes": [
+                                "HouseholdModel",
+                                "IndividualModel",
+                                "TaskModel"
+                              ]
+                            }
+                          },
+                          {
+                            "actionType": "NAVIGATION",
+                            "properties": {
+                              "data": [
+                                {
+                                  "key": "HouseholdClientReferenceId",
+                                  "value":
+                                      "{{item.HouseholdModel.clientReferenceId}}"
+                                },
+                                {
+                                  "key": "ProjectBeneficiaryClientReferenceId",
+                                  "value":
+                                      "{{item.projectBeneficiaries.ProjectBeneficiaryModel.clientReferenceId}}"
+                                },
+                                {"key": "isEdit", "value": "true"},
+                                {"key": "isClosedHousehold", "value": "true"},
+                                {
+                                  "key": "identifier",
+                                  "value": "{{item.headIndividual}}"
+                                },
+                                {
+                                  "key": "startPage",
+                                  "value": "caregiverConsent"
+                                },
+                                {"key": "deferFormRoutePop", "value": "true"}
+                              ],
+                              "name": "HOUSEHOLD",
+                              "type": "FORM"
+                            }
+                          }
+                        ],
+                        "condition": {
+                          "expression":
+                              "{{fn:isClosedHousehold(item.tasks)}} == false && {{fn:isHouseholdMarkedClosed(item.tasks)}} == true"
                         }
                       },
                       {
@@ -2069,58 +2096,6 @@ final dynamic sampleFlows = {
                         "condition": {
                           "expression":
                               "{{fn:isCaregiverConsentMissing(item.HouseholdModel)}} == true"
-                        }
-                      },
-                      {
-                        "actions": [
-                          {
-                            "actionType": "REVERSE_TRANSFORM",
-                            "properties": {
-                              "data": [
-                                {"key": "entities", "value": "{{item}}"}
-                              ],
-                              "configName": "beneficiaryRegistration",
-                              "entityTypes": [
-                                "HouseholdModel",
-                                "IndividualModel",
-                                "TaskModel"
-                              ]
-                            }
-                          },
-                          {
-                            "actionType": "NAVIGATION",
-                            "properties": {
-                              "data": [
-                                {
-                                  "key": "HouseholdClientReferenceId",
-                                  "value":
-                                      "{{item.HouseholdModel.clientReferenceId}}"
-                                },
-                                {
-                                  "key": "ProjectBeneficiaryClientReferenceId",
-                                  "value":
-                                      "{{item.projectBeneficiaries.ProjectBeneficiaryModel.clientReferenceId}}"
-                                },
-                                {"key": "isEdit", "value": "true"},
-                                {"key": "isClosedHousehold", "value": "true"},
-                                {
-                                  "key": "identifier",
-                                  "value": "{{item.headIndividual}}"
-                                },
-                                {
-                                  "key": "startPage",
-                                  "value": "caregiverConsent"
-                                },
-                                {"key": "deferFormRoutePop", "value": "true"}
-                              ],
-                              "name": "HOUSEHOLD",
-                              "type": "FORM"
-                            }
-                          }
-                        ],
-                        "condition": {
-                          "expression":
-                              "{{fn:isClosedHousehold(item.tasks)}} == false && {{fn:isHouseholdMarkedClosed(item.tasks)}} == true"
                         }
                       },
                       {
@@ -3161,13 +3136,8 @@ final dynamic sampleFlows = {
             "hidden": false,
             "onAction": [
               {
-                "actionType": "NAVIGATION",
-                "properties": {
-                  "name": "searchBeneficiary",
-                  "type": "TEMPLATE",
-                  "navigationMode": "popUntilAndReplace",
-                  "popUntilPageName": "searchBeneficiary"
-                }
+                "actionType": "BACK_NAVIGATION",
+                "properties": {"name": "searchBeneficiary", "forcePop": true}
               },
               {
                 "actionType": "REFRESH_SEARCH",
@@ -3187,13 +3157,8 @@ final dynamic sampleFlows = {
       "footer": [],
       "onSystemBack": [
         {
-          "actionType": "NAVIGATION",
-          "properties": {
-            "name": "searchBeneficiary",
-            "type": "TEMPLATE",
-            "navigationMode": "popUntilAndReplace",
-            "popUntilPageName": "searchBeneficiary"
-          }
+          "actionType": "BACK_NAVIGATION",
+          "properties": {"name": "searchBeneficiary", "forcePop": true}
         },
         {
           "actionType": "REFRESH_SEARCH",
@@ -3207,13 +3172,8 @@ final dynamic sampleFlows = {
           "format": "backLink",
           "onAction": [
             {
-              "actionType": "NAVIGATION",
-              "properties": {
-                "name": "searchBeneficiary",
-                "type": "TEMPLATE",
-                "navigationMode": "popUntilAndReplace",
-                "popUntilPageName": "searchBeneficiary"
-              }
+              "actionType": "BACK_NAVIGATION",
+              "properties": {"name": "searchBeneficiary", "forcePop": true}
             },
             {
               "actionType": "REFRESH_SEARCH",
@@ -3521,21 +3481,7 @@ final dynamic sampleFlows = {
               "validations": [
                 {"type": "isGS1Code", "value": true},
                 {"type": "scanLimit", "value": 3},
-                {"type": "allowManualEntry", "value": true},
-                {
-                  // Was "^[!-~]{1,20}$" - any 1-20 printable characters, so
-                  // a manually typed "sjfk" passed. Same guard-rail as the
-                  // Liberia branch (4f3cbadc3): uppercase alphanumeric with
-                  // hyphens allowed, minimum 8 characters. Rejects short /
-                  // lowercase junk while still accepting GTIN-style digits
-                  // and XXXX-XXXX-XXXX codes.
-                  // TIGHTEN once the real code format is confirmed - and
-                  // note a non-matching manual code is rejected with a toast
-                  // here, so an over-strict pattern blocks valid codes.
-                  "type": "manualSerialPattern",
-                  "value": "^[A-Z0-9][A-Z0-9-]{7,}\$",
-                  "message": "APPONE_REGISTRATION_DELIVERYDETAILS_label_scanner_serial_pattern_message"
-                }
+                {"type": "allowManualEntry", "value": true}
               ],
               "errorMessage": "",
               "includeInForm": true,
@@ -5960,7 +5906,13 @@ final dynamic sampleFlows = {
           "showTabView": false,
           "submitCondition": null,
           "preventScreenCapture": false,
-          "conditionalNavigateTo": null
+          "conditionalNavigateTo": null,
+          "showAlertPopUp": {
+            "title": "APPONE_ELIGIBILITYCHECKLIST_ALERT_TITLE",
+            "description": "HOUSEHOLD_CHECKLIST_SUBMIT_DESCRIPTION",
+            "primaryActionLabel": "ACTION_SUBMIT",
+            "secondaryActionLabel": "ACTION_CANCEL"
+          }
         }
       ],
       "summary": false,

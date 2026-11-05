@@ -277,8 +277,10 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
                                 variants: productVariants,
                                 onProductChanged: (index, product) {
                                   setState(() {
-                                    _maxQuantities[index] =
-                                        capDeliveryQuantity(product.quantity);
+                                    // The dose criteria's quantity IS the
+                                    // per-household maximum for this
+                                    // project's district - use it as given.
+                                    _maxQuantities[index] = product.quantity;
                                   });
                                 },
                                 onDelete: (index) {
@@ -513,7 +515,7 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
     _maxQuantities = List<int?>.generate(
       _controllers.length,
       (index) => (productVariants != null && index < productVariants.length)
-          ? capDeliveryQuantity(productVariants[index].quantity)
+          ? productVariants[index].quantity
           : null,
     );
 
@@ -538,13 +540,19 @@ class _ResourceCardState extends LocalizedState<ResourceCard> {
       _quantityDistributedKey: FormArray<int>(
         _controllers.map((e) {
           final index = _controllers.indexOf(e);
+          final configuredMax =
+              (productVariants != null && index < productVariants.length)
+                  ? productVariants[index].quantity
+                  : null;
           return FormControl<int>(
-            value: (productVariants != null && index < productVariants.length)
-                ? capDeliveryQuantity(productVariants[index].quantity)
-                : 0,
+            value: configuredMax ?? 0,
             validators: [
               Validators.min(1),
-              Validators.max(maxDeliveryQuantityPerHousehold),
+              // The ceiling comes from the project's dose criteria, not from
+              // the app, so a district configured for 2 nets and one
+              // configured for 4 each validate against their own number.
+              // With nothing configured there is no upper bound to enforce.
+              if (configuredMax != null) Validators.max(configuredMax),
             ],
           );
         }).toList(),

@@ -480,8 +480,7 @@ class FlowCrudStateRegistry {
     // navigation_service.dart). Only the composite key was ever removed, so
     // the bare one survived for the life of the process and leaked
     // navigation.* values from one run of a screen into the next run of the
-    // same screen. Observed in the exitToHome probe as navParamKeys growing
-    // with every flow and never shrinking.
+    // same screen.
     //
     // Guarded on there being no OTHER live instance of the same screen: two
     // instances can legitimately coexist (a flow re-entered before the first
@@ -510,23 +509,6 @@ class FlowCrudStateRegistry {
   void disposeByCompositeKey(String compositeKey) {
     _disposeCompositeKey(compositeKey);
   }
-
-  // ============ Probe-only Accessors ============
-  // Read-only views for the exit-to-home debug probes. No app logic reads
-  // these. They exist to show what is STILL held after a flow is left:
-  // navigateTo stores nav params under both the plain screen name and
-  // `name::instanceId`, while FlowBuilderHomePage.dispose only clears the
-  // composite one - so a plain-name key surviving an exit to Home is the
-  // leak that bleeds `navigation.*` values into the next run of that screen.
-
-  /// Keys currently holding navigation params.
-  List<String> get debugNavParamKeys => _navParams.keys.toList();
-
-  /// Keys currently holding (non-null) flow state.
-  List<String> get debugLiveStateKeys => _map.entries
-      .where((e) => e.value.value != null)
-      .map((e) => e.key)
-      .toList();
 
   // ============ Composite Key Methods (Direct Access) ============
 

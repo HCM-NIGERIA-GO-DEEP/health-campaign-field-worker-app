@@ -1,8 +1,6 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:digit_flow_builder/data/transformer_config.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:health_campaign_field_worker_app/sampleJsonConfigs/registration_flows.dart';
 
 /// Guards the ITN serial capture on the delivery flow.
 ///
@@ -23,11 +21,7 @@ void main() {
     late Map<String, dynamic> scanner;
 
     setUpAll(() {
-      final config = jsonDecode(
-        File('assets/configs/json/REGISTRATION.json').readAsStringSync(),
-      ) as Map<String, dynamic>;
-
-      final delivery = (config['flows'] as List)
+      final delivery = (sampleFlows['flows'] as List)
           .cast<Map<String, dynamic>>()
           .firstWhere((f) => f['name'] == 'DELIVERY');
       final page = (delivery['pages'] as List)
@@ -56,9 +50,19 @@ void main() {
       expect(validationsByType()['isGS1Code'], isTrue);
     });
 
-    test('its fallback scan limit does not exceed the per-household cap', () {
-      // 3 == maxDeliveryQuantityPerHousehold. The old value of 4 would have
-      // let a fallback path ask for more ITNs than a household can receive.
+    test('manual serial entry has no pattern validation', () {
+      final validations = validationsByType();
+      expect(validations['allowManualEntry'], isTrue);
+      expect(validations.keys,
+          isNot(anyElement(contains(RegExp('pattern', caseSensitive: false)))));
+    });
+
+    test('its fallback scan limit covers the largest configured district', () {
+      // Only a fallback: the live scan count comes from dynamicScanLimit,
+      // driven by the dose criteria. There is no app-side per-household cap
+      // to align with any more, so this just has to be >= the largest
+      // per-household maximum any district is configured for. Raise it if a
+      // district is ever configured above this.
       expect(validationsByType()['scanLimit'], 3);
     });
   });

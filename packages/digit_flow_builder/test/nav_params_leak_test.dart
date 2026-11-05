@@ -8,11 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 ///
 /// The bare entry therefore survived for the life of the process, and
 /// navigation.* values from one run of a screen leaked into the next run of
-/// that same screen. On device this showed up in the exitToHome probe as
-/// navParamKeys growing with every completed flow and never shrinking:
-///   [viewTransaction, incomingTransactions, stockReceiptDetails, stockSuccess]
-///   [... , reportDetails]
-///   [... , stockReconciliationDetails]
+/// that same screen.
 ///
 /// The removal is deliberately conditional. Two instances of one screen can
 /// legitimately coexist (a flow re-entered before the first is torn down) and
@@ -34,12 +30,13 @@ void main() {
     registry.updateNavigationParams(screen, {'mrnNumber': 'AAAA'});
     registry.updateNavigationParams(composite, {'mrnNumber': 'AAAA'});
 
-    expect(registry.debugNavParamKeys, containsAll([screen, composite]));
+    expect(registry.getNavigationParams(screen), isNotNull);
+    expect(registry.getNavigationParams(composite), isNotNull);
 
     registry.disposeByCompositeKey(composite);
 
-    expect(registry.debugNavParamKeys, isNot(contains(composite)));
-    expect(registry.debugNavParamKeys, isNot(contains(screen)),
+    expect(registry.getNavigationParams(composite), isNull);
+    expect(registry.getNavigationParams(screen), isNull,
         reason: 'the bare-name entry leaked - its values will bleed into the '
             'next run of this screen');
   });
@@ -56,9 +53,9 @@ void main() {
 
     registry.disposeByCompositeKey(first);
 
-    expect(registry.debugNavParamKeys, isNot(contains(first)));
-    expect(registry.debugNavParamKeys, contains(second));
-    expect(registry.debugNavParamKeys, contains(screen),
+    expect(registry.getNavigationParams(first), isNull);
+    expect(registry.getNavigationParams(second), isNotNull);
+    expect(registry.getNavigationParams(screen), isNotNull,
         reason: 'the surviving instance still falls back to the bare key');
   });
 
@@ -72,10 +69,10 @@ void main() {
     registry.updateNavigationParams(second, {'q': 'y'});
 
     registry.disposeByCompositeKey(first);
-    expect(registry.debugNavParamKeys, contains(screen));
+    expect(registry.getNavigationParams(screen), isNotNull);
 
     registry.disposeByCompositeKey(second);
-    expect(registry.debugNavParamKeys, isNot(contains(screen)),
+    expect(registry.getNavigationParams(screen), isNull,
         reason: 'nothing is left to read the bare key, so it must go');
   });
 
@@ -90,7 +87,8 @@ void main() {
 
     registry.disposeByCompositeKey(a);
 
-    expect(registry.debugNavParamKeys, containsAll(['screenB', b]));
+    expect(registry.getNavigationParams('screenB'), isNotNull);
+    expect(registry.getNavigationParams(b), isNotNull);
   });
 
   test('a prefix-sharing screen name is not mistaken for an instance', () {
@@ -107,14 +105,13 @@ void main() {
 
     registry.disposeByCompositeKey(search);
 
-    expect(registry.debugNavParamKeys, isNot(contains('search')),
+    expect(registry.getNavigationParams('search'), isNull,
         reason: 'searchBeneficiary::i1 is a different screen and must not '
             'keep "search" alive');
-    expect(registry.debugNavParamKeys, contains('searchBeneficiary'));
+    expect(registry.getNavigationParams('searchBeneficiary'), isNotNull);
   });
 
   test('repeated run/dispose cycles do not accumulate keys', () {
-    // The user-visible symptom: navParamKeys grew with every flow.
     const screen = 'deliverySuccess';
 
     for (var i = 0; i < 5; i++) {
@@ -122,10 +119,8 @@ void main() {
       registry.updateNavigationParams(screen, {'run': i});
       registry.updateNavigationParams(composite, {'run': i});
       registry.disposeByCompositeKey(composite);
+      expect(registry.getNavigationParams(composite), isNull);
+      expect(registry.getNavigationParams(screen), isNull);
     }
-
-    expect(registry.debugNavParamKeys, isEmpty,
-        reason: 'five completed flows left ${registry.debugNavParamKeys} '
-            'behind');
   });
 }

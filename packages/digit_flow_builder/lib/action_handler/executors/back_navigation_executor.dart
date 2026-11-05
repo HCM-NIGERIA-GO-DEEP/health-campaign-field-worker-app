@@ -17,11 +17,12 @@ class BackNavigationExecutor extends ActionExecutor {
     Map<String, dynamic> contextData,
   ) async {
     final targetPageName = action.properties['name'] as String?;
+    final forcePop = action.properties['forcePop'] == true;
     final router = context.router;
 
     if (targetPageName == null || targetPageName.isEmpty) {
       // If no target page specified, just do a single pop
-      _performSinglePop(context);
+      _performSinglePop(context, forcePop: forcePop);
       return contextData;
     }
 
@@ -34,7 +35,7 @@ class BackNavigationExecutor extends ActionExecutor {
         });
       } catch (e) {
         // If error occurs, do single pop
-        _performSinglePop(context);
+        _performSinglePop(context, forcePop: forcePop);
       }
       return contextData;
     }
@@ -77,20 +78,25 @@ class BackNavigationExecutor extends ActionExecutor {
         });
       } catch (e) {
         // If error occurs, do single pop
-        _performSinglePop(context);
+        _performSinglePop(context, forcePop: forcePop);
       }
     } else {
       // Target not found in stack, just do single pop
-      _performSinglePop(context);
+      _performSinglePop(context, forcePop: forcePop);
     }
 
     return contextData;
   }
 
-  void _performSinglePop(BuildContext context) {
+  void _performSinglePop(BuildContext context, {required bool forcePop}) {
     final router = context.router;
-    if (router.canPop()) {
-      router.pop();
+    if (!router.canPop()) return;
+
+    // Configured system Back can intercept maybePop on the current page.
+    if (forcePop) {
+      router.popForced();
+    } else {
+      router.maybePop();
     }
   }
 }

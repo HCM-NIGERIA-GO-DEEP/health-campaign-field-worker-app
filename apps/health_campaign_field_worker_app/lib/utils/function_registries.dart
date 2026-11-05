@@ -183,34 +183,39 @@ class FunctionRegistries {
       final number = raw is num ? raw : num.tryParse(raw.toString().trim());
       if (number == null) return raw.toString();
 
+      // No app-side default any more: with the per-household maximum now
+      // coming from dose criteria, a hardcoded fallback here would quietly
+      // reimpose the very cap that was removed. An absent//unparseable max
+      // means "do not cap".
       final maxArg = args.length > 1 ? args[1] : null;
-      final max = maxArg is num
-          ? maxArg
-          : num.tryParse(maxArg?.toString() ?? '') ??
-              maxDeliveryQuantityPerHousehold;
+      final max =
+          maxArg is num ? maxArg : num.tryParse(maxArg?.toString() ?? '');
+      if (max == null) {
+        return number == number.roundToDouble() ? number.toInt() : number;
+      }
 
       final capped = number > max ? max : number;
       return capped == capped.roundToDouble() ? capped.toInt() : capped;
     });
 
-    // Resolves the ITN entitlement for a household from its member count,
-    // per the project type's taskProcedure ("1 bednet per 2 household
-    // members", capped at maxDeliveryQuantityPerHousehold).
+    // Resolves the ITN entitlement for a household straight from the
+    // project's dose criteria.
     //
-    // This deliberately does NOT read the dose criteria's `quantity`: that
-    // is a flat per-unit "1" in the project type config, so using it showed
-    // the same figure for a 1-member and a 7-member household - and it
-    // resolved to an empty string entirely whenever no cycle was currently
-    // running, since the whole targetCycle lookup collapsed to null.
-    // Usage: "{{fn:itnsForMemberCount(path.to.memberCount)}}"
-    FunctionRegistry.register('itnsForMemberCount', (args, stateData) {
-      if (args.isEmpty || args.first == null) return '';
+    // Replaces itnsForMemberCount, which derived the figure in the app as
+    // "1 net per 2 household members, capped at 3". That rule was app-side
+    // guesswork: the real entitlement is a per-district campaign decision,
+    // each district is its own project, and the number is already carried on
+    // the project type. The app-side cap silently overrode the config, so a
+    // district configured for 4 nets still issued 3.
+    //
+    // Usage:
+    //   "{{fn:itnQuantityFromConfig(contextData.0.eligibleProductVariants)}}"
+    FunctionRegistry.register('itnQuantityFromConfig', (args, stateData) {
+      if (args.isEmpty || args.first == null) {
+        return '';
+      }
 
-      final raw = args.first;
-      final memberCount =
-          raw is num ? raw.toInt() : int.tryParse(raw.toString().trim());
-
-      final quantity = itnQuantityForMemberCount(memberCount);
+      final quantity = maxDeliveryQuantityFromDoseCriteria(args.first);
 
       return quantity?.toString() ?? '';
     });
@@ -381,6 +386,7 @@ class FunctionRegistries {
       if (kDebugMode) {
         print('uniqueId : $formattedUniqueId');
       }
+
       return formattedUniqueId;
     });
   }
@@ -1785,13 +1791,12 @@ class FunctionRegistries {
           if (productId == null || productId.isEmpty) continue;
           final rawQuantity =
               double.tryParse(variant['quantity']?.toString() ?? '1') ?? 1.0;
-          // Cap to the same per-household maximum ResourceCard enforces on
-          // the quantity actually entered, so this check (and the "required"
-          // figure shown in the insufficient-stock message) never demands
-          // more stock than a delivery could ever actually use.
-          final quantity = rawQuantity > maxDeliveryQuantityPerHousehold
-              ? maxDeliveryQuantityPerHousehold.toDouble()
-              : rawQuantity;
+          // The dose criteria's quantity IS the per-household maximum for
+          // this project's district, so it needs no further capping. Clamping
+          // it to an app-side 3 under-stated the requirement for a district
+          // configured for more, and the insufficient-stock check passed on
+          // a balance that could not actually cover the delivery.
+          final quantity = rawQuantity;
           final key = productId;
           final balance = cache.cache[key] ?? 0.0;
           if (balance < quantity) {
@@ -1866,12 +1871,9 @@ class FunctionRegistries {
 
         final rawQuantity =
             double.tryParse(resource['quantity']?.toString() ?? '1') ?? 1.0;
-        // A redose must never ask for more than the per-household cap
-        // either, even for a historical task recorded before this cap
-        // existed.
-        final quantity = rawQuantity > maxDeliveryQuantityPerHousehold
-            ? maxDeliveryQuantityPerHousehold.toDouble()
-            : rawQuantity;
+        // As above: the configured quantity is already the per-household
+        // maximum for this district, so it is used as recorded.
+        final quantity = rawQuantity;
         final balance = cache.cache[productId] ?? 0.0;
         if (balance < quantity) {
           insufficientProducts.add({

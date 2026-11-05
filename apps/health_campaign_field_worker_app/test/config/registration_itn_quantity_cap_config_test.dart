@@ -1,47 +1,41 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:health_campaign_field_worker_app/sampleJsonConfigs/registration_flows.dart';
 
-/// Guards the per-household ITN figure everywhere REGISTRATION.json displays
-/// or forwards it, so it never contradicts the capped quantity the field
-/// worker is actually allowed to enter (the ResourceCard widget separately
-/// enforces the same cap - see custom_resource_card.dart /
-/// capDeliveryQuantity in utils.dart).
+/// Guards the per-household ITN figure everywhere the registration flow displays
+/// or forwards it, so what is shown matches the ceiling the field worker is
+/// actually allowed to enter (the ResourceCard widget validates against the
+/// same configured number - see custom_resource_card.dart).
 ///
-/// The figure is derived from the household's member count via
-/// fn:itnsForMemberCount (see itnQuantityForMemberCount in utils.dart), which
-/// applies the cap internally. It must never go back to reading the project's
-/// dose-criteria quantity directly: that value is a flat per-unit "1" that
-/// ignores household size, and the targetCycle lookup it hangs off resolves
-/// to null whenever no cycle is currently running - rendering the field
-/// blank.
+/// The figure comes from the project's resolved dose criteria via
+/// fn:itnQuantityFromConfig (see maxDeliveryQuantityFromDoseCriteria in
+/// utils.dart). The app applies no ceiling of its own: the per-household
+/// maximum is a per-district campaign decision, each district is its own
+/// project, and an app-side cap silently overrode it.
+///
+/// It must also never go back to reading the raw targetCycle dose-criteria
+/// path directly - that lookup resolves to null whenever no cycle is
+/// currently running, rendering the field blank.
 void main() {
-  late Map<String, dynamic> config;
+  final config = sampleFlows as Map<String, dynamic>;
 
   const rawQuantityPath =
       'contextData.0.targetCycle.0.deliveries.0.doseCriteria.0.ProductVariants.0.quantity';
   const cappedExpression =
-      '{{fn:itnsForMemberCount(contextData.0.household.HouseholdModel.memberCount)}}';
-
-  setUpAll(() {
-    final file = File(
-      '${Directory.current.path}/assets/configs/json/REGISTRATION.json',
-    );
-    config = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
-  });
+      '{{fn:itnQuantityFromConfig(contextData.0.eligibleProductVariants)}}';
 
   List<Map<String, dynamic>> flows() =>
       (config['flows'] as List).cast<Map<String, dynamic>>();
 
-  test('REGISTRATION.json never displays the raw, uncapped dose-criteria quantity', () {
+  test('registration never displays the raw, uncapped dose-criteria quantity', () {
     final serialized = jsonEncode(config);
 
     expect(serialized.contains('{{fn:trimTrailingZero($rawQuantityPath)}}'), isFalse);
     expect(serialized.contains('{{$rawQuantityPath}}'), isFalse);
   });
 
-  test('householdOverview\'s NUMBER_OF_ITN_FOR_DELIVERY label is capped at 3', () {
+  test('householdOverview\'s NUMBER_OF_ITN_FOR_DELIVERY label uses the configured quantity', () {
     final householdOverview =
         flows().firstWhere((f) => f['name'] == 'householdOverview');
     final serialized = jsonEncode(householdOverview);
@@ -50,7 +44,7 @@ void main() {
     expect(serialized.contains(cappedExpression), isTrue);
   });
 
-  test('previewScreen\'s NUMBER_OF_ITN_FOR_DELIVERY label is capped at 3', () {
+  test('previewScreen\'s NUMBER_OF_ITN_FOR_DELIVERY label uses the configured quantity', () {
     final previewScreen =
         flows().firstWhere((f) => f['name'] == 'previewScreen');
     final serialized = jsonEncode(previewScreen);
@@ -59,7 +53,7 @@ void main() {
     expect(serialized.contains(cappedExpression), isTrue);
   });
 
-  test('the "qty" navigation value forwarded to DELIVERY is also capped at 3', () {
+  test('the "qty" navigation value forwarded to DELIVERY uses the configured quantity', () {
     final householdOverview =
         flows().firstWhere((f) => f['name'] == 'householdOverview');
     final footerButton =
