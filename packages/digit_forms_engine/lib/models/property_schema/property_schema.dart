@@ -76,6 +76,14 @@ class PropertySchema with _$PropertySchema {
     VisibilityCondition? submitCondition,
     // Secondary action button label (e.g., "Decline" button alongside "Accept")
     String? secondaryActionLabel,
+    // Gates the secondary action button. Without this it shows whenever a
+    // label and a handler both exist, so a page needing it for only some
+    // arrivals had no way to suppress it - the stock receipt page offered
+    // "Partially Accept" on a plain return, which has no shortfall to
+    // apportion. Evaluated against the same context as visibilityCondition.
+    // Absent means always visible, so existing configs are unaffected.
+    @JsonKey(fromJson: _visibilityConditionOrNull)
+    VisibilityCondition? secondaryActionVisibility,
     // Comparison config for scanner fields - enables duplicate detection against historical data
     @JsonKey(fromJson: _comparisonConfigOrNull)
     ComparisonConfig? comparisonConfig,

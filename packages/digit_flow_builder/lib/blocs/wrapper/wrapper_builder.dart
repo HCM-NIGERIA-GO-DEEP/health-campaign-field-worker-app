@@ -34,6 +34,9 @@ class WrapperBuilder {
       final rootEntityType = config['rootEntity'];
       final groupByType = config['groupByType'] == true;
       final groupByField = config['groupBy'] as String?;
+      // Optional second path, used only where groupBy resolves null - see
+      // EntityGrouper.groupEntitiesByCustomField.
+      final groupByFallbackField = config['groupByFallback'] as String?;
 
       if (groupByType) {
         // Return all entities grouped by type
@@ -43,8 +46,11 @@ class WrapperBuilder {
 
           // If groupBy field is specified, further group entities by that field
           if (groupByField != null) {
-            groupedEntities[type] =
-                grouper.groupEntitiesByCustomField(typeEntities, groupByField);
+            groupedEntities[type] = grouper.groupEntitiesByCustomField(
+              typeEntities,
+              groupByField,
+              fallbackFieldPath: groupByFallbackField,
+            );
           } else {
             groupedEntities[type] = typeEntities;
           }

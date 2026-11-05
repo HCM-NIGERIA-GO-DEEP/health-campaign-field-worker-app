@@ -2085,6 +2085,14 @@ final dynamic sampleInventoryFlows = {
                       "key": "selectedStock",
                       "value": "{{navigation.mrnNumber}}"
                     },
+                    // The receipt just created, by its own id. Same filter
+                    // viewTransactionDetails uses when arriving from the
+                    // transactions list, so both routes in behave alike and
+                    // neither depends on an MRN existing.
+                    {
+                      "key": "selectedStockRefs",
+                      "value": "{{navigation.clientReferenceId}}"
+                    },
                     {
                       "key": "clientReferenceId",
                       "value": "{{navigation.clientReferenceId}}"
@@ -2140,9 +2148,59 @@ final dynamic sampleInventoryFlows = {
             "awaitResults": true,
             "skipAccumulatedFilters": true,
             "data": [
+              // Drill in on the exact rows the tapped card was built from,
+              // instead of substring-matching the MRN inside the
+              // additionalFields JSON blob.
+              //
+              // The old filter could not work for web-created stock: with no
+              // mrnNumber the group key was a synthetic 'null_0', and
+              // "additionalFields contains null_0" matches nothing, so the
+              // screen rendered its heading over an empty body. Where
+              // selectedStock was blank it fell through to the
+              // __NO_MATCHING_STOCK_MRN__ sentinel, which matches nothing
+              // either - the same empty screen by a different route.
+              //
+              // clientReferenceId is never null, is an indexed column rather
+              // than a substring of a JSON blob, and identifies exactly the
+              // same rows whether the group was keyed on a real MRN (several
+              // product rows share it) or on the clientReferenceId fallback
+              // (a single row).
+              //
+              // TWO filters, because the routes in carry different
+              // identifiers and this list is AND-ed:
+              //
+              //   from a transactions list -> selectedStockRefs always, plus
+              //       selectedStock only when the rows actually have an MRN;
+              //   from stockSuccess after RECORDSTOCK / RECORDLESSEXCESS ->
+              //       selectedStock (the MRN) only. Those flows CREATE a
+              //       record and never capture its clientReferenceId, so
+              //       there are no refs to pass.
+              //
+              // Each filter vanishes when its own input is absent, so
+              // whichever identifier the route has does the narrowing and the
+              // other stands down:
+              //   - "in" with an empty list is dropped by QueryBuilder;
+              //   - "contains" with an empty value becomes LIKE '%%'.
+              //
+              // Hence no sentinel on either. An earlier __NO_STOCK_REFS__
+              // fallback here made the refs filter match NOTHING when refs
+              // were absent, which is what blanked this screen for a PHU
+              // return: the MRN was present and would have found the record,
+              // but the AND could never be satisfied.
+              //
+              // Both inputs empty would match every row. That is prevented
+              // structurally rather than here - every navigation into this
+              // screen must supply at least one of the two, which
+              // inventory_null_mrn_transactions_config_test asserts by
+              // sweeping the whole config.
+              {
+                "key": "clientReferenceId",
+                "value": "{{navigation.selectedStockRefs}}",
+                "operation": "in"
+              },
               {
                 "key": "additionalFields",
-                "value": "{{fn:getCommentValue(navigation.selectedStock, '__NO_MATCHING_STOCK_MRN__')}}",
+                "value": "{{navigation.selectedStock}}",
                 "operation": "contains"
               }
             ]
@@ -2353,6 +2411,13 @@ final dynamic sampleInventoryFlows = {
         "groupByType": true,
         "rootEntity": "StockModel",
         "groupBy": "additionalFields.fields.mrnNumber",
+        // Stock created from the web (Commodity Management) carries no
+        // mrnNumber. Grouping on MRN alone gave each such row a synthetic
+        // 'null_0', 'null_1', ... key that exists nowhere in the data, so the
+        // card read "MRN null_0" and the drilldown could never find the row
+        // again. clientReferenceId is never null and is a real, searchable
+        // column, so those rows stay groupable and openable.
+        "groupByFallback": "clientReferenceId",
         "filters": [],
         "relations": [
           {"name": "stock", "entity": "StockModel"}
@@ -2399,7 +2464,14 @@ final dynamic sampleInventoryFlows = {
                     "format": "tag",
                     "type": "template",
                     "fieldName": "incomingTransactionsMrnTag",
-                    "label": "MRN {{item.groupKey}}"
+                    // Reads the MRN off the row rather than the group key:
+                    // with groupByFallback the key may now be a
+                    // clientReferenceId, which means nothing to the user.
+                    // transactionTag falls back to the entry date when there
+                    // is no MRN - the sending facility is already its own row
+                    // on this card.
+                    "label":
+                        "{{fn:transactionTag(item.items[0].additionalFields.fields.mrnNumber, item.items[0].dateOfEntry)}}"
                   },
                   {
                     "format": "textTemplate",
@@ -3644,6 +3716,23 @@ final dynamic sampleInventoryFlows = {
           "description": "",
           "actionLabel": "INVENTORY_ACCEPT_STOCK_LABEL",
           "secondaryActionLabel": "INVENTORY_PARTIALLY_ACCEPT_STOCK_LABEL",
+          // A plain return from a lower level carries no discrepancyReason -
+          // there is no shortfall to apportion, so Partially Accept has
+          // nothing to do and was only ever a way to corrupt the balance.
+          // The three shortfall returns (STOCK_LOSS, STOCK_DAMAGE,
+          // IN_TRANSIT) all set discrepancyReason, as do dispatches, so this
+          // hides the button for exactly the normal-return case.
+          // Two entries, not one "||" string: evaluateVisibilityExpression
+          // ORs the list and parses each entry separately, so a missing
+          // navigation.discrepancyReason (absent, not empty, on a plain
+          // return) fails only its own clause instead of poisoning the
+          // dispatch clause alongside it.
+          "secondaryActionVisibility": {
+            "expression": [
+              {"condition": "navigation.incomingStockEntryType != 'RETURNED'"},
+              {"condition": "navigation.discrepancyReason != ''"}
+            ]
+          },
           "showAlertPopUp": {
             "title": "INVENTORY_ACCEPT_CONFIRMATION_TITLE",
             "description": "INVENTORY_ACCEPT_CONFIRMATION_DESCRIPTION",
@@ -3903,6 +3992,10 @@ final dynamic sampleInventoryFlows = {
         "groupByType": true,
         "rootEntity": "StockModel",
         "groupBy": "additionalFields.fields.mrnNumber",
+        // Same reason as incomingTransactions: MRN-less web stock would
+        // otherwise group under a synthetic 'null_N' key that no later
+        // search can resolve back to the row.
+        "groupByFallback": "clientReferenceId",
         "filters": [],
         "relations": [
           {"name": "stock", "entity": "StockModel"}
@@ -3948,7 +4041,10 @@ final dynamic sampleInventoryFlows = {
                     "format": "tag",
                     "type": "template",
                     "fieldName": "viewTransactionMrnTag",
-                    "label": "MRN {{item.groupKey}}"
+                    // Off the row, not the group key - see the matching tag
+                    // on incomingTransactions.
+                    "label":
+                        "{{fn:transactionTag(item.items[0].additionalFields.fields.mrnNumber, item.items[0].dateOfEntry)}}"
                   },
                   {
                     "format": "textTemplate",
@@ -4075,7 +4171,29 @@ final dynamic sampleInventoryFlows = {
                       "data": [
                         {"key": "item", "value": "{{item}}"},
                         {"key": "item2", "value": "{{item.items[0]}}"},
-                        {"key": "selectedStock", "value": "{{item.groupKey}}"},
+                        // The row's OWN mrnNumber, not the group key. Since
+                        // groupByFallback the key may be a clientReferenceId,
+                        // and that string does not appear anywhere in the
+                        // additionalFields blob that viewTransactionDetails
+                        // substring-matches - so passing the key would make
+                        // that filter match nothing. safeString renders a
+                        // missing MRN as empty rather than the text "null",
+                        // which is what lets the filter stand down instead of
+                        // excluding everything.
+                        {
+                          "key": "selectedStock",
+                          "value":
+                              "{{fn:safeString(item.items[0].additionalFields.fields.mrnNumber)}}"
+                        },
+                        // Every row behind this card, by its own id. This is
+                        // what viewTransactionDetails filters on - the group
+                        // key alone is unusable once it may be a synthetic
+                        // 'null_N' for MRN-less web stock.
+                        {
+                          "key": "selectedStockRefs",
+                          "value":
+                              "{{fn:pluckJoin(item.items, 'clientReferenceId')}}"
+                        },
                         {
                           "key": "clientReferenceId",
                           "value": "{{item.items[0].clientReferenceId}}"

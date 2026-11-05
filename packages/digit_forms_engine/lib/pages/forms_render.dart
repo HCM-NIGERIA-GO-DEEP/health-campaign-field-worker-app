@@ -320,10 +320,33 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     );
   }
 
-  bool _shouldShowSecondaryButton(PropertySchema schema, String contextLabel) {
+  bool _shouldShowSecondaryButton(
+    PropertySchema schema,
+    String contextLabel,
+    FormGroup formGroup,
+  ) {
     final hasLabel = schema.secondaryActionLabel != null;
     final hasAction = widget.onSecondaryAction != null;
-    return hasLabel && hasAction;
+    if (!hasLabel || !hasAction) return false;
+
+    // Optional gate - see PropertySchema.secondaryActionVisibility. No
+    // condition, or an empty one, keeps the previous always-visible
+    // behaviour.
+    final visibility = schema.secondaryActionVisibility;
+    if (visibility == null || visibility.expression.isEmpty) {
+      debugPrint('SLDBG|secondaryBtn|page=${widget.pageName}'
+          '|gate=none|visible=true');
+      return true;
+    }
+
+    final ctx = _buildPageVisibilityContext(formGroup);
+    final visible = evaluateVisibilityExpression(visibility.expression, ctx);
+    debugPrint('SLDBG|secondaryBtn|page=${widget.pageName}'
+        '|entryType=${ctx['navigation.incomingStockEntryType']}'
+        '|discrepancyReason=${ctx['navigation.discrepancyReason']}'
+        '|clauses=${visibility.expression.map((e) => e.condition).toList()}'
+        '|visible=$visible');
+    return visible;
   }
 
   bool _isVisibleForScannerValidation(
@@ -1076,7 +1099,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                           // navigation param directly here instead avoids
                           // touching that schema field at all.
                           if (_shouldShowSecondaryButton(
-                              schema, 'Issue1-Button-1'))
+                              schema, 'Issue1-Button-1', formGroup))
                             Padding(
                               padding: const EdgeInsets.only(top: spacer1),
                               child: DigitButton(
@@ -1451,7 +1474,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                     ),
                   ),
                   if (_shouldShowSecondaryButton(
-                      schema, 'Issue1-Button-2'))
+                      schema, 'Issue1-Button-2', formGroup))
                     Padding(
                       padding: const EdgeInsets.only(top: spacer1),
                       child: DigitButton(

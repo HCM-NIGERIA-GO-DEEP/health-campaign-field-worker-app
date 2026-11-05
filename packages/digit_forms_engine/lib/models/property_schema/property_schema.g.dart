@@ -68,6 +68,8 @@ _$PropertySchemaImpl _$$PropertySchemaImplFromJson(Map<String, dynamic> json) =>
       preventScreenCapture: json['preventScreenCapture'] as bool?,
       submitCondition: _visibilityConditionOrNull(json['submitCondition']),
       secondaryActionLabel: json['secondaryActionLabel'] as String?,
+      secondaryActionVisibility:
+          _visibilityConditionOrNull(json['secondaryActionVisibility']),
       comparisonConfig: _comparisonConfigOrNull(json['comparisonConfig']),
       dynamicScanLimit: _dynamicScanLimitConfigOrNull(json['dynamicScanLimit']),
     );
@@ -132,6 +134,8 @@ Map<String, dynamic> _$$PropertySchemaImplToJson(
   writeNotNull('preventScreenCapture', instance.preventScreenCapture);
   writeNotNull('submitCondition', instance.submitCondition?.toJson());
   writeNotNull('secondaryActionLabel', instance.secondaryActionLabel);
+  writeNotNull('secondaryActionVisibility',
+      instance.secondaryActionVisibility?.toJson());
   writeNotNull('comparisonConfig', instance.comparisonConfig?.toJson());
   writeNotNull('dynamicScanLimit', instance.dynamicScanLimit?.toJson());
   return val;

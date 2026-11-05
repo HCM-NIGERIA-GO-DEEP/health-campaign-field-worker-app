@@ -91,6 +91,14 @@ mixin _$PropertySchema {
   VisibilityCondition? get submitCondition =>
       throw _privateConstructorUsedError; // Secondary action button label (e.g., "Decline" button alongside "Accept")
   String? get secondaryActionLabel =>
+      throw _privateConstructorUsedError; // Gates the secondary action button. Without this it shows whenever a
+// label and a handler both exist, so a page needing it for only some
+// arrivals had no way to suppress it - the stock receipt page offered
+// "Partially Accept" on a plain return, which has no shortfall to
+// apportion. Evaluated against the same context as visibilityCondition.
+// Absent means always visible, so existing configs are unaffected.
+  @JsonKey(fromJson: _visibilityConditionOrNull)
+  VisibilityCondition? get secondaryActionVisibility =>
       throw _privateConstructorUsedError; // Comparison config for scanner fields - enables duplicate detection against historical data
   @JsonKey(fromJson: _comparisonConfigOrNull)
   ComparisonConfig? get comparisonConfig =>
@@ -166,6 +174,8 @@ abstract class $PropertySchemaCopyWith<$Res> {
       @JsonKey(fromJson: _visibilityConditionOrNull)
       VisibilityCondition? submitCondition,
       String? secondaryActionLabel,
+      @JsonKey(fromJson: _visibilityConditionOrNull)
+      VisibilityCondition? secondaryActionVisibility,
       @JsonKey(fromJson: _comparisonConfigOrNull)
       ComparisonConfig? comparisonConfig,
       @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
@@ -178,6 +188,7 @@ abstract class $PropertySchemaCopyWith<$Res> {
   $ShowSecondaryAlertPopUpCopyWith<$Res>? get showSecondaryAlertPopUp;
   $MultiEntityConfigCopyWith<$Res>? get multiEntityConfig;
   $VisibilityConditionCopyWith<$Res>? get submitCondition;
+  $VisibilityConditionCopyWith<$Res>? get secondaryActionVisibility;
   $ComparisonConfigCopyWith<$Res>? get comparisonConfig;
   $DynamicScanLimitConfigCopyWith<$Res>? get dynamicScanLimit;
 }
@@ -239,6 +250,7 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
     Object? preventScreenCapture = freezed,
     Object? submitCondition = freezed,
     Object? secondaryActionLabel = freezed,
+    Object? secondaryActionVisibility = freezed,
     Object? comparisonConfig = freezed,
     Object? dynamicScanLimit = freezed,
   }) {
@@ -419,6 +431,10 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
           ? _value.secondaryActionLabel
           : secondaryActionLabel // ignore: cast_nullable_to_non_nullable
               as String?,
+      secondaryActionVisibility: freezed == secondaryActionVisibility
+          ? _value.secondaryActionVisibility
+          : secondaryActionVisibility // ignore: cast_nullable_to_non_nullable
+              as VisibilityCondition?,
       comparisonConfig: freezed == comparisonConfig
           ? _value.comparisonConfig
           : comparisonConfig // ignore: cast_nullable_to_non_nullable
@@ -518,6 +534,19 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
 
   @override
   @pragma('vm:prefer-inline')
+  $VisibilityConditionCopyWith<$Res>? get secondaryActionVisibility {
+    if (_value.secondaryActionVisibility == null) {
+      return null;
+    }
+
+    return $VisibilityConditionCopyWith<$Res>(_value.secondaryActionVisibility!,
+        (value) {
+      return _then(_value.copyWith(secondaryActionVisibility: value) as $Val);
+    });
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
   $ComparisonConfigCopyWith<$Res>? get comparisonConfig {
     if (_value.comparisonConfig == null) {
       return null;
@@ -603,6 +632,8 @@ abstract class _$$PropertySchemaImplCopyWith<$Res>
       @JsonKey(fromJson: _visibilityConditionOrNull)
       VisibilityCondition? submitCondition,
       String? secondaryActionLabel,
+      @JsonKey(fromJson: _visibilityConditionOrNull)
+      VisibilityCondition? secondaryActionVisibility,
       @JsonKey(fromJson: _comparisonConfigOrNull)
       ComparisonConfig? comparisonConfig,
       @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
@@ -622,6 +653,8 @@ abstract class _$$PropertySchemaImplCopyWith<$Res>
   $MultiEntityConfigCopyWith<$Res>? get multiEntityConfig;
   @override
   $VisibilityConditionCopyWith<$Res>? get submitCondition;
+  @override
+  $VisibilityConditionCopyWith<$Res>? get secondaryActionVisibility;
   @override
   $ComparisonConfigCopyWith<$Res>? get comparisonConfig;
   @override
@@ -683,6 +716,7 @@ class __$$PropertySchemaImplCopyWithImpl<$Res>
     Object? preventScreenCapture = freezed,
     Object? submitCondition = freezed,
     Object? secondaryActionLabel = freezed,
+    Object? secondaryActionVisibility = freezed,
     Object? comparisonConfig = freezed,
     Object? dynamicScanLimit = freezed,
   }) {
@@ -863,6 +897,10 @@ class __$$PropertySchemaImplCopyWithImpl<$Res>
           ? _value.secondaryActionLabel
           : secondaryActionLabel // ignore: cast_nullable_to_non_nullable
               as String?,
+      secondaryActionVisibility: freezed == secondaryActionVisibility
+          ? _value.secondaryActionVisibility
+          : secondaryActionVisibility // ignore: cast_nullable_to_non_nullable
+              as VisibilityCondition?,
       comparisonConfig: freezed == comparisonConfig
           ? _value.comparisonConfig
           : comparisonConfig // ignore: cast_nullable_to_non_nullable
@@ -929,6 +967,8 @@ class _$PropertySchemaImpl implements _PropertySchema {
       this.preventScreenCapture,
       @JsonKey(fromJson: _visibilityConditionOrNull) this.submitCondition,
       this.secondaryActionLabel,
+      @JsonKey(fromJson: _visibilityConditionOrNull)
+      this.secondaryActionVisibility,
       @JsonKey(fromJson: _comparisonConfigOrNull) this.comparisonConfig,
       @JsonKey(fromJson: _dynamicScanLimitConfigOrNull) this.dynamicScanLimit})
       : _properties = properties,
@@ -1104,6 +1144,15 @@ class _$PropertySchemaImpl implements _PropertySchema {
 // Secondary action button label (e.g., "Decline" button alongside "Accept")
   @override
   final String? secondaryActionLabel;
+// Gates the secondary action button. Without this it shows whenever a
+// label and a handler both exist, so a page needing it for only some
+// arrivals had no way to suppress it - the stock receipt page offered
+// "Partially Accept" on a plain return, which has no shortfall to
+// apportion. Evaluated against the same context as visibilityCondition.
+// Absent means always visible, so existing configs are unaffected.
+  @override
+  @JsonKey(fromJson: _visibilityConditionOrNull)
+  final VisibilityCondition? secondaryActionVisibility;
 // Comparison config for scanner fields - enables duplicate detection against historical data
   @override
   @JsonKey(fromJson: _comparisonConfigOrNull)
@@ -1117,7 +1166,7 @@ class _$PropertySchemaImpl implements _PropertySchema {
 
   @override
   String toString() {
-    return 'PropertySchema(type: $type, readOnly: $readOnly, displayOnly: $displayOnly, hidden: $hidden, properties: $properties, enums: $enums, schemaCode: $schemaCode, systemDate: $systemDate, charCount: $charCount, format: $format, startDate: $startDate, endDate: $endDate, minValue: $minValue, maxValue: $maxValue, minLength: $minLength, maxLength: $maxLength, min: $min, max: $max, helpText: $helpText, tooltip: $tooltip, prefixText: $prefixText, suffixText: $suffixText, innerLabel: $innerLabel, label: $label, isMultiSelect: $isMultiSelect, value: $value, displayBehavior: $displayBehavior, conditions: $conditions, order: $order, actionLabel: $actionLabel, description: $description, validations: $validations, includeInForm: $includeInForm, includeInSummary: $includeInSummary, navigateTo: $navigateTo, visibilityCondition: $visibilityCondition, conditionalNavigateTo: $conditionalNavigateTo, autoFillCondition: $autoFillCondition, showAlertPopUp: $showAlertPopUp, showSecondaryAlertPopUp: $showSecondaryAlertPopUp, multiEntityConfig: $multiEntityConfig, preventScreenCapture: $preventScreenCapture, submitCondition: $submitCondition, secondaryActionLabel: $secondaryActionLabel, comparisonConfig: $comparisonConfig, dynamicScanLimit: $dynamicScanLimit)';
+    return 'PropertySchema(type: $type, readOnly: $readOnly, displayOnly: $displayOnly, hidden: $hidden, properties: $properties, enums: $enums, schemaCode: $schemaCode, systemDate: $systemDate, charCount: $charCount, format: $format, startDate: $startDate, endDate: $endDate, minValue: $minValue, maxValue: $maxValue, minLength: $minLength, maxLength: $maxLength, min: $min, max: $max, helpText: $helpText, tooltip: $tooltip, prefixText: $prefixText, suffixText: $suffixText, innerLabel: $innerLabel, label: $label, isMultiSelect: $isMultiSelect, value: $value, displayBehavior: $displayBehavior, conditions: $conditions, order: $order, actionLabel: $actionLabel, description: $description, validations: $validations, includeInForm: $includeInForm, includeInSummary: $includeInSummary, navigateTo: $navigateTo, visibilityCondition: $visibilityCondition, conditionalNavigateTo: $conditionalNavigateTo, autoFillCondition: $autoFillCondition, showAlertPopUp: $showAlertPopUp, showSecondaryAlertPopUp: $showSecondaryAlertPopUp, multiEntityConfig: $multiEntityConfig, preventScreenCapture: $preventScreenCapture, submitCondition: $submitCondition, secondaryActionLabel: $secondaryActionLabel, secondaryActionVisibility: $secondaryActionVisibility, comparisonConfig: $comparisonConfig, dynamicScanLimit: $dynamicScanLimit)';
   }
 
   @override
@@ -1203,6 +1252,9 @@ class _$PropertySchemaImpl implements _PropertySchema {
                 other.submitCondition == submitCondition) &&
             (identical(other.secondaryActionLabel, secondaryActionLabel) ||
                 other.secondaryActionLabel == secondaryActionLabel) &&
+            (identical(other.secondaryActionVisibility,
+                    secondaryActionVisibility) ||
+                other.secondaryActionVisibility == secondaryActionVisibility) &&
             (identical(other.comparisonConfig, comparisonConfig) ||
                 other.comparisonConfig == comparisonConfig) &&
             (identical(other.dynamicScanLimit, dynamicScanLimit) ||
@@ -1257,6 +1309,7 @@ class _$PropertySchemaImpl implements _PropertySchema {
         preventScreenCapture,
         submitCondition,
         secondaryActionLabel,
+        secondaryActionVisibility,
         comparisonConfig,
         dynamicScanLimit
       ]);
@@ -1331,6 +1384,8 @@ abstract class _PropertySchema implements PropertySchema {
       @JsonKey(fromJson: _visibilityConditionOrNull)
       final VisibilityCondition? submitCondition,
       final String? secondaryActionLabel,
+      @JsonKey(fromJson: _visibilityConditionOrNull)
+      final VisibilityCondition? secondaryActionVisibility,
       @JsonKey(fromJson: _comparisonConfigOrNull)
       final ComparisonConfig? comparisonConfig,
       @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
@@ -1445,6 +1500,14 @@ abstract class _PropertySchema implements PropertySchema {
   VisibilityCondition? get submitCondition;
   @override // Secondary action button label (e.g., "Decline" button alongside "Accept")
   String? get secondaryActionLabel;
+  @override // Gates the secondary action button. Without this it shows whenever a
+// label and a handler both exist, so a page needing it for only some
+// arrivals had no way to suppress it - the stock receipt page offered
+// "Partially Accept" on a plain return, which has no shortfall to
+// apportion. Evaluated against the same context as visibilityCondition.
+// Absent means always visible, so existing configs are unaffected.
+  @JsonKey(fromJson: _visibilityConditionOrNull)
+  VisibilityCondition? get secondaryActionVisibility;
   @override // Comparison config for scanner fields - enables duplicate detection against historical data
   @JsonKey(fromJson: _comparisonConfigOrNull)
   ComparisonConfig? get comparisonConfig;

@@ -5,11 +5,15 @@ import 'package:crypto/crypto.dart';
 import 'package:digit_crud_bloc/digit_crud_bloc.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/blocs/app_localization.dart';
+// Not re-exported by flow_builder.dart, but needed to read a field off the
+// EntityModels inside a grouped card (they are not Maps) - see pluckJoin.
+import 'package:digit_flow_builder/blocs/wrapper/value_resolver.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 import '../blocs/app_initialization/app_initialization.dart';
 import '../models/entities/roles_type.dart';
@@ -247,6 +251,94 @@ class FunctionRegistries {
         parts.add(trimmed);
       }
       return parts.join(' ');
+    });
+
+    // Collects one field off every item in a group, as a comma-joined string.
+    //
+    // QueryBuilder._normalizeToList splits a comma string back into a list, so
+    // the result drops straight into an "in" filter. Used to drill from a
+    // grouped transaction card into its own rows without going through the
+    // MRN: the group's clientReferenceIds identify exactly the same rows, are
+    // never null, and work the same whether the group was keyed on a real MRN
+    // (several product rows) or on the clientReferenceId fallback (one row).
+    //
+    // Usage:
+    //   "{{fn:pluckJoin(item.items, 'clientReferenceId')}}"
+    FunctionRegistry.register('pluckJoin', (args, stateData) {
+      if (args.length < 2 || args.first is! List) return '';
+
+      final fieldName =
+          args[1]?.toString().replaceAll(RegExp("^['\"]|['\"]\$"), '') ?? '';
+      if (fieldName.isEmpty) return '';
+
+      final values = <String>[];
+      for (final item in args.first as List) {
+        dynamic value;
+        if (item is Map) {
+          value = item[fieldName];
+        } else {
+          // EntityModels are not Maps - go through the same resolver the
+          // templates use so dotted paths and model fields both work.
+          try {
+            value = ValueResolver().resolveValue(fieldName, item, {});
+          } catch (_) {
+            value = null;
+          }
+        }
+
+        final trimmed = value?.toString().trim() ?? '';
+        // A comma inside a value would be split apart by _normalizeToList and
+        // silently widen the filter, so drop those rather than corrupt the
+        // query.
+        if (trimmed.isEmpty ||
+            trimmed.toLowerCase() == 'null' ||
+            trimmed.contains(',')) {
+          continue;
+        }
+        if (!values.contains(trimmed)) values.add(trimmed);
+      }
+
+      debugPrint('SLDBG|pluckJoin|field=$fieldName'
+          '|items=${(args.first as List).length}|collected=${values.length}');
+
+      return values.join(',');
+    });
+
+    // The tag shown on an incoming/outgoing transaction card.
+    //
+    // Reads "MRN <n>" when the transaction has one. Stock created from the web
+    // (Commodity Management) does not send an MRN, and the card used to
+    // interpolate the raw group key, rendering the literal text "MRN null_0".
+    // Those fall back to the entry date, which is the only other thing that
+    // meaningfully identifies the transaction to the user - the sending
+    // facility is already its own row on the same card.
+    //
+    // Usage:
+    //   "{{fn:transactionTag(item.items[0].additionalFields.fields.mrnNumber,
+    //                        item.items[0].dateOfEntry)}}"
+    FunctionRegistry.register('transactionTag', (args, stateData) {
+      final rawMrn = args.isNotEmpty ? args.first : null;
+      final mrn = rawMrn?.toString().trim() ?? '';
+
+      final hasMrn = mrn.isNotEmpty &&
+          mrn.toLowerCase() != 'null' &&
+          !mrn.startsWith('null_') &&
+          !(mrn.contains('{{') && mrn.contains('}}'));
+
+      if (hasMrn) return 'MRN $mrn';
+
+      final rawDate = args.length > 1 ? args[1] : null;
+      DateTime? date;
+      if (rawDate is int) {
+        date = DateTime.fromMillisecondsSinceEpoch(rawDate);
+      } else if (rawDate != null) {
+        final millis = int.tryParse(rawDate.toString());
+        if (millis != null) date = DateTime.fromMillisecondsSinceEpoch(millis);
+      }
+
+      if (date == null) return '';
+
+      return DateFormat('dd MMM yyyy').format(date);
     });
 
     FunctionRegistry.register('getCommentValue', (args, stateData) {
