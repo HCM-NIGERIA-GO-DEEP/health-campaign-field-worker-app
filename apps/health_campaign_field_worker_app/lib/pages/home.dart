@@ -2165,14 +2165,9 @@ class _HomePageState extends LocalizedState<HomePage> {
                 await FlowNavigationUtils.navigateToFlowModule(
                   context: ctx,
                   config: FlowModuleConfig(
-                    // MDMS publishes this module as REGISTRATIONFLOW, and
-                    // storeSchema caches under schemaJson['name'] verbatim,
-                    // so that is the name actually present in the cache -
-                    // ask for it directly. Asking for REGISTRATION (the name
-                    // our own source config carries) never matched, which is
-                    // why registration silently ran on the bundled
-                    // sampleFlows below and no backend change reached the app.
+                    // Prefer the current MDMS name, then the legacy name.
                     schemaKey: 'REGISTRATIONFLOW',
+                    schemaKeyAliases: const ['REGISTRATION'],
                     sampleFlows: sampleFlows,
                     relationshipMappings: [
                       const RelationshipMapping(

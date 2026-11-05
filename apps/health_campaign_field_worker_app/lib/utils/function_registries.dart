@@ -311,7 +311,18 @@ class FunctionRegistries {
       final localization = Localizations.of<FlowBuilderLocalization>(
           context, FlowBuilderLocalization);
       final translated = localization?.translate(sku);
-      return translated == null || translated.trim().isEmpty ? sku : translated;
+      if (translated != null && translated.trim().isNotEmpty && translated != sku) {
+        return translated;
+      }
+
+      // Commodity Management can send the same bednet under its catalog SKU.
+      if (sku == 'BEDNET-BEDNET') {
+        final bednet = localization?.translate('ITN');
+        if (bednet != null && bednet.trim().isNotEmpty && bednet != 'ITN') {
+          return bednet;
+        }
+      }
+      return sku;
     });
 
     // The tag shown on an incoming/outgoing transaction card.

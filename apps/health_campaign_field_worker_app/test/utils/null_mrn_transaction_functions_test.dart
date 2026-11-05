@@ -59,6 +59,10 @@ void main() {
 
     expect(FunctionRegistry.call('localizeStockSku', ['ITN'], stateData),
         'Bednet');
+    expect(
+      FunctionRegistry.call('localizeStockSku', ['BEDNET-BEDNET'], stateData),
+      'Bednet',
+    );
     expect(FunctionRegistry.call('localizeStockSku', ['NEW-SKU'], stateData),
         'NEW-SKU');
   });
