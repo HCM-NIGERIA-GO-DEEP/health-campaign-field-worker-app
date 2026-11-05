@@ -1,0 +1,967 @@
+
+curl --location 'http: //localhost:8987/service-request/service/definition/v1/_create' \
+--header 'Content-Type: application/json' \
+--data '{
+    "RequestInfo": {
+        "authToken": "df25f90d-416a-4690-b36e-b04323fd2d47",
+        "userInfo": {
+            "uuid": "liberia-itn-monitor-0346"
+        }
+    },
+    "ServiceDefinition": {
+        "tenantId": "liberia",
+        "code": "demo_bednet_october_2026.TRAINING_SUPERVISION.HEALTH_FACILITY_WORKER",
+        "isActive": true,
+        "attributes": [
+            {
+                "tenantId": "liberia",
+                "code": "OVERALL_ORG_1",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "1",
+                "additionalDetails": {
+                    "secDesc": "Are all D2D or DP team members present?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "OVERALL_ORG_2",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "2",
+                "additionalDetails": {
+                    "secDesc": "Have all team members been recruited locally and trained?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "OVERALL_ORG_3",
+                "dataType": "Number",
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "3",
+                "additionalDetails": {
+                    "secDesc": "How many members of the team were trained? (write number)"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "OVERALL_ORG_4",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "4",
+                "additionalDetails": {
+                    "secDesc": "Are there tables for the retrieval of vouchers and distribution of nets at DP?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "OVERALL_ORG_5",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "5",
+                "additionalDetails": {
+                    "secDesc": "Is there a rope or line for crowd control at DP?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "OVERALL_ORG_6",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "6",
+                "additionalDetails": {
+                    "secDesc": "Is distribution being orderly done?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "OVERALL_ORG_7",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "7",
+                "additionalDetails": {
+                    "secDesc": "Is there a banner hanging to identify the distribution point?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "OVERALL_ORG_8",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "8",
+                "additionalDetails": {
+                    "secDesc": "Are vouchers being verified and scanned by the voucher verifier (D2D or DP)?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "OVERALL_ORG_9",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "9",
+                "additionalDetails": {
+                    "secDesc": "Is there a priority line for people that are aged, pregnant women or physically challenged?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "OVERALL_ORG_10",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "10",
+                "additionalDetails": {
+                    "secDesc": "Is the DP supervisor present?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DEVICES_11",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "11",
+                "additionalDetails": {
+                    "secDesc": "Are devices available at the District?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DEVICES_12",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "12",
+                "additionalDetails": {
+                    "secDesc": "Is there a safe place for storage of the devices?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DEVICES_13",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "13",
+                "additionalDetails": {
+                    "secDesc": "Is there a secured charging area in the HF catchment area for the devices?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DEVICES_14",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "14",
+                "additionalDetails": {
+                    "secDesc": "Are devices available at the DP?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DEVICES_15",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "15",
+                "additionalDetails": {
+                    "secDesc": "Are there sufficient devices for all of the planned DPs?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DEVICES_16",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "16",
+                "additionalDetails": {
+                    "secDesc": "Are all of the devices sufficiently charged for the day'\''s work?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DEVICES_17",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "17",
+                "additionalDetails": {
+                    "secDesc": "Has the team experienced any challenges with the devices?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DEVICES_18",
+                "dataType": "SingleValueList",
+                "values": [
+                    "CHARGING",
+                    "SYNCHING",
+                    "NETWORK",
+                    "OTHER",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": false,
+                "regex": null,
+                "order": "18",
+                "additionalDetails": {
+                    "secDesc": "If yes, choose an option: 1-charging, 2-synching, 3-network, others"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DEVICES_19",
+                "dataType": "String",
+                "isActive": true,
+                "required": false,
+                "regex": null,
+                "order": "19",
+                "additionalDetails": {
+                    "secDesc": "If the answers to any of the above question is NO, what corrective actions/solutions are been taken?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "LOGISTICS_20",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "20",
+                "additionalDetails": {
+                    "secDesc": "Is the District warehouse secure for the storage of ITNs?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "LOGISTICS_21",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "21",
+                "additionalDetails": {
+                    "secDesc": "Is the stocksheet being used at the District warehouse?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "LOGISTICS_22",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": false,
+                "regex": null,
+                "order": "22",
+                "additionalDetails": {
+                    "secDesc": "If yes, is the stocksheet up to date?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "LOGISTICS_23",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "23",
+                "additionalDetails": {
+                    "secDesc": "Has the ITN stock been properly recorded in the device?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "LOGISTICS_24",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "24",
+                "additionalDetails": {
+                    "secDesc": "Has the PPS/DP supervisor made arrangements for net movement to households, outreach and mobile DPs?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "LOGISTICS_25",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "25",
+                "additionalDetails": {
+                    "secDesc": "Has the PPS supervisors communicated to community leaders about the D2D distribution?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "LOGISTICS_26",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "26",
+                "additionalDetails": {
+                    "secDesc": "Is there a safe storage for the ITNs at the PPS/DP?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "LOGISTICS_27",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "27",
+                "additionalDetails": {
+                    "secDesc": "Are nets available at the PPS/DP?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "LOGISTICS_28",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "28",
+                "additionalDetails": {
+                    "secDesc": "Is there a plan for re-stocking when supplies are running low?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "LOGISTICS_29",
+                "dataType": "String",
+                "isActive": true,
+                "required": false,
+                "regex": null,
+                "order": "29",
+                "additionalDetails": {
+                    "secDesc": "If the answers to any of the above question is NO, what corrective actions/solutions are been taken?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DISTRIBUTION_30",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "30",
+                "additionalDetails": {
+                    "secDesc": "Observe the process. Is the DP team following the tasks for receiving vouchers and issuing nets using the device?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DISTRIBUTION_31",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "31",
+                "additionalDetails": {
+                    "secDesc": "Is a line being drawn across each voucher to indicate it has been received and ITN issued?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DISTRIBUTION_32",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "32",
+                "additionalDetails": {
+                    "secDesc": "Are the valid vouchers being put into a separate voucher box from the invalid vouchers?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DISTRIBUTION_33",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "33",
+                "additionalDetails": {
+                    "secDesc": "Are children under 18 being served at the DP?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DISTRIBUTION_34",
+                "dataType": "String",
+                "isActive": true,
+                "required": false,
+                "regex": null,
+                "order": "34",
+                "additionalDetails": {
+                    "secDesc": "If the answers to any of the above question is NO, what corrective actions/solutions are been taken?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DATA_COLLECTION_35",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "35",
+                "additionalDetails": {
+                    "secDesc": "Check the data on the device. Are the DP teams scanning the vouchers and providing nets accurately?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DATA_COLLECTION_36",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "36",
+                "additionalDetails": {
+                    "secDesc": "Check the data on the device. Does the data on the device align to the physical stock of nets remaining?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DATA_COLLECTION_37",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "37",
+                "additionalDetails": {
+                    "secDesc": "Do vouchers received from household tally with the nets given to them?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "DATA_COLLECTION_38",
+                "dataType": "String",
+                "isActive": true,
+                "required": false,
+                "regex": null,
+                "order": "38",
+                "additionalDetails": {
+                    "secDesc": "If the answers to any of the above question is NO, what corrective actions/solutions are been taken?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "SOCIAL_BEHAVIOR_39",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "39",
+                "additionalDetails": {
+                    "secDesc": "Were Health Educators demonstration site appropriately set up?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "SOCIAL_BEHAVIOR_40",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "40",
+                "additionalDetails": {
+                    "secDesc": "Are health education activities being carried out at demonstration site?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "SOCIAL_BEHAVIOR_41",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "41",
+                "additionalDetails": {
+                    "secDesc": "Is there a net hanging at the demonstration area?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "SOCIAL_BEHAVIOR_42",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "42",
+                "additionalDetails": {
+                    "secDesc": "Is the Health Educator giving the key messages on the use and care of the ITN?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "SOCIAL_BEHAVIOR_43",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "43",
+                "additionalDetails": {
+                    "secDesc": "Is the health educator using the flash cards to demonstrate ITN use and care?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "SOCIAL_BEHAVIOR_44",
+                "dataType": "String",
+                "isActive": true,
+                "required": false,
+                "regex": null,
+                "order": "44",
+                "additionalDetails": {
+                    "secDesc": "If the answers to any of the above question is NO, what corrective actions/solutions are been taken?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "OBSERVATIONS_45",
+                "dataType": "String",
+                "isActive": true,
+                "required": false,
+                "regex": null,
+                "order": "45",
+                "additionalDetails": {
+                    "secDesc": "List three good practices that were observed at the DP."
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "OBSERVATIONS_46",
+                "dataType": "String",
+                "isActive": true,
+                "required": false,
+                "regex": null,
+                "order": "46",
+                "additionalDetails": {
+                    "secDesc": "Were there any additional problems observed at this DP?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "EXIT_INTERVIEW_47",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "47",
+                "additionalDetails": {
+                    "secDesc": "Have you gone to the DP to redeem your net?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "EXIT_INTERVIEW_48",
+                "dataType": "SingleValueList",
+                "values": [
+                    "NOT_REGISTERED",
+                    "LOST_VOUCHER",
+                    "DONT_KNOW_LOCATION",
+                    "DP_TOO_FAR",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": false,
+                "regex": null,
+                "order": "48",
+                "additionalDetails": {
+                    "secDesc": "If no, why you have not done so? 1-was not registered, 2-lost my voucher, 3-Do not know where to go, 4-DP is too far"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "EXIT_INTERVIEW_49",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "49",
+                "additionalDetails": {
+                    "secDesc": "Are you satisfied with the ITN distribution?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "EXIT_INTERVIEW_50",
+                "dataType": "MultiValueList",
+                "values": [
+                    "DP_TOO_CROWDED",
+                    "WAIT_TIME_LONG",
+                    "WRONG_NET_QUANTITY",
+                    "STAFF_NOT_ATTENTIVE",
+                    "NETS_DIRTY",
+                    "DP_TOO_FAR",
+                    "OTHER",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": false,
+                "regex": null,
+                "order": "50",
+                "additionalDetails": {
+                    "secDesc": "If No, what problem did you experience? 1-DP is too crowded, 2-Wait time is too long, 3-Didn'\''t get the right number of nets, 4-DP staff not attentive, 5-Nets are dirty, 6-Distance to the DP location too far, 7-other"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "EXIT_INTERVIEW_51",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "51",
+                "additionalDetails": {
+                    "secDesc": "Did you receive the right quantity of nets?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "EXIT_INTERVIEW_52",
+                "dataType": "SingleValueList",
+                "values": [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": false,
+                "regex": null,
+                "order": "52",
+                "additionalDetails": {
+                    "secDesc": "If No, how many did you receive? Choose from the option 1-5"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "EXIT_INTERVIEW_53",
+                "dataType": "SingleValueList",
+                "values": [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                    "6",
+                    "7",
+                    "8",
+                    "9",
+                    "10",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "53",
+                "additionalDetails": {
+                    "secDesc": "How many did you expect to receive? Choose from the option 1-10"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "EXIT_INTERVIEW_54",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "54",
+                "additionalDetails": {
+                    "secDesc": "Did you receive any message about the nets or malaria at the DP?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "EXIT_INTERVIEW_55",
+                "dataType": "String",
+                "isActive": true,
+                "required": false,
+                "regex": null,
+                "order": "55",
+                "additionalDetails": {
+                    "secDesc": "If yes what message did you receive?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "EXIT_INTERVIEW_56",
+                "dataType": "SingleValueList",
+                "values": [
+                    "yes",
+                    "no",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": true,
+                "regex": null,
+                "order": "56",
+                "additionalDetails": {
+                    "secDesc": "Did you receive any message from any other channel about the campaign?"
+                }
+            },
+            {
+                "tenantId": "liberia",
+                "code": "EXIT_INTERVIEW_57",
+                "dataType": "MultiValueList",
+                "values": [
+                    "RADIO",
+                    "STREET_ANNOUNCEMENT",
+                    "TOWN_CRIERS",
+                    "TV",
+                    "CSOS",
+                    "SOCIAL_MEDIA",
+                    "NOT_SELECTED"
+                ],
+                "isActive": true,
+                "required": false,
+                "regex": null,
+                "order": "57",
+                "additionalDetails": {
+                    "secDesc": "If yes, what medium? Choose from options: 1-Radio, 2-Street announcement, 3-Town criers, 4-TV, 5-CSOs, 6-Social media"
+                }
+            }
+        ]
+    }
+}'
+ 
