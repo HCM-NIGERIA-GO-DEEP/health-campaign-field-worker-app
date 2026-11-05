@@ -2148,60 +2148,23 @@ final dynamic sampleInventoryFlows = {
             "awaitResults": true,
             "skipAccumulatedFilters": true,
             "data": [
-              // Drill in on the exact rows the tapped card was built from,
-              // instead of substring-matching the MRN inside the
-              // additionalFields JSON blob.
-              //
-              // The old filter could not work for web-created stock: with no
-              // mrnNumber the group key was a synthetic 'null_0', and
-              // "additionalFields contains null_0" matches nothing, so the
-              // screen rendered its heading over an empty body. Where
-              // selectedStock was blank it fell through to the
-              // __NO_MATCHING_STOCK_MRN__ sentinel, which matches nothing
-              // either - the same empty screen by a different route.
-              //
-              // clientReferenceId is never null, is an indexed column rather
-              // than a substring of a JSON blob, and identifies exactly the
-              // same rows whether the group was keyed on a real MRN (several
-              // product rows share it) or on the clientReferenceId fallback
-              // (a single row).
-              //
-              // TWO filters, because the routes in carry different
-              // identifiers and this list is AND-ed:
-              //
-              //   from a transactions list -> selectedStockRefs always, plus
-              //       selectedStock only when the rows actually have an MRN;
-              //   from stockSuccess after RECORDSTOCK / RECORDLESSEXCESS ->
-              //       selectedStock (the MRN) only. Those flows CREATE a
-              //       record and never capture its clientReferenceId, so
-              //       there are no refs to pass.
-              //
-              // Each filter vanishes when its own input is absent, so
-              // whichever identifier the route has does the narrowing and the
-              // other stands down:
-              //   - "in" with an empty list is dropped by QueryBuilder;
-              //   - "contains" with an empty value becomes LIKE '%%'.
-              //
-              // Hence no sentinel on either. An earlier __NO_STOCK_REFS__
-              // fallback here made the refs filter match NOTHING when refs
-              // were absent, which is what blanked this screen for a PHU
-              // return: the MRN was present and would have found the record,
-              // but the AND could never be satisfied.
-              //
-              // Both inputs empty would match every row. That is prevented
-              // structurally rather than here - every navigation into this
-              // screen must supply at least one of the two, which
-              // inventory_null_mrn_transactions_config_test asserts by
-              // sweeping the whole config.
+              // List entries supply client reference IDs. The acknowledgement
+              // after creating stock can supply only an MRN. Add each filter
+              // only when its identifier is present. An empty string passed
+              // to "in" becomes a list containing one empty string.
               {
                 "key": "clientReferenceId",
                 "value": "{{navigation.selectedStockRefs}}",
-                "operation": "in"
+                "operation": "in",
+                "applyIf":
+                    '"{{navigation.selectedStockRefs}}" != "" && "{{navigation.selectedStockRefs}}" != "null"'
               },
               {
                 "key": "additionalFields",
                 "value": "{{navigation.selectedStock}}",
-                "operation": "contains"
+                "operation": "contains",
+                "applyIf":
+                    '"{{navigation.selectedStock}}" != "" && "{{navigation.selectedStock}}" != "null"'
               }
             ]
           }

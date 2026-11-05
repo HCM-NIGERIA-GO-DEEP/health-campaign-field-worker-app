@@ -1,4 +1,6 @@
 import 'package:collection/collection.dart';
+import 'package:digit_flow_builder/utils/utils.dart';
+import 'package:digit_formula_parser/digit_formula_parser.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:health_campaign_field_worker_app/sampleJsonConfigs/manage_stock.dart';
 
@@ -157,15 +159,43 @@ void main() {
       expect(byMrn['operation'], 'contains');
     });
 
+    test('details search applies only the filters with identifiers', () {
+      List<String> activeFields(Map<String, dynamic> navigation) {
+        return detailsFilters()
+            .where((filter) {
+              final guard = filter['applyIf'] as String?;
+              if (guard == null) return true;
+              final expression =
+                  resolveTemplate(guard, {'navigation': navigation});
+              final result = FormulaParser(expression, {'_dummy': ''}).parse;
+              expect(result['isSuccess'], isTrue, reason: expression);
+              return result['value'] == true;
+            })
+            .map((filter) => filter['key'] as String)
+            .toList();
+      }
+
+      expect(activeFields({'selectedStock': 'AB12-CD34-EF56'}),
+          ['additionalFields']);
+      expect(activeFields({'selectedStockRefs': '', 'selectedStock': 'MRN-1'}),
+          ['additionalFields']);
+      expect(activeFields({'selectedStockRefs': 'stock-1,stock-2'}),
+          ['clientReferenceId']);
+      expect(
+          activeFields({'selectedStockRefs': 'stock-1', 'selectedStock': ''}),
+          ['clientReferenceId']);
+      expect(
+          activeFields(
+              {'selectedStockRefs': 'stock-1', 'selectedStock': 'MRN-1'}),
+          ['clientReferenceId', 'additionalFields']);
+      expect(activeFields({}), isEmpty);
+    });
+
     test('neither filter uses a non-matching sentinel', () {
       // The filter list is AND-ed, so a filter that matches NOTHING when its
       // input is absent makes the whole query unsatisfiable - that is exactly
       // how a __NO_STOCK_REFS__ fallback blanked this screen for a PHU return,
       // where the MRN was present and would have found the record.
-      //
-      // Each filter must instead vanish when unused: "in" with an empty list
-      // is dropped by QueryBuilder, "contains" with an empty value becomes
-      // LIKE '%%'.
       for (final f in detailsFilters()) {
         final value = f['value'] as String;
         expect(value, isNot(contains('__NO_')),
@@ -175,9 +205,7 @@ void main() {
     });
 
     test('EVERY navigation supplies at least one identifier', () {
-      // This is what makes "both filters empty" - which would match every
-      // stock row - structurally unreachable, rather than relying on a
-      // sentinel that we just proved breaks the MRN-only routes.
+      // At least one filter must be active for the details search to run.
       final navs = findMaps(
         sampleInventoryFlows,
         (m) => m['name'] == 'viewTransactionDetails' && m['data'] is List,
@@ -197,7 +225,7 @@ void main() {
           isTrue,
           reason: 'a navigation to viewTransactionDetails passes neither '
               'selectedStockRefs nor selectedStock, so both filters stand '
-              'down and the screen lists EVERY stock row. '
+              'down and the details search is skipped. '
               'Passed keys: ${keys.toList()}',
         );
       }
@@ -208,7 +236,7 @@ void main() {
       // clientReferenceId, so their success screen can only identify it by
       // MRN. That MRN is minted when the flow is ENTERED - if a flow were ever
       // entered without one, both filters on viewTransactionDetails would
-      // stand down and the screen would list every stock row.
+      // stand down and the details search would be skipped.
       //
       // This is the runtime half of the "at least one identifier" invariant:
       // the test above proves a key is passed, this one proves it has a value.
@@ -230,7 +258,7 @@ void main() {
         expect(anyMintsMrn, isTrue,
             reason: '$flow is entered without minting an mrnNumber. Its '
                 'success screen has no clientReferenceId either, so '
-                'viewTransactionDetails would match EVERY stock row.');
+                'viewTransactionDetails would skip the search.');
       }
     });
 
