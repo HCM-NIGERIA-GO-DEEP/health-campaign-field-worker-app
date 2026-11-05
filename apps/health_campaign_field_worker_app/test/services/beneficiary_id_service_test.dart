@@ -67,7 +67,9 @@ class MemoryBoundaries extends Fake
 }
 
 class Prefixes extends BoundaryBeneficiaryIdRepository {
-  Map<String, int> values = {'DP': 42, 'OTHER': 43};
+  // Zero-padded, as the service issues them - exercises the padding the
+  // composed identifier has to preserve.
+  Map<String, String> values = {'DP': '0042', 'OTHER': '0043'};
   bool fail = false;
   int calls = 0;
   Prefixes() : super(Dio(), tenantId: 'si');
@@ -129,7 +131,9 @@ void main() {
     await service.prepare(boundaries.rows.first);
     final result = await service.allocate(boundaries.rows.first, 'household-1');
     expect(result.rawId, 'raw_123');
-    expect(result.identifier, '42_raw_123');
+    // Padding preserved end to end: an int round-trip anywhere in the
+    // fetch -> cache -> compose chain would yield '42_raw_123'.
+    expect(result.identifier, '0042_raw_123');
     expect(pool.rows.keys, ['raw_123']);
     expect(pool.rows['raw_123']!.status, IdStatus.unAssigned.toValue());
     expect(
@@ -298,10 +302,18 @@ void main() {
   test('numeric map rejects malformed prefixes and accepts zero', () {
     expect(
         BoundaryBeneficiaryIdMap.fromJson({'DP': 0}).boundaryToNumericId['DP'],
-        0);
+        '0');
     expect(() => BoundaryBeneficiaryIdMap.fromJson({'DP': 'bad'}),
         throwsFormatException);
     expect(() => BoundaryBeneficiaryIdMap.fromJson({'DP': -1}),
         throwsFormatException);
+    expect(() => BoundaryBeneficiaryIdMap.fromJson({'DP': ''}),
+        throwsFormatException);
+  });
+  test('zero-padded prefix survives into the composed identifier', () {
+    expect(
+        BoundaryBeneficiaryIdMap.fromJson({'DP': '0255'})
+            .boundaryToNumericId['DP'],
+        '0255');
   });
 }

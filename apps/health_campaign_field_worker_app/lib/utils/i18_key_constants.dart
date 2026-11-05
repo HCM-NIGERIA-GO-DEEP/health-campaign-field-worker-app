@@ -858,6 +858,11 @@ class Home {
 
   String get houseToHouse => 'HOME_HOUSE_TO_HOUSE_LABEL';
 
+  /// Same card as [houseToHouse], labelled for the Distributor role.
+  ///
+  /// A Registrar works house to house; a Distributor hands out at a fixed
+  /// distribution point, so the shared card read wrongly for half the users
+  /// who could see it.
   String get distributionPoint => 'HOME_DISTRIBUTION_POINT_LABEL';
 
   String get manageStockLabel => 'HOME_MANAGE_STOCK_LABEL';

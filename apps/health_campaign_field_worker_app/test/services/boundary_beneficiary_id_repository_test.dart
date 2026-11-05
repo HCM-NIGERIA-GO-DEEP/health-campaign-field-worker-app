@@ -42,7 +42,23 @@ void main() {
       'limit': 50,
     });
     expect(request.data['RequestInfo']['authToken'], 'test-token');
-    expect(result.boundaryToNumericId, {'DP': 42});
+    expect(result.boundaryToNumericId, {'DP': '42'});
+  });
+  test('zero-padded codes keep their width', () async {
+    final dio = Dio(BaseOptions(baseUrl: 'https://example.invalid/'));
+    dio.interceptors.add(AuthTokenInterceptor(localSecureStore: SecureStore()));
+    dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
+      handler.resolve(Response(requestOptions: options, statusCode: 200, data: {
+        'ResponseInfo': {},
+        'BoundaryIdentifier': {'DP': '0255'}
+      }));
+    }));
+    final result = await BoundaryBeneficiaryIdRepository(dio, tenantId: 'si')
+        .fetch(boundaryCode: 'DP', hierarchyType: 'ADMIN');
+    // Parsing this as an int yielded 255, so the composed beneficiary ID was
+    // "255_xx" and the prefix width tracked the code's magnitude instead of
+    // staying fixed at what the backend issued.
+    expect(result.boundaryToNumericId, {'DP': '0255'});
   });
   test('non-map responses return no prefix', () async {
     final dio = Dio();

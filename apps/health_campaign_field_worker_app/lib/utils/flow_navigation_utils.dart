@@ -16,6 +16,18 @@ class FlowModuleConfig {
   /// The key used to retrieve schema from app_config_schemas (e.g., 'COMPLAINTS', 'CLOSEHOUSEHOLD')
   final String schemaKey;
 
+  /// Alternate names the backend may publish this same module under, tried in
+  /// order after [schemaKey] misses.
+  ///
+  /// storeSchema caches each config under its own `name` field verbatim, with
+  /// no normalisation, so a module renamed in MDMS lands under a key the app
+  /// never queries - the lookup silently misses and the module falls back to
+  /// its bundled flows. That is not visibly an error: the module keeps working
+  /// on stale compiled-in config while backend changes appear to do nothing.
+  /// Listing the known aliases here makes the app tolerant of the rename in
+  /// either direction.
+  final List<String> schemaKeyAliases;
+
   /// Sample flows to use as fallback when schema is not available
   final dynamic sampleFlows;
 
@@ -27,6 +39,7 @@ class FlowModuleConfig {
 
   const FlowModuleConfig({
     required this.schemaKey,
+    this.schemaKeyAliases = const [],
     this.sampleFlows,
     this.relationshipMappings = const [],
     this.nestedModelMappings = const [],
@@ -83,9 +96,11 @@ class FlowNavigationUtils {
 
       if (schemaJsonRaw != null && config.schemaKey != "ATTENDANCE") {
         final allSchemas = json.decode(schemaJsonRaw) as Map<String, dynamic>;
-        final moduleSchema = allSchemas[config.schemaKey];
 
-        if (moduleSchema != null) {
+        for (final key in [config.schemaKey, ...config.schemaKeyAliases]) {
+          final moduleSchema = allSchemas[key];
+          if (moduleSchema == null) continue;
+
           Map<String, dynamic> configData = moduleSchema['data'];
           await _navigate(context, configData);
           return;

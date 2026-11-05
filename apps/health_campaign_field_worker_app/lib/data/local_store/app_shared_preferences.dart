@@ -61,21 +61,17 @@ class AppSharedPreferences {
   String _beneficiaryKey(String scope, String code, String kind) =>
       'beneficiary_${kind}_${Uri.encodeComponent(scope)}_${Uri.encodeComponent(code)}';
 
-  /// Stored as a String so a zero-padded prefix keeps the width the backend
-  /// issued ("0255", not 255).
-  ///
-  /// setInt/getInt normalised the padding away, which would have undone the
-  /// String handling in BoundaryBeneficiaryIdMap one layer further down - the
-  /// map parsed "0255" correctly and the cache then wrote 255 back.
+  /// Stored as a String to preserve the zero padding the service issues
+  /// ("0255"); see [BoundaryBeneficiaryIdMap].
   String? getBoundaryNumericId(String scope, String code) {
-    final key = _beneficiaryKey(scope, code, 'prefix');
     try {
-      return sharedPreferences.getString(key);
-    } on TypeError {
-      // An install from before this change still holds an int under this key,
-      // and getString throws on the type mismatch rather than returning null.
-      // Treat it as absent: it is then re-fetched and rewritten as a String,
-      // and the un-padded int was the wrong value to begin with.
+      return sharedPreferences.getString(_beneficiaryKey(scope, code, 'prefix'));
+    } catch (_) {
+      // Builds before this switched to String wrote the key with setInt, and
+      // getString throws on the type mismatch rather than returning null.
+      // Treat a legacy int as absent: the caller falls back to the DP name and
+      // the next sync rewrites the key as a String. Returning the int here
+      // would reintroduce the unpadded prefix this change exists to fix.
       return null;
     }
   }
