@@ -189,6 +189,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
       final unsyncedPeopleByDate = <String, int>{};
       final localPeopleInHouseholdsByDate = <String, int>{};
       final localChildrenUnder5ByDate = <String, int>{};
+      final syncedChildrenUnder5ByDate = <String, int>{};
       final closedHouseholdsInServerReportByDate = <String, int>{};
       final closedHouseholdMembersInServerReportByDate = <String, int>{};
       final closedHouseholdChildrenUnder5InServerReportByDate = <String, int>{};
@@ -221,10 +222,12 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
             closedHouseholdMembersInServerReportByDate[date] =
                 (closedHouseholdMembersInServerReportByDate[date] ?? 0) +
                     (hh.memberCount ?? 0);
-            closedHouseholdChildrenUnder5InServerReportByDate[date] =
-                (closedHouseholdChildrenUnder5InServerReportByDate[date] ??
-                        0) +
-                    householdChildrenUnder5Count(hh);
+            if (hh.id != null) {
+              closedHouseholdChildrenUnder5InServerReportByDate[date] =
+                  (closedHouseholdChildrenUnder5InServerReportByDate[date] ??
+                          0) +
+                      householdChildrenUnder5Count(hh);
+            }
           }
           continue;
         }
@@ -235,9 +238,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         // dropped real registrations - the row for the current date could
         // disappear entirely.
         final date = _epochToDateString(epochMs);
+        final childrenUnder5 = householdChildrenUnder5Count(hh);
         localChildrenUnder5ByDate[date] =
-            (localChildrenUnder5ByDate[date] ?? 0) +
-                householdChildrenUnder5Count(hh);
+            (localChildrenUnder5ByDate[date] ?? 0) + childrenUnder5;
         // Split on whether the server aggregate already counts this row.
         // HouseholdModel.id stays null until a sync-up round trip writes the
         // server-generated id back, so `id != null` means "already inside
@@ -249,6 +252,8 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         localHouseholdsRegisteredByDate[date] =
             (localHouseholdsRegisteredByDate[date] ?? 0) + 1;
         if (hh.id != null) {
+          syncedChildrenUnder5ByDate[date] =
+              (syncedChildrenUnder5ByDate[date] ?? 0) + childrenUnder5;
           syncedHouseholdsByDate[date] = (syncedHouseholdsByDate[date] ?? 0) + 1;
           syncedPeopleByDate[date] =
               (syncedPeopleByDate[date] ?? 0) + (hh.memberCount ?? 0);
@@ -264,6 +269,7 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
 
       // Local ITN distributed by date (same reasoning as households above).
       final localITNByDate = <String, int>{};
+      final syncedITNByDate = <String, int>{};
       for (final task in tasks) {
         if (task.status != 'ADMINISTRATION_SUCCESS' &&
             task.status != 'VISITED') {
@@ -295,6 +301,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
           }
           final qty = (double.tryParse(res.quantity ?? '0') ?? 0).toInt();
           localITNByDate[date] = (localITNByDate[date] ?? 0) + qty;
+          if (task.id != null) {
+            syncedITNByDate[date] = (syncedITNByDate[date] ?? 0) + qty;
+          }
         }
       }
 
@@ -377,21 +386,21 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
         final baseline = await summaryReportService.baselineFor(
           date: date,
           localHouseholdCount: localHouseholdsRegisteredByDate[date] ?? 0,
+          delivery: (
+            syncedChildrenUnder5: syncedChildrenUnder5ByDate[date] ?? 0,
+            closedChildrenUnder5:
+                closedHouseholdChildrenUnder5InServerReportByDate[date] ?? 0,
+            localItns: localITNByDate[date] ?? 0,
+            syncedItns: syncedITNByDate[date] ?? 0,
+          ),
         );
         int serverReportHouseholdRegistration = baseline.households;
         int serverReportPeopleInHouseholds = baseline.people;
-        int serverReportITNDistributed =
-            await summaryReportService.itnsDistributed(date: date);
-        int serverReportChildrenUnder5 =
-            await summaryReportService.childrenRegistered(date: date);
-
         final adjustedServerHouseholdCount =
             serverReportHouseholdRegistration -
                 (closedHouseholdsInServerReportByDate[date] ?? 0);
         final adjustedServerPeopleCount = serverReportPeopleInHouseholds -
             (closedHouseholdMembersInServerReportByDate[date] ?? 0);
-        final adjustedServerChildrenUnder5Count = serverReportChildrenUnder5 -
-            (closedHouseholdChildrenUnder5InServerReportByDate[date] ?? 0);
         // Every local household for the date counts on top of the
         // baseline, synced or not: the baseline deliberately excludes them
         // all. Identical to the progress bar's rule.
@@ -404,13 +413,9 @@ class _SummaryReportPageState extends LocalizedState<SummaryReportPage> {
             (adjustedServerPeopleCount < 0 ? 0 : adjustedServerPeopleCount) +
                 (syncedPeopleByDate[date] ?? 0) +
                 (unsyncedPeopleByDate[date] ?? 0);
-        final dailyChildrenUnder5Count = (adjustedServerChildrenUnder5Count < 0
-                ? 0
-                : adjustedServerChildrenUnder5Count) +
-            (localChildrenUnder5ByDate[date] ?? 0);
-        final dailyITNCount =
-            serverReportITNDistributed + (localITNByDate[date] ?? 0);
-
+        final dailyChildrenUnder5Count =
+            baseline.childrenUnder5 + (localChildrenUnder5ByDate[date] ?? 0);
+        final dailyITNCount = baseline.itns + (localITNByDate[date] ?? 0);
 
         // Filter stock entries for this day only to compute total less/excess.
         final dateStocks = allStocks.where((stock) {

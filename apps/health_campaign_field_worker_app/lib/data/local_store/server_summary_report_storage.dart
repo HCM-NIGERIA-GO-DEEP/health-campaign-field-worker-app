@@ -37,7 +37,7 @@ class ServerSummaryReportStorage {
       // adding the local rows on top counted them twice (29 + 2 registered
       // read as 34). Only a caller that knows the device holds zero local
       // rows for a date can safely record its baseline - see
-      // ServerSummaryReportService.recordBaselineIfDeviceHasNoLocalRows.
+      // ServerSummaryReportService.baselineFor.
       // Carry any existing baseline forward untouched.
       final previous = existingData[report.date];
       final previousMap = previous is Map ? previous : const {};
@@ -49,12 +49,13 @@ class ServerSummaryReportStorage {
         'childrenRegistered': report.beneficiariesRegistered,
         'itnsDistributed': report.itnsDistributed,
         'stockConsumedMap': report.stockConsumedMap,
-        if (previousMap['baselineHouseholdsRegistered'] != null)
-          'baselineHouseholdsRegistered':
-              previousMap['baselineHouseholdsRegistered'],
-        if (previousMap['baselinePeopleInHouseholds'] != null)
-          'baselinePeopleInHouseholds':
-              previousMap['baselinePeopleInHouseholds'],
+        for (final key in [
+          'baselineHouseholdsRegistered',
+          'baselinePeopleInHouseholds',
+          'baselineChildrenUnder5',
+          'baselineItnsDistributed',
+        ])
+          if (previousMap[key] != null) key: previousMap[key],
       };
     }
 
@@ -68,17 +69,18 @@ class ServerSummaryReportStorage {
 
   /// Persists the pre-contribution baseline for a single date.
   ///
-  /// Callers must only invoke this when the device holds NO local rows for
-  /// [date], so the observed server counts cannot already include anything
-  /// this device registered. Writes the minimum ever seen, so a later
+  /// Supply a metric only when the device has no local contributions to
+  /// that metric on [date]. Writes the minimum ever seen, so a later
   /// observation that has grown (because records landed) cannot raise it.
   Future<void> writeBaseline({
     required String userUuid,
     required String projectId,
     required int cycleIndex,
     required String date,
-    required int households,
-    required int people,
+    int? households,
+    int? people,
+    int? childrenUnder5,
+    int? itnsDistributed,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     final root = _readRoot(prefs);
@@ -98,22 +100,22 @@ class ServerSummaryReportStorage {
         ? Map<String, dynamic>.from(dayEntry)
         : <String, dynamic>{};
 
-    int lowest(String key, int observed) {
-      final stored = dayData[key];
-      final storedInt = stored is num ? stored.toInt() : null;
-      return storedInt == null || observed < storedInt ? observed : storedInt;
+    final observations = {
+      'baselineHouseholdsRegistered': households,
+      'baselinePeopleInHouseholds': people,
+      'baselineChildrenUnder5': childrenUnder5,
+      'baselineItnsDistributed': itnsDistributed,
+    };
+    var changed = false;
+    for (final entry in observations.entries) {
+      final observed = entry.value;
+      if (observed == null) continue;
+      final stored = dayData[entry.key];
+      if (stored is num && stored <= observed) continue;
+      dayData[entry.key] = observed;
+      changed = true;
     }
-
-    final nextHouseholds = lowest('baselineHouseholdsRegistered', households);
-    final nextPeople = lowest('baselinePeopleInHouseholds', people);
-
-    if (dayData['baselineHouseholdsRegistered'] == nextHouseholds &&
-        dayData['baselinePeopleInHouseholds'] == nextPeople) {
-      return;
-    }
-
-    dayData['baselineHouseholdsRegistered'] = nextHouseholds;
-    dayData['baselinePeopleInHouseholds'] = nextPeople;
+    if (!changed) return;
     existingData[date] = dayData;
 
     root[reportKey] = {

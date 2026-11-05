@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:digit_data_model/models/entities/project_type.dart';
 
 import '../local_store/server_summary_report_storage.dart';
@@ -188,15 +190,36 @@ class ServerSummaryReportService {
   ///
   /// Falls back to the live count when no baseline has been recorded yet,
   /// which keeps pre-upgrade installs and never-synced dates reading sensibly.
-  Future<({int households, int people})> baselineFor({
+  Future<({int households, int people, int childrenUnder5, int itns})>
+      baselineFor({
     required String date,
     required int localHouseholdCount,
+    ({
+      int syncedChildrenUnder5,
+      int closedChildrenUnder5,
+      int localItns,
+      int syncedItns,
+    })? delivery,
   }) async {
-    final dayData = await readActiveSummaryReportDayData(date: date);
+    var dayData = await readActiveSummaryReportDayData(date: date);
     final liveHouseholds = _toInt(dayData?['householdsRegistered']);
     final livePeople = _toInt(dayData?['peopleInHouseholds']);
+    final liveChildren = _toNullableInt(dayData?['childrenRegistered']);
+    final hasItnReport =
+        dayData?['itnsDistributed'] != null || dayData?['stockConsumedMap'] is Map;
+    final liveItns = delivery != null && hasItnReport
+        ? await itnsDistributed(date: date)
+        : null;
 
-    if (localHouseholdCount == 0 &&
+    final captureHouseholds = localHouseholdCount == 0;
+    final captureChildren = delivery != null &&
+        captureHouseholds &&
+        delivery.closedChildrenUnder5 == 0 &&
+        liveChildren != null;
+    final captureItns =
+        delivery != null && delivery.localItns == 0 && liveItns != null;
+
+    if ((captureHouseholds || captureChildren || captureItns) &&
         _activeUserUuid != null &&
         _activeProjectId != null &&
         _activeCycle != null) {
@@ -205,23 +228,31 @@ class ServerSummaryReportService {
         projectId: _activeProjectId!,
         cycleIndex: _activeCycle!.id,
         date: date,
-        households: liveHouseholds,
-        people: livePeople,
+        households: captureHouseholds ? liveHouseholds : null,
+        people: captureHouseholds ? livePeople : null,
+        childrenUnder5: captureChildren ? liveChildren : null,
+        itnsDistributed: captureItns ? liveItns : null,
       );
       await _reloadCacheFromStorage();
-      final refreshed = await readActiveSummaryReportDayData(date: date);
-      return (
-        households: _toInt(refreshed?['baselineHouseholdsRegistered']),
-        people: _toInt(refreshed?['baselinePeopleInHouseholds']),
-      );
+      dayData = await readActiveSummaryReportDayData(date: date);
     }
 
-    final storedHouseholds = dayData?['baselineHouseholdsRegistered'];
-    final storedPeople = dayData?['baselinePeopleInHouseholds'];
+    // On older dates without a baseline, the live report may already include
+    // synced local contributions. Exclude that overlap before the page adds
+    // its local totals. A stored baseline already excludes local contributions.
     return (
-      households:
-          storedHouseholds != null ? _toInt(storedHouseholds) : liveHouseholds,
-      people: storedPeople != null ? _toInt(storedPeople) : livePeople,
+      households: _toNullableInt(dayData?['baselineHouseholdsRegistered']) ??
+          liveHouseholds,
+      people:
+          _toNullableInt(dayData?['baselinePeopleInHouseholds']) ?? livePeople,
+      childrenUnder5: _toNullableInt(dayData?['baselineChildrenUnder5']) ??
+          math.max(
+              0,
+              (liveChildren ?? 0) -
+                  (delivery?.closedChildrenUnder5 ?? 0) -
+                  (delivery?.syncedChildrenUnder5 ?? 0)),
+      itns: _toNullableInt(dayData?['baselineItnsDistributed']) ??
+          math.max(0, (liveItns ?? 0) - (delivery?.syncedItns ?? 0)),
     );
   }
 
