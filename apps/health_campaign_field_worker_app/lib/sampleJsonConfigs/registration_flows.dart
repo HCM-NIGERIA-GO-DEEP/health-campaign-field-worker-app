@@ -78,12 +78,6 @@ final dynamic sampleFlows = {
             "hidden": false,
             "onAction": [
               {
-                "actionType": "REFRESH_SEARCH",
-                "properties": {
-                  "screenName": "searchBeneficiary"
-                }
-              },
-              {
                 "actionType": "NAVIGATION",
                 "properties": {
                   "name": "searchBeneficiary",
@@ -108,12 +102,6 @@ final dynamic sampleFlows = {
       "footer": [],
       "onSystemBack": [
         {
-          "actionType": "REFRESH_SEARCH",
-          "properties": {
-            "screenName": "searchBeneficiary"
-          }
-        },
-        {
           "actionType": "NAVIGATION",
           "properties": {
             "name": "searchBeneficiary",
@@ -129,12 +117,6 @@ final dynamic sampleFlows = {
           "label": "DELIVERY_BACK",
           "format": "backLink",
           "onAction": [
-            {
-              "actionType": "REFRESH_SEARCH",
-              "properties": {
-                "screenName": "searchBeneficiary"
-              }
-            },
             {
               "actionType": "NAVIGATION",
               "properties": {
@@ -486,6 +468,17 @@ final dynamic sampleFlows = {
       ],
       "name": "caregiverAcknowledgement",
       "order": 13,
+      "onSystemBack": [
+        {
+          "actionType": "NAVIGATION",
+          "properties": {
+            "name": "searchBeneficiary",
+            "type": "TEMPLATE",
+            "navigationMode": "popUntilAndReplace",
+            "popUntilPageName": "searchBeneficiary"
+          }
+        }
+      ],
       "footer": [],
       "header": [{"type": "template", "label": "DELIVERY_BACK", "format": "backLink", "onAction": [{"actionType": "NAVIGATION", "properties": {"name": "searchBeneficiary", "type": "TEMPLATE", "navigationMode": "popUntilAndReplace", "popUntilPageName": "searchBeneficiary"}}]}],
       "summary": false,
@@ -941,6 +934,17 @@ final dynamic sampleFlows = {
       ],
       "name": "householdOverview",
       "order": 3,
+      "onSystemBack": [
+        {
+          "actionType": "NAVIGATION",
+          "properties": {
+            "name": "searchBeneficiary",
+            "type": "TEMPLATE",
+            "navigationMode": "popUntilAndReplace",
+            "popUntilPageName": "searchBeneficiary"
+          }
+        }
+      ],
       "footer": [
         {
           "type": "template",
@@ -1517,6 +1521,17 @@ final dynamic sampleFlows = {
       ],
       "name": "previewScreen",
       "order": 12,
+      "onSystemBack": [
+        {
+          "actionType": "NAVIGATION",
+          "properties": {
+            "name": "searchBeneficiary",
+            "type": "TEMPLATE",
+            "navigationMode": "popUntilAndReplace",
+            "popUntilPageName": "searchBeneficiary"
+          }
+        }
+      ],
       "footer": [
         {
           "type": "template",
@@ -1529,7 +1544,9 @@ final dynamic sampleFlows = {
               "properties": {
                 "data": [],
                 "name": "searchBeneficiary",
-                "type": "TEMPLATE"
+                "type": "TEMPLATE",
+                "navigationMode": "popUntilAndReplace",
+                "popUntilPageName": "searchBeneficiary"
               }
             }
           ],
@@ -1552,7 +1569,9 @@ final dynamic sampleFlows = {
               "actionType": "NAVIGATION",
               "properties": {
                 "name": "searchBeneficiary",
-                "type": "TEMPLATE"
+                "type": "TEMPLATE",
+                "navigationMode": "popUntilAndReplace",
+                "popUntilPageName": "searchBeneficiary"
               }
             }
           ]
@@ -2245,7 +2264,19 @@ final dynamic sampleFlows = {
                       }
                     ],
                     "fieldName": "openMemberCard",
-                    "disabled": "{{fn:isDelivered(item.tasks)}} == true",
+                    "disabled": {
+                      "@condition": [
+                        {
+                          "when": "{{fn:isDelivered(item.tasks)}} == true",
+                          "value": true
+                        },
+                        {
+                          "when": "{{fn:hasRole('REGISTRAR')}} == true && {{fn:isHouseholdMarkedClosed(item.tasks, item.HouseholdModel)}} == true && {{fn:hasMinimumBeneficiaryId(singleton.beneficiaryIdMinCount, widgetData.uniqueIdPoolCount)}} == false",
+                          "value": true
+                        }
+                      ],
+                      "@default": false
+                    },
                     "properties": {
                       "size": "medium",
                       "type": "secondary"
@@ -2277,9 +2308,17 @@ final dynamic sampleFlows = {
               },
               {
                 "type": "template",
+                "value": "SEARCH_HOUSEHOLD_STATUS_CLOSED",
+                "format": "textTemplate",
+                "visible": "{{fn:isDelivered(item.tasks)}} == false && {{fn:isHouseholdMarkedClosed(item.tasks, item.HouseholdModel)}} == true",
+                "fieldName": "statusClosedHousehold",
+                "properties": {}
+              },
+              {
+                "type": "template",
                 "value": "SEARCH_HOUSEHOLD_STATUS_NOT_VISITED",
                 "format": "textTemplate",
-                "visible": "{{fn:isDelivered(item.tasks)}} == false",
+                "visible": "{{fn:isDelivered(item.tasks)}} == false && {{fn:isHouseholdMarkedClosed(item.tasks, item.HouseholdModel)}} == false",
                 "fieldName": "statusNotVisited",
                 "properties": {}
               }
@@ -2302,6 +2341,26 @@ final dynamic sampleFlows = {
       ],
       "name": "searchBeneficiary",
       "order": 1,
+      "onReturn": [
+        {
+          "actionType": "NAVIGATION",
+          "properties": {
+            "name": "searchBeneficiary",
+            "type": "TEMPLATE",
+            "navigationMode": "popUntilAndReplace",
+            "popUntilPageName": "searchBeneficiary"
+          }
+        }
+      ],
+      "onSystemBack": [
+        {
+          "actionType": "BACK_NAVIGATION",
+          "properties": {
+            "name": "HOME",
+            "type": "HOME"
+          }
+        }
+      ],
       "footer": [
         {
           "icon": "FilterAlt",
@@ -4685,7 +4744,7 @@ final dynamic sampleFlows = {
             {
               "actionType": "FETCH_TRANSFORMER_CONFIG",
               "properties": {
-                "configName": "beneficiaryRegistration",
+                "configName": "householdConsentDeclinedUpdate",
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",

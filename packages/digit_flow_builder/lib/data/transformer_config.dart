@@ -1,4 +1,23 @@
 final jsonConfig = {
+  "householdConsentDeclinedUpdate": {
+    "models": {
+      "HouseholdModel": {
+        "mappings": {
+          "additionalFields": {
+            "caregiverConsent": "caregiverConsent.consentToParticipate",
+          },
+        },
+      },
+      "IndividualModel": {
+        "mappings": {
+          "name": {
+            "givenName": "caregiverConsent.firstName",
+            "familyName": "caregiverConsent.lastName",
+          },
+        },
+      },
+    },
+  },
   "beneficiaryRegistration": {
     "fallbackModel": "HouseholdModel",
     // fallback model to map form values which are not mapped to any field

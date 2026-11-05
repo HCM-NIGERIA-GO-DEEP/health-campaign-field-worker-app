@@ -119,6 +119,12 @@ class NavigationExecutor extends ActionExecutor {
     FlowCrudStateRegistry().clear(targetCompositeKey);
 
     NavigationRegistry.navigateTo(navigationProperties);
+    if (targetScreenKey == 'searchBeneficiary' &&
+        navigationMode == 'popUntilAndReplace' &&
+        targetScreenKey == popUntilPageName) {
+      return contextData;
+    }
+
     final entities = contextData['entities'];
 
     if (entities != null) {

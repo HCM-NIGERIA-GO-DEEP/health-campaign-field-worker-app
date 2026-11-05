@@ -1,3 +1,9 @@
+import 'package:digit_data_converter/src/transformer_service.dart';
+import 'package:digit_data_converter/utils/utils.dart';
+import 'package:digit_data_model/data_model.dart';
+import 'package:digit_data_model/data_model.init.dart';
+import 'package:digit_data_model/models/entities/name.dart';
+import 'package:digit_flow_builder/data/digit_data_converter.dart';
 import 'package:digit_flow_builder/data/transformer_config.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -18,6 +24,56 @@ void main() {
     final config =
         jsonConfig['householdConsentDeclinedRegistration'] as Map<String, dynamic>;
     models = config['models'] as Map<String, dynamic>;
+  });
+
+  test('editing declined consent preserves the existing registration and ID', () {
+    initializeMappers();
+    DataConverterSingleton()
+        .setData(dynamicEntityModelListener: EntityModelJsonMapper());
+    final registration = ProjectBeneficiaryModel(
+      clientReferenceId: 'registration',
+      dateOfRegistration: 1234,
+    );
+    final identifier = IdentifierModel(
+      clientReferenceId: 'identifier',
+      individualClientReferenceId: 'head',
+      identifierType: 'DEFAULT',
+      identifierId: 'placeholder',
+    );
+    final updated = FormEntityMapper(config: jsonConfig).updateEntitiesFromForm(
+      existingModels: [
+        HouseholdModel(clientReferenceId: 'household'),
+        IndividualModel(
+          clientReferenceId: 'head',
+          name: NameModel(individualClientReferenceId: 'head'),
+          identifiers: [identifier],
+        ),
+        registration,
+      ],
+      formValues: const {
+        'caregiverConsent': {
+          'consentToParticipate': 'FALSE',
+          'firstName': 'Updated first',
+          'lastName': 'Updated last',
+        },
+        'householdDetails': {'dateOfRegistration': null},
+      },
+      modelsConfig: jsonConfig['householdConsentDeclinedUpdate']!['models']
+          as Map<String, dynamic>,
+      context: const {},
+    );
+
+    final head = updated.whereType<IndividualModel>().single;
+    expect(head.name?.givenName, 'Updated first');
+    expect(head.name?.familyName, 'Updated last');
+    expect(head.name?.individualClientReferenceId, 'head');
+    expect(head.identifiers?.single.identifierId, 'placeholder');
+    expect(updated.whereType<ProjectBeneficiaryModel>().single, same(registration));
+    final household = updated.whereType<HouseholdModel>().single;
+    expect(household.toMap()['additionalFields']['fields'],
+        equals([
+          {'key': 'caregiverConsent', 'value': 'FALSE'},
+        ]));
   });
 
   test('produces the full entity set the real Closed Household feature produces', () {
@@ -80,12 +136,12 @@ void main() {
     expect(additionalFields['caregiverConsent'], 'caregiverConsent.consentToParticipate');
   });
 
-  test('does not source a head name from any field - no name is captured before consent', () {
+  test('sources the head name from the declined-consent form', () {
     final individualMappings = (models['IndividualModel']
         as Map<String, dynamic>)['mappings'] as Map<String, dynamic>;
     final nameMapping = individualMappings['name'] as Map<String, dynamic>;
 
-    expect(nameMapping.containsKey('givenName'), isFalse);
-    expect(nameMapping.containsKey('familyName'), isFalse);
+    expect(nameMapping['givenName'], 'caregiverConsent.firstName');
+    expect(nameMapping['familyName'], 'caregiverConsent.lastName');
   });
 }

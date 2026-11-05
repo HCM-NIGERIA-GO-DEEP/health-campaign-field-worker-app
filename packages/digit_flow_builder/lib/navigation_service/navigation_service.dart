@@ -100,17 +100,13 @@ class FlowBuilderNavigationService implements NavigationService {
           break;
 
         case NavigationMode.popUntilAndReplace:
-          // Pop until a specific page is reached, pop that page, then push fresh instance
-          // This ensures initActions are triggered on the fresh page
-          if (popUntilPageName != null && popUntilPageName.isNotEmpty) {
-            _popUntilPage(router, popUntilPageName);
-            // Pop the target page itself
-            if (router.canPop()) {
-              router.maybePop();
-            }
+          if (popUntilPageName != null &&
+              popUntilPageName.isNotEmpty &&
+              _popUntilPage(router, popUntilPageName)) {
+            router.replace(route);
+          } else {
+            router.push(route);
           }
-          // Push fresh instance of the page
-          router.push(route);
           break;
       }
     } else {
@@ -121,13 +117,13 @@ class FlowBuilderNavigationService implements NavigationService {
   }
 
     /// Pops routes until the specified page name is found
-    void _popUntilPage(StackRouter router, String targetPageName) {
+    bool _popUntilPage(StackRouter router, String targetPageName) {
       // Special handling for HOME - exit the entire flow by popping all
       // FlowBuilderHomeRoute pages, landing on whatever is below (e.g. CurrentBoundary)
       if (targetPageName == 'HOME') {
         router.popUntil((route) =>
             route.settings.name?.contains('FlowBuilderHomeRoute') != true);
-        return;
+        return true;
       }
 
       // Check if target page exists in the stack
@@ -154,6 +150,7 @@ class FlowBuilderNavigationService implements NavigationService {
           return false;
         });
       }
+      return targetExists;
     }
 
   @override
@@ -265,8 +262,11 @@ class NavigationRegistry {
         final routeKey = name;
 
         // Provide a function that returns the appropriate PageRouteInfo
-        routeMap[routeKey] = (data) =>
-            FlowBuilderHomeRoute(pageName: name, navigationParams: data);
+        routeMap[routeKey] = (data) => FlowBuilderHomeRoute(
+              key: ValueKey(data?['_instanceId']),
+              pageName: name,
+              navigationParams: data,
+            );
       }
     }
 

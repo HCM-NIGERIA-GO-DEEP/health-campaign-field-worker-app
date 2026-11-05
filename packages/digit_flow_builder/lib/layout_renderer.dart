@@ -56,6 +56,8 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
     'stockReconciliationSuccess',
   };
 
+  bool _coveredByPage = false;
+
   // Scroll listener state
   Timer? _debounceTimer;
   bool _hasTriggeredAtBottom = false;
@@ -296,6 +298,25 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
         getCompositeKey(context, screenKey: screenKey) ??
         screenKey;
 
+    final onReturn = widget.config['onReturn'] as List<dynamic>?;
+    if (onReturn != null && onReturn.isNotEmpty) {
+      final route = ModalRoute.of(context);
+      if (route != null && !route.isCurrent) {
+        // Dialogs aren't AutoRoute pages. Closing a search filter dialog
+        // must preserve the current search.
+        _coveredByPage |=
+            !identical(context.router.current, context.routeData);
+      } else if (route != null && _coveredByPage) {
+        _coveredByPage = false;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted && route.isCurrent) {
+            _handleScreenActions(context, onReturn, compositeKey);
+          }
+        });
+        return const SizedBox.shrink();
+      }
+    }
+
     return ValueListenableBuilder(
       valueListenable: FlowCrudStateRegistry().listen(compositeKey),
       builder: (context, flowState, __) {
@@ -329,7 +350,7 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
           onPopInvoked: (didPop) async {
             if (didPop) return;
             if (!hasOnSystemBack) return;
-            await _handleConfiguredSystemBack(
+            await _handleScreenActions(
               context,
               onSystemBackActions,
               compositeKey,
@@ -506,19 +527,17 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
     );
   }
 
-  /// Executes screen-level `onSystemBack` actions configured in the JSON.
-  /// Used by [PopScope] when canPop is false to override the default
-  /// Android system back behaviour for this screen only.
-  Future<void> _handleConfiguredSystemBack(
+  /// Executes screen-level actions for a back press or a return to this route.
+  Future<void> _handleScreenActions(
     BuildContext context,
-    List<dynamic> onSystemBackActions,
+    List<dynamic> actions,
     String compositeKey,
   ) async {
     final navParams =
         FlowCrudStateRegistry().getNavigationParams(compositeKey) ?? {};
 
     await ActionHandler.executeActions(
-      onSystemBackActions,
+      actions,
       context,
       {
         'wrappers': const [],
