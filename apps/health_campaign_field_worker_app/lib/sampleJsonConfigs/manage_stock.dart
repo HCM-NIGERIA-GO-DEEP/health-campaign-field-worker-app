@@ -1415,6 +1415,7 @@ final dynamic sampleInventoryFlows = {
         {
           "actionType": "CREATE_EVENT",
           "properties": {
+            "awaitPersistence": true,
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
@@ -1454,6 +1455,10 @@ final dynamic sampleInventoryFlows = {
             ],
             "data": [
               {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
+              {
+                "key": "selectedStockRefs",
+                "value": "{{fn:pluckJoin(contextData.entities, 'clientReferenceId')}}"
+              },
               {
                 "key": "transactionDetailsHeading",
                 "value":
@@ -2006,6 +2011,7 @@ final dynamic sampleInventoryFlows = {
         {
           "actionType": "CREATE_EVENT",
           "properties": {
+            "awaitPersistence": true,
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
@@ -2046,6 +2052,10 @@ final dynamic sampleInventoryFlows = {
             "data": [
               {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
               {
+                "key": "selectedStockRefs",
+                "value": "{{fn:pluckJoin(contextData.entities, 'clientReferenceId')}}"
+              },
+              {
                 "key": "transactionDetailsHeading",
                 "value":
                     "{{fn:getViewTransactionHeadingCode(formData.lessExcessDetails.recordType)}}"
@@ -2082,20 +2092,8 @@ final dynamic sampleInventoryFlows = {
                   "popUntilPageName": "manageStock",
                   "data": [
                     {
-                      "key": "selectedStock",
-                      "value": "{{navigation.mrnNumber}}"
-                    },
-                    // The receipt just created, by its own id. Same filter
-                    // viewTransactionDetails uses when arriving from the
-                    // transactions list, so both routes in behave alike and
-                    // neither depends on an MRN existing.
-                    {
                       "key": "selectedStockRefs",
-                      "value": "{{navigation.clientReferenceId}}"
-                    },
-                    {
-                      "key": "clientReferenceId",
-                      "value": "{{navigation.clientReferenceId}}"
+                      "value": "{{navigation.selectedStockRefs}}"
                     },
                     {
                       "key": "transactionDetailsHeading",
@@ -2127,6 +2125,7 @@ final dynamic sampleInventoryFlows = {
       "screenType": "TEMPLATE",
       "category": "INVENTORY",
       "name": "viewTransactionDetails",
+      "seedFromNavigation": false,
       "heading": "{{navigation.transactionDetailsHeading}}",
       "description": "",
       "header": [
@@ -2148,23 +2147,12 @@ final dynamic sampleInventoryFlows = {
             "awaitResults": true,
             "skipAccumulatedFilters": true,
             "data": [
-              // List entries supply client reference IDs. The acknowledgement
-              // after creating stock can supply only an MRN. Add each filter
-              // only when its identifier is present. An empty string passed
-              // to "in" becomes a list containing one empty string.
               {
                 "key": "clientReferenceId",
                 "value": "{{navigation.selectedStockRefs}}",
                 "operation": "in",
                 "applyIf":
                     '"{{navigation.selectedStockRefs}}" != "" && "{{navigation.selectedStockRefs}}" != "null"'
-              },
-              {
-                "key": "additionalFields",
-                "value": "{{navigation.selectedStock}}",
-                "operation": "contains",
-                "applyIf":
-                    '"{{navigation.selectedStock}}" != "" && "{{navigation.selectedStock}}" != "null"'
               }
             ]
           }
@@ -2231,7 +2219,8 @@ final dynamic sampleInventoryFlows = {
                   },
                   {
                     "key": "INVENTORY_MRN_NUMBER_LABEL",
-                    "value": "{{item.additionalFields.fields.mrnNumber}}"
+                    "value": "{{item.additionalFields.fields.mrnNumber}}",
+                    "hideIfNull": true
                   },
                   {
                     "key": "INVENTORY_WAYBILL_NUMBER_LABEL",
@@ -2504,7 +2493,7 @@ final dynamic sampleInventoryFlows = {
                   "type": "template",
                   "fieldName": "incomingTransactionsGroupedItemText",
                   "value":
-                      "{{item.additionalFields.fields.sku}}: {{item.quantity}}"
+                      "{{fn:localizeStockSku(item.additionalFields.fields.sku)}}: {{item.quantity}}"
                 }
               },
               {
@@ -2825,7 +2814,7 @@ final dynamic sampleInventoryFlows = {
                 "data": [
                   {"key": "mrnNumber", "value": "{{fn:getCommentValue(navigation.mrnNumber, navigation.selectedTransactionMrn)}}"},
                   {
-                    "key": "clientReferenceId",
+                    "key": "selectedStockRefs",
                     "value": "{{navigation.clientReferenceId}}"
                   },
                   {
@@ -2883,7 +2872,7 @@ final dynamic sampleInventoryFlows = {
                 "data": [
                   {"key": "mrnNumber", "value": "{{fn:getCommentValue(navigation.mrnNumber, navigation.selectedTransactionMrn)}}"},
                   {
-                    "key": "clientReferenceId",
+                    "key": "selectedStockRefs",
                     "value": "{{navigation.clientReferenceId}}"
                   },
                   {
@@ -3045,7 +3034,7 @@ final dynamic sampleInventoryFlows = {
             "data": [
               {"key": "mrnNumber", "value": "{{fn:getCommentValue(navigation.mrnNumber, navigation.selectedTransactionMrn)}}"},
               {
-                "key": "clientReferenceId",
+                "key": "selectedStockRefs",
                 "value": "{{navigation.clientReferenceId}}"
               },
               {
@@ -3332,7 +3321,7 @@ final dynamic sampleInventoryFlows = {
                 "data": [
                   {"key": "mrnNumber", "value": "{{fn:getCommentValue(navigation.mrnNumber, navigation.selectedTransactionMrn)}}"},
                   {
-                    "key": "clientReferenceId",
+                    "key": "selectedStockRefs",
                     "value": "{{navigation.clientReferenceId}}"
                   },
                   {
@@ -3614,7 +3603,7 @@ final dynamic sampleInventoryFlows = {
                 "data": [
                   {"key": "mrnNumber", "value": "{{fn:getCommentValue(navigation.mrnNumber, navigation.selectedTransactionMrn)}}"},
                   {
-                    "key": "clientReferenceId",
+                    "key": "selectedStockRefs",
                     "value": "{{navigation.clientReferenceId}}"
                   },
                   {
@@ -4107,7 +4096,7 @@ final dynamic sampleInventoryFlows = {
                     {
                       "key": "{{fn:getViewTransactionQuantityLabel(item)}}",
                       "value":
-                          "{{item.additionalFields.fields.sku}}: {{fn:getViewTransactionQuantity(item)}}"
+                          "{{fn:localizeStockSku(item.additionalFields.fields.sku)}}: {{fn:getViewTransactionQuantity(item)}}"
                     }
                   ]
                 }
@@ -4132,34 +4121,10 @@ final dynamic sampleInventoryFlows = {
                       "navigationMode": "popUntilAndPush",
                       "popUntilPageName": "manageStock",
                       "data": [
-                        {"key": "item", "value": "{{item}}"},
-                        {"key": "item2", "value": "{{item.items[0]}}"},
-                        // The row's OWN mrnNumber, not the group key. Since
-                        // groupByFallback the key may be a clientReferenceId,
-                        // and that string does not appear anywhere in the
-                        // additionalFields blob that viewTransactionDetails
-                        // substring-matches - so passing the key would make
-                        // that filter match nothing. safeString renders a
-                        // missing MRN as empty rather than the text "null",
-                        // which is what lets the filter stand down instead of
-                        // excluding everything.
-                        {
-                          "key": "selectedStock",
-                          "value":
-                              "{{fn:safeString(item.items[0].additionalFields.fields.mrnNumber)}}"
-                        },
-                        // Every row behind this card, by its own id. This is
-                        // what viewTransactionDetails filters on - the group
-                        // key alone is unusable once it may be a synthetic
-                        // 'null_N' for MRN-less web stock.
                         {
                           "key": "selectedStockRefs",
                           "value":
                               "{{fn:pluckJoin(item.items, 'clientReferenceId')}}"
-                        },
-                        {
-                          "key": "clientReferenceId",
-                          "value": "{{item.items[0].clientReferenceId}}"
                         },
                         {
                           "key": "transactionDetailsHeading",

@@ -298,10 +298,15 @@ class FunctionRegistries {
         if (!values.contains(trimmed)) values.add(trimmed);
       }
 
-      debugPrint('SLDBG|pluckJoin|field=$fieldName'
-          '|items=${(args.first as List).length}|collected=${values.length}');
-
       return values.join(',');
+    });
+
+    FunctionRegistry.register('localizeStockSku', (args, stateData) {
+      final sku = args.firstOrNull?.toString() ?? '';
+      final localization = Localizations.of<FlowBuilderLocalization>(
+          context, FlowBuilderLocalization);
+      final translated = localization?.translate(sku);
+      return translated == null || translated.trim().isEmpty ? sku : translated;
     });
 
     // The tag shown on an incoming/outgoing transaction card.

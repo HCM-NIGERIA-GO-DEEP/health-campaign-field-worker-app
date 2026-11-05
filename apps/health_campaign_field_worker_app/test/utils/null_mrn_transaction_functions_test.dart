@@ -1,4 +1,5 @@
 import 'package:digit_data_model/data_model.dart';
+import 'package:digit_flow_builder/blocs/app_localization.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
 import 'package:digit_flow_builder/utils/interpolation.dart';
 import 'package:flutter/material.dart';
@@ -36,6 +37,31 @@ void main() {
   }
 
   StockModel stock(String ref) => StockModel(clientReferenceId: ref);
+
+  testWidgets('stock SKU is translated before quantity is appended',
+      (tester) async {
+    const locale = Locale('en', 'NG');
+    await tester.pumpWidget(MaterialApp(
+      locale: locale,
+      supportedLocales: const [locale],
+      localizationsDelegates: [
+        FlowBuilderLocalization.getDelegate(
+          Future.value([_StockLabel('en_NG', 'ITN', 'Bednet')]),
+          [(value: 'en_NG',)],
+        ),
+      ],
+      home: Builder(builder: (context) {
+        FunctionRegistries(context).registerAll();
+        return const SizedBox.shrink();
+      }),
+    ));
+    await tester.pumpAndSettle();
+
+    expect(FunctionRegistry.call('localizeStockSku', ['ITN'], stateData),
+        'Bednet');
+    expect(FunctionRegistry.call('localizeStockSku', ['NEW-SKU'], stateData),
+        'NEW-SKU');
+  });
 
   group('transactionTag', () {
     dynamic tag(List<dynamic> args) =>
@@ -186,20 +212,18 @@ void main() {
       });
     });
 
-    testWidgets('blank result is caught by the config sentinel', (tester) async {
-      // An empty "in" list means "no filter" to QueryBuilder, which would turn
-      // the details screen into a dump of every stock row. The config guards
-      // this with getCommentValue(..., '__NO_STOCK_REFS__'); this asserts the
-      // precondition that guard relies on - pluckJoin returns something
-      // getCommentValue treats as blank.
+    testWidgets('returns blank for an empty group', (tester) async {
       await withRegistry(tester, () {
-        final empty = pluck([<dynamic>[], 'clientReferenceId']);
-        expect(empty, '');
-
-        final guarded =
-            FunctionRegistry.call('getCommentValue', [empty, '__NO_STOCK_REFS__'], stateData);
-        expect(guarded, '__NO_STOCK_REFS__');
+        expect(pluck([<dynamic>[], 'clientReferenceId']), '');
       });
     });
   });
+}
+
+class _StockLabel {
+  _StockLabel(this.locale, this.code, this.message);
+
+  final String locale;
+  final String code;
+  final String message;
 }

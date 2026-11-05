@@ -190,15 +190,7 @@ Map<String, dynamic> transformJson(Map<String, dynamic> inputJson) {
         'preventScreenCapture': pageMap['preventScreenCapture'],
         'submitCondition': pageMap['submitCondition'],
         'secondaryActionLabel': pageMap['secondaryActionLabel'],
-        // Must travel with secondaryActionLabel above. This map is an explicit
-        // allow-list, so a page key that is not named here is dropped on the
-        // way into the forms engine - silently, since the result is a valid
-        // schema that simply lacks the gate. That is how the Partially Accept
-        // button stayed visible on a plain return even though the config
-        // declared a secondaryActionVisibility for it: PropertySchema parses
-        // the field correctly, but it never reached the parser. Confirmed on
-        // device as `secondaryBtn|gate=none|visible=true`, where gate=none
-        // means "no condition was present on the schema at all".
+        // Preserve the visibility gate alongside the secondary action label.
         'secondaryActionVisibility': pageMap['secondaryActionVisibility'],
       };
 

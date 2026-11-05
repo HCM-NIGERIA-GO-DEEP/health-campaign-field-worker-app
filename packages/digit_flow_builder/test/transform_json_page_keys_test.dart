@@ -10,8 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// return, PropertySchema parsed the field correctly, and forms_render honoured
 /// it - but the key never survived normalisation, so the gate simply did not
 /// exist at runtime and the button stayed visible. Nothing errored; the result
-/// was a valid schema that was merely missing a condition. On device it showed
-/// up only as `secondaryBtn|gate=none|visible=true`.
+/// was a valid schema that was merely missing a condition.
 ///
 /// These tests pin the keys whose loss is invisible rather than loud - a page
 /// that renders fine but silently drops a guard.

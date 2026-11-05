@@ -696,15 +696,13 @@ final dynamic inventoryReportFlows = {
                 "cellValue":
                     "{{fn:absoluteValue(item.additionalFields.fields.stockReturned)}}"
               },
-              {
-                "header": "STOCK_RECONCILIATION_WAREHOUSE_STOCK_LOST",
-                "cellValue": "{{fn:getWarehouseWriteOffQuantity(item.additionalFields.fields.stockLost, item.additionalFields.fields.lowerFacilityLostShortfall)}}"
-              },
-              {
-                "header": "STOCK_RECONCILIATION_WAREHOUSE_STOCK_DAMAGED",
-                "cellValue":
-                    "{{fn:getWarehouseWriteOffQuantity(item.additionalFields.fields.stockDamaged, item.additionalFields.fields.lowerFacilityDamagedShortfall)}}"
-              },
+              // The warehouse's own write-off columns (stockLost /
+              // stockDamaged minus the lower-facility shortfall) were
+              // dropped: in this campaign a warehouse never records its own
+              // loss or damage, so both always rendered 0 and pushed the
+              // columns that do carry data off the side of the table. The
+              // two reported-shortfall columns below are what the warehouse
+              // actually reconciles against.
               {
                 "header": "STOCK_RECONCILIATION_REPORTED_SHORTFALL_LOST",
                 "cellValue":
@@ -714,6 +712,17 @@ final dynamic inventoryReportFlows = {
                 "header": "STOCK_RECONCILIATION_REPORTED_SHORTFALL_DAMAGED",
                 "cellValue":
                     "{{fn:coalesceQuantity(item.additionalFields.fields.reportedDamagedShortfall, item.additionalFields.fields.lowerFacilityDamagedShortfall, 0)}}"
+              },
+              // Shown next to the physical count so the report carries both
+              // halves of an edit: the system's figure and what the user
+              // actually entered. With only the physical count there was no
+              // way to see that a count had been overridden, or by how much
+              // - just the comment explaining a discrepancy the report did
+              // not itself display.
+              {
+                "header":
+                    "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_CALCULATED_LABEL",
+                "cellValue": "{{item.calculatedCount}}"
               },
               {
                 "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_7_LABEL",
@@ -767,6 +776,17 @@ final dynamic inventoryReportFlows = {
               {
                 "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_6_LABEL",
                 "cellValue": "{{item.additionalFields.fields.stockExcess}}"
+              },
+              // Shown next to the physical count so the report carries both
+              // halves of an edit: the system's figure and what the user
+              // actually entered. With only the physical count there was no
+              // way to see that a count had been overridden, or by how much
+              // - just the comment explaining a discrepancy the report did
+              // not itself display.
+              {
+                "header":
+                    "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_CALCULATED_LABEL",
+                "cellValue": "{{item.calculatedCount}}"
               },
               {
                 "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_7_LABEL",

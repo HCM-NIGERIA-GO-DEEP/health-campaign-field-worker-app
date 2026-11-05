@@ -117,7 +117,8 @@ class NavigationExecutor extends ActionExecutor {
     NavigationRegistry.navigateTo(navigationProperties);
     final entities = contextData['entities'];
 
-    if (entities != null) {
+    // Search-backed screens can wait for their own scoped results.
+    if (entities != null && config?['seedFromNavigation'] != false) {
       if (config?['wrapperConfig'] != null) {
         // Check if this is an edit mode - if so, merge updated entities into existing wrapper
         // Check from contextData['navigation'] which carries isEdit from the action chain

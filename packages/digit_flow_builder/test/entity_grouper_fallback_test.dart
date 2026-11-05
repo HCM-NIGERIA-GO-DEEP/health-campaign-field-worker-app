@@ -153,6 +153,27 @@ void main() {
       }
     });
 
+    test('blank MRNs fall back and matching MRN and row ID stay separate', () {
+      final groups = grouper.groupEntitiesByCustomField(
+        [
+          stock(mrn: 'web-1', ref: 'regular-1'),
+          stock(ref: 'web-1'),
+          stock(mrn: ' ', ref: 'web-2'),
+          stock(mrn: 'null', ref: 'web-3'),
+        ],
+        mrnPath,
+        fallbackFieldPath: refPath,
+      );
+
+      expect(groups.map((group) => group['groupKey']),
+          ['web-1', 'web-1', 'web-2', 'web-3']);
+      expect(
+        groups.map((group) =>
+            (group['items'] as List).cast<StockModel>().single.clientReferenceId),
+        ['regular-1', 'web-1', 'web-2', 'web-3'],
+      );
+    });
+
     test('synthetic key remains only when BOTH paths are null', () {
       final groups = grouper.groupEntitiesByCustomField(
         [stock(ref: 'a')],

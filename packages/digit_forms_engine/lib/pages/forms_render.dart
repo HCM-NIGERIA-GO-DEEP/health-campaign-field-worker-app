@@ -333,20 +333,10 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     // condition, or an empty one, keeps the previous always-visible
     // behaviour.
     final visibility = schema.secondaryActionVisibility;
-    if (visibility == null || visibility.expression.isEmpty) {
-      debugPrint('SLDBG|secondaryBtn|page=${widget.pageName}'
-          '|gate=none|visible=true');
-      return true;
-    }
+    if (visibility == null || visibility.expression.isEmpty) return true;
 
-    final ctx = _buildPageVisibilityContext(formGroup);
-    final visible = evaluateVisibilityExpression(visibility.expression, ctx);
-    debugPrint('SLDBG|secondaryBtn|page=${widget.pageName}'
-        '|entryType=${ctx['navigation.incomingStockEntryType']}'
-        '|discrepancyReason=${ctx['navigation.discrepancyReason']}'
-        '|clauses=${visibility.expression.map((e) => e.condition).toList()}'
-        '|visible=$visible');
-    return visible;
+    return evaluateVisibilityExpression(
+        visibility.expression, _buildPageVisibilityContext(formGroup));
   }
 
   bool _isVisibleForScannerValidation(

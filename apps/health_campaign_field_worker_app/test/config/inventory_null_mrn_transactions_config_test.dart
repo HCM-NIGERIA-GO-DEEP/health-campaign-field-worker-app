@@ -1,8 +1,13 @@
-import 'package:collection/collection.dart';
+import 'package:digit_crud_bloc/models/global_search_params.dart';
+import 'package:digit_crud_bloc/repositories/helpers/query_builder.dart';
+import 'package:digit_data_model/data_model.dart';
+import 'package:digit_flow_builder/screen_builder.dart';
 import 'package:digit_flow_builder/utils/utils.dart';
 import 'package:digit_formula_parser/digit_formula_parser.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:health_campaign_field_worker_app/sampleJsonConfigs/manage_stock.dart';
+import 'package:health_campaign_field_worker_app/utils/function_registries.dart';
 
 /// Guards the inventory config against the null-MRN regression.
 ///
@@ -15,8 +20,8 @@ import 'package:health_campaign_field_worker_app/sampleJsonConfigs/manage_stock.
 ///     substring that never matches, so the screen showed its heading over an
 ///     empty body.
 ///
-/// The fix keys those rows on clientReferenceId instead, and has the details
-/// screen filter on that column rather than substring-matching a JSON blob.
+/// Rows without an MRN group by clientReferenceId. The details screen uses
+/// exact row IDs from the selected card or acknowledgement.
 ///
 /// These assertions are deliberately whole-config sweeps rather than checks on
 /// the two screens that were fixed by hand: the failure mode is an entry point
@@ -126,163 +131,139 @@ void main() {
     });
   });
 
+  test('transaction cards localize the SKU before appending quantity', () {
+    for (final entry in {
+      'incomingTransactions': 'incomingTransactionsGroupedItemText',
+      'viewTransaction': 'viewTransactionGroupedItemText',
+    }.entries) {
+      final cardItem = findMaps(
+        flowNamed(entry.key),
+        (widget) => widget['fieldName'] == entry.value,
+      ).single;
+      final value = cardItem['value'] ?? cardItem['data'][0]['value'];
+      expect(value,
+          startsWith('{{fn:localizeStockSku(item.additionalFields.fields.sku)}}: '));
+    }
+  });
+
   group('viewTransactionDetails search', () {
-    List<Map<String, dynamic>> detailsFilters() {
+    List<Map<String, dynamic>> routesTo(String name) => findMaps(
+          sampleInventoryFlows,
+          (m) => m['name'] == name && m['data'] is List,
+        ).toList();
+
+    String refsTemplate(Map<String, dynamic> route) =>
+        (route['data'] as List).singleWhere(
+            (entry) => entry['key'] == 'selectedStockRefs')['value'] as String;
+
+    List<SearchFilter> filtersFor(Map<String, dynamic> navigation) {
       final details = flowNamed('viewTransactionDetails');
-      final initActions = (details['initActions'] as List).cast<Map<String, dynamic>>();
-      final search = initActions.firstWhere(
-        (a) => a['actionType'] == 'SEARCH_EVENT',
-        orElse: () => throw StateError('viewTransactionDetails has no SEARCH_EVENT'),
-      );
-      return ((search['properties'] as Map)['data'] as List)
-          .cast<Map<String, dynamic>>();
+      final actions = resolveTemplates(details['initActions'], navigation) as List;
+      final search = actions.single;
+      return (search['properties']['data'] as List).where((filter) {
+        final expression = filter['applyIf'] as String;
+        final result = FormulaParser(expression, {'_dummy': ''}).parse;
+        expect(result['isSuccess'], isTrue, reason: expression);
+        return result['value'] == true;
+      }).map((filter) {
+        return SearchFilter(
+          root: 'stock',
+          field: filter['key'] as String,
+          operator: filter['operation'] as String,
+          value: filter['value'],
+        );
+      }).toList();
     }
 
-    test('carries both an id filter and an MRN filter', () {
-      // Routes in supply different identifiers, so the screen needs both:
-      // a transactions list has clientReferenceIds; stockSuccess after
-      // RECORDSTOCK / RECORDLESSEXCESS has only the MRN, because those flows
-      // create a record and never capture its clientReferenceId.
-      final filters = detailsFilters();
-
-      final byRef = filters.firstWhere(
-        (f) => f['key'] == 'clientReferenceId',
-        orElse: () => throw StateError('no clientReferenceId filter'),
-      );
-      expect(byRef['operation'], 'in');
-
-      final byMrn = filters.firstWhere(
-        (f) => f['key'] == 'additionalFields',
-        orElse: () => throw StateError('no additionalFields/MRN filter - the '
-            'MRN-only routes (PHU return) cannot resolve their record'),
-      );
-      expect(byMrn['operation'], 'contains');
+    test('requires row IDs and does not seed details from navigation entities', () {
+      final details = flowNamed('viewTransactionDetails');
+      final search = (details['initActions'] as List).single;
+      expect(details['seedFromNavigation'], isFalse);
+      expect(search['properties']['skipAccumulatedFilters'], isTrue);
+      expect(filtersFor({}), isEmpty);
+      expect(filtersFor({'selectedStock': 'MRN-1'}), isEmpty);
+      expect(filtersFor({'selectedStockRefs': ''}), isEmpty);
+      expect(filtersFor({'selectedStockRefs': 'null'}), isEmpty);
     });
 
-    test('details search applies only the filters with identifiers', () {
-      List<String> activeFields(Map<String, dynamic> navigation) {
-        return detailsFilters()
-            .where((filter) {
-              final guard = filter['applyIf'] as String?;
-              if (guard == null) return true;
-              final expression =
-                  resolveTemplate(guard, {'navigation': navigation});
-              final result = FormulaParser(expression, {'_dummy': ''}).parse;
-              expect(result['isSuccess'], isTrue, reason: expression);
-              return result['value'] == true;
-            })
-            .map((filter) => filter['key'] as String)
-            .toList();
-      }
-
-      expect(activeFields({'selectedStock': 'AB12-CD34-EF56'}),
-          ['additionalFields']);
-      expect(activeFields({'selectedStockRefs': '', 'selectedStock': 'MRN-1'}),
-          ['additionalFields']);
-      expect(activeFields({'selectedStockRefs': 'stock-1,stock-2'}),
-          ['clientReferenceId']);
-      expect(
-          activeFields({'selectedStockRefs': 'stock-1', 'selectedStock': ''}),
-          ['clientReferenceId']);
-      expect(
-          activeFields(
-              {'selectedStockRefs': 'stock-1', 'selectedStock': 'MRN-1'}),
-          ['clientReferenceId', 'additionalFields']);
-      expect(activeFields({}), isEmpty);
-    });
-
-    test('neither filter uses a non-matching sentinel', () {
-      // The filter list is AND-ed, so a filter that matches NOTHING when its
-      // input is absent makes the whole query unsatisfiable - that is exactly
-      // how a __NO_STOCK_REFS__ fallback blanked this screen for a PHU return,
-      // where the MRN was present and would have found the record.
-      for (final f in detailsFilters()) {
-        final value = f['value'] as String;
-        expect(value, isNot(contains('__NO_')),
-            reason: '${f['key']} falls back to a value that matches nothing; '
-                'AND-ed with the other filter that blanks the screen');
+    test('stock creation waits for persistence before acknowledging', () {
+      for (final name in ['RECORDSTOCK', 'RECORDLESSEXCESS']) {
+        final actions = flowNamed(name)['onAction'] as List;
+        final create = actions.singleWhere(
+            (action) => action['actionType'] == 'CREATE_EVENT');
+        expect(create['properties']['awaitPersistence'], isTrue, reason: name);
       }
     });
 
-    test('EVERY navigation supplies at least one identifier', () {
-      // At least one filter must be active for the details search to run.
-      final navs = findMaps(
-        sampleInventoryFlows,
-        (m) => m['name'] == 'viewTransactionDetails' && m['data'] is List,
-      );
+    testWidgets('each entry route resolves only its selected stock row IDs',
+        (tester) async {
+      await tester.pumpWidget(MaterialApp(home: Builder(builder: (context) {
+        FunctionRegistries(context).registerAll();
+        return const SizedBox.shrink();
+      })));
 
-      expect(navs.length, greaterThanOrEqualTo(2),
-          reason: 'expected the success screen and the transactions list');
+      final detailRoutes = routesTo('viewTransactionDetails');
+      final acknowledgement = detailRoutes.singleWhere(
+          (route) => refsTemplate(route).contains('navigation.'));
+      final listRoute = detailRoutes.singleWhere(
+          (route) => refsTemplate(route).contains('item.items'));
 
-      for (final nav in navs) {
-        final keys = (nav['data'] as List)
-            .cast<Map<String, dynamic>>()
-            .map((d) => d['key'])
-            .toSet();
+      void expectLookup(Object? refs, List<String> expected) {
+        final filters = filtersFor({
+          'selectedStockRefs': refs,
+          'selectedStock': 'unrelated-MRN',
+        });
+        expect(filters.single.field, 'clientReferenceId');
+        expect(filters.single.operator, 'in');
+        final placeholders = List.filled(expected.length, '?').join(', ');
+        expect(QueryBuilder.buildWhereClauseRaw(filters),
+            'client_reference_id IN ($placeholders)');
+        expect(QueryBuilder.buildWhereArgs(filters).map((arg) => arg.value),
+            expected);
+      }
 
-        expect(
-          keys.contains('selectedStockRefs') || keys.contains('selectedStock'),
-          isTrue,
-          reason: 'a navigation to viewTransactionDetails passes neither '
-              'selectedStockRefs nor selectedStock, so both filters stand '
-              'down and the details search is skipped. '
-              'Passed keys: ${keys.toList()}',
+      final successRoutes = routesTo('stockSuccess');
+      expect(successRoutes, isNotEmpty);
+      final created = successRoutes.where(
+          (route) => refsTemplate(route).contains('contextData.entities'));
+      expect(created, hasLength(2));
+      for (final route in successRoutes) {
+        final refs = resolveNavigationDataValue(
+          rawValue: refsTemplate(route),
+          stateFormData: const {},
+          contextData: {
+            'formData': <String, dynamic>{},
+            'entities': [StockModel(clientReferenceId: 'created-row')],
+            'navigation': {'clientReferenceId': 'updated-row'},
+          },
         );
-      }
-    });
-
-    test('the refs-less flows are entered with a generated MRN', () {
-      // RECORDSTOCK and RECORDLESSEXCESS create a record and never capture its
-      // clientReferenceId, so their success screen can only identify it by
-      // MRN. That MRN is minted when the flow is ENTERED - if a flow were ever
-      // entered without one, both filters on viewTransactionDetails would
-      // stand down and the details search would be skipped.
-      //
-      // This is the runtime half of the "at least one identifier" invariant:
-      // the test above proves a key is passed, this one proves it has a value.
-      for (final flow in ['RECORDSTOCK', 'RECORDLESSEXCESS']) {
-        final navsIn = findMaps(
-          sampleInventoryFlows,
-          (m) => m['name'] == flow && m['data'] is List,
+        final detailRefs = resolveNavigationDataValue(
+          rawValue: refsTemplate(acknowledgement),
+          contextData: {
+            'formData': <String, dynamic>{},
+            'navigation': {'selectedStockRefs': refs},
+          },
         );
-
-        expect(navsIn, isNotEmpty, reason: 'no navigation into $flow');
-
-        final anyMintsMrn = navsIn.any((nav) =>
-            (nav['data'] as List).cast<Map<String, dynamic>>().any((d) =>
-                d['key'] == 'mrnNumber' &&
-                (d['value'] as String?)
-                        ?.contains('generateUniqueMaterialNoteNumber') ==
-                    true));
-
-        expect(anyMintsMrn, isTrue,
-            reason: '$flow is entered without minting an mrnNumber. Its '
-                'success screen has no clientReferenceId either, so '
-                'viewTransactionDetails would skip the search.');
+        expectLookup(detailRefs,
+            [created.contains(route) ? 'created-row' : 'updated-row']);
       }
-    });
 
-    test('the list route passes the row MRN, never the group key', () {
-      // Since groupByFallback the group key may be a clientReferenceId, which
-      // appears nowhere in the additionalFields blob - passing it as
-      // selectedStock would make the MRN filter match nothing and blank the
-      // screen for exactly the web-created rows this all exists to fix.
-      final navs = findMaps(
-        sampleInventoryFlows,
-        (m) => m['name'] == 'viewTransactionDetails' && m['data'] is List,
-      );
-
-      for (final nav in navs) {
-        final entry = (nav['data'] as List)
-            .cast<Map<String, dynamic>>()
-            .where((d) => d['key'] == 'selectedStock')
-            .firstOrNull;
-        if (entry == null) continue;
-
-        expect(entry['value'], isNot(contains('groupKey')),
-            reason: 'selectedStock is the group key, which may be a '
-                'clientReferenceId and will not substring-match '
-                'additionalFields');
+      for (final ids in [
+        ['mrn-row-1', 'mrn-row-2'],
+        ['web-row'],
+        ['next-row'],
+      ]) {
+        final refs = resolveNavigationDataValue(
+          rawValue: refsTemplate(listRoute),
+          stateWrapperFirst: {
+            'formData': <String, dynamic>{},
+            'item': {
+              'items': ids.map((id) => StockModel(clientReferenceId: id)).toList(),
+            },
+          },
+          contextData: const {},
+        );
+        expectLookup(refs, ids);
       }
     });
   });

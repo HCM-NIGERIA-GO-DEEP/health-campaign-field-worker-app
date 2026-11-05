@@ -106,21 +106,33 @@ void main() {
     final warehouse = table('tableInfoReckonReportDetails');
     final columns = ((warehouse['data'] as Map)['columns'] as List)
         .cast<Map<String, dynamic>>();
+    // The warehouse's own write-off columns were removed: a warehouse never
+    // records its own loss or damage in this campaign, so both always
+    // rendered 0 and pushed the columns that do carry data off the side of
+    // the table. The reported-shortfall pair below is what it reconciles
+    // against.
     expect(
         columns.where(
             (c) => c['header'] == 'STOCK_RECONCILIATION_WAREHOUSE_STOCK_LOST'),
-        hasLength(1));
+        isEmpty);
     expect(
         columns.where((c) =>
             c['header'] == 'STOCK_RECONCILIATION_WAREHOUSE_STOCK_DAMAGED'),
-        hasLength(1));
+        isEmpty);
     expect(
         columns.where((c) => c['header'].toString().contains('_LOWER_LABEL')),
         isEmpty);
-    final loss = columns.firstWhere(
-        (c) => c['header'] == 'STOCK_RECONCILIATION_WAREHOUSE_STOCK_LOST');
-    expect(loss['cellValue'], contains('getWarehouseWriteOffQuantity'));
-    expect(loss['cellValue'], contains('lowerFacilityLostShortfall'));
+    // Both halves of a manual-count edit are reported: the system's figure
+    // and what the user actually entered over it.
+    expect(
+        columns.where((c) =>
+            c['header'] ==
+            'STOCKRECON_REPORT_DETAILS_TABLE_HEADER_CALCULATED_LABEL'),
+        hasLength(1));
+    expect(
+        columns.where((c) =>
+            c['header'] == 'STOCKRECON_REPORT_DETAILS_TABLE_HEADER_7_LABEL'),
+        hasLength(1));
     for (final suffix in ['LOST', 'DAMAGED']) {
       expect(
           columns.where((column) =>

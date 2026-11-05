@@ -24,71 +24,54 @@ class EntityGrouper {
   /// Returns a list of group objects:
   /// [{"groupKey": "value1", "items": [entity1, entity2]}, ...]
   ///
-  /// [fallbackFieldPath] is resolved only for entities where [fieldPath] is
-  /// null, and gives those entities a real, stable group key instead of a
-  /// synthetic 'null_N'. Stock created from the web (Commodity Management)
-  /// carries no mrnNumber, so grouping incoming transactions on MRN alone put
-  /// every such row in its own 'null_0', 'null_1', ... group - a key that
-  /// exists nowhere in the data, so the drilldown's
-  /// "additionalFields contains <groupKey>" search could never match it and
-  /// the details screen came up empty. Falling back to clientReferenceId
-  /// keeps the key groupable AND searchable.
+  /// [fallbackFieldPath] supplies a stable key for rows without a primary
+  /// value. Fallback groups are kept separate from primary groups even when
+  /// their displayed keys match.
   List<Map<String, dynamic>> groupEntitiesByCustomField(
     List<dynamic> entities,
     String fieldPath, {
     String? fallbackFieldPath,
   }) {
-    final Map<String, List<dynamic>> groupedByField = {};
+    final groupedByField = <(String, String), List<dynamic>>{};
     int nullCounter = 0;
-    // Probe only - counts how many entities had no value at fieldPath. For
-    // "additionalFields.fields.mrnNumber" a non-zero unresolved count is a
-    // web/Commodity-Management created transaction that carries no MRN: each
-    // one lands in its own 'null_N' group and the card renders "MRN null_0".
-    int unresolved = 0;
-    int usedFallback = 0;
-    int threw = 0;
 
     for (final entity in entities) {
       try {
         // Resolve the field value for this entity
         var fieldValue = _resolver.resolveValue(fieldPath, entity, {});
 
-        if (fieldValue == null) {
-          unresolved++;
+        var keySource = 'primary';
+        if (fieldValue == null ||
+            (fallbackFieldPath != null &&
+                fieldValue is String &&
+                (fieldValue.trim().isEmpty ||
+                    fieldValue.trim().toLowerCase() == 'null'))) {
           if (fallbackFieldPath != null) {
             fieldValue = _resolver.resolveValue(fallbackFieldPath, entity, {});
-            if (fieldValue != null) usedFallback++;
+            keySource = 'fallback';
           }
         }
 
         // Create unique keys for null values instead of grouping them together
-        final groupKey = fieldValue?.toString() ?? 'null_${nullCounter++}';
+        final groupKey = fieldValue == null
+            ? ('missing', 'null_${nullCounter++}')
+            : (keySource, fieldValue.toString());
 
         groupedByField.putIfAbsent(groupKey, () => []).add(entity);
       } catch (e) {
         debugPrint('Error grouping entity by field $fieldPath: $e');
-        threw++;
         // Put ungroupable entities in unique 'null' groups
         groupedByField
-            .putIfAbsent('null_${nullCounter++}', () => [])
+            .putIfAbsent(('missing', 'null_${nullCounter++}'), () => [])
             .add(entity);
       }
     }
-
-    debugPrint('SLDBG|groupBy|path=$fieldPath'
-        '|fallback=${fallbackFieldPath ?? "none"}'
-        '|entities=${entities.length}'
-        '|groups=${groupedByField.length}'
-        '|unresolved=$unresolved'
-        '|usedFallback=$usedFallback'
-        '|threw=$threw'
-        '|keys=${groupedByField.keys.take(12).toList()}');
 
     // Convert to list of group objects with groupKey and items
     final result = <Map<String, dynamic>>[];
     for (final entry in groupedByField.entries) {
       result.add({
-        'groupKey': entry.key,
+        'groupKey': entry.key.$2,
         'items': entry.value,
       });
     }
