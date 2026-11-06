@@ -68,7 +68,9 @@ void main() async {
   //     debugPrint('Security check failed: $e');
   //   }
   // }
-  WidgetsBinding.instance.addObserver(AppLifecycleObserver());
+  if (backgroundSyncEnabled) {
+    WidgetsBinding.instance.addObserver(AppLifecycleObserver());
+  }
   _dio = DioClient().dio;
 
   DigitUi.instance.initThemeComponents();
@@ -100,7 +102,14 @@ void main() async {
   // Create the encrypted database instance
   _sql = LocalSqlDataStore(encryptionKey: encryptionKey);
 
-  await initializeService(_dio, _isar);
+  if (backgroundSyncEnabled) {
+    await initializeService(_dio, _isar);
+  } else {
+    final service = FlutterBackgroundService();
+    if (await service.isRunning()) {
+      service.invoke('stopService');
+    }
+  }
 
   // Register FCM background message handler
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);

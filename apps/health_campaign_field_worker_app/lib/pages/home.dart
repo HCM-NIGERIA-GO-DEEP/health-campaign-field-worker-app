@@ -161,20 +161,22 @@ class _HomePageState extends LocalizedState<HomePage> {
       if (mounted) setState(() {});
     });
 
-    // If background service was killed with the app, release orphaned lock
-    // and restart the service.
-    FlutterBackgroundService().isRunning().then((isRunning) {
-      if (!isRunning) {
-        SyncLock.release();
-        if (context.mounted) {
-          performBackgroundService(
-            isBackground: false,
-            stopService: false,
-            context: context,
-          );
+    if (backgroundSyncEnabled) {
+      // If background service was killed with the app, release orphaned lock
+      // and restart the service.
+      FlutterBackgroundService().isRunning().then((isRunning) {
+        if (!isRunning) {
+          SyncLock.release();
+          if (context.mounted) {
+            performBackgroundService(
+              isBackground: false,
+              stopService: false,
+              context: context,
+            );
+          }
         }
-      }
-    });
+      });
+    }
 
     subscription = Connectivity()
         .onConnectivityChanged
@@ -2584,7 +2586,9 @@ class _HomePageState extends LocalizedState<HomePage> {
 
       i18.home.syncDataLabel: homeShowcaseData.distributorSyncData.buildWith(
         child: StreamBuilder<Map<String, dynamic>?>(
-          stream: FlutterBackgroundService().on('serviceRunning'),
+          stream: backgroundSyncEnabled
+              ? FlutterBackgroundService().on('serviceRunning')
+              : null,
           builder: (context, snapshot) {
             final syncError = snapshot.data?['syncError'] as String?;
             if (syncError != null && context.mounted) {
@@ -2610,7 +2614,8 @@ class _HomePageState extends LocalizedState<HomePage> {
               icon: Icons.sync_alt,
               label: i18.home.syncDataLabel,
               onPressed: () async {
-                if (envConfig.variables.envType == EnvType.qa ||
+                if (!backgroundSyncEnabled ||
+                    envConfig.variables.envType == EnvType.qa ||
                     envConfig.variables.envType == EnvType.dev ||
                     envConfig.variables.envType == EnvType.uat) {
                   if (context.mounted) attemptSyncUp(context);
@@ -3002,7 +3007,7 @@ class _HomePageState extends LocalizedState<HomePage> {
     if (envConfig.variables.envType == EnvType.demo && kReleaseMode) {
       filteredLabels.remove(i18.home.db);
     }
-    filteredLabels.remove(i18.home.db);
+    // filteredLabels.remove(i18.home.db);
 
     final isRegistrar = userRoleCodes.contains(RolesType.registrar.toValue());
     if (isDistributor || isRegistrar) {

@@ -229,11 +229,15 @@ T? _readOrNull<T>(BuildContext context) {
   }
 }
 
+const backgroundSyncEnabled = false;
+
 performBackgroundService({
   BuildContext? context,
   required bool stopService,
   required bool isBackground,
 }) async {
+  if (!backgroundSyncEnabled) return;
+
   final connectivityResult = await (Connectivity().checkConnectivity());
 
   final isOnline = connectivityResult.contains(ConnectivityResult.wifi) ||
