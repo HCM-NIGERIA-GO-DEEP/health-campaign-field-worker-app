@@ -68,6 +68,7 @@ import 'package:transit_post/data/repositories/remote/user_action.dart';
 
 import '../blocs/app_initialization/app_initialization.dart';
 import '../data/local_store/downsync/downsync.dart';
+import '../data/repositories/api_interceptors.dart';
 import '../data/network_manager.dart';
 import '../data/repositories/oplog.dart';
 import '../data/repositories/remote/auth.dart';
@@ -132,6 +133,11 @@ class NetworkManagerProviderWrapper extends StatelessWidget {
               ),
             ),
           );
+        }
+        for (final interceptor
+            in dio.interceptors.whereType<AuthTokenInterceptor>()) {
+          interceptor.loginPath =
+              actionMap[DataModelType.user]?[ApiOperation.login];
         }
         final remote = _getRemoteRepositories(dio, actionMap);
         final local = _getLocalRepositories(sql, isar);

@@ -29,9 +29,10 @@ class DioClient {
 
   // Initialization method for the Dio client
   void init() {
-    _dio = Dio()
+    _dio = Dio();
+    _dio
       ..interceptors.addAll([
-        AuthTokenInterceptor(),
+        AuthTokenInterceptor(_dio),
         // Custom interceptor for handling authentication tokens
         ApiLoggerInterceptor(),
         // Custom interceptor for logging API requests and responses

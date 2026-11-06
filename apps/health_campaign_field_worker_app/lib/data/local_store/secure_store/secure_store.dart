@@ -266,13 +266,48 @@ class LocalSecureStore {
     );
   }
 
-  Future<void> setAuthCredentials(AuthModel model) async {
-    await storage.write(key: accessTokenKey, value: model.accessToken);
-    await storage.write(key: refreshTokenKey, value: model.refreshToken);
-    await storage.write(
-      key: userObjectKey,
-      value: json.encode(model.userRequestModel),
-    );
+  Future<void> _authWrite = Future.value();
+
+  // A refresh can finish while another session is signing in or out.
+  Future<T> _serializeAuthWrite<T>(Future<T> Function() write) {
+    final result = _authWrite.then((_) => write());
+    _authWrite = result.then<void>((_) {}, onError: (Object _, StackTrace __) {});
+    return result;
+  }
+
+  Future<void> setAuthCredentials(AuthModel model) =>
+      _serializeAuthWrite(() async {
+        await _writeAuthTokens(model.accessToken, model.refreshToken);
+        await storage.write(
+          key: userObjectKey,
+          value: json.encode(model.userRequestModel),
+        );
+      });
+
+  Future<String?> refreshTokenForAccessToken(String expectedAccessToken) =>
+      _serializeAuthWrite(() async {
+        if (await accessToken != expectedAccessToken) return null;
+        return refreshToken;
+      });
+
+  Future<bool> replaceAuthTokens({
+    required String previousAccessToken,
+    required String previousRefreshToken,
+    required String newAccessToken,
+    required String newRefreshToken,
+  }) =>
+      _serializeAuthWrite(() async {
+        if (await accessToken != previousAccessToken ||
+            await refreshToken != previousRefreshToken) {
+          return false;
+        }
+        await _writeAuthTokens(newAccessToken, newRefreshToken);
+        return true;
+      });
+
+  Future<void> _writeAuthTokens(String accessToken, String refreshToken) async {
+    await storage.write(key: refreshTokenKey, value: refreshToken);
+    await storage.write(key: accessTokenKey, value: accessToken);
   }
 
   Future<void> setBoundaryRefetch(bool isboundaryRefetch) async {
@@ -313,7 +348,9 @@ class LocalSecureStore {
     }
   }
 
-  Future<void> deleteAll() async {
+  Future<void> deleteAll() => _serializeAuthWrite(_deleteAll);
+
+  Future<void> _deleteAll() async {
     // Preserve the database encryption key before deleting all
     final encryptionKey = await storage.read(key: dbEncryptionKeyKey);
     final userTokenMapString = await storage.read(key: userVsDeviceTokenMapKey);

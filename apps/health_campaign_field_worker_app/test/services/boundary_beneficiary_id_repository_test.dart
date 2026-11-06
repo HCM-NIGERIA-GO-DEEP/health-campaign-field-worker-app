@@ -22,7 +22,9 @@ void main() {
       () async {
     final dio = Dio(BaseOptions(baseUrl: 'https://example.invalid/'));
     late RequestOptions request;
-    dio.interceptors.add(AuthTokenInterceptor(localSecureStore: SecureStore()));
+    dio.interceptors.add(
+      AuthTokenInterceptor(dio, localSecureStore: SecureStore()),
+    );
     dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
       request = options;
       handler.resolve(Response(requestOptions: options, statusCode: 200, data: {
@@ -46,7 +48,9 @@ void main() {
   });
   test('zero-padded codes keep their width', () async {
     final dio = Dio(BaseOptions(baseUrl: 'https://example.invalid/'));
-    dio.interceptors.add(AuthTokenInterceptor(localSecureStore: SecureStore()));
+    dio.interceptors.add(
+      AuthTokenInterceptor(dio, localSecureStore: SecureStore()),
+    );
     dio.interceptors.add(InterceptorsWrapper(onRequest: (options, handler) {
       handler.resolve(Response(requestOptions: options, statusCode: 200, data: {
         'ResponseInfo': {},

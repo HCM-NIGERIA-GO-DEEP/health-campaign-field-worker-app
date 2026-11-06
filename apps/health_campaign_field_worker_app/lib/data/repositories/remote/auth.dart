@@ -11,25 +11,42 @@ class AuthRepository {
 
   const AuthRepository(this._client, {required this.loginPath});
 
-  Future<AuthModel> fetchAuthToken({required LoginModel loginModel}) async {
-    final headers = <String, String>{
-      "content-type": 'application/x-www-form-urlencoded',
-      "Access-Control-Allow-Origin": "*",
-      "authorization": "Basic ZWdvdi11c2VyLWNsaWVudDo=",
-    };
-
-    final response = await _client.post(
+  Future<Response<dynamic>> _requestToken(Map<String, dynamic> data) {
+    return _client.post(
       loginPath,
-      data: {
-        ...loginModel.toJson(),
-        'clientType': 'mobile',
-      },
+      data: {...data, 'clientType': 'mobile'},
       options: Options(
-        headers: headers,
+        headers: {"authorization": "Basic ZWdvdi11c2VyLWNsaWVudDo="},
         contentType: Headers.formUrlEncodedContentType,
-        extra: {'skipRequestInfo': true},
+        extra: {'skipRequestInfo': true, 'skipApiLogging': true},
       ),
     );
+  }
+
+  Future<({String accessToken, String refreshToken})> refreshAuthToken(
+    String refreshToken,
+  ) async {
+    final response = await _requestToken({
+      'grant_type': 'refresh_token',
+      'refresh_token': refreshToken,
+    });
+    final data = response.data;
+    if (data is! Map ||
+        data['access_token'] is! String ||
+        (data['access_token'] as String).isEmpty) {
+      throw const FormatException('Invalid refresh response');
+    }
+    final rotatedToken = data['refresh_token'];
+    return (
+      accessToken: data['access_token'] as String,
+      refreshToken: rotatedToken is String && rotatedToken.isNotEmpty
+          ? rotatedToken
+          : refreshToken,
+    );
+  }
+
+  Future<AuthModel> fetchAuthToken({required LoginModel loginModel}) async {
+    final response = await _requestToken(loginModel.toJson());
 
     final data = response.data;
     if (data is! Map<String, dynamic>) {

@@ -8,13 +8,21 @@ import '../../models/request_info/request_info_model.dart';
 import '../../utils/constants.dart';
 import '../../utils/environment_config.dart';
 import '../local_store/secure_store/secure_store.dart';
+import 'remote/auth.dart';
 
 class AuthTokenInterceptor extends Interceptor {
+  final Dio _client;
   final LocalSecureStore localSecureStore;
+  String? loginPath;
 
+  ({String rejectedToken, Future<String?> result})? _refresh;
+  ({String rejectedToken, String accessToken})? _lastRefresh;
+
+  static const _retriedKey = 'authRetried';
   static const _skipRequestInfoKey = 'skipRequestInfo';
 
-  AuthTokenInterceptor({
+  AuthTokenInterceptor(
+    this._client, {
     LocalSecureStore? localSecureStore,
   }) : localSecureStore = localSecureStore ?? LocalSecureStore.instance;
 
@@ -24,7 +32,7 @@ class AuthTokenInterceptor extends Interceptor {
     RequestInterceptorHandler handler,
   ) async {
     final skipRequestInfo = options.extra[_skipRequestInfoKey] == true;
-    if (skipRequestInfo) {
+    if (skipRequestInfo || options.extra[_retriedKey] == true) {
       return super.onRequest(options, handler);
     }
 
@@ -48,6 +56,99 @@ class AuthTokenInterceptor extends Interceptor {
     }
     super.onRequest(options, handler);
   }
+
+  @override
+  Future<void> onError(
+      DioException error, ErrorInterceptorHandler handler) async {
+    final request = error.requestOptions;
+    final data = request.data;
+    final requestInfo = data is Map ? data['RequestInfo'] : null;
+    final rejectedToken = requestInfo is Map ? requestInfo['authToken'] : null;
+    final path = loginPath;
+    if (error.response?.statusCode != 401 ||
+        request.extra[_skipRequestInfoKey] == true ||
+        request.extra[_retriedKey] == true ||
+        rejectedToken is! String ||
+        rejectedToken.isEmpty ||
+        path == null ||
+        path.isEmpty) {
+      return handler.next(error);
+    }
+
+    String? accessToken;
+    try {
+      accessToken = await _refreshAccessToken(rejectedToken, path);
+      if (accessToken == null ||
+          await localSecureStore.accessToken != accessToken) {
+        return handler.next(error);
+      }
+    } on DioException catch (refreshError) {
+      final status = refreshError.response?.statusCode;
+      return handler
+          .next(status == null || status >= 500 ? refreshError : error);
+    } catch (_) {
+      return handler.next(error);
+    }
+
+    // Keep the original request and user context. Replace only the token.
+    final retry = request.copyWith(
+      data: {
+        ...(data as Map),
+        'RequestInfo': {...(requestInfo as Map), 'authToken': accessToken},
+      },
+      extra: {...request.extra, _retriedKey: true},
+    );
+    try {
+      handler.resolve(await _client.fetch<dynamic>(retry));
+    } on DioException catch (retryError) {
+      handler.next(retryError);
+    }
+  }
+
+  Future<String?> _refreshAccessToken(String rejectedToken, String path) async {
+    final currentToken = await localSecureStore.accessToken;
+    final pending = _refresh;
+    if (pending != null && pending.rejectedToken == rejectedToken) {
+      return pending.result;
+    }
+
+    if (currentToken != rejectedToken) {
+      // A delayed 401 can use the token refreshed for that exact session.
+      final last = _lastRefresh;
+      return last?.rejectedToken == rejectedToken &&
+              last?.accessToken == currentToken
+          ? currentToken
+          : null;
+    }
+
+    final result = _exchangeRefreshToken(rejectedToken, path);
+    _refresh = (rejectedToken: rejectedToken, result: result);
+    try {
+      return await result;
+    } finally {
+      if (identical(_refresh?.result, result)) _refresh = null;
+    }
+  }
+
+  Future<String?> _exchangeRefreshToken(
+      String rejectedToken, String path) async {
+    final refreshToken =
+        await localSecureStore.refreshTokenForAccessToken(rejectedToken);
+    if (refreshToken == null || refreshToken.isEmpty) return null;
+
+    final tokens = await AuthRepository(_client, loginPath: path)
+        .refreshAuthToken(refreshToken);
+    final updated = await localSecureStore.replaceAuthTokens(
+      previousAccessToken: rejectedToken,
+      previousRefreshToken: refreshToken,
+      newAccessToken: tokens.accessToken,
+      newRefreshToken: tokens.refreshToken,
+    );
+    if (!updated) return null;
+    _lastRefresh =
+        (rejectedToken: rejectedToken, accessToken: tokens.accessToken);
+    return tokens.accessToken;
+  }
 }
 
 class ApiLoggerInterceptor extends Interceptor {
@@ -56,7 +157,8 @@ class ApiLoggerInterceptor extends Interceptor {
     RequestOptions options,
     RequestInterceptorHandler handler,
   ) async {
-    if (options.data is Map || options.data is List) {
+    if (options.extra['skipApiLogging'] != true &&
+        (options.data is Map || options.data is List)) {
       AppLogger.instance.info(
         _getIndentedJson(json.encode(options.data)),
         title: '[REQUEST] ${options.uri.toString()}',
@@ -69,7 +171,8 @@ class ApiLoggerInterceptor extends Interceptor {
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     super.onResponse(response, handler);
 
-    if (response.requestOptions.path.contains('boundarys')) return;
+    if (response.requestOptions.extra['skipApiLogging'] == true ||
+        response.requestOptions.path.contains('boundarys')) return;
 
     try {
       AppLogger.instance.info(
