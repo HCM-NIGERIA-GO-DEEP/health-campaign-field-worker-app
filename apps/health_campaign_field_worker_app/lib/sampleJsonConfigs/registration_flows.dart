@@ -3485,8 +3485,7 @@ final dynamic sampleFlows = {
                   "value": 3,
                   "message": "APPONE_REGISTRATION_DELIVERYDETAILS_SCANNER_LIMIT_MESSAGE"
                 },
-                // {"type": "allowManualEntry", "value": true},
-                {"type": "allowManualEntry", "value": false}
+                {"type": "allowManualEntry", "value": true}
               ],
               "errorMessage": "",
               "includeInForm": true,

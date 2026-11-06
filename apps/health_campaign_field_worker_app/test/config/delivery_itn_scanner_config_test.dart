@@ -51,12 +51,12 @@ void main() {
       expect(validationsByType()['isGS1Code'], isTrue);
     });
 
-    test('manual serial entry is disabled without affecting QR scanning', () {
+    test('manual serial entry is enabled without pattern validation', () {
       final rules = (scanner['validations'] as List)
           .cast<Map<String, dynamic>>()
           .map(ScannerValidation.fromJson)
           .toList();
-      expect(rules.allowManualEntry, isFalse);
+      expect(rules.allowManualEntry, isTrue);
       expect(rules.scanLimitMessage,
           'APPONE_REGISTRATION_DELIVERYDETAILS_SCANNER_LIMIT_MESSAGE');
       expect(validationsByType().keys,
