@@ -2214,6 +2214,7 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key":
                         "{{fn:getSecondPagePartyLabel(item.additionalFields.fields)}}",
+                    "previewLabel": "INVENTORY_TRANSACTING_PARTY_LABEL",
                     "value":
                         "{{fn:getSecondPageParty(item.additionalFields.fields, item.senderId, item.receiverId, item.senderType, item.receiverType)}}"
                   },
@@ -2245,12 +2246,14 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key":
                         "{{fn:getDetailsPrimaryQuantityLabel(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status, item.senderId, item.receiverId)}}",
+                    "previewLabel": "APPONE_INVENTORY_QUANTITY_LABEL",
                     "value":
                         "{{fn:coalesceQuantity(item.additionalFields.fields.originalQuantityReceived, item.quantity)}}"
                   },
                   {
                     "key":
                         "{{fn:getDetailsConfirmedQuantityLabel(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status, item.senderId, item.receiverId)}}",
+                    "previewLabel": "INVENTORY_DETAILS_QUANTITY_CONFIRMED",
                     "value":
                         "{{fn:getDetailsConfirmedQuantity(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status, item.senderId, item.receiverId)}}",
                     "hideIfNull": true
@@ -2258,6 +2261,7 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key":
                         "{{fn:getDetailsDifferenceLabel(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status, item.senderId, item.receiverId)}}",
+                    "previewLabel": "INVENTORY_DETAILS_NOT_RECEIVED",
                     "value":
                         "{{fn:getDetailsDifference(item.additionalFields.fields.stockEntryType, item.transactionReason, item.additionalFields.fields.discrepancyReason, item.additionalFields.fields.originalQuantityReceived, item.additionalFields.fields.actualQuantityReceived, item.quantity, item.additionalFields.fields.originalIssueClientReferenceId, item.additionalFields.fields.status, item.senderId, item.receiverId)}}",
                     "hideIfNull": true
@@ -4095,6 +4099,7 @@ final dynamic sampleInventoryFlows = {
                   "data": [
                     {
                       "key": "{{fn:getViewTransactionQuantityLabel(item)}}",
+                      "previewLabel": "APPONE_INVENTORY_QUANTITY_LABEL",
                       "value":
                           "{{fn:localizeStockSku(item.additionalFields.fields.sku)}}: {{fn:getViewTransactionQuantity(item)}}"
                     }

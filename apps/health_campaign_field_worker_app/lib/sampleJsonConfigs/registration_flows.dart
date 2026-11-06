@@ -2159,6 +2159,7 @@ final dynamic sampleFlows = {
                     // like.
                     "key":
                         "{{fn:getCapturedIdentifierValue(item.headIndividual.0.identifiers, 'identifierType')}}",
+                    "previewLabel": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_identificationNumber",
                     "value":
                         "{{fn:getCapturedIdentifierValue(item.headIndividual.0.identifiers, 'identifierId')}}",
                     "isActive": true,
