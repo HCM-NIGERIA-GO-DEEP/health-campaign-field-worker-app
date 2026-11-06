@@ -35,15 +35,15 @@ class AppLocalizations {
   /// every genuinely missing localisation and emit English into non-English
   /// locales. A real server message always wins over these.
   static const Map<String, String> _fallbackMessages = <String, String>{
-    'DOWNLOAD_BENEFICIARY_IDS': 'Download Beneficiary IDs',
-    'BENEFICIARY_IDS_LABEL': 'Beneficiary IDs',
-    'NO_OF_BENEFICIARY_IDS_LEFT': 'Number of Beneficiary IDs left',
-    'AVAILABLE_BENEFICIARY_IDS_TEXT': 'Available Beneficiary IDs',
-    'TOTAL_BENEFICIARY_IDS': 'Total Beneficiary IDs',
-    'LOW_BENEFICIARY_IDS_LABEL': 'Low on Beneficiary IDs',
-    'NO_BENEFICIARY_IDS_LABEL': 'No Beneficiary IDs',
+    'DOWNLOAD_BENEFICIARY_IDS': 'Download e-Tokens',
+    'BENEFICIARY_IDS_LABEL': 'e-Tokens',
+    'NO_OF_BENEFICIARY_IDS_LEFT': 'e-Tokens left',
+    'AVAILABLE_BENEFICIARY_IDS_TEXT': 'Number of available e-Tokens',
+    'TOTAL_BENEFICIARY_IDS': 'Total e-Tokens',
+    'LOW_BENEFICIARY_IDS_LABEL': 'Low on e-Tokens',
+    'NO_BENEFICIARY_IDS_LABEL': 'No e-Tokens left!',
     'BENEFICIARY_IDS_RE_FETCH': 'Retry download',
-    'FAILED_BENEFICIARY_IDS': 'Failed to download Beneficiary IDs',
+    'FAILED_BENEFICIARY_IDS': 'Failed to fetch e-Tokens',
   };
 
   static LocalizationsDelegate<AppLocalizations> getDelegate(
