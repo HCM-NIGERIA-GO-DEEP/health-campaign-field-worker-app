@@ -2776,6 +2776,7 @@ final dynamic sampleInventoryFlows ={
                   },
                   {
                     "key": "{{fn:getSecondPagePartyLabel(item.additionalFields.fields)}}",
+                    "previewLabel": "INVENTORY_TRANSACTING_PARTY_LABEL",
                     "value": "{{fn:getSecondPageParty(item.additionalFields.fields, item.senderId, item.receiverId)}}"
                   },
                   {
@@ -2796,6 +2797,7 @@ final dynamic sampleInventoryFlows ={
                   },
                   {
                     "key": "{{fn:getStockQuantityLabel(item.additionalFields.fields)}}",
+                    "previewLabel": "INVENTORY_QUANTITY_LABEL",
                     "value": "{{item.quantity}}"
                   }
                 ]
