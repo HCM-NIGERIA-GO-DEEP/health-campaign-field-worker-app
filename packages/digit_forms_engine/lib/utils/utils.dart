@@ -496,6 +496,14 @@ List<dynamic> _parseArguments(String args, Map<String, dynamic> values) {
   return argList;
 }
 
+/// Whole months from [dob] to [today]. A month whose day has not come yet is
+/// not counted (born 22 Nov 2025 -> 11 months on 3 Nov 2026), so this agrees
+/// with the age the DOB widget shows.
+int ageInMonthsOn(DateTime dob, DateTime today) {
+  final months = (today.year - dob.year) * 12 + today.month - dob.month;
+  return today.day < dob.day ? months - 1 : months;
+}
+
 final functionRegistry = {
   'calculateAgeInMonths': (List<dynamic> args) {
     final dobString = args[0] as String;
@@ -514,8 +522,7 @@ final functionRegistry = {
       }
     }
 
-    final today = DateTime.now();
-    return (today.year - dob.year) * 12 + today.month - dob.month;
+    return ageInMonthsOn(dob, DateTime.now());
   },
 
   // Calculates wastage for a returned stock entry.
