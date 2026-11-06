@@ -1,4 +1,5 @@
 import 'package:digit_flow_builder/data/transformer_config.dart';
+import 'package:digit_scanner/models/scanner_validation.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:health_campaign_field_worker_app/sampleJsonConfigs/registration_flows.dart';
 
@@ -50,10 +51,15 @@ void main() {
       expect(validationsByType()['isGS1Code'], isTrue);
     });
 
-    test('manual serial entry has no pattern validation', () {
-      final validations = validationsByType();
-      expect(validations['allowManualEntry'], isTrue);
-      expect(validations.keys,
+    test('manual serial entry is disabled without affecting QR scanning', () {
+      final rules = (scanner['validations'] as List)
+          .cast<Map<String, dynamic>>()
+          .map(ScannerValidation.fromJson)
+          .toList();
+      expect(rules.allowManualEntry, isFalse);
+      expect(rules.scanLimitMessage,
+          'APPONE_REGISTRATION_DELIVERYDETAILS_SCANNER_LIMIT_MESSAGE');
+      expect(validationsByType().keys,
           isNot(anyElement(contains(RegExp('pattern', caseSensitive: false)))));
     });
 

@@ -3480,8 +3480,13 @@ final dynamic sampleFlows = {
               "systemDate": false,
               "validations": [
                 {"type": "isGS1Code", "value": true},
-                {"type": "scanLimit", "value": 3},
-                {"type": "allowManualEntry", "value": true}
+                {
+                  "type": "scanLimit",
+                  "value": 3,
+                  "message": "APPONE_REGISTRATION_DELIVERYDETAILS_SCANNER_LIMIT_MESSAGE"
+                },
+                // {"type": "allowManualEntry", "value": true},
+                {"type": "allowManualEntry", "value": false}
               ],
               "errorMessage": "",
               "includeInForm": true,
