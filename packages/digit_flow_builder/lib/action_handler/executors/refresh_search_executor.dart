@@ -180,6 +180,13 @@ class RefreshSearchExecutor extends ActionExecutor {
       return contextData;
     }
 
+    // An up-load must stop at the window's first row, or a window that starts
+    // part-way into a page re-fetches rows that are already on screen.
+    final pageLimit = direction == 'up'
+        ? stateManager.loadUpLimit(compositeKey, paginationKey,
+            offset: offset, limit: limit)
+        : limit;
+
     // Build search params with pagination
     final searchParams = GlobalSearchParameters(
       filters: filters,
@@ -187,7 +194,7 @@ class RefreshSearchExecutor extends ActionExecutor {
       select: (config?['wrapperConfig']?['searchConfig']?['select'] as List?)
               ?.cast<String>() ??
           [],
-      pagination: PaginationParams(offset: offset, limit: limit),
+      pagination: PaginationParams(offset: offset, limit: pageLimit),
     );
 
     // Set mode in registry - FlowCrudBloc.onTransition will handle it
@@ -197,6 +204,7 @@ class RefreshSearchExecutor extends ActionExecutor {
       registryKey,
       limit: limit,
       maxItems: maxItems,
+      offset: offset,
     );
 
     debugPrint(

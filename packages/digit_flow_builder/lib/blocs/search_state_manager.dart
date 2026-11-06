@@ -488,6 +488,39 @@ class SearchStateManager {
     return newOffset;
   }
 
+  /// Rows to fetch for an up-load starting at [offset]: never past the
+  /// window's first row. When the window starts part-way into a page
+  /// (startOffset not a multiple of [limit]), a full [limit] from 0 would
+  /// re-fetch rows already on screen and show them twice.
+  int loadUpLimit(String screenKey, String searchName,
+      {required int offset, required int limit}) {
+    final start = getPaginationWindow(screenKey, searchName)?.startOffset ?? 0;
+    final rowsAbove = start - offset;
+    return rowsAbove > 0 && rowsAbove < limit ? rowsAbove : limit;
+  }
+
+  /// Sets the window's DB-row offsets directly. FlowCrudBloc calls this
+  /// after trimming when wrapper items and DB rows differ (rows dropped by
+  /// wrapperConfig.filters), because [onDataLoadedByCompositeKey] counts the
+  /// trim in wrapper items.
+  void setWindowOffsetsByCompositeKey(
+    String compositeKey,
+    String searchName, {
+    int? startOffset,
+    int? endOffset,
+  }) {
+    final windowData = _state['$compositeKey::$searchName']
+        ?['paginationWindow'] as Map<String, dynamic>?;
+    if (windowData == null) return;
+    if (startOffset != null) {
+      windowData['startOffset'] = startOffset;
+      windowData['hasMoreUp'] = startOffset > 0;
+    }
+    if (endOffset != null) {
+      windowData['endOffset'] = endOffset;
+    }
+  }
+
   /// Update window after data is loaded
   /// Call this from FlowCrudBloc after data arrives
   void onDataLoaded(

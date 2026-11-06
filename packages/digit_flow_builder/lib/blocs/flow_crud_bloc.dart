@@ -13,6 +13,11 @@ class FlowCrudBloc extends CrudBloc {
   final String compositeKey;
   final void Function(String screenKey, FlowCrudState state)? onUpdate;
 
+  /// DB row offset of each wrapper item loaded by a paged search. Keyed by
+  /// object identity so the wrapper maps themselves stay unchanged for
+  /// templates and transformers.
+  static final Expando<int> _dbRowOf = Expando<int>('dbRow');
+
   FlowCrudBloc({
     required this.flowConfig,
     required super.service,
@@ -81,12 +86,30 @@ class FlowCrudBloc extends CrudBloc {
               screenKey: screenKey,
             ).build()
           : newEntities;
+      // LIMIT/OFFSET runs on the primary model's rows, but WrapperBuilder can
+      // drop some of them (wrapperConfig.filters, e.g. a household with no
+      // active member). Advance the window by those rows, not by wrapper
+      // items: one dropped row made a page look short (4 < limit 5), which
+      // set hasMoreDown = false and stopped scrolling for good.
+      final primaryModel = (wrapperConfig?['searchConfig']
+          as Map<String, dynamic>?)?['primary'] as String?;
+      final primaryRowCount =
+          primaryModel == null ? null : crudState.results[primaryModel]?.length;
+      // DB offset of this page: REFRESH_SEARCH passes it; the first search
+      // of a screen (no scroll direction) starts at 0.
+      final pageOffset =
+          paginationInfo?['offset'] ?? (scrollDirection == null ? 0 : null);
+      if (paginationInfo != null) {
+        _tagDbRows(newWrapper, crudState.results, primaryModel, pageOffset);
+      }
       if (scrollDirection != null && existingState?.stateWrapper != null) {
         // Bidirectional pagination mode
         wrapper = _handleBidirectionalPagination(
           existingWrapper: existingState!.stateWrapper!,
           newWrapper: newWrapper,
           rawEntityCount: newEntities.length,
+          primaryRowCount: primaryRowCount,
+          pageOffset: pageOffset,
           direction: scrollDirection,
           paginationInfo: paginationInfo,
         );
@@ -116,10 +139,12 @@ class FlowCrudBloc extends CrudBloc {
         // Update pagination window for initial load
         // For groupByType configs, use raw entity count since WrapperBuilder
         // groups N entities into 1 wrapper item, skewing the pagination count.
-        // For other configs, use wrapper length (original behavior).
+        // For other configs, count the primary model's rows (see above);
+        // wrapper length only when the primary model is unknown.
         final isGrouped = wrapperConfig?['groupByType'] == true;
-        final initialLoadCount =
-            isGrouped ? newEntities.length : newWrapper.length;
+        final initialLoadCount = isGrouped
+            ? newEntities.length
+            : (primaryRowCount ?? newWrapper.length);
         _updatePaginationWindowInitial(initialLoadCount, paginationInfo);
       }
 
@@ -167,6 +192,8 @@ class FlowCrudBloc extends CrudBloc {
     required List<dynamic> newWrapper,
     required int rawEntityCount,
     required String direction,
+    int? primaryRowCount,
+    int? pageOffset,
     Map<String, int>? paginationInfo,
   }) {
     final limit = paginationInfo?['limit'] ?? 10;
@@ -234,15 +261,73 @@ class FlowCrudBloc extends CrudBloc {
 
     // Update pagination window state with PRE-TRIM total so offsets are calculated correctly.
     // For groupByType, use rawEntityCount since wrapper items != entity count.
-    // For non-grouped, use newWrapper.length (original behavior) to avoid side effects.
-    final loadedCount = isGroupedByType ? rawEntityCount : newWrapper.length;
+    // For non-grouped, use the primary model's row count: the window offset is
+    // a DB offset, and the wrapper may have dropped rows (see onTransition).
+    final loadedCount = isGroupedByType
+        ? rawEntityCount
+        : (primaryRowCount ?? newWrapper.length);
     debugPrint(
         'FlowCrudBloc: Calling _updatePaginationWindow - direction=$direction, '
         'loadedCount=$loadedCount, isGrouped=$isGroupedByType, totalBeforeTrim=$totalBeforeTrim');
     _updatePaginationWindow(
         direction, loadedCount, totalBeforeTrim, paginationInfo);
 
+    // The window trims wrapper items, but its offsets are DB rows. When the
+    // wrapper dropped rows, "items trimmed" != "rows trimmed", so the next
+    // up/down load would skip or repeat rows. Re-derive the offsets from the
+    // rows of the items that are actually kept.
+    if (!isGroupedByType &&
+        primaryRowCount != null &&
+        totalBeforeTrim > maxItems &&
+        result.isNotEmpty) {
+      if (direction == 'down') {
+        final firstRow = _dbRowOf[result.first];
+        if (firstRow != null) {
+          SearchStateManager().setWindowOffsetsByCompositeKey(
+              compositeKey, '_pagination',
+              startOffset: firstRow);
+        }
+      } else if (direction == 'up') {
+        final lastRow = _dbRowOf[result.last];
+        SearchStateManager().setWindowOffsetsByCompositeKey(
+          compositeKey,
+          '_pagination',
+          startOffset: pageOffset,
+          endOffset: lastRow == null ? null : lastRow + 1,
+        );
+      }
+    }
+
     return result;
+  }
+
+  /// Remembers the DB row (page offset + index among the primary model's
+  /// rows) of each wrapper item, so trimming can keep the window's offsets in
+  /// rows. Items whose root entity isn't a primary row are left untagged.
+  void _tagDbRows(
+    List<dynamic> newWrapper,
+    Map<String, List<EntityModel>> results,
+    String? primaryModel,
+    int? pageOffset,
+  ) {
+    final rootEntity =
+        (flowConfig['wrapperConfig'] as Map<String, dynamic>?)?['rootEntity']
+            as String?;
+    if (primaryModel == null || rootEntity == null || pageOffset == null) {
+      return;
+    }
+    final rows = results[primaryModel];
+    if (rows == null || rows.isEmpty) return;
+    final indexOf = Map<Object, int>.identity();
+    for (var i = 0; i < rows.length; i++) {
+      indexOf[rows[i]] = i;
+    }
+    for (final item in newWrapper) {
+      if (item is! Map) continue;
+      final root = item[rootEntity];
+      final index = root == null ? null : indexOf[root];
+      if (index != null) _dbRowOf[item] = pageOffset + index;
+    }
   }
 
   /// Merge grouped wrappers by combining entity lists under the same type key.
@@ -629,11 +714,16 @@ class FlowCrudStateRegistry {
     return direction;
   }
 
-  /// Set pagination info for window management
+  /// Set pagination info for window management. [offset] is the DB row
+  /// offset of the page being fetched (REFRESH_SEARCH); omitted = 0.
   void setPaginationInfo(String key,
-      {required int limit, required int maxItems}) {
+      {required int limit, required int maxItems, int? offset}) {
     final compositeKey = _currentCompositeKey(key) ?? key;
-    _paginationInfo[compositeKey] = {'limit': limit, 'maxItems': maxItems};
+    _paginationInfo[compositeKey] = {
+      'limit': limit,
+      'maxItems': maxItems,
+      if (offset != null) 'offset': offset,
+    };
     debugPrint(
         'FlowCrudStateRegistry: Set paginationInfo limit=$limit, maxItems=$maxItems for $compositeKey');
   }
