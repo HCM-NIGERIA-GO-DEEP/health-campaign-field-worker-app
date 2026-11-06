@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../router/app_router.dart';
 import '../sampleJsonConfigs/permission_handler.dart';
 import '../utils/i18_key_constants.dart' as i18;
+import '../utils/utils.dart' show backgroundSyncEnabled;
 
 @RoutePage()
 class PermissionsPage extends LocalizedStatefulWidget {
@@ -487,42 +488,43 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
     return DigitCard(
       margin: const EdgeInsets.only(top: spacer2),
       children: [
-        Row(
-          children: [
-            Padding(
-              padding: const EdgeInsets.only(right: spacer2),
-              child: DigitCheckbox(
-                value: backgroundActivityConfirmed,
-                onChanged: (val) {
-                  setState(() {
-                    backgroundActivityConfirmed = val;
-                  });
-                },
-              ),
-            ),
-            Expanded(
-              child: RichText(
-                text: TextSpan(
-                  children: [
-                    TextSpan(
-                      text: localizations
-                          .translate(i18.common.allowBackgroundActivityDesc),
-                      style: textTheme.bodyS.copyWith(
-                        color: theme.colorTheme.primary.primary2,
-                      ),
-                    ),
-                    TextSpan(
-                      text: " *",
-                      style: textTheme.bodyS.copyWith(
-                        color: theme.colorTheme.alert.error,
-                      ),
-                    ),
-                  ],
+        if (backgroundSyncEnabled)
+          Row(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(right: spacer2),
+                child: DigitCheckbox(
+                  value: backgroundActivityConfirmed,
+                  onChanged: (val) {
+                    setState(() {
+                      backgroundActivityConfirmed = val;
+                    });
+                  },
                 ),
               ),
-            ),
-          ],
-        ),
+              Expanded(
+                child: RichText(
+                  text: TextSpan(
+                    children: [
+                      TextSpan(
+                        text: localizations
+                            .translate(i18.common.allowBackgroundActivityDesc),
+                        style: textTheme.bodyS.copyWith(
+                          color: theme.colorTheme.primary.primary2,
+                        ),
+                      ),
+                      TextSpan(
+                        text: " *",
+                        style: textTheme.bodyS.copyWith(
+                          color: theme.colorTheme.alert.error,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
         DigitButton(
           label: localizations.translate(i18.common.permissionContinue),
           type: DigitButtonType.primary,
@@ -530,11 +532,13 @@ class _PermissionsScreenState extends LocalizedState<PermissionsPage> {
           mainAxisSize: MainAxisSize.max,
           onPressed: () async {
             bool granted = await _checkPermissions();
-            if (!granted || !backgroundActivityConfirmed) {
+            final needsBackgroundConfirmation =
+                backgroundSyncEnabled && !backgroundActivityConfirmed;
+            if (!granted || needsBackgroundConfirmation) {
               Toast.showToast(
                 context,
                 message: localizations.translate(
-                  !backgroundActivityConfirmed
+                  needsBackgroundConfirmation
                       ? i18.common.enablePermissionCheckbox
                       : i18.common.permissionsAlert,
                 ),
