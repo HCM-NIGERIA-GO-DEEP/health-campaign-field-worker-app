@@ -7,7 +7,6 @@ import 'package:digit_dss/digit_dss.dart';
 import 'package:digit_flow_builder/action_handler/action_handler.dart';
 import 'package:digit_scanner/blocs/scanner.dart';
 import 'package:digit_ui_components/services/location_bloc.dart';
-import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -23,6 +22,7 @@ import 'blocs/app_initialization/app_initialization.dart';
 import 'blocs/auth/auth.dart';
 import 'blocs/error/error.dart';
 import 'blocs/push_notification/push_notification.dart';
+import 'blocs/localization/app_rebuild_rule.dart';
 import 'blocs/localization/localization.dart';
 import 'blocs/project/project.dart';
 import 'data/local_store/app_shared_preferences.dart';
@@ -39,6 +39,7 @@ import 'executors/load_unique_id_pool_executor.dart';
 import 'models/downsync/downsync.dart';
 import 'router/app_navigator_observer.dart';
 import 'router/app_router.dart';
+import 'utils/app_theme.dart';
 import 'utils/environment_config.dart';
 import 'utils/localization_delegates.dart';
 import 'utils/utils.dart';
@@ -496,17 +497,15 @@ class MainApplicationState extends State<MainApplication>
                             builder: (context, errorState) {
                           return BlocBuilder<LocalizationBloc,
                               LocalizationState>(
-                            // Only rebuild the whole MaterialApp when the
-                            // selected language actually changes. Rebuilding on
-                            // every LocalizationBloc emission (e.g. loading
-                            // true/false toggles while modules and boundary
-                            // localizations load) rebuilt the entire app and
-                            // caused heavy screen flicker on login. Individual
-                            // screens rebuild via their own blocs and read
-                            // translations from AppLocalizations directly, so
-                            // gating on the language index is sufficient.
+                            // Skip localization loads starting. Apply new
+                            // translations when a load finishes.
                             buildWhen: (previous, current) =>
-                                previous.index != current.index,
+                                shouldRebuildAppForLocalization(
+                              previousIndex: previous.index,
+                              currentIndex: current.index,
+                              previousLoading: previous.loading,
+                              currentLoading: current.loading,
+                            ),
                             builder: (context, langState) {
                               final selectedLocale =
                                   AppSharedPreferences().getSelectedLocale ??
@@ -561,8 +560,7 @@ class MainApplicationState extends State<MainApplication>
                                         selectedLocale.split("_").last,
                                       )
                                     : firstLanguage,
-                                theme:
-                                    DigitExtendedTheme.instance.getLightTheme(),
+                                theme: appLightTheme,
                                 routeInformationParser:
                                     widget.appRouter.defaultRouteParser(),
                                 scaffoldMessengerKey: scaffoldMessengerKey,
