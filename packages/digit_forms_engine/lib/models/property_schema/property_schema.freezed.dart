@@ -78,6 +78,14 @@ mixin _$PropertySchema {
       throw _privateConstructorUsedError;
   @JsonKey(fromJson: _showAlertOrNull)
   ShowAlertPopUp? get showAlertPopUp =>
+      throw _privateConstructorUsedError; // Confirmation shown when this page moves on to the NEXT form page (not on
+// final submit - that is showAlertPopUp). It opens after the page
+// navigation interceptor ran, so its `{value}` slot can show what the
+// interceptor reserved, e.g. the e-token via a DEFAULT condition whose
+// value is "{{navigation.beneficiaryId}}". A separate key so pages that
+// already carry an (inert) showAlertPopUp do not start showing it.
+  @JsonKey(fromJson: _showAlertOrNull)
+  ShowAlertPopUp? get showNextAlertPopUp =>
       throw _privateConstructorUsedError; // Secondary action alert popup (e.g., for reject confirmation with comment)
   @JsonKey(fromJson: _showSecondaryAlertOrNull)
   ShowSecondaryAlertPopUp? get showSecondaryAlertPopUp =>
@@ -166,6 +174,7 @@ abstract class $PropertySchemaCopyWith<$Res> {
       @JsonKey(fromJson: _autoFillConditionListOrNull)
       List<AutoFillCondition>? autoFillCondition,
       @JsonKey(fromJson: _showAlertOrNull) ShowAlertPopUp? showAlertPopUp,
+      @JsonKey(fromJson: _showAlertOrNull) ShowAlertPopUp? showNextAlertPopUp,
       @JsonKey(fromJson: _showSecondaryAlertOrNull)
       ShowSecondaryAlertPopUp? showSecondaryAlertPopUp,
       @JsonKey(fromJson: _multiEntityConfigOrNull)
@@ -185,6 +194,7 @@ abstract class $PropertySchemaCopyWith<$Res> {
   $NavigateToConfigCopyWith<$Res>? get navigateTo;
   $VisibilityConditionCopyWith<$Res>? get visibilityCondition;
   $ShowAlertPopUpCopyWith<$Res>? get showAlertPopUp;
+  $ShowAlertPopUpCopyWith<$Res>? get showNextAlertPopUp;
   $ShowSecondaryAlertPopUpCopyWith<$Res>? get showSecondaryAlertPopUp;
   $MultiEntityConfigCopyWith<$Res>? get multiEntityConfig;
   $VisibilityConditionCopyWith<$Res>? get submitCondition;
@@ -245,6 +255,7 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
     Object? conditionalNavigateTo = freezed,
     Object? autoFillCondition = freezed,
     Object? showAlertPopUp = freezed,
+    Object? showNextAlertPopUp = freezed,
     Object? showSecondaryAlertPopUp = freezed,
     Object? multiEntityConfig = freezed,
     Object? preventScreenCapture = freezed,
@@ -411,6 +422,10 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
           ? _value.showAlertPopUp
           : showAlertPopUp // ignore: cast_nullable_to_non_nullable
               as ShowAlertPopUp?,
+      showNextAlertPopUp: freezed == showNextAlertPopUp
+          ? _value.showNextAlertPopUp
+          : showNextAlertPopUp // ignore: cast_nullable_to_non_nullable
+              as ShowAlertPopUp?,
       showSecondaryAlertPopUp: freezed == showSecondaryAlertPopUp
           ? _value.showSecondaryAlertPopUp
           : showSecondaryAlertPopUp // ignore: cast_nullable_to_non_nullable
@@ -492,6 +507,18 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
 
     return $ShowAlertPopUpCopyWith<$Res>(_value.showAlertPopUp!, (value) {
       return _then(_value.copyWith(showAlertPopUp: value) as $Val);
+    });
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $ShowAlertPopUpCopyWith<$Res>? get showNextAlertPopUp {
+    if (_value.showNextAlertPopUp == null) {
+      return null;
+    }
+
+    return $ShowAlertPopUpCopyWith<$Res>(_value.showNextAlertPopUp!, (value) {
+      return _then(_value.copyWith(showNextAlertPopUp: value) as $Val);
     });
   }
 
@@ -624,6 +651,7 @@ abstract class _$$PropertySchemaImplCopyWith<$Res>
       @JsonKey(fromJson: _autoFillConditionListOrNull)
       List<AutoFillCondition>? autoFillCondition,
       @JsonKey(fromJson: _showAlertOrNull) ShowAlertPopUp? showAlertPopUp,
+      @JsonKey(fromJson: _showAlertOrNull) ShowAlertPopUp? showNextAlertPopUp,
       @JsonKey(fromJson: _showSecondaryAlertOrNull)
       ShowSecondaryAlertPopUp? showSecondaryAlertPopUp,
       @JsonKey(fromJson: _multiEntityConfigOrNull)
@@ -647,6 +675,8 @@ abstract class _$$PropertySchemaImplCopyWith<$Res>
   $VisibilityConditionCopyWith<$Res>? get visibilityCondition;
   @override
   $ShowAlertPopUpCopyWith<$Res>? get showAlertPopUp;
+  @override
+  $ShowAlertPopUpCopyWith<$Res>? get showNextAlertPopUp;
   @override
   $ShowSecondaryAlertPopUpCopyWith<$Res>? get showSecondaryAlertPopUp;
   @override
@@ -711,6 +741,7 @@ class __$$PropertySchemaImplCopyWithImpl<$Res>
     Object? conditionalNavigateTo = freezed,
     Object? autoFillCondition = freezed,
     Object? showAlertPopUp = freezed,
+    Object? showNextAlertPopUp = freezed,
     Object? showSecondaryAlertPopUp = freezed,
     Object? multiEntityConfig = freezed,
     Object? preventScreenCapture = freezed,
@@ -877,6 +908,10 @@ class __$$PropertySchemaImplCopyWithImpl<$Res>
           ? _value.showAlertPopUp
           : showAlertPopUp // ignore: cast_nullable_to_non_nullable
               as ShowAlertPopUp?,
+      showNextAlertPopUp: freezed == showNextAlertPopUp
+          ? _value.showNextAlertPopUp
+          : showNextAlertPopUp // ignore: cast_nullable_to_non_nullable
+              as ShowAlertPopUp?,
       showSecondaryAlertPopUp: freezed == showSecondaryAlertPopUp
           ? _value.showSecondaryAlertPopUp
           : showSecondaryAlertPopUp // ignore: cast_nullable_to_non_nullable
@@ -961,6 +996,7 @@ class _$PropertySchemaImpl implements _PropertySchema {
       @JsonKey(fromJson: _autoFillConditionListOrNull)
       final List<AutoFillCondition>? autoFillCondition,
       @JsonKey(fromJson: _showAlertOrNull) this.showAlertPopUp,
+      @JsonKey(fromJson: _showAlertOrNull) this.showNextAlertPopUp,
       @JsonKey(fromJson: _showSecondaryAlertOrNull)
       this.showSecondaryAlertPopUp,
       @JsonKey(fromJson: _multiEntityConfigOrNull) this.multiEntityConfig,
@@ -1126,6 +1162,15 @@ class _$PropertySchemaImpl implements _PropertySchema {
   @override
   @JsonKey(fromJson: _showAlertOrNull)
   final ShowAlertPopUp? showAlertPopUp;
+// Confirmation shown when this page moves on to the NEXT form page (not on
+// final submit - that is showAlertPopUp). It opens after the page
+// navigation interceptor ran, so its `{value}` slot can show what the
+// interceptor reserved, e.g. the e-token via a DEFAULT condition whose
+// value is "{{navigation.beneficiaryId}}". A separate key so pages that
+// already carry an (inert) showAlertPopUp do not start showing it.
+  @override
+  @JsonKey(fromJson: _showAlertOrNull)
+  final ShowAlertPopUp? showNextAlertPopUp;
 // Secondary action alert popup (e.g., for reject confirmation with comment)
   @override
   @JsonKey(fromJson: _showSecondaryAlertOrNull)
@@ -1166,7 +1211,7 @@ class _$PropertySchemaImpl implements _PropertySchema {
 
   @override
   String toString() {
-    return 'PropertySchema(type: $type, readOnly: $readOnly, displayOnly: $displayOnly, hidden: $hidden, properties: $properties, enums: $enums, schemaCode: $schemaCode, systemDate: $systemDate, charCount: $charCount, format: $format, startDate: $startDate, endDate: $endDate, minValue: $minValue, maxValue: $maxValue, minLength: $minLength, maxLength: $maxLength, min: $min, max: $max, helpText: $helpText, tooltip: $tooltip, prefixText: $prefixText, suffixText: $suffixText, innerLabel: $innerLabel, label: $label, isMultiSelect: $isMultiSelect, value: $value, displayBehavior: $displayBehavior, conditions: $conditions, order: $order, actionLabel: $actionLabel, description: $description, validations: $validations, includeInForm: $includeInForm, includeInSummary: $includeInSummary, navigateTo: $navigateTo, visibilityCondition: $visibilityCondition, conditionalNavigateTo: $conditionalNavigateTo, autoFillCondition: $autoFillCondition, showAlertPopUp: $showAlertPopUp, showSecondaryAlertPopUp: $showSecondaryAlertPopUp, multiEntityConfig: $multiEntityConfig, preventScreenCapture: $preventScreenCapture, submitCondition: $submitCondition, secondaryActionLabel: $secondaryActionLabel, secondaryActionVisibility: $secondaryActionVisibility, comparisonConfig: $comparisonConfig, dynamicScanLimit: $dynamicScanLimit)';
+    return 'PropertySchema(type: $type, readOnly: $readOnly, displayOnly: $displayOnly, hidden: $hidden, properties: $properties, enums: $enums, schemaCode: $schemaCode, systemDate: $systemDate, charCount: $charCount, format: $format, startDate: $startDate, endDate: $endDate, minValue: $minValue, maxValue: $maxValue, minLength: $minLength, maxLength: $maxLength, min: $min, max: $max, helpText: $helpText, tooltip: $tooltip, prefixText: $prefixText, suffixText: $suffixText, innerLabel: $innerLabel, label: $label, isMultiSelect: $isMultiSelect, value: $value, displayBehavior: $displayBehavior, conditions: $conditions, order: $order, actionLabel: $actionLabel, description: $description, validations: $validations, includeInForm: $includeInForm, includeInSummary: $includeInSummary, navigateTo: $navigateTo, visibilityCondition: $visibilityCondition, conditionalNavigateTo: $conditionalNavigateTo, autoFillCondition: $autoFillCondition, showAlertPopUp: $showAlertPopUp, showNextAlertPopUp: $showNextAlertPopUp, showSecondaryAlertPopUp: $showSecondaryAlertPopUp, multiEntityConfig: $multiEntityConfig, preventScreenCapture: $preventScreenCapture, submitCondition: $submitCondition, secondaryActionLabel: $secondaryActionLabel, secondaryActionVisibility: $secondaryActionVisibility, comparisonConfig: $comparisonConfig, dynamicScanLimit: $dynamicScanLimit)';
   }
 
   @override
@@ -1241,6 +1286,8 @@ class _$PropertySchemaImpl implements _PropertySchema {
                 .equals(other._autoFillCondition, _autoFillCondition) &&
             (identical(other.showAlertPopUp, showAlertPopUp) ||
                 other.showAlertPopUp == showAlertPopUp) &&
+            (identical(other.showNextAlertPopUp, showNextAlertPopUp) ||
+                other.showNextAlertPopUp == showNextAlertPopUp) &&
             (identical(
                     other.showSecondaryAlertPopUp, showSecondaryAlertPopUp) ||
                 other.showSecondaryAlertPopUp == showSecondaryAlertPopUp) &&
@@ -1304,6 +1351,7 @@ class _$PropertySchemaImpl implements _PropertySchema {
         const DeepCollectionEquality().hash(_conditionalNavigateTo),
         const DeepCollectionEquality().hash(_autoFillCondition),
         showAlertPopUp,
+        showNextAlertPopUp,
         showSecondaryAlertPopUp,
         multiEntityConfig,
         preventScreenCapture,
@@ -1376,6 +1424,8 @@ abstract class _PropertySchema implements PropertySchema {
       @JsonKey(fromJson: _autoFillConditionListOrNull)
       final List<AutoFillCondition>? autoFillCondition,
       @JsonKey(fromJson: _showAlertOrNull) final ShowAlertPopUp? showAlertPopUp,
+      @JsonKey(fromJson: _showAlertOrNull)
+      final ShowAlertPopUp? showNextAlertPopUp,
       @JsonKey(fromJson: _showSecondaryAlertOrNull)
       final ShowSecondaryAlertPopUp? showSecondaryAlertPopUp,
       @JsonKey(fromJson: _multiEntityConfigOrNull)
@@ -1487,6 +1537,14 @@ abstract class _PropertySchema implements PropertySchema {
   @override
   @JsonKey(fromJson: _showAlertOrNull)
   ShowAlertPopUp? get showAlertPopUp;
+  @override // Confirmation shown when this page moves on to the NEXT form page (not on
+// final submit - that is showAlertPopUp). It opens after the page
+// navigation interceptor ran, so its `{value}` slot can show what the
+// interceptor reserved, e.g. the e-token via a DEFAULT condition whose
+// value is "{{navigation.beneficiaryId}}". A separate key so pages that
+// already carry an (inert) showAlertPopUp do not start showing it.
+  @JsonKey(fromJson: _showAlertOrNull)
+  ShowAlertPopUp? get showNextAlertPopUp;
   @override // Secondary action alert popup (e.g., for reject confirmation with comment)
   @JsonKey(fromJson: _showSecondaryAlertOrNull)
   ShowSecondaryAlertPopUp? get showSecondaryAlertPopUp;

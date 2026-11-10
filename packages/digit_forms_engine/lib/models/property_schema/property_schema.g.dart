@@ -62,6 +62,7 @@ _$PropertySchemaImpl _$$PropertySchemaImplFromJson(Map<String, dynamic> json) =>
       autoFillCondition:
           _autoFillConditionListOrNull(json['autoFillCondition']),
       showAlertPopUp: _showAlertOrNull(json['showAlertPopUp']),
+      showNextAlertPopUp: _showAlertOrNull(json['showNextAlertPopUp']),
       showSecondaryAlertPopUp:
           _showSecondaryAlertOrNull(json['showSecondaryAlertPopUp']),
       multiEntityConfig: _multiEntityConfigOrNull(json['multiEntityConfig']),
@@ -128,6 +129,7 @@ Map<String, dynamic> _$$PropertySchemaImplToJson(
   writeNotNull('autoFillCondition',
       instance.autoFillCondition?.map((e) => e.toJson()).toList());
   writeNotNull('showAlertPopUp', instance.showAlertPopUp?.toJson());
+  writeNotNull('showNextAlertPopUp', instance.showNextAlertPopUp?.toJson());
   writeNotNull(
       'showSecondaryAlertPopUp', instance.showSecondaryAlertPopUp?.toJson());
   writeNotNull('multiEntityConfig', instance.multiEntityConfig?.toJson());

@@ -63,6 +63,13 @@ class PropertySchema with _$PropertySchema {
     @JsonKey(fromJson: _autoFillConditionListOrNull)
     List<AutoFillCondition>? autoFillCondition,
     @JsonKey(fromJson: _showAlertOrNull) ShowAlertPopUp? showAlertPopUp,
+    // Confirmation shown when this page moves on to the NEXT form page (not on
+    // final submit - that is showAlertPopUp). It opens after the page
+    // navigation interceptor ran, so its `{value}` slot can show what the
+    // interceptor reserved, e.g. the e-token via a DEFAULT condition whose
+    // value is "{{navigation.beneficiaryId}}". A separate key so pages that
+    // already carry an (inert) showAlertPopUp do not start showing it.
+    @JsonKey(fromJson: _showAlertOrNull) ShowAlertPopUp? showNextAlertPopUp,
     // Secondary action alert popup (e.g., for reject confirmation with comment)
     @JsonKey(fromJson: _showSecondaryAlertOrNull)
     ShowSecondaryAlertPopUp? showSecondaryAlertPopUp,

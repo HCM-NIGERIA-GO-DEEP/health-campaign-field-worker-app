@@ -185,6 +185,7 @@ Map<String, dynamic> transformJson(Map<String, dynamic> inputJson) {
         'visibilityCondition': pageMap['visibilityCondition'],
         'conditionalNavigateTo': pageMap['conditionalNavigateTo'],
         'showAlertPopUp': pageMap['showAlertPopUp'],
+        'showNextAlertPopUp': pageMap['showNextAlertPopUp'],
         'showSecondaryAlertPopUp': pageMap['showSecondaryAlertPopUp'],
         'multiEntityConfig': pageMap['multiEntityConfig'],
         'preventScreenCapture': pageMap['preventScreenCapture'],

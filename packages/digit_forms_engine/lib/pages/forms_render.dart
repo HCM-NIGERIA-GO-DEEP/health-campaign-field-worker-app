@@ -26,6 +26,7 @@ import '../models/schema_object/schema_object.dart';
 import '../utils/screen_protection_manager.dart';
 import '../utils/utils.dart';
 import '../helper/form_page_navigation_registry.dart';
+import '../helper/next_page_alert.dart';
 import '../widgets/multi_entity_tab_view.dart';
 import '../widgets/scanner_comparison_provider.dart';
 
@@ -163,6 +164,29 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
       }
     }
     return nextNavParams;
+  }
+
+  /// Asks the page's showNextAlertPopUp (if any) before the next form page
+  /// opens. On false the caller must stay on this page; the Next button is
+  /// re-enabled here so the user can correct the page or try again.
+  Future<bool> _confirmNextPage(
+    PropertySchema pageSchema,
+    Map<String, dynamic> nextNavParams,
+  ) async {
+    final popup = pageSchema.showNextAlertPopUp;
+    if (popup == null) return true;
+    final confirmed = await confirmNextPage(
+      context: context,
+      popup: popup,
+      nextNavParams: nextNavParams,
+      translate: localizations.translate,
+    );
+    if (!mounted) return false;
+    if (!confirmed) {
+      _isSubmitting = false;
+      setState(() {});
+    }
+    return confirmed;
   }
 
   int? _getScannerScanLimit(PropertySchema schema) {
@@ -780,6 +804,10 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                         if (nextNavParams[
                                                 '__blockNavigation'] ==
                                             true) return;
+                                        if (!await _confirmNextPage(
+                                            schema, nextNavParams)) {
+                                          return;
+                                        }
                                         context.router.push(FormsRenderRoute(
                                           isEdit: widget.isEdit,
                                           customComponents:
@@ -955,6 +983,10 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                   );
                                   if (nextNavParams['__blockNavigation'] ==
                                       true) return;
+                                  if (!await _confirmNextPage(
+                                      schema, nextNavParams)) {
+                                    return;
+                                  }
                                   context.router.push(FormsRenderRoute(
                                       isEdit: widget.isEdit,
                                       customComponents: widget.customComponents,
@@ -1439,6 +1471,9 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                           );
                           if (nextNavParams['__blockNavigation'] == true)
                             return;
+                          if (!await _confirmNextPage(schema, nextNavParams)) {
+                            return;
+                          }
                           context.router.push(FormsRenderRoute(
                             isEdit: widget.isEdit,
                             customComponents: widget.customComponents,
