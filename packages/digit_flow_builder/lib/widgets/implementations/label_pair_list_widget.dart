@@ -1,3 +1,5 @@
+import 'package:digit_ui_components/digit_components.dart';
+import 'package:digit_ui_components/theme/digit_extended_theme.dart';
 import 'package:digit_ui_components/widgets/atoms/label_value_list.dart';
 import 'package:digit_ui_components/widgets/molecules/label_value_summary.dart';
 import 'package:flutter/material.dart';
@@ -36,6 +38,7 @@ class LabelPairListWidget extends ResolvedFlowWidget {
       final value = e['value'];
       final defaultValue = e['defaultValue'];
       final hideIfNull = e['hideIfNull'] == true;
+      final valueBold = e['valueBold'] == true;
 
       // Resolve template using evalContext
       final keyText = resolveTemplate(
@@ -76,6 +79,7 @@ class LabelPairListWidget extends ResolvedFlowWidget {
               ? _safeTranslateValue(valueText, localization)
               : "--",
           labelFlex: 7,
+          valueTextStyle: valueBold ? _boldValueStyle(context) : null,
         ),
       );
     }
@@ -83,6 +87,20 @@ class LabelPairListWidget extends ResolvedFlowWidget {
     return LabelValueSummary(
       padding: const EdgeInsets.all(0),
       items: filteredItems,
+    );
+  }
+
+  /// The style [LabelValueItem] gives a text value by default (bodyL on a
+  /// mobile-shaped screen, bodyS otherwise, primary text colour), made bold.
+  /// Only the weight changes, so a `"valueBold": true` row (the e-token)
+  /// keeps the size and line height of the rows around it.
+  TextStyle _boldValueStyle(BuildContext context) {
+    final theme = Theme.of(context);
+    final textTheme = theme.digitTextTheme(context);
+    final isMobile = AppView.isMobileView(MediaQuery.of(context).size);
+    return (isMobile ? textTheme.bodyL : textTheme.bodyS).copyWith(
+      color: theme.colorTheme.text.primary,
+      fontWeight: FontWeight.w700,
     );
   }
 
