@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:digit_forms_engine/blocs/forms/forms.dart';
+import 'package:digit_forms_engine/helper/visibility_manager.dart';
 import 'package:flutter/widgets.dart';
 
 /// Callback type for form submission handlers
@@ -26,6 +27,10 @@ class FormSubmissionRegistry {
 
   /// Map of schema key to registered screen instance ID
   final Map<String, String> _registeredInstances = {};
+
+  /// Map of schema key to the fields the user saw and then hid in its latest
+  /// submit
+  final Map<String, Set<String>> _hiddenFieldsOfSubmit = {};
 
   /// Stream subscription for the FormsBloc
   StreamSubscription<FormsState>? _subscription;
@@ -56,6 +61,10 @@ class FormSubmissionRegistry {
     if (state is FormsSubmittedState) {
       final schemaKey = state.activeSchemaKey;
       final handler = _handlers[schemaKey];
+
+      if (schemaKey != null) {
+        _hiddenFieldsOfSubmit[schemaKey] = hiddenFieldPaths(state.schema.pages);
+      }
 
       if (handler != null) {
         await handler(state.formData);
@@ -106,6 +115,12 @@ class FormSubmissionRegistry {
       _registeredInstances.remove(schemaKey);
     }
   }
+
+  /// `page.field` paths the user saw and their edit then hid, in the latest
+  /// submit of [schemaKey]. Replaced on every submit of that schema, so
+  /// nothing carries over from an earlier one.
+  Set<String> hiddenFieldsOfSubmit(String schemaKey) =>
+      _hiddenFieldsOfSubmit[schemaKey] ?? const {};
 
   /// Check if a schema key has a registered handler
   bool hasHandler(String schemaKey) => _handlers.containsKey(schemaKey);

@@ -114,6 +114,7 @@ class FormEntityMapper {
     required Map<String, dynamic> modelsConfig,
     required Map<String, dynamic> context,
     String? fallbackFormDataString,
+    Set<String> hiddenFormPaths = const {},
   }) {
     final List<EntityModel> updatedModels = [];
     final Set<String> existingModelTypes =
@@ -137,6 +138,7 @@ class FormEntityMapper {
         formValues: formValues,
         modelConfig: modelConfig,
         context: context,
+        hiddenFormPaths: hiddenFormPaths,
       );
 
       updatedModels.add(updatedModel);
@@ -218,11 +220,15 @@ class FormEntityMapper {
     }
   }
 
+  /// [hiddenFormPaths] lists the form fields (`page.field`) the user saw
+  /// and their own edit then hid through the field's visibilityCondition
+  /// (recorded by the forms engine's VisibilityManager).
   EntityModel updateModelFromForm({
     required EntityModel existingModel,
     required Map<String, dynamic> formValues,
     required Map<String, dynamic> modelConfig,
     required Map<String, dynamic> context,
+    Set<String> hiddenFormPaths = const {},
   }) {
     final modelType = existingModel.runtimeType.toString();
     final factory = DataConverterSingleton()
@@ -260,6 +266,7 @@ class FormEntityMapper {
             formValues: formValues,
             modelName: modelType,
             context: context,
+            hiddenFormPaths: hiddenFormPaths,
           );
 
           if (updatedAdditional != null) {
@@ -378,8 +385,15 @@ class FormEntityMapper {
     required Map<String, dynamic> formValues,
     required String modelName,
     required Map<String, dynamic> context,
+    Set<String> hiddenFormPaths = const {},
   }) {
     final updatedFields = <String, dynamic>{};
+    // Keys whose field the user saw and their edit then hid, and which came
+    // back empty. A create from the same form would not store them, so
+    // their old values go. Any other null field (left empty, hidden from
+    // the start, or on a page never opened) keeps its stored value, as
+    // before.
+    final clearedKeys = <String>{};
 
     updateMapping.forEach((customKey, path) {
       // __concatName: / __ageInMonths: are derived values, not plain form
@@ -403,11 +417,13 @@ class FormEntityMapper {
 
           // Track the path as used so it's not treated as unmapped
           usedPaths.add(path.split('.').last.split('[').first);
+        } else if (hiddenFormPaths.contains(path)) {
+          clearedKeys.add(customKey);
         }
       }
     });
 
-    if (updatedFields.isEmpty) return null;
+    if (updatedFields.isEmpty && clearedKeys.isEmpty) return null;
 
     final existingFields = <String, dynamic>{};
     if (existingAdditionalFields['fields'] is List) {
@@ -417,6 +433,10 @@ class FormEntityMapper {
         }
       }
     }
+
+    final removedKeys = clearedKeys.where(existingFields.containsKey).toList();
+    if (updatedFields.isEmpty && removedKeys.isEmpty) return null;
+    removedKeys.forEach(existingFields.remove);
 
     // merge updates into existing (filter out null values)
     updatedFields.forEach((key, value) {

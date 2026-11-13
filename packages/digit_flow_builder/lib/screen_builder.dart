@@ -47,6 +47,26 @@ class ScreenBuilder extends StatefulWidget {
   State<ScreenBuilder> createState() => _ScreenBuilderState();
 }
 
+/// The context a FORM submit starts its onAction chain with.
+///
+/// [hiddenFormPaths] are the fields the user saw and their edit then hid
+/// (visibilityCondition) in this submit; an edit drops their stored values
+/// (FETCH_TRANSFORMER_CONFIG hands them to
+/// FormEntityMapper.updateEntitiesFromForm). They are only added when there
+/// are any, so every other submit's context is unchanged.
+Map<String, dynamic> formSubmitContext({
+  required Map<String, dynamic> formData,
+  required Map<String, dynamic> navigation,
+  required List<dynamic> entities,
+  required Set<String> hiddenFormPaths,
+}) =>
+    {
+      'formData': formData,
+      'navigation': navigation,
+      if (entities.isNotEmpty) 'entities': entities,
+      if (hiddenFormPaths.isNotEmpty) 'hiddenFormPaths': hiddenFormPaths,
+    };
+
 dynamic resolveTemplates(dynamic input, Map<String, dynamic> nav) {
   if (input is String) {
     return input.replaceAllMapped(RegExp(r'{{(.*?)}}'), (match) {
@@ -153,11 +173,13 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
       entities = registryState?.stateWrapper ?? [];
     }
 
-    Map<String, dynamic> contextData = {
-      'formData': formData,
-      'navigation': mergedNavParams,
-      if (entities.isNotEmpty) 'entities': entities,
-    };
+    Map<String, dynamic> contextData = formSubmitContext(
+      formData: formData,
+      navigation: mergedNavParams,
+      entities: entities,
+      hiddenFormPaths:
+          FormSubmissionRegistry().hiddenFieldsOfSubmit(_schemaKey),
+    );
 
     if (onSubmit != null) {
       // Clear form state via registry

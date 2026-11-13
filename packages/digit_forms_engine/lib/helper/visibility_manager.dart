@@ -32,6 +32,54 @@ class _AppliedVisibility {
       const DeepCollectionEquality().equals(validations, rules);
 }
 
+/// Controls the user saw and that their own edit then hid: shown by an
+/// earlier visibility application, hidden by the latest one. A field hidden
+/// from the first build (e.g. by `navigation.isHead==false`) is never set.
+final Expando<bool> _hiddenAfterShown = Expando<bool>('hiddenAfterShown');
+
+/// Fields each saved page showed hidden after the user saw them, keyed on the
+/// page schema object stored in FormsBloc when the user left the page.
+///
+/// Keyed on that object so the record lives exactly as long as the page
+/// values saved with it: clearing or reloading the form replaces the object
+/// and the record goes with it.
+final Expando<Set<String>> _hiddenOnSave = Expando<Set<String>>('hiddenOnSave');
+
+/// Records on [saved] (the page schema about to be saved from [form]) which
+/// of its fields the user saw and then hid through their visibilityCondition.
+///
+/// Reads what [VisibilityManager.toggleControlVisibility] applied, so it is
+/// exactly what the user saw, not a re-evaluation.
+///
+/// [current] is the page the bloc holds now. When [saved] equals it, the bloc
+/// drops the update as a duplicate state and keeps [current], so the record
+/// goes on [current] too.
+void recordHiddenFields(
+  PropertySchema saved,
+  FormGroup form, {
+  PropertySchema? current,
+}) {
+  final hidden = <String>{
+    for (final entry in saved.properties?.entries ??
+        const <MapEntry<String, PropertySchema>>[])
+      if (entry.value.visibilityCondition != null &&
+          form.contains(entry.key) &&
+          _hiddenAfterShown[form.control(entry.key)] == true)
+        entry.key,
+  };
+  final record = hidden.isEmpty ? null : hidden;
+  _hiddenOnSave[saved] = record;
+  if (current != null && current == saved) _hiddenOnSave[current] = record;
+}
+
+/// `page.field` paths of every field recorded on the saved [pages] as seen by
+/// the user and then hidden.
+Set<String> hiddenFieldPaths(Map<String, PropertySchema> pages) => {
+      for (final page in pages.entries)
+        for (final field in _hiddenOnSave[page.value] ?? const <String>{})
+          '${page.key}.$field',
+    };
+
 class VisibilityManager {
   final Map<String, PropertySchema> schemaMap;
   final FormGroup form;
@@ -98,12 +146,14 @@ class VisibilityManager {
 
     // Same visibility and rules as last time: nothing to apply, and emitting
     // a status event here would rebuild the page that is evaluating us.
-    if (_appliedVisibility[control]?.matches(isVisible, schema.validations) ==
-        true) {
+    final previous = _appliedVisibility[control];
+    if (previous?.matches(isVisible, schema.validations) == true) {
       return;
     }
     _appliedVisibility[control] =
         _AppliedVisibility(isVisible, schema.validations);
+    _hiddenAfterShown[control] = !isVisible &&
+        (previous?.isVisible == true || _hiddenAfterShown[control] == true);
 
     if (isVisible) {
       control.setValidators(buildValidators(schema));

@@ -4,7 +4,7 @@
 -keep class io.flutter.embedding.** { *; }
 
 # App classes
--keep class org.egov.azm.adamawa.** { *; }
+-keep class org.egov.jigawa.** { *; }
 
 # Flutter Background Service
 -keep class id.flutter.flutter_background_service.** { *; }

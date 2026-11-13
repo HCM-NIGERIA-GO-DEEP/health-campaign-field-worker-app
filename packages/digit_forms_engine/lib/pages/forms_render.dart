@@ -19,6 +19,7 @@ import 'package:reactive_forms/reactive_forms.dart';
 import '../../widgets/localized.dart';
 import '../helper/form_builder_helper.dart';
 import '../helper/validator_helper.dart';
+import '../helper/visibility_manager.dart';
 import '../models/property_schema/property_schema.dart';
 import '../models/schema_object/schema_object.dart';
 import '../utils/screen_protection_manager.dart';
@@ -188,6 +189,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                 // Then update UI
                                 setState(() {});
 
+                                final formsBloc = context.read<FormsBloc>();
+
                                 // Add small delay to allow custom component to update schema data
                                 await Future.delayed(
                                     const Duration(milliseconds: 200));
@@ -325,6 +328,14 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
                                 final updatedPropertySchema = schema.copyWith(
                                   properties: updatedProperties,
+                                );
+                                recordHiddenFields(
+                                  updatedPropertySchema,
+                                  formGroup,
+                                  current: formsBloc
+                                      .state
+                                      .cachedSchemas[widget.currentSchemaKey]
+                                      ?.pages[widget.pageName],
                                 );
 
                                 context.read<FormsBloc>().add(
@@ -1021,6 +1032,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                         // Then update UI
                         setState(() {});
 
+                        final formsBloc = context.read<FormsBloc>();
+
                         // Add small delay to allow custom component to update schema data
                         await Future.delayed(const Duration(milliseconds: 200));
 
@@ -1103,6 +1116,14 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
                         final updatedPropertySchema = schema.copyWith(
                           properties: updatedProperties,
+                        );
+                        recordHiddenFields(
+                          updatedPropertySchema,
+                          formGroup,
+                          current: formsBloc
+                              .state
+                              .cachedSchemas[widget.currentSchemaKey]
+                              ?.pages[widget.pageName],
                         );
 
                         context.read<FormsBloc>().add(

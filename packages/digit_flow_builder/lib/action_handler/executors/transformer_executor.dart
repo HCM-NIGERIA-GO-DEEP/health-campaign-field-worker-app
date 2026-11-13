@@ -266,6 +266,16 @@ class TransformerExecutor extends ActionExecutor {
       debugPrint(
           'TRANSFORMER: filteredConfig keys=${filteredConfig.keys}, createEntities=$createEntities');
 
+      // Fields the user saw and their edit then hid in this FORM submit
+      // (screen_builder); only these may drop a stored additionalFields
+      // value when they come back empty. Absent for every other caller,
+      // which then saves as before.
+      final hiddenFormPaths = contextData['hiddenFormPaths'] is Iterable
+          ? (contextData['hiddenFormPaths'] as Iterable)
+              .map((e) => e.toString())
+              .toSet()
+          : const <String>{};
+
       try {
         entities = formEntityMapper.updateEntitiesFromForm(
           existingModels: dedupedExistingModels,
@@ -273,6 +283,7 @@ class TransformerExecutor extends ActionExecutor {
           modelsConfig: filteredConfig,
           context: contextMap,
           fallbackFormDataString: fallBackModel,
+          hiddenFormPaths: hiddenFormPaths,
         );
       } catch (e) {
         debugPrint(e.toString());
