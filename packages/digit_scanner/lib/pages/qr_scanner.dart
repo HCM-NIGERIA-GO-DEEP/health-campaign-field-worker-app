@@ -3,7 +3,9 @@ import 'dart:io';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:auto_route/auto_route.dart';
 import 'package:camera/camera.dart';
+import 'package:collection/collection.dart';
 import 'package:digit_scanner/models/scanner_validation.dart';
+import 'package:digit_scanner/utils/scanned_stock.dart';
 import 'package:digit_scanner/utils/scanner_utils.dart';
 import 'package:digit_scanner/widgets/localized.dart';
 import 'package:digit_ui_components/digit_components.dart';
@@ -71,6 +73,8 @@ class DigitScannerPage extends LocalizedStatefulWidget {
 
   /// Gets the effective quantity - from validations if available, otherwise from legacy param
   int get effectiveQuantity {
+    // A typed (bale/piece) scanner has no limit.
+    if (isTypedScan) return typedScanNoLimit;
     if (validations != null && validations!.any((v) => v.type == 'scanLimit')) {
       return validations.scanLimit;
     }
@@ -114,6 +118,22 @@ class DigitScannerPage extends LocalizedStatefulWidget {
 
   bool get effectiveAllowManualEntry => validations?.allowManualEntry ?? true;
 
+  /// Bale/piece ("typed") scanning: the kinds of code this scanner accepts,
+  /// from a `scanTypes` validation (see utils/scanned_stock.dart). Empty for
+  /// every other scanner, which then behaves exactly as before.
+  List<ScanTypeRule> get scanTypeRules => scanTypeRulesFrom(validations
+      ?.where((v) => v.type == scanTypesValidationType)
+      .firstOrNull
+      ?.value);
+
+  bool get isTypedScan => scanTypeRules.isNotEmpty;
+
+  /// Shown when a typed scanner reads a code no rule accepts.
+  String? get unknownCodeMessage => validations
+      ?.where((v) => v.type == scanTypesValidationType)
+      .firstOrNull
+      ?.message;
+
   @override
   State<DigitScannerPage> createState() => DigitScannerPageState();
 }
@@ -142,6 +162,7 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
   static const _manualCodeFormKey = 'manualCode';
   static const _manualSerialNoFormKey = 'serialNoCode';
   static const _manualExpiryDateFormKey = 'expiryDate';
+  static const _manualTypeFormKey = 'scanType';
 
   /// Safely parses DateTime from form control value
   /// Handles String, DateTime, int (milliseconds), and null values
@@ -221,6 +242,28 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
               );
         }
       });
+    } else if (widget.isTypedScan &&
+        widget.initialBarcodeData != null &&
+        widget.initialBarcodeData!.isNotEmpty) {
+      // Typed (bale/piece) scanner reopened: rebuild the codes from their
+      // stored element strings - the generic path below would rebuild them
+      // as (01)+(21) nets and drop every bale.
+      final barcodes = barcodesFromScannedStock(widget.initialBarcodeData);
+      if (barcodes.isNotEmpty) {
+        result = barcodes;
+        _originalBarcodes = List.from(barcodes);
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (mounted) {
+            context.read<DigitScannerBloc>().add(
+                  DigitScannerEvent.handleScanner(
+                    qrCode: [],
+                    barCode: barcodes,
+                    scannerId: widget.scannerId,
+                  ),
+                );
+          }
+        });
+      }
     } else if (widget.initialBarcodeData != null &&
         widget.initialBarcodeData!.isNotEmpty) {
       // Initialize with existing barcode (GS1) data for edit mode
@@ -459,6 +502,8 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
       patternMessage: widget.patternMessage,
       duplicateCheckFn: widget.duplicateCheckFn,
       duplicateCheckMessage: widget.duplicateCheckMessage,
+      scanTypeRules: widget.scanTypeRules,
+      unknownCodeMessage: widget.unknownCodeMessage,
     );
   }
 
@@ -499,11 +544,13 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
       scanData: scanData,
       player: player,
       updateResult: (newResult) {
+        if (!mounted) return;
         setState(() {
           result = newResult;
         });
       },
       initialResult: result,
+      isStillOpen: widget.isTypedScan ? () => mounted : null,
     );
   }
 
@@ -540,12 +587,19 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
     );
   }
 
+  String _typedRuleLabel(ScanTypeRule rule) =>
+      rule.label != null ? localizations.translate(rule.label!) : rule.type;
+
   FormGroup buildForm() {
     if (widget.effectiveIsGS1code) {
       return fb.group(<String, Object>{
         _manualSerialNoFormKey: FormControl<String>(
           validators: [Validators.required],
         ),
+        if (widget.isTypedScan)
+          _manualTypeFormKey: FormControl<String>(
+            value: widget.scanTypeRules.first.type,
+          ),
       });
     } else {
       return fb
@@ -608,7 +662,8 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                               }
 
                               final serialPattern = widget.manualSerialPattern;
-                              if (serialPattern != null &&
+                              if (!widget.isTypedScan &&
+                                  serialPattern != null &&
                                   !RegExp(serialPattern)
                                       .hasMatch(serialValue)) {
                                 final message =
@@ -628,22 +683,59 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                                 return;
                               }
 
-                              // Keep GS1 payload valid while collecting only serial from UI.
-                              const gtinValue = '00000000000000';
-                              const batchValue = 'MANUAL';
-                              final expiryDate =
-                                  DateTime.now().add(const Duration(days: 365));
-                              final barcodeString =
-                                  DigitScannerUtils().generateGS1Barcode(
-                                gtin: gtinValue,
-                                serialNumber: serialValue,
-                                expiryDate: expiryDate,
-                                batchNumber: batchValue,
-                              );
+                              final GS1Barcode parsed;
+                              if (widget.isTypedScan) {
+                                // Typed (bale/piece) scanner: only what was
+                                // typed, under the picked kind's field.
+                                final rules = widget.scanTypeRules;
+                                final pickedType =
+                                    form.control(_manualTypeFormKey).value;
+                                final pickedRule = rules.firstWhereOrNull(
+                                        (r) => r.type == pickedType) ??
+                                    rules.first;
+                                final check = checkTypedManualCode(
+                                  serialValue,
+                                  pickedRule,
+                                  rules,
+                                );
+                                final typed = check.code;
+                                if (typed == null) {
+                                  // Say what is wrong (digit count, a wrong
+                                  // digit, brackets in a serial, …).
+                                  Toast.showToast(
+                                    context,
+                                    type: ToastType.error,
+                                    message: manualCodeProblemMessage(
+                                      check,
+                                      pickedRule,
+                                      localizations.translate,
+                                      otherKindMessage: localizations.translate(
+                                          widget.unknownCodeMessage ??
+                                              i18.scanner.invalidBarcode),
+                                    ),
+                                    sentenceCaseEnabled: false,
+                                  );
+                                  return;
+                                }
+                                parsed = typed;
+                              } else {
+                                // Keep GS1 payload valid while collecting only serial from UI.
+                                const gtinValue = '00000000000000';
+                                const batchValue = 'MANUAL';
+                                final expiryDate = DateTime.now()
+                                    .add(const Duration(days: 365));
+                                final barcodeString =
+                                    DigitScannerUtils().generateGS1Barcode(
+                                  gtin: gtinValue,
+                                  serialNumber: serialValue,
+                                  expiryDate: expiryDate,
+                                  batchNumber: batchValue,
+                                );
 
-                              // Now parse it using your existing model
-                              final parser = GS1BarcodeParser.defaultParser();
-                              final parsed = parser.parse(barcodeString);
+                                // Now parse it using your existing model
+                                final parser = GS1BarcodeParser.defaultParser();
+                                parsed = parser.parse(barcodeString);
+                              }
                               // ✅ Append to existing barcodes; DO NOT touch qrCodes in GS1 mode
                               // Use local result as fallback when bloc state is empty
                               final existingBarcodes = state.barCodes.isNotEmpty
@@ -761,8 +853,14 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                               Toast.showToast(
                                 context,
                                 type: ToastType.error,
-                                message: localizations
-                                    .translate(i18.scanner.resourcesScanFailed),
+                                // A typed bale/piece code that does not parse
+                                // (e.g. an SSCC that is not 18 digits) gets
+                                // the configured message, not a generic one.
+                                message: localizations.translate(
+                                    widget.isTypedScan &&
+                                            widget.unknownCodeMessage != null
+                                        ? widget.unknownCodeMessage!
+                                        : i18.scanner.resourcesScanFailed),
                                 sentenceCaseEnabled: false,
                               );
                             }
@@ -889,6 +987,34 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                             ),
                           ),
                           if (widget.effectiveIsGS1code) ...[
+                            if (widget.isTypedScan)
+                              LabeledField(
+                                label: localizations
+                                    .translate(i18.scanner.manualScanType),
+                                capitalizedFirstLetter: false,
+                                child: DigitDropdown<String>(
+                                  items: widget.scanTypeRules
+                                      .map((rule) => DropdownItem(
+                                            name: _typedRuleLabel(rule),
+                                            code: rule.type,
+                                          ))
+                                      .toList(),
+                                  selectedOption: widget.scanTypeRules
+                                      .where((rule) =>
+                                          rule.type ==
+                                          form.control(_manualTypeFormKey).value)
+                                      .map((rule) => DropdownItem(
+                                            name: _typedRuleLabel(rule),
+                                            code: rule.type,
+                                          ))
+                                      .firstOrNull,
+                                  onSelect: (item) => setState(() {
+                                    form.control(_manualTypeFormKey).value =
+                                        item.code;
+                                  }),
+                                  isSearchable: false,
+                                ),
+                              ),
                             ReactiveWrapperField(
                               formControlName: _manualSerialNoFormKey,
                               validationMessages: {
@@ -896,10 +1022,20 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                                     .translate(i18.scanner.enterManualCode),
                               },
                               builder: (field) {
+                                final typedRule = widget.isTypedScan
+                                    ? widget.scanTypeRules.firstWhereOrNull(
+                                        (rule) =>
+                                            rule.type ==
+                                            form
+                                                .control(_manualTypeFormKey)
+                                                .value)
+                                    : null;
                                 return LabeledField(
-                                  label: localizations.translate(
-                                    i18.scanner.serialNumber,
-                                  ),
+                                  label: typedRule != null
+                                      ? _typedRuleLabel(typedRule)
+                                      : localizations.translate(
+                                          i18.scanner.serialNumber,
+                                        ),
                                   capitalizedFirstLetter: false,
                                   child: DigitTextFormInput(
                                       errorMessage: field.errorText,
@@ -1289,7 +1425,17 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
     final scannedCount = widget.effectiveIsGS1code
         ? effectiveBarcodes.length
         : effectiveQrCodes.length;
-    final hasPendingScans = scannedCount < widget.effectiveQuantity;
+    // A typed (bale/piece) scanner has no target to reach: any number of
+    // codes, none included, can be submitted.
+    final hasPendingScans =
+        !widget.isTypedScan && scannedCount < widget.effectiveQuantity;
+    final typedRules = widget.scanTypeRules;
+    String typedLabel(ScanTypeRule? rule) =>
+        rule == null ? '-' : _typedRuleLabel(rule);
+    final typedSummary = typedRules
+        .map((rule) =>
+            '${typedLabel(rule)}: ${effectiveBarcodes.where((b) => classifyScan(b, typedRules)?.type == rule.type).length}')
+        .join('   ');
 
     return Stack(
       children: [
@@ -1308,7 +1454,7 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                 type: DigitButtonType.primary,
                 isDisabled: hasPendingScans,
                 onPressed: () async {
-                  if (scannedCount < widget.effectiveQuantity) {
+                  if (hasPendingScans) {
                     DigitScannerUtils().buildDialog(
                       context,
                       localizations,
@@ -1332,7 +1478,9 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
         Positioned(
           bottom: (spacer1 * 10),
           height: (widget.effectiveIsGS1code
-                  ? (effectiveBarcodes.length * 160.0) + 80.0
+                  // A typed scanner's per-kind counts can wrap to two lines.
+                  ? (effectiveBarcodes.length * 160.0) +
+                      (widget.isTypedScan ? 120.0 : 80.0)
                   : ((effectiveQrCodes.length + 1) * 60.0))
               .clamp(0.0, MediaQuery.of(context).size.height / 3),
           width: MediaQuery.of(context).size.width,
@@ -1376,7 +1524,9 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                             ),
                             const SizedBox(height: spacer1),
                             Text(
-                              '$capturedSerialCount of $totalSerialTarget bednet serials captured. $remainingSerialCount remaining.',
+                              widget.isTypedScan
+                                  ? typedSummary
+                                  : '$capturedSerialCount of $totalSerialTarget bednet serials captured. $remainingSerialCount remaining.',
                               style: textTheme.bodyS.copyWith(
                                 color: theme.colorTheme.text.secondary,
                               ),
@@ -1399,12 +1549,19 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                         final gs1Data = DigitScannerUtils()
                             .getGs1CodeFormattedStringAtIndex(
                                 effectiveBarcodes, index);
-                        final serialValue = (gs1Data['21'] ??
-                                gs1Data['SERIAL'] ??
-                                gs1Data['serial'] ??
-                                gs1Data['Serial'])
-                            ?.toString()
-                            .trim();
+                        final typedRule = widget.isTypedScan
+                            ? classifyScan(
+                                effectiveBarcodes[index], typedRules)
+                            : null;
+                        final serialValue = widget.isTypedScan
+                            ? effectiveBarcodes[index]
+                                .getAIRawData(typedRule?.ai ?? '')
+                            : (gs1Data['21'] ??
+                                    gs1Data['SERIAL'] ??
+                                    gs1Data['serial'] ??
+                                    gs1Data['Serial'])
+                                ?.toString()
+                                .trim();
                         return ListTile(
                           shape: const Border(),
                           title: Container(
@@ -1435,8 +1592,10 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                                       SizedBox(
                                         width: 110,
                                         child: Text(
-                                          localizations.translate(
-                                              i18.scanner.serialNumber),
+                                          widget.isTypedScan
+                                              ? typedLabel(typedRule)
+                                              : localizations.translate(
+                                                  i18.scanner.serialNumber),
                                           style: textTheme.bodyS.copyWith(
                                             color:
                                                 theme.colorTheme.text.secondary,

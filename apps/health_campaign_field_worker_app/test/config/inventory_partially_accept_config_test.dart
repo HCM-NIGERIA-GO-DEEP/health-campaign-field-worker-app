@@ -59,6 +59,13 @@ void main() {
       ((page['showSecondaryAlertPopUp'] as Map)['body'] as List)
           .cast<Map<String, dynamic>>();
 
+  /// Fields the user types into. A row with `computedValue` (the received
+  /// quantity shown in bales) only displays another field's value: it is
+  /// neither required nor handed to the actions (forms engine
+  /// secondaryPopupData), so the input invariants below do not apply to it.
+  List<Map<String, dynamic>> typedBodyFields() =>
+      bodyFields().where((f) => f['computedValue'] == null).toList();
+
   String expressionOf(Map<String, dynamic> branch) =>
       (branch['condition'] as Map)['expression'] as String;
 
@@ -157,7 +164,7 @@ void main() {
   });
 
   test('both popup fields are mandatory', () {
-    for (final field in bodyFields()) {
+    for (final field in typedBodyFields()) {
       expect(field['mandatory'], isTrue,
           reason: '${field['fieldName']} should be required');
     }
@@ -215,7 +222,7 @@ void main() {
       }
     }
     final persisted = persistedValues.join(' ');
-    for (final field in bodyFields()) {
+    for (final field in typedBodyFields()) {
       expect(persisted, contains('formData.${field['fieldName']}'),
           reason: '${field['fieldName']} is captured but never persisted');
     }

@@ -156,25 +156,132 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
     return updated;
   }
 
-  String formatDisplayCodes(List displayCodes) {
-    if (displayCodes.isEmpty) return '';
-    // If it's a single code with ||, format as "userName : userUuid"
-    if (displayCodes.length == 1 && displayCodes.first.contains('||')) {
-      final parts = displayCodes.first.toString().split('||');
-      final userName = parts.first.trim();
-      final userUuid = parts.last.trim();
-      return '$userName : $userUuid';
+  /// Bale/piece ("typed") scanning, turned on by a `scanTypes` validation
+  /// (digit_scanner utils/scanned_stock.dart). Empty for every other scanner.
+  List<ScanTypeRule> get _scanTypeRules => scanTypeRulesFrom(validations
+      ?.firstWhereOrNull((v) => v.type == scanTypesValidationType)
+      ?.value);
+
+  /// Keeps the codes the scanner page returned - those a rule accepts - as
+  /// the field value, one line per code. The page always returns the full
+  /// list, so this replaces rather than merges.
+  void _storeTypedScans(FormGroup form, List<GS1Barcode> barCodes) {
+    final entries = barCodes
+        .map((code) => scannedStockEntryFor(code, _scanTypeRules))
+        .whereNotNull()
+        .toList();
+    final value = entries.isEmpty ? null : encodeScannedStock(entries);
+    if (form.control(formControlName).value != value) {
+      form.control(formControlName).value = value;
     }
-    // If multiple codes, format any containing || and join with comma and space
-    return displayCodes.map((e) {
-      final str = e.toString();
-      if (str.contains('||')) {
-        final parts = str.split('||');
-        return '${parts.first.trim()} : ${parts.last.trim()}';
-      }
-      return str;
-    }).join(', ');
   }
+
+  Widget _typedScanContent(
+    BuildContext context,
+    FormGroup form,
+    DigitScannerState state,
+    FormLocalization loc,
+  ) {
+    final rules = _scanTypeRules;
+    final formValue = form.control(formControlName).value as String?;
+
+    // Returning from the scanner page: the listener can miss the state change
+    // during navigation, so sync after this frame.
+    if (state.scannerId == formControlName) {
+      final entries = state.barCodes
+          .map((code) => scannedStockEntryFor(code, rules))
+          .whereNotNull()
+          .toList();
+      final stateValue = entries.isEmpty ? null : encodeScannedStock(entries);
+      if (stateValue != formValue) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _storeTypedScans(form, state.barCodes);
+        });
+      }
+    }
+
+    String ruleLabel(ScanTypeRule? rule) => rule == null
+        ? '-'
+        : (rule.label != null ? loc.translate(rule.label!) : rule.type);
+    ScanTypeRule? ruleFor(String saveKey) =>
+        rules.firstWhereOrNull((r) => r.saveKey == saveKey);
+
+    final entries = decodeScannedStock(formValue);
+    final counts = scannedStockCounts(formValue, rules);
+    final summary = rules
+        .map((rule) => '${ruleLabel(rule)}: ${counts[rule.type] ?? 0}')
+        .join('   ');
+
+    final provider = ScannerComparisonProvider.of(context);
+    final registry = ScannerComparisonRegistry();
+    final dupeFn =
+        provider != null ? provider.duplicateCheckFn : registry.duplicateCheckFn;
+    final dupeErrFn = provider != null
+        ? provider.duplicateErrorMessage
+        : registry.duplicateErrorMessage;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (entries.isNotEmpty) ...[
+          Text(summary),
+          const SizedBox(height: 8),
+          LabelValueSummary(
+            padding: EdgeInsets.zero,
+            withDivider: false,
+            items: entries
+                .map((entry) => LabelValueItem(
+                      labelFlex: 5,
+                      label: ruleLabel(ruleFor(entry.saveKey)),
+                      value: entry.id,
+                      maxLines: 2,
+                    ))
+                .toList(),
+          ),
+          const SizedBox(height: 12),
+        ],
+        DigitButton(
+          capitalizeLetters: false,
+          size: DigitButtonSize.large,
+          label: label ?? 'scanner',
+          // No limit: more can always be scanned.
+          isDisabled: false,
+          onPressed: () {
+            if (formValue == null || formValue.isEmpty) {
+              // Start from an empty list, not a previous field's codes.
+              context.read<DigitScannerBloc>().add(
+                    DigitScannerEvent.handleScanner(
+                      scannerId: formControlName,
+                    ),
+                  );
+            }
+            context.router.push(DigitScannerRoute(
+              quantity: typedScanNoLimit,
+              validations: _toScannerValidations(),
+              isGS1code: true,
+              isEditEnabled: true,
+              initialBarcodeData: formValue,
+              scannerId: formControlName,
+              duplicateCheckFn: dupeFn != null
+                  ? (String scannedValue) =>
+                      dupeFn(formControlName, scannedValue, form.value)
+                  : null,
+              duplicateCheckMessage: dupeErrFn?.call(formControlName),
+            ));
+          },
+          type: DigitButtonType.secondary,
+          prefixIcon: Icons.qr_code,
+          mainAxisSize: MainAxisSize.max,
+        ),
+      ],
+    );
+  }
+
+  /// A team QR ("userName||userUuid") shows as the userName only; see
+  /// [teamCodeLabel]. The form value is not touched.
+  String formatDisplayCodes(List displayCodes) =>
+      formatScannedCodes(displayCodes);
 
   String _extractSerialFromGs1Map(Map<String, dynamic> data) {
     final serial =
@@ -356,6 +463,10 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
         // Only rebuild if this scanner initiated the scan
         return current.scannerId == formControlName;
       }, listener: (context, state) {
+        if (_scanTypeRules.isNotEmpty) {
+          _storeTypedScans(form, state.barCodes);
+          return;
+        }
         if (state.qrCodes.isNotEmpty) {
           // Join multiple QR codes with comma separator
           form.control(formControlName).value = state.qrCodes.join(', ');
@@ -371,6 +482,9 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
           form.control(formControlName).value = null;
         }
       }, builder: (context, state) {
+        if (_scanTypeRules.isNotEmpty) {
+          return _typedScanContent(context, form, state, loc);
+        }
         // Check if this scanner initiated the scan OR if form has pre-populated data
         final isThisScanner = state.scannerId == formControlName;
         final formValue = form.control(formControlName).value as String?;

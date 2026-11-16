@@ -2725,6 +2725,10 @@ final dynamic sampleInventoryFlows = {
             // Transactions page came up completely blank after Accept.
             "modify": [
               {
+                "key": "StockModel.additionalFields.numberedScans",
+                "value": "{{formData.stockReceiptDetails.scannedStock}}"
+              },
+              {
                 "key": "StockModel.additionalFields.fields.partial_flow",
                 "value":
                     "{{fn:isPartialStockFlow(navigation.originalIssueClientReferenceId, navigation.partial_flow)}}"
@@ -2783,6 +2787,10 @@ final dynamic sampleInventoryFlows = {
                 "source": "existingModels",
                 "entity": "StockModel",
                 "modify": [
+                  {
+                    "key": "StockModel.additionalFields.numberedScans",
+                    "value": "{{formData.stockReceiptDetails.scannedStock}}"
+                  },
                   {
                     "key": "StockModel.additionalFields.fields.status",
                     "value": "ACCEPTED"
@@ -2850,6 +2858,10 @@ final dynamic sampleInventoryFlows = {
                 "entity": "StockModel",
                 "modify": [
                   {
+                    "key": "StockModel.additionalFields.numberedScans",
+                    "value": "{{formData.stockReceiptDetails.scannedStock}}"
+                  },
+                  {
                     "key": "StockModel.additionalFields.fields.status",
                     "value": "ACCEPTED"
                   },
@@ -2909,6 +2921,10 @@ final dynamic sampleInventoryFlows = {
                 "source": "existingModels",
                 "entity": "StockModel",
                 "modify": [
+                  {
+                    "key": "StockModel.additionalFields.numberedScans",
+                    "value": "{{formData.stockReceiptDetails.scannedStock}}"
+                  },
                   {
                     "key": "StockModel.additionalFields.fields.status",
                     "value": "ACCEPTED"
@@ -3096,6 +3112,10 @@ final dynamic sampleInventoryFlows = {
                 "source": "existingModels",
                 "entity": "StockModel",
                 "modify": [
+                  {
+                    "key": "StockModel.additionalFields.numberedScans",
+                    "value": "{{formData.stockReceiptDetails.scannedStock}}"
+                  },
                   {
                     "key": "StockModel.additionalFields.fields.partial_flow",
                     "value": true
@@ -3407,6 +3427,10 @@ final dynamic sampleInventoryFlows = {
                 "source": "existingModels",
                 "entity": "StockModel",
                 "modify": [
+                  {
+                    "key": "StockModel.additionalFields.numberedScans",
+                    "value": "{{formData.stockReceiptDetails.scannedStock}}"
+                  },
                   {
                     "key": "StockModel.additionalFields.fields.partial_flow",
                     "value": true
@@ -3722,6 +3746,17 @@ final dynamic sampleInventoryFlows = {
               },
               {
                 "type": "string",
+                "label": "INVENTORY_PARTIAL_ACCEPT_QUANTITY_IN_BALES_LABEL",
+                "fieldName": "actualBalesReceived",
+                "mandatory": false,
+                "computedValue": {
+                  "sourceField": "actualQuantityReceived",
+                  "divideBy": 50,
+                  "decimals": 2
+                }
+              },
+              {
+                "type": "string",
                 "label": "INVENTORY_DISCREPANCY_REASON_LABEL",
                 "format": "dropdown",
                 "fieldName": "discrepancyReason",
@@ -3866,6 +3901,76 @@ final dynamic sampleInventoryFlows = {
                   "type": "regex",
                   "value": "^[0-9]+\$",
                   "message": "INVENTORY_VALID_NUMBER_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "enums": null
+            },
+            {
+              "type": "string",
+              "label": "INVENTORY_QUANTITY_IN_BALES_LABEL",
+              "order": 7.1,
+              "value": "",
+              "format": "text",
+              "hidden": false,
+              "tooltip": "",
+              "helpText": "INVENTORY_QUANTITY_IN_BALES_HELPTEXT",
+              "infoText": "",
+              "readOnly": true,
+              "fieldName": "bales",
+              "deleteFlag": false,
+              "innerLabel": "",
+              "systemDate": false,
+              "visibilityCondition": {},
+              "computedValue": {
+                "sourceField": "quantity",
+                "divideBy": 50,
+                "decimals": 2
+              },
+              "validations": [],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "enums": null
+            },
+            {
+              "type": "string",
+              "label": "INVENTORY_SCAN_STOCK_LABEL",
+              "order": 7.2,
+              "value": "",
+              "format": "scanner",
+              "hidden": false,
+              "tooltip": "",
+              "helpText": "INVENTORY_SCAN_STOCK_HELPTEXT",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "scannedStock",
+              "deleteFlag": false,
+              "innerLabel": "",
+              "systemDate": false,
+              "validations": [
+                {
+                  "type": "isGS1",
+                  "value": true,
+                  "message": "INVENTORY_SCAN_STOCK_LABEL"
+                },
+                {
+                  "type": "scanTypes",
+                  "value": [
+                    {
+                      "type": "bale",
+                      "ai": "00",
+                      "saveKey": "baleScannedStock",
+                      "label": "INVENTORY_SCAN_TYPE_BALE"
+                    },
+                    {
+                      "type": "piece",
+                      "ai": "21",
+                      "saveKey": "piecesScannedStock",
+                      "label": "INVENTORY_SCAN_TYPE_PIECE"
+                    }
+                  ],
+                  "message": "INVENTORY_SCAN_UNKNOWN_STOCK_CODE"
                 }
               ],
               "errorMessage": "",

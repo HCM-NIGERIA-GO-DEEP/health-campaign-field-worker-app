@@ -115,7 +115,11 @@ mixin _$PropertySchema {
 // validation - e.g. bednets needed scales with household member count.
   @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
   DynamicScanLimitConfig? get dynamicScanLimit =>
-      throw _privateConstructorUsedError;
+      throw _privateConstructorUsedError; // Read-only value worked out from a sibling field on the same page, e.g.
+// a quantity in pieces shown in bales. Kept up to date as that field
+// changes; the field is never editable.
+  @JsonKey(fromJson: _computedValueConfigOrNull)
+  ComputedValueConfig? get computedValue => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -188,7 +192,9 @@ abstract class $PropertySchemaCopyWith<$Res> {
       @JsonKey(fromJson: _comparisonConfigOrNull)
       ComparisonConfig? comparisonConfig,
       @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
-      DynamicScanLimitConfig? dynamicScanLimit});
+      DynamicScanLimitConfig? dynamicScanLimit,
+      @JsonKey(fromJson: _computedValueConfigOrNull)
+      ComputedValueConfig? computedValue});
 
   $DisplayBehaviorCopyWith<$Res>? get displayBehavior;
   $NavigateToConfigCopyWith<$Res>? get navigateTo;
@@ -201,6 +207,7 @@ abstract class $PropertySchemaCopyWith<$Res> {
   $VisibilityConditionCopyWith<$Res>? get secondaryActionVisibility;
   $ComparisonConfigCopyWith<$Res>? get comparisonConfig;
   $DynamicScanLimitConfigCopyWith<$Res>? get dynamicScanLimit;
+  $ComputedValueConfigCopyWith<$Res>? get computedValue;
 }
 
 /// @nodoc
@@ -264,6 +271,7 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
     Object? secondaryActionVisibility = freezed,
     Object? comparisonConfig = freezed,
     Object? dynamicScanLimit = freezed,
+    Object? computedValue = freezed,
   }) {
     return _then(_value.copyWith(
       type: null == type
@@ -458,6 +466,10 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
           ? _value.dynamicScanLimit
           : dynamicScanLimit // ignore: cast_nullable_to_non_nullable
               as DynamicScanLimitConfig?,
+      computedValue: freezed == computedValue
+          ? _value.computedValue
+          : computedValue // ignore: cast_nullable_to_non_nullable
+              as ComputedValueConfig?,
     ) as $Val);
   }
 
@@ -596,6 +608,18 @@ class _$PropertySchemaCopyWithImpl<$Res, $Val extends PropertySchema>
       return _then(_value.copyWith(dynamicScanLimit: value) as $Val);
     });
   }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $ComputedValueConfigCopyWith<$Res>? get computedValue {
+    if (_value.computedValue == null) {
+      return null;
+    }
+
+    return $ComputedValueConfigCopyWith<$Res>(_value.computedValue!, (value) {
+      return _then(_value.copyWith(computedValue: value) as $Val);
+    });
+  }
 }
 
 /// @nodoc
@@ -665,7 +689,9 @@ abstract class _$$PropertySchemaImplCopyWith<$Res>
       @JsonKey(fromJson: _comparisonConfigOrNull)
       ComparisonConfig? comparisonConfig,
       @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
-      DynamicScanLimitConfig? dynamicScanLimit});
+      DynamicScanLimitConfig? dynamicScanLimit,
+      @JsonKey(fromJson: _computedValueConfigOrNull)
+      ComputedValueConfig? computedValue});
 
   @override
   $DisplayBehaviorCopyWith<$Res>? get displayBehavior;
@@ -689,6 +715,8 @@ abstract class _$$PropertySchemaImplCopyWith<$Res>
   $ComparisonConfigCopyWith<$Res>? get comparisonConfig;
   @override
   $DynamicScanLimitConfigCopyWith<$Res>? get dynamicScanLimit;
+  @override
+  $ComputedValueConfigCopyWith<$Res>? get computedValue;
 }
 
 /// @nodoc
@@ -750,6 +778,7 @@ class __$$PropertySchemaImplCopyWithImpl<$Res>
     Object? secondaryActionVisibility = freezed,
     Object? comparisonConfig = freezed,
     Object? dynamicScanLimit = freezed,
+    Object? computedValue = freezed,
   }) {
     return _then(_$PropertySchemaImpl(
       type: null == type
@@ -944,6 +973,10 @@ class __$$PropertySchemaImplCopyWithImpl<$Res>
           ? _value.dynamicScanLimit
           : dynamicScanLimit // ignore: cast_nullable_to_non_nullable
               as DynamicScanLimitConfig?,
+      computedValue: freezed == computedValue
+          ? _value.computedValue
+          : computedValue // ignore: cast_nullable_to_non_nullable
+              as ComputedValueConfig?,
     ));
   }
 }
@@ -1006,7 +1039,8 @@ class _$PropertySchemaImpl implements _PropertySchema {
       @JsonKey(fromJson: _visibilityConditionOrNull)
       this.secondaryActionVisibility,
       @JsonKey(fromJson: _comparisonConfigOrNull) this.comparisonConfig,
-      @JsonKey(fromJson: _dynamicScanLimitConfigOrNull) this.dynamicScanLimit})
+      @JsonKey(fromJson: _dynamicScanLimitConfigOrNull) this.dynamicScanLimit,
+      @JsonKey(fromJson: _computedValueConfigOrNull) this.computedValue})
       : _properties = properties,
         _enums = enums,
         _conditions = conditions,
@@ -1208,10 +1242,16 @@ class _$PropertySchemaImpl implements _PropertySchema {
   @override
   @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
   final DynamicScanLimitConfig? dynamicScanLimit;
+// Read-only value worked out from a sibling field on the same page, e.g.
+// a quantity in pieces shown in bales. Kept up to date as that field
+// changes; the field is never editable.
+  @override
+  @JsonKey(fromJson: _computedValueConfigOrNull)
+  final ComputedValueConfig? computedValue;
 
   @override
   String toString() {
-    return 'PropertySchema(type: $type, readOnly: $readOnly, displayOnly: $displayOnly, hidden: $hidden, properties: $properties, enums: $enums, schemaCode: $schemaCode, systemDate: $systemDate, charCount: $charCount, format: $format, startDate: $startDate, endDate: $endDate, minValue: $minValue, maxValue: $maxValue, minLength: $minLength, maxLength: $maxLength, min: $min, max: $max, helpText: $helpText, tooltip: $tooltip, prefixText: $prefixText, suffixText: $suffixText, innerLabel: $innerLabel, label: $label, isMultiSelect: $isMultiSelect, value: $value, displayBehavior: $displayBehavior, conditions: $conditions, order: $order, actionLabel: $actionLabel, description: $description, validations: $validations, includeInForm: $includeInForm, includeInSummary: $includeInSummary, navigateTo: $navigateTo, visibilityCondition: $visibilityCondition, conditionalNavigateTo: $conditionalNavigateTo, autoFillCondition: $autoFillCondition, showAlertPopUp: $showAlertPopUp, showNextAlertPopUp: $showNextAlertPopUp, showSecondaryAlertPopUp: $showSecondaryAlertPopUp, multiEntityConfig: $multiEntityConfig, preventScreenCapture: $preventScreenCapture, submitCondition: $submitCondition, secondaryActionLabel: $secondaryActionLabel, secondaryActionVisibility: $secondaryActionVisibility, comparisonConfig: $comparisonConfig, dynamicScanLimit: $dynamicScanLimit)';
+    return 'PropertySchema(type: $type, readOnly: $readOnly, displayOnly: $displayOnly, hidden: $hidden, properties: $properties, enums: $enums, schemaCode: $schemaCode, systemDate: $systemDate, charCount: $charCount, format: $format, startDate: $startDate, endDate: $endDate, minValue: $minValue, maxValue: $maxValue, minLength: $minLength, maxLength: $maxLength, min: $min, max: $max, helpText: $helpText, tooltip: $tooltip, prefixText: $prefixText, suffixText: $suffixText, innerLabel: $innerLabel, label: $label, isMultiSelect: $isMultiSelect, value: $value, displayBehavior: $displayBehavior, conditions: $conditions, order: $order, actionLabel: $actionLabel, description: $description, validations: $validations, includeInForm: $includeInForm, includeInSummary: $includeInSummary, navigateTo: $navigateTo, visibilityCondition: $visibilityCondition, conditionalNavigateTo: $conditionalNavigateTo, autoFillCondition: $autoFillCondition, showAlertPopUp: $showAlertPopUp, showNextAlertPopUp: $showNextAlertPopUp, showSecondaryAlertPopUp: $showSecondaryAlertPopUp, multiEntityConfig: $multiEntityConfig, preventScreenCapture: $preventScreenCapture, submitCondition: $submitCondition, secondaryActionLabel: $secondaryActionLabel, secondaryActionVisibility: $secondaryActionVisibility, comparisonConfig: $comparisonConfig, dynamicScanLimit: $dynamicScanLimit, computedValue: $computedValue)';
   }
 
   @override
@@ -1288,8 +1328,7 @@ class _$PropertySchemaImpl implements _PropertySchema {
                 other.showAlertPopUp == showAlertPopUp) &&
             (identical(other.showNextAlertPopUp, showNextAlertPopUp) ||
                 other.showNextAlertPopUp == showNextAlertPopUp) &&
-            (identical(
-                    other.showSecondaryAlertPopUp, showSecondaryAlertPopUp) ||
+            (identical(other.showSecondaryAlertPopUp, showSecondaryAlertPopUp) ||
                 other.showSecondaryAlertPopUp == showSecondaryAlertPopUp) &&
             (identical(other.multiEntityConfig, multiEntityConfig) ||
                 other.multiEntityConfig == multiEntityConfig) &&
@@ -1305,7 +1344,9 @@ class _$PropertySchemaImpl implements _PropertySchema {
             (identical(other.comparisonConfig, comparisonConfig) ||
                 other.comparisonConfig == comparisonConfig) &&
             (identical(other.dynamicScanLimit, dynamicScanLimit) ||
-                other.dynamicScanLimit == dynamicScanLimit));
+                other.dynamicScanLimit == dynamicScanLimit) &&
+            (identical(other.computedValue, computedValue) ||
+                other.computedValue == computedValue));
   }
 
   @JsonKey(ignore: true)
@@ -1359,7 +1400,8 @@ class _$PropertySchemaImpl implements _PropertySchema {
         secondaryActionLabel,
         secondaryActionVisibility,
         comparisonConfig,
-        dynamicScanLimit
+        dynamicScanLimit,
+        computedValue
       ]);
 
   @JsonKey(ignore: true)
@@ -1439,7 +1481,9 @@ abstract class _PropertySchema implements PropertySchema {
       @JsonKey(fromJson: _comparisonConfigOrNull)
       final ComparisonConfig? comparisonConfig,
       @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
-      final DynamicScanLimitConfig? dynamicScanLimit}) = _$PropertySchemaImpl;
+      final DynamicScanLimitConfig? dynamicScanLimit,
+      @JsonKey(fromJson: _computedValueConfigOrNull)
+      final ComputedValueConfig? computedValue}) = _$PropertySchemaImpl;
 
   factory _PropertySchema.fromJson(Map<String, dynamic> json) =
       _$PropertySchemaImpl.fromJson;
@@ -1574,6 +1618,11 @@ abstract class _PropertySchema implements PropertySchema {
 // validation - e.g. bednets needed scales with household member count.
   @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
   DynamicScanLimitConfig? get dynamicScanLimit;
+  @override // Read-only value worked out from a sibling field on the same page, e.g.
+// a quantity in pieces shown in bales. Kept up to date as that field
+// changes; the field is never editable.
+  @JsonKey(fromJson: _computedValueConfigOrNull)
+  ComputedValueConfig? get computedValue;
   @override
   @JsonKey(ignore: true)
   _$$PropertySchemaImplCopyWith<_$PropertySchemaImpl> get copyWith =>
@@ -3417,7 +3466,12 @@ mixin _$SecondaryAlertBodyField {
 // option that needs its own free-text reason.
   List<Option>? get enums => throw _privateConstructorUsedError;
   String? get revealsFreeTextOn => throw _privateConstructorUsedError;
-  String? get revealedDetailLabel => throw _privateConstructorUsedError;
+  String? get revealedDetailLabel =>
+      throw _privateConstructorUsedError; // A read-only row worked out from another body field as it is typed (e.g.
+// the received quantity in bales). Not validated and not handed back on
+// confirm.
+  @JsonKey(fromJson: _computedValueConfigOrNull)
+  ComputedValueConfig? get computedValue => throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -3439,7 +3493,11 @@ abstract class $SecondaryAlertBodyFieldCopyWith<$Res> {
       bool mandatory,
       List<Option>? enums,
       String? revealsFreeTextOn,
-      String? revealedDetailLabel});
+      String? revealedDetailLabel,
+      @JsonKey(fromJson: _computedValueConfigOrNull)
+      ComputedValueConfig? computedValue});
+
+  $ComputedValueConfigCopyWith<$Res>? get computedValue;
 }
 
 /// @nodoc
@@ -3464,6 +3522,7 @@ class _$SecondaryAlertBodyFieldCopyWithImpl<$Res,
     Object? enums = freezed,
     Object? revealsFreeTextOn = freezed,
     Object? revealedDetailLabel = freezed,
+    Object? computedValue = freezed,
   }) {
     return _then(_value.copyWith(
       type: null == type
@@ -3498,7 +3557,23 @@ class _$SecondaryAlertBodyFieldCopyWithImpl<$Res,
           ? _value.revealedDetailLabel
           : revealedDetailLabel // ignore: cast_nullable_to_non_nullable
               as String?,
+      computedValue: freezed == computedValue
+          ? _value.computedValue
+          : computedValue // ignore: cast_nullable_to_non_nullable
+              as ComputedValueConfig?,
     ) as $Val);
+  }
+
+  @override
+  @pragma('vm:prefer-inline')
+  $ComputedValueConfigCopyWith<$Res>? get computedValue {
+    if (_value.computedValue == null) {
+      return null;
+    }
+
+    return $ComputedValueConfigCopyWith<$Res>(_value.computedValue!, (value) {
+      return _then(_value.copyWith(computedValue: value) as $Val);
+    });
   }
 }
 
@@ -3519,7 +3594,12 @@ abstract class _$$SecondaryAlertBodyFieldImplCopyWith<$Res>
       bool mandatory,
       List<Option>? enums,
       String? revealsFreeTextOn,
-      String? revealedDetailLabel});
+      String? revealedDetailLabel,
+      @JsonKey(fromJson: _computedValueConfigOrNull)
+      ComputedValueConfig? computedValue});
+
+  @override
+  $ComputedValueConfigCopyWith<$Res>? get computedValue;
 }
 
 /// @nodoc
@@ -3543,6 +3623,7 @@ class __$$SecondaryAlertBodyFieldImplCopyWithImpl<$Res>
     Object? enums = freezed,
     Object? revealsFreeTextOn = freezed,
     Object? revealedDetailLabel = freezed,
+    Object? computedValue = freezed,
   }) {
     return _then(_$SecondaryAlertBodyFieldImpl(
       type: null == type
@@ -3577,6 +3658,10 @@ class __$$SecondaryAlertBodyFieldImplCopyWithImpl<$Res>
           ? _value.revealedDetailLabel
           : revealedDetailLabel // ignore: cast_nullable_to_non_nullable
               as String?,
+      computedValue: freezed == computedValue
+          ? _value.computedValue
+          : computedValue // ignore: cast_nullable_to_non_nullable
+              as ComputedValueConfig?,
     ));
   }
 }
@@ -3592,7 +3677,8 @@ class _$SecondaryAlertBodyFieldImpl implements _SecondaryAlertBodyField {
       this.mandatory = false,
       final List<Option>? enums,
       this.revealsFreeTextOn,
-      this.revealedDetailLabel})
+      this.revealedDetailLabel,
+      @JsonKey(fromJson: _computedValueConfigOrNull) this.computedValue})
       : _enums = enums;
 
   factory _$SecondaryAlertBodyFieldImpl.fromJson(Map<String, dynamic> json) =>
@@ -3631,10 +3717,16 @@ class _$SecondaryAlertBodyFieldImpl implements _SecondaryAlertBodyField {
   final String? revealsFreeTextOn;
   @override
   final String? revealedDetailLabel;
+// A read-only row worked out from another body field as it is typed (e.g.
+// the received quantity in bales). Not validated and not handed back on
+// confirm.
+  @override
+  @JsonKey(fromJson: _computedValueConfigOrNull)
+  final ComputedValueConfig? computedValue;
 
   @override
   String toString() {
-    return 'SecondaryAlertBodyField(type: $type, label: $label, format: $format, fieldName: $fieldName, mandatory: $mandatory, enums: $enums, revealsFreeTextOn: $revealsFreeTextOn, revealedDetailLabel: $revealedDetailLabel)';
+    return 'SecondaryAlertBodyField(type: $type, label: $label, format: $format, fieldName: $fieldName, mandatory: $mandatory, enums: $enums, revealsFreeTextOn: $revealsFreeTextOn, revealedDetailLabel: $revealedDetailLabel, computedValue: $computedValue)';
   }
 
   @override
@@ -3653,7 +3745,9 @@ class _$SecondaryAlertBodyFieldImpl implements _SecondaryAlertBodyField {
             (identical(other.revealsFreeTextOn, revealsFreeTextOn) ||
                 other.revealsFreeTextOn == revealsFreeTextOn) &&
             (identical(other.revealedDetailLabel, revealedDetailLabel) ||
-                other.revealedDetailLabel == revealedDetailLabel));
+                other.revealedDetailLabel == revealedDetailLabel) &&
+            (identical(other.computedValue, computedValue) ||
+                other.computedValue == computedValue));
   }
 
   @JsonKey(ignore: true)
@@ -3667,7 +3761,8 @@ class _$SecondaryAlertBodyFieldImpl implements _SecondaryAlertBodyField {
       mandatory,
       const DeepCollectionEquality().hash(_enums),
       revealsFreeTextOn,
-      revealedDetailLabel);
+      revealedDetailLabel,
+      computedValue);
 
   @JsonKey(ignore: true)
   @override
@@ -3686,14 +3781,17 @@ class _$SecondaryAlertBodyFieldImpl implements _SecondaryAlertBodyField {
 
 abstract class _SecondaryAlertBodyField implements SecondaryAlertBodyField {
   const factory _SecondaryAlertBodyField(
-      {required final String type,
-      required final String label,
-      final String? format,
-      required final String fieldName,
-      final bool mandatory,
-      final List<Option>? enums,
-      final String? revealsFreeTextOn,
-      final String? revealedDetailLabel}) = _$SecondaryAlertBodyFieldImpl;
+          {required final String type,
+          required final String label,
+          final String? format,
+          required final String fieldName,
+          final bool mandatory,
+          final List<Option>? enums,
+          final String? revealsFreeTextOn,
+          final String? revealedDetailLabel,
+          @JsonKey(fromJson: _computedValueConfigOrNull)
+          final ComputedValueConfig? computedValue}) =
+      _$SecondaryAlertBodyFieldImpl;
 
   factory _SecondaryAlertBodyField.fromJson(Map<String, dynamic> json) =
       _$SecondaryAlertBodyFieldImpl.fromJson;
@@ -3717,6 +3815,11 @@ abstract class _SecondaryAlertBodyField implements SecondaryAlertBodyField {
   String? get revealsFreeTextOn;
   @override
   String? get revealedDetailLabel;
+  @override // A read-only row worked out from another body field as it is typed (e.g.
+// the received quantity in bales). Not validated and not handed back on
+// confirm.
+  @JsonKey(fromJson: _computedValueConfigOrNull)
+  ComputedValueConfig? get computedValue;
   @override
   @JsonKey(ignore: true)
   _$$SecondaryAlertBodyFieldImplCopyWith<_$SecondaryAlertBodyFieldImpl>
@@ -4514,6 +4617,190 @@ abstract class _DynamicScanLimitConfig implements DynamicScanLimitConfig {
   @JsonKey(ignore: true)
   _$$DynamicScanLimitConfigImplCopyWith<_$DynamicScanLimitConfigImpl>
       get copyWith => throw _privateConstructorUsedError;
+}
+
+ComputedValueConfig _$ComputedValueConfigFromJson(Map<String, dynamic> json) {
+  return _ComputedValueConfig.fromJson(json);
+}
+
+/// @nodoc
+mixin _$ComputedValueConfig {
+// Field on the same page (or popup) holding the number, e.g. "quantity".
+  String get sourceField =>
+      throw _privateConstructorUsedError; // Shown value = sourceField value / divideBy, e.g. 50 pieces per bale.
+  num get divideBy =>
+      throw _privateConstructorUsedError; // Decimals always shown: 60 / 50 → "1.20".
+  int get decimals => throw _privateConstructorUsedError;
+
+  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
+  @JsonKey(ignore: true)
+  $ComputedValueConfigCopyWith<ComputedValueConfig> get copyWith =>
+      throw _privateConstructorUsedError;
+}
+
+/// @nodoc
+abstract class $ComputedValueConfigCopyWith<$Res> {
+  factory $ComputedValueConfigCopyWith(
+          ComputedValueConfig value, $Res Function(ComputedValueConfig) then) =
+      _$ComputedValueConfigCopyWithImpl<$Res, ComputedValueConfig>;
+  @useResult
+  $Res call({String sourceField, num divideBy, int decimals});
+}
+
+/// @nodoc
+class _$ComputedValueConfigCopyWithImpl<$Res, $Val extends ComputedValueConfig>
+    implements $ComputedValueConfigCopyWith<$Res> {
+  _$ComputedValueConfigCopyWithImpl(this._value, this._then);
+
+  // ignore: unused_field
+  final $Val _value;
+  // ignore: unused_field
+  final $Res Function($Val) _then;
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? sourceField = null,
+    Object? divideBy = null,
+    Object? decimals = null,
+  }) {
+    return _then(_value.copyWith(
+      sourceField: null == sourceField
+          ? _value.sourceField
+          : sourceField // ignore: cast_nullable_to_non_nullable
+              as String,
+      divideBy: null == divideBy
+          ? _value.divideBy
+          : divideBy // ignore: cast_nullable_to_non_nullable
+              as num,
+      decimals: null == decimals
+          ? _value.decimals
+          : decimals // ignore: cast_nullable_to_non_nullable
+              as int,
+    ) as $Val);
+  }
+}
+
+/// @nodoc
+abstract class _$$ComputedValueConfigImplCopyWith<$Res>
+    implements $ComputedValueConfigCopyWith<$Res> {
+  factory _$$ComputedValueConfigImplCopyWith(_$ComputedValueConfigImpl value,
+          $Res Function(_$ComputedValueConfigImpl) then) =
+      __$$ComputedValueConfigImplCopyWithImpl<$Res>;
+  @override
+  @useResult
+  $Res call({String sourceField, num divideBy, int decimals});
+}
+
+/// @nodoc
+class __$$ComputedValueConfigImplCopyWithImpl<$Res>
+    extends _$ComputedValueConfigCopyWithImpl<$Res, _$ComputedValueConfigImpl>
+    implements _$$ComputedValueConfigImplCopyWith<$Res> {
+  __$$ComputedValueConfigImplCopyWithImpl(_$ComputedValueConfigImpl _value,
+      $Res Function(_$ComputedValueConfigImpl) _then)
+      : super(_value, _then);
+
+  @pragma('vm:prefer-inline')
+  @override
+  $Res call({
+    Object? sourceField = null,
+    Object? divideBy = null,
+    Object? decimals = null,
+  }) {
+    return _then(_$ComputedValueConfigImpl(
+      sourceField: null == sourceField
+          ? _value.sourceField
+          : sourceField // ignore: cast_nullable_to_non_nullable
+              as String,
+      divideBy: null == divideBy
+          ? _value.divideBy
+          : divideBy // ignore: cast_nullable_to_non_nullable
+              as num,
+      decimals: null == decimals
+          ? _value.decimals
+          : decimals // ignore: cast_nullable_to_non_nullable
+              as int,
+    ));
+  }
+}
+
+/// @nodoc
+
+@JsonSerializable(explicitToJson: true, includeIfNull: false)
+class _$ComputedValueConfigImpl implements _ComputedValueConfig {
+  const _$ComputedValueConfigImpl(
+      {required this.sourceField, required this.divideBy, this.decimals = 2});
+
+  factory _$ComputedValueConfigImpl.fromJson(Map<String, dynamic> json) =>
+      _$$ComputedValueConfigImplFromJson(json);
+
+// Field on the same page (or popup) holding the number, e.g. "quantity".
+  @override
+  final String sourceField;
+// Shown value = sourceField value / divideBy, e.g. 50 pieces per bale.
+  @override
+  final num divideBy;
+// Decimals always shown: 60 / 50 → "1.20".
+  @override
+  @JsonKey()
+  final int decimals;
+
+  @override
+  String toString() {
+    return 'ComputedValueConfig(sourceField: $sourceField, divideBy: $divideBy, decimals: $decimals)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    return identical(this, other) ||
+        (other.runtimeType == runtimeType &&
+            other is _$ComputedValueConfigImpl &&
+            (identical(other.sourceField, sourceField) ||
+                other.sourceField == sourceField) &&
+            (identical(other.divideBy, divideBy) ||
+                other.divideBy == divideBy) &&
+            (identical(other.decimals, decimals) ||
+                other.decimals == decimals));
+  }
+
+  @JsonKey(ignore: true)
+  @override
+  int get hashCode => Object.hash(runtimeType, sourceField, divideBy, decimals);
+
+  @JsonKey(ignore: true)
+  @override
+  @pragma('vm:prefer-inline')
+  _$$ComputedValueConfigImplCopyWith<_$ComputedValueConfigImpl> get copyWith =>
+      __$$ComputedValueConfigImplCopyWithImpl<_$ComputedValueConfigImpl>(
+          this, _$identity);
+
+  @override
+  Map<String, dynamic> toJson() {
+    return _$$ComputedValueConfigImplToJson(
+      this,
+    );
+  }
+}
+
+abstract class _ComputedValueConfig implements ComputedValueConfig {
+  const factory _ComputedValueConfig(
+      {required final String sourceField,
+      required final num divideBy,
+      final int decimals}) = _$ComputedValueConfigImpl;
+
+  factory _ComputedValueConfig.fromJson(Map<String, dynamic> json) =
+      _$ComputedValueConfigImpl.fromJson;
+
+  @override // Field on the same page (or popup) holding the number, e.g. "quantity".
+  String get sourceField;
+  @override // Shown value = sourceField value / divideBy, e.g. 50 pieces per bale.
+  num get divideBy;
+  @override // Decimals always shown: 60 / 50 → "1.20".
+  int get decimals;
+  @override
+  @JsonKey(ignore: true)
+  _$$ComputedValueConfigImplCopyWith<_$ComputedValueConfigImpl> get copyWith =>
+      throw _privateConstructorUsedError;
 }
 
 ComparisonFilter _$ComparisonFilterFromJson(Map<String, dynamic> json) {

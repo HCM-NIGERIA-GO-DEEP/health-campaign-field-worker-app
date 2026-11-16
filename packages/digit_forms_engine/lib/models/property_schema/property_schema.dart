@@ -99,6 +99,11 @@ class PropertySchema with _$PropertySchema {
     // validation - e.g. bednets needed scales with household member count.
     @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
     DynamicScanLimitConfig? dynamicScanLimit,
+    // Read-only value worked out from a sibling field on the same page, e.g.
+    // a quantity in pieces shown in bales. Kept up to date as that field
+    // changes; the field is never editable.
+    @JsonKey(fromJson: _computedValueConfigOrNull)
+    ComputedValueConfig? computedValue,
   }) = _PropertySchema;
 
   factory PropertySchema.fromJson(Map<String, dynamic> json) =>
@@ -237,6 +242,11 @@ class SecondaryAlertBodyField with _$SecondaryAlertBodyField {
     List<Option>? enums,
     String? revealsFreeTextOn,
     String? revealedDetailLabel,
+    // A read-only row worked out from another body field as it is typed (e.g.
+    // the received quantity in bales). Not validated and not handed back on
+    // confirm.
+    @JsonKey(fromJson: _computedValueConfigOrNull)
+    ComputedValueConfig? computedValue,
   }) = _SecondaryAlertBodyField;
 
   factory SecondaryAlertBodyField.fromJson(Map<String, dynamic> json) =>
@@ -304,6 +314,22 @@ class DynamicScanLimitConfig with _$DynamicScanLimitConfig {
 
   factory DynamicScanLimitConfig.fromJson(Map<String, dynamic> json) =>
       _$DynamicScanLimitConfigFromJson(json);
+}
+
+@freezed
+class ComputedValueConfig with _$ComputedValueConfig {
+  @JsonSerializable(explicitToJson: true, includeIfNull: false)
+  const factory ComputedValueConfig({
+    // Field on the same page (or popup) holding the number, e.g. "quantity".
+    required String sourceField,
+    // Shown value = sourceField value / divideBy, e.g. 50 pieces per bale.
+    required num divideBy,
+    // Decimals always shown: 60 / 50 → "1.20".
+    @Default(2) int decimals,
+  }) = _ComputedValueConfig;
+
+  factory ComputedValueConfig.fromJson(Map<String, dynamic> json) =>
+      _$ComputedValueConfigFromJson(json);
 }
 
 @freezed
@@ -432,6 +458,20 @@ DynamicScanLimitConfig? _dynamicScanLimitConfigOrNull(dynamic value) {
     return DynamicScanLimitConfig.fromJson(Map<String, dynamic>.from(value));
   }
   return null;
+}
+
+// A malformed entry (missing sourceField, divideBy as text) is dropped rather
+// than thrown: a throw here fails the whole page schema, not just this field.
+ComputedValueConfig? _computedValueConfigOrNull(dynamic value) {
+  if (value is! Map || value['sourceField'] is! String || value['divideBy'] is! num) {
+    return null;
+  }
+  final decimals = value['decimals'];
+  return ComputedValueConfig(
+    sourceField: value['sourceField'] as String,
+    divideBy: value['divideBy'] as num,
+    decimals: decimals is int ? decimals : 2,
+  );
 }
 
 enum FormulaBehavior { show, hide }

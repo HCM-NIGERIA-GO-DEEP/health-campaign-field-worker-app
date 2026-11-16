@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../utils/context_utility.dart';
+import '../../utils/numbered_scans.dart';
 import '../../utils/utils.dart';
 import '../action_config.dart';
 import 'action_executor.dart';
@@ -383,6 +384,13 @@ class UpdateExecutor extends ActionExecutor {
               parts[2] == 'fields') {
             // Deep: "EntityType.additionalFields.fields.fieldKey"
             additionalFieldUpdates[parts[3]] = entry.value;
+          } else if (parts.length == 3 &&
+              parts[0] == entityType &&
+              parts[1] == 'additionalFields' &&
+              parts[2] == numberedScansModifyField) {
+            // "EntityType.additionalFields.numberedScans": one field per
+            // scanned code (baleScannedStock1, piecesScannedStock1, …).
+            additionalFieldUpdates.addAll(numberedScanFields(entry.value));
           }
         }
 

@@ -27,6 +27,7 @@ import '../utils/screen_protection_manager.dart';
 import '../utils/utils.dart';
 import '../helper/form_page_navigation_registry.dart';
 import '../helper/next_page_alert.dart';
+import '../helper/secondary_popup_values.dart';
 import '../widgets/multi_entity_tab_view.dart';
 import '../widgets/scanner_comparison_provider.dart';
 
@@ -1134,6 +1135,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                       schema,
                                       localizations,
                                       widget.onSecondaryAction!,
+                                      pageValues: formGroup.value,
                                     );
                                   } else {
                                     widget.onSecondaryAction!();
@@ -1512,6 +1514,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                               schema,
                               localizations,
                               widget.onSecondaryAction!,
+                              pageValues: formGroup.value,
                             );
                           } else {
                             widget.onSecondaryAction!();
@@ -2004,8 +2007,9 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     BuildContext context,
     PropertySchema schema,
     dynamic localizations,
-    void Function({Map<String, dynamic>? popupData}) onConfirm,
-  ) {
+    void Function({Map<String, dynamic>? popupData}) onConfirm, {
+    Map<String, dynamic>? pageValues,
+  }) {
     final popUpConfig = schema.showSecondaryAlertPopUp!;
     final bodyFields = popUpConfig.body ?? [];
 
@@ -2065,6 +2069,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
     /// Null when the field is acceptable, otherwise the reason it is not.
     String? validate(SecondaryAlertBodyField field) {
+      // A computed row only shows another field's value; nothing to check.
+      if (isComputedPopupField(field)) return null;
       final value = (values[field.fieldName] ?? '').trim();
       final label = popupText(field.label);
 
@@ -2116,12 +2122,21 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                   final isFieldReadOnly = isUpperPartialAccept &&
                       field.fieldName == 'discrepancyReason';
 
+                  final isComputed = isComputedPopupField(field);
+
                   final fieldWidget = Padding(
                     padding: const EdgeInsets.only(top: spacer2),
                     child: LabeledField(
                       label: popupText(field.label),
-                      isRequired: field.mandatory,
-                      child: isDropdown(field)
+                      isRequired: field.mandatory && !isComputed,
+                      child: isComputed
+                          // Greyed out; follows the typed source field, since
+                          // every keystroke rebuilds the popup.
+                          ? DigitTextFormInput(
+                              readOnly: true,
+                              initialValue: computedPopupText(field, values),
+                            )
+                          : isDropdown(field)
                           ? DigitDropdown<String>(
                               readOnly: isFieldReadOnly,
                               items: (field.enums ?? [])
@@ -2215,14 +2230,12 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                       });
                       return;
                     }
-                    final popupData = <String, dynamic>{
-                      for (final field in bodyFields) ...{
-                        field.fieldName: (values[field.fieldName] ?? '').trim(),
-                        if (freeTextRevealed(field))
-                          '${field.fieldName}Detail':
-                              (values['${field.fieldName}Detail'] ?? '').trim(),
-                      },
-                    };
+                    final popupData = secondaryPopupData(
+                      bodyFields,
+                      values,
+                      pageName: widget.pageName,
+                      pageValues: pageValues,
+                    );
                     Navigator.of(ctx, rootNavigator: true).pop();
                     onConfirm(popupData: popupData);
                   },

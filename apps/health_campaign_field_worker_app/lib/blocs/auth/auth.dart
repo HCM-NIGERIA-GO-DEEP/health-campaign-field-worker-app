@@ -16,7 +16,6 @@ import '../../models/auth/auth_model.dart';
 import '../../models/entities/roles_type.dart';
 import '../../models/role_actions/role_actions_model.dart';
 import '../../services/device_id_service.dart';
-import '../../services/logout_sql_cleanup.dart';
 import '../../utils/constants.dart';
 import '../../utils/environment_config.dart';
 import '../../utils/function_registries.dart';
@@ -163,33 +162,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   // ensureOnlineOrAlert) — if the API call still fails here, the local
   // session is left untouched so the user stays logged in.
   FutureOr<void> _onLogout(AuthLogoutEvent event, AuthEmitter emit) async {
-    // _deleteUserLocalDatabaseData() clears session SQL tables plus the entire
-    // opLog outbox. Previously this ran unconditionally on every logout,
-    // permanently destroying any record still waiting to be uploaded with no
-    // way to recover it. A later fix blocked logout entirely whenever
-    // pending records existed - but that left users stuck on this screen
-    // (e.g. no connectivity to sync, or a sync that keeps failing), and the
-    // only workaround support had was to manually clear app data, which lost
-    // the same data this was meant to protect. Product decision: never block
-    // logout. Skip the local wipe when there's unsynced data instead, so it
-    // survives on disk across the session boundary - the next login then
-    // shows a "you have pending records" reminder (see
-    // AuthenticatedPageWrapper's pending-sync check) instead of silently
-    // discarding it.
-    final userObject = await localSecureStore.userRequestModel;
-    final currentUserUuid = userObject?.uuid;
-    var hasPendingRecords = false;
-    if (currentUserUuid != null && currentUserUuid.isNotEmpty) {
-      final pendingCount = await isar.opLogs
-          .filter()
-          .createdByEqualTo(currentUserUuid)
-          .syncedUpEqualTo(false)
-          .not()
-          .operationEqualTo(DataOperation.search)
-          .count();
-      hasPendingRecords = pendingCount > 0;
-    }
-
+    // Logout ends the session only; it never deletes the local database or
+    // the opLog outbox. Devices are shared between roles (a registrar and a
+    // distributor on one phone), and wiping on logout left the next user with
+    // no beneficiaries, so proximity/name search found nothing. The wipe also
+    // ignored other users' unsynced records, because the pending check only
+    // looked at the current user. Each user's unsynced records stay on disk
+    // and the next login shows the pending-sync reminder
+    // (AuthenticatedPageWrapper).
     try {
       final payload = await _buildLogoutPayload();
       if (payload['access_token'] == null ||
@@ -219,11 +199,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return;
     }
 
-    if (!hasPendingRecords) {
-      await _deleteUserLocalDatabaseData();
-    }
-    // In-memory only - safe to clear unconditionally regardless of
-    // hasPendingRecords. Without this, a stale balance map from this
+    // In-memory only. Without this, a stale balance map from this
     // session's facility silently carries over into the next login,
     // which matters when a different role/facility logs in on the same
     // device right after (see StockBalanceCache's facility-mismatch guard
@@ -322,17 +298,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         'plainAccessRequest': {},
       },
     };
-  }
-
-  Future<void> _deleteUserLocalDatabaseData() async {
-    await clearLogoutSqlTables(sql);
-    await _clearIsarUserSessionData();
-  }
-
-  Future<void> _clearIsarUserSessionData() async {
-    await isar.writeTxn(() async {
-      await isar.opLogs.clear();
-    });
   }
 
   FutureOr<void> _onReset(AuthResetEvent event, AuthEmitter emit) async {
