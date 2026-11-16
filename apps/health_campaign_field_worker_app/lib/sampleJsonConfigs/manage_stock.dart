@@ -1085,6 +1085,26 @@ final dynamic sampleInventoryFlows ={
                 {
                   "code": "JEEP",
                   "name": "INVENTORY_TRANSPORT_TYPE_JEEP"
+                },
+                {
+                  "code": "CANOE",
+                  "name": "INVENTORY_TRANSPORT_TYPE_CANOE"
+                },
+                {
+                  "code": "KEKEH",
+                  "name": "INVENTORY_TRANSPORT_TYPE_KEKEH"
+                },
+                {
+                  "code": "MOTORBIKE",
+                  "name": "INVENTORY_TRANSPORT_TYPE_MOTORBIKE"
+                }
+              ],
+              "mandatory": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "INVENTORY_TRANSPORT_TYPE_REQUIRED_MESSAGE"
                 }
               ]
             },
@@ -1100,6 +1120,7 @@ final dynamic sampleInventoryFlows ={
               "infoText": "",
               "readOnly": false,
               "fieldName": "vehicleNumber",
+              "mandatory": true,
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
@@ -1107,6 +1128,11 @@ final dynamic sampleInventoryFlows ={
               "isMultiSelect": false,
               "enums": null,
               "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "INVENTORY_VEHICLE_NUMBER_REQUIRED_MESSAGE"
+                },
                 {
                   "type": "pattern",
                   "value": r"^[a-zA-Z0-9 ]+$",
@@ -1131,7 +1157,15 @@ final dynamic sampleInventoryFlows ={
               "systemDate": false,
               "errorMessage": "",
               "isMultiSelect": false,
-              "enums": null
+              "enums": null,
+              "mandatory": true,
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "INVENTORY_WAYBILL_NUMBER_REQUIRED_MESSAGE"
+                }
+              ]
             }
           ],
           "value": null,
@@ -3460,6 +3494,11 @@ final dynamic sampleInventoryFlows ={
               "visibilityCondition": {},
               "validations": [
                 {
+                  "type": "required",
+                  "value": true,
+                  "message": "INVENTORY_WAYBILL_NUMBER_REQUIRED_MESSAGE"
+                },
+                {
                   "type": "minLength",
                   "value": "3",
                   "message": "INVENTORY_TEXT_MIN_LENGTH_ERROR_MESSAGE"
@@ -3467,7 +3506,8 @@ final dynamic sampleInventoryFlows ={
               ],
               "errorMessage": "",
               "isMultiSelect": false,
-              "enums": null
+              "enums": null,
+              "mandatory": true
             },
             {
               "type": "integer",
