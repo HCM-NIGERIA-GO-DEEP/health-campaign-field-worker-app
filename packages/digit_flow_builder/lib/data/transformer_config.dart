@@ -1183,7 +1183,8 @@ final jsonConfig = {
             "discrepancyReason": "__context:discrepancyReason",
             "wayBillNumber": "__context:wayBillNumber",
             "primaryRole": "__context:primaryRole",
-            "secondaryRole": "__context:secondaryRole"
+            "secondaryRole": "__context:secondaryRole",
+            "balesQuantity": "__context:balesQuantity"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",

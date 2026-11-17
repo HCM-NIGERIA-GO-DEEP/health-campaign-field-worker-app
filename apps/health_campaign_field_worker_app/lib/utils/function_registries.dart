@@ -10,6 +10,7 @@ import 'package:digit_flow_builder/blocs/app_localization.dart';
 import 'package:digit_flow_builder/blocs/wrapper/value_resolver.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/utils/function_registry.dart';
+import 'package:digit_forms_engine/utils/computed_value.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -133,6 +134,23 @@ class FunctionRegistries {
       return difference == difference.roundToDouble()
           ? difference.toInt()
           : difference;
+    });
+
+    // Pieces → bales with 2 decimals: toBales(pieces, piecesPerBale[, minus]),
+    // e.g. toBales(297, 50, 100) = "3.94". piecesPerBale comes from config so
+    // it can change. `minus` exists because config fn args cannot nest a
+    // two-argument fn (the arg splitter cuts at every comma). '' when not
+    // computable.
+    FunctionRegistry.register('toBales', (args, stateData) {
+      if (args.length < 2) return '';
+      num? toNum(dynamic raw) =>
+          raw is num ? raw : num.tryParse(raw?.toString().trim() ?? '');
+      num? pieces = toNum(args[0]);
+      if (args.length > 2) {
+        final minus = toNum(args[2]);
+        pieces = pieces == null || minus == null ? null : pieces - minus;
+      }
+      return divideForDisplay(pieces, toNum(args[1]) ?? 0, 2) ?? '';
     });
 
     // Prefer the preserved dispatch quantity for historical records whose

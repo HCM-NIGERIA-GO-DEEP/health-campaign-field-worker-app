@@ -2980,6 +2980,10 @@ final dynamic sampleInventoryFlows = {
                   },
                   {"key": "quantity", "value": "{{navigation.quantity}}"},
                   {
+                    "key": "balesQuantity",
+                    "value": "{{fn:toBales(navigation.quantity, 50)}}"
+                  },
+                  {
                     "key": "mrnNumber",
                     "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
                   },
@@ -3204,6 +3208,10 @@ final dynamic sampleInventoryFlows = {
                     "value": "{{formData.actualQuantityReceived}}"
                   },
                   {
+                    "key": "balesQuantity",
+                    "value": "{{fn:toBales(formData.actualQuantityReceived, 50)}}"
+                  },
+                  {
                     "key": "mrnNumber",
                     "value": "{{fn:generateUniqueMaterialNoteNumber()}}"
                   },
@@ -3294,6 +3302,10 @@ final dynamic sampleInventoryFlows = {
                     "key": "quantity",
                     "value":
                         "{{fn:subtractQuantity(navigation.quantity, formData.actualQuantityReceived)}}"
+                  },
+                  {
+                    "key": "balesQuantity",
+                    "value": "{{fn:toBales(navigation.quantity, 50, formData.actualQuantityReceived)}}"
                   },
                   {
                     "key": "mrnNumber",
@@ -3580,6 +3592,10 @@ final dynamic sampleInventoryFlows = {
                     "key": "quantity",
                     "value":
                         "{{fn:subtractQuantity(navigation.quantity, formData.actualQuantityReceived)}}"
+                  },
+                  {
+                    "key": "balesQuantity",
+                    "value": "{{fn:toBales(navigation.quantity, 50, formData.actualQuantityReceived)}}"
                   },
                   {
                     "key": "mrnNumber",
