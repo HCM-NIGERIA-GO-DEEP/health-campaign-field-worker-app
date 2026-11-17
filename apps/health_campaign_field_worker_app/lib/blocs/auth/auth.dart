@@ -162,22 +162,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   // ensureOnlineOrAlert) — if the API call still fails here, the local
   // session is left untouched so the user stays logged in.
   FutureOr<void> _onLogout(AuthLogoutEvent event, AuthEmitter emit) async {
-    // Preserve the local database if any records are still waiting to sync.
-    // Users can log out; the next login can continue syncing the retained data.
-    final userObject = await localSecureStore.userRequestModel;
-    final currentUserUuid = userObject?.uuid;
-    var hasPendingRecords = false;
-    if (currentUserUuid != null && currentUserUuid.isNotEmpty) {
-      final pendingCount = await isar.opLogs
-          .filter()
-          .createdByEqualTo(currentUserUuid)
-          .syncedUpEqualTo(false)
-          .not()
-          .operationEqualTo(DataOperation.search)
-          .count();
-      hasPendingRecords = pendingCount > 0;
-    }
-
+    // Logout ends the session only; it never deletes the local database or
+    // the opLog outbox. Devices are shared between roles (a registrar and a
+    // distributor on one phone), and wiping on logout left the next user with
+    // no beneficiaries, so proximity/name search found nothing. The wipe also
+    // ignored other users' unsynced records, because the pending check only
+    // looked at the current user. Each user's unsynced records stay on disk
+    // and the next login shows the pending-sync reminder
+    // (AuthenticatedPageWrapper).
     try {
       final payload = await _buildLogoutPayload();
       if (payload['access_token'] == null ||
@@ -227,9 +219,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       return;
     }
 
-    if (!hasPendingRecords) {
-      await _deleteUserLocalDatabaseData();
-    }
     StockBalanceCache.instance.clear();
     await localSecureStore.deleteAll();
     await localSecureStore.setBoundaryRefetch(true);
@@ -324,50 +313,6 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         'plainAccessRequest': {},
       },
     };
-  }
-
-  Future<void> _deleteUserLocalDatabaseData() async {
-    await _clearSqlTables();
-    await _clearIsarUserSessionData();
-  }
-
-  Future<void> _clearSqlTables() async {
-    await sql.transaction(() async {
-      await sql.customStatement('PRAGMA foreign_keys = OFF;');
-      try {
-        final tables = await sql
-            .customSelect(
-              "SELECT name FROM sqlite_master WHERE type = 'table' "
-              "AND name NOT LIKE 'sqlite_%' "
-              "AND name != 'moor_schema' "
-              "AND LOWER(name) != 'localization' "
-              // Beneficiary IDs are a pool DOWNLOADED from the server and
-              // allocated to THIS device - not session data. Wiping the
-              // table on logout meant the pool count read zero on the next
-              // login, and refilling it needs connectivity plus a fresh
-              // server allocation, which a field user may not have. Rows
-              // already marked ASSIGNED keep that status, so preserving the
-              // table cannot re-issue an id that was already used.
-              "AND LOWER(name) != 'unique_id_pool';",
-            )
-            .get();
-
-        for (final row in tables) {
-          final tableName = row.data['name'] as String?;
-          if (tableName == null || tableName.isEmpty) continue;
-          final escaped = tableName.replaceAll('"', '""');
-          await sql.customStatement('DELETE FROM "$escaped";');
-        }
-      } finally {
-        await sql.customStatement('PRAGMA foreign_keys = ON;');
-      }
-    });
-  }
-
-  Future<void> _clearIsarUserSessionData() async {
-    await isar.writeTxn(() async {
-      await isar.opLogs.clear();
-    });
   }
 
   FutureOr<void> _onReset(AuthResetEvent event, AuthEmitter emit) async {
