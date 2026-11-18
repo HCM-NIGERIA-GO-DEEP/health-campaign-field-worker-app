@@ -1625,10 +1625,10 @@ final jsonConfig = {
   // isEdit reopen path already expects to find and update. Sourced from our
   // own "beneficiaryLocation"/"caregiverConsent" pages instead of
   // CLOSEHOUSEHOLD.json's "closeHouseholdDetails" page. givenName/familyName
-  // come from caregiverConsent's own (optional) nameOfIndividual/familyname
-  // fields - same opportunistic capture Closed Household already does via
-  // headName/familyname, so a name isn't lost just because consent was
-  // declined before the full registration interview happened.
+  // come from caregiverConsent's own nameOfIndividual/familyname fields
+  // (required when consent is declined, SL QA 2026-11-18), so a name isn't
+  // lost just because consent was declined before the full registration
+  // interview happened.
   "householdConsentDeclinedRegistration": {
     "fallbackModel": "HouseholdModel",
     "models": {
@@ -1699,13 +1699,10 @@ final jsonConfig = {
           "name": {
             "individualClientReferenceId":
                 "__ref:IndividualModel.clientReferenceId",
-            // Optional on this page (no full registration interview happens
-            // before consent) - caregiverConsent.nameOfIndividual/familyname
-            // are the same optional fields Closed Household's
-            // headName/familyname already model this scenario with. Resolve
-            // to null when left blank, same as before this field existed;
-            // the full Registration flow's mandatory name fields are the
-            // durable source once consent becomes Yes.
+            // Required on the caregiverConsent page when consent is declined
+            // (SL QA 2026-11-18); configs that still leave them optional
+            // resolve to null when blank. The full Registration flow's name
+            // fields are the durable source once consent becomes Yes.
             "givenName": "caregiverConsent.nameOfIndividual",
             "familyName": "caregiverConsent.familyname",
             "clientAuditDetails": "__generate:clientAudit",

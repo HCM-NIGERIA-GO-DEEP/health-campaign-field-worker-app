@@ -861,7 +861,7 @@
     "module": "hcm-registration-CMP-2026-10-12-001274",
     "locale": "en_NG",
     "code": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_maxField_message",
-    "message": "Number of children cannot exceed total household members"
+    "message": "Number of children must be less than the total number of household members"
   },
   {
     "module": "hcm-registration-CMP-2026-10-12-001274",

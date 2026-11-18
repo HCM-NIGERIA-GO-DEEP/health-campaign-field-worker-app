@@ -14,6 +14,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:gs1_barcode_parser/gs1_barcode_parser.dart';
 import 'package:health_campaign_field_worker_app/sampleJsonConfigs/manage_stock.dart';
+import 'package:health_campaign_field_worker_app/utils/function_registries.dart';
 
 /// Sierra Leone ITN: bales and nets scanned on the stock Accept screen must
 /// be saved on the record that is actually stored. Accepting stock UPDATES
@@ -158,6 +159,32 @@ void main() {
       expect(row.quantity, '60');
     });
 
+    testWidgets('codes typed on manual entry go under <saveKey>Manual keys',
+        (tester) async {
+      // QA 2026-11-18: a typed bale and a typed net were saved as
+      // baleScannedStock2 / piecesScannedStock2, like camera scans.
+      final typedBale =
+          typedManualCode('123456789987654321', rules.first, rules)!;
+      final typedNet = typedManualCode('manualpieces9700', rules.last, rules)!;
+      // What the scanner page does on manual entry.
+      markManualCode(typedBale);
+      markManualCode(typedNet);
+      final mixed = encodeScannedStock([
+        scannedStockEntryFor(parser.parse('00176402178112799276'), rules)!,
+        scannedStockEntryFor(typedBale, rules)!,
+        scannedStockEntryFor(typedNet, rules)!,
+      ]);
+
+      final fields = fieldsOf(await run(tester, acceptUpdate(), {
+        'stockReceiptDetails': {'scannedStock': mixed},
+      }));
+      expect(fields['baleScannedStock1'], '(00)176402178112799276');
+      expect(fields['baleScannedStockManual1'], '(00)123456789987654321');
+      expect(fields['piecesScannedStockManual1'], '(21)manualpieces9700');
+      expect(fields.keys, isNot(contains('baleScannedStock2')));
+      expect(fields.keys, isNot(contains('piecesScannedStock1')));
+    });
+
     testWidgets('Accept with nothing scanned adds no scan keys',
         (tester) async {
       final row = await run(tester, acceptUpdate(), {
@@ -196,6 +223,35 @@ void main() {
       expect(fields['status'], 'ACCEPTED');
       expect(fields.keys, isNot(contains('bales')));
       expect(fields.keys, isNot(contains('scannedStock')));
+    });
+
+    testWidgets('Partially accept saves the received bales next to the pieces',
+        (tester) async {
+      await tester.pumpWidget(Builder(builder: (context) {
+        FunctionRegistries(context).registerAll();
+        return const SizedBox();
+      }));
+      final partial = dispatchUpdates().firstWhere((u) =>
+          u.key.startsWith('Partially accept') &&
+          !u.key.contains('RETURNED'));
+      final formData = secondaryPopupData(
+        const [
+          SecondaryAlertBodyField(
+              type: 'integer',
+              label: 'QTY',
+              fieldName: 'actualQuantityReceived',
+              mandatory: true),
+        ],
+        {'actualQuantityReceived': '40'},
+        pageName: 'stockReceiptDetails',
+        pageValues: const {},
+      );
+
+      final row = await run(tester, partial.value, formData);
+      final fields = fieldsOf(row);
+      expect(fields['actualQuantityReceived'], '40');
+      expect(fields['actualBalesReceived'], '0.80');
+      expect(row.quantity, '60', reason: 'quantity stays as dispatched');
     });
   });
 }

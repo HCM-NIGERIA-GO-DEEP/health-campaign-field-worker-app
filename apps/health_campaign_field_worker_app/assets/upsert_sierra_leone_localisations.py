@@ -360,6 +360,43 @@ MESSAGES_BY_MODULE = {
         # Shown to Distributors in place of HOME_HOUSE_TO_HOUSE_LABEL, which
         # stays as-is for Registrars.
         "HOME_DISTRIBUTION_POINT_LABEL": "Distribution point",
+
+        # QA sheet 2026-11-18. childrenCount's rule is maxField memberCount
+        # with offset -1 (children <= members - 1), so "cannot exceed" was
+        # wrong when children == members.
+        "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_maxField_message":
+            "Number of children must be less than the total number of household members",
+        # caregiverConsent First/Last name are now required when consent is No.
+        "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_mandatory_message":
+            "First name is required",
+        "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_lastName_mandatory_message":
+            "Last name is required",
+    },
+
+    # QA sheet 2026-11-18. Bale row + bale/piece scanner on the Accept screen
+    # (stockReceiptDetails, INVENTORY.json) showed raw codes.
+    f"hcm-inventory-{CAMPAIGN}": {
+        "INVENTORY_QUANTITY_IN_BALES_LABEL": "Quantity (in bales)",
+        "INVENTORY_QUANTITY_IN_BALES_HELPTEXT": "Worked out from the quantity in pieces",
+        "INVENTORY_PARTIAL_ACCEPT_QUANTITY_IN_BALES_LABEL": "Actual Quantity Received (in bales)",
+        "INVENTORY_SCAN_STOCK_LABEL": "Scan Bales / Pieces",
+        "INVENTORY_SCAN_STOCK_HELPTEXT": "Scan or enter the code of each bale or piece received",
+        "INVENTORY_SCAN_TYPE_BALE": "Bale",
+        "INVENTORY_SCAN_TYPE_PIECE": "Piece",
+        "INVENTORY_SCAN_UNKNOWN_STOCK_CODE": "This code is not a bale or a piece code",
+    },
+
+    # COMPLAINTS.json contactNumber pattern ^0\d{9}$.
+    f"hcm-complaints-{CAMPAIGN}": {
+        "MOBILE_NUMBER_START_WITH_ZERO_ERROR": "Mobile number must start with 0",
+        "MOBILE_LENGTH_10_DIGIT": "Mobile number must be 10 digits",
+        # supervisorContactNumber uses the plural spelling.
+        "MOBILE_LENGTH_10_DIGITS": "Mobile number must be 10 digits",
+    },
+
+    # Manual-entry type picker on the bale/piece scanner (digit_scanner).
+    "hcm-scanner": {
+        "SCANNER_MANUAL_SCAN_TYPE": "Code type",
     },
 }
 

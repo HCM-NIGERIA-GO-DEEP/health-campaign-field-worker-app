@@ -39,7 +39,22 @@ class ScanTypeRule {
 
   /// Localization key shown for this kind.
   final String? label;
+
+  /// Whether a stored saveKey is this rule's, scanned or typed by hand.
+  bool owns(String key) =>
+      key == saveKey || key == '$saveKey$manualSaveKeySuffix';
 }
+
+/// Appended to a rule's saveKey for codes typed on manual entry, so they are
+/// saved apart from camera scans: baleScannedStockManual1, …
+const manualSaveKeySuffix = 'Manual';
+
+final _manualCodes = Expando<bool>('manualCode');
+
+/// Marks [code] as typed on manual entry rather than scanned.
+void markManualCode(GS1Barcode code) => _manualCodes[code] = true;
+
+bool isManualCode(GS1Barcode code) => _manualCodes[code] ?? false;
 
 /// Rules from a `scanTypes` validation value. Entries without a type, ai or
 /// saveKey are dropped; anything that is not a list gives no rules.
@@ -309,7 +324,9 @@ ScannedStockEntry? scannedStockEntryFor(
   final rule = classifyScan(code, rules);
   if (rule == null) return null;
   return ScannedStockEntry(
-    saveKey: rule.saveKey,
+    saveKey: isManualCode(code)
+        ? '${rule.saveKey}$manualSaveKeySuffix'
+        : rule.saveKey,
     code: gs1HumanReadable(code),
     raw: gs1ElementString(code),
   );
@@ -348,7 +365,9 @@ List<GS1Barcode> barcodesFromScannedStock(String? value) {
   final barcodes = <GS1Barcode>[];
   for (final entry in decodeScannedStock(value)) {
     try {
-      barcodes.add(parser.parse(entry.raw));
+      final code = parser.parse(entry.raw);
+      if (entry.saveKey.endsWith(manualSaveKeySuffix)) markManualCode(code);
+      barcodes.add(code);
     } catch (_) {
       // A stored code that cannot be parsed is skipped.
     }
@@ -362,6 +381,6 @@ Map<String, int> scannedStockCounts(String? value, List<ScanTypeRule> rules) {
   final entries = decodeScannedStock(value);
   return {
     for (final rule in rules)
-      rule.type: entries.where((e) => e.saveKey == rule.saveKey).length,
+      rule.type: entries.where((e) => rule.owns(e.saveKey)).length,
   };
 }

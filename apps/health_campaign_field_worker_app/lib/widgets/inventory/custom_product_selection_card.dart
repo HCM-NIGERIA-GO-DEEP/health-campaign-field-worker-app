@@ -22,6 +22,25 @@ import '../../utils/extensions/extensions.dart';
 import '../../utils/stock_calculation_utils.dart';
 import '../localized.dart';
 
+/// Whose stock a distributor's Loss/Excess is checked against: their own uuid.
+/// warehouseDetails.facilityToWhich is the PARENT warehouse there (balance 0,
+/// QA 2026-11-18 "no stock available" with 115 in hand), while the Loss is
+/// sent from the uuid (getStockLessExcessPartyValue) and the home stock card
+/// balances the uuid. Null = not this case, use the usual lookup.
+String? lessExcessStockHolderId({
+  required Map<dynamic, dynamic> navigationParams,
+  required bool isDistributor,
+  required String? userUuid,
+}) {
+  if (navigationParams['stockEntryType']?.toString() != 'LESS_EXCESS' ||
+      !isDistributor ||
+      userUuid == null ||
+      userUuid.isEmpty) {
+    return null;
+  }
+  return userUuid;
+}
+
 class ProductSelectionCard extends LocalizedStatefulWidget {
   final dynamic stateData;
   final String pageSchema;
@@ -125,6 +144,14 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
     final isIssue =
         transactionType == 'DISPATCHED' || transactionType == 'ISSUED';
     final isReturn = transactionType == 'RETURNED';
+
+    final lessExcessHolder = lessExcessStockHolderId(
+      navigationParams: navigationParams,
+      isDistributor: context.loggedInUserRoles
+          .any((r) => r.code == RolesType.distributor.toValue()),
+      userUuid: context.loggedInUserUuid,
+    );
+    if (lessExcessHolder != null) return lessExcessHolder;
 
     // For issue, use current user's facility directly
     if (isIssue || isReturn) {

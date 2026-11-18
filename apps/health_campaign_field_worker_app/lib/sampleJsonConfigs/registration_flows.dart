@@ -5401,12 +5401,9 @@ final dynamic sampleFlows = {
               "innerLabel": "",
               "schemaCode": null,
               "systemDate": false,
-              // Optional, same as Closed Household's headName/familyname -
-              // declining consent means no full registration interview
-              // happened, so there's no reliable source for a name yet. Only
-              // shown/collected when consent is declined; the full
-              // Registration flow's own (mandatory) name fields are what
-              // capture it once consent later becomes Yes.
+              // Required when consent is declined (SL QA 2026-11-18). Hidden
+              // on Yes, and a hidden field's rules are dropped
+              // (VisibilityManager), so Yes is not blocked.
               "visibilityCondition": {
                 "expression": [
                   {
@@ -5416,6 +5413,11 @@ final dynamic sampleFlows = {
                 ]
               },
               "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_nameOfIndividual_mandatory_message"
+                },
                 {
                   "type": "minLength",
                   "value": "2",
@@ -5458,6 +5460,11 @@ final dynamic sampleFlows = {
                 ]
               },
               "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_lastName_mandatory_message"
+                },
                 {
                   "type": "minLength",
                   "value": "2",

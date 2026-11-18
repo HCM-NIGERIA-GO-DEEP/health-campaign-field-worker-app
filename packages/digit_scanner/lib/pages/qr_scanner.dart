@@ -717,6 +717,8 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
                                   );
                                   return;
                                 }
+                                // Saved under <saveKey>Manual, apart from scans.
+                                markManualCode(typed);
                                 parsed = typed;
                               } else {
                                 // Keep GS1 payload valid while collecting only serial from UI.

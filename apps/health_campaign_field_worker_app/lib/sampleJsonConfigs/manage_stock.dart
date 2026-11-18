@@ -2739,6 +2739,10 @@ final dynamic sampleInventoryFlows = {
                 "value": "{{navigation.quantity}}"
               },
               {
+                "key": "StockModel.additionalFields.fields.actualBalesReceived",
+                "value": "{{fn:toBales(navigation.quantity, 50)}}"
+              },
+              {
                 "key": "StockModel.additionalFields.fields.status",
                 "value": "ACCEPTED"
               },
@@ -2805,6 +2809,10 @@ final dynamic sampleInventoryFlows = {
                     "value": "0"
                   },
                   {
+                    "key": "StockModel.additionalFields.fields.actualBalesReceived",
+                    "value": "0.00"
+                  },
+                  {
                     "key": "StockModel.transactionReason",
                     "value": "STOCK_DAMAGE"
                   }
@@ -2869,6 +2877,10 @@ final dynamic sampleInventoryFlows = {
                     "key":
                         "StockModel.additionalFields.fields.actualQuantityReceived",
                     "value": "0"
+                  },
+                  {
+                    "key": "StockModel.additionalFields.fields.actualBalesReceived",
+                    "value": "0.00"
                   },
                   {
                     "key": "StockModel.additionalFields.fields.stockEntryType",
@@ -3141,6 +3153,10 @@ final dynamic sampleInventoryFlows = {
                         "StockModel.additionalFields.fields.actualQuantityReceived",
                     "value":
                         "{{fn:safeString(formData.actualQuantityReceived)}}"
+                  },
+                  {
+                    "key": "StockModel.additionalFields.fields.actualBalesReceived",
+                    "value": "{{fn:toBales(formData.actualQuantityReceived, 50)}}"
                   },
                   {
                     "key":
@@ -3464,6 +3480,10 @@ final dynamic sampleInventoryFlows = {
                         "StockModel.additionalFields.fields.actualQuantityReceived",
                     "value":
                         "{{fn:safeString(formData.actualQuantityReceived)}}"
+                  },
+                  {
+                    "key": "StockModel.additionalFields.fields.actualBalesReceived",
+                    "value": "{{fn:toBales(formData.actualQuantityReceived, 50)}}"
                   },
                   {
                     "key":

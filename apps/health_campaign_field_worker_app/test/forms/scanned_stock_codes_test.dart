@@ -162,6 +162,23 @@ void main() {
       expect(decoded.map((e) => e.id), entries.map((e) => e.id));
     });
 
+    test('a typed code keeps its Manual key when the scanner reopens', () {
+      final typed = typedManualCode('123456789987654321', rules.first, rules)!;
+      markManualCode(typed);
+      final value = encodeScannedStock(
+          [entryOf(baleSscc), scannedStockEntryFor(typed, rules)!]);
+
+      // Reopening rebuilds the codes from the value, then saves them again.
+      final again = encodeScannedStock(barcodesFromScannedStock(value)
+          .map((code) => scannedStockEntryFor(code, rules)!)
+          .toList());
+      expect(decodeScannedStock(again).map((e) => e.saveKey),
+          ['baleScannedStock', 'baleScannedStockManual']);
+      expect(scannedStockCounts(again, rules), {'bale': 2, 'piece': 0});
+      expect(rules.first.owns('baleScannedStockManual'), isTrue);
+      expect(rules.last.owns('baleScannedStockManual'), isFalse);
+    });
+
     test('decoding skips blank or broken lines', () {
       expect(decodeScannedStock(null), isEmpty);
       expect(decodeScannedStock(''), isEmpty);

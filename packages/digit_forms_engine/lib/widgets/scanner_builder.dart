@@ -204,7 +204,7 @@ class JsonSchemaScannerBuilder extends JsonSchemaBuilder<String> {
         ? '-'
         : (rule.label != null ? loc.translate(rule.label!) : rule.type);
     ScanTypeRule? ruleFor(String saveKey) =>
-        rules.firstWhereOrNull((r) => r.saveKey == saveKey);
+        rules.firstWhereOrNull((r) => r.owns(saveKey));
 
     final entries = decodeScannedStock(formValue);
     final counts = scannedStockCounts(formValue, rules);
