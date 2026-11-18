@@ -41,6 +41,9 @@ class ProductSelectionCard extends LocalizedStatefulWidget {
 
 class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
   String get _productVariantKey => widget.formKey;
+
+  bool get _isNationalWarehouseManager => context.loggedInUserRoles
+      .any((role) => role.code == 'NATIONAL_WAREHOUSE_MANAGER');
   List<DropdownItem>? _prefilledOptions;
   Set<String>? _prefilledProductIds; // Store just the IDs for matching
   bool _initialized = false;
@@ -463,14 +466,18 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
             .where((v) => v.type != 'max' && v.type != 'maxValue')
             .toList();
 
+        // National warehouses have no upstream receipts; issue quantities
+        // use the absolute limit instead of the stock balance.
+        final skipStockCap =
+            _isNationalWarehouseManager && fieldName == 'quantitySent';
+        final effectiveMax = skipStockCap ? 10000000 : min(maxValue, 10000000);
         final newValidations = [
           ...filteredValidations,
-          // Always add max validation, even when stockInHand is 0
-          // This prevents entering any quantity when there's no stock
+          // Other transactions still require stock, including at zero balance.
           ValidationRule(
             type: 'max',
-            value: min(maxValue, 10000000),
-            message: maxValue > 10000000
+            value: effectiveMax,
+            message: skipStockCap || maxValue > 10000000
                 ? localizations
                     .translate('QUANTITY_CANNOT_EXCEED_STOCK_MAX_LIMIT_VALUE')
                 : maxValue > 0
@@ -484,8 +491,8 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
         // Create the entity-specific field schema with validation
         updatedProperties[entityFieldName] = baseFieldSchema.copyWith(
           validations: newValidations,
-          max: maxValue,
-          maxValue: maxValue,
+          max: effectiveMax,
+          maxValue: effectiveMax,
         );
       }
     }
