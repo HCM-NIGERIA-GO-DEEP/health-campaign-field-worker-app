@@ -1,3 +1,6 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:digit_flow_builder/data/transformer_config.dart';
 import 'package:digit_scanner/models/scanner_validation.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,10 +41,31 @@ void main() {
             (v as Map)['type'] as String: v['value'],
         };
 
-    test('is rendered - a hidden scanner captures nothing and gates nothing',
-        () {
-      expect(scanner['hidden'], isFalse);
+    // Reversed on request 2026-11-18 (SL): no ITN scan on delivery. Hidden
+    // means not rendered (so no Scan QR Code button and no red "Ensure that
+    // N ITNs..." banner, both drawn by the scanner field) and not counted by
+    // the Next gate in forms_render.dart. Set back to false to bring the
+    // scan back; the rest of the field config is kept for that.
+    test('is hidden - no scan button, no banner, Next is not gated', () {
+      expect(scanner['hidden'], isTrue);
       expect(scanner['format'], 'scanner');
+    });
+
+    test('the bundled JSON hides it too', () {
+      final delivery = ((jsonDecode(
+                  File('assets/configs/json/REGISTRATION.json')
+                      .readAsStringSync()
+                      .replaceFirst('﻿', ''))
+              as Map<String, dynamic>)['flows'] as List)
+          .cast<Map<String, dynamic>>()
+          .firstWhere((f) => f['name'] == 'DELIVERY');
+      final page = (delivery['pages'] as List)
+          .cast<Map<String, dynamic>>()
+          .firstWhere((p) => p['page'] == 'DeliveryDetails');
+      final jsonScanner = (page['properties'] as List)
+          .cast<Map<String, dynamic>>()
+          .firstWhere((p) => p['fieldName'] == 'scanner');
+      expect(jsonScanner['hidden'], isTrue);
     });
 
     test('is explicitly marked GS1', () {

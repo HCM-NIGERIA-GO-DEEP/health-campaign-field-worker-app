@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../blocs/flow_crud_bloc.dart';
 import '../../blocs/search_state_manager.dart';
+import '../../flow_builder.dart' show FlowRegistry;
 import '../../utils/interpolation.dart';
 import '../../widget_registry.dart';
 import '../action_config.dart';
@@ -100,13 +101,58 @@ class ClearStateExecutor extends ActionExecutor {
     if (triggerSearch) {
       final hasRemainingFilters =
           SearchStateManager().hasFiltersForScreen(compositeKey);
-      if (hasRemainingFilters) {
+      // Only on a household search is the boundary filter a scope the app
+      // adds itself; elsewhere (complaints inbox) the user picks a locality,
+      // and that filter is kept.
+      final primaryModel = FlowRegistry.getByName(
+                  compositeKey.split('::').first)?['wrapperConfig']
+              ?['searchConfig']?['primary']
+          ?.toString()
+          .toLowerCase();
+      final isHouseholdSearch =
+          primaryModel == 'household' || primaryModel == 'householdmodel';
+      final hasUserFilters = !isHouseholdSearch ||
+          SearchStateManager().hasUserFiltersForScreen(compositeKey);
+      if (hasRemainingFilters && !hasUserFilters) {
+        // Only the boundary scope filter is left: what the user searched for
+        // is gone, so there is nothing to search. Empty the list - otherwise
+        // the cards of the search that was just switched off stay on screen
+        // (QA SL 2026-11-18) - and drop the leftover so a later scroll
+        // refresh does not list the whole boundary.
+        SearchStateManager().removeFiltersByKeysForScreen(
+          compositeKey,
+          SearchStateManager.scopeOnlyFilterKeys.toList(),
+          triggerSearch: false,
+        );
+        final currentState = FlowCrudStateRegistry().get(compositeKey);
+        if (currentState != null) {
+          FlowCrudStateRegistry().update(
+            compositeKey,
+            FlowCrudState(
+              base: null,
+              stateWrapper: const [],
+              formData: currentState.formData,
+              widgetData: currentState.widgetData,
+              isLoading: false,
+            ),
+          );
+        }
+      } else if (hasRemainingFilters) {
+        final hasNamedSearch =
+            SearchStateManager().hasSearchCallback(compositeKey, searchName);
         SearchStateManager().updateFilters(
           compositeKey,
           searchName,
           [],
           triggerSearch: true,
         );
+        // A clear without a `name` asks for the "default" search, which a
+        // screen with only named searches never registers. Run one of the
+        // registered searches so the remaining filters (e.g. proximity) are
+        // applied instead of leaving the old result on screen.
+        if (!hasNamedSearch) {
+          SearchStateManager().runAnySearchForScreen(compositeKey);
+        }
       } else {
         SearchStateManager().updateFilters(
           compositeKey,

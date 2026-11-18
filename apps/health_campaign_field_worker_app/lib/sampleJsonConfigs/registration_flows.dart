@@ -3466,7 +3466,7 @@ final dynamic sampleFlows = {
               "order": 5,
               "value": "",
               "format": "scanner",
-              "hidden": false,
+              "hidden": true,
               "isMdms": false,
               "tooltip": "",
               "helpText": "",

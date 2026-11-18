@@ -351,6 +351,46 @@ class SearchStateManager {
     return false;
   }
 
+  /// Filter keys that only scope a search to where the user is working. Every
+  /// household search stores one next to what the user typed (and
+  /// SearchExecutor adds it when missing), so on its own it is not a search.
+  static const Set<String> scopeOnlyFilterKeys = {'localityBoundaryCode'};
+
+  /// True when the screen still holds a filter the user asked for, i.e. one
+  /// that is not just a scope filter (see [scopeOnlyFilterKeys]).
+  bool hasUserFiltersForScreen(String screenKey) {
+    final prefix = _screenKeyPrefix(screenKey);
+    for (final entry in _state.entries) {
+      if (!entry.key.startsWith(prefix)) continue;
+      final filters = entry.value['filters'] as List? ?? [];
+      for (final filter in filters) {
+        if (filter is! Map) continue;
+        if (!scopeOnlyFilterKeys.contains(filter['key']?.toString())) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  /// True when a search callback is registered under [searchName].
+  bool hasSearchCallback(String screenKey, String searchName) =>
+      _searchCallbacks.containsKey(_compositeKey(screenKey, searchName));
+
+  /// Runs ONE registered search of the screen (the first registered). Every
+  /// callback searches with the filters of all search names, so one is enough.
+  /// Returns false when the screen has no registered search.
+  bool runAnySearchForScreen(String screenKey) {
+    final prefix = _screenKeyPrefix(screenKey);
+    for (final key in _searchCallbacks.keys.toList()) {
+      if (key.startsWith(prefix)) {
+        _searchCallbacks[key]?.call();
+        return true;
+      }
+    }
+    return false;
+  }
+
   /// Update orderBy - only one active at a time, last one wins
   void updateOrderBy(
     String screenKey,

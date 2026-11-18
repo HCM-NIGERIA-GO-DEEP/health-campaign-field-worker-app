@@ -51,6 +51,8 @@ final jsonConfig = {
             "childrenCount": "householdDetails.childrenCount",
             "pregnantWomenCount": "householdDetails.pregnantWomenCount",
             "memberCount": "householdDetails.memberCount",
+            // Head name, also sent on the household (SL request 2026-11-18).
+            "householdName": "householdDetails.nameOfIndividual",
             "caregiverConsent": "caregiverConsent.consentToParticipate",
             "ACTION1": "registrationHealthTalkChecklist.ACTION1",
             "ACTION2": "registrationHealthTalkChecklist.ACTION2",

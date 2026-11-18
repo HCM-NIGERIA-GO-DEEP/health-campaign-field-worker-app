@@ -159,6 +159,26 @@ class FormEntityMapper {
     // Get unmapped form fields and merge into additionalDetails (same as create flow)
     final unmapped = _getUnmappedFields(formValues);
 
+    // The edit form also carries every stored additional field as a flat key
+    // (reverse transform). When such a key is mapped from a form path of
+    // another name (householdName <- householdDetails.nameOfIndividual) the
+    // flat copy is the OLD value and would overwrite the one just mapped, so
+    // a value the form supplied wins. Keys the form did not supply keep the
+    // old merge.
+    final mappedExtras = fallbackFormDataString == null
+        ? null
+        : modelsConfig[fallbackFormDataString]?['mappings']
+            ?['additionalFields'];
+    if (mappedExtras is Map) {
+      unmapped.removeWhere((key, _) {
+        final path = mappedExtras[key];
+        return path is String &&
+            !path.startsWith('__') &&
+            containsPathInFormData(path, formValues) &&
+            _getValueFromPath(formValues, path) != null;
+      });
+    }
+
     if (fallbackFormDataString != null && unmapped.isNotEmpty) {
       final fallbackModelName = fallbackFormDataString;
       final factory = DataConverterSingleton()
