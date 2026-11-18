@@ -1293,6 +1293,36 @@ class FunctionRegistries {
       return (isDistributor && !isWareHouseMgr) ? 'STAFF' : 'WAREHOUSE';
     });
 
+    // Team name saved on a shortfall return / re-issue record
+    // (additionalFields.deliveryTeamName). Those records are built from the
+    // record being accepted, not from a form with a team QR, so they used to
+    // carry no name and the receiver saw the sender's user uuid.
+    // args: [navigation.receivedFromName] - the team name on the record being
+    // accepted. The team on the new record is the same team: a distributor
+    // sends back what a warehouse issued to them, and a warehouse re-issues to
+    // the team that returned.
+    FunctionRegistry.register('getShortfallTeamName', (args, stateData) {
+      final parentName = args.isNotEmpty ? args.first?.toString() : null;
+      try {
+        final isDistributor = context.loggedInUserRoles
+                .any((role) => role.code == RolesType.distributor.toValue()) &&
+            !context.loggedInUserRoles.any(
+                (role) => role.code == RolesType.warehouseManager.toValue());
+        return shortfallTeamName(
+          senderIsTeam: isDistributor,
+          ownTeamCode: isDistributor ? context.loggedInUserTeamCode : '',
+          parentTeamName: parentName,
+        );
+      } catch (e) {
+        debugPrint('getShortfallTeamName error: $e');
+        return shortfallTeamName(
+          senderIsTeam: false,
+          ownTeamCode: '',
+          parentTeamName: parentName,
+        );
+      }
+    });
+
     // Same purpose as getUserPartyType, but for the OTHER party in a
     // shortfall/reissue exchange (carried forward as navigation.
     // senderFacilityId) - we don't have that party's role at hand, only
@@ -1603,13 +1633,6 @@ class FunctionRegistries {
         debugPrint('getCurrentFacilities error: $e');
         return <Map<String, dynamic>>[];
       }
-    });
-
-    FunctionRegistry.register('getFacilityName', (args, stateData) {
-      if (args.isEmpty) return '';
-      final facilityId = args.first?.toString() ?? '';
-      if (facilityId.isEmpty) return '';
-      return facilityId.contains('F') ? 'FAC_$facilityId' : facilityId;
     });
 
     FunctionRegistry.register('hasResults', (args, stateData) {
@@ -2000,6 +2023,41 @@ class FunctionRegistries {
       return result;
     }
 
+    // Sender shown on the Incoming Transactions card.
+    // args: [senderId, additionalFields.fields (optional)]
+    // A facility id keeps its FAC_ prefix, as before. Any other sender is a
+    // delivery team / distributor, recorded by user uuid: show the userName
+    // saved on the record, and fall back to the id when the record has none
+    // (older records, or a team QR that held only the uuid). The second
+    // argument may also be the name itself, which is how the SMC configs call
+    // this function. With one argument the result is what it always was, so a
+    // config that has not been updated shows no change.
+    FunctionRegistry.register('getFacilityName', (args, stateData) {
+      if (args.isEmpty) return '';
+      final facilityId = args.first?.toString() ?? '';
+      if (facilityId.isEmpty) return '';
+      if (facilityId.contains('F')) return 'FAC_$facilityId';
+      final source = args.length > 1 ? args[1] : null;
+      var teamName = '';
+      if (source is String) {
+        final text = source.trim();
+        // An unresolved config path or a stringified null is not a name.
+        // Nor is an id: an older config shape passed (senderId, receiverId).
+        final isName = text.isNotEmpty &&
+            text.toLowerCase() != 'null' &&
+            !text.contains('{{') &&
+            !text.startsWith('item.') &&
+            !text.startsWith('F-') &&
+            !RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-').hasMatch(text);
+        // A raw team QR is "userName||userUuid".
+        if (isName) teamName = text.split('||').first.trim();
+      } else if (source != null) {
+        teamName = resolveTeamName(source).trim();
+        if (teamName.toLowerCase() == 'null') teamName = '';
+      }
+      return teamName.isNotEmpty ? teamName : facilityId;
+    });
+
     // These functions are also called directly by the receipt flow config.
     FunctionRegistry.register('resolveTeamName', (args, stateData) =>
         args.isEmpty ? '' : resolveTeamName(args.first));
@@ -2148,4 +2206,33 @@ class StockBalanceCache {
 @Deprecated('Use StockBalanceCache.instance.setCache instead')
 void setStockBalanceCache(String facilityId, Map<String, double> cache) {
   StockBalanceCache.instance.setCache(facilityId, cache);
+}
+
+/// The delivery-team userName to save on a shortfall return / re-issue.
+///
+/// When the logged-in user is the team (a distributor sending back a
+/// shortfall), their own userName is used: [ownTeamCode] is
+/// "userName||userUuid", or a bare uuid when the user has no name. Otherwise,
+/// and when the user has no name, the name comes from the record being
+/// accepted ([parentTeamName]). Returns '' when there is no name, which the
+/// transformer leaves out of the record.
+String shortfallTeamName({
+  required bool senderIsTeam,
+  required String ownTeamCode,
+  required String? parentTeamName,
+}) {
+  String clean(String? value) {
+    final text = value?.trim() ?? '';
+    final unusable = text.isEmpty ||
+        text.toLowerCase() == 'null' ||
+        text.contains('{{') ||
+        text.startsWith('navigation.');
+    return unusable ? '' : text;
+  }
+
+  if (senderIsTeam && ownTeamCode.contains('||')) {
+    final own = clean(ownTeamCode.split('||').first);
+    if (own.isNotEmpty) return own;
+  }
+  return clean(parentTeamName);
 }

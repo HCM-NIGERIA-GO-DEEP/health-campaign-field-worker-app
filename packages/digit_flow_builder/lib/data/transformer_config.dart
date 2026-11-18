@@ -1184,7 +1184,11 @@ final jsonConfig = {
             "wayBillNumber": "__context:wayBillNumber",
             "primaryRole": "__context:primaryRole",
             "secondaryRole": "__context:secondaryRole",
-            "balesQuantity": "__context:balesQuantity"
+            "balesQuantity": "__context:balesQuantity",
+            // userName of the delivery team / distributor on either side of
+            // this movement, so the receiver's lists can show a name instead
+            // of the user uuid. Left out when no team is involved.
+            "deliveryTeamName": "__context:deliveryTeamName"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",

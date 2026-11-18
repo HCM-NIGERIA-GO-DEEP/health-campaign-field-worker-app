@@ -2472,7 +2472,7 @@ final dynamic sampleInventoryFlows = {
                           "type": "template",
                           "fieldName": "incomingTransactionsSenderValueText",
                           "value":
-                              "{{fn:getFacilityName(item.items[0].senderId)}}",
+                              "{{fn:getFacilityName(item.items[0].senderId, item.items[0].additionalFields.fields)}}",
                           "maxLines": 2
                         }
                       ]
@@ -2964,6 +2964,10 @@ final dynamic sampleInventoryFlows = {
                     "value": "{{fn:getUserPartyType()}}"
                   },
                   {
+                    "key": "deliveryTeamName",
+                    "value": "{{fn:getShortfallTeamName(navigation.receivedFromName)}}"
+                  },
+                  {
                     "key": "receiverPartyType",
                     "value":
                         "{{fn:getPartyTypeForFacilityId(navigation.senderFacilityId)}}"
@@ -3193,6 +3197,10 @@ final dynamic sampleInventoryFlows = {
                     "value": "{{fn:getUserPartyType()}}"
                   },
                   {
+                    "key": "deliveryTeamName",
+                    "value": "{{fn:getShortfallTeamName(navigation.receivedFromName)}}"
+                  },
+                  {
                     "key": "receiverPartyType",
                     "value":
                         "{{fn:getPartyTypeForFacilityId(navigation.senderFacilityId)}}"
@@ -3286,6 +3294,10 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "senderPartyType",
                     "value": "{{fn:getUserPartyType()}}"
+                  },
+                  {
+                    "key": "deliveryTeamName",
+                    "value": "{{fn:getShortfallTeamName(navigation.receivedFromName)}}"
                   },
                   {
                     "key": "receiverPartyType",
@@ -3580,6 +3592,10 @@ final dynamic sampleInventoryFlows = {
                   {
                     "key": "senderPartyType",
                     "value": "{{fn:getUserPartyType()}}"
+                  },
+                  {
+                    "key": "deliveryTeamName",
+                    "value": "{{fn:getShortfallTeamName(navigation.receivedFromName)}}"
                   },
                   {
                     "key": "receiverPartyType",
