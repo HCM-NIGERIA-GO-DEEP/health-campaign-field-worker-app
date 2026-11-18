@@ -25,6 +25,7 @@ import '../models/property_schema/property_schema.dart';
 import '../models/schema_object/schema_object.dart';
 import '../utils/screen_protection_manager.dart';
 import '../utils/utils.dart';
+import '../helper/secondary_popup_values.dart';
 import '../widgets/multi_entity_tab_view.dart';
 import '../helper/validation_context_manager.dart';
 
@@ -945,6 +946,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                   schema,
                                   localizations,
                                   widget.onSecondaryAction!,
+                                  pageValues: formGroup.value,
                                 );
                               } else {
                                 widget.onSecondaryAction!();
@@ -1311,6 +1313,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                               schema,
                               localizations,
                               widget.onSecondaryAction!,
+                              pageValues: formGroup.value,
                             );
                           } else {
                             widget.onSecondaryAction!();
@@ -1726,8 +1729,9 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
     BuildContext context,
     PropertySchema schema,
     dynamic localizations,
-    void Function({Map<String, dynamic>? popupData}) onConfirm,
-  ) {
+    void Function({Map<String, dynamic>? popupData}) onConfirm, {
+    Map<String, dynamic>? pageValues,
+  }) {
     final popUpConfig = schema.showSecondaryAlertPopUp!;
     final bodyFields = popUpConfig.body ?? [];
 
@@ -1748,6 +1752,8 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
     /// Null when the field is acceptable, otherwise the reason it is not.
     String? validate(SecondaryAlertBodyField field) {
+      // A computed row only shows another field's value; nothing to check.
+      if (isComputedPopupField(field)) return null;
       final value = (values[field.fieldName] ?? '').trim();
       final label = localizations.translate(field.label);
 
@@ -1783,12 +1789,21 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                     });
                   }
 
+                  final isComputed = isComputedPopupField(field);
+
                   return Padding(
                     padding: const EdgeInsets.only(top: spacer2),
                     child: LabeledField(
                       label: localizations.translate(field.label),
-                      isRequired: field.mandatory,
-                      child: isNumeric(field)
+                      isRequired: field.mandatory && !isComputed,
+                      child: isComputed
+                          // Greyed out; follows the typed source field, since
+                          // every keystroke rebuilds the popup.
+                          ? DigitTextFormInput(
+                              readOnly: true,
+                              initialValue: computedPopupText(field, values),
+                            )
+                          : isNumeric(field)
                           ? DigitNumericFormInput(
                               initialValue: values[field.fieldName] ?? '',
                               onChange: onChange,
@@ -1824,10 +1839,12 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                       });
                       return;
                     }
-                    final popupData = <String, dynamic>{
-                      for (final field in bodyFields)
-                        field.fieldName: (values[field.fieldName] ?? '').trim(),
-                    };
+                    final popupData = secondaryPopupData(
+                      bodyFields,
+                      values,
+                      pageName: widget.pageName,
+                      pageValues: pageValues,
+                    );
                     Navigator.of(ctx, rootNavigator: true).pop();
                     onConfirm(popupData: popupData);
                   },

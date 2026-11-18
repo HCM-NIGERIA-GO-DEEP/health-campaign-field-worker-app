@@ -13,10 +13,54 @@ import 'package:intl/intl.dart';
 
 import '../blocs/scanner.dart';
 import '../widgets/vision_detector_views/painters/barcode_detector_painter.dart';
+import 'scanned_stock.dart';
 import './i18_key_constants.dart' as i18;
 import 'constants.dart';
 
 class DigitScannerUtils {
+  /// The first detected barcode that parses as GS1, that one of [rules]
+  /// accepts and whose check digits are right, with its parsed form; null
+  /// when none does. A code with a wrong check digit is a misread and is
+  /// never taken (see [hasMisreadCode]).
+  static MapEntry<Barcode, GS1Barcode>? classifiedBarcode(
+    List<Barcode> barcodes,
+    List<ScanTypeRule> rules,
+  ) {
+    final parser = GS1BarcodeParser.defaultParser();
+    for (final barcode in barcodes) {
+      try {
+        final parsed = parser.parse(barcode.displayValue.toString());
+        if (classifyScan(parsed, rules) != null && hasValidGs1Keys(parsed)) {
+          return MapEntry(barcode, parsed);
+        }
+      } catch (_) {
+        // Not GS1, or not readable - try the next one in view.
+      }
+    }
+    return null;
+  }
+
+  /// Whether a detected barcode is a bale/piece code (one of [rules] would
+  /// take it) with a wrong check digit - a misread of a real label, so the
+  /// camera should simply try the next frame.
+  static bool hasMisreadCode(
+    List<Barcode> barcodes,
+    List<ScanTypeRule> rules,
+  ) {
+    final parser = GS1BarcodeParser.defaultParser();
+    for (final barcode in barcodes) {
+      try {
+        final parsed = parser.parse(barcode.displayValue.toString());
+        if (classifyScan(parsed, rules) != null && !hasValidGs1Keys(parsed)) {
+          return true;
+        }
+      } catch (_) {
+        // Not GS1 - not a misread of a bale or piece code.
+      }
+    }
+    return false;
+  }
+
   static DateTime? _lastErrorToastTime;
   static String _lastErrorToastMessage = '';
 
@@ -145,6 +189,8 @@ class DigitScannerUtils {
     String? patternMessage,
     Future<bool> Function(String scannedValue)? duplicateCheckFn,
     String? duplicateCheckMessage,
+    List<ScanTypeRule> scanTypeRules = const [],
+    String? unknownCodeMessage,
   }) async {
     // Check if processing is allowed
     if (!canProcess) return;
@@ -177,10 +223,33 @@ class DigitScannerUtils {
         // Check if the widget is scanning GS1 codes
         if (isGS1code) {
           try {
-            // Parse the first barcode using GS1BarcodeParser
             final parser = GS1BarcodeParser.defaultParser();
-            final parsedResult =
-                parser.parse(barcodes.first.displayValue.toString());
+            // A typed (bale/piece) scanner takes the first code in view that
+            // one of its rules accepts - a bale label holds two barcodes, and
+            // only the SSCC one is the bale.
+            final Barcode scanned;
+            final GS1Barcode parsedResult;
+            if (scanTypeRules.isNotEmpty) {
+              final match = classifiedBarcode(barcodes, scanTypeRules);
+              if (match == null && hasMisreadCode(barcodes, scanTypeRules)) {
+                // A misread frame: no toast or buzzer, keep scanning. The
+                // busy flag must be cleared here, since handleError (which
+                // normally clears it) is not called.
+                setBusy(false);
+                return;
+              }
+              if (match == null) {
+                await handleError(localizations.translate(
+                    unknownCodeMessage ?? i18.scanner.invalidBarcode));
+                return;
+              }
+              scanned = match.key;
+              parsedResult = match.value;
+            } else {
+              // Parse the first barcode using GS1BarcodeParser
+              scanned = barcodes.first;
+              parsedResult = parser.parse(scanned.displayValue.toString());
+            }
 
             final existingBarcodes =
                 bloc.state.barCodes.isNotEmpty ? bloc.state.barCodes : result;
@@ -229,8 +298,7 @@ class DigitScannerUtils {
                   localizations.translate(i18.scanner.resourceAlreadyScanned));
             } else if (regex != null &&
                 regex.trim().isNotEmpty &&
-                !RegExp(regex)
-                    .hasMatch(barcodes.first.displayValue.toString())) {
+                !RegExp(regex).hasMatch(scanned.displayValue.toString())) {
               // Handle error if barcode doesn't match regex pattern
               final errorMsg = patternMessage != null
                   ? localizations.translate(patternMessage)
@@ -403,6 +471,11 @@ class DigitScannerUtils {
     required AudioPlayer player,
     required Function(List<GS1Barcode>) updateResult,
     required List<GS1Barcode> initialResult,
+    // Typed (bale/piece) scanner only: after the delay below, skip the store
+    // once the page is closed, and add to the list as it is now - the user
+    // may have deleted or typed codes meanwhile. Unset for every other
+    // scanner, which keeps its old behaviour.
+    bool Function()? isStillOpen,
   }) async {
     // Assign the scanned data to a local variable
     final parsedResult = scanData;
@@ -416,8 +489,13 @@ class DigitScannerUtils {
     // Wait for 3 seconds before proceeding
     await Future.delayed(const Duration(seconds: 3));
 
+    if (isStillOpen != null && !isStillOpen()) return;
+
     // Make a copy of the current barcodes from the bloc state
-    List<GS1Barcode> result = List.from(initialResult);
+    List<GS1Barcode> result = List.from(
+        isStillOpen != null && bloc.state.barCodes.isNotEmpty
+            ? bloc.state.barCodes
+            : initialResult);
 
     // Remove duplicate entries based on the full serialized barcode
     result.removeDuplicates(

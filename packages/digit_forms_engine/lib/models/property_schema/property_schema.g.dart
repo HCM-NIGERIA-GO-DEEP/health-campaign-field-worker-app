@@ -71,6 +71,7 @@ _$PropertySchemaImpl _$$PropertySchemaImplFromJson(Map<String, dynamic> json) =>
       secondaryActionLabel: json['secondaryActionLabel'] as String?,
       comparisonConfig: _comparisonConfigOrNull(json['comparisonConfig']),
       dynamicScanLimit: _dynamicScanLimitConfigOrNull(json['dynamicScanLimit']),
+      computedValue: _computedValueConfigOrNull(json['computedValue']),
     );
 
 Map<String, dynamic> _$$PropertySchemaImplToJson(
@@ -137,6 +138,7 @@ Map<String, dynamic> _$$PropertySchemaImplToJson(
   writeNotNull('secondaryActionLabel', instance.secondaryActionLabel);
   writeNotNull('comparisonConfig', instance.comparisonConfig?.toJson());
   writeNotNull('dynamicScanLimit', instance.dynamicScanLimit?.toJson());
+  writeNotNull('computedValue', instance.computedValue?.toJson());
   return val;
 }
 
@@ -353,6 +355,7 @@ _$SecondaryAlertBodyFieldImpl _$$SecondaryAlertBodyFieldImplFromJson(
       format: json['format'] as String?,
       fieldName: json['fieldName'] as String,
       mandatory: json['mandatory'] as bool? ?? false,
+      computedValue: _computedValueConfigOrNull(json['computedValue']),
     );
 
 Map<String, dynamic> _$$SecondaryAlertBodyFieldImplToJson(
@@ -363,6 +366,7 @@ Map<String, dynamic> _$$SecondaryAlertBodyFieldImplToJson(
       'format': instance.format,
       'fieldName': instance.fieldName,
       'mandatory': instance.mandatory,
+      'computedValue': instance.computedValue,
     };
 
 _$AlertConditionImpl _$$AlertConditionImplFromJson(Map<String, dynamic> json) =>
@@ -450,6 +454,22 @@ Map<String, dynamic> _$$DynamicScanLimitConfigImplToJson(
   writeNotNull('maxQuantity', instance.maxQuantity);
   return val;
 }
+
+_$ComputedValueConfigImpl _$$ComputedValueConfigImplFromJson(
+        Map<String, dynamic> json) =>
+    _$ComputedValueConfigImpl(
+      sourceField: json['sourceField'] as String,
+      divideBy: json['divideBy'] as num,
+      decimals: (json['decimals'] as num?)?.toInt() ?? 2,
+    );
+
+Map<String, dynamic> _$$ComputedValueConfigImplToJson(
+        _$ComputedValueConfigImpl instance) =>
+    <String, dynamic>{
+      'sourceField': instance.sourceField,
+      'divideBy': instance.divideBy,
+      'decimals': instance.decimals,
+    };
 
 _$ComparisonFilterImpl _$$ComparisonFilterImplFromJson(
         Map<String, dynamic> json) =>

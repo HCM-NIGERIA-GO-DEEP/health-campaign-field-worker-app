@@ -10,6 +10,7 @@ import 'package:digit_forms_engine/helper/visibility_manager.dart';
 import 'package:digit_scanner/blocs/scanner.dart';
 import 'package:digit_scanner/models/scanner_validation.dart';
 import 'package:digit_scanner/router/digit_scanner_router.gm.dart';
+import 'package:digit_scanner/utils/scanned_stock.dart';
 import 'package:digit_scanner/utils/scanner_utils.dart';
 import 'package:gs1_barcode_parser/gs1_barcode_parser.dart';
 import 'package:digit_ui_components/digit_components.dart';
@@ -31,6 +32,7 @@ import 'package:intl/intl.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import '../blocs/forms/forms.dart';
+import '../helper/computed_value_binding.dart';
 import '../helper/validation_message_helper.dart';
 import '../helper/visibility_manager.dart';
 import '../utils/utils.dart';

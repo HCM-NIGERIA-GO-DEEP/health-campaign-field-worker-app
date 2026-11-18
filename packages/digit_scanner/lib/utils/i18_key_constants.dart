@@ -172,6 +172,17 @@ class Scanner {
   String get barCodeSerial => 'BARCODE_SERIAL_NUMBER';
   String get serialNumber => 'SERIAL_NUMBER';
 
+  /// Manual entry on a bale/piece scanner: which kind of code is typed.
+  String get manualScanType => 'SCANNER_MANUAL_SCAN_TYPE';
+
+  /// Manual entry on a bale/piece scanner: why a typed code was refused.
+  /// Placeholders: {kind} {ai} {expected} {count} {code}.
+  String get manualCodeNotDigits => 'SCANNER_MANUAL_CODE_NOT_DIGITS';
+  String get manualCodeWrongLength => 'SCANNER_MANUAL_CODE_WRONG_LENGTH';
+  String get manualCodeWrongCheckDigit =>
+      'SCANNER_MANUAL_CODE_WRONG_CHECK_DIGIT';
+  String get manualSerialInvalid => 'SCANNER_MANUAL_SERIAL_INVALID';
+
   String get barCodeExpiry => 'BARCODE_EXPIRY_DATE';
 
   String get barCodeGtin => 'BARCODE_GTIN';

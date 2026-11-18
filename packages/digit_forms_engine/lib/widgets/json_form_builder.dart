@@ -26,6 +26,29 @@ class JsonFormBuilder extends LocalizedStatefulWidget {
 class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
   bool _autoReadOnly = false; // ← runtime overlay
 
+  // schema.computedValue: follows the source field for the form it was bound
+  // to; rebound only if the page hands this field a different FormGroup.
+  ComputedValueBinding? _computedBinding;
+  FormGroup? _computedForm;
+
+  void _bindComputedValue(FormGroup form) {
+    final config = widget.schema.computedValue;
+    if (config == null || identical(form, _computedForm)) return;
+    _computedBinding?.dispose();
+    _computedForm = form;
+    _computedBinding = ComputedValueBinding(
+      form: form,
+      targetControlName: widget.formControlName,
+      config: config,
+    )..start();
+  }
+
+  @override
+  void dispose() {
+    _computedBinding?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     final form = ReactiveForm.of(context) as FormGroup;
@@ -50,11 +73,15 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
     }
 
     _checkAutoFill(form);
+    _bindComputedValue(form);
 
     return _buildByType(form);
   }
 
-  bool get _isReadOnly => (widget.schema.readOnly ?? false) || _autoReadOnly;
+  bool get _isReadOnly =>
+      (widget.schema.readOnly ?? false) ||
+      _autoReadOnly ||
+      widget.schema.computedValue != null;
 
   void _checkAutoFill(FormGroup form) {
     final autoFillConditions = widget.schema.autoFillCondition;
