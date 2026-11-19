@@ -1634,6 +1634,13 @@ final jsonConfig = {
           "additionalFields": {
             "headName":
                 "__concatName:closeHouseholdDetails.headName,closeHouseholdDetails.familyname",
+            // TaskModel has no household column, so the delivery configs all
+            // carry the link here; without it the task indexes with a null
+            // householdClientReferenceId. The household is created in this
+            // same run, so take the ref rather than a context key, as this
+            // config's own HouseholdMember/ProjectBeneficiary mappings do.
+            "householdClientReferenceId":
+                "__ref:HouseholdModel.clientReferenceId",
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -1890,6 +1897,13 @@ final jsonConfig = {
           "additionalFields": {
             "headName":
                 "__concatName:caregiverConsent.nameOfIndividual,caregiverConsent.familyname",
+            // TaskModel has no household column, so the delivery configs all
+            // carry the link here; without it the task indexes with a null
+            // householdClientReferenceId. The household is created in this
+            // same run, so take the ref rather than a context key, as this
+            // config's own HouseholdMember/ProjectBeneficiary mappings do.
+            "householdClientReferenceId":
+                "__ref:HouseholdModel.clientReferenceId",
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
