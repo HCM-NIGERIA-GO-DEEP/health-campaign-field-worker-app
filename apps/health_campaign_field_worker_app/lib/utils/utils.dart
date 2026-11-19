@@ -200,7 +200,8 @@ Future<void> _executeLogout(BuildContext context) async {
       );
 
       if (apiEndPoint.isNotEmpty) {
-        pushBloc.add(PushNotificationEvent.logout(apiEndPoint: apiEndPoint));
+        // Finish before AuthLogoutEvent ends the session this call uses.
+        await pushBloc.unregisterForLogout(apiEndPoint);
       }
     } catch (_) {
       // Best effort: logout should continue even if token unregister fails.

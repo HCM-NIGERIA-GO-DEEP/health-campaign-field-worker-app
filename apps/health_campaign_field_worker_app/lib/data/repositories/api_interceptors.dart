@@ -65,8 +65,10 @@ class AuthTokenInterceptor extends Interceptor {
     final requestInfo = data is Map ? data['RequestInfo'] : null;
     final rejectedToken = requestInfo is Map ? requestInfo['authToken'] : null;
     final path = loginPath;
+    // Requests that build their own RequestInfo (skipRequestInfo, e.g.
+    // logout) still refresh. The token request itself has no
+    // RequestInfo.authToken, so it never triggers a refresh.
     if (error.response?.statusCode != 401 ||
-        request.extra[_skipRequestInfoKey] == true ||
         request.extra[_retriedKey] == true ||
         rejectedToken is! String ||
         rejectedToken.isEmpty ||
@@ -91,9 +93,13 @@ class AuthTokenInterceptor extends Interceptor {
     }
 
     // Keep the original request and user context. Replace only the token.
+    final body = data as Map;
     final retry = request.copyWith(
       data: {
-        ...(data as Map),
+        ...body,
+        // Logout also sends the token as top-level access_token, which is
+        // what the server uses to find the session.
+        if (body['access_token'] == rejectedToken) 'access_token': accessToken,
         'RequestInfo': {...(requestInfo as Map), 'authToken': accessToken},
       },
       extra: {...request.extra, _retriedKey: true},

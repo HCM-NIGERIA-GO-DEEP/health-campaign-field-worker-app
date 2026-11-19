@@ -118,6 +118,71 @@ void main() {
     expect(await LocalSecureStore.instance.accessToken, 'new-login-access');
     expect(await LocalSecureStore.instance.refreshToken, 'new-login-refresh');
   });
+
+  test('logout refreshes on 401 and retries with both tokens rotated',
+      () async {
+    var refreshes = 0;
+    final sent = <Map>[];
+    final dio = _client((request) async {
+      if (request.path == '/token') {
+        refreshes++;
+        return _json(
+            200, '{"access_token":"new-access","refresh_token":"new-refresh"}');
+      }
+      final body = request.data as Map;
+      sent.add(body);
+      return _json(body['access_token'] == 'old-access' ? 401 : 200, '{}');
+    });
+    addTearDown(() => dio.close());
+
+    await dio.post(
+      '/user/_logout',
+      data: {
+        'access_token': 'old-access',
+        'tenantId': 'test-tenant',
+        'RequestInfo': {
+          'apiId': '',
+          'authToken': 'old-access',
+          'msgId': '',
+          'plainAccessRequest': <String, dynamic>{},
+        },
+      },
+      options: Options(extra: {'skipRequestInfo': true}),
+    );
+
+    expect(refreshes, 1);
+    expect(sent, hasLength(2));
+    // The logout-built RequestInfo is kept, not replaced by the interceptor.
+    expect(sent.first['RequestInfo'], containsPair('plainAccessRequest', {}));
+    expect(sent.last['access_token'], 'new-access');
+    expect(sent.last['tenantId'], 'test-tenant');
+    expect(sent.last['RequestInfo'], {
+      'apiId': '',
+      'authToken': 'new-access',
+      'msgId': '',
+      'plainAccessRequest': <String, dynamic>{},
+    });
+  });
+
+  test('a 401 from the token request does not start another refresh',
+      () async {
+    var refreshes = 0;
+    final dio = _client((request) async {
+      if (request.path == '/token') refreshes++;
+      return _json(401, '{}');
+    });
+    addTearDown(() => dio.close());
+
+    await expectLater(
+      dio.post('/sync', data: <String, dynamic>{}),
+      throwsA(isA<DioException>()
+          .having((e) => e.response?.statusCode, 'status', 401)
+          .having((e) => e.requestOptions.path, 'path', '/sync')),
+    );
+    expect(refreshes, 1);
+    expect(await LocalSecureStore.instance.accessToken, 'old-access');
+    expect(await LocalSecureStore.instance.refreshToken, 'old-refresh');
+  });
 }
 
 Dio _client(Future<ResponseBody> Function(RequestOptions) respond) {

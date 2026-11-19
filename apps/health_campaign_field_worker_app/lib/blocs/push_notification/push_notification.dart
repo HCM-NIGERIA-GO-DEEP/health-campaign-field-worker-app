@@ -88,7 +88,14 @@ class PushNotificationBloc
   FutureOr<void> _onLogout(
     PushNotificationLogoutEvent event,
     PushNotificationEmitter emit,
-  ) async {
+  ) =>
+      unregisterForLogout(event.apiEndPoint);
+
+  /// Unregisters this device's FCM token and forgets the user. Logout awaits
+  /// this before calling /user/_logout: the unregister call needs a valid
+  /// session, and running it alongside logout let it refresh or fail against
+  /// the session logout was ending. Never throws.
+  Future<void> unregisterForLogout(String apiEndPoint) async {
     try {
       final currentState = state;
       final token = currentState is PushNotificationInitializedState
@@ -97,7 +104,7 @@ class PushNotificationBloc
 
       if (token != null && _lastUserObject != null) {
         await notificationTokenRepository.unregisterToken(
-          apiEndPoint: event.apiEndPoint,
+          apiEndPoint: apiEndPoint,
           token: token,
           userUuid: _lastUserObject!.uuid,
           tenantId: _lastUserObject!.tenantId ?? envConfig.variables.tenantId,

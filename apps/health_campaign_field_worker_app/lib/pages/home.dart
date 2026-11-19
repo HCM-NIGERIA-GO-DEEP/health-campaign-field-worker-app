@@ -3004,10 +3004,9 @@ class _HomePageState extends LocalizedState<HomePage> {
         .map((label) => homeItemsShowcaseMap[label]!)
         .toList();
 
-    if (envConfig.variables.envType == EnvType.demo && kReleaseMode) {
+    if (envConfig.variables.envType == EnvType.prod && kReleaseMode) {
       filteredLabels.remove(i18.home.db);
     }
-    filteredLabels.remove(i18.home.db);
 
     final isRegistrar = userRoleCodes.contains(RolesType.registrar.toValue());
     if (isDistributor || isRegistrar) {
