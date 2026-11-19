@@ -1042,9 +1042,11 @@ final jsonConfig = {
           "transactionReason": "__value:RECEIVED",
           "campaignNumber": "__context:selectedProject.referenceID",
           "senderId": "__context:senderFacilityId",
-          "senderType": "__switch:__context:senderPartyType:{STAFF:__value:STAFF,default:__value:WAREHOUSE}",
+          "senderType":
+              "__switch:__context:senderPartyType:{STAFF:__value:STAFF,default:__value:WAREHOUSE}",
           "receiverId": "__context:userFacilityId",
-          "receiverType": "__switch:__context:receiverPartyType:{STAFF:__value:STAFF,default:__value:WAREHOUSE}",
+          "receiverType":
+              "__switch:__context:receiverPartyType:{STAFF:__value:STAFF,default:__value:WAREHOUSE}",
           "nonRecoverableError": "errors.nonRecoverable",
           "tenantId": "__context:tenantId",
           "rowVersion": "meta.rowVersion",
@@ -1417,7 +1419,16 @@ final jsonConfig = {
           "householdType": "__context:householdType",
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
-          "additionalFields": {"date": "closeHouseholdDetails.date"}
+          "additionalFields": {
+            "date": "closeHouseholdDetails.date",
+            // Head name on the household too, same key and reason as
+            // beneficiaryRegistration's (SL request 2026-11-18).
+            // HouseholdModel has no name column, so additionalFields is the
+            // only place it can go. Same source as this config's
+            // TaskModel.headName, so the two never disagree.
+            "householdName":
+                "__concatName:closeHouseholdDetails.headName,closeHouseholdDetails.familyname",
+          }
         }
       },
       "IndividualModel": {
@@ -1617,7 +1628,13 @@ final jsonConfig = {
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit"
           },
-          "additionalFields": "additionalInfo.fields",
+          // The head's name is captured on the closeHouseholdDetails page but
+          // was only reaching IndividualModel.name, so a CLOSED_HOUSEHOLD task
+          // carried no name and reports had nothing to show against it.
+          "additionalFields": {
+            "headName":
+                "__concatName:closeHouseholdDetails.headName,closeHouseholdDetails.familyname",
+          },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
         }
@@ -1683,7 +1700,14 @@ final jsonConfig = {
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
           "additionalFields": {
-            "caregiverConsent": "caregiverConsent.consentToParticipate"
+            "caregiverConsent": "caregiverConsent.consentToParticipate",
+            // Head name on the household too, same key and reason as
+            // beneficiaryRegistration's (SL request 2026-11-18).
+            // HouseholdModel has no name column, so additionalFields is the
+            // only place it can go. Same source as this config's
+            // TaskModel.headName, so the two never disagree.
+            "householdName":
+                "__concatName:caregiverConsent.nameOfIndividual,caregiverConsent.familyname",
           }
         }
       },
@@ -1859,7 +1883,14 @@ final jsonConfig = {
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit"
           },
-          "additionalFields": "additionalInfo.fields",
+          // Same gap as closeHouseholdRegistration: the declined-consent name
+          // only reached IndividualModel.name, leaving the CLOSED_HOUSEHOLD
+          // task anonymous. Sourced from caregiverConsent's own fields, which
+          // are required once consent is declined.
+          "additionalFields": {
+            "headName":
+                "__concatName:caregiverConsent.nameOfIndividual,caregiverConsent.familyname",
+          },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
         }

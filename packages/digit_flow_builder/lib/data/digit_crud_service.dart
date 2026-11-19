@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:digit_crud_bloc/digit_crud_bloc.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/attendance_log.dart';
@@ -152,6 +154,19 @@ class EntityModelMapMapper extends DynamicEntityModelListener {
                 : item)
             .toList();
       } else if (value is String) {
+        // Raw SQL rows store additionalFields as JSON text. Model mappers
+        // require its decoded object, including when hydrating task resources.
+        if (key == 'additionalFields') {
+          try {
+            final decoded = jsonDecode(value);
+            if (decoded is Map<String, dynamic>) {
+              newMap[key] = normalizeKnownFlatFieldsRecursively(decoded);
+              return;
+            }
+          } on FormatException {
+            // Leave invalid input for the model mapper to validate.
+          }
+        }
         // ---------- NEW FIX HERE ----------
         // Convert stringified list → actual List<String>
         final trimmed = value.trim();
