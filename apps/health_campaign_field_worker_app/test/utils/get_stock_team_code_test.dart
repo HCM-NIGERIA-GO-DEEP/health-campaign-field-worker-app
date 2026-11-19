@@ -148,7 +148,7 @@ void main() {
       expect(
           FunctionRegistry.call(
               'teamPartyDisplay', ['Jane', 'user-uuid-2'], stateData),
-          'Jane : user-uuid-2');
+          'Jane');
       expect(
           FunctionRegistry.call(
               'teamPartyDisplay', ['Jane', 'F-SENDER'], stateData),
@@ -167,7 +167,7 @@ void main() {
               'getSecondPageParty',
               [fields, 'user-uuid-2', 'F-RECEIVER', 'STAFF', 'WAREHOUSE'],
               stateData),
-          'Jane : user-uuid-2');
+          'Jane');
     });
   });
 

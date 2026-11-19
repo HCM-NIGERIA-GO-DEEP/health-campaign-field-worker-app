@@ -2009,18 +2009,12 @@ class FunctionRegistries {
       return '';
     }
 
-    /// Display form for a STAFF (delivery team / CDD) party: the username
-    /// alongside the id it is recorded against, e.g. "jdoe : <uuid>". The id
-    /// is what every transaction and report keys on, so showing the name
-    /// alone makes rows impossible to cross-reference; showing the id alone
-    /// is meaningless to the user. Degrades to whichever half is available.
+    /// Display form for a STAFF (delivery team / CDD) party: the username,
+    /// e.g. "jdoe". Falls back to the id it is recorded against (the user
+    /// uuid) only when no name was captured on the record.
     String teamPartyDisplay(String teamName, String id) {
       final name = teamName.trim();
-      final identifier = id.trim();
-      final result = name.isEmpty
-          ? identifier
-          : (identifier.isEmpty ? name : '$name : $identifier');
-      return result;
+      return name.isNotEmpty ? name : id.trim();
     }
 
     // Sender shown on the Incoming Transactions card.
