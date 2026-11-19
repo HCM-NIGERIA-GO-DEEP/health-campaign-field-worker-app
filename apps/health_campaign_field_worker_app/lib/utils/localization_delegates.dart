@@ -60,13 +60,26 @@ getAppLocalizationDelegates({
       LocalizationLocalRepository().returnLocalizationFromSQL(sql) as Future,
       appConfig.languages!,
     ),
+    // The forms engine and the flow builder render every JSON flow, so they
+    // need every module's codes, not the subset of the last load. The app
+    // root rebuilds (and these delegates reload) each time a load ends, and
+    // with the filtered query that rebuild replaced the full list
+    // LocalizationBloc._loadLocale had just set with only the last load's
+    // modules: Closed Household opened with raw keys whenever the last load
+    // to end was the boundary page's (hcm-common, hcm-login, ...).
     forms_engine_localization.FormLocalization.getDelegate(
-      LocalizationLocalRepository().returnLocalizationFromSQL(sql) as Future,
+      _allForLocale(sql, selectedLocale),
       appConfig.languages!,
     ),
     flow_builder_localization.FlowBuilderLocalization.getDelegate(
-      LocalizationLocalRepository().returnLocalizationFromSQL(sql) as Future,
+      _allForLocale(sql, selectedLocale),
       appConfig.languages!,
     ),
   ];
 }
+
+Future<dynamic> _allForLocale(LocalSqlDataStore sql, Locale locale) =>
+    Future.value(LocalizationLocalRepository().fetchAllForLocale(
+      sql: sql,
+      locale: '${locale.languageCode}_${locale.countryCode}',
+    ));

@@ -182,13 +182,36 @@ class LocalizationLocalRepository {
     });
   }
 
+  /// Whether any row of [module] is stored for [locale]. Reads one row at
+  /// most, unlike [fetchLocalization], which loads the whole module.
+  Future<bool> hasModule({
+    required LocalSqlDataStore sql,
+    required String locale,
+    required String module,
+  }) async {
+    return retryLocalCallOperation(() async {
+      final query = sql.select(sql.localization)
+        ..where((t) => t.locale.equals(locale) & t.module.equals(module))
+        ..limit(1);
+      final rows = await query.get();
+      return rows.isNotEmpty;
+    });
+  }
+
+  /// Counts completed writes to the localization table, from any caller.
+  /// The in-memory translation copies are rebuilt from the table, so a copy
+  /// built before the latest write may be missing rows (see
+  /// LocalizationBloc.ensureModulesLoaded).
+  static int writeGeneration = 0;
+
   FutureOr create(
       List<LocalizationCompanion> result, LocalSqlDataStore sql) async {
     if (result.isEmpty) return;
     return retryLocalCallOperation(() async {
-      return sql.batch((batch) {
+      await sql.batch((batch) {
         batch.insertAllOnConflictUpdate(sql.localization, result);
       });
+      writeGeneration++;
     });
   }
 }

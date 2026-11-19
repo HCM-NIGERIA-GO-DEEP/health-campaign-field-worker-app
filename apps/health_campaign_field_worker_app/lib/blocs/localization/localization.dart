@@ -232,6 +232,50 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
     await _loadLocale(locale.split('_'));
   }
 
+  // The table write that the in-memory copies (app, flow-builder, forms) were
+  // last rebuilt from by _loadLocale, and for which locale. Null until the
+  // first rebuild in this run of the app.
+  int? _snapshotGeneration;
+  String? _snapshotLocale;
+
+  /// Makes sure every module in [modules] is stored for [locale], fetching
+  /// the missing ones (one request per module, with retry). Then rebuilds the
+  /// in-memory copies if the table was written since they were last rebuilt.
+  /// Returns true when every module was already stored.
+  ///
+  /// Unlike the load events, the caller can await this for ITS OWN modules.
+  /// Waiting on the shared `loading` flag ended on whichever load finished
+  /// first, since the handlers run concurrently, so a flow could open before
+  /// its module was stored. And skipping the rebuild whenever the module was
+  /// already stored left out rows stored after the last rebuild: the
+  /// project-selection refresh stores modules one by one but rebuilds only
+  /// when all of them are done.
+  Future<bool> ensureModulesLoaded({
+    required List<String> modules,
+    required String locale,
+    required String tenantId,
+    required String path,
+  }) async {
+    var allStored = true;
+    for (final module in modules) {
+      final stored = await LocalizationLocalRepository()
+          .hasModule(sql: sql, locale: locale, module: module);
+      if (stored) continue;
+      allStored = false;
+      await _fetchAndStoreModule(
+        module: module,
+        locale: locale,
+        tenantId: tenantId,
+        path: path,
+      );
+    }
+    if (_snapshotLocale != locale ||
+        _snapshotGeneration != LocalizationLocalRepository.writeGeneration) {
+      await _loadLocale(locale.split('_'));
+    }
+    return allStored;
+  }
+
   /// Fetches a SINGLE localization module and stores it, retrying a few times
   /// so a transient network abort does not silently drop the module. Returns
   /// true when stored (or the server returned nothing), false if all attempts
@@ -263,6 +307,9 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
   }
 
   FutureOr<void> _loadLocale(List codes) async {
+    // Read before the table is, so a write that lands during the rebuild
+    // marks the copies out of date rather than being missed.
+    final generation = LocalizationLocalRepository.writeGeneration;
     LocalizationParams().setLocale(Locale(codes.first, codes.last));
     await AppLocalizations(Locale(codes.first, codes.last), sql).load();
     // Keep the flow-builder's (JSON-driven flows) localization cache in sync.
@@ -294,6 +341,8 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
         Future.value(fbRows),
         const [],
       ).load();
+      _snapshotGeneration = generation;
+      _snapshotLocale = '${codes.first}_${codes.last}';
     } catch (e) {
       debugPrint('flow/forms localization refresh skipped: $e');
     }

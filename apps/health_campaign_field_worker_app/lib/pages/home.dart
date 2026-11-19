@@ -44,7 +44,6 @@ import '../blocs/auth/auth.dart';
 import '../blocs/localization/localization.dart';
 import '../blocs/stock_downsync/stock_downsync.dart';
 import '../data/local_store/app_shared_preferences.dart';
-import '../data/repositories/local/localization.dart';
 import '../data/local_store/no_sql/schema/app_configuration.dart';
 import '../data/local_store/no_sql/schema/service_registry.dart';
 import '../data/local_store/secure_store/secure_store.dart';
@@ -64,6 +63,7 @@ import '../services/face_auth_feature_flag.dart';
 import '../utils/attendance_utils.dart';
 import '../utils/date_util_attendance.dart';
 import '../utils/debound.dart';
+import '../utils/delayed_loader.dart';
 import '../utils/environment_config.dart';
 import '../utils/flow_navigation_utils.dart';
 import '../utils/function_registries.dart';
@@ -3026,47 +3026,27 @@ class _HomePageState extends LocalizedState<HomePage> {
     );
   }
 
+  // Modules every flow card loads alongside its own.
+  static const _sharedFlowModules = [
+    'hcm-common',
+    'hcm-login',
+    'hcm-scanner',
+    'hcm-checklist',
+    'hcm-beneficiary',
+  ];
+
   Future<void> triggerLocalization({String? module, bool? loadOnline}) async {
-    // Localization is loaded post project selection (all flow modules) and at
-    // startup (base modules), and the flow/forms caches are refreshed then. So
-    // if the requested flow module is already cached, skip everything -- no
-    // re-fetch, no cache rebuild -- so the tile navigates instantly. Real work
-    // only happens in the rare case a module is genuinely missing.
-    if (loadOnline != true && module != null && module.trim().isNotEmpty) {
-      // Every module in the list has to be checked, not just the first.
-      // Cards pass a comma-separated list -- house-to-house sends
-      // "hcm-registration-<ref>,hcm-beneficiary,hcm-inventory-<ref>" -- and
-      // this used to cache-check only "hcm-registration-<ref>". That module is
-      // cached on the first entry, so from then on the method returned here
-      // and the remaining modules were never fetched at all. Codes that live
-      // only in hcm-beneficiary (DOWNLOAD_BENEFICIARY_IDS) therefore never
-      // reached the device through this path, however many times the card was
-      // tapped, and rendered as the raw key.
-      //
-      // Dispatching when ANY module is missing is cheap: _onLoadLocalization
-      // cache-checks each module individually and fetches only the missing
-      // ones, so an already-cached module costs nothing.
-      final modules = module
-          .split(',')
-          .map((m) => m.trim())
-          .where((m) => m.isNotEmpty)
-          .toList();
-      final localeStr = AppSharedPreferences().getSelectedLocale ??
-          'en_${envConfig.variables.tenantId.toUpperCase()}';
-      final sqlStore = context.read<LocalSqlDataStore>();
-      try {
-        var allCached = true;
-        for (final m in modules) {
-          final cached = await LocalizationLocalRepository()
-              .fetchLocalization(sql: sqlStore, locale: localeStr, module: m);
-          if (!mounted) return;
-          if (cached.isEmpty) {
-            allCached = false;
-            break;
-          }
-        }
-        if (allCached) return;
-      } catch (_) {}
+    // Cards pass a comma-separated list -- house-to-house sends
+    // "hcm-registration-<ref>,hcm-beneficiary,hcm-inventory-<ref>" -- and every
+    // module in it is checked, not just the first.
+    final modules = (module ?? '')
+        .split(',')
+        .map((m) => m.trim())
+        .where((m) => m.isNotEmpty)
+        .toList();
+    if (loadOnline != true && modules.isNotEmpty) {
+      await _ensureFlowLocalization(modules);
+      return;
     }
     if (!mounted) return;
     var loadDispatched = false;
@@ -3097,14 +3077,11 @@ class _HomePageState extends LocalizedState<HomePage> {
               context
                   .read<LocalizationBloc>()
                   .add(LocalizationEvent.onLoadLocalization(
-                    module: module != null && module.isNotEmpty
-                        ? "$module,hcm-common,hcm-login,hcm-scanner,hcm-checklist,hcm-beneficiary,hcm-boundary-admin"
-                        : localizationModulesList?.interfaces
-                                .where(
-                                    (e) => e.type == Modules.localizationModule)
-                                .map((e) => e.name.toString())
-                                .join(',') ??
-                            "",
+                    module: localizationModulesList?.interfaces
+                            .where((e) => e.type == Modules.localizationModule)
+                            .map((e) => e.name.toString())
+                            .join(',') ??
+                        "",
                     tenantId: envConfig.variables.tenantId,
                     locale: selectedLocale!,
                     path: Constants.localizationApiPath,
@@ -3112,24 +3089,72 @@ class _HomePageState extends LocalizedState<HomePage> {
             }
           },
         );
-    // Wait for the just-dispatched localization load to settle so its data is
-    // persisted (and the flow-builder cache synced by the load's own
-    // _loadLocale) BEFORE the flow paints. Without this the first entry showed
-    // raw codes and only the second entry was localized. The timeout guards
-    // against hanging (e.g. offline / no emission).
+    // Wait (briefly) for the dispatched load to settle. Only the full and the
+    // force-refresh loads come through here; a flow card's modules go through
+    // _ensureFlowLocalization, which waits for its own modules.
     if (loadDispatched && mounted) {
+      final settled = context
+          .read<LocalizationBloc>()
+          .stream
+          .firstWhere((s) => !s.loading)
+          .timeout(const Duration(seconds: 3));
       try {
-        await context
-            .read<LocalizationBloc>()
-            .stream
-            .firstWhere((s) => !s.loading)
-            .timeout(const Duration(seconds: 3));
+        // The force-refresh runs in the background when Home opens, so it
+        // gets no loader; a card waiting on the full load does.
+        await (loadOnline == true
+            ? settled
+            : runWithDelayedLoader(context, settled));
       } catch (_) {}
     }
-    // The load above (onLoadLocalization) already refreshes the flow-builder /
-    // forms-engine localization caches in its own completion path, and the
-    // await on `!loading` guarantees that finished before we return -- so the
-    // caches are current before the tile navigates. No second refresh needed.
+  }
+
+  /// Stores a flow card's localization [modules] (and the shared ones) and
+  /// has them in the flow-builder / forms copies before the flow opens.
+  ///
+  /// This used to dispatch a load and wait for the shared `loading` flag.
+  /// The bloc runs loads concurrently, so the wait ended when ANY load
+  /// finished (the boundary page's, Home's inventory refresh, the
+  /// project-selection refresh), or after 3 seconds, often before this
+  /// card's module was stored. And when the module was already stored it
+  /// returned without refreshing the in-memory copy, which misses rows
+  /// stored after the last refresh. Either way the flow (e.g. Closed
+  /// Household) opened with raw keys until it was re-entered.
+  Future<void> _ensureFlowLocalization(List<String> modules) async {
+    final localizationBloc = context.read<LocalizationBloc>();
+    final locale = AppSharedPreferences().getSelectedLocale ??
+        'en_${envConfig.variables.tenantId.toUpperCase()}';
+    final wanted = {...modules, ..._sharedFlowModules}.toList();
+    var allStored = false;
+    try {
+      // Every module already stored and the copies current: no network and
+      // no rebuild, so the card opens at once (the loader only shows when it
+      // takes longer). The cap only matters on a slow connection; the flow
+      // then opens with what is stored.
+      allStored = await runWithDelayedLoader(
+        context,
+        localizationBloc
+            .ensureModulesLoaded(
+              modules: wanted,
+              locale: locale,
+              tenantId: envConfig.variables.tenantId,
+              path: Constants.localizationApiPath,
+            )
+            .timeout(const Duration(seconds: 10)),
+      );
+    } catch (_) {}
+    if (allStored || !mounted) return;
+
+    // Something had to be fetched: also run the regular load, as before, for
+    // the boundary module and the module list the other packages' copies
+    // are read with. Its modules are stored by now, so it costs no network
+    // beyond the boundary module.
+    LocalizationParams().setCode(LeastLevelBoundarySingleton().boundary);
+    localizationBloc.add(LocalizationEvent.onLoadLocalization(
+      module: [...wanted, 'hcm-boundary-admin'].join(','),
+      tenantId: envConfig.variables.tenantId,
+      locale: locale,
+      path: Constants.localizationApiPath,
+    ));
   }
 }
 

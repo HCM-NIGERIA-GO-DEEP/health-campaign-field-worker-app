@@ -28,12 +28,16 @@ class FormLocalization {
 
   // Method to load localized strings
   Future<bool> load() async {
-    _localizedStrings.clear();
-    _localizedMap.clear();
+    // Build the new lists first and swap them in afterwards. Clearing the
+    // shared lists before awaiting the rows left them empty for the whole
+    // read, so any form drawn meanwhile showed raw keys.
+    final rows = await localizedStrings;
+    final strings = <dynamic>[];
+    final map = <String, String>{};
     // Iterate over localized strings and filter based on locale
-    for (var element in await localizedStrings) {
+    for (var element in rows) {
       if (element.locale == '${locale.languageCode}_${locale.countryCode}') {
-        _localizedStrings.add(element);
+        strings.add(element);
         final code = element.code as String;
         final message = element.message as String;
         // Rows arrive from every module at once in no guaranteed order, and
@@ -41,14 +45,19 @@ class FormLocalization {
         // resolves to whichever row is read last. An empty message carries no
         // information and must never displace one that has text (see the
         // matching comment in the app's AppLocalizations.load).
-        if (message.trim().isEmpty &&
-            (_localizedMap[code]?.trim().isNotEmpty ?? false)) {
+        if (message.trim().isEmpty && (map[code]?.trim().isNotEmpty ?? false)) {
           continue;
         }
-        _localizedMap[code] = message;
+        map[code] = message;
       }
     }
 
+    _localizedStrings
+      ..clear()
+      ..addAll(strings);
+    _localizedMap
+      ..clear()
+      ..addAll(map);
     return true;
   }
 
