@@ -2971,7 +2971,7 @@ class _HomePageState extends LocalizedState<HomePage> {
       i18.home
           .beneficiaryIdLabel, // TODO: Uncomment when beneficiary downsync is implemented
       if (FaceAuthFeatureFlag.enabled) i18.home.faceRegistrationLabel,
-      // i18.home.dataShare,
+      i18.home.dataShare,
       i18.home.stockSyncDataLabel,
       i18.home.summaryReportLabel,
       i18.home.db,

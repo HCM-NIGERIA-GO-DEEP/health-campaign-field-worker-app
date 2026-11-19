@@ -42,6 +42,11 @@ class PeerToPeerBloc extends Bloc<PeerToPeerEvent, PeerToPeerState> {
   final LocalRepository<ServiceModel, ServiceSearchModel>
       serviceLocalRepository;
 
+  /// How long the sender waits for a peer's acknowledgment before giving up.
+  /// Generous because a receiver writing a large chunk to its local DB can
+  /// stall for a while on a low-end device.
+  static const Duration _confirmationTimeout = Duration(seconds: 60);
+
   List<dynamic> receivedData = [];
   int receivedBytes = 0;
   int totalCount = 0;
@@ -125,11 +130,18 @@ class PeerToPeerBloc extends Bloc<PeerToPeerEvent, PeerToPeerState> {
                 }
 
                 // Wait for confirmation before proceeding
-                await waitForConfirmation(
+                final acknowledged = await waitForConfirmation(
                   event.nearbyService,
                   confirmationType: ConfirmationTypes.chunk.toValue(),
                   offset: offsetValue,
                 );
+
+                if (!acknowledged) {
+                  emit(PeerToPeerState.failedToTransfer(
+                      error: i18.dataShare.failedToTransfer));
+
+                  return;
+                }
 
                 emit(PeerToPeerState.transferInProgress(
                     progress: offsetValue / totalCount,
@@ -155,10 +167,17 @@ class PeerToPeerBloc extends Bloc<PeerToPeerEvent, PeerToPeerState> {
               progress: 100, offset: 0, totalCount: totalCount));
 
           // Wait for receiver's overall acknowledgment
-          await waitForConfirmation(
+          final acknowledged = await waitForConfirmation(
             event.nearbyService,
             confirmationType: ConfirmationTypes.finalAcknowledgment.toValue(),
           );
+
+          if (!acknowledged) {
+            emit(PeerToPeerState.failedToTransfer(
+                error: i18.dataShare.failedToTransfer));
+
+            return;
+          }
 
           emit(const PeerToPeerState.completedDataTransfer());
         }
@@ -194,18 +213,26 @@ class PeerToPeerBloc extends Bloc<PeerToPeerEvent, PeerToPeerState> {
           final entityList =
               DataMapEncryptor.decrypt(compressedMessage).entries;
 
+          // Checked once per chunk rather than per entity: the estimate below
+          // depends only on totalCount, so querying free space inside the loop
+          // re-ran a platform channel call for every entity type to compare
+          // against an unchanged threshold.
+          // [TODO: Move the function DiskSpace.getFreeDiskSpace to utils
+          final diskSpace = await DiskSpace
+              .getFreeDiskSpace; // Returns the device available space in MB
+          // diskSpace in MB * 1024 comparison with serverTotalCount * 150KB * Number of entities * 2
+          if ((diskSpace ?? 0) * 1024 < (totalCount ?? 0) * 150 * 2) {
+            // Must stop here. Previously this emitted and fell through, so the
+            // data was written anyway and the next receivingInProgress emit
+            // overwrote the error -- the guard never actually did anything.
+            emit(PeerToPeerState.failedToReceive(
+                error: i18.beneficiaryDetails.insufficientStorage));
+
+            return;
+          }
+
           for (var entity in entityList) {
             entityType = entity.key;
-
-            double? diskSpace = 0;
-            // [TODO: Move the function DiskSpace.getFreeDiskSpace to utils
-            diskSpace = await DiskSpace
-                .getFreeDiskSpace; // Returns the device available space in MB
-            // diskSpace in MB * 1024 comparison with serverTotalCount * 150KB * Number of entities * 2
-            if ((diskSpace ?? 0) * 1024 < (totalCount ?? 0 * 150 * 2)) {
-              emit(PeerToPeerState.failedToReceive(
-                  error: i18.beneficiaryDetails.insufficientStorage));
-            }
 
             if (entityType == 'DownsyncCriteria') {
               final existingDownSyncData = await downSyncLocalRepository.search(
@@ -360,7 +387,14 @@ class PeerToPeerBloc extends Bloc<PeerToPeerEvent, PeerToPeerState> {
       },
     );
 
-    bool result = await completer.future;
+    // Without a deadline this waits on a bare Completer forever, so a receiver
+    // that stops acknowledging -- it hit the disk-space guard, was killed, or
+    // walked out of range -- leaves the sender stuck on "transfer in progress"
+    // with no way out but killing the app.
+    bool result = await completer.future.timeout(
+      _confirmationTimeout,
+      onTimeout: () => false,
+    );
     subscription.cancel();
     return result;
   }
