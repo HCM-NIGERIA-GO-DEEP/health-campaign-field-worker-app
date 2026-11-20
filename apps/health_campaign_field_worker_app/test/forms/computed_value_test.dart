@@ -35,6 +35,16 @@ void main() {
       expect(divideForDisplay(double.nan, 50, 2), isNull);
       expect(divideForDisplay(double.infinity, 50, 2), isNull);
     });
+
+    test('multiplies for bales shown as pieces', () {
+      expect(divideForDisplay(3, 1, 0, multiplyBy: 50), '150');
+      expect(divideForDisplay('7', 1, 0, multiplyBy: 50), '350');
+      expect(divideForDisplay(0, 1, 0, multiplyBy: 50), '0');
+      expect(divideForDisplay(60, 50, 2, multiplyBy: 1), '1.20',
+          reason: 'multiplyBy 1 leaves the bales row unchanged');
+      expect(divideForDisplay(3, 1, 0, multiplyBy: 0), isNull);
+      expect(divideForDisplay(3, 1, 0, multiplyBy: -50), isNull);
+    });
   });
 
   group('ComputedValueConfig in config JSON', () {
@@ -61,12 +71,37 @@ void main() {
       expect(PropertySchema.fromJson({'type': 'string'}).computedValue, isNull);
     });
 
+    test('multiplyBy alone is enough; the missing factor is 1', () {
+      final schema = PropertySchema.fromJson({
+        'type': 'string',
+        'computedValue': {
+          'sourceField': 'quantityReceived',
+          'multiplyBy': 50,
+          'decimals': 0,
+        },
+      });
+      expect(
+          schema.computedValue,
+          const ComputedValueConfig(
+              sourceField: 'quantityReceived', multiplyBy: 50, decimals: 0));
+      expect(schema.computedValue?.divideBy, 1);
+      expect(
+          PropertySchema.fromJson({
+            'type': 'string',
+            'computedValue': {'sourceField': 'quantity', 'divideBy': 50},
+          }).computedValue?.multiplyBy,
+          1);
+    });
+
     test('a malformed computedValue is ignored, not a crash', () {
       for (final bad in <dynamic>[
         '50',
         50,
         <String, dynamic>{},
+        {'sourceField': 'quantity'},
         {'sourceField': 'quantity', 'divideBy': '50'},
+        {'sourceField': 'quantity', 'multiplyBy': '50'},
+        {'sourceField': 'quantity', 'divideBy': 50, 'multiplyBy': '2'},
         {'sourceField': 7, 'divideBy': 50},
       ]) {
         final schema = PropertySchema.fromJson(
@@ -137,6 +172,24 @@ void main() {
       expect(form.control('bales').value, '1.20');
     });
 
+    test('marks the target touched when it fills, so its errors show', () {
+      // Nobody types into a computed field; without this a stock-in-hand
+      // error on it stayed hidden until submit.
+      final empty = buildForm(null);
+      ComputedValueBinding(
+          form: empty, targetControlName: 'bales', config: config)
+        ..start()
+        ..dispose();
+      expect(empty.control('bales').touched, isFalse);
+
+      final filled = buildForm(60);
+      ComputedValueBinding(
+          form: filled, targetControlName: 'bales', config: config)
+        ..start()
+        ..dispose();
+      expect(filled.control('bales').touched, isTrue);
+    });
+
     test('a missing source or target field leaves the form alone', () {
       final noSource = FormGroup({'bales': FormControl<String>()});
       final noTarget = FormGroup({'quantity': FormControl<int>(value: 60)});
@@ -148,6 +201,57 @@ void main() {
         binding.dispose();
       }
       expect(noSource.control('bales').value, isNull);
+    });
+  });
+
+  group('ComputedValueBinding (multi-product page)', () {
+    // The stock product details page renames every editable field per
+    // product: quantityReceived → quantityReceived_item_0, _item_1, ...
+    const config = ComputedValueConfig(
+        sourceField: 'quantityReceived', multiplyBy: 50, decimals: 0);
+
+    test('each product row follows its own product quantity', () async {
+      final form = FormGroup({
+        'quantityReceived_item_0': FormControl<int>(value: 3),
+        'quantityReceived_item_1': FormControl<int>(value: 10),
+        'quantityReceivedPieces_item_0': FormControl<String>(),
+        'quantityReceivedPieces_item_1': FormControl<String>(),
+      });
+      final first = ComputedValueBinding(
+          form: form,
+          targetControlName: 'quantityReceivedPieces_item_0',
+          config: config)
+        ..start();
+      final second = ComputedValueBinding(
+          form: form,
+          targetControlName: 'quantityReceivedPieces_item_1',
+          config: config)
+        ..start();
+      addTearDown(first.dispose);
+      addTearDown(second.dispose);
+
+      expect(form.control('quantityReceivedPieces_item_0').value, '150');
+      expect(form.control('quantityReceivedPieces_item_1').value, '500');
+
+      form.control('quantityReceived_item_1').value = 4;
+      await pumpEventQueue();
+      expect(form.control('quantityReceivedPieces_item_0').value, '150');
+      expect(form.control('quantityReceivedPieces_item_1').value, '200');
+    });
+
+    test('a suffixed target still reads an unsuffixed source', () {
+      final form = FormGroup({
+        'quantityReceived': FormControl<int>(value: 2),
+        'quantityReceivedPieces_item_0': FormControl<String>(),
+      });
+      final binding = ComputedValueBinding(
+          form: form,
+          targetControlName: 'quantityReceivedPieces_item_0',
+          config: config)
+        ..start();
+      addTearDown(binding.dispose);
+
+      expect(form.control('quantityReceivedPieces_item_0').value, '100');
     });
   });
 

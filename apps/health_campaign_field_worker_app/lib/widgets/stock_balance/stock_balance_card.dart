@@ -37,6 +37,9 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
   double _maxThreshold = 500;
   bool _isLoading = true;
   bool _isDistributor = false;
+  // Balances are held in pieces; shown in bales unless this is a registrar
+  // or distributor (see countsStockInPieces).
+  bool _showInPieces = false;
 
   @override
   void didChangeDependencies() {
@@ -71,6 +74,8 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       // Check if user is a distributor
       final isDistributor = context.loggedInUserRoles
           .any((role) => role.code == RolesType.distributor.toValue());
+      final showInPieces = countsStockInPieces(
+          context.loggedInUserRoles.map((role) => role.code));
 
       // Get project facilities
       final projectFacilityRepo = context.read<
@@ -135,6 +140,7 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
         _selectedFacility = autoSelectedFacility;
         _isLoading = false;
         _isDistributor = isDistributor;
+        _showInPieces = showInPieces;
       });
 
       // Distributors always use their UUID; others use facility ID
@@ -433,12 +439,19 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
         // Per-commodity stock balance bars
         ..._productVariants.map((product) {
           print("--- ${_stockBalances}");
-          final balance = max(_stockBalances[product.id] ?? 0.0, 0.0);
+          final pieces = max(_stockBalances[product.id] ?? 0.0, 0.0);
+          // The thresholds and bar use the number shown, as they did when a
+          // warehouse manager's stock was still saved in bales.
+          final balance = _showInPieces ? pieces : pieces / itnPiecesPerBale;
+          final balanceText = _showInPieces
+              ? '${balance.toInt()}'
+              : balance.toStringAsFixed(2); // 230 pieces → 4.60 bales
           final color = _getColorForBalance(balance);
           final progress =
               _maxThreshold > 0 ? min(balance / _maxThreshold, 1.0) : 0.0;
           final displayName =
               localizations.translate(product.sku ?? product.id);
+          final displayUnit = _showInPieces ? 'pieces' : 'bales';
 
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: spacer1),
@@ -458,7 +471,7 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
                 Padding(
                   padding: const EdgeInsets.only(top: spacer1),
                   child: Text(
-                    '${balance.toInt()} $displayName',
+                    '$balanceText $displayName ($displayUnit)',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: color,
                       fontWeight: FontWeight.w600,

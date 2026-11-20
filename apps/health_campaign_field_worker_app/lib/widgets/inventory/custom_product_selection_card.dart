@@ -20,6 +20,8 @@ import '../../data/services/server_summary_report_service.dart';
 import '../../models/entities/roles_type.dart';
 import '../../utils/extensions/extensions.dart';
 import '../../utils/stock_calculation_utils.dart';
+import '../../utils/stock_quantity_validations.dart';
+import '../../utils/utils.dart' show ValueDropdownItem;
 import '../localized.dart';
 
 class ProductSelectionCard extends LocalizedStatefulWidget {
@@ -400,123 +402,26 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
     debugPrint(
         'ProductSelectionCard: Updating validations for ${_selectedProducts.length} products');
 
-    // Quantity fields that need max validation
-    // These are all quantity fields that could potentially need stock validation
-    final quantityFields = [
-      'quantitySent',
-      'quantityLost',
-      'quantityDamaged',
-      'quantityReturned',
-    ];
-
-    // Create a new properties map
-    final updatedProperties =
-        Map<String, PropertySchema>.from(multiEntityPage!.properties!);
-
-    // Store base field schemas before they might be removed
-    // This allows us to create entity-specific fields even if base fields were removed in a previous call
-    final baseFieldSchemas = <String, PropertySchema>{};
-    for (final fieldName in quantityFields) {
-      // First try to get the base field
-      var baseSchema = multiEntityPage.properties![fieldName];
-
-      // If base field is gone, try to get from an existing entity-specific field
-      if (baseSchema == null) {
-        // Find any existing entity-specific field to use as template
-        for (final key in multiEntityPage.properties!.keys) {
-          if (key.startsWith('${fieldName}_item_')) {
-            baseSchema = multiEntityPage.properties![key];
-            break;
-          }
-        }
-      }
-
-      if (baseSchema != null) {
-        baseFieldSchemas[fieldName] = baseSchema;
-      }
-    }
-
-    // For each selected product, create entity-specific field validations
-    for (var entityIndex = 0;
-        entityIndex < _selectedProducts.length;
-        entityIndex++) {
-      final product = _selectedProducts[entityIndex];
-      final stockInHand = _stockInHandMap[product.id] ?? 0.0;
-      final maxValue = stockInHand.toInt();
-
-      debugPrint(
-          'ProductSelectionCard: Entity $entityIndex - product=${product.id}, stockInHand=$stockInHand, maxValue=$maxValue');
-
-      for (final fieldName in quantityFields) {
-        // Get the base field schema (from our stored map)
-        final baseFieldSchema = baseFieldSchemas[fieldName];
-        if (baseFieldSchema == null) continue;
-
-        // Create the entity-specific field name (matching multi_entity_tab_view pattern)
-        final entityFieldName = '${fieldName}_item_$entityIndex';
-
-        // Create validations with entity-specific max value
-        final existingValidations = baseFieldSchema.validations ?? [];
-
-        // Filter out any existing max validation and add the new one
-        final filteredValidations = existingValidations
-            .where((v) => v.type != 'max' && v.type != 'maxValue')
-            .toList();
-
-        final newValidations = [
-          ...filteredValidations,
-          // Always add max validation, even when stockInHand is 0
-          // This prevents entering any quantity when there's no stock
-          ValidationRule(
-            type: 'max',
-            value: min(maxValue, 10000000),
-            message: maxValue > 10000000
-                ? localizations
-                    .translate('QUANTITY_CANNOT_EXCEED_STOCK_MAX_LIMIT_VALUE')
-                : maxValue > 0
-                    ? localizations
-                        .translate('QUANTITY_CANNOT_EXCEED_STOCK_IN_HAND_VALUE')
-                        .replaceAll('{maxValue}', maxValue.toString())
-                    : localizations.translate("NO_STOCK_AVAILABLE_IN_HAND"),
-          ),
-        ];
-
-        // Create the entity-specific field schema with validation
-        updatedProperties[entityFieldName] = baseFieldSchema.copyWith(
-          validations: newValidations,
-          max: maxValue,
-          maxValue: maxValue,
-        );
-      }
-    }
-
-    // Remove base quantity fields to prevent double-rendering.
-    // multi_entity_tab_view will use the entity-specific fields we created.
-    for (final fieldName in quantityFields) {
-      if (updatedProperties.containsKey(fieldName)) {
-        updatedProperties.remove(fieldName);
-        debugPrint('ProductSelectionCard: Removed base field: $fieldName');
-      }
-
-      // Also remove any old entity-specific fields that are beyond current selection
-      // (e.g., if user had 3 products but now has 2, remove _item_2 fields)
-      final keysToRemove = <String>[];
-      for (final key in updatedProperties.keys) {
-        if (key.startsWith('${fieldName}_item_')) {
-          final indexMatch = RegExp(r'_item_(\d+)$').firstMatch(key);
-          if (indexMatch != null) {
-            final index = int.tryParse(indexMatch.group(1)!);
-            if (index != null && index >= _selectedProducts.length) {
-              keysToRemove.add(key);
-            }
-          }
-        }
-      }
-      for (final key in keysToRemove) {
-        updatedProperties.remove(key);
-        debugPrint('ProductSelectionCard: Removed stale field: $key');
-      }
-    }
+    // One copy of each stock quantity field per product, checked against its
+    // stock in hand - on the Pieces row while the quantity is typed in bales,
+    // since stock in hand is in pieces.
+    final updatedProperties = stockCheckedQuantityFields(
+      properties: multiEntityPage!.properties!,
+      configuredProperties: formsBloc.state.initialSchemas[widget.pageSchema]
+          ?.pages[multiEntityPageKey]
+          ?.properties,
+      stockInHand: [
+        for (final product in _selectedProducts)
+          (_stockInHandMap[product.id] ?? 0.0).toInt(),
+      ],
+      stockMessage: (maxValue) => maxValue > 10000000
+          ? localizations.translate('QUANTITY_CANNOT_EXCEED_STOCK_MAX_LIMIT_VALUE')
+          : maxValue > 0
+              ? localizations
+                  .translate('QUANTITY_CANNOT_EXCEED_STOCK_IN_HAND_VALUE')
+                  .replaceAll('{maxValue}', maxValue.toString())
+              : localizations.translate("NO_STOCK_AVAILABLE_IN_HAND"),
+    );
 
     debugPrint(
         'ProductSelectionCard: Final quantity field keys: ${updatedProperties.keys.where((k) => k.contains('quantity')).toList()}');
@@ -871,7 +776,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
 
     for (final variant in productVariants) {
       if (variant is ProductVariantModel && productIds.contains(variant.id)) {
-        items.add(DropdownItem(
+        items.add(ValueDropdownItem(
           code: variant.id,
           name: localizations.translate(variant.sku ?? variant.id),
         ));
@@ -1000,7 +905,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
       // Handle List<ProductVariantModel>
       if (value is List<ProductVariantModel>) {
         return value
-            .map((m) => DropdownItem(
+            .map((m) => ValueDropdownItem(
                   code: m.id,
                   name: localizations.translate(m.sku ?? m.id),
                 ))
@@ -1015,13 +920,13 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
                 final id = item['id'] as String?;
                 final sku = item['sku'] as String?;
                 if (id != null) {
-                  return DropdownItem(
+                  return ValueDropdownItem(
                     code: id,
                     name: localizations.translate(sku ?? id),
                   );
                 }
               } else if (item is ProductVariantModel) {
-                return DropdownItem(
+                return ValueDropdownItem(
                   code: item.id,
                   name: localizations.translate(item.sku ?? item.id),
                 );
@@ -1054,7 +959,7 @@ class _ProductSelectionCardState extends LocalizedState<ProductSelectionCard> {
             errorMessage: field.errorText,
             helpText: localizations.translate('SELECT_PRODUCT_VARIANTS'),
             options: productVariants!
-                .map((e) => DropdownItem(
+                .map((e) => ValueDropdownItem(
                       code: e.id,
                       name: localizations.translate(e.sku ?? e.id),
                     ))

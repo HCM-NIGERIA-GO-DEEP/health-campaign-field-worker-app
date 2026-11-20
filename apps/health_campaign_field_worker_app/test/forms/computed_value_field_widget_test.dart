@@ -35,6 +35,10 @@ void main() {
         .firstWhere((p) => p['fieldName'] == 'bales'));
   });
 
+  // The bales row is hidden for a registrar or distributor, who type the
+  // pieces received instead. The visibility condition needs the forms bloc,
+  // which this test has no use for, so it is left off here; when the row
+  // shows is covered in test/config/stock_quantity_in_pieces_test.dart.
   Future<FormGroup> pumpBales(WidgetTester tester, int? quantity,
       {PropertySchema? schema}) async {
     final form = FormGroup({
@@ -48,7 +52,7 @@ void main() {
           formGroup: form,
           child: JsonFormBuilder(
             formControlName: 'bales',
-            schema: schema ?? balesSchema,
+            schema: (schema ?? balesSchema).copyWith(visibilityCondition: null),
             pageName: 'stockReceiptDetails',
             currentSchemaKey: 'stockReceiptDetails',
           ),
@@ -94,5 +98,99 @@ void main() {
     form.control('quantity').value = null;
     await tester.pumpAndSettle();
     expect(input(tester).controller.text, '');
+  });
+
+  /// The Quantity Received (Pieces) row of the stock product details page: a
+  /// warehouse manager types the received quantity in bales, and this row
+  /// shows it in pieces (3 bales → 150), greyed out.
+  group('Quantity Received (Pieces) on product details', () {
+    Map<String, dynamic> productDetailsPage(Map flows) =>
+        ((flows['flows'] as List)
+                .cast<Map<String, dynamic>>()
+                .firstWhere((f) => f['name'] == 'RECORDSTOCK')['pages'] as List)
+            .cast<Map<String, dynamic>>()
+            .firstWhere((p) => p['page'] == 'stockProductDetails');
+
+    Map<String, dynamic> property(Map<String, dynamic> page, String name) =>
+        (page['properties'] as List)
+            .cast<Map<String, dynamic>>()
+            .firstWhere((p) => p['fieldName'] == name);
+
+    late PropertySchema piecesSchema;
+
+    setUpAll(() {
+      piecesSchema = PropertySchema.fromJson(property(
+          productDetailsPage(sampleInventoryFlows as Map),
+          'quantityReceivedPieces'));
+    });
+
+    test('is worked out from the bales received, 50 pieces per bale', () {
+      expect(piecesSchema.type, PropertySchemaType.string);
+      expect(
+          piecesSchema.computedValue,
+          const ComputedValueConfig(
+              sourceField: 'quantityReceived', multiplyBy: 50, decimals: 0));
+      expect(piecesSchema.readOnly, isFalse,
+          reason: 'true would make every product tab share one value');
+      expect(piecesSchema.validations, isEmpty);
+    });
+
+    test('sits right under the received quantity', () {
+      final page = productDetailsPage(sampleInventoryFlows as Map);
+      final received = property(page, 'quantityReceived')['order'] as num;
+      final comment = property(page, 'comment')['order'] as num;
+      expect(piecesSchema.order, greaterThan(received));
+      expect(piecesSchema.order, lessThan(comment));
+    });
+
+    Future<FormGroup> pumpPieces(WidgetTester tester, int? bales) async {
+      // Product details is a multi-product page, so its controls carry the
+      // product suffix. The visibility condition needs the forms bloc, which
+      // this test has no use for, so it is left off here; when the row shows
+      // is covered in test/config/stock_quantity_in_pieces_test.dart.
+      final form = FormGroup({
+        'quantityReceived_item_0': FormControl<int>(value: bales),
+        'quantityReceivedPieces_item_0': FormControl<String>(),
+      });
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: [_FormDelegate()],
+        home: Scaffold(
+          body: ReactiveForm(
+            formGroup: form,
+            child: JsonFormBuilder(
+              formControlName: 'quantityReceivedPieces_item_0',
+              schema: piecesSchema.copyWith(visibilityCondition: null),
+              pageName: 'stockProductDetails',
+              currentSchemaKey: 'RECORDSTOCK',
+            ),
+          ),
+        ),
+      ));
+      await tester.pumpAndSettle();
+      return form;
+    }
+
+    testWidgets('shows the bales received in pieces, read-only',
+        (tester) async {
+      final form = await pumpPieces(tester, 3);
+
+      expect(input(tester).controller.text, '150');
+      expect(input(tester).readOnly, isTrue);
+      expect(form.control('quantityReceivedPieces_item_0').value, '150');
+    });
+
+    testWidgets('follows the bales as they are typed, and clears with them',
+        (tester) async {
+      final form = await pumpPieces(tester, null);
+      expect(input(tester).controller.text, '');
+
+      form.control('quantityReceived_item_0').value = 12;
+      await tester.pumpAndSettle();
+      expect(input(tester).controller.text, '600');
+
+      form.control('quantityReceived_item_0').value = null;
+      await tester.pumpAndSettle();
+      expect(input(tester).controller.text, '');
+    });
   });
 }

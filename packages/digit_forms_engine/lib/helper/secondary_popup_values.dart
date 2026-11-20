@@ -18,6 +18,7 @@ String? computedPopupText(
         values[config.sourceField],
         config.divideBy,
         config.decimals,
+        multiplyBy: config.multiplyBy,
       ) ??
       '';
 }

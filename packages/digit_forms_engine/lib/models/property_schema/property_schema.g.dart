@@ -459,7 +459,8 @@ _$ComputedValueConfigImpl _$$ComputedValueConfigImplFromJson(
         Map<String, dynamic> json) =>
     _$ComputedValueConfigImpl(
       sourceField: json['sourceField'] as String,
-      divideBy: json['divideBy'] as num,
+      divideBy: json['divideBy'] as num? ?? 1,
+      multiplyBy: json['multiplyBy'] as num? ?? 1,
       decimals: (json['decimals'] as num?)?.toInt() ?? 2,
     );
 
@@ -468,6 +469,7 @@ Map<String, dynamic> _$$ComputedValueConfigImplToJson(
     <String, dynamic>{
       'sourceField': instance.sourceField,
       'divideBy': instance.divideBy,
+      'multiplyBy': instance.multiplyBy,
       'decimals': instance.decimals,
     };
 

@@ -305,6 +305,37 @@ List<Validator<T>> buildValidators<T>(PropertySchema schema,
           }
           break;
 
+        // A max that stands aside while a sibling field holds a value,
+        // because that field carries the check instead - e.g. a stock
+        // quantity's stock-in-hand check moves to its read-only Pieces row
+        // while the quantity is typed in bales; that row only holds a value
+        // while it shows. Passes when empty or non-numeric.
+        // rule.value: {"max": 120, "unlessFilled": "quantitySentPieces_item_0"}
+        case 'maxUnlessFilled':
+          if (rule.value is Map) {
+            final config = rule.value as Map;
+            final maxValue = parseIntValue(config['max']);
+            final siblingName = config['unlessFilled']?.toString();
+            if (maxValue != null && siblingName != null) {
+              validators.add(Validators.delegate((control) {
+                final form = control.parent;
+                if (form is FormGroup &&
+                    form.contains(siblingName) &&
+                    (form.control(siblingName).value?.toString() ?? '')
+                        .isNotEmpty) {
+                  return null;
+                }
+                final numValue =
+                    num.tryParse(control.value?.toString() ?? '');
+                if (numValue == null || numValue <= maxValue) return null;
+                return {
+                  'maxUnlessFilled': {'max': maxValue, 'actual': numValue}
+                };
+              }) as Validator<T>);
+            }
+          }
+          break;
+
         // Validates that this field has a value whenever a sibling field
         // does - e.g. identificationNumber must be filled in once
         // identificationType is picked, even though neither field is

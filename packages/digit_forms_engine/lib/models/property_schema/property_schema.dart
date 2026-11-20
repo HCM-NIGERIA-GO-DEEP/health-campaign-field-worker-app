@@ -101,8 +101,8 @@ class PropertySchema with _$PropertySchema {
     @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
     DynamicScanLimitConfig? dynamicScanLimit,
     // Read-only value worked out from a sibling field on the same page, e.g.
-    // a quantity in pieces shown in bales. Kept up to date as that field
-    // changes; the field is never editable.
+    // a quantity in pieces shown in bales, or bales shown in pieces. Kept up
+    // to date as that field changes; the field is never editable.
     @JsonKey(fromJson: _computedValueConfigOrNull)
     ComputedValueConfig? computedValue,
   }) = _PropertySchema;
@@ -327,8 +327,10 @@ class ComputedValueConfig with _$ComputedValueConfig {
   const factory ComputedValueConfig({
     // Field on the same page (or popup) holding the number, e.g. "quantity".
     required String sourceField,
-    // Shown value = sourceField value / divideBy, e.g. 50 pieces per bale.
-    required num divideBy,
+    // Shown value = sourceField value × multiplyBy / divideBy. Pieces shown
+    // as bales use divideBy 50; bales shown as pieces use multiplyBy 50.
+    @Default(1) num divideBy,
+    @Default(1) num multiplyBy,
     // Decimals always shown: 60 / 50 → "1.20".
     @Default(2) int decimals,
   }) = _ComputedValueConfig;
@@ -484,16 +486,23 @@ DynamicScanLimitConfig? _dynamicScanLimitConfigOrNull(dynamic value) {
   return null;
 }
 
-// A malformed entry (missing sourceField, divideBy as text) is dropped rather
-// than thrown: a throw here fails the whole page schema, not just this field.
+// A malformed entry (missing sourceField, no divideBy/multiplyBy, a factor as
+// text) is dropped rather than thrown: a throw here fails the whole page
+// schema, not just this field.
 ComputedValueConfig? _computedValueConfigOrNull(dynamic value) {
-  if (value is! Map || value['sourceField'] is! String || value['divideBy'] is! num) {
+  if (value is! Map || value['sourceField'] is! String) return null;
+  final divideBy = value['divideBy'];
+  final multiplyBy = value['multiplyBy'];
+  if (divideBy == null && multiplyBy == null) return null;
+  if ((divideBy != null && divideBy is! num) ||
+      (multiplyBy != null && multiplyBy is! num)) {
     return null;
   }
   final decimals = value['decimals'];
   return ComputedValueConfig(
     sourceField: value['sourceField'] as String,
-    divideBy: value['divideBy'] as num,
+    divideBy: (divideBy as num?) ?? 1,
+    multiplyBy: (multiplyBy as num?) ?? 1,
     decimals: decimals is int ? decimals : 2,
   );
 }

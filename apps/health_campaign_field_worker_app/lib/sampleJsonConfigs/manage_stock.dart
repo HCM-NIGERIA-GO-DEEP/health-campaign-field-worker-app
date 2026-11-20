@@ -1208,10 +1208,18 @@ final dynamic sampleInventoryFlows ={
               // Warehouse managers count ITNs in bales; distributors count
               // loose pieces. Same field, same page, so the label code is
               // chosen by role rather than the field being duplicated.
+              // Stock going to or coming from a delivery team moves as loose
+              // nets, so a warehouse manager types it in pieces too (the
+              // second BALES entry). Typed bales are saved as pieces through
+              // the Pieces row below.
               "labelConditions": [
                 {
-                  "condition": "navigation.stockUnit == 'BALES'",
+                  "condition": "navigation.stockUnit == 'BALES' && warehouseDetails.facilityToWhich != 'DELIVERY_TEAM' && stockDetails.facilityFromWhich != 'DELIVERY_TEAM'",
                   "label": "APPONE_INVENTORY_QUANTITY_SENT_LABEL_BALES"
+                },
+                {
+                  "condition": "navigation.stockUnit == 'BALES'",
+                  "label": "APPONE_INVENTORY_QUANTITY_SENT_LABEL_PIECES"
                 },
                 {
                   "condition": "navigation.stockUnit == 'PIECES'",
@@ -1265,15 +1273,59 @@ final dynamic sampleInventoryFlows ={
               }
             },
             {
+              // Pieces equivalent of quantitySent, saved as the stock quantity -
+              // same rule as quantityReceivedPieces below.
+              "type": "string",
+              "label": "APPONE_INVENTORY_QUANTITY_SENT_LABEL_PIECES",
+              "order": 4.1,
+              "value": "",
+              "format": "text",
+              "hidden": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "quantitySentPieces",
+              "deleteFlag": false,
+              "innerLabel": "",
+              "systemDate": false,
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition":
+                        "navigation.stockEntryType == 'ISSUED' && navigation.stockUnit == 'BALES' && warehouseDetails.facilityToWhich != 'DELIVERY_TEAM' && stockDetails.facilityFromWhich != 'DELIVERY_TEAM'",
+                    "type": "custom"
+                  }
+                ]
+              },
+              "computedValue": {
+                "sourceField": "quantitySent",
+                "multiplyBy": 50,
+                "decimals": 0
+              },
+              "validations": [],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "enums": null
+            },
+            {
               "type": "integer",
               "label": "APPONE_INVENTORY_QUANTITY_LOST_LABEL",
               // Warehouse managers count ITNs in bales; distributors count
               // loose pieces. Same field, same page, so the label code is
               // chosen by role rather than the field being duplicated.
+              // Stock going to or coming from a delivery team moves as loose
+              // nets, so a warehouse manager types it in pieces too (the
+              // second BALES entry). Typed bales are saved as pieces through
+              // the Pieces row below.
               "labelConditions": [
                 {
-                  "condition": "navigation.stockUnit == 'BALES'",
+                  "condition": "navigation.stockUnit == 'BALES' && warehouseDetails.facilityToWhich != 'DELIVERY_TEAM' && stockDetails.facilityFromWhich != 'DELIVERY_TEAM'",
                   "label": "APPONE_INVENTORY_QUANTITY_LOST_LABEL_BALES"
+                },
+                {
+                  "condition": "navigation.stockUnit == 'BALES'",
+                  "label": "APPONE_INVENTORY_QUANTITY_LOST_LABEL_PIECES"
                 },
                 {
                   "condition": "navigation.stockUnit == 'PIECES'",
@@ -1325,6 +1377,42 @@ final dynamic sampleInventoryFlows ={
                   }
                 ]
               }
+            },
+            {
+              // Pieces equivalent of quantityLost, saved as the stock quantity -
+              // same rule as quantityReceivedPieces below.
+              "type": "string",
+              "label": "APPONE_INVENTORY_QUANTITY_LOST_LABEL_PIECES",
+              "order": 4.1,
+              "value": "",
+              "format": "text",
+              "hidden": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "quantityLostPieces",
+              "deleteFlag": false,
+              "innerLabel": "",
+              "systemDate": false,
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition":
+                        "navigation.stockEntryType == 'LOSS' && navigation.stockUnit == 'BALES' && warehouseDetails.facilityToWhich != 'DELIVERY_TEAM' && stockDetails.facilityFromWhich != 'DELIVERY_TEAM'",
+                    "type": "custom"
+                  }
+                ]
+              },
+              "computedValue": {
+                "sourceField": "quantityLost",
+                "multiplyBy": 50,
+                "decimals": 0
+              },
+              "validations": [],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "enums": null
             },
             {
               "type": "string",
@@ -1422,10 +1510,18 @@ final dynamic sampleInventoryFlows ={
               // Warehouse managers count ITNs in bales; distributors count
               // loose pieces. Same field, same page, so the label code is
               // chosen by role rather than the field being duplicated.
+              // Stock going to or coming from a delivery team moves as loose
+              // nets, so a warehouse manager types it in pieces too (the
+              // second BALES entry). Typed bales are saved as pieces through
+              // the Pieces row below.
               "labelConditions": [
                 {
-                  "condition": "navigation.stockUnit == 'BALES'",
+                  "condition": "navigation.stockUnit == 'BALES' && warehouseDetails.facilityToWhich != 'DELIVERY_TEAM' && stockDetails.facilityFromWhich != 'DELIVERY_TEAM'",
                   "label": "APPONE_INVENTORY_QUANTITY_DAMAGED_LABEL_BALES"
+                },
+                {
+                  "condition": "navigation.stockUnit == 'BALES'",
+                  "label": "APPONE_INVENTORY_QUANTITY_DAMAGED_LABEL_PIECES"
                 },
                 {
                   "condition": "navigation.stockUnit == 'PIECES'",
@@ -1479,6 +1575,42 @@ final dynamic sampleInventoryFlows ={
               }
             },
             {
+              // Pieces equivalent of quantityDamaged, saved as the stock quantity -
+              // same rule as quantityReceivedPieces below.
+              "type": "string",
+              "label": "APPONE_INVENTORY_QUANTITY_DAMAGED_LABEL_PIECES",
+              "order": 4.1,
+              "value": "",
+              "format": "text",
+              "hidden": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "quantityDamagedPieces",
+              "deleteFlag": false,
+              "innerLabel": "",
+              "systemDate": false,
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition":
+                        "navigation.stockEntryType == 'DAMAGED' && navigation.stockUnit == 'BALES' && warehouseDetails.facilityToWhich != 'DELIVERY_TEAM' && stockDetails.facilityFromWhich != 'DELIVERY_TEAM'",
+                    "type": "custom"
+                  }
+                ]
+              },
+              "computedValue": {
+                "sourceField": "quantityDamaged",
+                "multiplyBy": 50,
+                "decimals": 0
+              },
+              "validations": [],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "enums": null
+            },
+            {
               "type": "string",
               "label": "APPONE_INVENTORY_DAMAGE_REASON_LABEL",
               "order": 5,
@@ -1522,18 +1654,59 @@ final dynamic sampleInventoryFlows ={
               ]
             },
             {
+              // On a return the user picks the unit for each product, whatever
+              // their role: Pieces (the default) shows quantityReturned in
+              // pieces; Bales shows it in bales plus the read-only Pieces row
+              // below. The "stock" transformer saves pieces either way, and
+              // records the choice as additionalFields "stockUnit".
+              // _$tabIndex is this product's own copy of the field.
+              "type": "string",
+              "label": "APPONE_INVENTORY_RETURN_UNIT_LABEL",
+              "order": 3.9,
+              "value": "PIECES",
+              "format": "dropdown",
+              "hidden": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "returnUnit",
+              "deleteFlag": false,
+              "innerLabel": "",
+              "systemDate": false,
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition": "navigation.stockEntryType == 'RETURNED'",
+                    "type": "custom"
+                  }
+                ]
+              },
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "APPONE_INVENTORY_RETURN_UNIT_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "enums": [
+                {"code": "BALES", "name": "APPONE_INVENTORY_UNIT_BALES"},
+                {"code": "PIECES", "name": "APPONE_INVENTORY_UNIT_PIECES"}
+              ]
+            },
+            {
               "type": "integer",
               "label": "APPONE_INVENTORY_QUANTITY_RETURNED_LABEL",
-              // Warehouse managers count ITNs in bales; distributors count
-              // loose pieces. Same field, same page, so the label code is
-              // chosen by role rather than the field being duplicated.
+              // Labelled with the unit picked in returnUnit above.
               "labelConditions": [
                 {
-                  "condition": "navigation.stockUnit == 'BALES'",
+                  "condition": r"stockProductDetails.returnUnit_$tabIndex == 'BALES'",
                   "label": "APPONE_INVENTORY_QUANTITY_RETURNED_LABEL_BALES"
                 },
                 {
-                  "condition": "navigation.stockUnit == 'PIECES'",
+                  "condition": r"stockProductDetails.returnUnit_$tabIndex == 'PIECES'",
                   "label": "APPONE_INVENTORY_QUANTITY_RETURNED_LABEL_PIECES"
                 }
               ],
@@ -1584,15 +1757,61 @@ final dynamic sampleInventoryFlows ={
               "enums": null
             },
             {
+              // Pieces equivalent of quantityReturned, saved as the stock
+              // quantity when returned in bales - shown only when Bales is
+              // picked in returnUnit. Read-only for the same reason as
+              // quantityReceivedPieces below.
+              "type": "string",
+              "label": "APPONE_INVENTORY_QUANTITY_RETURNED_LABEL_PIECES",
+              "order": 4.1,
+              "value": "",
+              "format": "text",
+              "hidden": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "quantityReturnedPieces",
+              "deleteFlag": false,
+              "innerLabel": "",
+              "systemDate": false,
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition":
+                        r"navigation.stockEntryType == 'RETURNED' && stockProductDetails.returnUnit_$tabIndex == 'BALES'",
+                    "type": "custom"
+                  }
+                ]
+              },
+              "computedValue": {
+                "sourceField": "quantityReturned",
+                "multiplyBy": 50,
+                "decimals": 0
+              },
+              "validations": [],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "enums": null
+            },
+            {
               "type": "integer",
               "label": "APPONE_INVENTORY_QUANTITY_RECEIVED_LABEL",
               // Warehouse managers count ITNs in bales; distributors count
               // loose pieces. Same field, same page, so the label code is
               // chosen by role rather than the field being duplicated.
+              // Stock going to or coming from a delivery team moves as loose
+              // nets, so a warehouse manager types it in pieces too (the
+              // second BALES entry). Typed bales are saved as pieces through
+              // the Pieces row below.
               "labelConditions": [
                 {
-                  "condition": "navigation.stockUnit == 'BALES'",
+                  "condition": "navigation.stockUnit == 'BALES' && warehouseDetails.facilityToWhich != 'DELIVERY_TEAM' && stockDetails.facilityFromWhich != 'DELIVERY_TEAM'",
                   "label": "APPONE_INVENTORY_QUANTITY_RECEIVED_LABEL_BALES"
+                },
+                {
+                  "condition": "navigation.stockUnit == 'BALES'",
+                  "label": "APPONE_INVENTORY_QUANTITY_RECEIVED_LABEL_PIECES"
                 },
                 {
                   "condition": "navigation.stockUnit == 'PIECES'",
@@ -1641,6 +1860,55 @@ final dynamic sampleInventoryFlows ={
                   "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
                 }
               ],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "enums": null
+            },
+            {
+              // A warehouse manager types the received quantity in bales;
+              // this row shows it in pieces (50 per bale), worked out
+              // automatically and greyed out, and the stock transformer saves
+              // it as the quantity, so stock is stored in pieces. Only when
+              // the quantity is typed in bales: a distributor, and anyone
+              // receiving from or sending to a delivery team, types pieces
+              // into quantityReceived itself, which is saved as typed. The
+              // same rule as fn:stockEntryUnit, which tells the transformer
+              // which one to save.
+              //
+              // readOnly stays false on purpose: computedValue already makes
+              // the field read-only, and this multi-product page gives each
+              // product its own copy of a field (quantityReceivedPieces_item_0)
+              // only when readOnly is false. With true, every product tab
+              // would share one value.
+              "type": "string",
+              "label": "APPONE_INVENTORY_QUANTITY_RECEIVED_LABEL_PIECES",
+              "order": 4.1,
+              "value": "",
+              "format": "text",
+              "hidden": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "quantityReceivedPieces",
+              "deleteFlag": false,
+              "innerLabel": "",
+              "systemDate": false,
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition":
+                        "navigation.stockEntryType == 'RECEIPT' && navigation.stockUnit == 'BALES' && warehouseDetails.facilityToWhich != 'DELIVERY_TEAM' && stockDetails.facilityFromWhich != 'DELIVERY_TEAM'",
+                    "type": "custom"
+                  }
+                ]
+              },
+              "computedValue": {
+                "sourceField": "quantityReceived",
+                "multiplyBy": 50,
+                "decimals": 0
+              },
+              "validations": [],
               "errorMessage": "",
               "isMultiSelect": false,
               "enums": null
@@ -1767,6 +2035,15 @@ final dynamic sampleInventoryFlows ={
               {
                 "key": "vehicleNumber",
                 "value": "{{formData.stockDetails.vehicleNumber}}"
+              },
+              // The unit the product details quantities were typed in: BALES
+              // or PIECES (see fn:stockEntryUnit). Saved on the stock as
+              // additionalFields "stockUnit", and it picks what the "stock"
+              // transformer saves as quantity - the Pieces row when typed in
+              // bales - so stock is always stored in pieces.
+              {
+                "key": "stockUnit",
+                "value": "{{fn:stockEntryUnit(navigation.stockUnit, formData.warehouseDetails.facilityToWhich, formData.stockDetails.facilityFromWhich)}}"
               }
             ],
             "onError": [
@@ -3090,6 +3367,11 @@ final dynamic sampleInventoryFlows ={
                       "type": "FORM",
                       "name": "stockReceiptDetails",
                       "data": [
+                        // How the logged-in user takes this stock in: PIECES
+                        // for a registrar or distributor, who type the
+                        // pieces received; BALES for everyone else, who
+                        // accept it as sent. Read as navigation.receiptUnit.
+                        {"key": "receiptUnit", "value": "{{fn:stockReceiptUnit()}}"},
                         {
                           "key": "stockEntryType",
                           "value": "{{fn:getStockEntryTypeFromFields(item.items[0].additionalFields.fields)}}"
@@ -3227,6 +3509,12 @@ final dynamic sampleInventoryFlows ={
               {
                 "key": "quantity",
                 "value": "{{fn:bottlesToMl(navigation.quantity)}}"
+              },
+              {
+                // PIECES saves the pieces typed on the page (quantityReceived)
+                // instead of the dispatched quantity.
+                "key": "receiptUnit",
+                "value": "{{navigation.receiptUnit}}"
               },
               {
                 "key": "transactionReason",
@@ -3528,7 +3816,16 @@ final dynamic sampleInventoryFlows ={
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
-              "visibilityCondition": {},
+              // A registrar or distributor gets quantityReceived below, which
+              // they can edit, in place of this and the bales row.
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition": "navigation.receiptUnit != 'PIECES'",
+                    "type": "custom"
+                  }
+                ]
+              },
               "validations": [
                 {
                   "type": "required",
@@ -3539,6 +3836,59 @@ final dynamic sampleInventoryFlows ={
                   "type": "regex",
                   "value": r"^[0-9]+$",
                   "message": "INVENTORY_VALID_NUMBER_REQUIRED_MESSAGE"
+                }
+              ],
+              "errorMessage": "",
+              "isMultiSelect": false,
+              "enums": null
+            },
+            {
+              // A registrar or distributor always receives stock in pieces:
+              // this starts at the pieces sent and they correct it to what
+              // arrived. The "stockReceipt" transformer saves it as the
+              // quantity when navigation.receiptUnit is PIECES.
+              "type": "integer",
+              "label": "APPONE_INVENTORY_QUANTITY_RECEIVED_LABEL_PIECES",
+              "order": 7.05,
+              "value": "{{navigation.quantity}}",
+              "format": "text",
+              "hidden": false,
+              "tooltip": "",
+              "helpText": "",
+              "infoText": "",
+              "readOnly": false,
+              "fieldName": "quantityReceived",
+              "deleteFlag": false,
+              "innerLabel": "",
+              "systemDate": false,
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition": "navigation.receiptUnit == 'PIECES'",
+                    "type": "custom"
+                  }
+                ]
+              },
+              "validations": [
+                {
+                  "type": "required",
+                  "value": true,
+                  "message": "QUANTITY_RECEIVED_REQUIRED_ERROR_MESSAGE"
+                },
+                {
+                  "type": "min",
+                  "value": 1,
+                  "message": "QUANTITY_RECEIVED_MIN_REQUIRED_ERROR_MESSAGE"
+                },
+                {
+                  "type": "max",
+                  "value": 10000000,
+                  "message": "QUANTITY_MAX_ERROR_MESSAGE"
+                },
+                {
+                  "type": "regex",
+                  "value": r"^[0-9]+$",
+                  "message": "QUANTITY_VALID_NUMBER_ERROR_MESSAGE"
                 }
               ],
               "errorMessage": "",
@@ -3560,7 +3910,14 @@ final dynamic sampleInventoryFlows ={
               "deleteFlag": false,
               "innerLabel": "",
               "systemDate": false,
-              "visibilityCondition": {},
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition": "navigation.receiptUnit != 'PIECES'",
+                    "type": "custom"
+                  }
+                ]
+              },
               "computedValue": {
                 "sourceField": "quantity",
                 "divideBy": 50,

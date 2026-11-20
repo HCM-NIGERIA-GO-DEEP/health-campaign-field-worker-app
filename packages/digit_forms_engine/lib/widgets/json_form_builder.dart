@@ -55,6 +55,12 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
 
     // Handle conditional display logic
     if (_shouldHideField(form, widget.schema, widget.formControlName)) {
+      // A hidden computed field stops following its source, or the next
+      // change there would refill the value hiding just cleared. It is bound
+      // again, and filled, when it shows.
+      _computedBinding?.dispose();
+      _computedBinding = null;
+      _computedForm = null;
       // A hidden latLng field must still mount so it can capture the device
       // location into the form control (consumed by transformers, e.g. to save
       // lat/long on a Task during delivery). Render it silently/offstage.
@@ -171,24 +177,9 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
   }
 
   /// Resolve dynamic variables in the path (e.g., $tabIndex, $entityIndex)
-  String _resolveDynamicVariables(String path) {
-    String resolvedPath = path;
-
-    // Get current entity index from navigationParams if available
-    final currentEntityIndex = widget.navigationParams?['currentEntityIndex'];
-
-    // Replace $tabIndex or $entityIndex with actual index
-    // Uses '_item_N' suffix to match form control naming convention
-    // Example: scanResource_$tabIndex -> scanResource_item_0
-    if (currentEntityIndex != null) {
-      resolvedPath = resolvedPath
-          .replaceAll(r'_$tabIndex', '_item_$currentEntityIndex')
-          .replaceAll(r'_$entityIndex', '_item_$currentEntityIndex')
-          .replaceAll(r'_$index', '_item_$currentEntityIndex');
-    }
-
-    return resolvedPath;
-  }
+  /// Example: scanResource_$tabIndex -> scanResource_item_0
+  String _resolveDynamicVariables(String path) =>
+      resolveEntityIndex(path, widget.navigationParams?['currentEntityIndex']);
 
   /// Unified autoFill value resolver supporting both form controls and defaultValues
   /// Supports:
@@ -318,7 +309,11 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
         );
         for (final labelCondition in conditions) {
           final matched = evaluateVisibilityExpression(
-            [VisibilityExpression(condition: labelCondition.condition)],
+            [
+              VisibilityExpression(
+                  condition:
+                      _resolveDynamicVariables(labelCondition.condition))
+            ],
             values,
           );
           if (matched) {
@@ -351,8 +346,16 @@ class _JsonFormBuilderState extends LocalizedState<JsonFormBuilder> {
         navigationParams: widget.navigationParams,
       );
 
-      final result =
-          evaluateVisibilityExpression(visibility.expression, values);
+      // A condition can name this entity's own copy of a field on a
+      // multi-entity page with _$tabIndex, as autoFillCondition can.
+      final result = evaluateVisibilityExpression(
+        [
+          for (final expression in visibility.expression)
+            expression.copyWith(
+                condition: _resolveDynamicVariables(expression.condition)),
+        ],
+        values,
+      );
       VisibilityManager(
         schemaMap: {formName: schema},
         formData: form.rawValue,

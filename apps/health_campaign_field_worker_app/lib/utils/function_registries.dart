@@ -892,6 +892,34 @@ class FunctionRegistries {
       }
     });
 
+    // The unit the stock product details quantities were typed in, BALES or
+    // PIECES - see stockEntryUnit in utils.dart. Passed to the "stock"
+    // transformer as stockUnit: saved as the stock's additionalFields
+    // "stockUnit", and it picks the field saved as quantity (the pieces row
+    // when typed in bales), so stock is always stored in pieces.
+    // Usage: "{{fn:stockEntryUnit(navigation.stockUnit,
+    //   formData.warehouseDetails.facilityToWhich,
+    //   formData.stockDetails.facilityFromWhich)}}"
+    FunctionRegistry.register('stockEntryUnit', (args, stateData) {
+      Object? argAt(int index) => args.length > index ? args[index] : null;
+      return stockEntryUnit(argAt(0), argAt(1), argAt(2));
+    });
+
+    // How the logged-in user takes in stock on the stock receipt (Accept)
+    // screen, PIECES or BALES - see stockReceiptUnit in utils.dart. Passed
+    // down as navigation.receiptUnit: PIECES shows a registrar or
+    // distributor an editable pieces field in place of the read-only
+    // quantity and its bales, and the "stockReceipt" transformer saves it.
+    // Usage: "{{fn:stockReceiptUnit()}}"
+    FunctionRegistry.register('stockReceiptUnit', (args, stateData) {
+      try {
+        return stockReceiptUnit(
+            context.loggedInUserRoles.map((role) => role.code));
+      } catch (_) {
+        return 'BALES';
+      }
+    });
+
     // Suffixes a localisation code with the logged-in role's stock unit,
     // for places that resolve a label through resolveTemplate rather than a
     // plain translate() - i.e. TEMPLATE table headers, where the header is

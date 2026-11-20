@@ -117,8 +117,8 @@ mixin _$PropertySchema {
   @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
   DynamicScanLimitConfig? get dynamicScanLimit =>
       throw _privateConstructorUsedError; // Read-only value worked out from a sibling field on the same page, e.g.
-// a quantity in pieces shown in bales. Kept up to date as that field
-// changes; the field is never editable.
+// a quantity in pieces shown in bales, or bales shown in pieces. Kept up
+// to date as that field changes; the field is never editable.
   @JsonKey(fromJson: _computedValueConfigOrNull)
   ComputedValueConfig? get computedValue => throw _privateConstructorUsedError;
 
@@ -1222,8 +1222,8 @@ class _$PropertySchemaImpl implements _PropertySchema {
   @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
   final DynamicScanLimitConfig? dynamicScanLimit;
 // Read-only value worked out from a sibling field on the same page, e.g.
-// a quantity in pieces shown in bales. Kept up to date as that field
-// changes; the field is never editable.
+// a quantity in pieces shown in bales, or bales shown in pieces. Kept up
+// to date as that field changes; the field is never editable.
   @override
   @JsonKey(fromJson: _computedValueConfigOrNull)
   final ComputedValueConfig? computedValue;
@@ -1593,8 +1593,8 @@ abstract class _PropertySchema implements PropertySchema {
   @JsonKey(fromJson: _dynamicScanLimitConfigOrNull)
   DynamicScanLimitConfig? get dynamicScanLimit;
   @override // Read-only value worked out from a sibling field on the same page, e.g.
-// a quantity in pieces shown in bales. Kept up to date as that field
-// changes; the field is never editable.
+// a quantity in pieces shown in bales, or bales shown in pieces. Kept up
+// to date as that field changes; the field is never editable.
   @JsonKey(fromJson: _computedValueConfigOrNull)
   ComputedValueConfig? get computedValue;
   @override
@@ -4662,8 +4662,10 @@ ComputedValueConfig _$ComputedValueConfigFromJson(Map<String, dynamic> json) {
 mixin _$ComputedValueConfig {
 // Field on the same page (or popup) holding the number, e.g. "quantity".
   String get sourceField =>
-      throw _privateConstructorUsedError; // Shown value = sourceField value / divideBy, e.g. 50 pieces per bale.
-  num get divideBy =>
+      throw _privateConstructorUsedError; // Shown value = sourceField value × multiplyBy / divideBy. Pieces shown
+// as bales use divideBy 50; bales shown as pieces use multiplyBy 50.
+  num get divideBy => throw _privateConstructorUsedError;
+  num get multiplyBy =>
       throw _privateConstructorUsedError; // Decimals always shown: 60 / 50 → "1.20".
   int get decimals => throw _privateConstructorUsedError;
 
@@ -4679,7 +4681,7 @@ abstract class $ComputedValueConfigCopyWith<$Res> {
           ComputedValueConfig value, $Res Function(ComputedValueConfig) then) =
       _$ComputedValueConfigCopyWithImpl<$Res, ComputedValueConfig>;
   @useResult
-  $Res call({String sourceField, num divideBy, int decimals});
+  $Res call({String sourceField, num divideBy, num multiplyBy, int decimals});
 }
 
 /// @nodoc
@@ -4697,6 +4699,7 @@ class _$ComputedValueConfigCopyWithImpl<$Res, $Val extends ComputedValueConfig>
   $Res call({
     Object? sourceField = null,
     Object? divideBy = null,
+    Object? multiplyBy = null,
     Object? decimals = null,
   }) {
     return _then(_value.copyWith(
@@ -4707,6 +4710,10 @@ class _$ComputedValueConfigCopyWithImpl<$Res, $Val extends ComputedValueConfig>
       divideBy: null == divideBy
           ? _value.divideBy
           : divideBy // ignore: cast_nullable_to_non_nullable
+              as num,
+      multiplyBy: null == multiplyBy
+          ? _value.multiplyBy
+          : multiplyBy // ignore: cast_nullable_to_non_nullable
               as num,
       decimals: null == decimals
           ? _value.decimals
@@ -4724,7 +4731,7 @@ abstract class _$$ComputedValueConfigImplCopyWith<$Res>
       __$$ComputedValueConfigImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String sourceField, num divideBy, int decimals});
+  $Res call({String sourceField, num divideBy, num multiplyBy, int decimals});
 }
 
 /// @nodoc
@@ -4740,6 +4747,7 @@ class __$$ComputedValueConfigImplCopyWithImpl<$Res>
   $Res call({
     Object? sourceField = null,
     Object? divideBy = null,
+    Object? multiplyBy = null,
     Object? decimals = null,
   }) {
     return _then(_$ComputedValueConfigImpl(
@@ -4750,6 +4758,10 @@ class __$$ComputedValueConfigImplCopyWithImpl<$Res>
       divideBy: null == divideBy
           ? _value.divideBy
           : divideBy // ignore: cast_nullable_to_non_nullable
+              as num,
+      multiplyBy: null == multiplyBy
+          ? _value.multiplyBy
+          : multiplyBy // ignore: cast_nullable_to_non_nullable
               as num,
       decimals: null == decimals
           ? _value.decimals
@@ -4764,7 +4776,10 @@ class __$$ComputedValueConfigImplCopyWithImpl<$Res>
 @JsonSerializable(explicitToJson: true, includeIfNull: false)
 class _$ComputedValueConfigImpl implements _ComputedValueConfig {
   const _$ComputedValueConfigImpl(
-      {required this.sourceField, required this.divideBy, this.decimals = 2});
+      {required this.sourceField,
+      this.divideBy = 1,
+      this.multiplyBy = 1,
+      this.decimals = 2});
 
   factory _$ComputedValueConfigImpl.fromJson(Map<String, dynamic> json) =>
       _$$ComputedValueConfigImplFromJson(json);
@@ -4772,9 +4787,14 @@ class _$ComputedValueConfigImpl implements _ComputedValueConfig {
 // Field on the same page (or popup) holding the number, e.g. "quantity".
   @override
   final String sourceField;
-// Shown value = sourceField value / divideBy, e.g. 50 pieces per bale.
+// Shown value = sourceField value × multiplyBy / divideBy. Pieces shown
+// as bales use divideBy 50; bales shown as pieces use multiplyBy 50.
   @override
+  @JsonKey()
   final num divideBy;
+  @override
+  @JsonKey()
+  final num multiplyBy;
 // Decimals always shown: 60 / 50 → "1.20".
   @override
   @JsonKey()
@@ -4782,7 +4802,7 @@ class _$ComputedValueConfigImpl implements _ComputedValueConfig {
 
   @override
   String toString() {
-    return 'ComputedValueConfig(sourceField: $sourceField, divideBy: $divideBy, decimals: $decimals)';
+    return 'ComputedValueConfig(sourceField: $sourceField, divideBy: $divideBy, multiplyBy: $multiplyBy, decimals: $decimals)';
   }
 
   @override
@@ -4794,13 +4814,16 @@ class _$ComputedValueConfigImpl implements _ComputedValueConfig {
                 other.sourceField == sourceField) &&
             (identical(other.divideBy, divideBy) ||
                 other.divideBy == divideBy) &&
+            (identical(other.multiplyBy, multiplyBy) ||
+                other.multiplyBy == multiplyBy) &&
             (identical(other.decimals, decimals) ||
                 other.decimals == decimals));
   }
 
   @JsonKey(ignore: true)
   @override
-  int get hashCode => Object.hash(runtimeType, sourceField, divideBy, decimals);
+  int get hashCode =>
+      Object.hash(runtimeType, sourceField, divideBy, multiplyBy, decimals);
 
   @JsonKey(ignore: true)
   @override
@@ -4820,7 +4843,8 @@ class _$ComputedValueConfigImpl implements _ComputedValueConfig {
 abstract class _ComputedValueConfig implements ComputedValueConfig {
   const factory _ComputedValueConfig(
       {required final String sourceField,
-      required final num divideBy,
+      final num divideBy,
+      final num multiplyBy,
       final int decimals}) = _$ComputedValueConfigImpl;
 
   factory _ComputedValueConfig.fromJson(Map<String, dynamic> json) =
@@ -4828,8 +4852,11 @@ abstract class _ComputedValueConfig implements ComputedValueConfig {
 
   @override // Field on the same page (or popup) holding the number, e.g. "quantity".
   String get sourceField;
-  @override // Shown value = sourceField value / divideBy, e.g. 50 pieces per bale.
+  @override // Shown value = sourceField value × multiplyBy / divideBy. Pieces shown
+// as bales use divideBy 50; bales shown as pieces use multiplyBy 50.
   num get divideBy;
+  @override
+  num get multiplyBy;
   @override // Decimals always shown: 60 / 50 → "1.20".
   int get decimals;
   @override

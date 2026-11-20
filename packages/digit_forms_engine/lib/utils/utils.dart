@@ -332,6 +332,19 @@ ExpressionPreprocessResult _preprocessExpression(
   );
 }
 
+/// Points `_$tabIndex` (or `_$entityIndex`, `_$index`) at one entity's own
+/// copy of a field on a multi-entity page, matching the form control naming:
+/// `stockProductDetails.returnUnit_$tabIndex` becomes
+/// `stockProductDetails.returnUnit_item_0` for the first entity. Unchanged
+/// when [entityIndex] is null, i.e. outside a multi-entity page.
+String resolveEntityIndex(String text, Object? entityIndex) {
+  if (entityIndex == null) return text;
+  return text
+      .replaceAll(r'_$tabIndex', '_item_$entityIndex')
+      .replaceAll(r'_$entityIndex', '_item_$entityIndex')
+      .replaceAll(r'_$index', '_item_$entityIndex');
+}
+
 bool evaluateVisibilityExpression(
     List<VisibilityExpression> expressions, Map<String, dynamic> values) {
   // Any condition must be true (OR logic)

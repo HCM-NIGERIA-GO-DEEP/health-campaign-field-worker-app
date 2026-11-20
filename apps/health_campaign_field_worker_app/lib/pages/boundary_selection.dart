@@ -830,7 +830,7 @@ class _BoundarySelectionPageState
                                                       options: filteredItems
                                                           .map(
                                                               (e) =>
-                                                                  DropdownItem(
+                                                                  ValueDropdownItem(
                                                                     name: localizations.translate(
                                                                         e.code ??
                                                                             'No Value'),
@@ -847,7 +847,7 @@ class _BoundarySelectionPageState
                                                                       s.code ==
                                                                       e.code))
                                                               .map((e) =>
-                                                                  DropdownItem(
+                                                                  ValueDropdownItem(
                                                                     name: localizations.translate(
                                                                         e.code ??
                                                                             'No Value'),
