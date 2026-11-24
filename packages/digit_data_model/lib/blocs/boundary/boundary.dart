@@ -2,6 +2,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:collection/collection.dart';
 import 'package:digit_data_model/models/entities/boundary.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
@@ -39,19 +40,31 @@ class BoundaryBloc extends Bloc<BoundaryEvent, BoundaryState> {
     BoundaryFindEvent event,
     BoundaryEmitter emit,
   ) async {
-    List<BoundaryModel> boundaryList = await boundaryRepository.search(
+    final initialBoundaries = await boundaryRepository.search(
       BoundarySearchModel(
         codes: event.code,
         isSingle: true,
       ),
     );
 
-    final List<String> boundaryLabelList = [];
-    for (var element in boundaryList) {
-      if (!boundaryLabelList.contains(element.label.toString())) {
-        boundaryLabelList.add(element.label.toString());
-      }
-    }
+    // The picker can start at Distribution Point without selecting its parent.
+    final projectBoundaries = await boundaryRepository.search(
+      BoundarySearchModel(codes: event.code),
+    );
+    final knownCodes =
+        initialBoundaries.map((boundary) => boundary.code).toSet();
+    final distributionPoints = projectBoundaries.where(
+      (boundary) =>
+          boundary.label?.trim().toLowerCase() == 'distribution point' &&
+          (boundary.materializedPath?.split('.').contains(event.code) ??
+              false) &&
+          knownCodes.add(boundary.code),
+    );
+    final boundaryList = [...initialBoundaries, ...distributionPoints];
+    final orderedBoundaries = [...boundaryList]
+      ..sort((a, b) => (a.boundaryNum ?? 0).compareTo(b.boundaryNum ?? 0));
+    final boundaryLabelList =
+        orderedBoundaries.map((boundary) => boundary.label.toString()).toSet();
     emit(
       state.copyWith(
         boundaryList: boundaryList,
@@ -141,37 +154,11 @@ class BoundaryBloc extends Bloc<BoundaryEvent, BoundaryState> {
     BoundarySubmitEvent event,
     BoundaryEmitter emit,
   ) async {
-    // Multi-select controls populate selectedLastLevelBoundaries. A
-    // single-select leaf (used by distributor boundary selection) only
-    // populates selectedBoundaryMap, so include its deepest selection too.
-    final selectedBoundaries = state.selectedLastLevelBoundaries.isNotEmpty
-        ? state.selectedLastLevelBoundaries
-        : state.selectedBoundaryMap.values
-            .whereType<BoundaryModel>()
-            .toList()
-            .reversed
-            .take(1)
-            .toList();
-
-    // A distributor may submit a Distribution Point without choosing one
-    // Community. Resolve that point to its direct Community children so
-    // downsync uses the beneficiary locality level. The boundary list is
-    // already flattened and loaded for the selected parent in the picker.
-    final resolvedBoundaries = selectedBoundaries.length == 1 &&
-            selectedBoundaries.single.label?.trim().toLowerCase() ==
-                'distribution point'
-        ? state.boundaryList.where((boundary) {
-            final selected = selectedBoundaries.single;
-            final path = boundary.materializedPath?.split('.') ?? const [];
-            return boundary.label?.trim().toLowerCase() == 'community' &&
-                boundary.boundaryNum == (selected.boundaryNum ?? 0) + 1 &&
-                path.contains(selected.code);
-          }).toList()
-        : selectedBoundaries;
-
+    final resolvedBoundaries = state.effectiveSelectedBoundaries;
     // Keep selections from other branches, but discard an older parent or
     // child when the user changes to a more specific/broader boundary.
-    final previousSelections = state.allSelectedLastLevelBoundaries.where((old) {
+    final previousSelections =
+        state.allSelectedLastLevelBoundaries.where((old) {
       return !resolvedBoundaries.any((current) {
         final oldPath = old.materializedPath?.split('.') ?? const [];
         final currentPath = current.materializedPath?.split('.') ?? const [];
@@ -227,6 +214,29 @@ class BoundaryState with _$BoundaryState {
     @Default([]) List<BoundaryModel> allSelectedLastLevelBoundaries,
     @Default(false) bool hasSubmitted,
   }) = _BoundaryState;
+
+  List<BoundaryModel> get effectiveSelectedBoundaries {
+    if (selectedLastLevelBoundaries.isNotEmpty) {
+      return selectedLastLevelBoundaries;
+    }
+
+    final selected =
+        selectedBoundaryMap.values.whereType<BoundaryModel>().lastOrNull;
+    if (selected == null) return [];
+    if (selected.label?.trim().toLowerCase() != 'distribution point') {
+      return [selected];
+    }
+
+    // Beneficiary downsync uses Community localities.
+    final communities = boundaryList
+        .where((boundary) =>
+            boundary.label?.trim().toLowerCase() == 'community' &&
+            boundary.boundaryNum == (selected.boundaryNum ?? 0) + 1 &&
+            (boundary.materializedPath?.split('.').contains(selected.code) ??
+                false))
+        .toList();
+    return communities.isEmpty ? [selected] : communities;
+  }
 
   @override
   String toString() => const JsonEncoder.withIndent('  ').convert({
