@@ -601,6 +601,55 @@ final dynamic sampleFlows = {
                                 "actionType": "REVERSE_TRANSFORM",
                                 "properties": {
                                   "data": [
+                                    {"key": "entities", "value": "{{contextData.0.household}}"},
+                                    {"key": "entities", "value": "{{item.individual}}"},
+                                    {"key": "entities", "value": "{{contextData.0.projectBeneficiary}}"}
+                                  ],
+                                  "configName": "beneficiaryRegistration",
+                                  "excludeFormFields": ["nameOfIndividual", "familyname"],
+                                  "entityTypes": [
+                                    "HouseholdModel",
+                                    "IndividualModel",
+                                    "ProjectBeneficiaryModel"
+                                  ]
+                                }
+                              },
+                              {
+                                "actionType": "NAVIGATION",
+                                "properties": {
+                                  "data": [
+                                    {"key": "HouseholdClientReferenceId", "value": "{{item.member.0.householdClientReferenceId}}"},
+                                    {"key": "isEdit", "value": "true"},
+                                    {"key": "startPage", "value": "householdDetails"},
+                                    {"key": "firstName", "value": "{{item.individual.0.name.givenName}}"},
+                                    {"key": "lastName", "value": "{{item.individual.0.name.familyName}}"}
+                                  ],
+                                  "name": "HOUSEHOLD",
+                                  "type": "FORM"
+                                }
+                              }
+                            ],
+                            "condition": {
+                              // Heads go to the HOUSEHOLD form to edit
+                              // household details. The hasBeneficiaryId
+                              // clause is load-bearing: this branch is
+                              // evaluated FIRST, and the next one is the
+                              // only branch that passes
+                              // UNIQUE_BENEFICIARY_ID ({{latestBeneficiaryId}}).
+                              // Without it, a head who has no token yet
+                              // would match here, open the household form
+                              // and never be assigned one from the pool.
+                              "type": "custom",
+                              "expression":
+                                  "{{fn:isHead(item.member)}} == true && {{fn:hasBeneficiaryId(item.individual.0.identifiers.0)}} == true"
+                            }
+                          },
+                          {
+                            "actions": [
+                              {
+                                "actionType": "REVERSE_TRANSFORM",
+                                "properties": {
+                                  "data": [
                                     {
                                       "key": "entities",
                                       "value": "{{item.individual}}"
@@ -2127,12 +2176,20 @@ final dynamic sampleFlows = {
                             "actionType": "REVERSE_TRANSFORM",
                             "properties": {
                               "data": [
-                                {
-                                  "key": "entities",
-                                  "value": "{{item}}"
-                                }
+                                {"key": "entities", "value": "{{item.HouseholdModel}}"},
+                                {"key": "entities", "value": "{{item.headIndividual}}"},
+                                {"key": "entities", "value": "{{item.headOfHousehold}}"},
+                                {"key": "entities", "value": "{{item.projectBeneficiaries}}"},
+                                {"key": "entities", "value": "{{item.tasks}}"}
                               ],
                               "configName": "beneficiaryRegistration",
+                              "excludeFormFields": [
+                                "consentToParticipate",
+                                "firstName",
+                                "lastName",
+                                "nameOfIndividual",
+                                "familyname"
+                              ],
                               "entityTypes": [
                                 "HouseholdModel",
                                 "IndividualModel",
@@ -2983,6 +3040,17 @@ final dynamic sampleFlows = {
               "fieldName": "scanner",
               "mandatory": false,
               "showLabel": false,
+              "comparisonConfig": {
+                "model": "task",
+                "extractKey": "scanResource",
+                "filters": [
+                  {
+                    "key": "additionalFields",
+                    "operation": "containsAll",
+                    "value": "scanResource"
+                  }
+                ]
+              },
               "deleteFlag": false,
               "innerLabel": "",
               "schemaCode": null,
@@ -2995,6 +3063,17 @@ final dynamic sampleFlows = {
                 {
                   "type": "scanLimit",
                   "value": 4
+                },
+                {
+                  // Hides the "Enter manual code" link on the DELIVERY
+                  // scanner. A hand-typed code is not evidence that an ITN
+                  // was handed over, and these serials are the only
+                  // per-unit record of the handover - TaskResourceModel
+                  // carries an aggregate quantity with no per-unit column.
+                  // Opt-out only: scanners that declare nothing (stock
+                  // receipt, transit post, attendance, ADD_MEMBER) keep it.
+                  "type": "allowManualEntry",
+                  "value": false
                 }
               ],
               "errorMessage": "",
@@ -3640,6 +3719,14 @@ final dynamic sampleFlows = {
                       {
                         "key": "TaskModel.status",
                         "value": "NOT_ADMINISTERED"
+                      },
+                      {
+                        "key": "HouseholdModel.additionalFields.fields.familyName",
+                        "value": "{{formData.householdDetails.familyname}}"
+                      },
+                      {
+                        "key": "TaskModel.additionalFields.fields.familyName",
+                        "value": "{{formData.householdDetails.familyname}}"
                       }
                     ],
                     "onError": [
@@ -3694,7 +3781,7 @@ final dynamic sampleFlows = {
                         }
                       }
                     ],
-                    "configName": "beneficiaryRegistration"
+                    "configName": "householdDetailsEdit"
                   }
                 },
                 {
@@ -4897,6 +4984,14 @@ final dynamic sampleFlows = {
                   {
                     "key": "TaskModel.status",
                     "value": "NOT_ADMINISTERED"
+                  },
+                  {
+                    "key": "HouseholdModel.additionalFields.fields.familyName",
+                    "value": "{{formData.householdDetails.familyname}}"
+                  },
+                  {
+                    "key": "TaskModel.additionalFields.fields.familyName",
+                    "value": "{{formData.householdDetails.familyname}}"
                   }
                 ],
                 "onError": [
