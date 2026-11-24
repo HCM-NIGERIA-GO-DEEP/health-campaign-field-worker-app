@@ -65,7 +65,7 @@ class ScannerComparisonUtils {
   /// a direct column filter — any result means duplicate.
   ///
   /// For `extractFrom: "additionalFields"` configs, results are fetched
-  /// by senderId/receiverId filters, then each entity's additionalFields
+  /// by the configured SQL filters, then each entity's additionalFields
   /// are checked for a matching extractKey value.
   static Future<bool> executeDuplicateCheck(
     SchemaObject schema,
@@ -418,7 +418,7 @@ class ScannerComparisonUtils {
         if (batch.isNotEmpty) normalized.add('10:$batch');
         if (serial.isNotEmpty) normalized.add('21:$serial');
         if (normalized.isNotEmpty) {
-          values.add(normalized.join('|'));
+          values.add(_normalizeBarcode(normalized.join('|')));
         }
       }
     }
