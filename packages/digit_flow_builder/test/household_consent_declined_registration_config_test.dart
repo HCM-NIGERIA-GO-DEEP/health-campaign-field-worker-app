@@ -80,20 +80,125 @@ void main() {
     final task = updated.whereType<TaskModel>().single;
     expect(task.status, 'CLOSED_HOUSEHOLD');
     expect(task.toMap()['additionalFields']['fields'], [
+      {'key': 'firstName', 'value': 'Updated first'},
       {'key': 'familyName', 'value': 'Updated last'},
       {'key': 'householdClientReferenceId', 'value': 'household'},
     ]);
   });
 
+  test('reopening with consent saves names from Household Details', () {
+    initializeMappers();
+    DataConverterSingleton()
+        .setData(dynamicEntityModelListener: EntityModelJsonMapper());
+    final registrationModels = jsonConfig['beneficiaryRegistration']!['models']
+        as Map<String, dynamic>;
+    final updated = FormEntityMapper(config: jsonConfig).updateEntitiesFromForm(
+      existingModels: [
+        IndividualModel(
+          clientReferenceId: 'head',
+          name: NameModel(
+            individualClientReferenceId: 'head',
+            givenName: 'Earlier first',
+            familyName: 'Earlier last',
+          ),
+        ),
+      ],
+      formValues: const {
+        'caregiverConsent': {
+          'consentToParticipate': 'TRUE',
+          'firstName': 'Earlier first',
+          'lastName': 'Earlier last',
+        },
+        'householdDetails': {
+          'nameOfIndividual': 'Updated first',
+          'familyname': 'Updated last',
+        },
+      },
+      modelsConfig: {'IndividualModel': registrationModels['IndividualModel']},
+      context: const {
+        'tenantId': 'liberia',
+        'userUUID': 'worker',
+        'selectedBoundaryCode': 'community',
+        'identifierEntries': [
+          {'identifierType': 'UNIQUE_BENEFICIARY_ID', 'identifierId': 'token'},
+        ],
+      },
+    );
+
+    final head = updated.whereType<IndividualModel>().single;
+    expect(head.name?.givenName, 'Updated first');
+    expect(head.name?.familyName, 'Updated last');
+  });
+
+  test('household head edit changes names and counts and retains consent', () {
+    initializeMappers();
+    DataConverterSingleton()
+        .setData(dynamicEntityModelListener: EntityModelJsonMapper());
+    final address = AddressModel(latitude: 6.3, longitude: -10.8);
+    final updated = FormEntityMapper(config: jsonConfig).updateEntitiesFromForm(
+      existingModels: [
+        HouseholdModel(
+          clientReferenceId: 'household',
+          memberCount: 2,
+          address: address,
+          additionalFields: HouseholdAdditionalFields(
+            version: 1,
+            fields: [const AdditionalField('caregiverConsent', 'TRUE')],
+          ),
+        ),
+        IndividualModel(
+          clientReferenceId: 'head',
+          name: NameModel(
+            individualClientReferenceId: 'head',
+            givenName: 'Original first',
+            familyName: 'Original last',
+          ),
+          address: [address],
+        ),
+      ],
+      formValues: const {
+        'householdDetails': {
+          'nameOfIndividual': 'Updated first',
+          'familyname': 'Updated last',
+          'memberCount': 4,
+          'childrenCount': 2,
+        },
+        'caregiverConsent': {'consentToParticipate': null},
+        'beneficiaryLocation': {'latLng': null},
+      },
+      modelsConfig: jsonConfig['householdDetailsEdit']!['models']
+          as Map<String, dynamic>,
+      context: const {},
+    );
+
+    final head = updated.whereType<IndividualModel>().single;
+    expect(head.name?.givenName, 'Updated first');
+    expect(head.name?.familyName, 'Updated last');
+    expect(head.address?.single.latitude, 6.3);
+    final household = updated.whereType<HouseholdModel>().single;
+    expect(household.memberCount, 4);
+    expect(household.address?.longitude, -10.8);
+    expect(household.toMap()['additionalFields']['fields'], containsAll([
+      {'key': 'caregiverConsent', 'value': 'TRUE'},
+      {'key': 'childrenCount', 'value': 2},
+    ]));
+  });
+
   for (final entry in {
     'closeHouseholdRegistration': {
-      'closeHouseholdDetails': {'familyname': 'Captured last'},
+      'closeHouseholdDetails': {
+        'headName': 'Captured first',
+        'familyname': 'Captured last',
+      },
     },
     'householdConsentDeclinedRegistration': {
-      'caregiverConsent': {'lastName': 'Captured last'},
+      'caregiverConsent': {
+        'firstName': 'Captured first',
+        'lastName': 'Captured last',
+      },
     },
   }.entries) {
-    test('${entry.key} sends family name and links its task to the household', () {
+    test('${entry.key} sends both names and links its task to the household', () {
       initializeMappers();
       DataConverterSingleton()
           .setData(dynamicEntityModelListener: EntityModelJsonMapper());
@@ -110,10 +215,14 @@ void main() {
       );
       final household = entities.whereType<HouseholdModel>().single;
       final task = entities.whereType<TaskModel>().single;
+      final head = entities.whereType<IndividualModel>().single;
+      expect(head.name?.givenName, 'Captured first');
+      expect(head.name?.familyName, 'Captured last');
       final familyName = {'key': 'familyName', 'value': 'Captured last'};
       expect(household.toMap()['additionalFields']['fields'],
           contains(equals(familyName)));
       expect(task.toMap()['additionalFields']['fields'], containsAll([
+        {'key': 'firstName', 'value': 'Captured first'},
         familyName,
         {'key': 'householdClientReferenceId', 'value': household.clientReferenceId},
       ]));
