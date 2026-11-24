@@ -43,6 +43,23 @@ class ScannerValidation {
 
 /// Helper extension for List<ScannerValidation>
 extension ScannerValidationListExt on List<ScannerValidation>? {
+  /// Whether the "Enter manual code" escape hatch is offered.
+  ///
+  /// Defaults to TRUE so every existing scanner (stock receipt, transit
+  /// post, attendance) keeps its current behaviour; only a field that
+  /// explicitly declares `{"type": "allowManualEntry", "value": false}`
+  /// loses it. Used by the delivery scanner, where a hand-typed code is not
+  /// an acceptable substitute for scanning the ITN actually handed over.
+  bool get allowManualEntry {
+    final validation =
+        this?.firstWhereOrNull((v) => v.type == 'allowManualEntry');
+    if (validation == null) return true;
+    final value = validation.value;
+    if (value is bool) return value;
+    if (value is String) return value.toLowerCase() != 'false';
+    return true;
+  }
+
   /// Gets the scan limit value, defaults to 1
   int get scanLimit {
     final validation = this?.firstWhereOrNull((v) => v.type == 'scanLimit');
