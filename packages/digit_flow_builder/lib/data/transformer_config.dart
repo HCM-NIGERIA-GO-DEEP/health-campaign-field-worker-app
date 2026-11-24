@@ -12,6 +12,7 @@ final jsonConfig = {
       "TaskModel": {
         "mappings": {
           "additionalFields": {
+            "firstName": "caregiverConsent.firstName",
             "familyName": "__concatName:caregiverConsent.lastName",
             "householdClientReferenceId": "navigation.HouseholdClientReferenceId",
           },
@@ -22,6 +23,30 @@ final jsonConfig = {
           "name": {
             "givenName": "caregiverConsent.firstName",
             "familyName": "caregiverConsent.lastName",
+          },
+        },
+      },
+    },
+  },
+  "householdDetailsEdit": {
+    "models": {
+      "HouseholdModel": {
+        "mappings": {
+          "memberCount": "householdDetails.memberCount",
+          "additionalFields": {
+            "memberCount": "householdDetails.memberCount",
+            "childrenCount": "householdDetails.childrenCount",
+            "familyName": "householdDetails.familyname",
+          },
+        },
+      },
+      "IndividualModel": {
+        "mappings": {
+          "mobileNumber": "householdDetails.phone",
+          "gender": "householdDetails.gender",
+          "name": {
+            "givenName": "householdDetails.nameOfIndividual",
+            "familyName": "householdDetails.familyname",
           },
         },
       },
@@ -1017,6 +1042,9 @@ final jsonConfig = {
             // quantity itself is always pieces (see above).
             "stockUnit":
                 "__switch:stockProductDetails.returnUnit:{BALES:__value:BALES,PIECES:__value:PIECES,default:__context:stockUnit}",
+            // Keep the entered quantity alongside its unit as text.
+            "quantityReturned":
+                "__switch:__context:stockEntryType:{RETURNED:__concatName:stockProductDetails.quantityReturned,default:__value:null}",
             "primaryRole": "__context:primaryRole",
             "secondaryRole": "__context:secondaryRole",
             // A __switch with no matching case and no `default` throws, and
@@ -1511,6 +1539,7 @@ final jsonConfig = {
             "auditDetails": "__generate:audit"
           },
           "additionalFields": {
+            "firstName": "closeHouseholdDetails.headName",
             "familyName": "closeHouseholdDetails.familyname",
             "householdClientReferenceId": "__ref:HouseholdModel.clientReferenceId",
           },
@@ -1750,6 +1779,7 @@ final jsonConfig = {
             "auditDetails": "__generate:audit"
           },
           "additionalFields": {
+            "firstName": "caregiverConsent.firstName",
             "familyName": "caregiverConsent.lastName",
             "householdClientReferenceId": "__ref:HouseholdModel.clientReferenceId",
           },
