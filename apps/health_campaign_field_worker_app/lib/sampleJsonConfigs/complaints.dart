@@ -748,17 +748,12 @@ final dynamic sampleComplaintFlows = {
               "infoText": "",
               "readOnly": false,
               "fieldName": "contactNumber",
-              "mandatory": true,
+              "mandatory": false,
               "deleteFlag": false,
               "innerLabel": "",
               "prefixText": "",
               "systemDate": false,
               "validations": [
-                {
-                  "type": "required",
-                  "value": true,
-                  "message": "COMPLAINT_DETAILS_contactNumber_REQUIRED_ERROR"
-                },
                 {
                   "type": "minLength",
                   "value": 9,
