@@ -934,6 +934,7 @@ final dynamic sampleFlows = {
       ],
       "name": "householdOverview",
       "order": 3,
+      "disableSystemBack": "{{fn:hasRole('REGISTRAR')}} == true && {{fn:isUnder5CountMismatch(contextData.0.members, contextData.0.household)}} == true",
       "onSystemBack": [
         {
           "actionType": "NAVIGATION",
@@ -1031,6 +1032,26 @@ final dynamic sampleFlows = {
                       {
                         "key": "memberCount",
                         "value": "{{contextData.0.household.HouseholdModel.memberCount}}"
+                      },
+                      {
+                        "key": "childrenCount",
+                        "value": "{{contextData.0.household.HouseholdModel.additionalFields.fields.childrenCount}}"
+                      },
+                      {
+                        "key": "headMobileNumber",
+                        "value": "{{contextData.0.headIndividual.IndividualModel.mobileNumber}}"
+                      },
+                      {
+                        "key": "householdLatitude",
+                        "value": "{{contextData.0.household.HouseholdModel.address.latitude}}"
+                      },
+                      {
+                        "key": "householdLongitude",
+                        "value": "{{contextData.0.household.HouseholdModel.address.longitude}}"
+                      },
+                      {
+                        "key": "householdLocationAccuracy",
+                        "value": "{{contextData.0.household.HouseholdModel.address.locationAccuracy}}"
                       },
                       {
                         "key": "cycleIndex",
@@ -2974,23 +2995,6 @@ final dynamic sampleFlows = {
                 {
                   "type": "scanLimit",
                   "value": 4
-                },
-                {
-                  // Without a "pattern" entry effectiveRegex stays null and
-                  // DigitScannerBloc._handleScanner short-circuits on
-                  // `shouldValidate`, accepting anything - which is why a
-                  // manually typed "sjfk" was taken. This is a deliberately
-                  // permissive guard-rail, not the canonical code format:
-                  // uppercase alphanumeric (hyphens allowed), minimum 8
-                  // characters. It rejects short/lowercase junk while still
-                  // accepting GTIN-style digits and XXXX-XXXX-XXXX codes.
-                  // TIGHTEN THIS once the real format is confirmed - note
-                  // non-matching codes are DROPPED with a toast rather than
-                  // blocked, so an over-strict pattern silently loses valid
-                  // field scans.
-                  "type": "pattern",
-                  "value": r"^[A-Z0-9][A-Z0-9-]{7,}$",
-                  "message": "SCANNER_INVALID_CODE_MESSAGE"
                 }
               ],
               "errorMessage": "",
@@ -3922,7 +3926,6 @@ final dynamic sampleFlows = {
               "format": "mobileNumber",
               "hidden": false,
               "isMdms": false,
-              "pattern": r"^0\d{9}$",
               "tooltip": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_phone_tooltip",
               "helpText": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_phone_helpText",
               "infoText": "",
@@ -3935,31 +3938,25 @@ final dynamic sampleFlows = {
               "schemaCode": null,
               "systemDate": false,
               "lengthRange": {
-                "maxLength": 10,
-                "minLength": 10,
-                "errorMessage": "MOBILE_LENGTH_10_DIGIT_ERROR"
+                "maxLength": 9,
+                "minLength": 9,
+                "errorMessage": "MOBILE_LENGTH_9_DIGIT_ERROR"
               },
               "validations": [
                 {
-                  "type": "pattern",
-                  "value": r"^0\d{9}$",
-                  "message": "MOBILE_NUMBER_START_WITH_ZERO_ERROR"
-                },
-                {
                   "type": "minLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGIT_ERROR"
+                  "value": 9,
+                  "message": "MOBILE_LENGTH_9_DIGIT_ERROR"
                 },
                 {
                   "type": "maxLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGIT_ERROR"
+                  "value": 9,
+                  "message": "MOBILE_LENGTH_9_DIGIT_ERROR"
                 }
               ],
               "errorMessage": "",
               "isMultiSelect": false,
-              "required.message": "MOBILE_LENGTH_10_DIGIT_ERROR",
-              "pattern.message": "MOBILE_NUMBER_START_WITH_ZERO_ERROR"
+              "required.message": "MOBILE_LENGTH_9_DIGIT_ERROR"
             },
             {
               "type": "string",
@@ -4756,7 +4753,7 @@ final dynamic sampleFlows = {
             {
               "actionType": "UPDATE_EVENT",
               "properties": {
-                "entity": "HouseholdModel, IndividualModel",
+                "entity": "HouseholdModel, IndividualModel, TaskModel",
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",
