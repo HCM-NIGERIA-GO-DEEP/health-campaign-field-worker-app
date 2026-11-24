@@ -232,7 +232,7 @@ class _BoundarySelectionPageState
                                         projectModel: context.selectedProject,
                                         appConfiguartion: appConfiguration,
                                         boundaries:
-                                            getEffectiveBoundaries(state),
+                                            state.effectiveSelectedBoundaries,
                                         content: localizations.translate(
                                           i18.syncDialog.pendingSyncContent,
                                         ),
@@ -249,19 +249,17 @@ class _BoundarySelectionPageState
                                         boundaryCounts) {
                                       clickedStatus.value = false;
 
-                                      if (initialServerCount <= 0) {
-                                        clickedStatus.value = true;
-                                        Navigator.of(
-                                          context,
-                                          rootNavigator: true,
-                                        ).popUntil(
-                                          (route) => route is! PopupRoute,
-                                        );
-                                        context.router
-                                            .replaceAll([HomeRoute()]);
-                                        return;
-                                      }
-
+                                      // A zero count falls through to the same
+                                      // dialog as a non-zero one, which already
+                                      // renders the no-data variant of every
+                                      // field below (NO_DATA_FOUND, go back /
+                                      // go to home). This used to short-circuit
+                                      // to HomeRoute on `initialServerCount <= 0`,
+                                      // which made all of those `> 0` ternaries
+                                      // dead code: picking a village with no
+                                      // records dropped the user on the home
+                                      // screen with nothing explaining why the
+                                      // download never happened.
                                       showDownloadDialog(
                                         context,
                                         model: DownloadBeneficiary(
@@ -275,7 +273,7 @@ class _BoundarySelectionPageState
                                           appConfiguartion: appConfiguration,
                                           projectModel: context.selectedProject,
                                           boundaries:
-                                              getEffectiveBoundaries(state),
+                                              state.effectiveSelectedBoundaries,
                                           batchSize: batchSize,
                                           totalCount: initialServerCount,
                                           boundaryCounts: boundaryCounts,
@@ -313,7 +311,7 @@ class _BoundarySelectionPageState
                                           1,
                                         ),
                                         boundaryName: localizations.translate(
-                                          getEffectiveBoundaries(state)
+                                          state.effectiveSelectedBoundaries
                                                   .firstOrNull
                                                   ?.code ??
                                               '',
@@ -334,7 +332,7 @@ class _BoundarySelectionPageState
                                             projectModel:
                                                 context.selectedProject,
                                             boundaries:
-                                                getEffectiveBoundaries(state),
+                                                state.effectiveSelectedBoundaries,
                                             appConfiguartion: appConfiguration,
                                             syncCount: syncCount,
                                             totalCount: totalCount,
@@ -413,7 +411,7 @@ class _BoundarySelectionPageState
                                         projectModel: context.selectedProject,
                                         pendingSyncCount: pendingSyncCount,
                                         boundaries:
-                                            getEffectiveBoundaries(state),
+                                            state.effectiveSelectedBoundaries,
                                         content: localizations.translate(
                                           i18.beneficiaryDetails
                                               .dataFoundContent,
@@ -519,7 +517,7 @@ class _BoundarySelectionPageState
                                             projectModel:
                                                 context.selectedProject,
                                             boundaries:
-                                                getEffectiveBoundaries(state),
+                                                state.effectiveSelectedBoundaries,
                                             appConfiguartion: appConfiguration,
                                             syncCount: syncCount,
                                             totalCount: totalCount,
@@ -642,13 +640,10 @@ class _BoundarySelectionPageState
                                                             ],
                                                             projectModel: context
                                                                 .selectedProject,
-                                                            boundaries:
-                                                                getEffectiveBoundaries(
-                                                              context
-                                                                  .read<
-                                                                      BoundaryBloc>()
-                                                                  .state,
-                                                            ),
+                                                            boundaries: context
+                                                                .read<BoundaryBloc>()
+                                                                .state
+                                                                .effectiveSelectedBoundaries,
                                                             pendingSyncCount:
                                                                 pendingSyncCount,
                                                           ),
@@ -1085,24 +1080,23 @@ class _BoundarySelectionPageState
     return context.isWarehouseManager || context.isHealthFacilitySupervisor;
   }
 
-  /// Returns the selected leaf boundaries, falling back to the deepest
-  /// selected boundary from selectedBoundaryMap.
-  List<BoundaryModel> getEffectiveBoundaries(BoundaryState state) {
-    if (state.selectedLastLevelBoundaries.isNotEmpty) {
-      return state.selectedLastLevelBoundaries;
-    }
-    final lastSelected = state.selectedBoundaryMap.entries
-        .lastWhereOrNull((element) => element.value != null);
-    if (lastSelected?.value != null) {
-      final selectedBoundary = lastSelected!.value!;
-      return [selectedBoundary];
-    }
-    return [];
-  }
-
-  dynamic filterBoundaryLabelListBasedOnRole(
+  List<String> filterBoundaryLabelListBasedOnRole(
       bool doFilter, BoundaryState state) {
     final labelList = state.selectedBoundaryMap.keys.toList();
+    if (context.isDistributorRole) {
+      final distributionPoints = labelList
+          .where((label) => label.trim().toLowerCase() == 'distribution point')
+          .toList();
+      if (distributionPoints.isNotEmpty && !context.isRegistrarRole) {
+        return distributionPoints;
+      }
+
+      return labelList.where((label) {
+        final level = label.trim().toLowerCase();
+        return level == 'distribution point' || level == 'community';
+      }).toList();
+    }
+
     if (doFilter) {
       final filteredLabelList =
           labelList.isNotEmpty ? [labelList.first] : labelList;
@@ -1110,7 +1104,7 @@ class _BoundarySelectionPageState
       return filteredLabelList;
     }
 
-    if (context.isRegistrarRole || context.isDistributorRole) {
+    if (context.isRegistrarRole) {
       const allowedBoundaryLevels = {
         'health facility',
         'distribution point',
