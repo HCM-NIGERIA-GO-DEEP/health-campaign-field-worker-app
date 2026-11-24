@@ -482,16 +482,18 @@ void main() {
 
         expect(stock['quantity'], '150');
         expect(additionalFieldsOf(stock)['stockUnit'], 'BALES');
+        expect(additionalFieldsOf(stock)['quantityReturned'], '3');
       });
 
       test('a return picked in Pieces is saved as typed (stockUnit=$stockUnit)',
           () {
         final stock = run('RETURNED',
             stockUnit: stockUnit,
-            productValues: {'returnUnit': 'PIECES', 'quantityReturned': 40});
+            productValues: {'returnUnit': 'PIECES', 'quantityReturned': 125});
 
-        expect(stock['quantity'], '40');
+        expect(stock['quantity'], '125');
         expect(additionalFieldsOf(stock)['stockUnit'], 'PIECES');
+        expect(additionalFieldsOf(stock)['quantityReturned'], '125');
       });
     }
 
@@ -501,6 +503,7 @@ void main() {
           productValues: {'quantityReceived': 3, 'quantityReceivedPieces': '150'});
 
       expect(additionalFieldsOf(stock)['quantityReceived'], '3');
+      expect(additionalFieldsOf(stock), isNot(contains('quantityReturned')));
       expect(additionalFieldsOf(stock).containsKey('quantityReceivedPieces'),
           isFalse,
           reason: 'saved as quantity, not repeated');

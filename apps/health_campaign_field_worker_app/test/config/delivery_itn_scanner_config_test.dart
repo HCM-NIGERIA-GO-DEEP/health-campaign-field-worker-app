@@ -1,8 +1,9 @@
-import 'dart:convert';
-import 'dart:io';
-
 import 'package:digit_flow_builder/data/transformer_config.dart';
+import 'package:digit_flow_builder/utils/scanner_comparison_utils.dart';
+import 'package:digit_flow_builder/utils/utils.dart';
+import 'package:digit_forms_engine/forms_engine.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:health_campaign_field_worker_app/sampleJsonConfigs/registration_flows.dart';
 
 /// Guards the ITN serial capture on the delivery flow.
 ///
@@ -26,15 +27,14 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   group('DeliveryDetails scanner field', () {
     late Map<String, dynamic> scanner;
+    late SchemaObject schema;
 
     setUpAll(() {
-      final config = jsonDecode(
-        File('assets/configs/json/REGISTRATION.json').readAsStringSync(),
-      ) as Map<String, dynamic>;
-
+      final config = sampleFlows as Map<String, dynamic>;
       final delivery = (config['flows'] as List)
           .cast<Map<String, dynamic>>()
           .firstWhere((f) => f['name'] == 'DELIVERY');
+      schema = SchemaObject.fromJson(transformJson(delivery));
       final page = (delivery['pages'] as List)
           .cast<Map<String, dynamic>>()
           .firstWhere((p) => p['page'] == 'DeliveryDetails');
@@ -74,6 +74,32 @@ void main() {
       // "{{fn:...}}" string here would fail int.tryParse and silently
       // collapse the limit to 1.
       expect(validationsByType()['scanLimit'], isA<int>());
+    });
+
+    test('checks saved delivery scans across households', () {
+      final comparison =
+          ScannerComparisonUtils.findComparisonConfig(schema, 'scanner');
+      expect(
+        comparison,
+        const ComparisonConfig(
+          model: 'task',
+          extractKey: 'scanResource',
+          filters: [
+            ComparisonFilter(
+              key: 'additionalFields',
+              operation: 'containsAll',
+              value: 'scanResource',
+            ),
+          ],
+        ),
+      );
+    });
+
+    test('normalizes legacy saved ITN codes into GS1 field order', () {
+      expect(
+        ScannerComparisonUtils.extractComparisonValues('123,net-1,batch,expiry'),
+        contains('01:123|10:batch|17:expiry|21:net-1'),
+      );
     });
   });
 
