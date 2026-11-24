@@ -944,6 +944,30 @@ class FormEntityMapper {
         print('   formValue from data: $formValue');
       }
       if (formValue == null) {
+        // A multi-product page gives each product its own copy of every
+        // editable field, keyed "<field>_item_<n>" (see buildFormControl's
+        // entitySuffix) - the page's own conditions spell this as
+        // `returnUnit_$tabIndex`. Mapping paths are written without the
+        // suffix, so the plain lookup above misses on exactly those fields.
+        //
+        // That miss is silent and changes behaviour rather than failing:
+        // "stock"'s quantity key is __concatName of stockEntryType, stockUnit
+        // and stockProductDetails.returnUnit, and __concatName drops parts
+        // that resolve to null. A return with Pieces picked therefore built
+        // the key "RETURNED BALES" instead of "RETURNED BALES PIECES", which
+        // selects quantityReturnedPieces (quantityReturned x 50) - so 50
+        // pieces were saved as 2500. The same miss made additionalFields
+        // stockUnit fall through to its default and report BALES.
+        final suffixedValue =
+            _getValueFromPath(data, '${instruction}_item_$listItemIndex');
+        if (suffixedValue != null) {
+          if (kDebugMode) {
+            print('   resolved via _item_ suffix: $suffixedValue');
+          }
+
+          return suffixedValue;
+        }
+
         // Try to resolve relative to current list item in context
         final contextPath = listSourcePath.startsWith('__context:')
             ? listSourcePath.replaceFirst('__context:', '')
