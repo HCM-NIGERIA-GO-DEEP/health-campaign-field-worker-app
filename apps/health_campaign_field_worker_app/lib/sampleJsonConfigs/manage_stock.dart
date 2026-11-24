@@ -681,24 +681,38 @@ final dynamic sampleInventoryFlows = {
                   "type": "facilityHierarchy",
                   "value": {
                     "hierarchyMapping": {
+                      // The ITN supply chain is
+                      //   IDA Foundation -> Country -> District
+                      //   -> Distribution Point (DP/PPS) -> DELIVERY_TEAM
+                      // It deliberately SKIPS two geographic levels that the
+                      // boundary hierarchy still carries: County, and Health
+                      // Facility (the HHR registration role maps there and
+                      // has no stock flow at all). Only this mapping drops
+                      // them - the boundaryTypes derivation in project.dart
+                      // reads the boundary tree and is unaffected.
+                      //
+                      // Country's forReceipt names a facility USAGE, not a
+                      // boundary type, and is the ONLY entry that does. The
+                      // national warehouse sits on the root boundary, so it
+                      // has no parent level the ProjectFacility FacilityMap
+                      // could ever key a source under; its source is instead
+                      // identified by the usage on the facility record. It
+                      // was "Central Facility", which is the national
+                      // warehouse's own usage - i.e. it pointed the user at
+                      // themselves and no source was ever offered. Every
+                      // other level names a boundary type here, which matches
+                      // no facility usage, so they resolve nothing and keep
+                      // using FacilityMap/ProjectFacilities unchanged.
                       "Country": {
-                        "forReceipt": ["Central Facility"],
-                        "forIssue": ["County"]
-                      },
-                      "County": {
-                        "forReceipt": ["Country"],
+                        "forReceipt": ["IDA Foundation"],
                         "forIssue": ["District"]
                       },
                       "District": {
-                        "forReceipt": ["County"],
-                        "forIssue": ["Health Facility"]
-                      },
-                      "Health Facility": {
-                        "forReceipt": ["District"],
+                        "forReceipt": ["Country"],
                         "forIssue": ["Distribution Point"]
                       },
                       "Distribution Point": {
-                        "forReceipt": ["Health Facility"],
+                        "forReceipt": ["District"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
                     },
@@ -831,24 +845,38 @@ final dynamic sampleInventoryFlows = {
                   "type": "facilityHierarchy",
                   "value": {
                     "hierarchyMapping": {
+                      // The ITN supply chain is
+                      //   IDA Foundation -> Country -> District
+                      //   -> Distribution Point (DP/PPS) -> DELIVERY_TEAM
+                      // It deliberately SKIPS two geographic levels that the
+                      // boundary hierarchy still carries: County, and Health
+                      // Facility (the HHR registration role maps there and
+                      // has no stock flow at all). Only this mapping drops
+                      // them - the boundaryTypes derivation in project.dart
+                      // reads the boundary tree and is unaffected.
+                      //
+                      // Country's forReceipt names a facility USAGE, not a
+                      // boundary type, and is the ONLY entry that does. The
+                      // national warehouse sits on the root boundary, so it
+                      // has no parent level the ProjectFacility FacilityMap
+                      // could ever key a source under; its source is instead
+                      // identified by the usage on the facility record. It
+                      // was "Central Facility", which is the national
+                      // warehouse's own usage - i.e. it pointed the user at
+                      // themselves and no source was ever offered. Every
+                      // other level names a boundary type here, which matches
+                      // no facility usage, so they resolve nothing and keep
+                      // using FacilityMap/ProjectFacilities unchanged.
                       "Country": {
-                        "forReceipt": ["Central Facility"],
-                        "forIssue": ["County"]
-                      },
-                      "County": {
-                        "forReceipt": ["Country"],
+                        "forReceipt": ["IDA Foundation"],
                         "forIssue": ["District"]
                       },
                       "District": {
-                        "forReceipt": ["County"],
-                        "forIssue": ["Health Facility"]
-                      },
-                      "Health Facility": {
-                        "forReceipt": ["District"],
+                        "forReceipt": ["Country"],
                         "forIssue": ["Distribution Point"]
                       },
                       "Distribution Point": {
-                        "forReceipt": ["Health Facility"],
+                        "forReceipt": ["District"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
                     },
@@ -2060,24 +2088,38 @@ final dynamic sampleInventoryFlows = {
                   "type": "facilityHierarchy",
                   "value": {
                     "hierarchyMapping": {
+                      // The ITN supply chain is
+                      //   IDA Foundation -> Country -> District
+                      //   -> Distribution Point (DP/PPS) -> DELIVERY_TEAM
+                      // It deliberately SKIPS two geographic levels that the
+                      // boundary hierarchy still carries: County, and Health
+                      // Facility (the HHR registration role maps there and
+                      // has no stock flow at all). Only this mapping drops
+                      // them - the boundaryTypes derivation in project.dart
+                      // reads the boundary tree and is unaffected.
+                      //
+                      // Country's forReceipt names a facility USAGE, not a
+                      // boundary type, and is the ONLY entry that does. The
+                      // national warehouse sits on the root boundary, so it
+                      // has no parent level the ProjectFacility FacilityMap
+                      // could ever key a source under; its source is instead
+                      // identified by the usage on the facility record. It
+                      // was "Central Facility", which is the national
+                      // warehouse's own usage - i.e. it pointed the user at
+                      // themselves and no source was ever offered. Every
+                      // other level names a boundary type here, which matches
+                      // no facility usage, so they resolve nothing and keep
+                      // using FacilityMap/ProjectFacilities unchanged.
                       "Country": {
-                        "forReceipt": ["Central Facility"],
-                        "forIssue": ["County"]
-                      },
-                      "County": {
-                        "forReceipt": ["Country"],
+                        "forReceipt": ["IDA Foundation"],
                         "forIssue": ["District"]
                       },
                       "District": {
-                        "forReceipt": ["County"],
-                        "forIssue": ["Health Facility"]
-                      },
-                      "Health Facility": {
-                        "forReceipt": ["District"],
+                        "forReceipt": ["Country"],
                         "forIssue": ["Distribution Point"]
                       },
                       "Distribution Point": {
-                        "forReceipt": ["Health Facility"],
+                        "forReceipt": ["District"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
                     },
@@ -2231,24 +2273,38 @@ final dynamic sampleInventoryFlows = {
                   "type": "facilityHierarchy",
                   "value": {
                     "hierarchyMapping": {
+                      // The ITN supply chain is
+                      //   IDA Foundation -> Country -> District
+                      //   -> Distribution Point (DP/PPS) -> DELIVERY_TEAM
+                      // It deliberately SKIPS two geographic levels that the
+                      // boundary hierarchy still carries: County, and Health
+                      // Facility (the HHR registration role maps there and
+                      // has no stock flow at all). Only this mapping drops
+                      // them - the boundaryTypes derivation in project.dart
+                      // reads the boundary tree and is unaffected.
+                      //
+                      // Country's forReceipt names a facility USAGE, not a
+                      // boundary type, and is the ONLY entry that does. The
+                      // national warehouse sits on the root boundary, so it
+                      // has no parent level the ProjectFacility FacilityMap
+                      // could ever key a source under; its source is instead
+                      // identified by the usage on the facility record. It
+                      // was "Central Facility", which is the national
+                      // warehouse's own usage - i.e. it pointed the user at
+                      // themselves and no source was ever offered. Every
+                      // other level names a boundary type here, which matches
+                      // no facility usage, so they resolve nothing and keep
+                      // using FacilityMap/ProjectFacilities unchanged.
                       "Country": {
-                        "forReceipt": ["Central Facility"],
-                        "forIssue": ["County"]
-                      },
-                      "County": {
-                        "forReceipt": ["Country"],
+                        "forReceipt": ["IDA Foundation"],
                         "forIssue": ["District"]
                       },
                       "District": {
-                        "forReceipt": ["County"],
-                        "forIssue": ["Health Facility"]
-                      },
-                      "Health Facility": {
-                        "forReceipt": ["District"],
+                        "forReceipt": ["Country"],
                         "forIssue": ["Distribution Point"]
                       },
                       "Distribution Point": {
-                        "forReceipt": ["Health Facility"],
+                        "forReceipt": ["District"],
                         "forIssue": ["DELIVERY_TEAM"]
                       }
                     },
