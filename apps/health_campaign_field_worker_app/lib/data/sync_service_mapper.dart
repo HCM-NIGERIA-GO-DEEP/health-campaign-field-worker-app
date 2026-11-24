@@ -312,14 +312,7 @@ class SyncServiceMapper extends SyncEntityMapperListener {
               ),
             );
 
-            // The server's Household response doesn't always echo back
-            // latitude/longitude (captured during registration, stored on
-            // both Household and its nested Address). local.update(), run
-            // on whatever this case returns, overwrites the full local row
-            // - so a server response missing these fields was silently
-            // wiping out an already-correct local value. Falls back to the
-            // locally-captured coordinates whenever the server's response
-            // doesn't have its own.
+            // Keep captured location values when the server omits them.
             mergedHouseholds.add(responseEntity!.copyWith(
               latitude: responseEntity.latitude ?? entity.latitude,
               longitude: responseEntity.longitude ?? entity.longitude,
@@ -329,6 +322,9 @@ class SyncServiceMapper extends SyncEntityMapperListener {
                           entity.address?.latitude,
                       longitude: responseEntity.address!.longitude ??
                           entity.address?.longitude,
+                      locationAccuracy:
+                          responseEntity.address!.locationAccuracy ??
+                              entity.address?.locationAccuracy,
                     )
                   : entity.address,
             ));
