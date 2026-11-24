@@ -265,7 +265,23 @@ class TransformerExecutor extends ActionExecutor {
     }
     extraContext['identifierEntries'] = identifierEntries;
 
+    final deliveryContext = <String, dynamic>{};
+    if (configName == 'delivery' || configName == 'indirectBulkDelivery') {
+      deliveryContext.addAll(navigationParams ?? {});
+      final headName = [
+        deliveryContext['nameOfIndividual'],
+        deliveryContext['lastName'],
+      ].whereType<String>()
+          .map((name) => name.trim())
+          .where((name) => name.isNotEmpty)
+          .join(' ');
+      if (headName.isNotEmpty) {
+        deliveryContext.putIfAbsent('headName', () => headName);
+      }
+    }
+
     final contextMap = {
+      ...deliveryContext,
       "selectedProject": FlowBuilderSingleton().selectedProject,
       "projectId": FlowBuilderSingleton().selectedProject?.id,
       "user": FlowBuilderSingleton().loggedInUser,

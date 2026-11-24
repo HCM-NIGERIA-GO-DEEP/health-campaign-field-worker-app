@@ -5,6 +5,15 @@ final jsonConfig = {
         "mappings": {
           "additionalFields": {
             "caregiverConsent": "caregiverConsent.consentToParticipate",
+            "familyName": "__concatName:caregiverConsent.lastName",
+          },
+        },
+      },
+      "TaskModel": {
+        "mappings": {
+          "additionalFields": {
+            "familyName": "__concatName:caregiverConsent.lastName",
+            "householdClientReferenceId": "navigation.HouseholdClientReferenceId",
           },
         },
       },
@@ -538,6 +547,10 @@ final jsonConfig = {
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
             "memberCount": "__context:memberCount",
+            "childrenCount": "__context:childrenCount",
+            "householdLatitude": "__context:householdLatitude",
+            "householdLongitude": "__context:householdLongitude",
+            "householdLocationAccuracy": "__context:householdLocationAccuracy",
             "individualClientReferenceId":
                 "__context:individualClientReferenceId",
             "beneficiaryId": "__context:beneficiaryId",
@@ -636,6 +649,10 @@ final jsonConfig = {
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
             "memberCount": "__context:memberCount",
+            "childrenCount": "__context:childrenCount",
+            "householdLatitude": "__context:householdLatitude",
+            "householdLongitude": "__context:householdLongitude",
+            "householdLocationAccuracy": "__context:householdLocationAccuracy",
             "individualClientReferenceId":
                 "__context:individualClientReferenceId",
             "beneficiaryId": "__context:beneficiaryId",
@@ -1290,7 +1307,10 @@ final jsonConfig = {
           "householdType": "__context:householdType",
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
-          "additionalFields": {"date": "closeHouseholdDetails.date"}
+          "additionalFields": {
+            "date": "closeHouseholdDetails.date",
+            "familyName": "closeHouseholdDetails.familyname",
+          }
         }
       },
       "IndividualModel": {
@@ -1490,7 +1510,10 @@ final jsonConfig = {
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit"
           },
-          "additionalFields": "additionalInfo.fields",
+          "additionalFields": {
+            "familyName": "closeHouseholdDetails.familyname",
+            "householdClientReferenceId": "__ref:HouseholdModel.clientReferenceId",
+          },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
         }
@@ -1553,7 +1576,8 @@ final jsonConfig = {
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
           "additionalFields": {
-            "caregiverConsent": "caregiverConsent.consentToParticipate"
+            "caregiverConsent": "caregiverConsent.consentToParticipate",
+            "familyName": "caregiverConsent.lastName",
           }
         }
       },
@@ -1725,7 +1749,10 @@ final jsonConfig = {
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit"
           },
-          "additionalFields": "additionalInfo.fields",
+          "additionalFields": {
+            "familyName": "caregiverConsent.lastName",
+            "householdClientReferenceId": "__ref:HouseholdModel.clientReferenceId",
+          },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
         }

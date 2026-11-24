@@ -49,6 +49,7 @@ void main() {
           identifiers: [identifier],
         ),
         registration,
+        TaskModel(clientReferenceId: 'closed-task', status: 'CLOSED_HOUSEHOLD'),
       ],
       formValues: const {
         'caregiverConsent': {
@@ -57,6 +58,7 @@ void main() {
           'lastName': 'Updated last',
         },
         'householdDetails': {'dateOfRegistration': null},
+        'navigation': {'HouseholdClientReferenceId': 'household'},
       },
       modelsConfig: jsonConfig['householdConsentDeclinedUpdate']!['models']
           as Map<String, dynamic>,
@@ -73,8 +75,86 @@ void main() {
     expect(household.toMap()['additionalFields']['fields'],
         equals([
           {'key': 'caregiverConsent', 'value': 'FALSE'},
+          {'key': 'familyName', 'value': 'Updated last'},
         ]));
+    final task = updated.whereType<TaskModel>().single;
+    expect(task.status, 'CLOSED_HOUSEHOLD');
+    expect(task.toMap()['additionalFields']['fields'], [
+      {'key': 'familyName', 'value': 'Updated last'},
+      {'key': 'householdClientReferenceId', 'value': 'household'},
+    ]);
   });
+
+  for (final entry in {
+    'closeHouseholdRegistration': {
+      'closeHouseholdDetails': {'familyname': 'Captured last'},
+    },
+    'householdConsentDeclinedRegistration': {
+      'caregiverConsent': {'lastName': 'Captured last'},
+    },
+  }.entries) {
+    test('${entry.key} sends family name and links its task to the household', () {
+      initializeMappers();
+      DataConverterSingleton()
+          .setData(dynamicEntityModelListener: EntityModelJsonMapper());
+      final entities = FormEntityMapper(config: jsonConfig).mapFormToEntities(
+        formValues: entry.value,
+        modelsConfig: jsonConfig[entry.key]!['models'] as Map<String, dynamic>,
+        fallbackFormDataString: 'HouseholdModel',
+        context: const {
+          'tenantId': 'test',
+          'userUUID': 'worker',
+          'selectedBoundaryCode': 'community',
+          'beneficiaryType': 'HOUSEHOLD',
+        },
+      );
+      final household = entities.whereType<HouseholdModel>().single;
+      final task = entities.whereType<TaskModel>().single;
+      final familyName = {'key': 'familyName', 'value': 'Captured last'};
+      expect(household.toMap()['additionalFields']['fields'],
+          contains(equals(familyName)));
+      expect(task.toMap()['additionalFields']['fields'], containsAll([
+        familyName,
+        {'key': 'householdClientReferenceId', 'value': household.clientReferenceId},
+      ]));
+    });
+  }
+
+  for (final configName in ['delivery', 'indirectBulkDelivery']) {
+    test('$configName serializes household details on the task', () {
+      initializeMappers();
+      DataConverterSingleton()
+          .setData(dynamicEntityModelListener: EntityModelJsonMapper());
+      const householdDetails = {
+        'headName': 'Household Head',
+        'headMobileNumber': '123456789',
+        'memberCount': 4,
+        'childrenCount': 0,
+        'householdLatitude': 6.31,
+        'householdLongitude': -10.8,
+        'householdLocationAccuracy': 12.0,
+      };
+      final tasks = FormEntityMapper(config: jsonConfig).mapFormToEntities(
+        formValues: const {},
+        modelsConfig: jsonConfig[configName]!['models'] as Map<String, dynamic>,
+        context: const {
+          ...householdDetails,
+          'HouseholdClientReferenceId': 'household',
+          'ProjectBeneficiaryClientReferenceId': 'beneficiary',
+          'tenantId': 'test',
+          'userUUID': 'worker',
+          'selectedBoundaryCode': 'community',
+          'futureDoses': [{'id': 2, 'deliveryStrategy': 'INDIRECT'}],
+        },
+      ).whereType<TaskModel>();
+      expect(tasks.single.toMap()['additionalFields']['fields'], containsAll(
+        householdDetails.entries.map((entry) => {
+          'key': entry.key,
+          'value': entry.value,
+        }),
+      ));
+    });
+  }
 
   test('produces the full entity set the real Closed Household feature produces', () {
     expect(
