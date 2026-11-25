@@ -1045,6 +1045,31 @@ final jsonConfig = {
             // Keep the entered quantity alongside its unit as text.
             "quantityReturned":
                 "__switch:__context:stockEntryType:{RETURNED:__concatName:stockProductDetails.quantityReturned,default:__value:null}",
+
+            // The pieces figure for a return. ALWAYS present and always
+            // equal to StockModel.quantity - it repeats the switch the
+            // top-level quantity uses, so the two cannot disagree.
+            //
+            // Mapped explicitly rather than left to the fallback model,
+            // which swept the read-only quantityReturnedPieces form control
+            // into additionalFields. That control is gated by a
+            // visibilityCondition, and whether its value survived depended
+            // on whether the user had toggled the unit - so the saved field
+            // was wrong in both directions: a BALES return saved no pieces
+            // value at all, while a return switched BALES -> PIECES saved
+            // 50x the typed amount (75 pieces shipped as 3750). The
+            // top-level quantity was correct throughout, which is why this
+            // mirrors it rather than reading the control directly.
+            "quantityReturnedPieces":
+                "__switch:__concatName:__context:stockEntryType,__context:stockUnit,stockProductDetails.returnUnit:{"
+                    "RETURNED BALES BALES:stockProductDetails.quantityReturnedPieces,"
+                    "RETURNED PIECES BALES:stockProductDetails.quantityReturnedPieces,"
+                    "RETURNED BALES PIECES:stockProductDetails.quantityReturned,"
+                    "RETURNED PIECES PIECES:stockProductDetails.quantityReturned,"
+                    "RETURNED BALES:stockProductDetails.quantityReturnedPieces,"
+                    "RETURNED PIECES:stockProductDetails.quantityReturned,"
+                    "RETURNED:stockProductDetails.quantityReturned,"
+                    "default:__value:null}",
             "primaryRole": "__context:primaryRole",
             "secondaryRole": "__context:secondaryRole",
             // A __switch with no matching case and no `default` throws, and
