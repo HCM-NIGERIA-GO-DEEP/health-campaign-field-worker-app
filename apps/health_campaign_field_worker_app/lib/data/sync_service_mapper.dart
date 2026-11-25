@@ -810,21 +810,18 @@ class SyncServiceMapper extends SyncEntityMapperListener {
         break;
 
       case DataModelType.service:
-        responseEntities = await remote.search(ServiceSearchModel(
-          referenceIds: entities
-              .whereType<ServiceModel>()
-              .map((e) => e.referenceId)
-              .whereNotNull()
-              .toList(),
-        ));
-
         for (var element in operationGroupedEntity.value) {
           if (element.id == null) continue;
           final entity = element.entity as ServiceModel;
-          final responseEntity =
-              responseEntities.whereType<ServiceModel>().firstWhereOrNull(
-                    (e) => e.referenceId == entity.referenceId,
-                  );
+          // referenceId is the project id, shared by all its checklists, and
+          // a project holds more of them than one search page: ask for each
+          // one by its own clientId.
+          final responseEntity = (await remote.search(
+            ServiceSearchModel(clientId: entity.clientId),
+          ))
+              .whereType<ServiceModel>()
+              .firstWhereOrNull((e) => e.clientId == entity.clientId);
+          if (responseEntity != null) responseEntities.add(responseEntity);
 
           final serverGeneratedId = responseEntity?.id;
           final rowVersion = responseEntity?.rowVersion;

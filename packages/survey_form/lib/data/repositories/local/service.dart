@@ -292,12 +292,14 @@ class ServiceLocalRepository
       if (transformedAttributesForLocal != null &&
           transformedAttributesForLocal.isNotEmpty) {
         for (final a in transformedAttributesForLocal ?? []) {
+          // A server copy may carry attributes without a client id.
+          if (a.clientReferenceId == null) continue;
           final selectNestedQuery = sql.select(sql.serviceAttributes).join([]);
 
           final query = await (selectNestedQuery
                 ..where(buildAnd([
                   sql.serviceAttributes.clientReferenceId
-                      .equals(a.clientReferenceId!),
+                      .equals(a.clientReferenceId),
                 ])))
               .get();
 
@@ -323,10 +325,12 @@ class ServiceLocalRepository
       await sql.batch((batch) async {
         batch.update(
           sql.service,
-          serviceCompanion,
-          where: (table) => table.referenceId.equals(
-            entity.referenceId ?? '',
-          ),
+          // A server copy lacks what the server does not store (createdAt,
+          // client audit): its nulls must not erase the local values.
+          RawValuesInsertable<ServiceData>(serviceCompanion.toColumns(false)
+            ..removeWhere((_, v) => v is Variable && v.value == null)),
+          // referenceId is the project id, shared by all its checklists.
+          where: (table) => table.clientId.equals(entity.clientId),
         );
       });
 
