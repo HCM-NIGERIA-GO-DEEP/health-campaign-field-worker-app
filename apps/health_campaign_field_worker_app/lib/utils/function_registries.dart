@@ -652,7 +652,11 @@ class FunctionRegistries {
     // teamCode field's own visibilityCondition is
     // `warehouseDetails.facilityToWhich==DELIVERY_TEAM`, so a non-empty
     // teamCode already means the destination is a delivery team.
-    FunctionRegistry.register('getStockTeamCode', (args, stateData) {
+    // The team code behind a stock record, from the arguments shared by
+    // getStockTeamCode (the id) and getStockTeamName (the name), so the two
+    // can never describe different teams.
+    ({String rawTeam, bool isSixArg, bool toDeliveryTeam}) stockTeamOf(
+        List<dynamic> args) {
       String argAt(int index) =>
           args.length > index ? (args[index]?.toString().trim() ?? '') : '';
 
@@ -664,6 +668,31 @@ class FunctionRegistries {
       final rawTeam = toDeliveryTeam
           ? destinationTeam
           : (isSixArg && argAt(4) == 'DELIVERY_TEAM' ? sourceTeam : '');
+      return (
+        rawTeam: rawTeam,
+        isSixArg: isSixArg,
+        toDeliveryTeam: toDeliveryTeam,
+      );
+    }
+
+    // True for a distributor / community distributor. False when the roles
+    // cannot be read (no user bloc in scope): this runs inside config
+    // interpolation, where a throw would abort the whole transform.
+    bool loggedInUserIsDistributor() {
+      try {
+        return context.loggedInUserRoles.any((role) =>
+            role.code == RolesType.distributor.toValue() ||
+            role.code == RolesType.communityDistributor.toValue());
+      } catch (_) {
+        return false;
+      }
+    }
+
+    FunctionRegistry.register('getStockTeamCode', (args, stateData) {
+      final team = stockTeamOf(args);
+      final isSixArg = team.isSixArg;
+      final toDeliveryTeam = team.toDeliveryTeam;
+      final rawTeam = team.rawTeam;
 
       if (rawTeam.isEmpty) {
         // A distributor receiving stock INTO their own delivery team has no
@@ -694,15 +723,12 @@ class FunctionRegistries {
           return '';
         }
         try {
-          final isDistributor = context.loggedInUserRoles.any((role) =>
-              role.code == RolesType.distributor.toValue() ||
-              role.code == RolesType.communityDistributor.toValue());
-          if (isDistributor) return context.loggedInUserUuid;
+          if (loggedInUserIsDistributor()) return context.loggedInUserUuid;
         } catch (_) {
-          // loggedInUserRoles/loggedInUserUuid throw when the user bloc is
-          // not in scope. This runs inside config interpolation, where an
-          // exception would abort the whole transform, so fall back to the
-          // previous behaviour rather than taking the form down.
+          // loggedInUserUuid throws when the user bloc is not in scope. This
+          // runs inside config interpolation, where an exception would abort
+          // the whole transform, so fall back to the previous behaviour
+          // rather than taking the form down.
         }
         return '';
       }
@@ -745,6 +771,31 @@ class FunctionRegistries {
         return args.length > 2 ? (args[2]?.toString() ?? '') : '';
       }
       return '';
+    });
+
+    // The delivery team member's user name to save on a stock record
+    // (additionalFields.deliveryTeamName), read from the same team code that
+    // getStockTeamCode turns into the id. Takes the same arguments.
+    // - A scanned team QR is "userName||userUuid": the userName.
+    // - A bare uuid or a typed code carries no name: ''.
+    // - No team code and a distributor recording stock for their own team
+    //   (getStockTeamCode then uses their uuid): their own userName.
+    // - No delivery team involved: ''. A blank value is not saved.
+    FunctionRegistry.register('getStockTeamName', (args, stateData) {
+      final team = stockTeamOf(args);
+      if (team.rawTeam.isNotEmpty) {
+        return team.rawTeam.contains('||')
+            ? team.rawTeam.split('||').first.trim()
+            : '';
+      }
+      if (team.isSixArg && !team.toDeliveryTeam) return '';
+      try {
+        if (!loggedInUserIsDistributor()) return '';
+        final own = context.loggedInUserTeamCode;
+        return own.contains('||') ? own.split('||').first.trim() : '';
+      } catch (_) {
+        return '';
+      }
     });
 
     FunctionRegistry.register('getTransactionStatusType', (args, stateData) {
@@ -1153,13 +1204,6 @@ class FunctionRegistries {
         debugPrint('getCurrentFacilities error: $e');
         return <Map<String, dynamic>>[];
       }
-    });
-
-    FunctionRegistry.register('getFacilityName', (args, stateData) {
-      if (args.isEmpty) return '';
-      final facilityId = args.first?.toString() ?? '';
-      if (facilityId.isEmpty) return '';
-      return facilityId.contains('F') ? 'FAC_$facilityId' : facilityId;
     });
 
     FunctionRegistry.register('hasResults', (args, stateData) {
@@ -1577,6 +1621,87 @@ class FunctionRegistries {
       return '';
     }
 
+    // The logged-in user's own label (userName, else name) when [id] is their
+    // uuid, else ''. Records saved before deliveryTeamName was stored, and
+    // records where no team QR was scanned, carry no name; on the user's own
+    // phone their own uuid can still be shown as a name. Never throws: this
+    // runs inside config interpolation.
+    String ownNameFor(dynamic id) {
+      final value = id?.toString() ?? '';
+      if (value.isEmpty) return '';
+      try {
+        if (value != context.loggedInUserUuid) return '';
+        final teamCode = context.loggedInUserTeamCode;
+        return teamCode.contains('||') ? teamCode.split('||').first.trim() : '';
+      } catch (_) {
+        return '';
+      }
+    }
+
+    // What to show for a STAFF party: the saved team name, else the logged-in
+    // user's own name when the id is theirs, else the raw id.
+    String staffParty(String teamName, dynamic id) {
+      if (teamName.isNotEmpty) return teamName;
+      final own = ownNameFor(id);
+      return own.isNotEmpty ? own : (id?.toString() ?? '');
+    }
+
+    // What to show for a party saved as a facility. Accepting or declining
+    // stock saves a record whose sender and receiver are both typed WAREHOUSE,
+    // also when the one accepting is a delivery team member recorded by their
+    // user uuid; that record showed "FAC_<own uuid>". A user's own uuid is
+    // never a facility id, so it is shown as their name.
+    String facilityParty(dynamic id) {
+      final own = ownNameFor(id);
+      return own.isNotEmpty ? own : withFacilityPrefix(id);
+    }
+
+    // Sender shown on the Incoming Transactions card.
+    // args: [senderId, additionalFields.fields (optional),
+    //        senderType (optional)]
+    // A facility id keeps its FAC_ prefix, as before. Any other sender is a
+    // delivery team member, recorded by user uuid: show the userName saved on
+    // the record, and fall back to the id when the record has none (older
+    // records, or a team code that held only the uuid). The second argument
+    // may also be the name itself, which is how the SMC configs call this
+    // function. With one argument the result is what it always was, so a
+    // config that has not been updated shows no change.
+    // The saved name belongs to the team on EITHER side of the record. When
+    // the sender type is given and is not STAFF, the sender is a facility and
+    // the name is the receiver's, so it is not used.
+    FunctionRegistry.register('getFacilityName', (args, stateData) {
+      if (args.isEmpty) return '';
+      final facilityId = args.first?.toString() ?? '';
+      if (facilityId.isEmpty) return '';
+      if (facilityId.contains('F')) return 'FAC_$facilityId';
+      final senderType =
+          args.length > 2 ? (args[2]?.toString().trim() ?? '') : '';
+      if (senderType.isNotEmpty &&
+          senderType.toLowerCase() != 'null' &&
+          senderType != 'STAFF') {
+        return facilityId;
+      }
+      final source = args.length > 1 ? args[1] : null;
+      var teamName = '';
+      if (source is String) {
+        final text = source.trim();
+        // An unresolved config path or a stringified null is not a name.
+        // Nor is an id: an older config shape passed (senderId, receiverId).
+        final isName = text.isNotEmpty &&
+            text.toLowerCase() != 'null' &&
+            !text.contains('{{') &&
+            !text.startsWith('item.') &&
+            !text.startsWith('F-') &&
+            !RegExp(r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-').hasMatch(text);
+        // A raw team QR is "userName||userUuid".
+        if (isName) teamName = text.split('||').first.trim();
+      } else if (source != null) {
+        teamName = resolveTeamName(source).trim();
+        if (teamName.toLowerCase() == 'null') teamName = '';
+      }
+      return teamName.isNotEmpty ? teamName : facilityId;
+    });
+
     FunctionRegistry.register('getFirstPagePartyLabel', (args, stateData) {
       if (args.isEmpty) return 'INVENTORY_TRANSACTING_PARTY_LABEL';
       final stockEntryType = getStockEntryTypeFromFields(args.first);
@@ -1607,21 +1732,21 @@ class FunctionRegistries {
         case 'RECEIPT':
         case 'RETURNED':
           if (senderType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
+            return staffParty(teamName, args[1]);
           }
-          return withFacilityPrefix(args[1]);
+          return facilityParty(args[1]);
         case 'ISSUED':
         case 'DAMAGED':
         case 'LOSS':
           if (receiverType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
+            return staffParty(teamName, args[2]);
           }
-          return withFacilityPrefix(args[2]);
+          return facilityParty(args[2]);
         default:
           if (senderType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
+            return staffParty(teamName, args[1]);
           }
-          return withFacilityPrefix(args[1]);
+          return facilityParty(args[1]);
       }
     });
 
@@ -1654,21 +1779,21 @@ class FunctionRegistries {
         case 'RECEIPT':
         case 'RETURNED':
           if (receiverType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
+            return staffParty(teamName, args[2]);
           }
-          return withFacilityPrefix(args[2]);
+          return facilityParty(args[2]);
         case 'ISSUED':
         case 'DAMAGED':
         case 'LOSS':
           if (senderType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[1]?.toString() ?? '');
+            return staffParty(teamName, args[1]);
           }
-          return withFacilityPrefix(args[1]);
+          return facilityParty(args[1]);
         default:
           if (receiverType == 'STAFF') {
-            return teamName.isNotEmpty ? teamName : (args[2]?.toString() ?? '');
+            return staffParty(teamName, args[2]);
           }
-          return withFacilityPrefix(args[2]);
+          return facilityParty(args[2]);
       }
     });
   }

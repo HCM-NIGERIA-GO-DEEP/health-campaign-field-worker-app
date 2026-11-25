@@ -1036,6 +1036,11 @@ final jsonConfig = {
             "deliveryTeam": "stockDetails.deliveryTeam",
             "wayBillNumber": "stockProductDetails.wayBillNumber",
             "mrnNumber": "__context:mrnNumber",
+            // The delivery team member's user name (action data
+            // fn:getStockTeamName), so the transaction screens can show a
+            // name for a STAFF party instead of the user uuid. Blank for
+            // warehouse-to-warehouse records, and a blank value is not saved.
+            "deliveryTeamName": "__context:deliveryTeamName",
             "stockEntryType": "__context:stockEntryType",
             // How the quantity was typed: BALES or PIECES - on a return, the
             // unit picked on the page (returnUnit), otherwise stockUnit.

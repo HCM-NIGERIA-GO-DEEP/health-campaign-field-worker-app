@@ -1865,6 +1865,16 @@ final dynamic sampleInventoryFlows = {
                 "value":
                     "{{fn:getStockReceiverId(navigation.stockEntryType, navigation.primaryRole, formData.warehouseDetails.facilityToWhich, formData.warehouseDetails.teamCode, formData.stockDetails.deliveryTeam)}}"
               },
+              // The delivery team member's user name, saved on the stock
+              // as additionalFields "deliveryTeamName" so the transaction
+              // screens can show a name for a STAFF party, not the uuid.
+              // Same arguments as teamCode above: the name is read from
+              // the team code that gives the id.
+              {
+                "key": "deliveryTeamName",
+                "value":
+                    "{{fn:getStockTeamName(navigation.stockEntryType, navigation.primaryRole, formData.warehouseDetails.teamCode, formData.warehouseDetails.facilityToWhich, formData.stockDetails.facilityFromWhich, formData.stockDetails.deliveryTeam)}}"
+              },
               {"key": "mrnNumber", "value": "{{navigation.mrnNumber}}"},
               {
                 "key": "transactionReason",
@@ -2707,7 +2717,7 @@ final dynamic sampleInventoryFlows = {
                         "type": "template",
                         "fieldName": "viewTransactionPartyValueText",
                         "value":
-                            "{{fn:getFirstPageParty(item.items[0].additionalFields.fields, item.items[0].senderId, item.items[0].receiverId)}}"
+                            "{{fn:getFirstPageParty(item.items[0].additionalFields.fields, item.items[0].senderId, item.items[0].receiverId, item.items[0].senderType, item.items[0].receiverType)}}"
                       }
                     ]
                   },
@@ -2883,7 +2893,7 @@ final dynamic sampleInventoryFlows = {
                         "{{fn:getSecondPagePartyLabel(item.additionalFields.fields)}}",
                     "previewLabel": "INVENTORY_TRANSACTING_PARTY_LABEL",
                     "value":
-                        "{{fn:getSecondPageParty(item.additionalFields.fields, item.senderId, item.receiverId)}}"
+                        "{{fn:getSecondPageParty(item.additionalFields.fields, item.senderId, item.receiverId, item.senderType, item.receiverType)}}"
                   },
                   {
                     "key": "INVENTORY_MRN_NUMBER_LABEL",
@@ -3095,7 +3105,7 @@ final dynamic sampleInventoryFlows = {
                         "type": "template",
                         "fieldName": "incomingTransactionsSenderValueText",
                         "value":
-                            "{{fn:getFacilityName(item.items[0].senderId)}}"
+                            "{{fn:getFacilityName(item.items[0].senderId, item.items[0].additionalFields.fields, item.items[0].senderType)}}"
                       }
                     ]
                   },

@@ -164,7 +164,12 @@ class _UserQRDetailsPageState extends LocalizedState<UserQRDetailsPage> {
                       width: 2,
                     )),
                 child: QrImageView(
-                  data: context.loggedInUserUuid,
+                  // "userName||userUuid", the same code the stock form
+                  // prefills for the user's own team. A bare uuid gave the
+                  // scanning warehouse no name to save, so its transaction
+                  // screens showed this user's uuid. Every reader of a team
+                  // code strips the name before using the id.
+                  data: context.loggedInUserTeamCode,
                   version: QrVersions.auto,
                   size: MediaQuery.of(context).size.width / 1.25,
                 ),
