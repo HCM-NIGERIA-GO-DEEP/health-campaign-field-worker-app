@@ -59,6 +59,11 @@ class VisibilityManager {
     return result;
   }
 
+  /// The value a control held when it was last hidden, keyed by the control
+  /// itself. Static because a new VisibilityManager is created on every build.
+  static final Expando<_HiddenValue> _hiddenValues =
+      Expando<_HiddenValue>('hiddenValue');
+
   void toggleControlVisibility(
     String key,
     bool isVisible,
@@ -71,12 +76,31 @@ class VisibilityManager {
 
     if (isVisible) {
       control.setValidators(buildValidators(schema));
+      // Put back what the field held before it was hidden: a prefilled
+      // default (e.g. the name typed in the search bar) or what the user
+      // typed. Only into an empty control, and only once.
+      final hidden = _hiddenValues[control];
+      if (hidden != null) {
+        _hiddenValues[control] = null;
+        control.value ??= hidden.value;
+      }
     } else {
+      // This runs on every build while hidden; once reset, the value is null,
+      // so the kept value is not overwritten.
+      if (control.value != null) {
+        _hiddenValues[control] = _HiddenValue(control.value);
+      }
       control
         ..clearValidators()
-        ..reset(); // 👈 clears value and marks untouched
+        ..reset(); // clears value so a hidden field is never saved
     }
 
     control.updateValueAndValidity();
   }
+}
+
+class _HiddenValue {
+  const _HiddenValue(this.value);
+
+  final Object? value;
 }
