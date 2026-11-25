@@ -430,10 +430,19 @@ class FormEntityMapper {
 
       if (containsPathInFormData(path, formValues)) {
         final value = getStrictValueFromFormDataOnly(path, formValues);
-        updatedFields[customKey] = value;
 
         // Track the path as used so it's not treated as unmapped
         usedPaths.add(path.split('.').last.split('[').first);
+
+        // A page the edit never showed (e.g. the consent page when editing
+        // from Household Details) is in the form with null values. Writing
+        // that null replaced the stored answer with
+        // {key: caregiverConsent, value: null}, which the server rejects
+        // (400 "must not be null") and which blocks the whole sync. Same
+        // rule as create (_mapAdditionalFields): no null/blank entries; the
+        // stored value stays.
+        if (value == null || value.toString().trim().isEmpty) return;
+        updatedFields[customKey] = value;
       }
     });
 
