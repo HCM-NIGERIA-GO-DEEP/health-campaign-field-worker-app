@@ -502,7 +502,9 @@ final dynamic inventoryReportFlows = {
                 "cellValue": "{{item.additionalFields.fields.wayBillNumber}}"
               },
               {
-                "header": "{{fn:unitLabel('STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_4_LABEL')}}",
+                // Every stock quantity is stored in pieces (see the "stock"
+                // transformer), whatever unit the role typed it in.
+                "header": "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_4_LABEL_PIECES",
                 "cellValue": "{{item.quantity}}"
               }
             ],

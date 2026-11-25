@@ -136,6 +136,10 @@ class ReverseTransformerExecutor extends ActionExecutor {
       );
 
       final formData = mapper.buildFormData();
+      final excludeFormFields = action.properties['excludeFormFields'] as List?;
+      for (final field in excludeFormFields ?? const []) {
+        formData.remove(field);
+      }
 
       debugPrint('REVERSE_TRANSFORM: Generated form data: $formData');
 

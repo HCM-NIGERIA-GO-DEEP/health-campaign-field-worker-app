@@ -44,7 +44,9 @@ import '../../utils/background_service.dart';
 import '../../utils/boundary_relationship_matcher.dart';
 import '../../utils/download_image.dart';
 import '../../utils/environment_config.dart';
+import '../../sampleJsonConfigs/manage_stock.dart';
 import '../../utils/least_level_boundary_singleton.dart';
+import '../../utils/parent_facility_resolver.dart';
 import '../../utils/runtime_hierarchy.dart';
 import '../../utils/stock_calculation_utils.dart';
 import '../../utils/stock_downsync_cursor.dart';
@@ -644,7 +646,22 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       ),
     );
 
-    await projectFacilityLocalRepository.bulkCreate(projectFacilities);
+    // A top-of-hierarchy user (the national warehouse, on Country) has no
+    // boundary above them, so the search can never return a 'parent' and the
+    // four upward-facing operations - Receive's "Receive from" and
+    // Return/Loss/Damaged's "Deliver to" - had nothing to offer. For that
+    // case the source facility is named by its `usage` in INVENTORY.json
+    // instead of by a boundary level. Appended rather than merged into the
+    // search so no existing tag can be overwritten.
+    final usageParents = await _resolveUsageBasedParents(
+      project: project,
+      assignedBoundaryType: assignedBoundaryType,
+      boundaryTypes: boundaryTypes,
+      alreadyResolved: projectFacilities,
+    );
+
+    await projectFacilityLocalRepository
+        .bulkCreate([...projectFacilities, ...usageParents]);
 
     // Register notification token with current level facility IDs
     final currentFacilityIds = projectFacilities
@@ -675,6 +692,95 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
                   userObject: userObject),
             );
       }
+    }
+  }
+
+  /// Builds the synthetic `parent` project facilities for a top-of-hierarchy
+  /// user, matching facility `usage` against
+  /// `hierarchyMapping.<boundaryType>.forReceipt` in the INVENTORY config.
+  ///
+  /// Returns an empty list for every user who has a real boundary above them,
+  /// so no existing flow changes: those levels declare a boundary type under
+  /// forReceipt, which matches no facility usage.
+  ///
+  /// Never throws - a config or lookup failure must not block project
+  /// selection, which is why the whole body is guarded.
+  Future<List<ProjectFacilityModel>> _resolveUsageBasedParents({
+    required ProjectModel project,
+    required String? assignedBoundaryType,
+    required List<String>? boundaryTypes,
+    required List<ProjectFacilityModel> alreadyResolved,
+  }) async {
+    try {
+      if (!isTopLevelAssignment(
+        assignedBoundaryType: assignedBoundaryType,
+        boundaryTypes: boundaryTypes,
+      )) {
+        return const [];
+      }
+
+      // Same two-source precedence as FlowNavigationUtils: the downloaded
+      // server config wins, the bundled Dart mirror is the offline
+      // fallback.
+      //
+      // Requires INVENTORY.json to have been uploaded. A stale server copy
+      // carrying Country.forReceipt = ["Central Facility"] resolves to the
+      // national warehouse's own usage, which the dedup below drops as the
+      // user's own facility - leaving no parent and an empty "Receive
+      // from". That is not a code fault, it is an unpublished config.
+      //
+      // Keep this on the same source as FlowNavigationUtils._navigate. If
+      // its SharedPreferences lookup is commented out for local testing,
+      // comment this block out too and fall back to sampleInventoryFlows,
+      // or the UI and this resolver read different INVENTORY copies.
+      dynamic inventoryConfig;
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('app_config_schemas');
+      if (raw != null) {
+        final all = json.decode(raw);
+        if (all is Map && all['INVENTORY'] is Map) {
+          inventoryConfig = (all['INVENTORY'] as Map)['data'];
+        }
+      }
+      inventoryConfig ??= sampleInventoryFlows;
+
+      final usages = parentFacilityUsages(
+        inventoryConfig: inventoryConfig,
+        boundaryType: assignedBoundaryType,
+      );
+      if (usages.isEmpty) return const [];
+
+      final facilities = await facilityLocalRepository.search(
+        FacilitySearchModel(tenantId: envConfig.variables.tenantId),
+      );
+
+      final seen = alreadyResolved.map((e) => e.facilityId).toSet();
+      final parents = <ProjectFacilityModel>[];
+      for (final facility in facilities) {
+        final usage = facility.usage;
+        if (usage == null || !usages.contains(usage)) continue;
+        if (!seen.add(facility.id)) continue;
+
+        final now = DateTime.now().millisecondsSinceEpoch;
+        parents.add(ProjectFacilityModel(
+          id: facility.id,
+          facilityId: facility.id,
+          projectId: project.id,
+          tenantId: facility.tenantId,
+          auditDetails: AuditDetails(createdBy: '', createdTime: now),
+          clientAuditDetails:
+              ClientAuditDetails(createdBy: '', createdTime: now),
+          additionalFields: ProjectFacilityAdditionalFields(
+            version: 1,
+            fields: [const AdditionalField('facilityLevel', 'parent')],
+          ),
+        ));
+      }
+
+      return parents;
+    } catch (e) {
+      debugPrint('usage-based parent facility resolution failed: $e');
+      return const [];
     }
   }
 

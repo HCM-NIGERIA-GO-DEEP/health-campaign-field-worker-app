@@ -345,11 +345,17 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
         final hasOnSystemBack =
             onSystemBackActions != null && onSystemBackActions.isNotEmpty;
 
+        final isSystemBackDisabled = ConditionalEvaluator.evaluate(
+          widget.config['disableSystemBack'],
+          {'contextData': stateData.rawState, ...stateData.modelMap},
+          screenKey: compositeKey,
+          stateData: stateData,
+        ) == true;
+
         return PopScope(
-          canPop: !hasOnSystemBack,
+          canPop: !hasOnSystemBack && !isSystemBackDisabled,
           onPopInvoked: (didPop) async {
-            if (didPop) return;
-            if (!hasOnSystemBack) return;
+            if (didPop || isSystemBackDisabled || !hasOnSystemBack) return;
             await _handleScreenActions(
               context,
               onSystemBackActions,

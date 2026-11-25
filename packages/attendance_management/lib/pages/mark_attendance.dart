@@ -1372,6 +1372,13 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                 type: ToastType.error,
               );
             } else {
+              final isSingleSession = widget.registerModel
+                      .additionalDetails?[EnumValues.sessions.toValue()] !=
+                  2;
+              final slotDetails = <String, dynamic>{
+                if (!isSingleSession)
+                  'attendanceSlot': isMorning ? 'MORNING' : 'EVENING',
+              };
               if (type == EnumValues.draft.toValue()) {
                 individualLogBloc?.add(SaveAsDraftEvent(
                     entryTime: entryTime,
@@ -1379,14 +1386,13 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                     selectedDate:
                         AttendanceDateTimeManagement.getFormattedDateToDateTime(
                             currentSelectedDate)!,
-                    isSingleSession: widget.registerModel.additionalDetails?[
-                            EnumValues.sessions.toValue()] !=
-                        2,
+                    isSingleSession: isSingleSession,
                     createOplog: type != EnumValues.draft.toValue(),
                     latitude: latitude,
                     longitude: longitude,
                     comment: form.control(_commentKey).value,
                     additionalDetails: {
+                      ...slotDetails,
                       if (markManualAttendance || _usedManualMarking)
                         'isMarkedManually': true,
                       if (manualAttendanceReason != null &&
@@ -1461,16 +1467,14 @@ class _MarkAttendancePageState extends State<MarkAttendancePage> {
                                   selectedDate: AttendanceDateTimeManagement
                                       .getFormattedDateToDateTime(
                                           currentSelectedDate)!,
-                                  isSingleSession:
-                                      widget.registerModel.additionalDetails?[
-                                              EnumValues.sessions.toValue()] !=
-                                          2,
+                                  isSingleSession: isSingleSession,
                                   createOplog:
                                       type != EnumValues.draft.toValue(),
                                   latitude: latitude,
                                   longitude: longitude,
                                   comment:
                                       dialogForm.control(_commentKey).value,
+                                  additionalDetails: slotDetails,
                                 ));
                                 Navigator.of(
                                   context,

@@ -45,7 +45,7 @@ class JsonSchemaDropdownBuilder extends JsonSchemaBuilder<String> {
                         .split('.')
                         .where((val) => val.trim().isNotEmpty) // 🔑 important
                         .map(
-                          (val) => DropdownItem(
+                          (val) => _ValueDropdownItem(
                             code: val,
                             name: loc.translate(
                               enums
@@ -61,7 +61,7 @@ class JsonSchemaDropdownBuilder extends JsonSchemaBuilder<String> {
                     : null,
                 options: enums
                     .map(
-                      (e) => DropdownItem(
+                      (e) => _ValueDropdownItem(
                           code: e.code, name: loc.translate(e.name)),
                     )
                     .toList(),
@@ -112,4 +112,22 @@ class JsonSchemaDropdownBuilder extends JsonSchemaBuilder<String> {
       ),
     );
   }
+}
+
+/// A [DropdownItem] equal to any other with the same code.
+///
+/// MultiSelectDropDown checks its initialOptions against its options with
+/// `contains`, and a plain DropdownItem only equals itself. So preselected
+/// items built apart from the options list - or on an earlier build, since
+/// the dropdown keeps its first build's options - throw "Cannot select
+/// options that are not in the options list" and show unticked.
+class _ValueDropdownItem extends DropdownItem {
+  const _ValueDropdownItem({required super.name, required super.code});
+
+  @override
+  bool operator ==(Object other) =>
+      other is _ValueDropdownItem && other.code == code;
+
+  @override
+  int get hashCode => code.hashCode;
 }

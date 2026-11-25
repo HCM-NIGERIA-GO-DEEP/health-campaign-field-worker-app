@@ -28,6 +28,7 @@ class FlowBuilderHomePage extends LocalizedStatefulWidget {
 
 class _FlowBuilderHomePageState extends State<FlowBuilderHomePage> {
   bool _formSchemaLoaded = false;
+  bool _waitingForFormReset = false;
   bool _isForm = false;
   bool _preventScreenCapture = false;
   late final String _instanceId;
@@ -70,9 +71,13 @@ class _FlowBuilderHomePageState extends State<FlowBuilderHomePage> {
     if (config?['screenType'] == 'FORM') {
       final normalized = transformJson(config!);
       final schemaJsonString = jsonEncode(normalized);
-      context
-          .read<FormsBloc>()
-          .add(FormsEvent.load(schemas: [schemaJsonString]));
+      final formsBloc = context.read<FormsBloc>();
+      final state = formsBloc.state;
+      // A new route must not build controls from an earlier attempt's values
+      // while its schema load is queued.
+      _waitingForFormReset = state.cachedSchemas[widget.pageName] !=
+          state.initialSchemas[widget.pageName];
+      formsBloc.add(FormsEvent.load(schemas: [schemaJsonString]));
       _formSchemaLoaded = true;
     }
   }
@@ -98,7 +103,7 @@ class _FlowBuilderHomePageState extends State<FlowBuilderHomePage> {
     DataConverterSingleton()
         .setData(dynamicEntityModelListener: EntityModelJsonMapper());
 
-    return MultiBlocProvider(
+    final screen = MultiBlocProvider(
       providers: [
         BlocProvider<CrudBloc>(
           create: (context) {
@@ -118,6 +123,20 @@ class _FlowBuilderHomePageState extends State<FlowBuilderHomePage> {
         navigationParams: widget.navigationParams,
         instanceId: _instanceId,
       ),
+    );
+    if (!_isForm) return screen;
+
+    return BlocBuilder<FormsBloc, FormsState>(
+      buildWhen: (_, __) => _waitingForFormReset,
+      builder: (context, state) {
+        if (_waitingForFormReset &&
+            state.cachedSchemas[widget.pageName] !=
+                state.initialSchemas[widget.pageName]) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        _waitingForFormReset = false;
+        return screen;
+      },
     );
   }
 }

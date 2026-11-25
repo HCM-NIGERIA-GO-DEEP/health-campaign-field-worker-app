@@ -5,6 +5,16 @@ final jsonConfig = {
         "mappings": {
           "additionalFields": {
             "caregiverConsent": "caregiverConsent.consentToParticipate",
+            "familyName": "__concatName:caregiverConsent.lastName",
+          },
+        },
+      },
+      "TaskModel": {
+        "mappings": {
+          "additionalFields": {
+            "firstName": "caregiverConsent.firstName",
+            "familyName": "__concatName:caregiverConsent.lastName",
+            "householdClientReferenceId": "navigation.HouseholdClientReferenceId",
           },
         },
       },
@@ -13,6 +23,30 @@ final jsonConfig = {
           "name": {
             "givenName": "caregiverConsent.firstName",
             "familyName": "caregiverConsent.lastName",
+          },
+        },
+      },
+    },
+  },
+  "householdDetailsEdit": {
+    "models": {
+      "HouseholdModel": {
+        "mappings": {
+          "memberCount": "householdDetails.memberCount",
+          "additionalFields": {
+            "memberCount": "householdDetails.memberCount",
+            "childrenCount": "householdDetails.childrenCount",
+            "familyName": "householdDetails.familyname",
+          },
+        },
+      },
+      "IndividualModel": {
+        "mappings": {
+          "mobileNumber": "householdDetails.phone",
+          "gender": "householdDetails.gender",
+          "name": {
+            "givenName": "householdDetails.nameOfIndividual",
+            "familyName": "householdDetails.familyname",
           },
         },
       },
@@ -538,6 +572,10 @@ final jsonConfig = {
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
             "memberCount": "__context:memberCount",
+            "childrenCount": "__context:childrenCount",
+            "householdLatitude": "__context:householdLatitude",
+            "householdLongitude": "__context:householdLongitude",
+            "householdLocationAccuracy": "__context:householdLocationAccuracy",
             "individualClientReferenceId":
                 "__context:individualClientReferenceId",
             "beneficiaryId": "__context:beneficiaryId",
@@ -636,6 +674,10 @@ final jsonConfig = {
             "householdClientReferenceId":
                 "__context:HouseholdClientReferenceId",
             "memberCount": "__context:memberCount",
+            "childrenCount": "__context:childrenCount",
+            "householdLatitude": "__context:householdLatitude",
+            "householdLongitude": "__context:householdLongitude",
+            "householdLocationAccuracy": "__context:householdLocationAccuracy",
             "individualClientReferenceId":
                 "__context:individualClientReferenceId",
             "beneficiaryId": "__context:beneficiaryId",
@@ -935,8 +977,39 @@ final jsonConfig = {
           "productVariantId": "stockDetails.productdetail.id",
           "referenceId": "__context:projectId",
           "referenceIdType": "__value:PROJECT",
+          // Always saved in pieces. stockUnit (fn:stockEntryUnit) is the unit
+          // the quantity was typed in: typed in BALES, the product details
+          // page's read-only <field>Pieces row (bales x 50) is saved; typed in
+          // PIECES, the field itself. The key is "<stockEntryType> <stockUnit>"
+          // - __concatName skips an empty part, so a config that sends no
+          // stockUnit gets just "<stockEntryType>" and saves the typed field
+          // as before, instead of matching no case (which throws and drops
+          // the whole StockModel).
+          // A return adds a third part, the unit picked on the page
+          // (returnUnit, empty for every other type), and that decides:
+          // "RETURNED <stockUnit> BALES" saves the Pieces row. A config
+          // without returnUnit gets "RETURNED <stockUnit>" as before.
           "quantity":
-              "__switch:__context:stockEntryType:{RECEIPT:stockProductDetails.quantityReceived,RETURNED:stockProductDetails.quantityReturned,ISSUED:stockProductDetails.quantitySent,DAMAGED:stockProductDetails.quantityDamaged,LOSS:stockProductDetails.quantityLost}",
+              "__switch:__concatName:__context:stockEntryType,__context:stockUnit,stockProductDetails.returnUnit:{"
+                  "RECEIPT BALES:stockProductDetails.quantityReceivedPieces,"
+                  "RECEIPT PIECES:stockProductDetails.quantityReceived,"
+                  "RECEIPT:stockProductDetails.quantityReceived,"
+                  "RETURNED BALES BALES:stockProductDetails.quantityReturnedPieces,"
+                  "RETURNED PIECES BALES:stockProductDetails.quantityReturnedPieces,"
+                  "RETURNED BALES PIECES:stockProductDetails.quantityReturned,"
+                  "RETURNED PIECES PIECES:stockProductDetails.quantityReturned,"
+                  "RETURNED BALES:stockProductDetails.quantityReturnedPieces,"
+                  "RETURNED PIECES:stockProductDetails.quantityReturned,"
+                  "RETURNED:stockProductDetails.quantityReturned,"
+                  "ISSUED BALES:stockProductDetails.quantitySentPieces,"
+                  "ISSUED PIECES:stockProductDetails.quantitySent,"
+                  "ISSUED:stockProductDetails.quantitySent,"
+                  "DAMAGED BALES:stockProductDetails.quantityDamagedPieces,"
+                  "DAMAGED PIECES:stockProductDetails.quantityDamaged,"
+                  "DAMAGED:stockProductDetails.quantityDamaged,"
+                  "LOSS BALES:stockProductDetails.quantityLostPieces,"
+                  "LOSS PIECES:stockProductDetails.quantityLost,"
+                  "LOSS:stockProductDetails.quantityLost}",
           "wayBillNumber": "stockProductDetails.wayBillNumber",
           "transactionType": "__context:transactionType",
           "transactionReason":
@@ -964,6 +1037,14 @@ final jsonConfig = {
             "wayBillNumber": "stockProductDetails.wayBillNumber",
             "mrnNumber": "__context:mrnNumber",
             "stockEntryType": "__context:stockEntryType",
+            // How the quantity was typed: BALES or PIECES - on a return, the
+            // unit picked on the page (returnUnit), otherwise stockUnit.
+            // quantity itself is always pieces (see above).
+            "stockUnit":
+                "__switch:stockProductDetails.returnUnit:{BALES:__value:BALES,PIECES:__value:PIECES,default:__context:stockUnit}",
+            // Keep the entered quantity alongside its unit as text.
+            "quantityReturned":
+                "__switch:__context:stockEntryType:{RETURNED:__concatName:stockProductDetails.quantityReturned,default:__value:null}",
             "primaryRole": "__context:primaryRole",
             "secondaryRole": "__context:secondaryRole",
             // A __switch with no matching case and no `default` throws, and
@@ -999,7 +1080,12 @@ final jsonConfig = {
           "productVariantId": "__context:productVariantId",
           "referenceId": "__context:projectId",
           "referenceIdType": "__value:PROJECT",
-          "quantity": "__context:quantity",
+          // A registrar or distributor (receiptUnit PIECES) types the pieces
+          // they received on the Accept screen, and that is saved; everyone
+          // else accepts the dispatched quantity as sent. A config without
+          // receiptUnit falls to the dispatched quantity, as before.
+          "quantity":
+              "__switch:__context:receiptUnit:{PIECES:stockReceiptDetails.quantityReceived,default:__context:quantity}",
           "wayBillNumber": "stockReceiptDetails.wayBillNumber",
           "transactionType": "__context:transactionType",
           "transactionReason": "__value:RECEIVED",
@@ -1249,7 +1335,10 @@ final jsonConfig = {
           "householdType": "__context:householdType",
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
-          "additionalFields": {"date": "closeHouseholdDetails.date"}
+          "additionalFields": {
+            "date": "closeHouseholdDetails.date",
+            "familyName": "closeHouseholdDetails.familyname",
+          }
         }
       },
       "IndividualModel": {
@@ -1449,7 +1538,11 @@ final jsonConfig = {
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit"
           },
-          "additionalFields": "additionalInfo.fields",
+          "additionalFields": {
+            "firstName": "closeHouseholdDetails.headName",
+            "familyName": "closeHouseholdDetails.familyname",
+            "householdClientReferenceId": "__ref:HouseholdModel.clientReferenceId",
+          },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
         }
@@ -1512,7 +1605,8 @@ final jsonConfig = {
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
           "additionalFields": {
-            "caregiverConsent": "caregiverConsent.consentToParticipate"
+            "caregiverConsent": "caregiverConsent.consentToParticipate",
+            "familyName": "caregiverConsent.lastName",
           }
         }
       },
@@ -1684,7 +1778,11 @@ final jsonConfig = {
             "clientAuditDetails": "__generate:clientAudit",
             "auditDetails": "__generate:audit"
           },
-          "additionalFields": "additionalInfo.fields",
+          "additionalFields": {
+            "firstName": "caregiverConsent.firstName",
+            "familyName": "caregiverConsent.lastName",
+            "householdClientReferenceId": "__ref:HouseholdModel.clientReferenceId",
+          },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
         }

@@ -282,6 +282,25 @@ String maskString(String input) {
   return maskedString;
 }
 
+/// A [DropdownItem] equal to any other with the same code.
+///
+/// MultiSelectDropDown checks its initialOptions against its options with
+/// `contains`, and a plain DropdownItem only equals itself. So preselected
+/// items built apart from the options list - or on an earlier build, since
+/// the dropdown keeps its first build's options - throw "Cannot select
+/// options that are not in the options list" and show unticked. Build both
+/// a MultiSelectDropDown's options and its initialOptions from this.
+class ValueDropdownItem extends DropdownItem {
+  const ValueDropdownItem({required super.name, required super.code});
+
+  @override
+  bool operator ==(Object other) =>
+      other is ValueDropdownItem && other.code == code;
+
+  @override
+  int get hashCode => code.hashCode;
+}
+
 /// The stock keeping unit a role counts in: a warehouse manager moves ITNs
 /// in bales, a distributor hands out loose pieces.
 ///
@@ -296,6 +315,55 @@ String stockUnitForRoles(Iterable<String> roleCodes) {
   if (roles.contains('WAREHOUSE_MANAGER')) return 'BALES';
   if (roles.contains('DISTRIBUTOR')) return 'PIECES';
   return '';
+}
+
+/// ITN nets in one bale. The stock forms carry the same number in config
+/// (computedValue multiplyBy / divideBy 50).
+const itnPiecesPerBale = 50;
+
+/// Whether the user counts stock in pieces: yes for a registrar or a
+/// distributor, who hand out loose nets, even alongside another role. They
+/// see the home stock balance in pieces and type the pieces they receive on
+/// the stock receipt screen; everyone else sees bales on both. Stock is
+/// stored in pieces either way.
+bool countsStockInPieces(Iterable<String> roleCodes) {
+  final roles = roleCodes.map((code) => code.toUpperCase()).toSet();
+  return roles.contains('REGISTRAR') || roles.contains('DISTRIBUTOR');
+}
+
+/// How the user takes in stock on the stock receipt (Accept) screen: 'PIECES'
+/// for a registrar or distributor ([countsStockInPieces]), who type the
+/// pieces received, which is what is saved; 'BALES' for everyone else, who
+/// accept the dispatched quantity as sent and see it in bales.
+String stockReceiptUnit(Iterable<String> roleCodes) =>
+    countsStockInPieces(roleCodes) ? 'PIECES' : 'BALES';
+
+/// The unit a stock quantity is typed in on the stock product details page:
+/// 'BALES' when the role counts in bales ([roleUnit], from
+/// [stockUnitForRoles]) and neither side of the movement is a delivery team;
+/// 'PIECES' otherwise. Stock going to or coming from a delivery team moves as
+/// loose nets, and a distributor - or a role with no unit - types pieces.
+///
+/// The product details page shows its bales input and read-only pieces row
+/// on exactly this rule, and the "stock" transformer saves that pieces row as
+/// the quantity when this is 'BALES', so stock is always stored in pieces.
+/// Also saved on the stock as additionalFields "stockUnit". A return is the
+/// exception: the user picks Bales or Pieces for each product on the page
+/// (returnUnit), and that decides instead.
+String stockEntryUnit(
+  Object? roleUnit,
+  Object? facilityToWhich,
+  Object? facilityFromWhich,
+) {
+  bool isDeliveryTeam(Object? facility) =>
+      facility?.toString().trim() == 'DELIVERY_TEAM';
+
+  final countsInBales = roleUnit?.toString().trim().toUpperCase() == 'BALES';
+  return countsInBales &&
+          !isDeliveryTeam(facilityToWhich) &&
+          !isDeliveryTeam(facilityFromWhich)
+      ? 'BALES'
+      : 'PIECES';
 }
 
 /// The maximum ITN units a household may be offered, read from the project

@@ -276,6 +276,23 @@ class _FacilityCardContent extends StatelessWidget {
     final isToField = formKey == 'facilityToWhich';
     final isFromField = formKey == 'facilityFromWhich';
 
+    // Which facilityLevel counts as "the facility I answer to" - the one a
+    // receipt comes from and a return/loss/damage goes to.
+    //
+    // For a warehouse user that is the level above them ('parent'): a DP
+    // warehouse (WAREHOUSE_MANAGER + DISTRIBUTOR, double phase) receives
+    // from and returns to the District warehouse.
+    //
+    // A distributor WITHOUT the warehouse role (CDD: REGISTRAR +
+    // DISTRIBUTOR, single phase) is not a node in the facility hierarchy at
+    // all - it is a delivery team hanging off a warehouse on its OWN
+    // boundary. Per the flows doc its receipt, return, loss and damage all
+    // face the PPS/DP warehouse, which is tagged 'current', not 'parent'.
+    // Resolving it as 'parent' walked one level too far up and offered the
+    // District warehouse instead.
+    final upwardLevel =
+        (isDistributor && !isWareHouseMgr) ? 'current' : 'parent';
+
     // Filter facilities
     final filteredFacilities = projectFacilities.where((e) {
       final model = e as ProjectFacilityModel;
@@ -291,13 +308,13 @@ class _FacilityCardContent extends StatelessWidget {
         // parent warehouse) for Loss/Excess, regardless of role - there is
         // no sense in which a Distributor would "deliver to" themselves or
         // to DELIVERY_TEAM when reporting loss/excess upward.
-        if (isToField) return facilityLevel == 'parent';
+        if (isToField) return facilityLevel == upwardLevel;
         if (isFromField) return facilityLevel == 'current';
       } else if (isReturnFlow) {
         // Same reasoning as isLessExcessFlow above: a return always goes up
         // to the parent facility, never to DELIVERY_TEAM or the user's own
         // (nonexistent) facility.
-        if (isToField) return facilityLevel == 'parent';
+        if (isToField) return facilityLevel == upwardLevel;
         if (isFromField) return facilityLevel == 'current';
       } else if (transactionType == 'DISPATCHED' ||
           transactionType == 'ISSUED') {
@@ -308,12 +325,26 @@ class _FacilityCardContent extends StatelessWidget {
         // A distributor receives stock into their delivery team. Showing the
         // mapped community warehouse here makes it look like a second valid
         // destination even though the receipt belongs to the distributor.
-        if (isToField && isDistributor && isReceivedFlow) return false;
+        //
+        // Excludes anyone who is ALSO a warehouse manager. A double-phase
+        // DP user (WAREHOUSE_MANAGER + DISTRIBUTOR) receives stock INTO
+        // their own DP warehouse, so 'current' is the correct destination.
+        // Suppressing it on the strength of the distributor role alone
+        // emptied their "Deliver to" entirely: the real facilities were
+        // filtered out here, and DELIVERY_TEAM is not offered either
+        // because showDeliveryTeam gates a warehouse manager behind
+        // hasNoChildFacilities, which is only ever true on DISPATCHED/
+        // ISSUED. A distributor without the warehouse role (CDD:
+        // REGISTRAR + DISTRIBUTOR) is unaffected.
+        if (isToField && isDistributor && !isWareHouseMgr && isReceivedFlow) {
+          return false;
+        }
         if (isToField) return facilityLevel == 'current';
-        if (isFromField) return facilityLevel == 'parent';
+        if (isFromField) return facilityLevel == upwardLevel;
       } else if (stockEntryType == 'LOSS' || stockEntryType == 'DAMAGED') {
-        // For loss and damaged, to field should show parent facility
-        if (isToField) return facilityLevel == 'parent';
+        // For loss and damaged, to field should show the facility the user
+        // answers to - parent for a warehouse, same-level for a CDD.
+        if (isToField) return facilityLevel == upwardLevel;
         if (isFromField) return facilityLevel == 'current';
       }
 

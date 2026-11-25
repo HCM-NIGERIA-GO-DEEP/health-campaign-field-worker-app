@@ -1588,25 +1588,33 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                       schemaKey: widget.currentSchemaKey,
                       isEdit: widget.isEdit));
 
-                  // Pop all form pages (FormsRenderRoute)
-                  /// FIXME: NOT BACKWARD COMPATIBLE
-                  context.router.popUntil((route) {
-                    return route.settings.name != FormsRenderRoute.name;
-                  });
-                } finally {
-                  // This reset is load-bearing, not hygiene. _isSubmitting is
-                  // State on this page, and the two other Submit buttons are
-                  // `isDisabled: _isSubmitting || ...`. The flag used to be
-                  // set here and never cleared, on the assumption that the
-                  // popUntil above always destroys this State. It does not:
-                  // the predicate stops at the first route whose name is not
-                  // FormsRenderRoute, so if the route name does not match
-                  // (see the FIXME) nothing is popped, the page survives with
-                  // the flag stuck true, and every Submit button on it is
-                  // disabled for good - with no error shown to explain why.
+                  // Deliberately no popUntil here, and _isSubmitting is left
+                  // true on the success path.
+                  //
+                  // FormsSubmitEvent only emits FormsSubmittedState; the flow's
+                  // configured onAction chain (FETCH_TRANSFORMER_CONFIG ->
+                  // CREATE_EVENT -> NAVIGATION) runs later, on a microtask, via
+                  // FormSubmissionRegistry. Popping this page synchronously used
+                  // to reveal the form underneath - still filled in, and with its
+                  // own _isSubmitting already reset to false when it pushed this
+                  // summary - while the entities were still being written. A
+                  // second tap there re-ran the whole submit, and CREATE_EVENT
+                  // has no duplicate detection, so one dwelling was saved as two
+                  // households.
+                  //
+                  // Tearing down the stack is therefore the configured
+                  // NAVIGATION's job (popUntilAndReplace past the form page),
+                  // which disposes this page only once the entities exist. A
+                  // flow that sets `summary: true` must navigate in its onAction,
+                  // or this page stays up with Submit disabled.
+                } catch (_) {
+                  // Only re-enable on failure. Nothing navigated away in that
+                  // case, so the user needs the button back to retry; on success
+                  // the navigation above disposes this page instead.
                   if (mounted) {
                     setState(() => _isSubmitting = false);
                   }
+                  rethrow;
                 }
               },
               type: DigitButtonType.primary,
