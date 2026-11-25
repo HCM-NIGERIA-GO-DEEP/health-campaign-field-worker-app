@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
@@ -10,7 +11,10 @@ import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../data/services/server_summary_report_service.dart';
+import '../../sampleJsonConfigs/registration_flows.dart';
+import '../../utils/daily_target_config.dart';
 import '../../utils/utils.dart';
 import '../progress_indicator/progress_indicator.dart';
 
@@ -36,6 +40,43 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
   // guard every re-entry stacks another live watch() on the same table.
   bool _listenersAttached = false;
 
+  // Daily target from the REGISTRATION flow config (`dailyTarget`), per
+  // role. Null until loaded, or when the config has no usable value - the
+  // bar then shows the project's target as before.
+  double? _configTarget;
+
+  // Reads the flow config the app runs for REGISTRATION: the MDMS copy
+  // cached at project selection first, then the bundled Dart copy - the
+  // same order navigateToFlowModule uses for this module.
+  Future<void> _loadConfigTarget({
+    required bool isRegistrar,
+    required bool isDistributor,
+  }) async {
+    double? target;
+    try {
+      dynamic registrationConfig;
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString('app_config_schemas');
+      if (raw != null) {
+        final all = json.decode(raw);
+        if (all is Map && all['REGISTRATION'] is Map) {
+          registrationConfig = (all['REGISTRATION'] as Map)['data'];
+        }
+      }
+      registrationConfig ??= sampleFlows;
+      target = dailyTargetFromFlowConfig(
+        registrationConfig,
+        isRegistrar: isRegistrar,
+        isDistributor: isDistributor,
+      );
+    } catch (e) {
+      debugPrint('BeneficiaryProgressBar: daily target config not read: $e');
+    }
+    if (mounted && target != _configTarget) {
+      setState(() => _configTarget = target);
+    }
+  }
+
   @override
   void didChangeDependencies() {
     if (_listenersAttached) {
@@ -46,6 +87,7 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
 
     final isRegistrar = context.isRegistrarRole;
     final isDistributor = context.isDistributorRole;
+    _loadConfigTarget(isRegistrar: isRegistrar, isDistributor: isDistributor);
     final taskRepository =
         context.read<LocalRepository<TaskModel, TaskSearchModel>>()
             as TaskLocalRepository;
@@ -341,7 +383,7 @@ class BeneficiaryProgressBarState extends State<BeneficiaryProgressBar> {
       (element) => element.beneficiaryType == beneficiaryType.toValue(),
     );
 
-    final target = targetModel?.targetNo ?? 0.0;
+    final target = _configTarget ?? targetModel?.targetNo ?? 0.0;
 
     return DigitCard(margin: const EdgeInsets.all(spacer2), children: [
       ProgressIndicatorContainer(

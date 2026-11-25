@@ -5981,6 +5981,7 @@ final dynamic sampleFlows = {
   "disabled": false,
   "isSelected": true,
   "initialPage": "searchBeneficiary",
+  "dailyTarget": {"registrar": 65, "distributor": 65},
   "isActive": true,
   "auditDetails": {
     "createdBy": "b43b260c-f620-45d3-a43f-f53148f87f15",
