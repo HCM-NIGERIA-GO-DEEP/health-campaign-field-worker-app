@@ -7,6 +7,7 @@ import 'package:digit_flow_builder/utils/utils.dart' show FlowBuilderSingleton;
 import 'package:digit_ui_components/digit_components.dart';
 import 'package:digit_ui_components/utils/component_utils.dart';
 import 'package:digit_ui_components/utils/date_utils.dart';
+import 'package:digit_ui_components/widgets/atoms/digit_loader.dart';
 import 'package:digit_ui_components/widgets/molecules/digit_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -53,6 +54,7 @@ class _BoundarySelectionPageState
   late final String setLocale = AppSharedPreferences().getSelectedLocale ??
       envConfig.variables.defaultLocale;
   bool doFilter = false;
+  bool _textsReloaded = false;
 
   @override
   void initState() {
@@ -159,15 +161,10 @@ class _BoundarySelectionPageState
                             i18.common.maxBoundarySelectionReached
                           ];
 
+                          // No text reload here: every boundary name is
+                          // already in AppLocalizations, and a reload per
+                          // state froze the screen after each selection.
                           LocalizationParams().setCode(combinedCodes);
-                          context.read<LocalizationBloc>().add(
-                              LocalizationEvent.onUpdateLocalizationIndex(
-                                  index: appConfiguration.languages!.indexWhere(
-                                      (element) =>
-                                          element.value ==
-                                          AppSharedPreferences()
-                                              .getSelectedLocale),
-                                  code: setLocale));
                         }
                       },
                       child: ReactiveFormBuilder(
@@ -180,16 +177,6 @@ class _BoundarySelectionPageState
                             footer: BlocListener<BeneficiaryDownSyncBloc,
                                 BeneficiaryDownSyncState>(
                               listener: (context, downSyncState) {
-                                LocalizationParams()
-                                    .setModule('boundary', true);
-                                context.read<LocalizationBloc>().add(
-                                    LocalizationEvent.onUpdateLocalizationIndex(
-                                        index: appConfiguration.languages!
-                                            .indexWhere((element) =>
-                                                element.value ==
-                                                AppSharedPreferences()
-                                                    .getSelectedLocale),
-                                        code: setLocale));
                                 Future.delayed(const Duration(milliseconds: 10),
                                     () {
                                   downSyncState.maybeWhen(
@@ -450,8 +437,13 @@ class _BoundarySelectionPageState
                                         appConfiguartion: appConfiguration,
                                         projectModel: context.selectedProject,
                                         pendingSyncCount: pendingSyncCount,
+                                        // Retry must check the same
+                                        // boundaries as Submit did. With a
+                                        // single-select last level,
+                                        // selectedLastLevelBoundaries is
+                                        // empty, so Retry checked nothing.
                                         boundaries:
-                                            state.selectedLastLevelBoundaries,
+                                            state.effectiveSelectedBoundaries,
                                         primaryButtonLabel:
                                             localizations.translate(
                                           i18.syncDialog.retryButtonLabel,
@@ -481,7 +473,7 @@ class _BoundarySelectionPageState
                                           projectModel: context.selectedProject,
                                           appConfiguartion: appConfiguration,
                                           boundaries:
-                                              state.selectedLastLevelBoundaries,
+                                              state.effectiveSelectedBoundaries,
                                           primaryButtonLabel:
                                               localizations.translate(
                                             i18.common.coreCommonOk,
@@ -633,12 +625,36 @@ class _BoundarySelectionPageState
                                                     .add(
                                                       const BoundarySubmitEvent(),
                                                     );
+                                                // The connection check can take
+                                                // seconds; show a loader meanwhile.
                                                 bool isOnline =
-                                                    await getIsConnected();
+                                                    await runWithOverlayLoader(
+                                                        context,
+                                                        getIsConnected);
 
                                                 if (context.mounted) {
+                                                  LocalizationParams()
+                                                      .setModule(
+                                                          'boundary', true);
+                                                  // Called by the two download
+                                                  // branches only: Home reloads
+                                                  // the texts itself
+                                                  // (setPackagesSingleton).
+                                                  void reloadTexts() => context
+                                                      .read<LocalizationBloc>()
+                                                      .add(LocalizationEvent
+                                                          .onUpdateLocalizationIndex(
+                                                              index: appConfiguration
+                                                                  .languages!
+                                                                  .indexWhere((element) =>
+                                                                      element
+                                                                          .value ==
+                                                                      AppSharedPreferences()
+                                                                          .getSelectedLocale),
+                                                              code: setLocale));
                                                   if (isOnline &&
                                                       isDistributor) {
+                                                    reloadTexts();
                                                     context
                                                         .read<
                                                             BeneficiaryDownSyncBloc>()
@@ -659,23 +675,7 @@ class _BoundarySelectionPageState
                                                         );
                                                   } else if (isOnline &&
                                                       isHealthFacilityWorkerOnly) {
-                                                    LocalizationParams()
-                                                        .setModule(
-                                                            'boundary', true);
-                                                    context
-                                                        .read<
-                                                            LocalizationBloc>()
-                                                        .add(LocalizationEvent
-                                                            .onUpdateLocalizationIndex(
-                                                                index: appConfiguration
-                                                                    .languages!
-                                                                    .indexWhere((element) =>
-                                                                        element
-                                                                            .value ==
-                                                                        AppSharedPreferences()
-                                                                            .getSelectedLocale),
-                                                                code:
-                                                                    setLocale));
+                                                    reloadTexts();
                                                     Future.delayed(
                                                         const Duration(
                                                             milliseconds: 10),
@@ -695,18 +695,6 @@ class _BoundarySelectionPageState
                                                     });
                                                   } else {
                                                     clickedStatus.value = true;
-                                                    LocalizationParams()
-                                                        .setModule(
-                                                            'boundary', true);
-                                                    context.read<LocalizationBloc>().add(LocalizationEvent.onUpdateLocalizationIndex(
-                                                        index: appConfiguration
-                                                            .languages!
-                                                            .indexWhere((element) =>
-                                                                element.value ==
-                                                                AppSharedPreferences()
-                                                                    .getSelectedLocale),
-                                                        code: AppSharedPreferences()
-                                                            .getSelectedLocale!));
                                                     context.router.replaceAll(
                                                         [HomeRoute()]);
                                                   }
@@ -1199,11 +1187,16 @@ class _BoundarySelectionPageState
       ];
 
       LocalizationParams().setCode(combinedCodes);
-      context.read<LocalizationBloc>().add(
-          LocalizationEvent.onUpdateLocalizationIndex(
-              index: appConfiguration.languages!.indexWhere((element) =>
-                  element.value == AppSharedPreferences().getSelectedLocale),
-              code: setLocale));
+      // Each selection swaps the form for a spinner and builds it again, so
+      // this runs every time; reload texts on entry only.
+      if (!_textsReloaded) {
+        _textsReloaded = true;
+        context.read<LocalizationBloc>().add(
+            LocalizationEvent.onUpdateLocalizationIndex(
+                index: appConfiguration.languages!.indexWhere((element) =>
+                    element.value == AppSharedPreferences().getSelectedLocale),
+                code: setLocale));
+      }
     }
     for (int i = 0; i < labelList.length; i++) {
       final label = labelList[i];
@@ -1250,5 +1243,27 @@ class _BoundarySelectionPageState
             });
           });
     });
+  }
+}
+
+/// Shows the overlay loader while [task] runs, then removes exactly that
+/// loader: not another popup opened meanwhile, and nothing if back closed it.
+@visibleForTesting
+Future<T> runWithOverlayLoader<T>(
+  BuildContext context,
+  Future<T> Function() task,
+) async {
+  final navigator = Navigator.of(context, rootNavigator: true);
+  DigitLoaders.overlayLoader(context: context);
+  // The loader was pushed synchronously; read it as the top route.
+  Route<dynamic>? loader;
+  navigator.popUntil((route) {
+    loader = route;
+    return true;
+  });
+  try {
+    return await task();
+  } finally {
+    if (loader?.isActive ?? false) navigator.removeRoute(loader!);
   }
 }
