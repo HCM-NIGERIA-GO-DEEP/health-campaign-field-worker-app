@@ -100,14 +100,13 @@ final dynamic inventoryReportFlows = {
           "icon": "Assessment",
           "fieldName": "stockIssued",
           "properties": {"icon": "Assessment"},
-          "visibilityCondition": {
-            "expression": [
-              {
-                "condition": "singleton.userRole != 'DISTRIBUTOR'",
-                "type": "custom"
-              }
-            ]
-          },
+          // Nobody holding DISTRIBUTOR can issue stock - the CDD, and the
+          // dual-role Distribution Point user (WAREHOUSE_MANAGER +
+          // DISTRIBUTOR) - so the Stock Issued report is not offered to them.
+          // `visible` is the key a TEMPLATE screen reads; the
+          // `visibilityCondition` this replaces is a forms-engine key the
+          // screen ignored, so the tile showed for every role.
+          "visible": "{{fn:hasRole('DISTRIBUTOR')}} == false",
           "onAction": [
             {
               "actionType": "NAVIGATION",
