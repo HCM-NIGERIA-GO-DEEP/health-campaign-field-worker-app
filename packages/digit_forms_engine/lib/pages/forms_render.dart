@@ -370,6 +370,7 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                   ValidationContextManager(
                     formGroup: group,
                     schemas: schema.properties!,
+                    schemaKey: widget.currentSchemaKey,
                   );
                 }
                 return group;

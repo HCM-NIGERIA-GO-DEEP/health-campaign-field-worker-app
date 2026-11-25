@@ -221,12 +221,28 @@ class FormsBloc extends Bloc<FormsEvent, FormsState> {
     )); // Reset after submit
   }
 
+  static final RegExp _navigationDefault =
+      RegExp(r'^\{\{\s*navigation\.[^{}]+?\s*\}\}$');
+
+  /// True when [value] is a field default of the form `{{navigation.x}}` that
+  /// nothing resolved.
+  ///
+  /// Only a built form control resolves such a default (buildFormControl's
+  /// resolveInitialValue, same pattern). The schema keeps the template text
+  /// when the field's page was never opened, or when it resolved to nothing
+  /// and the control stayed empty. Submitting it would save the template text
+  /// as if the user had typed it (QA, Liberia 2026-11-25: a consent "No"
+  /// household saved `nameOfIndividual: {{navigation.firstName}}`).
+  static bool isUnresolvedNavigationDefault(String value) =>
+      _navigationDefault.hasMatch(value.trim());
+
   /// Submit the form and collect all form data.
   ///
   /// This method:
   /// - Collects all field values from all pages
   /// - Filters out hidden fields (unless includeInForm is true)
   /// - Converts empty strings to null
+  /// - Converts an unresolved `{{navigation.x}}` default to null
   /// - Emits a FormsSubmittedState with the collected data
   void _onSubmit(FormsSubmitEvent event, FormsStateEmitter emit) {
     final schema = state.cachedSchemas[event.schemaKey];
@@ -245,8 +261,11 @@ class FormsBloc extends Bloc<FormsEvent, FormsState> {
 
         if (prop.hidden == true && prop.includeInForm != true) continue;
 
-        pageValues[propEntry.key] =
-            (rawValue is String && rawValue.trim().isEmpty) ? null : rawValue;
+        pageValues[propEntry.key] = (rawValue is String &&
+                (rawValue.trim().isEmpty ||
+                    isUnresolvedNavigationDefault(rawValue)))
+            ? null
+            : rawValue;
       }
 
       if (pageValues.isNotEmpty) {

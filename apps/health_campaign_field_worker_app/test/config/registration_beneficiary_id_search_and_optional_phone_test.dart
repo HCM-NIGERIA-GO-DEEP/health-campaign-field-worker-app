@@ -41,6 +41,10 @@ void main() {
     expect(phone['required'], isFalse);
     expect(phone['mandatory'], isFalse);
     expect(validations.any((rule) => rule['type'] == 'required'), isFalse);
-    expect(validations.any((rule) => rule['type'] == 'pattern'), isTrue);
+    // A supplied number is checked by length since 7829032dc (9 digits); the
+    // earlier `pattern` rule was removed there. The exact length is covered
+    // by registration_phone_length_config_test.
+    expect(validations.any((rule) => rule['type'] == 'minLength'), isTrue);
+    expect(validations.any((rule) => rule['type'] == 'maxLength'), isTrue);
   });
 }

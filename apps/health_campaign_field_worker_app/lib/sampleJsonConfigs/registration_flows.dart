@@ -622,7 +622,15 @@ final dynamic sampleFlows = {
                                     {"key": "isEdit", "value": "true"},
                                     {"key": "startPage", "value": "householdDetails"},
                                     {"key": "firstName", "value": "{{item.individual.0.name.givenName}}"},
-                                    {"key": "lastName", "value": "{{item.individual.0.name.familyName}}"}
+                                    {"key": "lastName", "value": "{{item.individual.0.name.familyName}}"},
+                                    // Children already registered in this
+                                    // household. householdDetails'
+                                    // childrenCount has a `min` rule on it,
+                                    // so the count cannot be edited below
+                                    // them (a child cannot be removed, and
+                                    // householdOverview blocks Back/Close
+                                    // while the two numbers differ).
+                                    {"key": "registeredChildCount", "value": "{{fn:registeredChildCount(contextData.0.members)}}"}
                                   ],
                                   "name": "HOUSEHOLD",
                                   "type": "FORM"
@@ -4183,6 +4191,19 @@ final dynamic sampleFlows = {
                   "type": "maxField",
                   "value": "memberCount",
                   "message": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_maxField_message"
+                },
+                // Household edit only: not below the children already
+                // registered (navigation.registeredChildCount, passed by the
+                // head's Edit in householdOverview). Without that param - a
+                // new registration, a reopened household, an APK without
+                // fn:registeredChildCount - the rule is skipped. Keep it
+                // AFTER the "min": "0" rule above: a `min` error shows the
+                // message of the LAST min rule, and the stepper takes its
+                // lower bound from the first one.
+                {
+                  "type": "min",
+                  "value": "navigation.registeredChildCount",
+                  "message": "APPONE_REGISTRATION_HOUSEHOLDDETAILS_label_childrenCount_registered_min_message"
                 }
               ],
               "errorMessage": "",
@@ -5036,6 +5057,65 @@ final dynamic sampleFlows = {
             "type": "custom",
             "expression": "isEdit==true && isClosedHousehold==true && caregiverConsent.consentToParticipate==TRUE"
           }
+        },
+        // Plain edit of a registered household (Edit on the head's card in
+        // householdOverview: isEdit, startPage householdDetails). It must sit
+        // HERE, in the flow's onAction: a FORM submits through this list only
+        // (screen_builder.dart _handleFormSubmission) and a page's own
+        // onAction is never read. Without this branch the edit fell through
+        // to DEFAULT below and ran CREATE_EVENT on records that already
+        // exist, so the changed head details were not saved. It comes after
+        // the closed-household and isNotBeneficiary branches, which are more
+        // specific, and before the two create branches.
+        {
+          "actions": [
+            {
+              "actionType": "FETCH_TRANSFORMER_CONFIG",
+              "properties": {
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to fetch config."}
+                  }
+                ],
+                "configName": "householdDetailsEdit"
+              }
+            },
+            {
+              "actionType": "UPDATE_EVENT",
+              "properties": {
+                "entity": "HouseholdModel, IndividualModel",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to update household."}
+                  }
+                ]
+              }
+            },
+            {
+              "actionType": "NAVIGATION",
+              "properties": {
+                "data": [
+                  {
+                    "key": "HouseholdClientReferenceId",
+                    "value": "{{navigation.HouseholdClientReferenceId}}"
+                  }
+                ],
+                "name": "householdOverview",
+                "type": "TEMPLATE",
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Navigation failed."}
+                  }
+                ],
+                "navigationMode": "popUntilAndPush",
+                "popUntilPageName": "searchBeneficiary"
+              }
+            }
+          ],
+          "condition": {"type": "custom", "expression": "isEdit==true"}
         },
         {
           "actions": [

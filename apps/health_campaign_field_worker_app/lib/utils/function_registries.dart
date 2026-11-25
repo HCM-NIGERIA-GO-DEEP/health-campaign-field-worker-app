@@ -11,6 +11,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../models/entities/roles_type.dart';
+import 'registered_child_count.dart';
 import 'utils.dart';
 
 class FunctionRegistries {
@@ -48,14 +49,6 @@ class FunctionRegistries {
     // false if they match.
     FunctionRegistry.register('isUnder5CountMismatch', (args, stateData) {
       if (args.isEmpty) return false;
-
-      final membersArg = args.first;
-      List<dynamic> membersList = [];
-      if (membersArg is List) {
-        membersList = membersArg;
-      } else if (membersArg is Map) {
-        membersList = [membersArg];
-      }
 
       int expectedCount = 0;
       bool foundExpectedCount = false;
@@ -164,43 +157,21 @@ class FunctionRegistries {
         }
       }
 
-      int registeredCount = 0;
-      for (final item in membersList) {
-        if (item == null) continue;
-        dynamic memberObj;
-        if (item is Map) {
-          memberObj = item['member'] ?? item['members'] ?? item['householdMember'] ?? item;
-        } else {
-          try {
-            memberObj = (item as dynamic).member ?? (item as dynamic).members ?? (item as dynamic).householdMember ?? item;
-          } catch (_) {
-            memberObj = item;
-          }
-        }
-
-        bool isHead = false;
-        if (memberObj is List) {
-          for (final m in memberObj) {
-            if (m == null) continue;
-            final headVal = m is Map ? m['isHeadOfHousehold'] : (m as dynamic).isHeadOfHousehold;
-            if (headVal == true || headVal?.toString().toLowerCase() == 'true' || headVal == 1) {
-              isHead = true;
-              break;
-            }
-          }
-        } else if (memberObj != null) {
-          final headVal = memberObj is Map ? memberObj['isHeadOfHousehold'] : (memberObj as dynamic).isHeadOfHousehold;
-          if (headVal == true || headVal?.toString().toLowerCase() == 'true' || headVal == 1) {
-            isHead = true;
-          }
-        }
-
-        if (!isHead) {
-          registeredCount++;
-        }
-      }
+      // Same count the children-count floor on household edit uses
+      // (fn:registeredChildCount below).
+      final registeredCount = registeredChildCount(args.first);
 
       return registeredCount != expectedCount;
+    });
+
+    // Number of registered members that are not the head. The head's Edit in
+    // householdOverview passes it to the HOUSEHOLD form, where the children
+    // count has a `min` rule on it: lowering the count below the children
+    // already registered left Back/Close disabled by isUnder5CountMismatch
+    // with no way to remove a child (QA, Liberia 2026-11-25).
+    // Usage: "{{fn:registeredChildCount(contextData.0.members)}}"
+    FunctionRegistry.register('registeredChildCount', (args, stateData) {
+      return registeredChildCount(args.isEmpty ? null : args.first);
     });
 
     // Displays whole-number decimals without the trailing .0 while

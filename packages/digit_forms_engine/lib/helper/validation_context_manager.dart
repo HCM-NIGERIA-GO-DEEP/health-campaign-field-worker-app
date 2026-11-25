@@ -34,6 +34,13 @@ class ValidationContextManager {
   final FormGroup formGroup;
   final Map<String, PropertySchema> schemas;
 
+  /// The form's schema key. Rules whose value is looked up by it - a `min` or
+  /// `max` reading `navigation.x`, and `notEqualTo` - are only built when it
+  /// is known. Without it, re-building a dependent field's validators
+  /// silently dropped those rules (the children-count floor on household
+  /// edit was lost as soon as the member count was changed).
+  final String? schemaKey;
+
   /// Maps source field -> Set of dependent fields
   /// e.g., {"maxAllowedStock": {"stockReceived", "stockIssued"}}
   final Map<String, Set<String>> _dependencyMap = {};
@@ -41,6 +48,7 @@ class ValidationContextManager {
   ValidationContextManager({
     required this.formGroup,
     required this.schemas,
+    this.schemaKey,
   }) {
     _analyzeDependencies();
     _setupListeners();
@@ -166,6 +174,7 @@ class ValidationContextManager {
           // Rebuild validators with updated context
           final newValidators = buildValidators(
             schema,
+            schemaKey: schemaKey,
           );
 
           // Update validators and re-validate
