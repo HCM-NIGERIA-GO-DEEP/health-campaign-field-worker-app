@@ -5,10 +5,32 @@ import 'package:digit_data_model/data_model.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../utils/additional_fields_guard.dart';
 import '../../utils/numbered_scans.dart';
 import '../../utils/utils.dart';
 import '../action_config.dart';
 import 'action_executor.dart';
+
+/// [entity] without the additional fields whose value is null or empty (see
+/// additional_fields_guard.dart). CREATE_EVENT and UPDATE_EVENT pass every
+/// record through this before it reaches a repository. A record with nothing
+/// to drop is returned as it is.
+EntityModel _withoutEmptyAdditionalFields(EntityModel entity) {
+  try {
+    final cleaned =
+        dropEmptyAdditionalFields(Map<String, dynamic>.from(entity.toMap()));
+    if (cleaned == null) return entity;
+
+    final factory = DataConverterSingleton()
+        .dynamicEntityModelListener
+        ?.modelFactoryRegistry[getEntityTypeName(entity)];
+    return factory == null ? entity : factory(cleaned);
+  } catch (e) {
+    // Saving the record matters more than cleaning it.
+    debugPrint('Could not drop empty additional fields: $e');
+    return entity;
+  }
+}
 
 /// Executor for CREATE_EVENT action type
 class CrudExecutor extends ActionExecutor {
@@ -48,8 +70,11 @@ class CrudExecutor extends ActionExecutor {
       return contextData;
     }
 
-    var entityList =
-        entities.whereType<EntityModel>().map(_sanitizeStockComments).toList();
+    var entityList = entities
+        .whereType<EntityModel>()
+        .map(_sanitizeStockComments)
+        .map(_withoutEmptyAdditionalFields)
+        .toList();
 
     final entityFilter = action.properties['entity'] as String?;
     if (entityFilter != null && entityFilter.isNotEmpty) {
@@ -339,6 +364,14 @@ class UpdateExecutor extends ActionExecutor {
               parts[1] == 'additionalFields' &&
               parts[2] == 'fields') {
             // Deep: "EntityType.additionalFields.fields.fieldKey"
+            // A value that is empty, or a template that resolved to nothing
+            // (it is still the template text here), is not written: the
+            // stored value stays. It used to replace the stored value with
+            // the empty value or with the template text itself.
+            if (isEmptyAdditionalValue(entry.value) ||
+                isUnresolvedTemplate(entry.value)) {
+              continue;
+            }
             additionalFieldUpdates[parts[3]] = entry.value;
           } else if (parts.length == 3 &&
               parts[0] == entityType &&
@@ -425,6 +458,7 @@ class UpdateExecutor extends ActionExecutor {
 
       // Ensure stock comments satisfy backend min length validation.
       updatedEntity = _sanitizeStockComments(updatedEntity);
+      updatedEntity = _withoutEmptyAdditionalFields(updatedEntity);
 
       // Find the original entity of the same type for comparison
       final originalEntity = existingModelsList.isEmpty
