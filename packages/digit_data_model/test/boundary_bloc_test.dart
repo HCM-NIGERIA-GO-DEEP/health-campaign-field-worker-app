@@ -39,6 +39,55 @@ void main() {
       BoundaryModel(name: 'Bangalore', code: 'BAN001'),
     ];
 
+    test('loads distribution points and uses their communities for sync',
+        () async {
+      final facility = BoundaryModel(
+        code: 'HF',
+        label: 'Health Facility',
+        boundaryNum: 1,
+        materializedPath: 'HF',
+      );
+      final point = BoundaryModel(
+        code: 'DP',
+        label: 'Distribution Point',
+        boundaryNum: 2,
+        materializedPath: 'HF.DP',
+      );
+      final community = BoundaryModel(
+        code: 'COM',
+        label: 'Community',
+        boundaryNum: 3,
+        materializedPath: 'HF.DP.COM',
+      );
+
+      when(() => mockBoundaryDataRepository.search(any())).thenAnswer(
+        (invocation) async {
+          final query =
+              invocation.positionalArguments.single as BoundarySearchModel;
+          if (query.isSingle == true) return [facility];
+          if (query.codes == 'HF') return [point];
+          return [community];
+        },
+      );
+
+      final loaded = boundaryBloc.stream.first;
+      boundaryBloc.add(const BoundaryEvent.findBoundary(code: 'HF'));
+      expect((await loaded).boundaryList, [facility, point]);
+
+      final selected = boundaryBloc.stream.firstWhere(
+        (state) =>
+            !state.loading &&
+            state.selectedBoundaryMap[point.label] == point &&
+            state.boundaryList.contains(community),
+      );
+      boundaryBloc
+        ..add(const BoundaryEvent.search(code: 'DP', boundaryNum: 2))
+        ..add(
+            BoundaryEvent.select(label: point.label!, selectedBoundary: point));
+      expect((await selected).effectiveSelectedBoundaries, [community]);
+      await boundaryBloc.close();
+    });
+
     // Test case for successfully loading boundaries.
     blocTest<BoundaryBloc, BoundaryState>(
       'emits [BoundaryState with loading true, BoundaryState with empty boundaries] when BoundarySearchEvent results in no match',

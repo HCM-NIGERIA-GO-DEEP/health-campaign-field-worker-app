@@ -15,16 +15,25 @@ class HouseholdLocalRepository
       tenantId: incoming.tenantId,
     ));
     if (existing.isEmpty) return incoming;
-    final saved = existing.first.address;
-    final address = incoming.address;
+    final household = existing.first;
+    final saved = household.address;
+    final address = incoming.address ?? saved;
     return incoming.copyWith(
-      address: address == null ? saved : address.copyWith(
-        latitude: address.latitude ?? saved?.latitude,
-        longitude: address.longitude ?? saved?.longitude,
+      latitude: incoming.latitude ??
+          address?.latitude ??
+          household.latitude ??
+          saved?.latitude,
+      longitude: incoming.longitude ??
+          address?.longitude ??
+          household.longitude ??
+          saved?.longitude,
+      address: address?.copyWith(
+        latitude: address.latitude ?? saved?.latitude ?? household.latitude,
+        longitude: address.longitude ?? saved?.longitude ?? household.longitude,
         locationAccuracy: address.locationAccuracy ?? saved?.locationAccuracy,
         locality: address.locality ?? saved?.locality,
       ),
-      additionalFields: incoming.additionalFields ?? existing.first.additionalFields,
+      additionalFields: incoming.additionalFields ?? household.additionalFields,
     );
   }
 
@@ -91,6 +100,8 @@ class HouseholdLocalRepository
               tenantId: household.tenantId,
               clientReferenceId: household.clientReferenceId,
               memberCount: household.memberCount,
+              latitude: household.latitude,
+              longitude: household.longitude,
               rowVersion: household.rowVersion,
               isDeleted: household.isDeleted,
               additionalFields: household.additionalFields != null &&

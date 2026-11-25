@@ -232,6 +232,28 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
     await _loadLocale(locale.split('_'));
   }
 
+  /// Loads one flow module and refreshes the translations before it opens.
+  Future<void> prepareFlowLocalization({
+    required String module,
+    required String locale,
+    required String tenantId,
+    required String path,
+  }) async {
+    final cached = await LocalizationLocalRepository()
+        .fetchLocalization(sql: sql, locale: locale, module: module);
+    if (cached.isEmpty) {
+      // An offline or unavailable server must not prevent opening the form.
+      await _fetchAndStoreModule(
+        module: module,
+        locale: locale,
+        tenantId: tenantId,
+        path: path,
+        attempts: 1,
+      );
+    }
+    await refreshFlowBuilderLocalization(locale);
+  }
+
   /// Fetches a SINGLE localization module and stores it, retrying a few times
   /// so a transient network abort does not silently drop the module. Returns
   /// true when stored (or the server returned nothing), false if all attempts

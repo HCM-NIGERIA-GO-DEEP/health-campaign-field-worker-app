@@ -744,40 +744,28 @@ final dynamic sampleComplaintFlows = {
               "format": "mobileNumber",
               "hidden": false,
               "tooltip": "",
-              "pattern": "^0\\d{9}\$",
               "helpText": "",
               "infoText": "",
               "readOnly": false,
               "fieldName": "contactNumber",
-              "mandatory": true,
+              "mandatory": false,
               "deleteFlag": false,
               "innerLabel": "",
               "prefixText": "",
               "systemDate": false,
               "validations": [
                 {
-                  "type": "required",
-                  "value": true,
-                  "message": "COMPLAINT_DETAILS_contactNumber_REQUIRED_ERROR"
-                },
-                {
                   "type": "minLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGIT"
+                  "value": 9,
+                  "message": "MOBILE_LENGTH_9_DIGIT_ERROR"
                 },
                 {
                   "type": "maxLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGIT"
-                },
-                {
-                  "type": "pattern",
-                  "value": "^0\\d{9}\$",
-                  "message": "MOBILE_NUMBER_START_WITH_ZERO_ERROR"
+                  "value": 9,
+                  "message": "MOBILE_LENGTH_9_DIGIT_ERROR"
                 }
               ],
               "errorMessage": "",
-              "pattern.message": "MOBILE_NUMBER_START_WITH_ZERO_ERROR",
               "isMultiSelect": false,
               "autoFillCondition": [
                 {
@@ -829,7 +817,6 @@ final dynamic sampleComplaintFlows = {
               "value": "",
               "format": "mobileNumber",
               "hidden": false,
-              "pattern": "^0\\d{9}\$",
               "tooltip": "",
               "helpText": "",
               "infoText": "",
@@ -842,22 +829,16 @@ final dynamic sampleComplaintFlows = {
               "validations": [
                 {
                   "type": "minLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGITS"
+                  "value": 9,
+                  "message": "MOBILE_LENGTH_9_DIGIT_ERROR"
                 },
                 {
                   "type": "maxLength",
-                  "value": 10,
-                  "message": "MOBILE_LENGTH_10_DIGITS"
-                },
-                {
-                  "type": "pattern",
-                  "value": "^0\\d{9}\$",
-                  "message": "MOBILE_NUMBER_START_WITH_ZERO_ERROR"
+                  "value": 9,
+                  "message": "MOBILE_LENGTH_9_DIGIT_ERROR"
                 }
               ],
               "errorMessage": "",
-              "pattern.message": "MOBILE_NUMBER_START_WITH_ZERO_ERROR",
               "isMultiSelect": false
             },
             {

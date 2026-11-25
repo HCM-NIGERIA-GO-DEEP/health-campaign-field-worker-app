@@ -105,6 +105,11 @@ class DigitScannerPage extends LocalizedStatefulWidget {
     return regex;
   }
 
+  /// Whether to offer the "Enter manual code" link. Opt-out only: a field
+  /// that declares nothing keeps the link, so existing scanners are
+  /// unaffected.
+  bool get effectiveAllowManualEntry => validations.allowManualEntry;
+
   /// Gets the scan limit exceeded message from validations
   String? get scanLimitMessage => validations?.scanLimitMessage;
 
@@ -1336,9 +1341,15 @@ class DigitScannerPageState extends LocalizedState<DigitScannerPage>
           ),
         ),
 
-        Center(
-          child: overlayForManualEntry(theme, textTheme),
-        ),
+        // Opt-out via {"type": "allowManualEntry", "value": false} on the
+        // field. The delivery scanner sets it: a typed code is not evidence
+        // that an ITN was handed over, and the serials captured here are the
+        // only per-unit record (TaskResourceModel carries an aggregate
+        // quantity only).
+        if (widget.effectiveAllowManualEntry)
+          Center(
+            child: overlayForManualEntry(theme, textTheme),
+          ),
 
         renderScannedResource(theme, textTheme, state)
       ],

@@ -266,7 +266,9 @@ final dynamic sampleCloseHouseholdFlows = {
               "actionType": "NAVIGATION",
               "properties": {
                 "type": "TEMPLATE",
-                "name": "closedHouseholdSummary",
+                "name": "closeHouseholdSuccess",
+                "navigationMode": "popUntilAndReplace",
+                "popUntilPageName": "closeHouseholdRegistration",
                 "onError": [
                   {
                     "actionType": "SHOW_TOAST",
@@ -293,7 +295,7 @@ final dynamic sampleCloseHouseholdFlows = {
         }
       ],
       "overView": "CLOSEHOUSEHOLD_SUMMARY_HEADING",
-      "summary": false,
+      "summary": true,
       "onAction": [
         {
           "actionType": "FETCH_TRANSFORMER_CONFIG",
@@ -328,7 +330,9 @@ final dynamic sampleCloseHouseholdFlows = {
           "actionType": "NAVIGATION",
           "properties": {
             "type": "TEMPLATE",
-            "name": "closedHouseholdSummary",
+            "name": "closeHouseholdSuccess",
+            "navigationMode": "popUntilAndReplace",
+            "popUntilPageName": "closeHouseholdRegistration",
             "onError": [
               {
                 "actionType": "SHOW_TOAST",
