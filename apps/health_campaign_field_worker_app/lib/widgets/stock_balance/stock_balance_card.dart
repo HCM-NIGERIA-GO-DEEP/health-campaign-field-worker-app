@@ -74,6 +74,15 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
       // Check if user is a distributor
       final isDistributor = context.loggedInUserRoles
           .any((role) => role.code == RolesType.distributor.toValue());
+
+      // A user holding BOTH roles (the double-phase DP user) is a warehouse
+      // first: their receipts are recorded against the DP facility, not
+      // against them personally, so their balance has to be keyed by
+      // facility. Only a distributor WITHOUT the warehouse role transacts
+      // under their own uuid (senderType STAFF).
+      final isWareHouseMgr = context.loggedInUserRoles
+          .any((role) => role.code == RolesType.warehouseManager.toValue());
+      final keyedByUser = isDistributor && !isWareHouseMgr;
       final showInPieces = countsStockInPieces(
           context.loggedInUserRoles.map((role) => role.code));
 
@@ -143,17 +152,36 @@ class _StockBalanceCardState extends LocalizedState<StockBalanceCard> {
         _showInPieces = showInPieces;
       });
 
-      // Distributors always use their UUID; others use facility ID
-      // Stock records (including Less/Excess) are keyed by facility IDs.
-      // Using distributor UUID here can miss those records in balance refresh.
-      final effectiveFacilityId =
-          isDistributor ? context.loggedInUserUuid : autoSelectedFacility?.id;
+      // A pure distributor uses their UUID; everyone else uses the facility
+      // ID. Stock records (including Less/Excess) are keyed by facility IDs.
+      //
+      // keyedByUser rather than isDistributor: a double-phase DP user holds
+      // DISTRIBUTOR as well as WAREHOUSE_MANAGER, so this resolved to their
+      // uuid while their receipts carry receiverId = the DP facility.
+      // calculateStockMetrics filters on
+      // `receiverId == facilityId || senderId == facilityId`, so nothing
+      // matched and the balance never moved after a receipt.
+      //
+      // The ?? fallback is load-bearing. autoSelectedFacility is null
+      // whenever no project facility is tagged 'current' - which happens
+      // while facilities are still syncing. Without it a dual-role user
+      // would resolve to null here, and the `if (effectiveFacilityId !=
+      // null)` guard below skips BOTH the initial balance load and the
+      // stock listener, so the card would never populate at all rather
+      // than merely showing zero. Falling back to the uuid keeps the old
+      // behaviour in that window.
+      final effectiveFacilityId = keyedByUser
+          ? context.loggedInUserUuid
+          : (autoSelectedFacility?.id ?? context.loggedInUserUuid);
 
-      if (effectiveFacilityId != null) {
-        // Load UserAction balances first (from deliveries) so UI shows them immediately
-        _loadInitialBalances(effectiveFacilityId);
-        _setupStockListener(effectiveFacilityId);
-      }
+      // No null guard: the fallback above always yields an id, so the card
+      // always loads and always attaches its listener. It previously had
+      // one because autoSelectedFacility?.id could be null.
+      //
+      // Load UserAction balances first (from deliveries) so UI shows them
+      // immediately.
+      _loadInitialBalances(effectiveFacilityId);
+      _setupStockListener(effectiveFacilityId);
     } catch (e) {
       if (mounted) {
         setState(() {
