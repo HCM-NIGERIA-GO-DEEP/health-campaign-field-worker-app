@@ -7,6 +7,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../data/transformer_config.dart';
 import '../../flow_builder.dart';
+import '../../utils/descendant_project_lookup.dart';
 import '../../utils/interpolation.dart';
 import '../../utils/utils.dart';
 import 'action_executor.dart';
@@ -293,6 +294,8 @@ class TransformerExecutor extends ActionExecutor {
       'householdType': HouseholdType.family.toValue(),
       ...extraContext,
       "beneficiaryType": FlowBuilderSingleton().beneficiaryType?.toValue(),
+      // After extraContext so no action `data` entry can replace it.
+      "beneficiaryProjectId": TransformerExecutor.beneficiaryProjectId(),
     };
 
     List<EntityModel> entities = [];
@@ -655,6 +658,30 @@ class TransformerExecutor extends ActionExecutor {
     }
 
     return result;
+  }
+
+  /// The projectId a new ProjectBeneficiary is saved with
+  /// (`__context:beneficiaryProjectId`).
+  ///
+  /// A REGISTRAR is staffed on a health-facility project, but the
+  /// beneficiaries they register belong to the project of the Distribution
+  /// Point above the boundary being saved. Every other model keeps the
+  /// selected project. Any other role, or no DP match, falls back to the
+  /// selected project, as before.
+  static String? beneficiaryProjectId() {
+    final singleton = FlowBuilderSingleton();
+    final isRegistrar = singleton.userRoles
+            ?.any((role) => role['code'] == 'REGISTRAR') ??
+        false;
+    final boundary = singleton.boundary;
+    final dpProjectId = isRegistrar
+        ? beneficiaryProjectIdFor(
+            materializedPath: boundary?.materializedPath,
+            boundaryCode: boundary?.code,
+            boundaryProjectIds: singleton.boundaryProjectIds,
+          )
+        : null;
+    return dpProjectId ?? singleton.selectedProject?.id;
   }
 
   /// Builds the `identifierEntries` list consumed by `IdentifierModel`'s

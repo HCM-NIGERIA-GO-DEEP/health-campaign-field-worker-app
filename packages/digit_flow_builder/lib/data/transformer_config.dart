@@ -219,7 +219,7 @@ final jsonConfig = {
       "ProjectBeneficiaryModel": {
         "mappings": {
           "id": "beneficiaryDetails.id",
-          "projectId": "__context:projectId",
+          "projectId": "__context:beneficiaryProjectId",
           "tenantId": "__context:tenantId",
           "beneficiaryId": "beneficiaryDetails.beneficiaryId",
           "tag": "beneficiaryDetails.scanner",
@@ -280,7 +280,7 @@ final jsonConfig = {
       "ProjectBeneficiaryModel": {
         "listSource": "__context:individuals",
         "mappings": {
-          "projectId": "__context:projectId",
+          "projectId": "__context:beneficiaryProjectId",
           "tenantId": "__context:tenantId",
           "beneficiaryClientReferenceId": "clientReferenceId",
           "clientReferenceId": "__generate:uuid",
@@ -465,7 +465,7 @@ final jsonConfig = {
       "ProjectBeneficiaryModel": {
         "mappings": {
           "id": "beneficiaryDetails.id",
-          "projectId": "__context:projectId",
+          "projectId": "__context:beneficiaryProjectId",
           "tenantId": "__context:tenantId",
           "beneficiaryId": "beneficiaryDetails.beneficiaryId",
           "tag": "beneficiaryDetails.scanner",
@@ -1452,7 +1452,7 @@ final jsonConfig = {
       "ProjectBeneficiaryModel": {
         "mappings": {
           "id": "beneficiaryDetails.id",
-          "projectId": "__context:projectId",
+          "projectId": "__context:beneficiaryProjectId",
           "tenantId": "__context:tenantId",
           "beneficiaryId": "beneficiaryDetails.beneficiaryId",
           "tag": "closeHouseholdDetails.scanner",
@@ -1697,7 +1697,7 @@ final jsonConfig = {
       "ProjectBeneficiaryModel": {
         "mappings": {
           "id": "beneficiaryDetails.id",
-          "projectId": "__context:projectId",
+          "projectId": "__context:beneficiaryProjectId",
           "tenantId": "__context:tenantId",
           "beneficiaryId": "beneficiaryDetails.beneficiaryId",
           "beneficiaryClientReferenceId":

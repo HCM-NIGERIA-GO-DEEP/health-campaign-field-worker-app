@@ -13,6 +13,8 @@ import 'package:digit_data_model/models/entities/attendance_register.dart';
 import 'package:digit_data_model/models/entities/face_auth_event.dart';
 import 'package:digit_data_model/models/entities/user_action.dart';
 import 'package:digit_dss/digit_dss.dart';
+import 'package:digit_flow_builder/utils/descendant_project_lookup.dart';
+import 'package:digit_flow_builder/utils/utils.dart' show FlowBuilderSingleton;
 import 'package:digit_ui_components/utils/app_logger.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/foundation.dart';
@@ -1354,6 +1356,8 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       return;
     }
 
+    await _storeDistributionPointProjects(event.model);
+
     // Create useraction for device switch
     try {
       await _createUserActionForDeviceSwitch(event.model);
@@ -1395,6 +1399,55 @@ class ProjectBloc extends Bloc<ProjectEvent, ProjectState> {
       loading: false,
       syncError: null,
     ));
+  }
+
+  /// A REGISTRAR is staffed on a health-facility project, but each new
+  /// ProjectBeneficiary they save belongs to the project of the Distribution
+  /// Point above the boundary it is registered in. Stores the selected
+  /// project's {DP boundary code -> DP project id} for the flow builder
+  /// (TransformerExecutor.beneficiaryProjectId).
+  ///
+  /// Best-effort and throw-free: a failed or empty fetch keeps the previously
+  /// stored map, and project selection never waits on an error from here.
+  Future<void> _storeDistributionPointProjects(ProjectModel project) async {
+    try {
+      // Never let another project's map apply to this one; home reloads the
+      // map stored for this project id when it mounts.
+      FlowBuilderSingleton().setBoundaryProjectIds(const {});
+      // A project mapped at DP level already is the DP project: the
+      // beneficiary falls back to the selected project id.
+      if (isDistributionPointBoundaryType(project.address?.boundaryType)) {
+        return;
+      }
+      final connectivity = await Connectivity().checkConnectivity();
+      final isOnline = connectivity.contains(ConnectivityResult.wifi) ||
+          connectivity.contains(ConnectivityResult.mobile);
+      if (!isOnline) return;
+
+      final response = await projectRemoteRepository.dio.post(
+        projectRemoteRepository.searchPath,
+        queryParameters: {
+          'offset': 0,
+          'limit': 100,
+          'tenantId': DigitDataModelSingleton().tenantId,
+          'includeDescendants': true,
+        },
+        data: {
+          'Projects': [
+            {'id': project.id, 'tenantId': project.tenantId},
+          ],
+        },
+      );
+      final boundaryProjectIds =
+          boundaryProjectIdsFromSearchResponse(response.data);
+      if (boundaryProjectIds.isEmpty) return;
+
+      await AppSharedPreferences()
+          .setProjectDescendants(project.id, jsonEncode(boundaryProjectIds));
+      FlowBuilderSingleton().setBoundaryProjectIds(boundaryProjectIds);
+    } catch (e) {
+      debugPrint('project descendants fetch failed: $e');
+    }
   }
 
   /// Silently downloads dispatched stock from server without UI dialogs.

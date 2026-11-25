@@ -3173,6 +3173,21 @@ void setPackagesSingleton(BuildContext context) {
                   })
               .toList(),
         );
+        // {DP boundary code -> DP project id} stored by ProjectBloc for the
+        // selected project; drives a REGISTRAR's new ProjectBeneficiary
+        // projectId. Empty on any problem (falls back to the selected project).
+        Map<String, String> boundaryProjectIds = const {};
+        try {
+          final stored = AppSharedPreferences()
+              .getProjectDescendants(context.selectedProject.id);
+          if (stored != null) {
+            boundaryProjectIds = Map<String, String>.from(
+                jsonDecode(stored) as Map<String, dynamic>);
+          }
+        } catch (e) {
+          debugPrint('stored project descendants unreadable: $e');
+        }
+        FlowBuilderSingleton().setBoundaryProjectIds(boundaryProjectIds);
         AttendanceSingleton().setInitialData(
           project: context.selectedProject,
           loggedInIndividualId: context.loggedInIndividualId ?? '',

@@ -56,4 +56,12 @@ class AppSharedPreferences {
   Future<void> setStockDownsyncTime(String key, int value) async {
     await sharedPreferences.setInt(key, value);
   }
+
+  /// JSON {DP boundary code -> DP project id} for the project's descendants.
+  String? getProjectDescendants(String projectId) =>
+      sharedPreferences.getString('projectDescendants_$projectId');
+
+  Future<void> setProjectDescendants(String projectId, String json) async {
+    await sharedPreferences.setString('projectDescendants_$projectId', json);
+  }
 }

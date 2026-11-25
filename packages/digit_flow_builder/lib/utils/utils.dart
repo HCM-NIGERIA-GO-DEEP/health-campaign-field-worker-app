@@ -36,6 +36,9 @@ class FlowBuilderSingleton {
   List<Map<String, dynamic>>?
       _userRoles; // User roles from app level (e.g., [{"code": "WAREHOUSE_MANAGER", "name": "Warehouse Manager"}])
   int? _beneficiaryIdMinCount;
+  // Distribution Point boundary code -> that DP's project id, read from the
+  // selected project's descendants. Empty when unknown.
+  Map<String, String> _boundaryProjectIds = const {};
 
   void setBoundary({required BoundaryModel boundary}) {
     _boundaryModel = boundary;
@@ -76,6 +79,10 @@ class FlowBuilderSingleton {
     _userRoles = userRoles;
   }
 
+  void setBoundaryProjectIds(Map<String, String> boundaryProjectIds) {
+    _boundaryProjectIds = boundaryProjectIds;
+  }
+
   void setTenantId(String tenantId) {
     _tenantId = tenantId;
   }
@@ -112,6 +119,8 @@ class FlowBuilderSingleton {
   List<Map<String, dynamic>>? get userRoles => _userRoles;
 
   int? get beneficiaryIdMinCount => _beneficiaryIdMinCount;
+
+  Map<String, String> get boundaryProjectIds => _boundaryProjectIds;
 }
 
 /// TODO: WILL REMOVE THIS FUNCTION ALSO : TEMPORARY
