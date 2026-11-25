@@ -28,6 +28,8 @@ getAppLocalizationDelegates({
   required AppConfiguration appConfig,
   required Locale selectedLocale,
 }) {
+  final flowTexts = allTextsForLocale(sql, selectedLocale);
+
   return [
     AppLocalizations.getDelegate(appConfig, sql),
     GlobalWidgetsLocalizations.delegate,
@@ -60,13 +62,31 @@ getAppLocalizationDelegates({
       LocalizationLocalRepository().returnLocalizationFromSQL(sql) as Future,
       appConfig.languages!,
     ),
+    // The forms engine and the flow builder each translate from one static
+    // copy that must hold the texts of EVERY flow module. These delegates are
+    // reloaded on each MaterialApp rebuild (a rebuild follows every finished
+    // text load), and returnLocalizationFromSQL reads only the modules and
+    // codes of the latest load (LocalizationParams). Reading that here
+    // replaced the full copy with the latest subset: opening Close Household
+    // goes through the boundary page, whose load names only the common
+    // modules, so the flow's own texts were dropped and it showed raw keys.
+    // Read all texts of the locale, as LocalizationBloc._loadLocale does.
+    // One read serves both delegates.
     forms_engine_localization.FormLocalization.getDelegate(
-      LocalizationLocalRepository().returnLocalizationFromSQL(sql) as Future,
+      flowTexts,
       appConfig.languages!,
     ),
     flow_builder_localization.FlowBuilderLocalization.getDelegate(
-      LocalizationLocalRepository().returnLocalizationFromSQL(sql) as Future,
+      flowTexts,
       appConfig.languages!,
     ),
   ];
+}
+
+/// Every stored text of [locale], whatever module it belongs to.
+Future<dynamic> allTextsForLocale(LocalSqlDataStore sql, Locale locale) async {
+  return LocalizationLocalRepository().fetchAllForLocale(
+    sql: sql,
+    locale: '${locale.languageCode}_${locale.countryCode}',
+  );
 }

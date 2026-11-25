@@ -28,10 +28,14 @@ class FlowBuilderLocalization {
 
   // Method to load localized strings
   Future<bool> load() async {
+    // Read first, then replace. Clearing before the read left the copy empty
+    // for as long as the read took, on every reload, and a flow built in that
+    // window showed raw keys.
+    final rows = await localizedStrings;
     _localizedStrings.clear();
     _localizedMap.clear();
     // Iterate over localized strings and filter based on locale
-    for (var element in await localizedStrings) {
+    for (var element in rows) {
       if (element.locale == '${locale.languageCode}_${locale.countryCode}') {
         _localizedStrings.add(element);
         final code = element.code as String;

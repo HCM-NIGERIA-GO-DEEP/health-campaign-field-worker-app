@@ -15,6 +15,7 @@ import 'package:digit_dss/data/local_store/no_sql/schema/dashboard_config_schema
 import 'package:digit_dss/models/entities/dashboard_response_model.dart';
 import 'package:digit_dss/router/dashboard_router.gm.dart';
 import 'package:digit_dss/utils/utils.dart';
+import 'package:digit_flow_builder/blocs/app_localization.dart';
 import 'package:digit_flow_builder/data/digit_crud_service.dart';
 import 'package:digit_flow_builder/flow_builder.dart';
 import 'package:digit_flow_builder/router/flow_builder_routes.gm.dart';
@@ -66,6 +67,7 @@ import '../utils/date_util_attendance.dart';
 import '../utils/debound.dart';
 import '../utils/environment_config.dart';
 import '../utils/flow_navigation_utils.dart';
+import '../utils/flow_text_cache.dart';
 import '../utils/function_registries.dart';
 import '../utils/i18_key_constants.dart' as i18;
 import '../utils/least_level_boundary_singleton.dart';
@@ -116,6 +118,11 @@ class _HomePageState extends LocalizedState<HomePage> {
   // This subscription forces a rebuild once AuthBloc emits again.
   StreamSubscription<AuthState>? _authSubscription;
   bool isTriggerLocalisation = true;
+
+  /// Module lists whose flow texts stayed incomplete after a refresh (see
+  /// triggerLocalization). Another refresh cannot help those, so they are
+  /// not refreshed again on every tap.
+  final Set<String> _flowTextRefreshDidNotHelp = {};
   final _syncDebouncer = Debouncer(seconds: 5);
   final StreamController<double> stockDownloadProgress =
       StreamController<double>.broadcast();
@@ -3054,8 +3061,10 @@ class _HomePageState extends LocalizedState<HomePage> {
       final localeStr = AppSharedPreferences().getSelectedLocale ??
           'en_${envConfig.variables.tenantId.toUpperCase()}';
       final sqlStore = context.read<LocalSqlDataStore>();
+      final localizationBloc = context.read<LocalizationBloc>();
       try {
         var allCached = true;
+        final storedTexts = <MapEntry<String, String>>[];
         for (final m in modules) {
           final cached = await LocalizationLocalRepository()
               .fetchLocalization(sql: sqlStore, locale: localeStr, module: m);
@@ -3064,8 +3073,34 @@ class _HomePageState extends LocalizedState<HomePage> {
             allCached = false;
             break;
           }
+          storedTexts.addAll(cached.map((e) => MapEntry(e.code, e.message)));
         }
-        if (allCached) return;
+        if (allCached) {
+          // The texts are in the database, but the flows translate from an
+          // in-memory copy that is refreshed only when a text load finishes.
+          // While the project-selection download is still running, a module's
+          // rows are stored before that refresh, so the first entry showed
+          // raw keys and a later entry was fine. Refresh the copy only when
+          // it really lacks these texts, so a normal tap stays instant.
+          final parts = localeStr.split('_');
+          final flowTexts = FlowBuilderLocalization(
+            Locale(parts.first, parts.last),
+            Future.value(const []),
+            const [],
+          );
+          bool stale() => flowTextsAreStale(
+                stored: storedTexts,
+                translate: flowTexts.translate,
+              );
+          if (!_flowTextRefreshDidNotHelp.contains(module) && stale()) {
+            await localizationBloc.refreshFlowBuilderLocalization(localeStr);
+            // Two modules can define one code, and the copy keeps one message
+            // per code; when the other module's message wins, this module's
+            // text stays "missing" whatever is reloaded.
+            if (stale()) _flowTextRefreshDidNotHelp.add(module);
+          }
+          return;
+        }
       } catch (_) {}
     }
     if (!mounted) return;
