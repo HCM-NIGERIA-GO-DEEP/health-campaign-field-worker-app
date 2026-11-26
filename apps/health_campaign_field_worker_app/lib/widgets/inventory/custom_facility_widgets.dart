@@ -1,4 +1,4 @@
-import 'package:digit_data_model/models/entities/project_facility.dart';
+import 'package:digit_data_model/data_model.dart';
 import 'package:digit_flow_builder/blocs/flow_crud_bloc.dart';
 import 'package:digit_forms_engine/blocs/forms/forms.dart';
 import 'package:digit_forms_engine/models/property_schema/property_schema.dart';
@@ -9,7 +9,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
 import '../../models/entities/roles_type.dart';
+import '../../sampleJsonConfigs/manage_stock.dart';
 import '../../utils/extensions/extensions.dart';
+import '../../utils/parent_facility_resolver.dart';
 import '../localized.dart';
 
 class FacilityCard extends LocalizedStatefulWidget {
@@ -31,6 +33,26 @@ class FacilityCard extends LocalizedStatefulWidget {
 }
 
 class _FacilityCardState extends LocalizedState<FacilityCard> {
+  String? _facilityProjectId;
+  Future<Set<String>>? _hiddenFacilityIds;
+
+  Future<Set<String>> _loadRootSupplierIds(String tenantId) async {
+    // Use the same usage mapping that gives the Country warehouse its supplier.
+    final rootUsages = parentFacilityUsages(
+      inventoryConfig: sampleInventoryFlows,
+      boundaryType: 'Country',
+    );
+    final repository =
+        context.read<LocalRepository<FacilityModel, FacilitySearchModel>>();
+    final facilities =
+        await repository.search(FacilitySearchModel(tenantId: tenantId));
+    return {
+      for (final facility in facilities)
+        if (facility.tenantId == tenantId && rootUsages.contains(facility.usage))
+          facility.id,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final pages =
@@ -60,18 +82,47 @@ class _FacilityCardState extends LocalizedState<FacilityCard> {
       return const SizedBox.shrink();
     }
 
-    return ValueListenableBuilder<FlowCrudState?>(
-      valueListenable:
-          FlowCrudStateRegistry().listen('FORM::${widget.schemaName}'),
-      builder: (context, flowState, _) {
-        return _FacilityCardContent(
-          formKey: widget.formKey,
-          dependantFormKey: widget.dependantFormKey,
-          fieldSchema: fieldSchema!,
-          stateData: widget.stateData,
-          pageSchema: widget.schemaName,
-          localizations: localizations,
-        );
+    Widget buildField(Set<String> hiddenFacilityIds) {
+      return ValueListenableBuilder<FlowCrudState?>(
+        valueListenable:
+            FlowCrudStateRegistry().listen('FORM::${widget.schemaName}'),
+        builder: (context, flowState, _) {
+          return _FacilityCardContent(
+            formKey: widget.formKey,
+            dependantFormKey: widget.dependantFormKey,
+            fieldSchema: fieldSchema!,
+            stateData: widget.stateData,
+            pageSchema: widget.schemaName,
+            localizations: localizations,
+            hiddenFacilityIds: hiddenFacilityIds,
+          );
+        },
+      );
+    }
+
+    final project = context.selectedProject;
+    // Country is the root of the Liberia stock hierarchy. For other levels,
+    // a supplier may still arrive as a regular parent in FacilityMap.
+    if (project.tenantId != 'liberia' ||
+        project.address?.boundaryType == 'Country') {
+      return buildField(const {});
+    }
+
+    if (_hiddenFacilityIds == null || _facilityProjectId != project.id) {
+      _facilityProjectId = project.id;
+      _hiddenFacilityIds = _loadRootSupplierIds('liberia');
+    }
+    return FutureBuilder<Set<String>>(
+      future: _hiddenFacilityIds,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const SizedBox.shrink();
+        }
+        if (snapshot.hasError) {
+          return Text(localizations.translate('NO_FACILITIES_FOUND'));
+        }
+        if (!snapshot.hasData) return const SizedBox.shrink();
+        return buildField(snapshot.requireData);
       },
     );
   }
@@ -84,6 +135,7 @@ class _FacilityCardContent extends StatelessWidget {
   final String pageSchema;
   final dynamic stateData;
   final dynamic localizations;
+  final Set<String> hiddenFacilityIds;
 
   const _FacilityCardContent({
     required this.formKey,
@@ -92,6 +144,7 @@ class _FacilityCardContent extends StatelessWidget {
     required this.pageSchema,
     required this.stateData,
     required this.localizations,
+    required this.hiddenFacilityIds,
   });
 
   String _normalizeHierarchyValue(String? value) {
@@ -296,6 +349,7 @@ class _FacilityCardContent extends StatelessWidget {
     // Filter facilities
     final filteredFacilities = projectFacilities.where((e) {
       final model = e as ProjectFacilityModel;
+      if (hiddenFacilityIds.contains(model.facilityId)) return false;
       final facilityLevel = model.additionalFields?.fields
           .where((f) => f.key == 'facilityLevel')
           .firstOrNull
@@ -410,6 +464,27 @@ class _FacilityCardContent extends StatelessWidget {
         // Read selected value from the form control (source of truth)
         var selectedValue = _getCurrentValue(field.control);
         final currentTeamCode = _getDependantValue(field.control);
+
+        if (hiddenFacilityIds.contains(selectedValue)) {
+          selectedValue = null;
+          if (hiddenFacilityIds.contains(field.control.value)) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              if (!context.mounted ||
+                  !hiddenFacilityIds.contains(field.control.value)) {
+                return;
+              }
+              field.control.value = null;
+              context.read<FormsBloc>().add(
+                    FormsEvent.updateField(
+                      schemaKey: pageSchema,
+                      context: context,
+                      key: formKey,
+                      value: null,
+                    ),
+                  );
+            });
+          }
+        }
 
         // For the receive flow, a distributor takes delivery into their OWN
         // team, so prefill it the same way the return and loss/excess
