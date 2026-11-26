@@ -970,6 +970,9 @@ final jsonConfig = {
     "multiEntityField": "stockDetails.productdetail",
     "models": {
       "StockModel": {
+        // Keep the return input available to quantity mappings without
+        // copying it to additionalFields through the fallback model.
+        "fallbackExcludedFields": ["quantityReturned"],
         "mappings": {
           "id": "stockDetails.id",
           "clientReferenceId": "__generate:uuid",
@@ -1047,10 +1050,6 @@ final jsonConfig = {
             // quantity itself is always pieces (see above).
             "stockUnit":
                 "__switch:stockProductDetails.returnUnit:{BALES:__value:BALES,PIECES:__value:PIECES,default:__context:stockUnit}",
-            // Keep the entered quantity alongside its unit as text.
-            "quantityReturned":
-                "__switch:__context:stockEntryType:{RETURNED:__concatName:stockProductDetails.quantityReturned,default:__value:null}",
-
             // The pieces figure for a return. ALWAYS present and always
             // equal to StockModel.quantity - it repeats the switch the
             // top-level quantity uses, so the two cannot disagree.

@@ -62,7 +62,11 @@ class FormEntityMapper {
     });
 
     // Get unmapped form fields
-    final unmapped = _getUnmappedFields(formValues);
+    final unmapped = _getUnmappedFields(
+      formValues,
+      modelsConfig[fallbackFormDataString]?['fallbackExcludedFields']
+          as List<dynamic>?,
+    );
 
     // Map unmapped fields if fallback string and config present
     if (fallbackFormDataString != null && unmapped.isNotEmpty) {
@@ -157,7 +161,11 @@ class FormEntityMapper {
     }
 
     // Get unmapped form fields and merge into additionalDetails (same as create flow)
-    final unmapped = _getUnmappedFields(formValues);
+    final unmapped = _getUnmappedFields(
+      formValues,
+      modelsConfig[fallbackFormDataString]?['fallbackExcludedFields']
+          as List<dynamic>?,
+    );
 
     if (fallbackFormDataString != null && unmapped.isNotEmpty) {
       final fallbackModelName = fallbackFormDataString;
@@ -1367,12 +1375,22 @@ class FormEntityMapper {
     return current;
   }
 
-  Map<String, dynamic> _getUnmappedFields(Map<String, dynamic> formData) {
+  static final _itemSuffix = RegExp(r'_item_\d+$');
+
+  Map<String, dynamic> _getUnmappedFields(
+    Map<String, dynamic> formData,
+    List<dynamic>? fallbackExcludedFields,
+  ) {
+    final excludedFields = fallbackExcludedFields?.toSet() ?? const {};
     final unmapped = <String, dynamic>{};
 
     void extractUnmapped(Map<String, dynamic> data) {
       data.forEach((key, value) {
         if (usedPaths.contains(key)) return;
+        if (excludedFields.isNotEmpty &&
+            excludedFields.contains(key.replaceFirst(_itemSuffix, ''))) {
+          return;
+        }
         // Skip navigation params — they are control data (e.g., isEdit),
         // not entity fields, and should never be stored in additionalFields.
         if (key == 'navigation') return;
