@@ -156,6 +156,19 @@ class _StockReconciliationCardState
     final theme = Theme.of(context);
     final textTheme = theme.digitTextTheme(context);
 
+    final roles = context.loggedInUserRoles.map((role) => role.code);
+    final unit = stockDisplayUnitForRoles(roles);
+    final isDistributor = unit == 'PIECES';
+    String displayMetric(String key) {
+      final pieces = _stockMetrics[key]!;
+      final quantity = stockDisplayQuantity(
+          key == 'stockReturned' ? pieces.abs() : pieces, unit);
+      final unitLabel = unit.isEmpty
+          ? ''
+          : localizations.translate('APPONE_INVENTORY_UNIT_$unit');
+      return unitLabel.isEmpty ? '$quantity' : '$quantity $unitLabel';
+    }
+
     // Get field schema for validation messages
     final pages =
         context.read<FormsBloc>().state.cachedSchemas[widget.pageSchema]?.pages;
@@ -357,18 +370,19 @@ class _StockReconciliationCardState
                       LabelValueItem(
                         label: localizations.translate(
                             i18.stockReconciliationMetrics.stockReceived),
-                        value:
-                            _stockMetrics['stockReceived']!.toStringAsFixed(0),
+                        value: displayMetric('stockReceived'),
                         labelFlex: 5,
                       ),
                       const DigitDivider(),
-                      LabelValueItem(
-                        label: localizations.translate(
-                            i18.stockReconciliationMetrics.stockIssued),
-                        value: _stockMetrics['stockIssued']!.toStringAsFixed(0),
-                        labelFlex: 5,
-                      ),
-                      const DigitDivider(),
+                      if (!isDistributor) ...[
+                        LabelValueItem(
+                          label: localizations.translate(
+                              i18.stockReconciliationMetrics.stockIssued),
+                          value: displayMetric('stockIssued'),
+                          labelFlex: 5,
+                        ),
+                        const DigitDivider(),
+                      ],
                       LabelValueItem(
                         label: localizations.translate(
                             i18.stockReconciliationMetrics.stockReturned),
@@ -378,31 +392,28 @@ class _StockReconciliationCardState
                         // so stockInHand comes out right) - correct for the
                         // internal math, but a user-facing count should never
                         // read negative.
-                        value: _stockMetrics['stockReturned']!
-                            .abs()
-                            .toStringAsFixed(0),
+                        value: displayMetric('stockReturned'),
                         labelFlex: 5,
                       ),
                       const DigitDivider(),
                       LabelValueItem(
                         label: localizations.translate(
                             i18.stockReconciliationMetrics.stockLost),
-                        value: _stockMetrics['stockLost']!.toStringAsFixed(0),
+                        value: displayMetric('stockLost'),
                         labelFlex: 5,
                       ),
                       const DigitDivider(),
                       LabelValueItem(
                         label: localizations.translate(
                             i18.stockReconciliationMetrics.stockDamaged),
-                        value:
-                            _stockMetrics['stockDamaged']!.toStringAsFixed(0),
+                        value: displayMetric('stockDamaged'),
                         labelFlex: 5,
                       ),
                       const DigitDivider(),
                       LabelValueItem(
                         label: localizations.translate(
                             i18.stockReconciliationMetrics.stockOnHand),
-                        value: _stockMetrics['stockInHand']!.toStringAsFixed(0),
+                        value: displayMetric('stockInHand'),
                         labelFlex: 5,
                       ),
                     ],
