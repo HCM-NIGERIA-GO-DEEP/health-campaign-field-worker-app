@@ -60,11 +60,34 @@ class WrapperBuilder {
 
         final wrapperData = <String, dynamic>{rootEntityType: root};
 
-        // 1. Build relations
-        _buildRelations(root, wrapperData, entityMap, filter, resolver);
+        // Steps 1 and 2 were the only unguarded work in this loop, so one
+        // bad row took the whole list with it: the throw escaped to the
+        // outer catch, which logs and returns `wrappers` as it stands -
+        // silently dropping every item AFTER the bad one, not just that one.
+        //
+        // That is how a single consent-declined household stopped the search
+        // list loading. Its card dereferences item.headIndividual.0.name.*,
+        // and headIndividual is resolved household -> HouseholdMember ->
+        // Individual; a placeholder missing that member link resolves empty,
+        // and indexing .0 on it throws inside _buildRelations.
+        //
+        // Skip only the offending item. Keeping the half-built wrapper was
+        // the alternative - it would leave the household visible in search -
+        // but its card would then render unresolved {{...}} paths or throw
+        // again in the widget layer, putting the same failure one level up.
+        try {
+          // 1. Build relations
+          _buildRelations(root, wrapperData, entityMap, filter, resolver);
 
-        // 2. Apply normal fields
-        _applyFields(root, wrapperData, resolver);
+          // 2. Apply normal fields
+          _applyFields(root, wrapperData, resolver);
+        } catch (e, st) {
+          debugPrint(
+            'WrapperBuilder: skipped one $rootEntityType - relations/fields '
+            'failed to build; the rest of the list is unaffected. $e\n$st',
+          );
+          continue;
+        }
 
         // 3. Computed fields
         try {
