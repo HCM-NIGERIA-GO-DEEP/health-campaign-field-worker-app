@@ -757,6 +757,10 @@ final dynamic sampleInventoryFlows = {
               "includeInForm": true,
               "validations": [
                 {
+                  "type": "allowManualEntry",
+                  "value": false
+                },
+                {
                   "type": "required",
                   "value": true,
                   "message":
@@ -2172,6 +2176,10 @@ final dynamic sampleInventoryFlows = {
               "systemDate": false,
               "includeInSummary": true,
               "validations": [
+                {
+                  "type": "allowManualEntry",
+                  "value": false
+                },
                 {
                   "type": "required",
                   "value": true,
