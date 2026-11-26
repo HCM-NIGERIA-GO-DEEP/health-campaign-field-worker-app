@@ -4021,6 +4021,7 @@ final dynamic sampleFlows = {
               "format": "mobileNumber",
               "hidden": false,
               "isMdms": false,
+              "pattern": r"^0\d{9}$",
               "tooltip": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_phone_tooltip",
               "helpText": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_phone_helpText",
               "infoText": "",
@@ -4033,25 +4034,31 @@ final dynamic sampleFlows = {
               "schemaCode": null,
               "systemDate": false,
               "lengthRange": {
-                "maxLength": 9,
-                "minLength": 9,
-                "errorMessage": "MOBILE_LENGTH_9_DIGIT_ERROR"
+                "maxLength": 10,
+                "minLength": 10,
+                "errorMessage": "MOBILE_LENGTH_10_DIGIT_ERROR"
               },
               "validations": [
                 {
+                  "type": "pattern",
+                  "value": r"^0\d{9}$",
+                  "message": "MOBILE_NUMBER_START_WITH_ZERO_ERROR"
+                },
+                {
                   "type": "minLength",
-                  "value": 9,
-                  "message": "MOBILE_LENGTH_9_DIGIT_ERROR"
+                  "value": 10,
+                  "message": "MOBILE_LENGTH_10_DIGIT_ERROR"
                 },
                 {
                   "type": "maxLength",
-                  "value": 9,
-                  "message": "MOBILE_LENGTH_9_DIGIT_ERROR"
+                  "value": 10,
+                  "message": "MOBILE_LENGTH_10_DIGIT_ERROR"
                 }
               ],
               "errorMessage": "",
               "isMultiSelect": false,
-              "required.message": "MOBILE_LENGTH_9_DIGIT_ERROR"
+              "required.message": "MOBILE_LENGTH_10_DIGIT_ERROR",
+              "pattern.message": "MOBILE_NUMBER_START_WITH_ZERO_ERROR"
             },
             {
               "type": "string",
