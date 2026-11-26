@@ -97,7 +97,7 @@ final dynamic stockReconciliationFlows = {
                   "STOCKRECONCILIATION_STOCKRECONCILIATION_manualCount_LABEL",
               "order": 2,
               "value": "",
-              "format": "number",
+              "format": "custom",
               "hidden": false,
               "tooltip": "",
               "helpText":

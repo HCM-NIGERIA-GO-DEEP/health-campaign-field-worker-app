@@ -238,10 +238,12 @@ class LocalizationBloc extends Bloc<LocalizationEvent, LocalizationState> {
     required String locale,
     required String tenantId,
     required String path,
+    Set<String> requiredCodes = const {},
   }) async {
     final cached = await LocalizationLocalRepository()
         .fetchLocalization(sql: sql, locale: locale, module: module);
-    if (cached.isEmpty) {
+    final cachedCodes = cached.map((entry) => entry.code).toSet();
+    if (cached.isEmpty || !cachedCodes.containsAll(requiredCodes)) {
       // An offline or unavailable server must not prevent opening the form.
       await _fetchAndStoreModule(
         module: module,
