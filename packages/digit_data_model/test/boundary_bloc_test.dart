@@ -34,6 +34,32 @@ void main() {
       expect(boundaryBloc.state, equals(const BoundaryState()));
     });
 
+    test('an active community takes precedence over the last selection',
+        () async {
+      final communities = List.generate(
+        4,
+        (index) => BoundaryModel(code: 'COM_$index', label: 'Community'),
+      );
+      final bloc = BoundaryBloc(
+        BoundaryState(
+          selectedLastLevelBoundaries: communities,
+          allSelectedLastLevelBoundaries: communities,
+        ),
+        boundaryRepository: mockBoundaryDataRepository,
+      );
+      addTearDown(bloc.close);
+
+      final changes = <BoundaryModel?>[];
+      bloc.activeBoundary.addListener(
+        () => changes.add(bloc.activeBoundary.value),
+      );
+      bloc.setActiveBoundary(communities[2]);
+
+      expect(bloc.currentBoundary, communities[2]);
+      expect(changes, [communities[2]]);
+      expect(bloc.state.effectiveSelectedBoundaries, communities);
+    });
+
     // Mock data for testing.
     final testBoundaries = [
       BoundaryModel(name: 'Bangalore', code: 'BAN001'),

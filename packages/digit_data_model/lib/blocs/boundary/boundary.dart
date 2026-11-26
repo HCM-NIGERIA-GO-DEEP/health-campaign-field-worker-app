@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:collection/collection.dart';
 import 'package:digit_data_model/models/entities/boundary.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
@@ -15,6 +16,24 @@ typedef BoundaryEmitter = Emitter<BoundaryState>;
 
 class BoundaryBloc extends Bloc<BoundaryEvent, BoundaryState> {
   final BoundaryDataRepository boundaryRepository;
+  final _activeBoundary = ValueNotifier<BoundaryModel?>(null);
+
+  ValueListenable<BoundaryModel?> get activeBoundary => _activeBoundary;
+
+  BoundaryModel? get currentBoundary =>
+      _activeBoundary.value ??
+      state.selectedLastLevelBoundaries.lastOrNull ??
+      state.selectedBoundaryMap.values.whereType<BoundaryModel>().lastOrNull;
+
+  void setActiveBoundary(BoundaryModel boundary) {
+    _activeBoundary.value = boundary;
+  }
+
+  @override
+  Future<void> close() async {
+    await super.close();
+    _activeBoundary.dispose();
+  }
 
   BoundaryBloc(
     super.initialState, {
@@ -33,6 +52,7 @@ class BoundaryBloc extends Bloc<BoundaryEvent, BoundaryState> {
     BoundaryEmitter emit,
   ) async {
     await boundaryRepository.delete(BoundaryModel());
+    _activeBoundary.value = null;
     emit(const BoundaryState());
   }
 
@@ -171,6 +191,11 @@ class BoundaryBloc extends Bloc<BoundaryEvent, BoundaryState> {
       ...resolvedBoundaries,
       ...previousSelections,
     ];
+    final activeCode = _activeBoundary.value?.code;
+    if (activeCode != null &&
+        !merged.any((boundary) => boundary.code == activeCode)) {
+      _activeBoundary.value = null;
+    }
     emit(state.copyWith(
       hasSubmitted: true,
       allSelectedLastLevelBoundaries: merged,
