@@ -317,6 +317,18 @@ String stockUnitForRoles(Iterable<String> roleCodes) {
   return '';
 }
 
+/// Stock report and reconciliation units give Distributor precedence.
+String stockDisplayUnitForRoles(Iterable<String> roleCodes) {
+  final roles = roleCodes.map((code) => code.toUpperCase()).toSet();
+  return roles.contains('DISTRIBUTOR') ? 'PIECES' : stockUnitForRoles(roles);
+}
+
+/// Converts stored pieces for display while keeping fractional bales.
+num stockDisplayQuantity(num pieces, String unit) {
+  final quantity = unit == 'BALES' ? pieces / itnPiecesPerBale : pieces;
+  return quantity == quantity.roundToDouble() ? quantity.toInt() : quantity;
+}
+
 /// ITN nets in one bale. The stock forms carry the same number in config
 /// (computedValue multiplyBy / divideBy 50).
 const itnPiecesPerBale = 50;

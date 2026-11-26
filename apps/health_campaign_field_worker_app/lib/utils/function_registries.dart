@@ -949,8 +949,7 @@ class FunctionRegistries {
     //
     // Form FIELD labels cannot use this: they go through translateIfPresent
     // with no template resolution, which is why those use `labelConditions`
-    // against navigation.stockUnit instead. Two mechanisms, same source of
-    // truth (stockUnitForRole).
+    // against navigation.stockUnit instead.
     //
     // Falls back to the bare code when the role has no unit, so the column
     // keeps its existing unit-less heading rather than rendering a raw key
@@ -966,12 +965,25 @@ class FunctionRegistries {
         final roles = context.loggedInUserRoles
             .map((role) => role.code.toUpperCase())
             .toSet();
-        unit = stockUnitForRoles(roles);
+        unit = stockDisplayUnitForRoles(roles);
       } catch (_) {
         unit = '';
       }
 
       return unit.isEmpty ? base : '${base}_$unit';
+    });
+
+    FunctionRegistry.register('stockDisplayQuantity', (args, stateData) {
+      if (args.isEmpty || args.first == null) return '';
+      final raw = args.first;
+      final pieces = raw is num ? raw : num.tryParse(raw.toString());
+      if (pieces == null || !pieces.isFinite) return raw.toString();
+
+      final unit = stockDisplayUnitForRoles(
+        context.loggedInUserRoles.map((role) => role.code),
+      );
+      final absolute = args.length > 1 && args[1] == 'absolute';
+      return stockDisplayQuantity(absolute ? pieces.abs() : pieces, unit);
     });
 
     FunctionRegistry.register('hasRole', (args, stateData) {
