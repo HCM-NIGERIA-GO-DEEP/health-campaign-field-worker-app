@@ -700,6 +700,16 @@ final dynamic inventoryReportFlows = {
                     "{{fn:stockDisplayQuantity(item.additionalFields.fields.stockReturned, 'absolute')}}"
               },
               {
+                "header": "STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_HEADING",
+                "cellValue":
+                    "{{fn:stockDisplayQuantity(item.additionalFields.fields.stockLost)}}"
+              },
+              {
+                "header": "STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_HEADING",
+                "cellValue":
+                    "{{fn:stockDisplayQuantity(item.additionalFields.fields.stockDamaged)}}"
+              },
+              {
                 "header":
                     "{{fn:unitLabel('STOCKRECON_REPORT_DETAILS_TABLE_HEADER_7_LABEL')}}",
                 "cellValue": "{{fn:stockDisplayQuantity(item.physicalCount)}}"

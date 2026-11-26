@@ -64,6 +64,30 @@ void main() {
     );
   });
 
+  test('reconciliation report reads stored loss and damage amounts', () {
+    final table = tileIn(inventoryReportFlows, 'tableInfoReckonReportDetails');
+    final columns = (table['data']['columns'] as List).cast<Map>();
+    FunctionRegistry.register('stockDisplayQuantity', (args, _) => args.single);
+    final item = {
+      'additionalFields': {
+        'fields': [
+          {'key': 'stockLost', 'value': '50'},
+          {'key': 'stockDamaged', 'value': '0'},
+        ],
+      },
+    };
+    final row = {'item': item, 'itemData': item};
+
+    for (final (heading, expected) in [
+      ('STOCKREPORTS_VIEW_REPORTS_STOCK_LOSS_HEADING', '50'),
+      ('STOCKREPORTS_VIEW_REPORTS_STOCK_DAMAGED_HEADING', '0'),
+    ]) {
+      final column =
+          columns.singleWhere((column) => column['header'] == heading);
+      expect(ConditionalEvaluator.evaluate(column['cellValue'], row), expected);
+    }
+  });
+
   for (final copy in copies.entries) {
     group(copy.key, () {
       late Map<String, dynamic> issued;
