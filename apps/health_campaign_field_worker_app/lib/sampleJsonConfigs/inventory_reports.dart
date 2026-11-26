@@ -503,8 +503,9 @@ final dynamic inventoryReportFlows = {
               {
                 // Every stock quantity is stored in pieces (see the "stock"
                 // transformer), whatever unit the role typed it in.
-                "header": "STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_4_LABEL_PIECES",
-                "cellValue": "{{item.quantity}}"
+                "header":
+                    "{{fn:unitLabel('STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_4_LABEL')}}",
+                "cellValue": "{{fn:stockDisplayQuantity(item.quantity)}}"
               }
             ],
             "rows": "{{contextData.0.StockModel}}"
@@ -680,25 +681,33 @@ final dynamic inventoryReportFlows = {
                     "{{fn:formatDate(item.dateOfReconciliation, 'date', 'dd MMM yyyy')}}"
               },
               {
-                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_2_LABEL",
-                "cellValue": "{{item.additionalFields.fields.stockReceived}}"
-              },
-              {
-                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_3_LABEL",
-                "cellValue": "{{item.additionalFields.fields.stockIssued}}"
-              },
-              {
-                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_4_LABEL",
+                "header":
+                    "{{fn:unitLabel('STOCKRECON_REPORT_DETAILS_TABLE_HEADER_2_LABEL')}}",
                 "cellValue":
-                    "{{fn:absoluteValue(item.additionalFields.fields.stockReturned)}}"
+                    "{{fn:stockDisplayQuantity(item.additionalFields.fields.stockReceived)}}"
               },
               {
-                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_7_LABEL",
-                "cellValue": "{{item.physicalCount}}"
+                "header":
+                    "{{fn:unitLabel('STOCKRECON_REPORT_DETAILS_TABLE_HEADER_3_LABEL')}}",
+                "visible": "{{fn:hasRole('DISTRIBUTOR')}} == false",
+                "cellValue":
+                    "{{fn:stockDisplayQuantity(item.additionalFields.fields.stockIssued)}}"
               },
               {
-                "header": "STOCKRECON_REPORT_DETAILS_TABLE_HEADER_8_LABEL",
-                "cellValue": "{{item.calculatedCount}}"
+                "header":
+                    "{{fn:unitLabel('STOCKRECON_REPORT_DETAILS_TABLE_HEADER_4_LABEL')}}",
+                "cellValue":
+                    "{{fn:stockDisplayQuantity(item.additionalFields.fields.stockReturned, 'absolute')}}"
+              },
+              {
+                "header":
+                    "{{fn:unitLabel('STOCKRECON_REPORT_DETAILS_TABLE_HEADER_7_LABEL')}}",
+                "cellValue": "{{fn:stockDisplayQuantity(item.physicalCount)}}"
+              },
+              {
+                "header":
+                    "{{fn:unitLabel('STOCKRECON_REPORT_DETAILS_TABLE_HEADER_8_LABEL')}}",
+                "cellValue": "{{fn:stockDisplayQuantity(item.calculatedCount)}}"
               }
             ],
             "rows": "{{contextData.0.StockReconciliationModel}}"

@@ -46,6 +46,24 @@ void main() {
         false;
   }
 
+  test('Stock Issued reconciliation column follows the same role gate', () {
+    final table =
+        tileIn(inventoryReportFlows, 'tableInfoReckonReportDetails');
+    final columns = (table['data']['columns'] as List);
+    final issuedColumn = columns.cast<Map<String, dynamic>>().singleWhere(
+          (column) => column['header']
+              .toString()
+              .contains('STOCKRECON_REPORT_DETAILS_TABLE_HEADER_3_LABEL'),
+        );
+
+    expect(shown(issuedColumn, {'WAREHOUSE_MANAGER'}), isTrue);
+    expect(shown(issuedColumn, {'DISTRIBUTOR'}), isFalse);
+    expect(
+      shown(issuedColumn, {'WAREHOUSE_MANAGER', 'DISTRIBUTOR'}),
+      isFalse,
+    );
+  });
+
   for (final copy in copies.entries) {
     group(copy.key, () {
       late Map<String, dynamic> issued;
