@@ -477,23 +477,34 @@ void main() {
         final stock = run('RETURNED', stockUnit: stockUnit, productValues: {
           'returnUnit': 'BALES',
           'quantityReturned': 3,
+          'quantityReturned_item_0': 3,
           'quantityReturnedPieces': '150',
         });
 
         expect(stock['quantity'], '150');
         expect(additionalFieldsOf(stock)['stockUnit'], 'BALES');
-        expect(additionalFieldsOf(stock)['quantityReturned'], '3');
+        expect(additionalFieldsOf(stock)['quantityReturnedPieces'].toString(),
+            '150');
+        expect(additionalFieldsOf(stock),
+            isNot(contains('quantityReturned_item_0')));
+        expect(additionalFieldsOf(stock), isNot(contains('quantityReturned')));
       });
 
       test('a return picked in Pieces is saved as typed (stockUnit=$stockUnit)',
           () {
         final stock = run('RETURNED',
             stockUnit: stockUnit,
-            productValues: {'returnUnit': 'PIECES', 'quantityReturned': 125});
+            productValues: {
+              'returnUnit': 'PIECES',
+              'quantityReturned': 125,
+              'quantityReturnedPieces': '6250',
+            });
 
         expect(stock['quantity'], '125');
         expect(additionalFieldsOf(stock)['stockUnit'], 'PIECES');
-        expect(additionalFieldsOf(stock)['quantityReturned'], '125');
+        expect(additionalFieldsOf(stock)['quantityReturnedPieces'].toString(),
+            '125');
+        expect(additionalFieldsOf(stock), isNot(contains('quantityReturned')));
       });
     }
 
