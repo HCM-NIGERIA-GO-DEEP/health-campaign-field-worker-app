@@ -57,10 +57,18 @@ class TableWidget extends ResolvedFlowWidget {
 
     // Store raw column configuration for later evaluation
     final rawColumns = (data['columns'] as List<dynamic>?) ?? [];
+    final visibleColumns = rawColumns.where((col) {
+      return col['isActive'] != false &&
+          ConditionalEvaluator.evaluate(
+                col['visible'] ?? true,
+                evalContext,
+                screenKey: resolved.screenKey,
+              ) !=
+              false;
+    }).toList();
 
     // Create column headers with resolved templates
-    final columns =
-        rawColumns.where((col) => col['isActive'] != false).map((col) {
+    final columns = visibleColumns.map((col) {
       final cellValue = col['cellValue'];
       final headerTemplate = col['header']?.toString() ?? '';
 
@@ -146,7 +154,7 @@ class TableWidget extends ResolvedFlowWidget {
       };
 
       return DigitTableRow(
-        tableRow: rawColumns.asMap().entries.map((entry) {
+        tableRow: visibleColumns.asMap().entries.map((entry) {
           final colIndex = entry.key;
           final colConfig = entry.value;
 
