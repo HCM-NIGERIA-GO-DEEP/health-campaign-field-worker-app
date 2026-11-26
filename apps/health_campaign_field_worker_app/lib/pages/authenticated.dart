@@ -7,7 +7,6 @@ import 'package:digit_data_model/models/entities/attendee.dart';
 import 'package:digit_face_verification/digit_face_verification.dart';
 import 'package:digit_data_model/data_model.dart';
 import 'package:digit_data_model/models/entities/hf_referral.dart';
-import 'package:digit_flow_builder/utils/utils.dart' show FlowBuilderSingleton;
 import 'package:digit_forms_engine/blocs/forms/forms.dart';
 import 'package:digit_showcase/showcase_widget.dart';
 import 'package:digit_ui_components/digit_components.dart';
@@ -659,48 +658,39 @@ class _AuthenticatedPageWrapperState extends State<AuthenticatedPageWrapper>
                       if (showDrawer)
                         BlocBuilder<BoundaryBloc, BoundaryState>(
                           builder: (context, state) {
-                            // Find the deepest selected boundary (e.g. Community) across all roles
-                            final selectedBoundaryModel = FlowBuilderSingleton()
-                                    .boundary ??
-                                context.boundaryOrNull ??
-                                state.selectedLastLevelBoundaries.lastOrNull ??
-                                state.allSelectedLastLevelBoundaries
-                                    .firstOrNull ??
-                                state.selectedBoundaryMap.values
-                                    .whereType<BoundaryModel>()
-                                    .lastOrNull ??
-                                state.boundaryList.lastOrNull;
-
-                            final selectedBoundary =
-                                selectedBoundaryModel?.code;
-
-                            return selectedBoundary != null
-                                ? DigitButton(
-                                    label: AppLocalizations.of(context)
-                                        .translate(selectedBoundary),
-                                    suffixIcon: Icons.arrow_drop_down,
-                                    type: DigitButtonType.tertiary,
-                                    size: DigitButtonSize.large,
-                                    onPressed: () async {
-                                      if (context.router.topRoute.name !=
-                                          CurrentBoundaryRoute.name) {
-                                        final picked = await context.router
-                                            .push<BoundaryModel>(
-                                                CurrentBoundaryRoute());
-                                        if (picked != null) {
-                                          context.setBoundary(picked);
-                                        }
-                                        if (mounted) {
-                                          setState(() {});
-                                        }
-                                      }
-                                    },
-                                    iconColor:
-                                        theme.colorTheme.generic.background,
-                                    textColor:
-                                        theme.colorTheme.generic.background,
-                                  )
-                                : const SizedBox.shrink();
+                            final boundaryBloc = context.read<BoundaryBloc>();
+                            return ValueListenableBuilder<BoundaryModel?>(
+                              valueListenable: boundaryBloc.activeBoundary,
+                              builder: (context, _, child) {
+                                final selectedBoundary =
+                                    (boundaryBloc.currentBoundary ??
+                                            state.allSelectedLastLevelBoundaries
+                                                .firstOrNull ??
+                                            state.boundaryList.lastOrNull)
+                                        ?.code;
+                                if (selectedBoundary == null) {
+                                  return const SizedBox.shrink();
+                                }
+                                return DigitButton(
+                                  label: AppLocalizations.of(context)
+                                      .translate(selectedBoundary),
+                                  suffixIcon: Icons.arrow_drop_down,
+                                  type: DigitButtonType.tertiary,
+                                  size: DigitButtonSize.large,
+                                  onPressed: () {
+                                    if (context.router.topRoute.name !=
+                                        CurrentBoundaryRoute.name) {
+                                      context.router
+                                          .push(CurrentBoundaryRoute());
+                                    }
+                                  },
+                                  iconColor:
+                                      theme.colorTheme.generic.background,
+                                  textColor:
+                                      theme.colorTheme.generic.background,
+                                );
+                              },
+                            );
                           },
                         ),
                     ],

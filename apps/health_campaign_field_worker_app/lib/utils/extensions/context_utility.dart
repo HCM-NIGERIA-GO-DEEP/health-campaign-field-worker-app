@@ -104,35 +104,21 @@ extension ContextUtilityExtensions on BuildContext {
   }
 
   BoundaryModel get boundary {
-    final boundaryBloc = _get<BoundaryBloc>();
-    final boundaryState = boundaryBloc.state;
-
-    // final selectedBoundary = boundaryState.selectedBoundaryMap.entries
-    //     .where((element) => element.value != null)
-    //     .lastOrNull
-    //     ?.value;
-
-    final selectedBoundary =
-        boundaryState.selectedLastLevelBoundaries.lastOrNull ??
-            boundaryState.selectedBoundaryMap.entries
-                .where((element) => element.value != null)
-                .lastOrNull
-                ?.value;
+    final selectedBoundary = _get<BoundaryBloc>().currentBoundary;
 
     if (selectedBoundary == null) {
       throw AppException('No boundary is selected');
     }
-    // INFO: Set Boundary for packages
-    SurveyFormSingleton().setBoundary(boundary: selectedBoundary);
-    AttendanceSingleton().setBoundary(boundary: selectedBoundary);
-    TransitPostSingleton().setBoundary(boundary: selectedBoundary);
-    LocationTrackerSingleton()
-        .setBoundaryName(boundaryName: selectedBoundary.code!);
-    FlowBuilderSingleton().setBoundary(boundary: selectedBoundary);
+    _setPackageBoundary(selectedBoundary);
     return selectedBoundary;
   }
 
   void setBoundary(BoundaryModel selectedBoundary) {
+    _setPackageBoundary(selectedBoundary);
+    _get<BoundaryBloc>().setActiveBoundary(selectedBoundary);
+  }
+
+  void _setPackageBoundary(BoundaryModel selectedBoundary) {
     SurveyFormSingleton().setBoundary(boundary: selectedBoundary);
     AttendanceSingleton().setBoundary(boundary: selectedBoundary);
     TransitPostSingleton().setBoundary(boundary: selectedBoundary);
