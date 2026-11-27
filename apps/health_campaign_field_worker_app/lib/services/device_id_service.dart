@@ -33,7 +33,7 @@ class DeviceIdService {
     final deviceInfo = DeviceInfoPlugin();
     try {
       if (Platform.isAndroid) {
-        final androidId = await _tryGetAndroidIdFromNative();
+        final androidId = await readAndroidId();
         if (androidId != null && androidId.isNotEmpty) return androidId;
 
         final info = await deviceInfo.androidInfo;
@@ -51,7 +51,8 @@ class DeviceIdService {
     }
   }
 
-  static Future<String?> _tryGetAndroidIdFromNative() async {
+  /// Settings.Secure.ANDROID_ID, or null when it cannot be read.
+  static Future<String?> readAndroidId() async {
     try {
       final androidId = await _deviceIdChannel.invokeMethod<String>(
         'getAndroidId',
@@ -74,7 +75,7 @@ class DeviceIdService {
       final isUnknown = cached.toLowerCase() == 'unknown';
       if (!isLegacyBuildId && !isUnknown) return cached;
 
-      final androidId = await _tryGetAndroidIdFromNative();
+      final androidId = await readAndroidId();
       return (androidId != null && androidId.isNotEmpty) ? androidId : cached;
     } catch (_) {
       return cached;

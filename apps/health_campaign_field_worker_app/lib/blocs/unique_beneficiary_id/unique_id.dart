@@ -10,6 +10,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:freezed_annotation/freezed_annotation.dart';
 
 import '../../services/beneficiary_id_service.dart';
+import '../../services/device_id_service.dart';
 
 part 'unique_id.freezed.dart';
 
@@ -81,7 +82,9 @@ class UniqueIdBloc extends Bloc<UniqueIdEvent, UniqueIdState> {
     try {
       final deviceInfo = DeviceInfoPlugin();
       final androidInfo = await deviceInfo.androidInfo;
-      final deviceUuid = androidInfo.id;
+      // ANDROID_ID, not androidInfo.id: that is Build.ID, which every device
+      // on the same firmware shares. Build.ID stays the fallback.
+      final deviceUuid = await DeviceIdService.readAndroidId() ?? androidInfo.id;
 
       final connectivityResult = await Connectivity().checkConnectivity();
       if (connectivityResult.contains(ConnectivityResult.none)) {

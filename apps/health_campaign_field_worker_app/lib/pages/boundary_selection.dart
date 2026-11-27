@@ -248,20 +248,6 @@ class _BoundarySelectionPageState
                                     dataFound: (initialServerCount, batchSize,
                                         boundaryCounts) {
                                       clickedStatus.value = false;
-
-                                      if (initialServerCount <= 0) {
-                                        clickedStatus.value = true;
-                                        Navigator.of(
-                                          context,
-                                          rootNavigator: true,
-                                        ).popUntil(
-                                          (route) => route is! PopupRoute,
-                                        );
-                                        context.router
-                                            .replaceAll([HomeRoute()]);
-                                        return;
-                                      }
-
                                       showDownloadDialog(
                                         context,
                                         model: DownloadBeneficiary(

@@ -356,6 +356,9 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
                                           stateData,
                                           context,
                                           screenKey: screenKey,
+                                          // Bind to this instance's state, not the
+                                          // newest instance sharing the screen name.
+                                          compositeKey: compositeKey,
                                           (action) {
                                             ActionHandler.execute(
                                                 action, context, {
@@ -377,6 +380,9 @@ class LayoutRendererPageState extends LocalizedState<LayoutRendererPage> {
                                         stateData,
                                         context,
                                         screenKey: screenKey,
+                                        // Bind to this instance's state, not the
+                                        // newest instance sharing the screen name.
+                                        compositeKey: compositeKey,
                                         (action) {
                                           ActionHandler.execute(
                                               action, context, {

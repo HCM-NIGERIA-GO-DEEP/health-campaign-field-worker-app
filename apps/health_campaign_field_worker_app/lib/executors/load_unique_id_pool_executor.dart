@@ -15,6 +15,11 @@ class LoadUniqueIdPoolExecutor extends ActionExecutor {
   final bool defaultAllocate;
   LoadUniqueIdPoolExecutor({this.defaultAllocate = false});
 
+  /// Widget-data key that is true while the pool is being read, so config
+  /// can disable Register until the count arrives. Unused by a config
+  /// without the flag.
+  static const loadingKey = 'uniqueIdPoolLoading';
+
   @override
   bool canHandle(String actionType) => actionType == 'LOAD_UNIQUE_ID_POOL';
 
@@ -53,6 +58,7 @@ class LoadUniqueIdPoolExecutor extends ActionExecutor {
     }
 
     try {
+      publish({loadingKey: true});
       if (!context.isRegistrarRole) {
         throw StateError('BENEFICIARY_IDS_REGISTRAR_ONLY');
       }
@@ -88,18 +94,22 @@ class LoadUniqueIdPoolExecutor extends ActionExecutor {
         'latestBeneficiaryIdModel': first,
         'rawBeneficiaryId': rawId,
         if (allocate) 'beneficiaryIdAllocationKey': session,
+        loadingKey: false,
       };
       publish(values);
       if (action.properties['requireAvailable'] == true && rows.isEmpty) {
         throw StateError('BENEFICIARY_IDS_DOWNLOAD_REQUIRED');
       }
       return {...contextData, ...values, if (allocate) 'formData': formData};
-    } catch (error) {
+    } catch (error, stackTrace) {
+      debugPrint('LOAD_UNIQUE_ID_POOL: failed: $error $stackTrace');
       final values = <String, dynamic>{
         'uniqueIdPoolCount': 0,
         'latestBeneficiaryId': null,
         'latestBeneficiaryIdModel': null,
         'rawBeneficiaryId': null,
+        // Clear the flag so a failed load does not leave Register disabled.
+        loadingKey: false,
       };
       publish(values);
       final blocked = allocate || action.properties['requireAvailable'] == true;
