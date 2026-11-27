@@ -259,4 +259,101 @@ void main() {
           reason: 'editing a name must not change the registration date');
     });
   });
+
+  // Liberia QA sheet of 2026-11-26, row 6 (Amit, 2026-11-27): the head's
+  // Edit opens the individual form again, and that form hides the date of
+  // birth for the head, because the head is created on Household Details,
+  // which has none. The hidden field reaches the transformer as null.
+  group('head edit from the individual form (individualRegistration)', () {
+    late ProjectBeneficiaryModel beneficiary;
+
+    setUp(() {
+      beneficiary = ProjectBeneficiaryModel(
+        clientReferenceId: 'beneficiary',
+        id: 'server-beneficiary',
+        tenantId: 'lb',
+        rowVersion: 1,
+        projectId: 'project',
+        beneficiaryClientReferenceId: 'household',
+        dateOfRegistration: 1700000000000,
+      );
+    });
+
+    IndividualModel editHead(IndividualModel head) {
+      final prefill = ReverseFormMapper(
+        formConfig: jsonConfig['individualRegistration']!,
+        modelInstances: [head, beneficiary],
+      ).buildFormData();
+      expect(prefill['nameOfIndividual'], 'Old given');
+
+      final formValues = <String, dynamic>{
+        'beneficiaryDetails': {
+          ...prefill,
+          'nameOfIndividual': 'New given',
+          'familyname': 'New family',
+          'gender': 'FEMALE',
+          'phone': '0222222222',
+          // Hidden for the head: the forms engine resets a hidden control.
+          'dobPicker': null,
+          'identifiers': 'UNIQUE_BENEFICIARY_ID, TOKEN-head',
+        },
+        'navigation': const {
+          'HouseholdClientReferenceId': 'household',
+          'isEdit': 'true',
+          'isHead': 'true',
+        },
+      };
+      final mapper = FormEntityMapper(config: jsonConfig);
+
+      final updated = mapper.updateEntitiesFromForm(
+        existingModels: [head, beneficiary],
+        formValues: formValues,
+        modelsConfig: models('individualRegistration',
+            ['IndividualModel', 'ProjectBeneficiaryModel']),
+        context: {
+          'tenantId': 'lb',
+          'userUUID': 'user',
+          'loggedInUserUuid': 'user',
+          'projectId': 'project',
+          'beneficiaryProjectId': 'project',
+          'beneficiaryType': 'HOUSEHOLD',
+          'HouseholdClientReferenceId': 'household',
+          'selectedBoundaryCode': 'BOUNDARY',
+          'identifierEntries':
+              TransformerExecutor.buildIdentifierEntries(formValues, mapper),
+        },
+        fallbackFormDataString: 'IndividualModel',
+      );
+
+      expect(updated.whereType<ProjectBeneficiaryModel>().single.id,
+          'server-beneficiary');
+      return updated.whereType<IndividualModel>().single;
+    }
+
+    test('a head registered without a date of birth saves name, gender and '
+        'phone, and still has no date of birth', () {
+      final head = person(
+        ref: 'head',
+        given: 'Old given',
+        family: 'Old family',
+        mobile: '0111111111',
+      ).copyWith(dateOfBirth: null);
+
+      final saved = editHead(head);
+
+      expect(saved.clientReferenceId, 'head');
+      expect(saved.id, 'server-head');
+      expect(saved.name?.givenName, 'New given');
+      expect(saved.name?.familyName, 'New family');
+      expect(saved.gender, Gender.female);
+      expect(saved.mobileNumber, '0222222222');
+      expect(saved.dateOfBirth, isNull);
+      expect(saved.identifiers!.single.identifierId, 'TOKEN-head');
+      expect(
+        fieldMap(saved).entries.where((f) => f.value == null),
+        isEmpty,
+        reason: 'no null additional field may be saved',
+      );
+    });
+  });
 }

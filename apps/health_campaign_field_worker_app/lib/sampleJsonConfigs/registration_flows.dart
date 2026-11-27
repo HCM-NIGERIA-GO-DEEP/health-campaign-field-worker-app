@@ -601,63 +601,6 @@ final dynamic sampleFlows = {
                                 "actionType": "REVERSE_TRANSFORM",
                                 "properties": {
                                   "data": [
-                                    {"key": "entities", "value": "{{contextData.0.household}}"},
-                                    {"key": "entities", "value": "{{item.individual}}"},
-                                    {"key": "entities", "value": "{{contextData.0.projectBeneficiary}}"}
-                                  ],
-                                  "configName": "beneficiaryRegistration",
-                                  "excludeFormFields": ["nameOfIndividual", "familyname"],
-                                  "entityTypes": [
-                                    "HouseholdModel",
-                                    "IndividualModel",
-                                    "ProjectBeneficiaryModel"
-                                  ]
-                                }
-                              },
-                              {
-                                "actionType": "NAVIGATION",
-                                "properties": {
-                                  "data": [
-                                    {"key": "HouseholdClientReferenceId", "value": "{{item.member.0.householdClientReferenceId}}"},
-                                    {"key": "isEdit", "value": "true"},
-                                    {"key": "startPage", "value": "householdDetails"},
-                                    {"key": "firstName", "value": "{{item.individual.0.name.givenName}}"},
-                                    {"key": "lastName", "value": "{{item.individual.0.name.familyName}}"},
-                                    // Children already registered in this
-                                    // household. householdDetails'
-                                    // childrenCount has a `min` rule on it,
-                                    // so the count cannot be edited below
-                                    // them (a child cannot be removed, and
-                                    // householdOverview blocks Back/Close
-                                    // while the two numbers differ).
-                                    {"key": "registeredChildCount", "value": "{{fn:registeredChildCount(contextData.0.members)}}"}
-                                  ],
-                                  "name": "HOUSEHOLD",
-                                  "type": "FORM"
-                                }
-                              }
-                            ],
-                            "condition": {
-                              // Heads go to the HOUSEHOLD form to edit
-                              // household details. The hasBeneficiaryId
-                              // clause is load-bearing: this branch is
-                              // evaluated FIRST, and the next one is the
-                              // only branch that passes
-                              // UNIQUE_BENEFICIARY_ID ({{latestBeneficiaryId}}).
-                              // Without it, a head who has no token yet
-                              // would match here, open the household form
-                              // and never be assigned one from the pool.
-                              "type": "custom",
-                              "expression":
-                                  "{{fn:isHead(item.member)}} == true && {{fn:hasBeneficiaryId(item.individual.0.identifiers.0)}} == true"
-                            }
-                          },
-                          {
-                            "actions": [
-                              {
-                                "actionType": "REVERSE_TRANSFORM",
-                                "properties": {
-                                  "data": [
                                     {
                                       "key": "entities",
                                       "value": "{{item.individual}}"
@@ -932,6 +875,10 @@ final dynamic sampleFlows = {
                                   {
                                     "key": "UNIQUE_BENEFICIARY_ID",
                                     "value": "{{latestBeneficiaryId}}"
+                                  },
+                                  {
+                                    "key": "isHead",
+                                    "value": "false"
                                   }
                                 ],
                                 "name": "ADD_MEMBER",
@@ -5685,6 +5632,21 @@ final dynamic sampleFlows = {
               "value": "",
               "format": "dob",
               "hidden": false,
+              // A field the create screen does not have is not on the edit
+              // screen either. The head is created on Household Details,
+              // which has no date of birth, so the head's Edit hides it here.
+              // A child is added on this page with a required date of birth
+              // and keeps it on add and on edit. Every NAVIGATION into
+              // ADD_MEMBER must pass isHead: a condition naming a value that
+              // was not passed is false, and that would hide the field for
+              // a child too (head_edit_individual_form_test).
+              "visibilityCondition": {
+                "expression": [
+                  {
+                    "condition": "navigation.isHead!=true"
+                  }
+                ]
+              },
               "isMdms": false,
               "tooltip": "APPONE_REGISTRATION_BENEFICIARYDETAILS_label_dobPicker_tooltip_addmember",
               "ageRange": {

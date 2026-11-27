@@ -120,14 +120,6 @@ void main() {
     // Guards against a future edit entry point silently inheriting whichever
     // behaviour happens to come first.
     for (final nav in editNavigations()) {
-      // The head's Edit on householdOverview (f4369c03b) is the one edit
-      // entry that is not on the search card. The overview is only reached
-      // for a registered household, so it is a plain edit: it opens on
-      // householdDetails and its branch is the head's own.
-      final isHeadEditOnOverview = nav.startPage == 'householdDetails' &&
-          nav.condition.contains('fn:isHead(item.member)');
-      if (isHeadEditOnOverview) continue;
-
       expect(
         nav.condition,
         contains('isHouseholdMarkedClosed'),
