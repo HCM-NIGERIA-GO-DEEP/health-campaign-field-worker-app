@@ -488,12 +488,6 @@ class MdmsRepository {
       return boundaryRelConfig;
     }).toList();
 
-    appConfiguration.warehouseMapping = result.hcmWrapperModel?.warehouseMapping
-        ?.map((e) => WarehouseMappingConfig()
-          ..facilityId = e.facilityId
-          ..children = e.children)
-        .toList();
-
     isar.writeTxnSync(() {
       isar.appConfigurations.putSync(appConfiguration);
       isar.rowVersionLists.putAllSync(rowVersionList);

@@ -202,44 +202,38 @@ const AppConfigurationSchema = CollectionSchema(
       type: IsarType.objectList,
       target: r'TransportTypes',
     ),
-    r'WAREHOUSE_MAPPING': PropertySchema(
-      id: 32,
-      name: r'WAREHOUSE_MAPPING',
-      type: IsarType.objectList,
-      target: r'WarehouseMappingConfig',
-    ),
     r'houseStructureTypes': PropertySchema(
-      id: 33,
+      id: 32,
       name: r'houseStructureTypes',
       type: IsarType.objectList,
       target: r'HouseStructureTypes',
     ),
     r'manualAttendanceReasons': PropertySchema(
-      id: 34,
+      id: 33,
       name: r'manualAttendanceReasons',
       type: IsarType.objectList,
       target: r'ManualAttendanceReasons',
     ),
     r'privacyPolicyConfig': PropertySchema(
-      id: 35,
+      id: 34,
       name: r'privacyPolicyConfig',
       type: IsarType.object,
       target: r'PrivacyPolicy',
     ),
     r'referralReasons': PropertySchema(
-      id: 36,
+      id: 35,
       name: r'referralReasons',
       type: IsarType.objectList,
       target: r'ReferralReasons',
     ),
     r'refusalReasons': PropertySchema(
-      id: 37,
+      id: 36,
       name: r'refusalReasons',
       type: IsarType.objectList,
       target: r'RefusalReasons',
     ),
     r'symptomsTypes': PropertySchema(
-      id: 38,
+      id: 37,
       name: r'symptomsTypes',
       type: IsarType.objectList,
       target: r'SymptomsTypes',
@@ -289,8 +283,7 @@ const AppConfigurationSchema = CollectionSchema(
     r'StockThresholdConfig': StockThresholdConfigSchema,
     r'FaceAuthMdmsConfig': FaceAuthMdmsConfigSchema,
     r'FacilityBoundaryRelationshipConfig':
-        FacilityBoundaryRelationshipConfigSchema,
-    r'WarehouseMappingConfig': WarehouseMappingConfigSchema
+        FacilityBoundaryRelationshipConfigSchema
   },
   getId: _appConfigurationGetId,
   getLinks: _appConfigurationGetLinks,
@@ -655,20 +648,6 @@ int _appConfigurationEstimateSize(
     }
   }
   {
-    final list = object.warehouseMapping;
-    if (list != null) {
-      bytesCount += 3 + list.length * 3;
-      {
-        final offsets = allOffsets[WarehouseMappingConfig]!;
-        for (var i = 0; i < list.length; i++) {
-          final value = list[i];
-          bytesCount += WarehouseMappingConfigSchema.estimateSize(
-              value, offsets, allOffsets);
-        }
-      }
-    }
-  }
-  {
     final list = object.houseStructureTypes;
     if (list != null) {
       bytesCount += 3 + list.length * 3;
@@ -912,44 +891,38 @@ void _appConfigurationSerialize(
     TransportTypesSchema.serialize,
     object.transportTypes,
   );
-  writer.writeObjectList<WarehouseMappingConfig>(
-    offsets[32],
-    allOffsets,
-    WarehouseMappingConfigSchema.serialize,
-    object.warehouseMapping,
-  );
   writer.writeObjectList<HouseStructureTypes>(
-    offsets[33],
+    offsets[32],
     allOffsets,
     HouseStructureTypesSchema.serialize,
     object.houseStructureTypes,
   );
   writer.writeObjectList<ManualAttendanceReasons>(
-    offsets[34],
+    offsets[33],
     allOffsets,
     ManualAttendanceReasonsSchema.serialize,
     object.manualAttendanceReasons,
   );
   writer.writeObject<PrivacyPolicy>(
-    offsets[35],
+    offsets[34],
     allOffsets,
     PrivacyPolicySchema.serialize,
     object.privacyPolicyConfig,
   );
   writer.writeObjectList<ReferralReasons>(
-    offsets[36],
+    offsets[35],
     allOffsets,
     ReferralReasonsSchema.serialize,
     object.referralReasons,
   );
   writer.writeObjectList<RefusalReasons>(
-    offsets[37],
+    offsets[36],
     allOffsets,
     RefusalReasonsSchema.serialize,
     object.refusalReasons,
   );
   writer.writeObjectList<SymptomsTypes>(
-    offsets[38],
+    offsets[37],
     allOffsets,
     SymptomsTypesSchema.serialize,
     object.symptomsTypes,
@@ -1120,14 +1093,8 @@ AppConfiguration _appConfigurationDeserialize(
     allOffsets,
     TransportTypes(),
   );
-  object.warehouseMapping = reader.readObjectList<WarehouseMappingConfig>(
-    offsets[32],
-    WarehouseMappingConfigSchema.deserialize,
-    allOffsets,
-    WarehouseMappingConfig(),
-  );
   object.houseStructureTypes = reader.readObjectList<HouseStructureTypes>(
-    offsets[33],
+    offsets[32],
     HouseStructureTypesSchema.deserialize,
     allOffsets,
     HouseStructureTypes(),
@@ -1135,30 +1102,30 @@ AppConfiguration _appConfigurationDeserialize(
   object.id = id;
   object.manualAttendanceReasons =
       reader.readObjectList<ManualAttendanceReasons>(
-    offsets[34],
+    offsets[33],
     ManualAttendanceReasonsSchema.deserialize,
     allOffsets,
     ManualAttendanceReasons(),
   );
   object.privacyPolicyConfig = reader.readObjectOrNull<PrivacyPolicy>(
-    offsets[35],
+    offsets[34],
     PrivacyPolicySchema.deserialize,
     allOffsets,
   );
   object.referralReasons = reader.readObjectList<ReferralReasons>(
-    offsets[36],
+    offsets[35],
     ReferralReasonsSchema.deserialize,
     allOffsets,
     ReferralReasons(),
   );
   object.refusalReasons = reader.readObjectList<RefusalReasons>(
-    offsets[37],
+    offsets[36],
     RefusalReasonsSchema.deserialize,
     allOffsets,
     RefusalReasons(),
   );
   object.symptomsTypes = reader.readObjectList<SymptomsTypes>(
-    offsets[38],
+    offsets[37],
     SymptomsTypesSchema.deserialize,
     allOffsets,
     SymptomsTypes(),
@@ -1358,47 +1325,40 @@ P _appConfigurationDeserializeProp<P>(
         TransportTypes(),
       )) as P;
     case 32:
-      return (reader.readObjectList<WarehouseMappingConfig>(
-        offset,
-        WarehouseMappingConfigSchema.deserialize,
-        allOffsets,
-        WarehouseMappingConfig(),
-      )) as P;
-    case 33:
       return (reader.readObjectList<HouseStructureTypes>(
         offset,
         HouseStructureTypesSchema.deserialize,
         allOffsets,
         HouseStructureTypes(),
       )) as P;
-    case 34:
+    case 33:
       return (reader.readObjectList<ManualAttendanceReasons>(
         offset,
         ManualAttendanceReasonsSchema.deserialize,
         allOffsets,
         ManualAttendanceReasons(),
       )) as P;
-    case 35:
+    case 34:
       return (reader.readObjectOrNull<PrivacyPolicy>(
         offset,
         PrivacyPolicySchema.deserialize,
         allOffsets,
       )) as P;
-    case 36:
+    case 35:
       return (reader.readObjectList<ReferralReasons>(
         offset,
         ReferralReasonsSchema.deserialize,
         allOffsets,
         ReferralReasons(),
       )) as P;
-    case 37:
+    case 36:
       return (reader.readObjectList<RefusalReasons>(
         offset,
         RefusalReasonsSchema.deserialize,
         allOffsets,
         RefusalReasons(),
       )) as P;
-    case 38:
+    case 37:
       return (reader.readObjectList<SymptomsTypes>(
         offset,
         SymptomsTypesSchema.deserialize,
@@ -4663,113 +4623,6 @@ extension AppConfigurationQueryFilter
   }
 
   QueryBuilder<AppConfiguration, AppConfiguration, QAfterFilterCondition>
-      warehouseMappingIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'WAREHOUSE_MAPPING',
-      ));
-    });
-  }
-
-  QueryBuilder<AppConfiguration, AppConfiguration, QAfterFilterCondition>
-      warehouseMappingIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'WAREHOUSE_MAPPING',
-      ));
-    });
-  }
-
-  QueryBuilder<AppConfiguration, AppConfiguration, QAfterFilterCondition>
-      warehouseMappingLengthEqualTo(int length) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'WAREHOUSE_MAPPING',
-        length,
-        true,
-        length,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<AppConfiguration, AppConfiguration, QAfterFilterCondition>
-      warehouseMappingIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'WAREHOUSE_MAPPING',
-        0,
-        true,
-        0,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<AppConfiguration, AppConfiguration, QAfterFilterCondition>
-      warehouseMappingIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'WAREHOUSE_MAPPING',
-        0,
-        false,
-        999999,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<AppConfiguration, AppConfiguration, QAfterFilterCondition>
-      warehouseMappingLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'WAREHOUSE_MAPPING',
-        0,
-        true,
-        length,
-        include,
-      );
-    });
-  }
-
-  QueryBuilder<AppConfiguration, AppConfiguration, QAfterFilterCondition>
-      warehouseMappingLengthGreaterThan(
-    int length, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'WAREHOUSE_MAPPING',
-        length,
-        include,
-        999999,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<AppConfiguration, AppConfiguration, QAfterFilterCondition>
-      warehouseMappingLengthBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'WAREHOUSE_MAPPING',
-        lower,
-        includeLower,
-        upper,
-        includeUpper,
-      );
-    });
-  }
-
-  QueryBuilder<AppConfiguration, AppConfiguration, QAfterFilterCondition>
       houseStructureTypesIsNull() {
     return QueryBuilder.apply(this, (query) {
       return query.addFilterCondition(const FilterCondition.isNull(
@@ -5560,13 +5413,6 @@ extension AppConfigurationQueryObject
   }
 
   QueryBuilder<AppConfiguration, AppConfiguration, QAfterFilterCondition>
-      warehouseMappingElement(FilterQuery<WarehouseMappingConfig> q) {
-    return QueryBuilder.apply(this, (query) {
-      return query.object(q, r'WAREHOUSE_MAPPING');
-    });
-  }
-
-  QueryBuilder<AppConfiguration, AppConfiguration, QAfterFilterCondition>
       houseStructureTypesElement(FilterQuery<HouseStructureTypes> q) {
     return QueryBuilder.apply(this, (query) {
       return query.object(q, r'houseStructureTypes');
@@ -6112,13 +5958,6 @@ extension AppConfigurationQueryProperty
     });
   }
 
-  QueryBuilder<AppConfiguration, List<WarehouseMappingConfig>?,
-      QQueryOperations> warehouseMappingProperty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addPropertyName(r'WAREHOUSE_MAPPING');
-    });
-  }
-
   QueryBuilder<AppConfiguration, List<HouseStructureTypes>?, QQueryOperations>
       houseStructureTypesProperty() {
     return QueryBuilder.apply(this, (query) {
@@ -6165,502 +6004,6 @@ extension AppConfigurationQueryProperty
 // **************************************************************************
 // IsarEmbeddedGenerator
 // **************************************************************************
-
-// coverage:ignore-file
-// ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types
-
-const WarehouseMappingConfigSchema = Schema(
-  name: r'WarehouseMappingConfig',
-  id: 7642674239083675163,
-  properties: {
-    r'children': PropertySchema(
-      id: 0,
-      name: r'children',
-      type: IsarType.stringList,
-    ),
-    r'facilityId': PropertySchema(
-      id: 1,
-      name: r'facilityId',
-      type: IsarType.string,
-    )
-  },
-  estimateSize: _warehouseMappingConfigEstimateSize,
-  serialize: _warehouseMappingConfigSerialize,
-  deserialize: _warehouseMappingConfigDeserialize,
-  deserializeProp: _warehouseMappingConfigDeserializeProp,
-);
-
-int _warehouseMappingConfigEstimateSize(
-  WarehouseMappingConfig object,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  var bytesCount = offsets.last;
-  {
-    final list = object.children;
-    if (list != null) {
-      bytesCount += 3 + list.length * 3;
-      {
-        for (var i = 0; i < list.length; i++) {
-          final value = list[i];
-          bytesCount += value.length * 3;
-        }
-      }
-    }
-  }
-  {
-    final value = object.facilityId;
-    if (value != null) {
-      bytesCount += 3 + value.length * 3;
-    }
-  }
-  return bytesCount;
-}
-
-void _warehouseMappingConfigSerialize(
-  WarehouseMappingConfig object,
-  IsarWriter writer,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  writer.writeStringList(offsets[0], object.children);
-  writer.writeString(offsets[1], object.facilityId);
-}
-
-WarehouseMappingConfig _warehouseMappingConfigDeserialize(
-  Id id,
-  IsarReader reader,
-  List<int> offsets,
-  Map<Type, List<int>> allOffsets,
-) {
-  final object = WarehouseMappingConfig();
-  object.children = reader.readStringList(offsets[0]);
-  object.facilityId = reader.readStringOrNull(offsets[1]);
-  return object;
-}
-
-P _warehouseMappingConfigDeserializeProp<P>(
-  IsarReader reader,
-  int propertyId,
-  int offset,
-  Map<Type, List<int>> allOffsets,
-) {
-  switch (propertyId) {
-    case 0:
-      return (reader.readStringList(offset)) as P;
-    case 1:
-      return (reader.readStringOrNull(offset)) as P;
-    default:
-      throw IsarError('Unknown property with id $propertyId');
-  }
-}
-
-extension WarehouseMappingConfigQueryFilter on QueryBuilder<
-    WarehouseMappingConfig, WarehouseMappingConfig, QFilterCondition> {
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> childrenIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'children',
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> childrenIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'children',
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> childrenElementEqualTo(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'children',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> childrenElementGreaterThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'children',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> childrenElementLessThan(
-    String value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'children',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> childrenElementBetween(
-    String lower,
-    String upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'children',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> childrenElementStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'children',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> childrenElementEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'children',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-          QAfterFilterCondition>
-      childrenElementContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'children',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-          QAfterFilterCondition>
-      childrenElementMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'children',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> childrenElementIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'children',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> childrenElementIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'children',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> childrenLengthEqualTo(int length) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'children',
-        length,
-        true,
-        length,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> childrenIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'children',
-        0,
-        true,
-        0,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> childrenIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'children',
-        0,
-        false,
-        999999,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> childrenLengthLessThan(
-    int length, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'children',
-        0,
-        true,
-        length,
-        include,
-      );
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> childrenLengthGreaterThan(
-    int length, {
-    bool include = false,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'children',
-        length,
-        include,
-        999999,
-        true,
-      );
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> childrenLengthBetween(
-    int lower,
-    int upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.listLength(
-        r'children',
-        lower,
-        includeLower,
-        upper,
-        includeUpper,
-      );
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> facilityIdIsNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNull(
-        property: r'facilityId',
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> facilityIdIsNotNull() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(const FilterCondition.isNotNull(
-        property: r'facilityId',
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> facilityIdEqualTo(
-    String? value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'facilityId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> facilityIdGreaterThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        include: include,
-        property: r'facilityId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> facilityIdLessThan(
-    String? value, {
-    bool include = false,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.lessThan(
-        include: include,
-        property: r'facilityId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> facilityIdBetween(
-    String? lower,
-    String? upper, {
-    bool includeLower = true,
-    bool includeUpper = true,
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.between(
-        property: r'facilityId',
-        lower: lower,
-        includeLower: includeLower,
-        upper: upper,
-        includeUpper: includeUpper,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> facilityIdStartsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.startsWith(
-        property: r'facilityId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> facilityIdEndsWith(
-    String value, {
-    bool caseSensitive = true,
-  }) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.endsWith(
-        property: r'facilityId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-          QAfterFilterCondition>
-      facilityIdContains(String value, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.contains(
-        property: r'facilityId',
-        value: value,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-          QAfterFilterCondition>
-      facilityIdMatches(String pattern, {bool caseSensitive = true}) {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.matches(
-        property: r'facilityId',
-        wildcard: pattern,
-        caseSensitive: caseSensitive,
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> facilityIdIsEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.equalTo(
-        property: r'facilityId',
-        value: '',
-      ));
-    });
-  }
-
-  QueryBuilder<WarehouseMappingConfig, WarehouseMappingConfig,
-      QAfterFilterCondition> facilityIdIsNotEmpty() {
-    return QueryBuilder.apply(this, (query) {
-      return query.addFilterCondition(FilterCondition.greaterThan(
-        property: r'facilityId',
-        value: '',
-      ));
-    });
-  }
-}
-
-extension WarehouseMappingConfigQueryObject on QueryBuilder<
-    WarehouseMappingConfig, WarehouseMappingConfig, QFilterCondition> {}
 
 // coverage:ignore-file
 // ignore_for_file: duplicate_ignore, non_constant_identifier_names, constant_identifier_names, invalid_use_of_protected_member, unnecessary_cast, prefer_const_constructors, lines_longer_than_80_chars, require_trailing_commas, inference_failure_on_function_invocation, unnecessary_parenthesis, unnecessary_raw_strings, unnecessary_null_checks, join_return_with_assignment, prefer_final_locals, avoid_js_rounded_ints, avoid_positional_boolean_parameters, always_specify_types

@@ -185,9 +185,6 @@ _$HCMWrapperModelImpl _$$HCMWrapperModelImplFromJson(
           ?.map((e) =>
               FacilityBoundaryRelationship.fromJson(e as Map<String, dynamic>))
           .toList(),
-      warehouseMapping: (json['WAREHOUSE_MAPPING'] as List<dynamic>?)
-          ?.map((e) => WarehouseMapping.fromJson(e as Map<String, dynamic>))
-          .toList(),
     );
 
 Map<String, dynamic> _$$HCMWrapperModelImplToJson(
@@ -221,7 +218,6 @@ Map<String, dynamic> _$$HCMWrapperModelImplToJson(
       'FIREBASE_CONFIG': instance.firebaseConfig,
       'TRANSIT_POST_TYPE': instance.transitPostType,
       'FACILITY_BOUNDARY_RELATIONSHIP': instance.facilityBoundaryRelationship,
-      'WAREHOUSE_MAPPING': instance.warehouseMapping,
     };
 
 _$AppConfigSecondaryWrapperModelImpl
@@ -676,22 +672,6 @@ Map<String, dynamic> _$$FacilityBoundaryRelationshipImplToJson(
       'order': instance.order,
       'hierarchyType': instance.hierarchyType,
       'parent': instance.parent,
-      'children': instance.children,
-    };
-
-_$WarehouseMappingImpl _$$WarehouseMappingImplFromJson(
-        Map<String, dynamic> json) =>
-    _$WarehouseMappingImpl(
-      facilityId: json['facilityId'] as String?,
-      children: (json['children'] as List<dynamic>?)
-          ?.map((e) => e as String)
-          .toList(),
-    );
-
-Map<String, dynamic> _$$WarehouseMappingImplToJson(
-        _$WarehouseMappingImpl instance) =>
-    <String, dynamic>{
-      'facilityId': instance.facilityId,
       'children': instance.children,
     };
 

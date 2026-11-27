@@ -110,15 +110,6 @@ class AppConfiguration {
 
   @Name('FACILITY_BOUNDARY_RELATIONSHIP')
   List<FacilityBoundaryRelationshipConfig>? facilityBoundaryRelationship;
-
-  @Name('WAREHOUSE_MAPPING')
-  List<WarehouseMappingConfig>? warehouseMapping;
-}
-
-@embedded
-class WarehouseMappingConfig {
-  String? facilityId;
-  List<String>? children;
 }
 
 @embedded

@@ -8,12 +8,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:reactive_forms/reactive_forms.dart';
 
-import '../../blocs/app_initialization/app_initialization.dart';
 import '../../models/entities/roles_type.dart';
 import '../../sampleJsonConfigs/manage_stock.dart';
 import '../../utils/extensions/extensions.dart';
 import '../../utils/parent_facility_resolver.dart';
-import '../../utils/warehouse_mapping.dart';
 import '../localized.dart';
 
 class FacilityCard extends LocalizedStatefulWidget {
@@ -263,48 +261,6 @@ class _FacilityCardContent extends StatelessWidget {
     return isUuid ? facilityId : localizations.translate('FAC_$facilityId');
   }
 
-  /// Options from the WAREHOUSE_MAPPING master for the user's own
-  /// ('current') facilities, or null when it has no entry for them. Never
-  /// throws: a missing bloc or odd data must leave the dropdown as it was.
-  List<String>? _mappedFacilityIds(
-    BuildContext context, {
-    required List<dynamic> projectFacilities,
-    required WarehouseMappingSide? side,
-  }) {
-    if (side == null) return null;
-    try {
-      final entries = context.read<AppInitializationBloc>().state.maybeWhen(
-            initialized: (appConfiguration, _, __) =>
-                appConfiguration.warehouseMapping,
-            orElse: () => null,
-          );
-      if (entries == null || entries.isEmpty) return null;
-
-      final mapping = <String, List<String>>{};
-      for (final entry in entries) {
-        final id = entry.facilityId;
-        if (id == null || id.isEmpty) continue;
-        (mapping[id] ??= []).addAll(entry.children ?? const []);
-      }
-
-      return mappedFacilityIds(
-        mapping: mapping,
-        currentFacilityIds:
-            projectFacilities.whereType<ProjectFacilityModel>().where((pf) {
-          final level = pf.additionalFields?.fields
-              .where((f) => f.key == 'facilityLevel')
-              .firstOrNull
-              ?.value;
-          return level == null || level == 'current';
-        }).map((pf) => pf.facilityId),
-        side: side,
-      )?.where((id) => !hiddenFacilityIds.contains(id)).toList();
-    } catch (e) {
-      debugPrint('warehouse mapping lookup failed: $e');
-      return null;
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final navigationParams =
@@ -449,30 +405,10 @@ class _FacilityCardContent extends StatelessWidget {
       return true;
     }).toList();
 
-    // A warehouse named in the MDMS WAREHOUSE_MAPPING master (a regional
-    // warehouse or one of its districts) gets its options from that master
-    // instead of the boundary-level tags. Null for everyone else, who keep
-    // the list filtered above.
-    final mappedIds = _mappedFacilityIds(
-      context,
-      projectFacilities: projectFacilities,
-      side: warehouseMappingSide(
-        isToField: isToField,
-        isFromField: isFromField,
-        isReturnOrLessExcessFlow: isReturnFlow || isLessExcessFlow,
-        transactionType: transactionType,
-        upwardLevel: upwardLevel,
-      ),
-    );
-    final facilityIds = mappedIds ??
-        filteredFacilities
-            .map((e) => (e as ProjectFacilityModel).facilityId)
-            .toList();
-
     // Check if there are child facilities (for warehouse managers at lowest level)
     final hasNoChildFacilities = isToField &&
         (transactionType == 'DISPATCHED' || transactionType == 'ISSUED') &&
-        facilityIds.isEmpty;
+        filteredFacilities.isEmpty;
 
     // Build facility dropdown items
     var facilities = <DropdownItem>[];
@@ -511,7 +447,9 @@ class _FacilityCardContent extends StatelessWidget {
       ));
     }
 
-    facilities.addAll(facilityIds.map((facilityId) {
+    facilities.addAll(filteredFacilities.map((e) {
+      final model = e as ProjectFacilityModel;
+      final facilityId = model.facilityId;
       final isUuid = facilityId.contains('-') && !facilityId.startsWith('F-');
       return DropdownItem(
         code: facilityId,

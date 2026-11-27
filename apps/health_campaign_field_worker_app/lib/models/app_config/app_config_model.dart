@@ -117,7 +117,6 @@ class HCMWrapperModel with _$HCMWrapperModel {
     @JsonKey(name: 'TRANSIT_POST_TYPE') List<TransitPostType>? transitPostType,
     @JsonKey(name: 'FACILITY_BOUNDARY_RELATIONSHIP')
     List<FacilityBoundaryRelationship>? facilityBoundaryRelationship,
-    @JsonKey(name: 'WAREHOUSE_MAPPING') List<WarehouseMapping>? warehouseMapping,
   }) = _HCMWrapperModel;
 
   factory HCMWrapperModel.fromJson(
@@ -521,20 +520,6 @@ class FacilityBoundaryRelationship with _$FacilityBoundaryRelationship {
 
   factory FacilityBoundaryRelationship.fromJson(Map<String, dynamic> json) =>
       _$FacilityBoundaryRelationshipFromJson(json);
-}
-
-// One warehouse and the warehouses it issues stock to, by facility id.
-// Both fields are nullable so one bad MDMS entry cannot fail the whole
-// app-config parse at start-up.
-@freezed
-class WarehouseMapping with _$WarehouseMapping {
-  factory WarehouseMapping({
-    String? facilityId,
-    List<String>? children,
-  }) = _WarehouseMapping;
-
-  factory WarehouseMapping.fromJson(Map<String, dynamic> json) =>
-      _$WarehouseMappingFromJson(json);
 }
 
 @freezed

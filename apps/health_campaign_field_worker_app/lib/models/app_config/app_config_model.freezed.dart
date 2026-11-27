@@ -1007,9 +1007,6 @@ mixin _$HCMWrapperModel {
   @JsonKey(name: 'FACILITY_BOUNDARY_RELATIONSHIP')
   List<FacilityBoundaryRelationship>? get facilityBoundaryRelationship =>
       throw _privateConstructorUsedError;
-  @JsonKey(name: 'WAREHOUSE_MAPPING')
-  List<WarehouseMapping>? get warehouseMapping =>
-      throw _privateConstructorUsedError;
 
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
   @JsonKey(ignore: true)
@@ -1067,9 +1064,7 @@ abstract class $HCMWrapperModelCopyWith<$Res> {
       @JsonKey(name: 'TRANSIT_POST_TYPE')
       List<TransitPostType>? transitPostType,
       @JsonKey(name: 'FACILITY_BOUNDARY_RELATIONSHIP')
-      List<FacilityBoundaryRelationship>? facilityBoundaryRelationship,
-      @JsonKey(name: 'WAREHOUSE_MAPPING')
-      List<WarehouseMapping>? warehouseMapping});
+      List<FacilityBoundaryRelationship>? facilityBoundaryRelationship});
 }
 
 /// @nodoc
@@ -1111,7 +1106,6 @@ class _$HCMWrapperModelCopyWithImpl<$Res, $Val extends HCMWrapperModel>
     Object? firebaseConfig = freezed,
     Object? transitPostType = freezed,
     Object? facilityBoundaryRelationship = freezed,
-    Object? warehouseMapping = freezed,
   }) {
     return _then(_value.copyWith(
       appConfig: null == appConfig
@@ -1219,10 +1213,6 @@ class _$HCMWrapperModelCopyWithImpl<$Res, $Val extends HCMWrapperModel>
           ? _value.facilityBoundaryRelationship
           : facilityBoundaryRelationship // ignore: cast_nullable_to_non_nullable
               as List<FacilityBoundaryRelationship>?,
-      warehouseMapping: freezed == warehouseMapping
-          ? _value.warehouseMapping
-          : warehouseMapping // ignore: cast_nullable_to_non_nullable
-              as List<WarehouseMapping>?,
     ) as $Val);
   }
 }
@@ -1279,9 +1269,7 @@ abstract class _$$HCMWrapperModelImplCopyWith<$Res>
       @JsonKey(name: 'TRANSIT_POST_TYPE')
       List<TransitPostType>? transitPostType,
       @JsonKey(name: 'FACILITY_BOUNDARY_RELATIONSHIP')
-      List<FacilityBoundaryRelationship>? facilityBoundaryRelationship,
-      @JsonKey(name: 'WAREHOUSE_MAPPING')
-      List<WarehouseMapping>? warehouseMapping});
+      List<FacilityBoundaryRelationship>? facilityBoundaryRelationship});
 }
 
 /// @nodoc
@@ -1321,7 +1309,6 @@ class __$$HCMWrapperModelImplCopyWithImpl<$Res>
     Object? firebaseConfig = freezed,
     Object? transitPostType = freezed,
     Object? facilityBoundaryRelationship = freezed,
-    Object? warehouseMapping = freezed,
   }) {
     return _then(_$HCMWrapperModelImpl(
       appConfig: null == appConfig
@@ -1429,10 +1416,6 @@ class __$$HCMWrapperModelImplCopyWithImpl<$Res>
           ? _value._facilityBoundaryRelationship
           : facilityBoundaryRelationship // ignore: cast_nullable_to_non_nullable
               as List<FacilityBoundaryRelationship>?,
-      warehouseMapping: freezed == warehouseMapping
-          ? _value._warehouseMapping
-          : warehouseMapping // ignore: cast_nullable_to_non_nullable
-              as List<WarehouseMapping>?,
     ));
   }
 }
@@ -1492,9 +1475,7 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
       @JsonKey(name: 'TRANSIT_POST_TYPE')
       final List<TransitPostType>? transitPostType,
       @JsonKey(name: 'FACILITY_BOUNDARY_RELATIONSHIP')
-      final List<FacilityBoundaryRelationship>? facilityBoundaryRelationship,
-      @JsonKey(name: 'WAREHOUSE_MAPPING')
-      final List<WarehouseMapping>? warehouseMapping})
+      final List<FacilityBoundaryRelationship>? facilityBoundaryRelationship})
       : _appConfig = appConfig,
         _bandWidthBatchSize = bandWidthBatchSize,
         _beneficiaryIdConfig = beneficiaryIdConfig,
@@ -1521,8 +1502,7 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
         _refusalReasons = refusalReasons,
         _firebaseConfig = firebaseConfig,
         _transitPostType = transitPostType,
-        _facilityBoundaryRelationship = facilityBoundaryRelationship,
-        _warehouseMapping = warehouseMapping;
+        _facilityBoundaryRelationship = facilityBoundaryRelationship;
 
   factory _$HCMWrapperModelImpl.fromJson(Map<String, dynamic> json) =>
       _$$HCMWrapperModelImplFromJson(json);
@@ -1803,21 +1783,9 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
     return EqualUnmodifiableListView(value);
   }
 
-  final List<WarehouseMapping>? _warehouseMapping;
-  @override
-  @JsonKey(name: 'WAREHOUSE_MAPPING')
-  List<WarehouseMapping>? get warehouseMapping {
-    final value = _warehouseMapping;
-    if (value == null) return null;
-    if (_warehouseMapping is EqualUnmodifiableListView)
-      return _warehouseMapping;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
-
   @override
   String toString() {
-    return 'HCMWrapperModel(appConfig: $appConfig, bandWidthBatchSize: $bandWidthBatchSize, beneficiaryIdConfig: $beneficiaryIdConfig, downSyncBandWidthBatchSize: $downSyncBandWidthBatchSize, householdDeletionReasonOptions: $householdDeletionReasonOptions, householdMemberDeletionReasonOptions: $householdMemberDeletionReasonOptions, backgroundServiceConfig: $backgroundServiceConfig, checklistTypes: $checklistTypes, deviceChangeReasons: $deviceChangeReasons, singleUserLogin: $singleUserLogin, idTypeOptions: $idTypeOptions, relationShipTypeOptions: $relationShipTypeOptions, deliveryCommentOptions: $deliveryCommentOptions, backendInterface: $backendInterface, callSupportOptions: $callSupportOptions, transportTypes: $transportTypes, symptomsTypeList: $symptomsTypeList, searchHouseHoldFilters: $searchHouseHoldFilters, searchCLFFilters: $searchCLFFilters, referralReasonList: $referralReasonList, manualAttendanceReasonList: $manualAttendanceReasonList, houseStructureTypes: $houseStructureTypes, refusalReasons: $refusalReasons, firebaseConfig: $firebaseConfig, transitPostType: $transitPostType, facilityBoundaryRelationship: $facilityBoundaryRelationship, warehouseMapping: $warehouseMapping)';
+    return 'HCMWrapperModel(appConfig: $appConfig, bandWidthBatchSize: $bandWidthBatchSize, beneficiaryIdConfig: $beneficiaryIdConfig, downSyncBandWidthBatchSize: $downSyncBandWidthBatchSize, householdDeletionReasonOptions: $householdDeletionReasonOptions, householdMemberDeletionReasonOptions: $householdMemberDeletionReasonOptions, backgroundServiceConfig: $backgroundServiceConfig, checklistTypes: $checklistTypes, deviceChangeReasons: $deviceChangeReasons, singleUserLogin: $singleUserLogin, idTypeOptions: $idTypeOptions, relationShipTypeOptions: $relationShipTypeOptions, deliveryCommentOptions: $deliveryCommentOptions, backendInterface: $backendInterface, callSupportOptions: $callSupportOptions, transportTypes: $transportTypes, symptomsTypeList: $symptomsTypeList, searchHouseHoldFilters: $searchHouseHoldFilters, searchCLFFilters: $searchCLFFilters, referralReasonList: $referralReasonList, manualAttendanceReasonList: $manualAttendanceReasonList, houseStructureTypes: $houseStructureTypes, refusalReasons: $refusalReasons, firebaseConfig: $firebaseConfig, transitPostType: $transitPostType, facilityBoundaryRelationship: $facilityBoundaryRelationship)';
   }
 
   @override
@@ -1881,9 +1849,7 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
                 .equals(other._transitPostType, _transitPostType) &&
             const DeepCollectionEquality().equals(
                 other._facilityBoundaryRelationship,
-                _facilityBoundaryRelationship) &&
-            const DeepCollectionEquality()
-                .equals(other._warehouseMapping, _warehouseMapping));
+                _facilityBoundaryRelationship));
   }
 
   @JsonKey(ignore: true)
@@ -1916,8 +1882,7 @@ class _$HCMWrapperModelImpl implements _HCMWrapperModel {
         const DeepCollectionEquality().hash(_refusalReasons),
         const DeepCollectionEquality().hash(_firebaseConfig),
         const DeepCollectionEquality().hash(_transitPostType),
-        const DeepCollectionEquality().hash(_facilityBoundaryRelationship),
-        const DeepCollectionEquality().hash(_warehouseMapping)
+        const DeepCollectionEquality().hash(_facilityBoundaryRelationship)
       ]);
 
   @JsonKey(ignore: true)
@@ -1988,9 +1953,8 @@ abstract class _HCMWrapperModel implements HCMWrapperModel {
       @JsonKey(name: 'TRANSIT_POST_TYPE')
       final List<TransitPostType>? transitPostType,
       @JsonKey(name: 'FACILITY_BOUNDARY_RELATIONSHIP')
-      final List<FacilityBoundaryRelationship>? facilityBoundaryRelationship,
-      @JsonKey(name: 'WAREHOUSE_MAPPING')
-      final List<WarehouseMapping>? warehouseMapping}) = _$HCMWrapperModelImpl;
+      final List<FacilityBoundaryRelationship>?
+          facilityBoundaryRelationship}) = _$HCMWrapperModelImpl;
 
   factory _HCMWrapperModel.fromJson(Map<String, dynamic> json) =
       _$HCMWrapperModelImpl.fromJson;
@@ -2073,9 +2037,6 @@ abstract class _HCMWrapperModel implements HCMWrapperModel {
   @override
   @JsonKey(name: 'FACILITY_BOUNDARY_RELATIONSHIP')
   List<FacilityBoundaryRelationship>? get facilityBoundaryRelationship;
-  @override
-  @JsonKey(name: 'WAREHOUSE_MAPPING')
-  List<WarehouseMapping>? get warehouseMapping;
   @override
   @JsonKey(ignore: true)
   _$$HCMWrapperModelImplCopyWith<_$HCMWrapperModelImpl> get copyWith =>
@@ -7392,171 +7353,6 @@ abstract class _FacilityBoundaryRelationship
   _$$FacilityBoundaryRelationshipImplCopyWith<
           _$FacilityBoundaryRelationshipImpl>
       get copyWith => throw _privateConstructorUsedError;
-}
-
-WarehouseMapping _$WarehouseMappingFromJson(Map<String, dynamic> json) {
-  return _WarehouseMapping.fromJson(json);
-}
-
-/// @nodoc
-mixin _$WarehouseMapping {
-  String? get facilityId => throw _privateConstructorUsedError;
-  List<String>? get children => throw _privateConstructorUsedError;
-
-  Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
-  @JsonKey(ignore: true)
-  $WarehouseMappingCopyWith<WarehouseMapping> get copyWith =>
-      throw _privateConstructorUsedError;
-}
-
-/// @nodoc
-abstract class $WarehouseMappingCopyWith<$Res> {
-  factory $WarehouseMappingCopyWith(
-          WarehouseMapping value, $Res Function(WarehouseMapping) then) =
-      _$WarehouseMappingCopyWithImpl<$Res, WarehouseMapping>;
-  @useResult
-  $Res call({String? facilityId, List<String>? children});
-}
-
-/// @nodoc
-class _$WarehouseMappingCopyWithImpl<$Res, $Val extends WarehouseMapping>
-    implements $WarehouseMappingCopyWith<$Res> {
-  _$WarehouseMappingCopyWithImpl(this._value, this._then);
-
-  // ignore: unused_field
-  final $Val _value;
-  // ignore: unused_field
-  final $Res Function($Val) _then;
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? facilityId = freezed,
-    Object? children = freezed,
-  }) {
-    return _then(_value.copyWith(
-      facilityId: freezed == facilityId
-          ? _value.facilityId
-          : facilityId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      children: freezed == children
-          ? _value.children
-          : children // ignore: cast_nullable_to_non_nullable
-              as List<String>?,
-    ) as $Val);
-  }
-}
-
-/// @nodoc
-abstract class _$$WarehouseMappingImplCopyWith<$Res>
-    implements $WarehouseMappingCopyWith<$Res> {
-  factory _$$WarehouseMappingImplCopyWith(_$WarehouseMappingImpl value,
-          $Res Function(_$WarehouseMappingImpl) then) =
-      __$$WarehouseMappingImplCopyWithImpl<$Res>;
-  @override
-  @useResult
-  $Res call({String? facilityId, List<String>? children});
-}
-
-/// @nodoc
-class __$$WarehouseMappingImplCopyWithImpl<$Res>
-    extends _$WarehouseMappingCopyWithImpl<$Res, _$WarehouseMappingImpl>
-    implements _$$WarehouseMappingImplCopyWith<$Res> {
-  __$$WarehouseMappingImplCopyWithImpl(_$WarehouseMappingImpl _value,
-      $Res Function(_$WarehouseMappingImpl) _then)
-      : super(_value, _then);
-
-  @pragma('vm:prefer-inline')
-  @override
-  $Res call({
-    Object? facilityId = freezed,
-    Object? children = freezed,
-  }) {
-    return _then(_$WarehouseMappingImpl(
-      facilityId: freezed == facilityId
-          ? _value.facilityId
-          : facilityId // ignore: cast_nullable_to_non_nullable
-              as String?,
-      children: freezed == children
-          ? _value._children
-          : children // ignore: cast_nullable_to_non_nullable
-              as List<String>?,
-    ));
-  }
-}
-
-/// @nodoc
-@JsonSerializable()
-class _$WarehouseMappingImpl implements _WarehouseMapping {
-  _$WarehouseMappingImpl({this.facilityId, final List<String>? children})
-      : _children = children;
-
-  factory _$WarehouseMappingImpl.fromJson(Map<String, dynamic> json) =>
-      _$$WarehouseMappingImplFromJson(json);
-
-  @override
-  final String? facilityId;
-  final List<String>? _children;
-  @override
-  List<String>? get children {
-    final value = _children;
-    if (value == null) return null;
-    if (_children is EqualUnmodifiableListView) return _children;
-    // ignore: implicit_dynamic_type
-    return EqualUnmodifiableListView(value);
-  }
-
-  @override
-  String toString() {
-    return 'WarehouseMapping(facilityId: $facilityId, children: $children)';
-  }
-
-  @override
-  bool operator ==(Object other) {
-    return identical(this, other) ||
-        (other.runtimeType == runtimeType &&
-            other is _$WarehouseMappingImpl &&
-            (identical(other.facilityId, facilityId) ||
-                other.facilityId == facilityId) &&
-            const DeepCollectionEquality().equals(other._children, _children));
-  }
-
-  @JsonKey(ignore: true)
-  @override
-  int get hashCode => Object.hash(
-      runtimeType, facilityId, const DeepCollectionEquality().hash(_children));
-
-  @JsonKey(ignore: true)
-  @override
-  @pragma('vm:prefer-inline')
-  _$$WarehouseMappingImplCopyWith<_$WarehouseMappingImpl> get copyWith =>
-      __$$WarehouseMappingImplCopyWithImpl<_$WarehouseMappingImpl>(
-          this, _$identity);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return _$$WarehouseMappingImplToJson(
-      this,
-    );
-  }
-}
-
-abstract class _WarehouseMapping implements WarehouseMapping {
-  factory _WarehouseMapping(
-      {final String? facilityId,
-      final List<String>? children}) = _$WarehouseMappingImpl;
-
-  factory _WarehouseMapping.fromJson(Map<String, dynamic> json) =
-      _$WarehouseMappingImpl.fromJson;
-
-  @override
-  String? get facilityId;
-  @override
-  List<String>? get children;
-  @override
-  @JsonKey(ignore: true)
-  _$$WarehouseMappingImplCopyWith<_$WarehouseMappingImpl> get copyWith =>
-      throw _privateConstructorUsedError;
 }
 
 FacilityBoundaryRelationshipRef _$FacilityBoundaryRelationshipRefFromJson(

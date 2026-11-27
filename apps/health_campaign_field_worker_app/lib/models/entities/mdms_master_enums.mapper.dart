@@ -93,8 +93,6 @@ class MasterEnumsMapper extends EnumMapper<MasterEnums> {
         return MasterEnums.faceAuthConfig;
       case "FACILITY_BOUNDARY_RELATIONSHIP":
         return MasterEnums.facilityBoundaryRelationShip;
-      case "WAREHOUSE_MAPPING":
-        return MasterEnums.warehouseMapping;
       default:
         throw MapperException.unknownEnumValue(value);
     }
@@ -171,8 +169,6 @@ class MasterEnumsMapper extends EnumMapper<MasterEnums> {
         return "FACE_AUTH_CONFIG";
       case MasterEnums.facilityBoundaryRelationShip:
         return "FACILITY_BOUNDARY_RELATIONSHIP";
-      case MasterEnums.warehouseMapping:
-        return "WAREHOUSE_MAPPING";
     }
   }
 }
