@@ -366,6 +366,11 @@ void main() {
           'familyName': 'New family',
           'childrenCount': '2',
           'caregiverConsent': 'TRUE',
+          // The household carries its head's details (CR 2026-11-27); the
+          // head in this test has no phone.
+          'headName': 'New given New family',
+          'headGender': 'MALE',
+          'headIndividualClientReferenceId': 'individual',
         });
       });
     });

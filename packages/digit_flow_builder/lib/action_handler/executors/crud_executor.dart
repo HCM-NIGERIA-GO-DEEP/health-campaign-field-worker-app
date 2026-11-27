@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../utils/additional_fields_guard.dart';
+import '../../utils/household_head_details.dart';
 import '../../utils/numbered_scans.dart';
 import '../../utils/utils.dart';
 import '../action_config.dart';
@@ -96,6 +97,9 @@ class CrudExecutor extends ActionExecutor {
       debugPrint('CREATE_EVENT: No entities after filtering');
       return contextData;
     }
+
+    // The household carries a copy of its head's details.
+    entityList = withHouseholdHeadDetails(entityList);
 
     context.read<CrudBloc>().add(CrudEventCreate(entities: entityList));
 
@@ -328,6 +332,7 @@ class UpdateExecutor extends ActionExecutor {
 
     // Update audit fields and apply field updates for each entity
     final processedEntities = <EntityModel>[];
+    final updatedEntities = <EntityModel>[];
 
     for (final entity in entityList) {
       final entityType = getEntityTypeName(entity);
@@ -459,6 +464,14 @@ class UpdateExecutor extends ActionExecutor {
       // Ensure stock comments satisfy backend min length validation.
       updatedEntity = _sanitizeStockComments(updatedEntity);
       updatedEntity = _withoutEmptyAdditionalFields(updatedEntity);
+      updatedEntities.add(updatedEntity);
+    }
+
+    // The household carries a copy of its head's details, read from the
+    // head's Individual as it is saved here (after `modify`), so an edit of
+    // the head keeps the copy right.
+    for (final updatedEntity in withHouseholdHeadDetails(updatedEntities)) {
+      final entityType = getEntityTypeName(updatedEntity);
 
       // Find the original entity of the same type for comparison
       final originalEntity = existingModelsList.isEmpty
