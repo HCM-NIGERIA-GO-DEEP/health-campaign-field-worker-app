@@ -24,6 +24,7 @@ final dynamic sampleFlows = {
               "data": [
                 {
                   "key": "E_TOKEN",
+                  "valueBold": true,
                   "value":
                       "{{fn:getUniqueBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}"
                 }
@@ -573,6 +574,7 @@ final dynamic sampleFlows = {
                 },
                 {
                   "key": "E_TOKEN",
+                  "valueBold": true,
                   "value":
                       "{{fn:getUniqueBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}",
                   "isActive": true
@@ -1207,6 +1209,7 @@ final dynamic sampleFlows = {
                 },
                 {
                   "key": "E_TOKEN",
+                  "valueBold": true,
                   "value":
                       "{{fn:getUniqueBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}",
                   "isActive": true
@@ -3092,6 +3095,7 @@ final dynamic sampleFlows = {
               "data": [
                 {
                   "key": "E_TOKEN",
+                  "valueBold": true,
                   "value":
                       "{{fn:getUniqueBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}",
                   "hideIfNull": true
@@ -4816,6 +4820,18 @@ final dynamic sampleFlows = {
           "showTabView": false,
           // Existing households submit their updated details here. New
           // registrations continue through beneficiaryDetails and location.
+          "showNextAlertPopUp": {
+            "title": "REGISTRATION_ETOKEN_POPUP_TITLE",
+            "description": "REGISTRATION_ETOKEN_POPUP_DESCRIPTION",
+            "primaryActionLabel": "ACTION_SUBMIT",
+            "secondaryActionLabel": "ACTION_CANCEL",
+            "conditions": [
+              {
+                "expression": "DEFAULT",
+                "value": "{{navigation.beneficiaryId}}"
+              }
+            ]
+          },
           "submitCondition": {
             "expression": [
               {"condition": "isEdit == true && isClosedHousehold != true"}
