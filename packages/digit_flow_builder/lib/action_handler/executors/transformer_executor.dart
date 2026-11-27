@@ -230,20 +230,33 @@ class TransformerExecutor extends ActionExecutor {
     // manually entered or migrated id), and re-picking over it would
     // overwrite a deliberate value - a worse failure than the one being
     // fixed, and one this code cannot distinguish from a genuine leak.
+    // The server accepts a pool id only from the user it was dispatched to
+    // (INVALID_USER_ID otherwise), and the pool table survives logout, so on
+    // a shared phone only the logged-in user's rows may be used.
+    final loggedInUuid = FlowBuilderSingleton().loggedInUserUuid;
+    final poolUser = (loggedInUuid?.isNotEmpty ?? false) ? loggedInUuid : null;
     var tokenUsable = hasSelectedToken;
     if (isRegistration && !alreadyAssigned && hasSelectedToken) {
       final rows = await context
           .read<LocalRepository<UniqueIdPoolModel, UniqueIdPoolSearchModel>>()
           .search(UniqueIdPoolSearchModel(id: incomingToken.toString()));
       // Absent from the pool: not pool-managed, so leave it alone.
+      // A carried id of another user (form state outlives a logout in the
+      // same app process) is not usable either.
       tokenUsable = rows.isEmpty ||
-          rows.first.status == IdStatus.unAssigned.toValue();
+          (rows.first.status == IdStatus.unAssigned.toValue() &&
+              (poolUser == null ||
+                  rows.first.userUuid == null ||
+                  rows.first.userUuid == poolUser));
     }
 
     if (isRegistration && !alreadyAssigned && !tokenUsable) {
       final available = await context
           .read<LocalRepository<UniqueIdPoolModel, UniqueIdPoolSearchModel>>()
-          .search(UniqueIdPoolSearchModel(status: IdStatus.unAssigned.toValue()));
+          .search(UniqueIdPoolSearchModel(
+            status: IdStatus.unAssigned.toValue(),
+            userUuid: poolUser,
+          ));
       if (available.isNotEmpty) {
         available.sort((a, b) => (a.auditDetails?.createdTime ?? 0)
             .compareTo(b.auditDetails?.createdTime ?? 0));
