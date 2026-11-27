@@ -71,6 +71,10 @@ class ReverseTransformerExecutor extends ActionExecutor {
       // Get entities from stateWrapper
       List<EntityModel> modelInstances = [];
       final seen = <EntityModel>{};
+      // Records the save must update but the form is not prefilled from:
+      // their additional fields are copies (a member's `gender`) and would
+      // overwrite the value read from the record that owns it.
+      final updateOnly = <EntityModel>[];
 
       // Check if data parameter is provided with specific entities
       final dataList = action.properties['data'] as List<dynamic>?;
@@ -84,6 +88,8 @@ class ReverseTransformerExecutor extends ActionExecutor {
             if (key == 'entities' && value != null) {
               // Extract entities using unified recursive method with deduplication
               _extractEntitiesRecursive(value, modelInstances, seen);
+            } else if (key == 'updateOnlyEntities' && value != null) {
+              _extractEntitiesRecursive(value, updateOnly, seen);
             }
           }
         }
@@ -160,7 +166,7 @@ class ReverseTransformerExecutor extends ActionExecutor {
         'formData': formData,
         'reverseTransformResult': formData,
         // Pass existing models for updateEntitiesFromForm in edit mode
-        'existingModels': modelInstances,
+        'existingModels': <EntityModel>[...modelInstances, ...updateOnly],
       };
     } catch (e, stackTrace) {
       debugPrint('REVERSE_TRANSFORM: Error: $e');

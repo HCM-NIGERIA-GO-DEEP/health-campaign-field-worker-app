@@ -608,6 +608,14 @@ final dynamic sampleFlows = {
                                     {
                                       "key": "entities",
                                       "value": "{{item.projectBeneficiary}}"
+                                    },
+                                    {
+                                      "key": "updateOnlyEntities",
+                                      "value": "{{item.member}}"
+                                    },
+                                    {
+                                      "key": "updateOnlyEntities",
+                                      "value": "{{contextData.0.household.HouseholdModel}}"
                                     }
                                   ],
                                   "configName": "individualRegistration",
@@ -661,6 +669,14 @@ final dynamic sampleFlows = {
                                     {
                                       "key": "entities",
                                       "value": "{{item.projectBeneficiary}}"
+                                    },
+                                    {
+                                      "key": "updateOnlyEntities",
+                                      "value": "{{item.member}}"
+                                    },
+                                    {
+                                      "key": "updateOnlyEntities",
+                                      "value": "{{contextData.0.household.HouseholdModel}}"
                                     }
                                   ],
                                   "configName": "individualRegistration",
@@ -5882,12 +5898,37 @@ final dynamic sampleFlows = {
             "configName": "individualRegistration"
           }
         },
+        // An edit also updates the copies of the person's details: the
+        // HouseholdMember additional fields (name, gender, date of birth)
+        // and, for the head, the household's familyName (this branch keeps no
+        // firstName on the household: transformer_executor strips it). Both
+        // records come from the Edit button's REVERSE_TRANSFORM.
         {
           "actions": [
             {
               "actionType": "UPDATE_EVENT",
               "properties": {
-                "entity": "IndividualModel, ProjectBeneficiaryModel"
+                "entity": "IndividualModel, ProjectBeneficiaryModel, HouseholdMemberModel, HouseholdModel",
+                "modify": [
+                  {
+                    "key": "HouseholdModel.additionalFields.fields.familyName",
+                    "value": "{{formData.beneficiaryDetails.familyname}}"
+                  }
+                ]
+              }
+            }
+          ],
+          "condition": {
+            "type": "custom",
+            "expression": "isEdit == true && isHead == true"
+          }
+        },
+        {
+          "actions": [
+            {
+              "actionType": "UPDATE_EVENT",
+              "properties": {
+                "entity": "IndividualModel, ProjectBeneficiaryModel, HouseholdMemberModel"
               }
             }
           ],
