@@ -72,5 +72,7 @@ enum MasterEnums {
   @MappableValue("FACE_AUTH_CONFIG")
   faceAuthConfig,
   @MappableValue("FACILITY_BOUNDARY_RELATIONSHIP")
-  facilityBoundaryRelationShip
+  facilityBoundaryRelationShip,
+  @MappableValue("WAREHOUSE_MAPPING")
+  warehouseMapping
 }
