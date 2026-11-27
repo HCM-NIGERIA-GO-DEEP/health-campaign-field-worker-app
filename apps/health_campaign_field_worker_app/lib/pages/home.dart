@@ -92,6 +92,7 @@ import '../widgets/showcase/config/showcase_constants.dart';
 import '../widgets/showcase/showcase_button.dart';
 import '../widgets/stock_balance/stock_balance_card.dart';
 import '../widgets/stock_reconciliation/stock_reconciliation_card.dart';
+import '../widgets/stock_reconciliation/stock_reconciliation_manual_count.dart';
 import '../widgets/task_functions.dart';
 
 @RoutePage()
@@ -438,6 +439,12 @@ class _HomePageState extends LocalizedState<HomePage> {
           pageSchema: 'stockReconciliationDetails',
         );
       },
+    );
+    CustomComponentRegistry().registerBuilder(
+      'manualCount',
+      (context, stateAccessor) => StockReconciliationManualCount(
+        pageSchema: stateAccessor.currentPageName,
+      ),
     );
     FunctionRegistries(context).registerAll();
     registerTaskFunctions();
@@ -2321,7 +2328,20 @@ class _HomePageState extends LocalizedState<HomePage> {
                 onBoundarySelected: (ctx) async {
                   final moduleName =
                       'hcm-closehousehold-${context.selectedProject.referenceID}';
-                  await triggerLocalization(module: moduleName);
+                  final tenantId = envConfig.variables.tenantId;
+                  final locale = AppSharedPreferences().getSelectedLocale ??
+                      'en_${tenantId.toUpperCase()}';
+                  try {
+                    await ctx.read<LocalizationBloc>().prepareFlowLocalization(
+                          module: moduleName,
+                          locale: locale,
+                          tenantId: tenantId,
+                          path: Constants.localizationApiPath,
+                        );
+                  } catch (error) {
+                    debugPrint('Closed household localisation failed: $error');
+                  }
+                  if (!mounted || !ctx.mounted) return;
                   isTriggerLocalisation = false;
 
                   FlowBuilderSingleton().setPersistenceConfiguration(
@@ -2516,12 +2536,23 @@ class _HomePageState extends LocalizedState<HomePage> {
             final moduleName =
                 'hcm-stockreconciliation-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
             await triggerLocalization(module: moduleName);
+            if (!context.mounted) return;
+            await _prepareLiberiaStockLabels(
+              'hcm-base-stockreconciliation-bednet',
+              const {
+                'STOCKRECONCILIATION_STOCKRECONCILIATION_manualCount_LABEL_BALES',
+                'STOCKRECONCILIATION_STOCKRECONCILIATION_manualCount_LABEL_PIECES',
+                'STOCKRECONCILIATION_STOCKRECONCILIATION_manualCount_HELP_TEXT_BALES',
+              },
+            );
+            if (!context.mounted) return;
             isTriggerLocalisation = false;
 
             await FlowNavigationUtils.navigateToFlowModule(
               context: context,
               config: FlowModuleConfig(
                 schemaKey: 'STOCKRECONCILIATION',
+                sampleFlows: stockReconciliationFlows,
                 relationshipMappings: const [
                   RelationshipMapping(
                       from: 'facility',
@@ -2685,6 +2716,18 @@ class _HomePageState extends LocalizedState<HomePage> {
             final moduleName =
                 'hcm-stockreports-${context.selectedProject.referenceID},hcm-inventory-${context.selectedProject.referenceID}';
             await triggerLocalization(module: moduleName);
+            if (!context.mounted) return;
+            await _prepareLiberiaStockLabels(
+              'hcm-base-stockreports-bednet',
+              {
+                'STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_4_LABEL_BALES',
+                'STOCKREPORTS_REPORT_DETAILS_TABLE_HEADER_4_LABEL_PIECES',
+                for (final column in [2, 3, 4, 7, 8])
+                  for (final unit in ['BALES', 'PIECES'])
+                    'STOCKRECON_REPORT_DETAILS_TABLE_HEADER_${column}_LABEL_$unit',
+              },
+            );
+            if (!context.mounted) return;
             isTriggerLocalisation = false;
 
             await FlowNavigationUtils.navigateToFlowModule(
@@ -2998,6 +3041,11 @@ class _HomePageState extends LocalizedState<HomePage> {
         .map((label) => homeItemsShowcaseMap[label]!)
         .toList();
 
+    // Temporarily kept visible so the DB card can be inspected while running
+    // against the prod environment.
+    //
+    // IMPORTANT: Uncomment before a production/release build - this is what
+    // hides the DB card from field users on prod.
     if (envConfig.variables.envType == EnvType.prod && kReleaseMode) {
       filteredLabels.remove(i18.home.db);
     }
@@ -3031,6 +3079,26 @@ class _HomePageState extends LocalizedState<HomePage> {
       widgetList,
       showcaseKeys,
     );
+  }
+
+  Future<void> _prepareLiberiaStockLabels(
+    String module,
+    Set<String> requiredCodes,
+  ) async {
+    final tenantId = envConfig.variables.tenantId;
+    if (tenantId != 'liberia') return;
+    final locale = AppSharedPreferences().getSelectedLocale ?? 'en_LIBERIA';
+    try {
+      await context.read<LocalizationBloc>().prepareFlowLocalization(
+            module: module,
+            locale: locale,
+            tenantId: tenantId,
+            path: Constants.localizationApiPath,
+            requiredCodes: requiredCodes,
+          );
+    } catch (error) {
+      debugPrint('Stock base localisation failed for $module: $error');
+    }
   }
 
   Future<void> triggerLocalization({String? module, bool? loadOnline}) async {

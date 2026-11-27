@@ -4,6 +4,7 @@ final jsonConfig = {
       "HouseholdModel": {
         "mappings": {
           "additionalFields": {
+            "firstName": "caregiverConsent.firstName",
             "caregiverConsent": "caregiverConsent.consentToParticipate",
             "familyName": "__concatName:caregiverConsent.lastName",
           },
@@ -34,6 +35,7 @@ final jsonConfig = {
         "mappings": {
           "memberCount": "householdDetails.memberCount",
           "additionalFields": {
+            "firstName": "householdDetails.nameOfIndividual",
             "memberCount": "householdDetails.memberCount",
             "childrenCount": "householdDetails.childrenCount",
             "familyName": "householdDetails.familyname",
@@ -101,6 +103,7 @@ final jsonConfig = {
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
           "additionalFields": {
+            "firstName": "householdDetails.nameOfIndividual",
             "childrenCount": "householdDetails.childrenCount",
             "pregnantWomenCount": "householdDetails.pregnantWomenCount",
             "memberCount": "householdDetails.memberCount",
@@ -1365,6 +1368,7 @@ final jsonConfig = {
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
           "additionalFields": {
+            "firstName": "closeHouseholdDetails.headName",
             "date": "closeHouseholdDetails.date",
             "familyName": "closeHouseholdDetails.familyname",
           }
@@ -1634,6 +1638,7 @@ final jsonConfig = {
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit",
           "additionalFields": {
+            "firstName": "caregiverConsent.firstName",
             "caregiverConsent": "caregiverConsent.consentToParticipate",
             "familyName": "caregiverConsent.lastName",
           }

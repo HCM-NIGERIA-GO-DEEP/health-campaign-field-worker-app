@@ -74,6 +74,7 @@ void main() {
     final household = updated.whereType<HouseholdModel>().single;
     expect(household.toMap()['additionalFields']['fields'],
         equals([
+          {'key': 'firstName', 'value': 'Updated first'},
           {'key': 'caregiverConsent', 'value': 'FALSE'},
           {'key': 'familyName', 'value': 'Updated last'},
         ]));
@@ -94,6 +95,13 @@ void main() {
         as Map<String, dynamic>;
     final updated = FormEntityMapper(config: jsonConfig).updateEntitiesFromForm(
       existingModels: [
+        HouseholdModel(
+          clientReferenceId: 'household',
+          additionalFields: HouseholdAdditionalFields(
+            version: 1,
+            fields: [const AdditionalField('familyName', 'Earlier last')],
+          ),
+        ),
         IndividualModel(
           clientReferenceId: 'head',
           name: NameModel(
@@ -114,7 +122,10 @@ void main() {
           'familyname': 'Updated last',
         },
       },
-      modelsConfig: {'IndividualModel': registrationModels['IndividualModel']},
+      modelsConfig: {
+        'HouseholdModel': registrationModels['HouseholdModel'],
+        'IndividualModel': registrationModels['IndividualModel'],
+      },
       context: const {
         'tenantId': 'liberia',
         'userUUID': 'worker',
@@ -128,6 +139,9 @@ void main() {
     final head = updated.whereType<IndividualModel>().single;
     expect(head.name?.givenName, 'Updated first');
     expect(head.name?.familyName, 'Updated last');
+    final household = updated.whereType<HouseholdModel>().single;
+    expect(household.toMap()['additionalFields']['fields'],
+        contains(equals({'key': 'firstName', 'value': 'Updated first'})));
   });
 
   test('household head edit changes names and counts and retains consent', () {
@@ -181,6 +195,7 @@ void main() {
     expect(household.toMap()['additionalFields']['fields'], containsAll([
       {'key': 'caregiverConsent', 'value': 'TRUE'},
       {'key': 'childrenCount', 'value': 2},
+      {'key': 'firstName', 'value': 'Updated first'},
     ]));
   });
 
@@ -219,8 +234,10 @@ void main() {
       expect(head.name?.givenName, 'Captured first');
       expect(head.name?.familyName, 'Captured last');
       final familyName = {'key': 'familyName', 'value': 'Captured last'};
-      expect(household.toMap()['additionalFields']['fields'],
-          contains(equals(familyName)));
+      expect(household.toMap()['additionalFields']['fields'], containsAll([
+        {'key': 'firstName', 'value': 'Captured first'},
+        familyName,
+      ]));
       expect(task.toMap()['additionalFields']['fields'], containsAll([
         {'key': 'firstName', 'value': 'Captured first'},
         familyName,
