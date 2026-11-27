@@ -52,7 +52,8 @@ final jsonConfig = {
             "pregnantWomenCount": "householdDetails.pregnantWomenCount",
             "memberCount": "householdDetails.memberCount",
             // Head name, also sent on the household (SL request 2026-11-18).
-            "householdName": "householdDetails.nameOfIndividual",
+            "householdName":
+                "__concatName:householdDetails.nameOfIndividual,householdDetails.familyname",
             "caregiverConsent": "caregiverConsent.consentToParticipate",
             "ACTION1": "registrationHealthTalkChecklist.ACTION1",
             "ACTION2": "registrationHealthTalkChecklist.ACTION2",
@@ -1647,6 +1648,39 @@ final jsonConfig = {
         }
       }
     }
+  },
+
+  // Repeated review updates the existing head and the name copies used by
+  // the household and closed-task reports. References and allocation stay
+  // on the original entities.
+  "closeHouseholdEdit": {
+    "models": {
+      "IndividualModel": {
+        "mappings": {
+          "name": {
+            "givenName": "closeHouseholdDetails.headName",
+            "familyName": "closeHouseholdDetails.familyname",
+            "additionalFields": {"lastName": "closeHouseholdDetails.lastName"},
+          },
+        },
+      },
+      "HouseholdModel": {
+        "mappings": {
+          "additionalFields": {
+            "householdName":
+                "__concatName:closeHouseholdDetails.headName,closeHouseholdDetails.familyname",
+          },
+        },
+      },
+      "TaskModel": {
+        "mappings": {
+          "additionalFields": {
+            "headName":
+                "__concatName:closeHouseholdDetails.headName,closeHouseholdDetails.familyname",
+          },
+        },
+      },
+    },
   },
   // Entity shape copied from "closeHouseholdRegistration" above (same complete
   // set: Household/Individual placeholder/Identifier placeholder/Address/

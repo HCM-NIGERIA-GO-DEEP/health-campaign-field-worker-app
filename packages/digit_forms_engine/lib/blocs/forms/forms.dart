@@ -112,7 +112,8 @@ class FormsBloc extends Bloc<FormsEvent, FormsState> {
       newInitials[schema.name] = finalSchema;
     }
 
-    emit(state.copyWith(
+    emit(FormsState(
+      activeSchemaKey: state.activeSchemaKey,
       cachedSchemas: newSchemas,
       initialSchemas: newInitials,
     ));
@@ -160,8 +161,10 @@ class FormsBloc extends Bloc<FormsEvent, FormsState> {
     final updatedSchemas = Map.of(state.cachedSchemas);
     updatedSchemas[event.schemaKey] = updatedSchema;
 
-    emit(state.copyWith(
+    emit(FormsState(
       cachedSchemas: updatedSchemas,
+      initialSchemas: state.initialSchemas,
+      activeSchemaKey: state.activeSchemaKey,
     ));
   }
 
@@ -172,9 +175,12 @@ class FormsBloc extends Bloc<FormsEvent, FormsState> {
     final updatedSchemas = Map<String, SchemaObject>.from(state.cachedSchemas);
     updatedSchemas[event.schemaKey] = event.schema;
 
-    emit(state.copyWith(
+    // Cache updates are not submissions: copyWith on FormsSubmittedState
+    // would replay its previous formData through the submission registry.
+    emit(FormsState(
       cachedSchemas: updatedSchemas,
       initialSchemas: state.initialSchemas,
+      activeSchemaKey: state.activeSchemaKey,
     ));
   }
 
@@ -200,8 +206,10 @@ class FormsBloc extends Bloc<FormsEvent, FormsState> {
     final updatedSchemas = Map.of(state.cachedSchemas);
     updatedSchemas[event.schemaKey] = updatedSchema;
 
-    emit(state.copyWith(
+    emit(FormsState(
       cachedSchemas: updatedSchemas,
+      initialSchemas: state.initialSchemas,
+      activeSchemaKey: state.activeSchemaKey,
     ));
   }
 

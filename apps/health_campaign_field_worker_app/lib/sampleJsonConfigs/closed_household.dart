@@ -270,35 +270,79 @@ final dynamic sampleCloseHouseholdFlows = {
       ],
       "overView": "CLOSEHOUSEHOLD_SUMMARY_HEADING",
       "summary": false,
+      // Retain this form and update its saved entities on repeated review.
+      "reopenAsEdit": true,
       "onAction": [
         {
-          "actionType": "FETCH_TRANSFORMER_CONFIG",
-          "properties": {
-            "configName": "closeHouseholdRegistration",
-            "data": [
-              {
-                "key": "latestBeneficiaryId",
-                "value": "{{navigation.UNIQUE_BENEFICIARY_ID}}"
+          "actions": [
+            {
+              "actionType": "FETCH_TRANSFORMER_CONFIG",
+              "properties": {
+                "configName": "closeHouseholdEdit",
+                "stopOnError": true,
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to fetch config."}
+                  }
+                ]
               }
-            ],
-            "onError": [
-              {
-                "actionType": "SHOW_TOAST",
-                "properties": {"message": "Failed to fetch config."}
+            },
+            {
+              "actionType": "UPDATE_EVENT",
+              "properties": {
+                // Must name every model closeHouseholdEdit produces:
+                // UPDATE_EVENT filters the transformed entities against this
+                // allowlist and silently drops anything missing from it.
+                "entity": "IndividualModel, HouseholdModel, TaskModel",
+                "stopOnError": true,
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to update household."}
+                  }
+                ]
               }
-            ]
-          }
+            }
+          ],
+          "condition": {"type": "custom", "expression": "isEdit==true"}
         },
         {
-          "actionType": "CREATE_EVENT",
-          "properties": {
-            "onError": [
-              {
-                "actionType": "SHOW_TOAST",
-                "properties": {"message": "Failed to create stock."}
+          "actions": [
+            {
+              "actionType": "FETCH_TRANSFORMER_CONFIG",
+              "properties": {
+                "configName": "closeHouseholdRegistration",
+                "stopOnError": true,
+                "data": [
+                  {
+                    "key": "latestBeneficiaryId",
+                    "value": "{{navigation.UNIQUE_BENEFICIARY_ID}}"
+                  }
+                ],
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to fetch config."}
+                  }
+                ]
               }
-            ]
-          }
+            },
+            {
+              "actionType": "CREATE_EVENT",
+              "properties": {
+                "awaitPersistence": true,
+                "stopOnError": true,
+                "onError": [
+                  {
+                    "actionType": "SHOW_TOAST",
+                    "properties": {"message": "Failed to create stock."}
+                  }
+                ]
+              }
+            }
+          ],
+          "condition": {"expression": "DEFAULT"}
         },
         {
           "actionType": "NAVIGATION",
@@ -463,6 +507,14 @@ final dynamic sampleCloseHouseholdFlows = {
         {
           "label": "HOUSEHOLD_BACK",
           "format": "backLink",
+          // Must POP, not navigate. Pushing the form from here produced an
+          // endless summary -> form -> summary loop, because every back tap
+          // pushed a fresh screen instead of unwinding one.
+          //
+          // Popping is also what makes the values reappear: the HCMFORM
+          // probes showed the form's State is never disposed (0 dispose
+          // lines across a whole run), so the live form underneath still
+          // holds everything the user typed.
           "onAction": [
             {"actionType": "BACK_NAVIGATION", "properties": {}}
           ]

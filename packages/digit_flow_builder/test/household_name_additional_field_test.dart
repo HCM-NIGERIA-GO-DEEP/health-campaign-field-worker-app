@@ -31,6 +31,7 @@ void main() {
           formValues: {
             'householdDetails': {
               'nameOfIndividual': 'Amara',
+              'familyname': 'Kamara',
               'memberCount': 4,
               'childrenCount': 1,
             },
@@ -47,7 +48,7 @@ void main() {
         .single;
 
     final fields = fieldsOf(household);
-    expect(fields['householdName'], 'Amara');
+    expect(fields['householdName'], 'Amara Kamara');
     expect(fields['memberCount'], isNotNull, reason: 'nothing is dropped');
     expect(fields['childrenCount'], isNotNull, reason: 'nothing is dropped');
   });
@@ -124,7 +125,8 @@ void main() {
         reason: 'the stale copy must be part of this replay');
     final page = Map<String, dynamic>.from(
         (formValues['householdDetails'] as Map?) ?? const {});
-    page['nameOfIndividual'] = 'New Name';
+    page['nameOfIndividual'] = 'New';
+    page['familyname'] = 'Family';
     formValues['householdDetails'] = page;
 
     final updated = FormEntityMapper(config: jsonConfig)
@@ -142,7 +144,32 @@ void main() {
         .where((f) => f.key == 'householdName')
         .map((f) => f.value)
         .toList();
-    expect(names, ['New Name'], reason: 'formValues were: $formValues');
+    expect(names, ['New Family'], reason: 'formValues were: $formValues');
     expect(fieldsOf(updated)['childrenCount'], isNotNull);
   });
+  test('closed and consent-no households save both name parts', () {
+    for (final entry in {
+      'closeHouseholdRegistration': {
+        'closeHouseholdDetails': {'headName': 'Amara', 'familyname': 'Kamara'}
+      },
+      'householdConsentDeclinedRegistration': {
+        'caregiverConsent': {'nameOfIndividual': 'Amara', 'familyname': 'Kamara'}
+      },
+    }.entries) {
+      final models = jsonConfig[entry.key]!['models'] as Map<String, dynamic>;
+      final household = FormEntityMapper(config: jsonConfig).mapFormToEntities(
+        formValues: entry.value,
+        modelsConfig: {'HouseholdModel': models['HouseholdModel']},
+        context: const {
+          'tenantId': 'si',
+          'householdType': 'FAMILY',
+          'selectedBoundaryCode': 'B1',
+          'userUUID': 'user-1',
+        },
+      ).whereType<HouseholdModel>().single;
+      expect(fieldsOf(household)['householdName'], 'Amara Kamara',
+          reason: entry.key);
+    }
+  });
+
 }

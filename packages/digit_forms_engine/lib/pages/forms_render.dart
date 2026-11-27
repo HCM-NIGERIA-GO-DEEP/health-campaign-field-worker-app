@@ -1097,6 +1097,9 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                               isEdit: widget.isEdit,
                                               schemaKey:
                                                   widget.currentSchemaKey));
+
+                                      // Allow resubmission when returning to the retained form.
+                                      _isSubmitting = false;
                                       // Pop all form pages (FormsRenderRoute)
 
                                       /// FIXME: NOT BACKWARD COMPATIBLE
@@ -1492,6 +1495,12 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
                                   schemaKey: widget.currentSchemaKey,
                                 ),
                               );
+                          // Same omission as the single-page path: the
+                          // next-page branch just above clears the flag, this
+                          // one never did. An inline form's State survives
+                          // the screen pushed over it, so the action button
+                          // stayed disabled when the user came back.
+                          _isSubmitting = false;
                           _popFormRoutesAfterSubmit();
                         }
                       },
@@ -1905,6 +1914,12 @@ class _FormsRenderPageState extends LocalizedState<FormsRenderPage> {
 
                 context.read<FormsBloc>().add(FormsSubmitEvent(
                     schemaKey: widget.currentSchemaKey, isEdit: widget.isEdit));
+
+                // Third of the three submit sites with the same omission -
+                // see the note on the single-page path. Left disabled, the
+                // action button could not be used again after returning to
+                // an inline form whose State was never torn down.
+                _isSubmitting = false;
 
                 // Pop all form pages (FormsRenderRoute)
                 /// FIXME: NOT BACKWARD COMPATIBLE

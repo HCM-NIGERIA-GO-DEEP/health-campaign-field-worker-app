@@ -77,6 +77,8 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
   late final String _schemaKey;
   late final String _compositeKey;
   bool _isRegistered = false;
+  List<dynamic> _savedFormEntities = [];
+  bool _submissionInProgress = false;
 
   @override
   void initState() {
@@ -136,6 +138,8 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
   Future<void> _handleFormSubmission(Map<String, dynamic> formData) async {
     if (!mounted) return;
 
+    final retainForReview = widget.config['reopenAsEdit'] == true;
+    if (retainForReview && _submissionInProgress) return;
     final onSubmit = widget.config['onAction'] as List<dynamic>?;
 
     // Merge widget.navigationParams with registry params (registry takes precedence)
@@ -144,6 +148,7 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
     final mergedNavParams = {
       ...?widget.navigationParams,
       ...?registryNavParams,
+      if (retainForReview && _savedFormEntities.isNotEmpty) 'isEdit': true,
     };
 
     // Get entities from registry state (from initActions SEARCH_EVENT)
@@ -159,6 +164,10 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
       entities = registryState?.stateWrapper ?? [];
     }
 
+    if (retainForReview && _savedFormEntities.isNotEmpty) {
+      entities = _savedFormEntities;
+    }
+
     Map<String, dynamic> contextData = {
       'formData': formData,
       '_compositeKey': _compositeKey,
@@ -166,15 +175,23 @@ class _ScreenBuilderState extends State<ScreenBuilder> {
       if (entities.isNotEmpty) 'entities': entities,
     };
 
-    if (onSubmit != null) {
-      // Clear form state via registry
-      FormSubmissionRegistry().clearForm(_schemaKey);
-
+    if (onSubmit == null) return;
+    _submissionInProgress = true;
+    try {
+      if (!retainForReview) FormSubmissionRegistry().clearForm(_schemaKey);
       contextData = await ActionHandler.executeActions(
         onSubmit,
         context,
         contextData,
       );
+      if (retainForReview && contextData['haltActionChain'] != true) {
+        final saved = contextData['entities'];
+        if (saved is List && saved.isNotEmpty) {
+          _savedFormEntities = saved;
+        }
+      }
+    } finally {
+      _submissionInProgress = false;
     }
   }
 

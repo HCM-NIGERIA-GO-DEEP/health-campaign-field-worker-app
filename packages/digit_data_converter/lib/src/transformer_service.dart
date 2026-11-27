@@ -172,10 +172,15 @@ class FormEntityMapper {
     if (mappedExtras is Map) {
       unmapped.removeWhere((key, _) {
         final path = mappedExtras[key];
-        return path is String &&
-            !path.startsWith('__') &&
-            containsPathInFormData(path, formValues) &&
-            _getValueFromPath(formValues, path) != null;
+        if (path is! String) return false;
+        // Concatenated names must also win over the stale reverse-mapped copy.
+        final sourcePaths = path.startsWith('__concatName:')
+            ? path.substring('__concatName:'.length).split(',')
+            : [path];
+        return sourcePaths.any((source) =>
+            !source.startsWith('__') &&
+            containsPathInFormData(source.trim(), formValues) &&
+            _getValueFromPath(formValues, source.trim()) != null);
       });
     }
 
