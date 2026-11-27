@@ -1098,6 +1098,20 @@ final dynamic sampleFlows = {
                         // genuinely has no token.
                         "key": "beneficiaryId",
                         "value": "{{fn:getBeneficiaryId(contextData.0.headIndividual.IndividualModel.identifiers)}}"
+                      },
+                      {
+                        "key": "headIndividualClientReferenceId",
+                        "value": "{{contextData.0.headIndividual.IndividualModel.clientReferenceId}}"
+                      },
+                      {
+                        "key": "headGender",
+                        "value": "{{fn:individualGender(contextData.0.headIndividual.IndividualModel)}}"
+                      },
+                      {
+                        // The registered members that are not the head, as
+                        // JSON array text (one string per additional field).
+                        "key": "householdMembers",
+                        "value": "{{fn:householdMembersForTask(contextData.0.members)}}"
                       }
                     ],
                     "name": "DELIVERY",

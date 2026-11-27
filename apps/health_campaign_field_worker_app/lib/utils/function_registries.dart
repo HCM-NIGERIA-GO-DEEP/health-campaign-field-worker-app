@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 
 import '../models/entities/roles_type.dart';
 import 'registered_child_count.dart';
+import 'task_household_details.dart';
 import 'utils.dart';
 
 class FunctionRegistries {
@@ -172,6 +173,19 @@ class FunctionRegistries {
     // Usage: "{{fn:registeredChildCount(contextData.0.members)}}"
     FunctionRegistry.register('registeredChildCount', (args, stateData) {
       return registeredChildCount(args.isEmpty ? null : args.first);
+    });
+
+    // Head gender and the registered members, copied onto the delivery task
+    // for the distribution report (one ITN task per household, so the task
+    // has no individual of its own). Both return null when there is nothing
+    // to save, and a null navigation value is dropped.
+    // Usage: "{{fn:individualGender(contextData.0.headIndividual.IndividualModel)}}"
+    FunctionRegistry.register('individualGender', (args, stateData) {
+      return individualGender(args.isEmpty ? null : args.first);
+    });
+    // Usage: "{{fn:householdMembersForTask(contextData.0.members)}}"
+    FunctionRegistry.register('householdMembersForTask', (args, stateData) {
+      return householdMembersForTask(args.isEmpty ? null : args.first);
     });
 
     // Displays whole-number decimals without the trailing .0 while

@@ -586,7 +586,11 @@ final jsonConfig = {
             "ageInMonths": "__context:ageInMonths",
             "gender": "__context:gender",
             "headName": "__context:headName",
-            "headMobileNumber": "__context:headMobileNumber"
+            "headMobileNumber": "__context:headMobileNumber",
+            "headGender": "__context:headGender",
+            "headIndividualClientReferenceId":
+                "__context:headIndividualClientReferenceId",
+            "householdMembers": "__context:householdMembers"
           },
           "clientAuditDetails": "__generate:clientAudit",
           "auditDetails": "__generate:audit"
@@ -689,6 +693,15 @@ final jsonConfig = {
             "gender": "__context:gender",
             "headName": "__context:headName",
             "headMobileNumber": "__context:headMobileNumber",
+
+            /// One task per household, so the head and the registered
+            /// members are copied here for the distribution report.
+            /// householdMembers is JSON array text built by
+            /// fn:householdMembersForTask (the non-head members).
+            "headGender": "__context:headGender",
+            "headIndividualClientReferenceId":
+                "__context:headIndividualClientReferenceId",
+            "householdMembers": "__context:householdMembers",
 
             /// One GS1 barcode per ITN handed over, captured by the scanner
             /// field on the DeliveryDetails page. TaskResourceModel carries
