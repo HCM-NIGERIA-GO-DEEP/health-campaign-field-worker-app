@@ -593,7 +593,7 @@ final dynamic sampleFlows = {
                         "label": "REGISTRATION_EDIT_INDIVIDUAL_BUTTON_LABEL",
                         "format": "button",
                         "visible": "{{fn:hasRole('REGISTRAR')}} == true",
-                        "disabled": "{{fn:disableEdit(item.task, item.hFReferral)}}==true",
+                        "disabled": "{{fn:disableEdit(item.task, item.hFReferral, item.individual)}}==true",
                         "onAction": [
                           {
                             "actions": [

@@ -13,6 +13,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:digit_data_model/data_model.dart';
 
+import 'created_by_another_user.dart';
 import 'interpolation.dart';
 
 class TaskStatus {
@@ -1300,13 +1301,22 @@ void initializeFunctionRegistry() {
   /// - **Arguments**:
   ///   - First argument: task - the task list for the beneficiary
   ///   - Second argument (optional): referral - the referral data
+  ///   - Third argument (optional): the individual being edited
   /// - **Returns**: `true` if editing should be disabled, `false` otherwise.
   ///
   /// Editing is disabled when:
   /// 1. Any task has a success status (ADMINISTRATION_SUCCESS or DELIVERED)
   /// 2. Any task is not eligible (INELIGIBLE status)
   /// 3. A referral exists (not null/empty)
+  /// 4. The individual (third argument) was created by another user: the
+  ///    server rejects an update from anyone but the creator.
   FunctionRegistry.register("disableEdit", (args, stateData) {
+    if (args.length > 2 &&
+        createdByAnotherUser(
+            args[2], FlowBuilderSingleton().loggedInUserUuid)) {
+      return true;
+    }
+
     // Check task statuses - if ANY task is delivered or ineligible, disable
     if (args.isNotEmpty && args.first != null) {
       final tasks = args.first;
